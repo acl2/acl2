@@ -83,8 +83,16 @@
            (pcp (+ pc2 pc1)))
   :hints (("Goal" :in-theory (enable pcp))))
 
-(defconst *program-enders*
-  '(:ret :return :areturn :ireturn :freturn :dreturn :lreturn :athrow :goto))
+;; These end a basic block but not necessarily the whole method
+(defconst *basic-block-enders*
+  '(:return :areturn :ireturn :freturn :dreturn :lreturn
+    :athrow
+    :goto :goto_w
+    :lookupswitch :tableswitch
+    :ret ; legacy
+    ;; todo: uncomment?:
+    ;; :jsr :jsr_w ; legacy
+    ))
 
 ;fixme check that relative jumps are in bounds (or at least don't go negative, which may be enough for now to show the PC is a natp)
 ;; PROGRAM is a list of (<pc> . <inst>) pairs
@@ -104,9 +112,13 @@
              (and (equal pc next-pc)
                   (instructionp inst)
                   (jvm-instruction-okayp inst pc valid-pcs)
-                  (if (not (member-eq (instruction-opcode inst) *program-enders*))
-                      (consp (rest program)) ; there are more instrs unless this one is a return
-                    t)
+                  (if (consp (rest program))
+                      ;; Is there are more instructions, we may or may not be
+                      ;; at a basic-block-ender (we might be at the end of the
+                      ;; basic block, but another basic block might come next):
+                      t
+                    ;; If there are no more instructions, we must be at a basic-block-ender:
+                    (member-eq (instruction-opcode inst) *basic-block-enders*))
                   (method-programp-aux (rest program) (+ (inst-len inst) next-pc) valid-pcs)))))))
 
 (defthm alistp-when-method-programp-aux
@@ -126,7 +138,7 @@
  (defthm method-programp-aux-key-property
    (implies (and (method-programp-aux program first-pc valid-pcs)
                  (member-equal pc (strip-cars program))
-                 (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+                 (not (member-equal (instruction-opcode (lookup-eq pc program)) *basic-block-enders*)))
             (member-equal (+ pc (inst-len (lookup-equal pc program)))
                           (strip-cars program)))
    :hints (("Goal" :induct (method-programp-aux program first-pc valid-pcs)
@@ -194,7 +206,7 @@
 (defthm method-programp-key-property
   (implies (and (method-programp program)
                 (member-equal pc (strip-cars program))
-                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *basic-block-enders*)))
            (member-equal (+ pc (inst-len (lookup-eq pc program)))
                          (strip-cars program)))
   :hints (("Goal" :in-theory (enable method-programp))))

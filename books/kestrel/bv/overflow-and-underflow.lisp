@@ -71,10 +71,11 @@
   :hints (("Goal" :in-theory (e/d (signed-addition-overflowsp-symmetric)
                                   (signed-addition-overflowsp)))))
 
-(defthm signed-addition-overflowsp-correct
+(defthmd signed-addition-overflowsp-correct
   (implies (and (posp size)
-                (unsigned-byte-p size x)
-                (unsigned-byte-p size y))
+                ;; (unsigned-byte-p size x)
+                ;; (unsigned-byte-p size y)
+                )
            (iff (signed-addition-overflowsp size x y)
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
@@ -166,10 +167,11 @@
   :hints (("Goal" :in-theory (e/d (signed-addition-underflowsp-symmetric)
                                   (signed-addition-underflowsp)))))
 
-(defthm signed-addition-underflowsp-correct
+(defthmd signed-addition-underflowsp-correct
   (implies (and (posp size)
-                (unsigned-byte-p size x)
-                (unsigned-byte-p size y))
+                ;; (unsigned-byte-p size x)
+                ;; (unsigned-byte-p size y)
+                )
            (iff (signed-addition-underflowsp size x y)
                 (< (+ (logext size x) (logext size y)) (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
