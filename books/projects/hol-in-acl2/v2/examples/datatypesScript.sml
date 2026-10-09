@@ -123,7 +123,8 @@ QED
 
 val defs =
     map def_bundle
-        [insert_ntree_def, I_THM, K_THM, insert_btree_def]
+        [hd basis_defs,  (* for COND *)
+         insert_ntree_def, I_THM, K_THM, insert_btree_def]
 
 val thms =
     [thm_bundle "ntree_refl" ntree_refl,

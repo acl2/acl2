@@ -27,7 +27,6 @@
 ; :pe hol::datatypes$prop
 
 (ENCAPSULATE (((HOL::DATATYPES$PROP) => *)
-              ((HOL::COND *) => *)
               ((HOL::NNODE *) => *)
               ((HOL::NLEAF *) => *)
               ((HOL::BNODE *) => *)
@@ -43,6 +42,7 @@
               ((HOL::T1 *) => *)
               ((HOL::FCONS *) => *)
               ((HOL::FNIL *) => *)
+              ((HOL::COND *) => *)
               ((HOL::INSERT_NTREE *) => *)
               ((HOL::I *) => *)
               ((HOL::K *) => *)
@@ -62,7 +62,6 @@
   (LOCAL (DEFUN HOL::TREE$VALUE NIL (OMEGA)))
   (LOCAL (DEFUN HOL::BTREE$VALUE NIL (OMEGA)))
   (LOCAL (DEFUN HOL::NTREE$VALUE NIL (OMEGA)))
-  (LOCAL (DEFUN HOL::COND (X) X))
   (LOCAL (DEFUN HOL::NNODE (X) X))
   (LOCAL (DEFUN HOL::NLEAF (X) X))
   (LOCAL (DEFUN HOL::BNODE (X) X))
@@ -78,6 +77,7 @@
   (LOCAL (DEFUN HOL::T1 (X) X))
   (LOCAL (DEFUN HOL::FCONS (X) X))
   (LOCAL (DEFUN HOL::FNIL (X) X))
+  (LOCAL (DEFUN HOL::COND (X) X))
   (LOCAL (DEFUN HOL::INSERT_NTREE (X) X))
   (LOCAL (DEFUN HOL::I (X) X))
   (LOCAL (DEFUN HOL::K (X) X))
@@ -132,17 +132,6 @@
     (IMPLIES (HOL::DATATYPES$PROP)
              (FUN-SPACE$PROP))
     :RULE-CLASSES :FORWARD-CHAINING)
-  (DEFTHM HOL::COND$TYPE
-    (IMPLIES
-     (FORCE (HOL::DATATYPES$PROP))
-     (AND
-      (HPP
-       (HOL::COND (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A)))
-       (HOL::DATATYPES$HTA))
-      (EQUAL
-       (HP-TYPE
-        (HOL::COND (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))
-       (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))))
   (DEFTHM HOL::NNODE$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -340,6 +329,17 @@
                        HOL::B (:FLIST HOL::A HOL::B)))))
        (TYP (:ARROW* (:IMPLICIT HOL::A)
                      HOL::B (:FLIST HOL::A HOL::B)))))))
+  (DEFTHM HOL::COND$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::COND (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::COND (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))
+       (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))))
   (DEFTHM HOL::INSERT_NTREE$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -705,8 +705,10 @@
      (FORCE (HOL::DATATYPES$PROP))
      (EQUAL
       (HP-AND
-       (HP= (HOL::LEAF (TYP (:TREE HOL::A)))
-            (HOL::LEAF (TYP (:TREE HOL::A))))
+       (HP= (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                     (:TREE HOL::A))))
+            (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                     (:TREE HOL::A)))))
        (HP-NOT
         (HP=
          (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::B)
@@ -739,17 +741,20 @@
            HOL::A)
           (HAP*
            (HOL::RIGHT
-            (TYP (:ARROW* HOL::A (:ALT HOL::A HOL::A))))
+            (TYP (:ARROW* (:IMPLICIT HOL::A)
+                          HOL::A (:ALT HOL::A HOL::A))))
            HOL::A)))
         (HP-NOT
          (HP=
           (HAP*
            (HOL::LEFT
-            (TYP (:ARROW* HOL::A (:ALT HOL::A HOL::B))))
+            (TYP (:ARROW* (:IMPLICIT HOL::B)
+                          HOL::A (:ALT HOL::A HOL::B))))
            HOL::A)
           (HAP*
            (HOL::RIGHT
-            (TYP (:ARROW* HOL::B (:ALT HOL::A HOL::B))))
+            (TYP (:ARROW* (:IMPLICIT HOL::A)
+                          HOL::B (:ALT HOL::A HOL::B))))
            HOL::B)))))
       (HP-TRUE))))
   (DEFTHM HOL::HOL{TRIO_REFL}
@@ -776,7 +781,8 @@
                                   HOL::A (:TRIO HOL::A :NUM))))
            HOL::A)
           (HAP*
-           (HOL::T2 (TYP (:ARROW* :NUM (:TRIO HOL::A :NUM))))
+           (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                  :NUM (:TRIO HOL::A :NUM))))
            HOL::B)))
         (HP= (HOL::T3 (TYP (:ARROW* (:IMPLICIT :BOOL)
                                     (:IMPLICIT :NUM)

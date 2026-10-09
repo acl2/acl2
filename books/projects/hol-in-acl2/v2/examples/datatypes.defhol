@@ -1,18 +1,3 @@
-#| Start manual additions by Matt |#
-
-#|
-Definition:
-
-   ⊢ (∀x y. (if T then x else y) = x) ∧ ∀x y. (if F then x else y) = y
-|#
-
-(defhol
-   :fns ((cond (:arrow* :bool a a a)))
-   :defs ((:forall ((x a) (y a))
-      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-true) x y) x))
-     (:forall ((x a) (y a))
-      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-false) x y) y))))
-
 #|
 Datatype ntree
 Constructors:
@@ -98,6 +83,19 @@ Constructors:
    :datatype (:flist a b)
    :constructors ((fnil (:arrow* (:implicit a) b (:flist a b)))
                   (fcons (:arrow* (:flist a b) a (:flist a b)))))
+
+#|
+Definition:
+
+   ⊢ (∀x y. (if T then x else y) = x) ∧ ∀x y. (if F then x else y) = y
+|#
+
+(defhol
+   :fns ((cond (:arrow* :bool a a a)))
+   :defs ((:forall ((x a) (y a))
+      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-true) x y) x))
+     (:forall ((x a) (y a))
+      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-false) x y) y))))
 
 #|
 Definition:
@@ -279,7 +277,9 @@ Theorem: tree_refl
 
 (defhol
    :name tree_refl
-   :thm (hp-and (hp= (leaf (typ (:tree a))) (leaf (typ (:tree a))))
+   :thm (hp-and
+     (hp= (leaf (typ (:arrow* (:implicit a) (:tree a))))
+      (leaf (typ (:arrow* (:implicit a) (:tree a)))))
      (hp-not
       (hp= (leaf (typ (:arrow* (:implicit b) (:tree b))))
        (hap* (node (typ (:arrow* b (:forest b) (:tree b)))) x f)))))
@@ -301,10 +301,10 @@ Theorem: alt_refl
      (hp-and
       (hp-not
        (hp= (hap* (left (typ (:arrow* (:implicit a) a (:alt a a)))) a)
-        (hap* (right (typ (:arrow* a (:alt a a)))) a)))
+        (hap* (right (typ (:arrow* (:implicit a) a (:alt a a)))) a)))
       (hp-not
-       (hp= (hap* (left (typ (:arrow* a (:alt a b)))) a)
-        (hap* (right (typ (:arrow* b (:alt a b)))) b))))))
+       (hp= (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a)
+        (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) b))))))
 
 #|
 Theorem: trio_refl
@@ -321,7 +321,7 @@ Theorem: trio_refl
      (hp-and
       (hp-not
        (hp= (hap* (t1 (typ (:arrow* (:implicit :num) a (:trio a :num)))) a)
-        (hap* (t2 (typ (:arrow* :num (:trio a :num)))) b)))
+        (hap* (t2 (typ (:arrow* (:implicit a) :num (:trio a :num)))) b)))
       (hp=
        (t3
         (typ (:arrow* (:implicit :bool) (:implicit :num) (:trio :bool :num))))
@@ -334,28 +334,13 @@ Theorem: flist_refl
    ⊢ (fNil x = fNil y ⇔ x = y) ∧ fCons fl x ≠ fNil y
 |#
 
-;;; Manual edit, 10/9/2026: The translation from HOL4 to defhol files created
-;;; the commented-out defhol form just below.  That translation is slightly in
-;;; error but will probably be fixed soon; the corrected form is below.
-
-#|
-(defhol
-   :name flist_refl
-   :thm (hp-and
-     (hp=
-      (hp= (hap* (fnil (typ (:arrow* b (:flist a b)))) x)
-       (hap* (fnil (typ (:arrow* b (:flist a b)))) y)) (hp= x y))
-     (hp-not
-      (hp= (hap* (fcons (typ (:arrow* (:flist b b) b (:flist b b)))) fl x)
-       (hap* (fnil (typ (:arrow* (:implicit b) b (:flist b b)))) y)))))
-|#
-
 (defhol
    :name flist_refl
    :thm (hp-and
      (hp=
       (hp= (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) x)
-       (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) y)) (hp= x y))
+       (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) y))
+      (hp= x y))
      (hp-not
       (hp= (hap* (fcons (typ (:arrow* (:flist b b) b (:flist b b)))) fl x)
        (hap* (fnil (typ (:arrow* (:implicit b) b (:flist b b)))) y)))))
