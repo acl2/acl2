@@ -26,14 +26,6 @@
 
 (local (in-theory (disable floor)))
 
-;move
-(local
- (defthm integerp-of-*-of---arg2
-   (equal (integerp (* x (- y)))
-          (integerp (* x y)))
-   :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
-            :in-theory (disable integerp-of--)))))
-
 (defthm ceiling-of-0-arg1
   (equal (ceiling 0 j)
          0)
@@ -44,6 +36,8 @@
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
 
+;; A powerful rule for avoiding the need to reason about ceiling (we have more
+;; rules about floor):
 (defthmd ceiling-in-terms-of-floor
   (equal (ceiling i j)
          (- (floor (- i) j)))
