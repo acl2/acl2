@@ -711,13 +711,13 @@
                      (defattach-event-lst wrld fns min max nil nil))
             fns))))
 
-(defun table-info-after-k (names wrld k evs table-guard-fns)
+(defun table-info (names wrld installed-wrld evs table-guard-fns)
 
 ; Accumulate into evs the most recent table event for each name in names (or
-; all names other than the two skipped, as mentioned below, if names is :all)
-; having absolute-event-number property greater than k.  Except, the "most
-; recent" restriction does not apply to table guard events.  Also, accumulate
-; into table-guard-fns all function symbols occurring in those table guards.
+; all names other than the two skipped, as mentioned below, if names is :all).
+; Except, the "most recent" restriction does not apply to table guard events.
+; Also, accumulate into table-guard-fns all function symbols occurring in those
+; table guards.
 
 ; We skip the acl2-defaults-table, as we should for our purposes since that
 ; table's events are local to a book.
@@ -726,53 +726,77 @@
 ; Without that exception, we saw an error, "HARD ACL2 ERROR in XDOC-EXTEND:
 ; Topic FAST-<< wasn't found."
 
-  (let ((trip (car wrld)))
-    (cond
-     ((and (eq (car trip) 'event-landmark)
-           (eq (cadr trip) 'global-value))
-      (cond
-       ((<= (access-event-tuple-number (cddr trip)) k)
-        (mv evs table-guard-fns))
-       (t (let* ((ev (access-event-tuple-form (cddr trip)))
-                 (evs (case-match ev
-                        (('table name nil nil :guard &)
-                         (cond
-                          ((eq name 'pe-table)
-
 ; The extend-pe-table event generates a call of (table pe-table ...) that
 ; causes an error if the name doesn't have an absolute-event-number.  This can
 ; heppen if that name isn't among the supporters.  Our solution here is to skip
 ; pe-table events.  If this is a problem we can perhaps pass in all supporters
 ; and make sure the name is among them.
 
-                           evs)
-                          ((or (eq names :all)
-                               (member-eq name names))
-                           (cons ev evs))
-                          (t evs)))
-                        (('table name . &)
-                         (cond
-                          ((eq name 'pe-table) ; see comment on pe-table above
-                           evs)
-                          ((and (not (member-eq name ; see comment above
-                                                '(acl2-defaults-table
-                                                  xdoc)))
-                                (or (eq names :all)
-                                    (member-eq name names))
-                                (not (assoc-eq-cadr name evs)))
-                           (cons `(table ,name
-                                         nil
-                                         ',(table-alist name wrld)
-                                         :clear)
-                                 evs))
-                          (t evs)))
-                        (& evs))))
-            (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
+; As we recur, we attempt to remove members of names that we are done with, so
+; that we can perhaps stop walking backward through the world before reaching
+; the boot-strap world.
+
+  (let ((trip (car wrld)))
+    (cond
+     ((null names)
+      (mv evs table-guard-fns))
+     ((and (eq (car trip) 'event-landmark)
+           (eq (cadr trip) 'global-value))
+      (cond
+       ((equal (access-event-tuple-form (cddar wrld))
+               '(exit-boot-strap-mode))
+        (mv evs table-guard-fns))
+       (t (let* ((ev (access-event-tuple-form (cddr trip))))
+            (mv-let (evs names table-guard-fns)
+              (case-match ev
+                (('table name nil nil :guard table-guard)
+                 (cond
+                  ((eq name 'pe-table)
+
+; We don't check name = 'acl2-defaults-table here because that table's guard is
+; provided in the boot-strap and we don't go into the boot-strap in this
+; function.  We don't check name = 'xdoc-table because that table has no
+; 'table-guard property.
+
+                   (mv evs names table-guard-fns))
+                  ((or (eq names :all)
+                       (member-eq name names))
+                   (mv (cons ev evs)
+                       (if (eq names :all) :all (remove1 name names))
+                       (all-fnnames1 nil table-guard table-guard-fns)))
+                  (t (mv evs names table-guard-fns))))
+                (('table name . &)
+                 (cond
+                  ((member-eq name '(acl2-defaults-table xdoc 'pe-table))
+                   (mv evs names table-guard-fns))
+                  ((and (or (eq names :all)
+                            (member-eq name names))
+
+; Name might be in names, even though we have already encountered an event
+; updating the table for name, because we are waiting for the event specifying
+; a table guard for name.  But we might encounter several events updating that
+; table as we walk back through the world, so we check here that we haven't
+; already accumulated a table update event for name.
+
+                        (not (assoc-eq-cadr name evs)))
+                   (mv (cons `(table ,name
+                                     nil
+                                     ',(table-alist name wrld)
+                                     :clear)
+                             evs)
+                       (if (getpropc name 'table-guard nil installed-wrld)
+                           names
+                         (if (eq names :all) :all (remove1 name names)))
+                       table-guard-fns))
+                  (t (mv evs names table-guard-fns))))
+                (& (mv evs names table-guard-fns)))
+              (table-info names (cdr wrld) installed-wrld evs
+                          table-guard-fns))))))
      ((and (eq (cadr trip) 'table-guard)
            (not (eq (cddr trip) *acl2-property-unbound*)))
-      (table-info-after-k names (cdr wrld) k evs
-                          (all-fnnames1 nil (cddr trip) table-guard-fns)))
-     (t (table-info-after-k names (cdr wrld) k evs table-guard-fns)))))
+      (table-info names (cdr wrld) installed-wrld evs
+                  (all-fnnames1 nil (cddr trip) table-guard-fns)))
+     (t (table-info names (cdr wrld) installed-wrld evs table-guard-fns)))))
 
 (defun supporters-in-theory-event (names ens wrld disables)
 
@@ -927,7 +951,14 @@
                   (let* ((wrld (w state))
                          (max (max-absolute-event-number wrld)))
                     (mv-let (table-evs fns1)
-                      (table-info-after-k ',tables wrld min nil nil)
+
+; As we search the world for events setting tables named in :tables, we
+; continue even earlier than the event with absolute-event-number min.  That's
+; because our book might have a local event setting a named table before the
+; with-supporters event whose local event sets such a table redundantly, and
+; hence wouldn't be picked up if we stop the search at min.
+
+                      (table-info ',tables wrld wrld nil nil)
                       (er-progn
                        (progn ,@events)
                        (let* ((wrld (w state))
