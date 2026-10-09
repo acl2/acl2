@@ -20,6 +20,7 @@
 (local (include-book "minus"))
 (local (include-book "mod"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "numerator-and-denominator"))
 
 (in-theory (disable ceiling))
 
@@ -132,7 +133,7 @@
 
   (local (defthm ceiling-upper-bound-neg
            (implies (and (< j 0) ; unusual
-                                 ;                (< 0 i) ; todo
+                         ;; (< 0 i) ; todo
                          (rationalp i)
                          (rationalp j))
                     (< (ceiling i j) (+ 1 (/ i j))))
