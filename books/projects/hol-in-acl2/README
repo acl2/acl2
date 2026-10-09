@@ -1,6 +1,29 @@
-This directory contains a translator from HOL4 to ACL2 -- more
-specifically, to the integration of set theory with ACL2 supported by
-community books directory projects/set-theory/.
+This directory supports translation from HOL4 to ACL2 -- more
+specifically, from HOL4 to ACL2(zfc), the integration of set theory
+with ACL2 supported by community books directory projects/set-theory/.
+The translation process actually consists of two parts:  a
+translator from HOL4 to defhol forms, and a translator from defhol
+forms to ACL2(zfc).  For the first of these, see:
 
-For example see examples/, in particular, examples/README.txt.
+https://github.com/HOL-Theorem-Prover/HOL/blob/master/examples/acl2/hol-to-acl2/
 
+The work here concerns the second part of the translation process:
+from defhol forms to ACL2(zfc).
+
+Subdirectory v1/ contains an initial version, as described in the
+following paper (to appear).
+
+  Kaufmann, M., Slind, K.: Translating HOL to ACL2 with set theory.
+  In: Nipkow, T., Passmore, G., Sultana, N. (eds.) Logic, Computation
+  and Proof, vol. 16870.  Springer Nature Switzerland (2026)
+
+A version of that paper may be made publicly available in late 2027
+according to the terms of the license with Springer.
+
+This work in progress continues in subdirectory v2/, which among other
+improvements contains support for HOL4 datatype definitions.
+
+Examples may be found in the examples/ subdirectory of each of those
+subdirectories, as discussed in examples/README.txt.
+
+Soundness considerations are addressed in soundness/README.txt.

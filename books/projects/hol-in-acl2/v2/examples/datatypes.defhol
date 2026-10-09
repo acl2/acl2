@@ -1,0 +1,361 @@
+#| Start manual additions by Matt |#
+
+#|
+Definition:
+
+   ⊢ (∀x y. (if T then x else y) = x) ∧ ∀x y. (if F then x else y) = y
+|#
+
+(defhol
+   :fns ((cond (:arrow* :bool a a a)))
+   :defs ((:forall ((x a) (y a))
+      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-true) x y) x))
+     (:forall ((x a) (y a))
+      (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-false) x y) y))))
+
+#|
+Datatype ntree
+Constructors:
+   nLeaf : num -> ntree
+   nNode : ntree -> num -> ntree -> ntree
+|#
+
+(defhol
+   :datatype :ntree
+   :constructors ((nleaf (:arrow* :num :ntree))
+                  (nnode (:arrow* :ntree :num :ntree :ntree))))
+
+#|
+Datatype α btree
+Constructors:
+   bLeaf : α -> α btree
+   bNode : α btree -> α -> α btree -> α btree
+|#
+
+(defhol
+   :datatype (:btree a)
+   :constructors ((bleaf (:arrow* a (:btree a)))
+                  (bnode (:arrow* (:btree a) a (:btree a) (:btree a)))))
+
+#|
+Datatype α tree
+Constructors:
+   Leaf : α tree
+   Node : α -> α forest -> α tree
+|#
+
+(defhol
+   :datatype (:tree a)
+   :constructors ((leaf (:arrow* (:implicit a) (:tree a)))
+                  (node (:arrow* a (:forest a) (:tree a)))))
+
+#|
+Datatype α forest
+Constructors:
+   Empty : α forest
+   Cons : α tree -> α forest -> α forest
+|#
+
+(defhol
+   :datatype (:forest a)
+   :constructors ((empty (:arrow* (:implicit a) (:forest a)))
+                  (cons (:arrow* (:tree a) (:forest a) (:forest a)))))
+
+#|
+Datatype (α, β) alt
+Constructors:
+   Left : α -> (α, β) alt
+   Right : β -> (α, β) alt
+|#
+
+(defhol
+   :datatype (:alt a b)
+   :constructors ((left (:arrow* (:implicit b) a (:alt a b)))
+                  (right (:arrow* (:implicit a) b (:alt a b)))))
+
+#|
+Datatype (α, β) trio
+Constructors:
+   T1 : α -> (α, β) trio
+   T2 : β -> (α, β) trio
+   T3 : (α, β) trio
+|#
+
+(defhol
+   :datatype (:trio a b)
+   :constructors ((t1 (:arrow* (:implicit b) a (:trio a b)))
+                  (t2 (:arrow* (:implicit a) b (:trio a b)))
+                  (t3 (:arrow* (:implicit a) (:implicit b) (:trio a b)))))
+
+#|
+Datatype (α, β) flist
+Constructors:
+   fNil : β -> (α, β) flist
+   fCons : (α, β) flist -> α -> (α, β) flist
+|#
+
+(defhol
+   :datatype (:flist a b)
+   :constructors ((fnil (:arrow* (:implicit a) b (:flist a b)))
+                  (fcons (:arrow* (:flist a b) a (:flist a b)))))
+
+#|
+Definition:
+
+   ⊢ (∀m n.
+        insert_ntree m (nLeaf n) =
+        if m = n then nLeaf n
+        else if m < n then nNode (nLeaf m) n (nLeaf 0)
+        else nNode (nLeaf 0) m (nLeaf n)) ∧
+     ∀m nt1 n nt2.
+       insert_ntree m (nNode nt1 n nt2) =
+       if m = n then nNode nt1 m nt2
+       else if m < n then nNode (insert_ntree m nt1) n nt2
+       else nNode nt1 n (insert_ntree m nt2)
+|#
+
+(defhol
+   :fns ((insert_ntree (:arrow* :num :ntree :ntree)))
+   :defs ((:forall ((m :num) (n :num))
+      (equal
+       (hap* (insert_ntree (typ (:arrow* :num :ntree :ntree))) m
+        (hap* (nleaf (typ (:arrow* :num :ntree))) n))
+       (hap* (cond (typ (:arrow* :bool :ntree :ntree :ntree))) (hp= m n)
+        (hap* (nleaf (typ (:arrow* :num :ntree))) n)
+        (hap* (cond (typ (:arrow* :bool :ntree :ntree :ntree))) (hp< m n)
+         (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+          (hap* (nleaf (typ (:arrow* :num :ntree))) m) n
+          (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 0)))
+         (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+          (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 0)) m
+          (hap* (nleaf (typ (:arrow* :num :ntree))) n))))))
+     (:forall ((m :num) (nt1 :ntree) (n :num) (nt2 :ntree))
+      (equal
+       (hap* (insert_ntree (typ (:arrow* :num :ntree :ntree))) m
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) nt1 n nt2))
+       (hap* (cond (typ (:arrow* :bool :ntree :ntree :ntree))) (hp= m n)
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) nt1 m nt2)
+        (hap* (cond (typ (:arrow* :bool :ntree :ntree :ntree))) (hp< m n)
+         (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+          (hap* (insert_ntree (typ (:arrow* :num :ntree :ntree))) m nt1) n
+          nt2)
+         (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) nt1 n
+          (hap* (insert_ntree (typ (:arrow* :num :ntree :ntree))) m nt2))))))))
+
+#|
+Definition:
+
+   ⊢ ∀x. I x = x
+|#
+
+(defhol
+   :fns ((i (:arrow* a a)))
+   :defs ((:forall ((x a)) (equal (hap* (i (typ (:arrow* a a))) x) x))))
+
+#|
+Definition:
+
+   ⊢ ∀x y. K x y = x
+|#
+
+(defhol
+   :fns ((k (:arrow* a b a)))
+   :defs ((:forall ((x a) (y b))
+      (equal (hap* (k (typ (:arrow* a b a))) x y) x))))
+
+#|
+Definition:
+
+   ⊢ (∀leq x y.
+        insert_btree leq x (bLeaf y) =
+        if x = y then bLeaf y
+        else if leq x y then bNode (bLeaf x) y (bLeaf y)
+        else bNode (bLeaf y) y (bLeaf x)) ∧
+     ∀leq x nt1 y nt2.
+       insert_btree leq x (bNode nt1 y nt2) =
+       if x = y then bNode nt1 y nt2
+       else if leq x y then bNode (insert_btree leq x nt1) y nt2
+       else bNode nt1 y (insert_btree leq x nt2)
+|#
+
+(defhol
+   :fns ((insert_btree (:arrow* (:arrow* a a :bool) a (:btree a) (:btree a))))
+   :defs ((:forall ((leq (:arrow* a a :bool)) (x a) (y a))
+      (equal
+       (hap*
+        (insert_btree
+         (typ (:arrow* (:arrow* a a :bool) a (:btree a) (:btree a)))) leq x
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) y))
+       (hap* (cond (typ (:arrow* :bool (:btree a) (:btree a) (:btree a))))
+        (hp= x y) (hap* (bleaf (typ (:arrow* a (:btree a)))) y)
+        (hap* (cond (typ (:arrow* :bool (:btree a) (:btree a) (:btree a))))
+         (hap* leq x y)
+         (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+          (hap* (bleaf (typ (:arrow* a (:btree a)))) x) y
+          (hap* (bleaf (typ (:arrow* a (:btree a)))) y))
+         (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+          (hap* (bleaf (typ (:arrow* a (:btree a)))) y) y
+          (hap* (bleaf (typ (:arrow* a (:btree a)))) x))))))
+     (:forall
+      ((leq (:arrow* a a :bool)) (x a) (nt1 (:btree a)) (y a)
+       (nt2 (:btree a)))
+      (equal
+       (hap*
+        (insert_btree
+         (typ (:arrow* (:arrow* a a :bool) a (:btree a) (:btree a)))) leq x
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) nt1 y
+         nt2))
+       (hap* (cond (typ (:arrow* :bool (:btree a) (:btree a) (:btree a))))
+        (hp= x y)
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) nt1 y
+         nt2)
+        (hap* (cond (typ (:arrow* :bool (:btree a) (:btree a) (:btree a))))
+         (hap* leq x y)
+         (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+          (hap*
+           (insert_btree
+            (typ (:arrow* (:arrow* a a :bool) a (:btree a) (:btree a)))) leq x
+           nt1) y nt2)
+         (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) nt1
+          y
+          (hap*
+           (insert_btree
+            (typ (:arrow* (:arrow* a a :bool) a (:btree a) (:btree a)))) leq x
+           nt2))))))))
+
+#|
+Theorem: ntree_refl
+
+   ⊢ nLeaf 3 = nLeaf 3 ∧ nLeaf 4 = nLeaf (2 + 2) ∧
+     nNode (nLeaf 3) 2 (nLeaf 4) = nNode (nLeaf 3) 2 (nLeaf 4)
+|#
+
+(defhol
+   :name ntree_refl
+   :thm (hp-and
+     (hp= (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 3))
+      (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 3)))
+     (hp-and
+      (hp= (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 4))
+       (hap* (nleaf (typ (:arrow* :num :ntree))) (hp+ (hp-num 2) (hp-num 2))))
+      (hp=
+       (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+        (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 3)) (hp-num 2)
+        (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 4)))
+       (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+        (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 3)) (hp-num 2)
+        (hap* (nleaf (typ (:arrow* :num :ntree))) (hp-num 4)))))))
+
+#|
+Theorem: btree_refl
+
+   ⊢ bLeaf x = bLeaf x ∧ bLeaf x = bLeaf (I x) ∧
+     bNode (bLeaf x) y (bLeaf z) = bNode (bLeaf (K x y)) y (bLeaf z)
+|#
+
+(defhol
+   :name btree_refl
+   :thm (hp-and
+     (hp= (hap* (bleaf (typ (:arrow* a (:btree a)))) x)
+      (hap* (bleaf (typ (:arrow* a (:btree a)))) x))
+     (hp-and
+      (hp= (hap* (bleaf (typ (:arrow* a (:btree a)))) x)
+       (hap* (bleaf (typ (:arrow* a (:btree a))))
+        (hap* (i (typ (:arrow* a a))) x)))
+      (hp=
+       (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) x) y
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) z))
+       (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+        (hap* (bleaf (typ (:arrow* a (:btree a))))
+         (hap* (k (typ (:arrow* a a a))) x y)) y
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) z))))))
+
+#|
+Theorem: tree_refl
+
+   ⊢ Leaf = Leaf ∧ Leaf ≠ Node x f
+|#
+
+(defhol
+   :name tree_refl
+   :thm (hp-and (hp= (leaf (typ (:tree a))) (leaf (typ (:tree a))))
+     (hp-not
+      (hp= (leaf (typ (:arrow* (:implicit b) (:tree b))))
+       (hap* (node (typ (:arrow* b (:forest b) (:tree b)))) x f)))))
+
+#|
+Theorem: alt_refl
+
+   ⊢ Left 1 = Left 1 ∧ Left a ≠ Right a ∧ Left a ≠ Right b
+|#
+
+(defhol
+   :name alt_refl
+   :thm (hp-and
+     (hp=
+      (hap* (left (typ (:arrow* (:implicit c) :num (:alt :num c))))
+       (hp-num 1))
+      (hap* (left (typ (:arrow* (:implicit c) :num (:alt :num c))))
+       (hp-num 1)))
+     (hp-and
+      (hp-not
+       (hp= (hap* (left (typ (:arrow* (:implicit a) a (:alt a a)))) a)
+        (hap* (right (typ (:arrow* a (:alt a a)))) a)))
+      (hp-not
+       (hp= (hap* (left (typ (:arrow* a (:alt a b)))) a)
+        (hap* (right (typ (:arrow* b (:alt a b)))) b))))))
+
+#|
+Theorem: trio_refl
+
+   ⊢ (T1 x = T1 y ⇔ x = y) ∧ T1 a ≠ T2 b ∧ T3 = T3
+|#
+
+(defhol
+   :name trio_refl
+   :thm (hp-and
+     (hp=
+      (hp= (hap* (t1 (typ (:arrow* (:implicit c) b (:trio b c)))) x)
+       (hap* (t1 (typ (:arrow* (:implicit c) b (:trio b c)))) y)) (hp= x y))
+     (hp-and
+      (hp-not
+       (hp= (hap* (t1 (typ (:arrow* (:implicit :num) a (:trio a :num)))) a)
+        (hap* (t2 (typ (:arrow* :num (:trio a :num)))) b)))
+      (hp=
+       (t3
+        (typ (:arrow* (:implicit :bool) (:implicit :num) (:trio :bool :num))))
+       (t3
+        (typ (:arrow* (:implicit :bool) (:implicit :num) (:trio :bool :num))))))))
+
+#|
+Theorem: flist_refl
+
+   ⊢ (fNil x = fNil y ⇔ x = y) ∧ fCons fl x ≠ fNil y
+|#
+
+;;; Manual edit, 10/9/2026: The translation from HOL4 to defhol files created
+;;; the commented-out defhol form just below.  That translation is slightly in
+;;; error but will probably be fixed soon; the corrected form is below.
+
+#|
+(defhol
+   :name flist_refl
+   :thm (hp-and
+     (hp=
+      (hp= (hap* (fnil (typ (:arrow* b (:flist a b)))) x)
+       (hap* (fnil (typ (:arrow* b (:flist a b)))) y)) (hp= x y))
+     (hp-not
+      (hp= (hap* (fcons (typ (:arrow* (:flist b b) b (:flist b b)))) fl x)
+       (hap* (fnil (typ (:arrow* (:implicit b) b (:flist b b)))) y)))))
+|#
+
+(defhol
+   :name flist_refl
+   :thm (hp-and
+     (hp=
+      (hp= (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) x)
+       (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) y)) (hp= x y))
+     (hp-not
+      (hp= (hap* (fcons (typ (:arrow* (:flist b b) b (:flist b b)))) fl x)
+       (hap* (fnil (typ (:arrow* (:implicit b) b (:flist b b)))) y)))))

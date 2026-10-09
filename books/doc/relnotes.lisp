@@ -453,11 +453,12 @@
    (xdoc::h4 "HOL4 to ACL2 Translator")
 
    (xdoc::p
-    "Some clean-up was made to directory @('[books]/projects/hol-in-acl2/') in
-     support of translation from HOL4 to ACL2(zfc) (see @(see zfc)).  A new
-     file, @('soundness/hol-in-acl2-supplement.pdf'), presents a soundness
-     argument; see file @('README.txt') in that @('soundness') subdirectory for
-     context.")
+    "Two subdirectories @('v1/') and @('v2/') were created, where @('v1/')
+     holds the existing work with some minor clean-up, and @('v2/') holds a new
+     version that, in particular, includes support for user-defined datatypes.
+     A new file, @('soundness/hol-in-acl2-supplement.pdf'), presents a
+     soundness argument; see file @('README.txt') in that @('soundness')
+     subdirectory for context.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
