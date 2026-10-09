@@ -625,7 +625,7 @@
      it is an error if there is none.
      It is also an error if the character is a new-line.
      If the character is a single quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -703,7 +703,7 @@
      it is an error if there is none.
      It is also an error if the character is a new-line.
      If the character is a double quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -717,7 +717,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
@@ -725,7 +725,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp schar & parstate)
         (if (utf8-= char (char-code #\\)) ; \
@@ -947,14 +947,14 @@
        ((unless char)
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos parstate))
        ((when (utf8-= char 10)) ; new-line
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        (qchar (q-char char))
        ((erp qchars closing-dquote-pos parstate) (lex-*-q-char parstate)))
@@ -993,14 +993,14 @@
     "This is called when we expect a header name.
      We read the next character, which must be present.
      Then we read the two kinds of header names,
-     based on whether the next character is greater-than or double quote.
+     based on whether the next character is less-than or double quote.
      If it is neither, lexing fails."))
   (b* (((reterr) (irr-header-name) (irr-span) parstate)
        ((erp char first-pos parstate) (read-char parstate)))
     (cond
      ((not char)
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))
      ((utf8-= char (char-code #\<)) ; <
@@ -1025,7 +1025,7 @@
                parstate)))
      (t ; other
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
   :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
@@ -1309,14 +1309,15 @@
             (lex-*-digit pos parstate)))
         (cond
          (digits ; f digits
-          (b* ((n (str::dec-digit-chars-value digits))
-               ((unless (member-equal n '(16 32 64 128)))
+          (b* ((digits-str (str::implode digits))
+               ((unless (member-equal digits-str '("16" "32" "64" "128")))
                 (reterr-msg :where pos
                             :expected "one of ~
                                        f16, f32, f64, f128, ~
                                        f16x, f32x, f64x, f128x"
-                            :found (msg "f~x0" n)))
-               ((erp charx posx parstate) (read-char parstate)))
+                            :found (msg "f~s0" digits-str)))
+               ((erp charx posx parstate) (read-char parstate))
+               (n (str::dec-digit-chars-value digits)))
             (cond
              ((eql charx (char-code #\x)) ; f digits x
               (b* ((fsuffix (case n
@@ -1338,18 +1339,19 @@
      ((utf8-= char (char-code #\F)) ; F
       (b* (((unless (parstate->gcc/clang parstate))
             (retok (fsuffix-upcase-f) pos parstate))
-           ((erp digits digits-last-pos & parstate) ; f [digits]
+           ((erp digits digits-last-pos & parstate) ; F [digits]
             (lex-*-digit pos parstate)))
         (cond
          (digits ; F digits
-          (b* ((n (str::dec-digit-chars-value digits))
-               ((unless (member-equal n '(16 32 64 128)))
+          (b* ((digits-str (str::implode digits))
+               ((unless (member-equal digits-str '("16" "32" "64" "128")))
                 (reterr-msg :where pos
                             :expected "one of ~
-                                       f16, f32, f64, f128, ~
-                                       f16x, f32x, f64x, f128x"
-                            :found (msg "f~x0" n)))
-               ((erp charx posx parstate) (read-char parstate)))
+                                       F16, F32, F64, F128, ~
+                                       F16x, F32x, F64x, F128x"
+                            :found (msg "F~s0" digits-str)))
+               ((erp charx posx parstate) (read-char parstate))
+               (n (str::dec-digit-chars-value digits)))
             (cond
              ((eql charx (char-code #\x)) ; F digits x
               (b* ((fsuffix (case n
@@ -1375,7 +1377,9 @@
      (t ; other
       (b* ((parstate (unread-char parstate)))
         (retok nil pos parstate)))))
-  :guard-hints (("Goal" :in-theory (enable acl2-numberp-when-natp)))
+  :guard-hints
+  (("Goal" :in-theory (enable acl2-numberp-when-natp
+                              str::character-listp-when-dec-digit-char-listp)))
 
   ///
 
@@ -1817,8 +1821,8 @@
             (cond
              ((not hexdigs2) ; 0 x/X .
               (reterr-msg :where hexdigs2-next-pos
-                          :expected "a hexadecimal digit or a dot"
-                          :found (char-to-msg nil)))
+                          :expected "one or more hexadecimal digits"
+                          :found "none"))
              (t ; 0 x/X . hexdigs2
               (b* (((erp expo expo-last-pos parstate)
                     (lex-binary-exponent-part parstate)))

@@ -6479,8 +6479,8 @@
 
             (if p-sign
                 (if q-sign
-                    (mv (if (< (fix a) j) nil t) nil wrld)
-                    (mv (if (<= j (fix a)) nil t) nil wrld))
+                    (mv (if (<?-number-v-rational t (fix a) j) nil t) nil wrld)
+                    (mv (if (<?-rational-v-number nil j (fix a)) nil t) nil wrld))
                 (mv t nil wrld))))
          ((eq q-discriminator :lessp-k-x)
           (let ((j (car q-recog)))
@@ -6492,8 +6492,8 @@
 
             (if p-sign
                 (if q-sign
-                    (mv (if (< j (fix a)) nil t) nil wrld)
-                    (mv (if (<= (fix a) j) nil t) nil wrld))
+                    (mv (if (<?-rational-v-number t j (fix a)) nil t) nil wrld)
+                    (mv (if (<?-number-v-rational nil (fix a) j) nil t) nil wrld))
                 (mv t nil wrld))))
          (t
 ;       (let ((q q-discriminator))
@@ -8756,7 +8756,8 @@
    ((eq (ffn-symb term) 'IF)
     (let ((x (fargn term 1))
           (y (fargn term 2))
-          (z (fargn term 3)))
+          (z (fargn term 3))
+          (cnfp1 (if sign cnfp (not cnfp))))
 
 ; Cases we consider:
 ; (if x y nil)  =   (AND x y)
@@ -8765,26 +8766,26 @@
 ; (if x t z)   <--> (OR x z)        = (if x x z)
 
       (cond ((equal z *nil*) ; (AND x y)
-             (if cnfp
+             (if cnfp1
                  (append (cnf-dnf sign x cnfp)
                          (cnf-dnf sign y cnfp))
                  (cross-prod (cnf-dnf sign x cnfp)
                              (cnf-dnf sign y cnfp))))
             ((equal y *nil*) ; (AND (NOT x) z)
-             (if cnfp
+             (if cnfp1
                  (append (cnf-dnf (not sign) x cnfp)
                          (cnf-dnf sign z cnfp))
                  (cross-prod (cnf-dnf (not sign) x cnfp)
                              (cnf-dnf sign z cnfp))))
             ((equal z *t*) ; (OR (NOT x) y)
-             (if cnfp
+             (if cnfp1
                  (cross-prod (cnf-dnf (not sign) x cnfp)
                              (cnf-dnf sign y cnfp))
                  (append (cnf-dnf (not sign) x cnfp)
                          (cnf-dnf sign y cnfp))))
             ((or (equal x y)    ; (OR x z)
                  (equal y *t*))
-             (if cnfp
+             (if cnfp1
                  (cross-prod (cnf-dnf sign x cnfp)
                              (cnf-dnf sign z cnfp))
                  (append (cnf-dnf sign x cnfp)
@@ -9247,82 +9248,190 @@
             (t (add-tau-conjunctive-rule rune hyps concl ens wrld))))
           (t wrld)))))))
 
-(defun convert-normalized-term-to-pairs (rhyps term ans)
+(defun member-complement (sign atm cl)
 
-; Term is a term in IF-normal form.  We convert it to a list of (hyps . concl)
-; pairs such that the conjunction of the (implies (and ,hyps) concl) terms is
-; IFF-equivalent to term.
+; We want to know whether the complement of ``lit'' occurs in clause cl, except
+; lit is sign/atm in the sense that if sign=t, lit is atm and if sign=nil, lit
+; is (NOT atm).  If we find the complement of lit, call it ~lit, in cl, we
+; return (mv t ~lit).  If we don't, we return (mv nil nil).
+
+  (cond ((endp cl) (mv nil nil))
+        ((if sign ; sign is positive, look for (NOT atm) in cl
+             (and (nvariablep (car cl))
+                  (not (fquotep (car cl)))
+                  (eq (ffn-symb (car cl)) 'NOT)
+                  (equal atm (fargn (car cl) 1)))
+             (equal atm (car cl)))
+         (mv t (car cl)))
+        (t (member-complement sign atm (cdr cl)))))
+
+(defun exist-complementary-lits (cl1 cl2)
+
+; If there is a literal, say lit, in cl1 that occurs complemented in cl2, we
+; return (mv t lit ~lit), else we return (mv nil nil nil).  Here ~lit is the
+; complement of lit.
+
+  (cond
+   ((endp cl1) (mv nil nil nil))
+   (t (let* ((sign (if (and (nvariablep (car cl1))
+                            (not (fquotep (car cl1)))
+                            (eq (ffn-symb (car cl1)) 'NOT))
+                       nil
+                       t))
+             (atm (if sign (car cl1) (fargn (car cl1) 1))))
+        (mv-let (flg lit2)
+          (member-complement sign atm cl2)
+          (if flg
+              (mv t (car cl1) lit2)
+              (exist-complementary-lits (cdr cl1) cl2)))))))
+
+(defun resolve-if-subsumes (cl1 cl2)
+
+; We try to resolve cl1 and cl2.  If resolution is possible and the resolvent
+; subsumes both parents, we return a singleton list containing the resolvent.
+; If resolution is possible and the resolvent subsumes just one parent, we
+; return a list of two clauses consisting of the retained parent and the
+; resolvent that subsumes the other parent.  The two clauses are the
+; replacements of cl1 and cl2, respectively.  I.e., if cl2 is the one subsumed
+; by the resolvent, we return (list cl1 resolvent), and if cl1 is the one
+; subsumed we return (list resolvent cl2).  If the resolution is possible but it
+; subsumes neither parent, we return nil.  If no resolvent is possible, we
+; return nil.
+
+  (mv-let (flg lit1 lit2)
+    (exist-complementary-lits cl1 cl2)
+    (cond (flg
+           (let ((new-cl1 (remove1-equal lit1 cl1))
+                 (new-cl2 (remove1-equal lit2 cl2)))
+
+; The resolvent is the union of new-cl1 and new-cl2.  We want to know if the
+; resolvent subsumes either parent.  If so, we keep the resolvent and throw
+; away the subsumed parent(s).  But we know new-cl1 is a proper subset of cl1
+; and new-cl2 is a proper subset of cl2.  So the resolvent subsumes cl1 iff
+; new-cl2 is a subset of cl1, and the resolvent resolvent subsumes cl2 iff
+; new-cl1 is a subset of cl2.  If we don't get a subsumption, keep both parents
+; and throw away the resolvent.
+
+             (cond
+              ((subsetp-equal new-cl2 cl1)
+; cl1 is subsumed.
+               (cond ((subsetp-equal new-cl1 cl2)
+; cl2 is subsumed.
+                      (list (union-equal new-cl1 new-cl2)))
+                     (t
+; cl2 not subsumed, must keep it.
+                      (list (union-equal new-cl1 new-cl2) cl2))))
+              ((subsetp-equal new-cl1 cl2)
+; cl1 not subsumed, must keep it.  But cl2 is subsumed.
+               (list cl1 (union-equal new-cl1 new-cl2)))
+              (t
+; neither subsumed, keep both.
+               nil))))
+          (t
+; resolution impossible: no complementary cl.
+           nil))))
+
+(defun resolve-cl1-against-each (cl1 cls changedp ans)
+  (cond ((endp cls) (mv changedp (cons cl1 (revappend ans nil))))
+        (t 
+; We try to resolve cl1 with the first element, cl2, of cls.
+
+         (let* ((cl2 (car cls))
+                (temp (resolve-if-subsumes cl1 cl2)))
+           (cond
+            ((null temp)
+; No productive resolution is possible.  Put cl2 into ans and resolve cl1 with
+; the rest.
+             (resolve-cl1-against-each cl1
+                                       (cdr cls)
+                                       changedp
+                                       (cons cl2 ans)))
+            ((null (cdr temp))
+; Resolvent replaces both, so continue onward with resolvent against the rest
+; of cls.
+             (resolve-cl1-against-each (car temp)
+                                       (cdr cls)
+                                       t
+                                       ans))
+            (t
+; Replace both and continue; note that (car temp) may be cl1 or may be the
+; resolvent that subsumed cl1.  Similarly, (cadr temp) may be cl2 or the
+; resolvent that subsumed it.
+
+             (resolve-cl1-against-each (car temp)
+                                       (cons (cadr temp) (cdr cls))
+                                       t
+                                       ans)))))))
+
+(defun resolve-cycle (cls)
+  (cond ((endp cls) cls)
+        ((endp (cdr cls)) cls)
+        (t (mv-let (changedp new-cls)
+             (resolve-cl1-against-each (car cls)
+                                       (cdr cls)
+                                       nil nil)
+             (cond
+              (changedp
+               (resolve-cycle new-cls))
+              (t (cons (car cls)
+                       (resolve-cycle (cdr cls)))))))))
+
+(defun convert-normalized-term-to-clauses (rcl term ans)
+
+; Term is a term in IF-normal form.  We convert it to an equivalent set of
+; clauses.  Rcl is the reverse of the clause formed by the tests passed so far.
 
   (cond
    ((variablep term)
-    (cons (cons (revappend rhyps nil) term) ans))
+    (cons (revappend rcl (list term)) ans))
    ((fquotep term)
     (if (equal term *nil*)
-        (cond ((consp rhyps)
-               (cons (cons (revappend (cdr rhyps) nil) (dumb-negate-lit (car rhyps)))
+        (cond ((consp rcl)
+               (cons (revappend rcl nil)
                      ans))
-              (t (cons (cons nil *nil*) ans)))
+              (t (cons (list *nil*) ans)))
         ans))
    ((eq (ffn-symb term) 'IF)
     (cond
      ((equal (fargn term 3) *nil*)
-      (convert-normalized-term-to-pairs
-       rhyps (fargn term 2)
-       (cons (cons (revappend rhyps nil)
-                   (fargn term 1)) ans)))
+      (convert-normalized-term-to-clauses
+       rcl (fargn term 2)
+       (cons (revappend rcl (list (fargn term 1))) ans)))
      ((equal (fargn term 2) *nil*)
-      (convert-normalized-term-to-pairs
-       rhyps (fargn term 3)
-       (cons (cons (revappend rhyps nil)
-                   (dumb-negate-lit (fargn term 1))) ans)))
-     (t (convert-normalized-term-to-pairs
-         (cons (fargn term 1) rhyps)
+      (convert-normalized-term-to-clauses
+       rcl (fargn term 3)
+       (cons (revappend rcl (list (dumb-negate-lit (fargn term 1)))) ans)))
+     (t (convert-normalized-term-to-clauses
+         (cons (dumb-negate-lit (fargn term 1)) rcl)
          (fargn term 2)
-         (convert-normalized-term-to-pairs
-          (cons (dumb-negate-lit (fargn term 1)) rhyps)
+         (convert-normalized-term-to-clauses
+          (cons (fargn term 1) rcl)
           (fargn term 3)
           ans)))))
-   (t (cons (cons (revappend rhyps nil) term) ans))))
+   (t (cons (revappend rcl (list term)) ans))))
 
-; In convert-term-to-pairs, below, we convert a term (known to be a theorem)
-; into a list of (hyps . concl) pairs.  We basically walk through its
-; propositional structure collecting hyps and then the conclusion at each tip.
-; We ought to just clausify the term instead, but we have not yet defined
-; clausify.  The following code is a cheap and dirty approximation of clausify
-; used just to process non-recursive propositional definition bodies containing
-; only tau recognizers.
+(defun convert-cl-to-pair (cl)
+  (cons (dumb-negate-lit-lst (all-but-last cl))
+        (car (last cl))))
 
-; To see the need for more than stripping, define a recognizer as a disjunction
-; of other recognizers, e.g., (DEFUN FOO (X) (OR (A X) (B X) (C X) (D X))).  To
-; make it easier to play, let's just think of proposition letters:
+(defun convert-clauses-to-pairs (cls)
+  (cond ((endp cls) nil)
+        (t (cons (convert-cl-to-pair (car cls))
+                 (convert-clauses-to-pairs (cdr cls))))))
 
-; FOO <--> (A v B v C v D).
+(defun convert-term-to-pairs (term ens wrld)
 
-; We want to store a tau rule of the form (A v B v C v D) --> foo.
-; If we express that as an IF we get
+; Term is assumed to be the result of expanding a tau-like-propositionp.  Thus,
+; it is a term composed entirely of T, NIL, (recog var), and IF expressions
+; composed of such terms.  We wish to convert term to a list of (hyps . concl) pairs.
 
-; (IF (IF A 'T (IF B 'T (IF C 'T D))) FOO 'T)
-
-; which normalizes to
-
-; (IF A FOO (IF B FOO (IF C FOO (IF D FOO 'T))))
-
-; and then a rudimentary strip branches produces the pairs:
-
-; (((A) . FOO)
-;  ((-A B) . FOO)
-;  ((-A -B C) . FOO)
-;  ((-A -B -C D) . FOO))
-
-; Our job now is to clean this up by getting rid of unnecessary hyps to produce:
-
-; (((A) . FOO)
-;  ((B) . FOO)
-;  ((C) . FOO)
-;  ((D) . FOO))
-
-; This is done quite nicely by the subsumption-replacement loop in clausify.
-; But we don't have clausify.
+  (mv-let (nterm ttree)
+    (normalize term t nil ens wrld nil
+               (backchain-limit wrld :ts))
+    (mv (convert-clauses-to-pairs
+         (resolve-cycle
+          (convert-normalized-term-to-clauses nil nterm nil)))
+        (all-runes-in-ttree ttree nil))))
 
 (defun complementaryp (lit1 lit2)
   (declare (xargs :guard (and (pseudo-termp lit1)
@@ -9340,313 +9449,6 @@
            (equal (fargn lit1 1) lit2))
       (and (ffn-symb-p lit2 'not)
            (equal (fargn lit2 1) lit1))))
-
-; Note on Terminology: Below we use the expression ``ancestor literal'' which
-; was introduced by Bob Kowalski in the early 1970s to name a literal
-; previously resolved upon in an SL-resolution proof.  Our ancestor literals
-; are similar in spirit but we make no claim that they are exactly the same as
-; Kowalski's; they may be, but we haven't thought about it.  The word
-; ``ancestor'' is just appropriate.  We define our use of the term below.
-
-(defun subsumes-but-for-one-negation (hyps1 hyps2 ancestor-lits)
-
-; First, think of hyps1 and hyps2 as merely sets of literals.  This function
-; returns either nil or identifies a literal, lit, in hyps1, whose complement,
-; lit', occurs in hyps2, and such that the result of removing lit from hyps1 is
-; a subset of hyps2.  It ``identifies'' that literal by returning the non-nil
-; list whose car is lit' (the element of hyps2) and whose cdr is ancestor-lits,
-; i.e., (cons lit' ancestor-lits).  We call lit' an ``ancestor literal'' in
-; this context.
-
-; However, what we check is weaker than the spec above.  Our requirement on
-; this function is that when it is non-nil. the result is as described above.
-; However, if the function returns nil it does not mean there is no such lit!
-; It only means we failed to find it.
-
-; What we actually check is this: Let lit be the first literal of hyps1 that is
-; not equal to its counterpart at the same position in hyps2.  Let tail1 be the
-; remaining literals of hyps1.  Let tail2 be the tail of hyps2 starting with
-; the counterpart of lit.  Then we insist that somewhere in tail2 the
-; complement, lit', of lit appears, that every literal passed before the first
-; occurrence of lit' is in ancestor-lits, and that tail1 is a subset of the
-; rest of tail2 from the point at which lit' was found.  We return either nil
-; or (cons lit' ancestor-lits) depending on whether these conditions hold.
-
-; Thus, if this function returns non-nil, the lit' it identifies occurs in
-; hyps2, occurs complemented in hyps1, and all the other literals of hyps1 are
-; in hyps2.
-
-; In this function, one may think of ancestor-lits merely as heuristic
-; ``permissions'' to scan deeper into hyps2 to find the complement of lit.  But
-; in subsequent functions it will play a crucial soundness role.
-
-  (cond ((endp hyps1) nil)
-        ((endp hyps2) nil)
-        ((equal (car hyps1) (car hyps2))
-         (subsumes-but-for-one-negation (cdr hyps1) (cdr hyps2) ancestor-lits))
-        ((complementaryp (car hyps1) (car hyps2))
-         (if (subsetp-equal (cdr hyps1) (cdr hyps2))
-             (cons (car hyps2) ancestor-lits)
-             nil))
-        ((member-equal (car hyps2) ancestor-lits)
-         (subsumes-but-for-one-negation hyps1 (cdr hyps2) ancestor-lits))
-        (t nil)))
-
-; On Removal of Ancestor Literals -- The Satriani Hack Prequel
-
-; Pair1 is a (hyps . concl) pair, say (hyps1 . concl1) and pairs is a list of
-; such pairs.  We ``clean up'' pairs with a very limited one-pass
-; ``subsumption-replacement'' loop.  The idea is to use pair1 to clean up the
-; first pair of pairs, pair2, producing new-pair2.  Then we use new-pair2 to
-; clean up the next pair of pairs, etc.  The tricky bit is the use of
-; ancestor-lits, which is accumulated from all the pairs we've cleaned up and
-; the maintenance of which is crucial to soundness.  This entire body of code
-; is reminiscent of the Satriani Hack, which is actually a little more
-; elaborate (and slower) because it checks for subsumptions we don't here.
-
-; We can ``use pair1 to clean pair2'' if the following three conditions hold:
-; (a) they have the same concls, (b) there is a literal, lit, of the hyps of
-; pair1 that appears complemented in the hyps of pair2, and (c) removing lit
-; from the hyps of pair1 produces a subset of the hyps of pair2.  Note that
-; conditions (b) and (c) are assured by subsumes-but-for-one-negation, which
-; treats ancestor-lits merely as heuristic permissions to scan further.
-
-; If we can use pair1 to clean up pair2, and the complement of the identified
-; lit is lit', then we ``clean up pair2'' by removing from its hyps not just
-; lit' but all the ancestor-lits!
-
-; In the discussion below we call lit' the ``ancestor literal'' of the cleaned
-; up pair2.  The ancestor literal of a newly derived pair is the literal
-; removed from the parent pair.  Its complement occurs as a hyp in an earlier
-; pair and that earlier pair's other hyps all occur in the newly derived pair.
-
-; For example, if pair1 is ((A B C) . concl) and pair2 is ((A -B C D) . concl)
-; then we can use pair1 to clean up pair2 and the process of checking that
-; identifies -B as an ancestor literal.  Cleaning up pair2 produces pair2', ((A
-; C D) . concl) and -B is the ancestor of literal of that pair in the context
-; of this derivation.
-
-; Why is it sound to clean up this way?  We start with two observations.
-
-; Observation 1.  If we have two theorems of the form ((H1 & p) --> c) and ((H2
-; & -p) --> c), where H1 is a subset of H2, then we can replace the second with
-; (H2 --> c).  This is most easily seen by putting the first into
-; contrapositive form, ((H1 & -c) --> -p), and observing that we can then
-; rewrite the -p in the second theorem to T.
-
-; Observation 2: We maintain the following invariant about ancestors-lits and the
-; ``current'' pair (the car of pairs), which we call pair2 in the statement of
-; the invariant:
-
-;    for every element, lit' (with complement lit), of ancestor-lits there
-;    exists a pair, say pair', among those we have already collected such that
-;    the concl of pair' is the concl of the pair2, lit occurs in the hyps of
-;    pair', and the remaining hyps of pair' form a subset of the hyps of pair2.
-
-; If this invariant is true, then we can remove every ancestor-lit from pair2.
-; The previous pair' can with Observation 1 to remove each ancestor.  Note that
-; lit' may not appear in the hyps of pair2.
-
-; One might wonder what gives us the right, subsequently, to remove the
-; ancestor lit of pair2 from the next pair encountered, even though we just
-; check that those hyps, which may be missing lit', are a subset of the next
-; pair.  The invariant ensures we can.  But if this conundrum bothers you,
-; just add lit' as a hyp to pair2: it is never unsound to add a hypothesis to a
-; theorem!  [The key part of the invariant is that, except for lit, the hyps of
-; pair' are members of the hyps of pair2.]
-
-; The invariant in Observation 2 is clearly true when ancestors-lit is nil, and
-; inspection of the code below shows that we make it nil when the concls of two
-; successive pairs are not equal and when the hyps of one are not in the
-; appropriate subset relation with the next.  The only time we add a lit' to
-; ancestors-lit we know that lit is a member of the hyps pair1 (which we
-; collect) and that the rest of the hyps of pair1 are a subset of the hyps of
-; pair2.  Since subset is transitive, we know that the pairs from which the
-; ancestors lit descend (minus the lit in question) are all subsets of the hyps
-; of the last pair collected.
-
-; Here is an example of this process:
-
-; Suppose we have:
-; pairs                                 pairs'                      ancestor-lits
-; [1] x y  A u --> concl                [1'] x y A u --> concl
-; [2] x y -A  B u v --> concl           [2'] x y B u v --> concl           -A
-; [3] x y -A -B  C u v w --> concl      [3'] x y C u v w --> concl      -B -A
-
-; ----- let's consider the next step ---
-
-; [4] x y -A -B -C  D u v w z --> concl [4'] x y D u v w z --> concl -C -B -A
-
-; By the time we use [2] to clean up [3] to produce [3'], we're the state shown
-; above the ``let's consider'' line.  We will next produce [4'] from [3'] and
-; [4].  Using Observation 1, [3'] allows us to knock off the -C from [4]
-; because the concls of [3'] and [4] are the same and the hyps of [3'] are a
-; subset of those of [4] except for the literal C which appears negated in the
-; hyps of [4].  -C is the ancestor literal of this step.
-
-; We thus get to remove -C from [4] and add -C to the ancestor lits going
-; forward.  But we also get to remove the other ancestor lits, -B and -A.  We
-; show why below.
-
-; Why can we remove -B? By the invariant, we know there exists a pair' among
-; those we have already collected such that the concl of pair' is the concl of
-; the [4], B occurs in the hyps of pair', and the remaining hyps of pair' form
-; a subset of the hyps of [4].  The pair' in question is [2'] and it allows us
-; to drop -B from [4].
-
-; Why can we remove -A? By the invariant, we know there exists a pair' among
-; those we have already collected such that the concl of pair' is the concl of
-; [4], A occurs in the hyps of pair', and the remaining hyps of pair' form a
-; subset of the hyps of [4].  The pair' in question is [1'] and it allows us to
-; drop -A from [4].
-
-; In this example, all the ancestor lits are in the current pair.  But that need
-; not be true.  For example, imagine that [4] did not contain -A.
-
-; [4] x y    -B -C  D u v w z --> concl [4'] x y D u v w z --> concl -C -B -A
-
-; The presence of -A in ancestors still means there is a collected pair, pair',
-; that would allow us to delete A because the other hyps of pair' are a subset
-; of [4].  We know the subset relation holds because the hyps of [1'] (minus A)
-; are a subset of [2'], the hyps of [2'] (minus B) are a subset of those of
-; [3'], and the hyps of [3'] (minus C) are a subset of those of [4].  So we
-; COULD delete -A even if it weren't there!
-
-; The function remove-ancestor-literals-from-pairs below is the top-level
-; entry to this process.  It takes a list of pairs, uses the first one as
-; pair1 and the rest as pairs.  The initial ancestor-lits is nil.
-
-; Here are some examples of the function in action.  These examples show how we
-; are sensitive to the order of the literals.  This sensitivity is deemed
-; unimportant because stripping the branches of normalized IFs produces the
-; regular order that we exploit.
-
-;   (remove-ancestor-literals-from-pairs
-;    '(((x y  A        u) . concl)
-;      ((x y (NOT A)  B        u v) . concl)
-;      ((x y (NOT A) (NOT B)  C        u v w) . concl)
-;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
-;   =
-;   (((x y A u) . concl)
-;    ((x y B u v) . concl)
-;    ((x y C u v w) . concl)
-;    ((x y D u v w z) . concl))
-
-; However, if we permute the first pair we fail to get any of the -A, but we do
-; knock off the -B, -C, and -D:
-
-;   (remove-ancestor-literals-from-pairs
-;    '(((x A  y        u) . concl)
-;      ((x y (NOT A)  B        u v) . concl)
-;      ((x y (NOT A) (NOT B)  C        u v w) . concl)
-;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl)))
-;   =
-;   (((x A y u) . concl)
-;    ((x y (not A) B u v) . concl)
-;    ((x y (not A) C u v w) . concl)
-;    ((x y (not A) D u v w z) . concl))
-
-; Similarly, if the second pair fails the subset test, we start over.
-
-;   (remove-ancestor-literals-from-pairs
-;    '(((x y  A           u1) . concl)
-;      ((x y (NOT A)  B        u1 v) . concl)
-;      ((x y         (NOT B)  C        u2 v w) . concl)
-;      ((x y (NOT A) (NOT B) (NOT C) D u2 v w z) . concl)))
-;   =
-;   (((x y A u1) . concl)
-;    ((x y B u1 v) . concl)
-;    ((x y (not B) C u2 v w) . concl)
-;    ((x y (not A) (not B) (not C) D u2 v w z) . concl))
-
-; Note that we do not get to knock off the -B in the third pair or the -A and
-; -B in the fourth, because u1 is not u2.  We would actually be justified in
-; knocking off the -C in the fourth, but we fail to find it because -A is
-; blocking the subset check for going deep enough to find the -C.  We would get
-; the improved result if we permuted the fourth input pair:
-
-;   (remove-ancestor-literals-from-pairs
-;    '(((x y  A           u1) . concl)
-;      ((x y (NOT A)  B        u1 v) . concl)
-;      ((x y         (NOT B)  C        u2 v w) . concl)
-;   ; On the next line, moved the -A to end.
-;      ((x y         (NOT B) (NOT C) D u2 v w z (NOT A)) . concl)))
-;   =
-;   (((x y A u1) . concl)
-;    ((x y B u1 v) . concl)
-;    ((x y (not B) C u2 v w) . concl)
-;    ((x y (not B) D u2 v w z (not A)) . concl))
-
-; Returning to the first, classic, example but changing the concl of the last
-; two rules:
-
-;   (remove-ancestor-literals-from-pairs
-;    '(((x y  A        u) . concl1)
-;      ((x y (NOT A)  B        u v) . concl1)
-;      ((x y (NOT A) (NOT B)  C        u v w) . concl2)
-;      ((x y (NOT A) (NOT B) (NOT C) D u v w z) . concl2)))
-;   =
-;   (((x y A u) . concl1)
-;    ((x y B u v) . concl1)
-;    ((x y (not A) (not B) C u v w) . concl2)
-;    ((x y (not A) (not B) D u v w z) . concl2))
-
-; we see we simplify the two concl1 pairs and the two concl2 pairs, but we
-; don't carry over from concl1 to concl2.
-
-(defun remove-ancestor-literals-from-pairs1 (pair1 pairs ancestor-lits)
-
-; See the discussion above On Removal of Ancestor Literals -- The Satriani Hack
-; Prequel
-
-  (cond
-   ((endp pairs) nil)
-   (t (let ((pair2 (car pairs)))
-        (cond
-         ((equal (cdr pair1) (cdr pair2))
-          (let ((new-ancestor-lits
-                 (subsumes-but-for-one-negation (car pair1) (car pair2)
-                                                ancestor-lits)))
-            (cond
-             (new-ancestor-lits
-              (let ((new-pair2 (cons (set-difference-equal (car pair2)
-                                                           new-ancestor-lits)
-                                     (cdr pair2))))
-                (cons new-pair2
-                      (remove-ancestor-literals-from-pairs1
-                       new-pair2 (cdr pairs) new-ancestor-lits))))
-             (t (cons pair2
-                      (remove-ancestor-literals-from-pairs1
-                       pair2 (cdr pairs) nil))))))
-         (t (cons pair2
-                  (remove-ancestor-literals-from-pairs1
-                   pair2 (cdr pairs) nil))))))))
-
-(defun remove-ancestor-literals-from-pairs (pairs)
-
-; See the discussion above On Removal of Ancestor Literals -- The Satriani Hack
-; Prequel for a thorough treatment of this function.  Pairs is a list of (hyps
-; . concl) pairs and we clean it up -- eliminating unnecessary hyps -- using a
-; very limited form of subsumption-replacement akin to the Satriani Hack.
-
-  (cond ((endp pairs) nil)
-        ((endp (cdr pairs)) pairs)
-        (t (cons (car pairs)
-                 (remove-ancestor-literals-from-pairs1
-                  (car pairs) (cdr pairs) nil)))))
-
-(defun convert-term-to-pairs (term ens wrld)
-
-; Term is assumed to be the result of expanding a tau-like-propositionp.  Thus,
-; it is a term composed entirely of T, NIL, (recog var), and IF expressions
-; composed of such terms.  We wish to convert term to a list of (hyps . concl) pairs.
-
-  (mv-let (nterm ttree)
-          (normalize term t nil ens wrld nil
-                     (backchain-limit wrld :ts))
-          (mv (remove-ancestor-literals-from-pairs
-               (convert-normalized-term-to-pairs nil nterm nil))
-              (all-runes-in-ttree ttree nil))))
 
 ; On the Motivation for Tau-Subrs
 
@@ -11641,7 +11443,7 @@
                                          ens wrld calist)
                      (apply-signature-tau-rules
                       sigrules
-                      (fargs term)
+                      (fargs (fargn term 2))
                       (if (all-unrestricted-signature-rulesp sigrules)
                           nil ; Abuse of Tau Representation
                           actual-tau-lst)

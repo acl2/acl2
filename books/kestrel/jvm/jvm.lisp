@@ -98,7 +98,7 @@
 (defthmd method-programp-key-property-2
   (implies (and (method-programp program)
                 (memberp pc (strip-cars program))
-                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *basic-block-enders*)))
            (memberp (+ pc (inst-len (lookup-eq pc program)))
                     (strip-cars program)))
   :hints (("Goal" :use (:instance method-programp-key-property)
@@ -109,7 +109,7 @@
   (implies (and (equal k (inst-len (lookup-eq pc program)))
                 (method-programp program)
                 (memberp pc (strip-cars program))
-                (not (member-equal (instruction-opcode (lookup-eq pc program)) *program-enders*)))
+                (not (member-equal (instruction-opcode (lookup-eq pc program)) *basic-block-enders*)))
            (memberp (+ k pc) (strip-cars program)))
   :hints (("Goal" :use (method-programp-key-property-2)
                   :in-theory (disable method-programp-key-property-2))))

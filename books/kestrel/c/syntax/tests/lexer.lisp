@@ -988,6 +988,16 @@
  "f168"
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+(test-lex-fail
+ lex-?-floating-suffix
+ "f016"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-lex-fail
+ lex-?-floating-suffix
+ "F016"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lex-?-sign

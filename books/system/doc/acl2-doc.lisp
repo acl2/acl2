@@ -110369,6 +110369,25 @@ it."
  well-founded-relation) rule.  See @(see community-book)
  @('system/tests/wfr-two-domains.lisp').</p>
 
+ <p>A soundness bug in the code the @(see tau-system) uses to put @('IF')-terms
+ into conjunctive or disjunctive normal form, @('cnf-dnf') was fixed.  See
+ @('system/tests/tau-cnf-dnf-sign.lisp') and
+ @('system/tests/tau-cnf-dnf-not-cnfp.lisp').</p>
+
+ <p>A soundness bug was fixed in @('tau-term') due to passing the wrong
+ arguments into the code that applies form 2 signature rules.  See
+ @('system/tests/tau-form2-sig-actuals.lisp').</p>
+
+ <p>A soundness bug was fixed in @('convert-term-to-pairs'), which is used in
+ the @(see tau-system).  That code included code to transform an @('IF')-term
+ into a set of rules for linking tau-like hypotheses to tau conclusions and the
+ transformation could inadventently drop a hypothesis and thus produce an
+ invalid rule.  See @('system/tests/tau-ancestor-literals.lisp').</p>
+
+ <p>A bug in the storage of tau rules, @('tau-put'), could lead to a Lisp error
+ if a complex rational was passed into a function expecting a rational.  The
+ bug has been fixed.  See @('system/tests/tau-put-complex-evg.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

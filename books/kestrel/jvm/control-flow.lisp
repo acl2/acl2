@@ -70,122 +70,118 @@
 ;;(make-pc-instr-pairs *code*)
 
 (defun add-to-all (val vals)
+  (declare (xargs :guard (and (rationalp val)
+                              (rational-listp vals))))
   (if (endp vals)
       nil
     (cons (+ val (first vals))
           (add-to-all val (rest vals)))))
 
-;the leaders are the targets of the branches and the instructions after the branches/returns (even for unconditional branches/returns)
-;returns nil if the instr is not a branch/return
-;fixme what about exceptions? can leaders be the PCs to which control can jump upon an exception?
-;; todo: in jvm.lisp, we use "inst" instead of "instr" to represent the instruction
-(defun leaders-after-branch-or-return (pc instr)
-  (let ((opcode (first instr)))
-    (if (eq ':goto opcode)
-        (list (+ pc (second instr))        ;the target of the GOTO
-              (+ pc 3 ;(jvm::inst-length instr)
-                 ) ;the instruction after the GOTO
-              )
-      (if (member-eq opcode '(:IF_ACMPEQ
-                              :IF_ACMPNE
-                              :IF_ICMPEQ
-                              :IF_ICMPGE
-                              :IF_ICMPGT
-                              :IF_ICMPLE
-                              :IF_ICMPLT
-                              :IF_ICMPNE
-                              :IFEQ
-                              :IFGE
-                              :IFGT
-                              :IFLE
-                              :IFLT
-                              :IFNE
-                              :IFNONNULL
-                              :IFNULL))
-          (list (+ pc (second instr))        ;the target of the branch
-                (+ pc 3 ;(jvm::inst-length instr)
-                   ) ;the instruction after the branch
-                )
-        (if (member-eq opcode '(:areturn
-                                :dreturn
-                                :freturn
-                                :ireturn
-                                :lreturn
-                                :return))
-            (list (+ pc 1 ;(jvm::inst-length instr)
-                     )) ;the instruction after the return
-          (if (eq opcode :tableswitch)
-              (let ((default-offset (farg1 instr))
-                    (jump-offsets (farg4 instr)) ;each is a signed-byte-p
-                    )
-                (cons (+ pc default-offset)
-                      (add-to-all pc jump-offsets)))
-            (if (eq opcode :lookupswitch)
-                (let ((default-value (farg1 instr))
-                      (match-offset-pairs (farg2 instr)))
-                  (cons (+ pc default-value)
-                        (add-to-all pc (strip-cdrs match-offset-pairs))))
-              ;; other instructions give rise to no leaders:
-              nil)))))))
+;; todo: use forward-chaining rules
+(local
+  (defthm rational-listp-helper
+    (implies (signed-byte-listp 32 x)
+             (rational-listp x))
+    :hints (("Goal" :in-theory (enable signed-byte-listp)))))
 
-;these do not include the instructions after returns or unconditional branches
-(defun successors-of-instruction (pc instr next-pc)
-  (let ((opcode (first instr)))
-    (if (eq ':goto opcode)
-        (list (+ pc (second instr)) ;the target of the GOTO
-              )
-      (if (member-eq opcode '(:IF_ACMPEQ
-                              :IF_ACMPNE
-                              :IF_ICMPEQ
-                              :IF_ICMPGE
-                              :IF_ICMPGT
-                              :IF_ICMPLE
-                              :IF_ICMPLT
-                              :IF_ICMPNE
-                              :IFEQ
-                              :IFGE
-                              :IFGT
-                              :IFLE
-                              :IFLT
-                              :IFNE
-                              :IFNONNULL
-                              :IFNULL))
-          (list (+ pc (second instr)) ;the target of the branch
-                next-pc               ;the instruction after the branch
-                )
-        (if (member-eq opcode '(:areturn
-                                :dreturn
-                                :freturn
-                                :ireturn
-                                :lreturn
-                                :return))
-            nil ; returns have no successors
-          (if (eq opcode :tableswitch)
-              (let ((default-offset (farg1 instr))
-                    (jump-offsets (farg4 instr)) ;each is a signed-byte-p
-                    )
-                (cons (+ pc default-offset)
-                      (add-to-all pc jump-offsets)))
-            (if (eq opcode :lookupswitch)
-                (let ((default-value (farg1 instr))
-                      (match-offset-pairs (farg2 instr)))
-                  (cons (+ pc default-value)
-                        (add-to-all pc (strip-cdrs match-offset-pairs))))
-              ;; for other instructions, the (single) succesor is just the next instruction:
-              (list next-pc))))))))
+;; The leaders are the targets of branches/jumps and the instructions after the branches/jumps (even for unconditional branches/jumps).
+;; Returns a list of PCs, possibly nil (if the inst is not a branch/jump).
+;fixme: what about exceptions? can leaders be the PCs to which control can jump upon an exception?
+;fixme: what about targets of :rets?
+(defund leaders-after-branch-or-return (pc inst finalp)
+  (declare (xargs :guard (and (jvm::pcp pc)
+                              (jvm::instructionp inst)
+                              (booleanp finalp))
+                  :guard-hints (("Goal" :in-theory (enable jvm::instructionp jvm::instruction-argsp jvm::inst-len jvm::instruction-opcode)))))
+  (let ((opcode (first inst)))
+    (case opcode
+      (:goto
+       (cons (+ pc (farg1 inst)) ; the target of the GOTO
+             ;; the instruction after the GOTO:
+             (and (not finalp)
+                  (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 3))))))
+      (:goto_w
+       (cons (+ pc (farg1 inst)) ; the target of the GOTO_W
+             ;; the instruction after the GOTO_W:
+             (and (not finalp)
+                  (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 5))))))
+      (:jsr
+       (cons (+ pc (farg1 inst)) ; the target of the JSR
+             ;; the instruction after the JSR:
+             (and (not finalp)
+                  (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 3))))))
+      (:jsr_w
+       (cons (+ pc (farg1 inst)) ; the target of the JSR_W
+             ;; the instruction after the JSR_W:
+             (and (not finalp)
+                  (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 5))))))
+      ((:IF_ACMPEQ
+        :IF_ACMPNE
+        :IF_ICMPEQ
+        :IF_ICMPGE
+        :IF_ICMPGT
+        :IF_ICMPLE
+        :IF_ICMPLT
+        :IF_ICMPNE
+        :IFEQ
+        :IFGE
+        :IFGT
+        :IFLE
+        :IFLT
+        :IFNE
+        :IFNONNULL
+        :IFNULL)
+       (cons (+ pc (farg1 inst)); the target of the branch
+             ;; the instruction after the branch:
+             (and (not finalp)
+                  (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 3))))))
+      ((:areturn
+        :dreturn
+        :freturn
+        :ireturn
+        :lreturn
+        :return
+        :athrow)
+       ;; the instruction after the return/throw:
+       (and (not finalp)
+            (list (+ pc (mbe :logic (jvm::inst-len inst) :exec 1)))))
+      (:ret
+       ;; the instruction after the ret:
+       (and (not finalp)
+            (let ((inst-len (farg2 inst)))
+              (list (+ pc (mbe :logic (jvm::inst-len inst) :exec inst-len))))))
+      (:tableswitch
+       (let ((default-offset (farg1 inst))
+             (jump-offsets (farg4 inst)) ;each is a signed-byte-p
+             (inst-len (farg5 inst)))
+         (append (cons (+ pc default-offset)
+                       (add-to-all pc jump-offsets))
+                 ;; the instruction after the tableswitch:
+                 (and (not finalp) (list (mbe :logic (jvm::inst-len inst) :exec inst-len))))))
+      (:lookupswitch
+       (let ((default-value (farg1 inst))
+             (match-offset-pairs (farg2 inst))
+             (inst-len (farg3 inst)))
+         (append (cons (+ pc default-value)
+                       (add-to-all pc (strip-cdrs match-offset-pairs)))
+                 ;; the instruction after the lookupswitch:
+                 (and (not finalp) (list (mbe :logic (jvm::inst-len inst) :exec inst-len))))))
+      ;; other instructions give rise to no leaders:
+      (otherwise nil))))
 
-;leaders are the starts of basic blocks
-;FIXME be sure i handle all jvm instructions!
+;; Leaders are the starts of basic blocks.
 (defun find-leader-pcs-aux (pc-instr-pairs leaders)
   (if (endp pc-instr-pairs)
       leaders
-    (let* ((pair (car pc-instr-pairs))
+    (let* ((pair (first pc-instr-pairs))
+           (rest-pairs (rest pc-instr-pairs))
            (pc (car pair))
            (instr (cdr pair))
-           (new-leaders (leaders-after-branch-or-return pc instr)) ;fixme could pass in pc-after-instr?
-           )
-      (find-leader-pcs-aux (cdr pc-instr-pairs)
-                           (append new-leaders leaders)))))
+           (finalp (endp rest-pairs))
+           (new-leaders (leaders-after-branch-or-return pc instr finalp)))
+      (find-leader-pcs-aux rest-pairs
+                           ;; todo: use union-eql?:
+                           (union-equal new-leaders leaders)))))
 
 (defun find-leader-pcs (pc-instr-pairs)
   (find-leader-pcs-aux pc-instr-pairs (list 0)))  ;PC 0 is always a leader
@@ -215,15 +211,82 @@
                            leader-pcs)))
 
 ;get the next program counter location after the given PC in CODE.
- ;fixme what if it's the last block?
 (defun get-pc-after-pc (pc code)
   (if (endp code)
       :none ;(hard-error 'get-pc-after-pc "can't get next pc" nil)
-    (let* ((pair (car code))
+    (let* ((pair (first code))
            (current-pc (car pair)))
       (if (eql pc current-pc)
-          (car (car (cdr code)))
-        (get-pc-after-pc pc (cdr code))))))
+          (if (endp (rest code))
+              :none
+            (car (car (rest code))))
+        ;; keep looking:
+        (get-pc-after-pc pc (rest code))))))
+
+;; fixme: update this to match leaders-after-branch-or-return
+;these do not include the instructions after returns or unconditional branches
+;; todo: support :goto_w, :athrow, :ret, :jsrm, and :jsr_w.
+(defun successors-of-instruction (pc inst next-pc)
+  (declare (xargs :guard (and (jvm::pcp pc)
+                              (jvm::instructionp inst)
+                              (or (jvm::pcp next-pc)
+                                  (eq :none next-pc)))
+                  :guard-hints (("Goal" :in-theory (enable jvm::instructionp jvm::instruction-argsp jvm::inst-len jvm::instruction-opcode)))))
+  (let ((opcode (first inst)))
+    (case opcode
+      (:goto (list (+ pc (farg1 inst)) ;the target of the GOTO
+                   ))
+      (:goto_w (list (+ pc (farg1 inst)) ;the target of the GOTO_W
+                     ))
+      ;; TODO: What about the next inst, since RET returns there?:
+      (:jsr (list (+ pc (farg1 inst)) ;the target of the JSR
+                  ))
+      ;; TODO: What about the next inst, since RET returns there?:
+      (:jsr_w (list (+ pc (farg1 inst)) ;the target of the JSR_W
+                    ))
+      ((:IF_ACMPEQ
+        :IF_ACMPNE
+        :IF_ICMPEQ
+        :IF_ICMPGE
+        :IF_ICMPGT
+        :IF_ICMPLE
+        :IF_ICMPLT
+        :IF_ICMPNE
+        :IFEQ
+        :IFGE
+        :IFGT
+        :IFLE
+        :IFLT
+        :IFNE
+        :IFNONNULL
+        :IFNULL)
+       (list (+ pc (farg1 inst)) ;the target of the branch
+             next-pc               ;the instruction after the branch
+             ))
+      ((:areturn
+        :dreturn
+        :freturn
+        :ireturn
+        :lreturn
+        :return
+        :athrow
+        :ret)
+       nil ; returns have no successors
+       )
+      (:tableswitch
+       (let ((default-offset (farg1 inst))
+             (jump-offsets (farg4 inst)) ;each is a signed-byte-p
+             )
+         (cons (+ pc default-offset)
+               (add-to-all pc jump-offsets))))
+      (:lookupswitch
+       (let ((default-offset (farg1 inst))
+             (match-offset-pairs (farg2 inst)))
+         (cons (+ pc default-offset)
+               (add-to-all pc (strip-cdrs match-offset-pairs)))))
+      (otherwise
+        ;; for other instructions, the (single) succesor is just the next instruction:
+        (list next-pc)))))
 
 ;pairs each basic block (indicated by its first PC) with a set of successor blocks (also indicated by first PCs)
 (defun pair-blocks-with-successors-aux (basic-blocks code successor-alist)
