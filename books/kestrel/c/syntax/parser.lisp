@@ -6873,7 +6873,8 @@
                  parstate)))
        ;; If token is a semicolon, and GCC/Clang extensions are enabled,
        ;; we have an empty structure declaration.
-       ((token-punctuatorp token ";") ; ;
+       ((and (token-punctuatorp token ";") ; ;
+             (parstate->gcc/clang parstate))
         (retok (struct-declon-empty) span parstate))
        ;; Otherwise, we must have a specifier and qualifier list,
        ;; optionally preceded by the '__extension__' keyword
