@@ -1862,6 +1862,15 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the STS transformation of a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-stmt-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-stmt-thm)
+     so that it can be used for STS proof generation as well."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
@@ -1905,6 +1914,150 @@
                      ,formula
                      :rule-classes nil
                      :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-gen-block-item-thm ((old block-itemp)
+                                 (new block-itemp)
+                                 (vartys-pre c::ident-type-mapp)
+                                 (vartys-post c::ident-type-mapp)
+                                 (const-new symbolp)
+                                 (thm-index posp)
+                                 (hints true-listp))
+  :guard (and (block-item-unambp old)
+              (block-item-unambp new)
+              (block-item-annop old)
+              (block-item-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the STS transformation of a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-block-item-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-block-item-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (block-item-fix old))
+       (new (block-item-fix new))
+       ((unless (block-item-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (block-item-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (types (block-item-types old))
+       ((unless (equal (block-item-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item ~x1 differ from ~
+                the types ~x2 of the old block item ~x3."
+               (block-item-types new) new types old)
+        (mv '(_) nil 1))
+       (vars-pre (gen-var-assertions vartys-pre 'old-compst))
+       (vars-post (gen-var-assertions vartys-post 'old-compst1))
+       ((mv & old-item) (ldm-block-item old)) ; ERP is NIL because FORMALP
+       ((mv & new-item) (ldm-block-item new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
+       (formula
+        `(b* ((old-item ',old-item)
+              (new-item ',new-item)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item old-item old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item new-item new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
+                         ,@vars-pre
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
+                         (set::in (c::type-option-of-stmt-value old-sval)
+                                  ',ctypes)
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-gen-block-item-list-thm ((old block-item-listp)
+                                      (new block-item-listp)
+                                      (vartys c::ident-type-mapp)
+                                      (const-new symbolp)
+                                      (thm-index posp)
+                                      (hints true-listp))
+  :guard (and (block-item-list-unambp old)
+              (block-item-list-unambp new)
+              (block-item-list-annop old)
+              (block-item-list-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for
+          the STS transformation of a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-block-item-list-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-block-item-list-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (block-item-list-fix old))
+       (new (block-item-list-fix new))
+       ((unless (block-item-list-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (block-item-list-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (types (block-item-list-types old))
+       ((unless (equal (block-item-list-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item list ~x1 differ from ~
+                the types ~x2 of the old block item list ~x3."
+               (block-item-list-types new) new types old)
+        (mv '(_) nil 1))
+       (vars-pre (gen-var-assertions vartys 'compst))
+       ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
+       ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
+       (formula
+        `(b* ((old-items ',old-items)
+              (new-items ',new-items)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item-list old-items old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item-list new-items new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
+                         ,@vars-pre
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
+                         (set::in (c::type-option-of-stmt-value old-sval)
+                                  ',ctypes)
+                         (compustate-equivp old-compst1 new-compst1)))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,(true-list-fix hints))))
     (mv thm-event thm-name thm-index))
   :no-function nil)
 
