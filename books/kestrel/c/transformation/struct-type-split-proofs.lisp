@@ -2533,13 +2533,13 @@
         (raise "Internal error: non-string identifier ~x0." fun)
         (retmsg$ ""))
        (params (if (c$::param-declon-list-voidp params) nil params))
-       ((mv & ldm-params) ; ERP is NIL because FORMALP above
+       ((mv & cparams) ; ERP is NIL because FORMALP above
         (ldm-param-declon-list params))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
-        (gen-from-params ldm-params 'old-compst (gin-fix gin)))
+        (gen-from-params cparams 'old-compst (gin-fix gin)))
        ((unless okp) (retok gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
-        (gen-init-scope-thm ldm-params
+        (gen-init-scope-thm cparams
                             args
                             parargs
                             arg-types
@@ -2551,7 +2551,7 @@
             thm-index)
         (gen-param-thms arg-types-compst
                         arg-types
-                        ldm-params
+                        cparams
                         args
                         init-scope-thm-name
                         gin.const-new
