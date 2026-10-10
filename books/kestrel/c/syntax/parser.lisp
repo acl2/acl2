@@ -6920,12 +6920,15 @@
                                                 :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
-           ;; If token2 is the keyword '__attribute__',
+           ;; If token2 is the keyword '__attribute' or '__attribute__',
            ;; GCC/Clang extensions must be supported
-           ;; (otherwise '__attribute__' would not be a keyword).
+           ;; (otherwise '__attribute' or '__attribute__'
+           ;; would not be a keyword).
            ;; We parse one or more attribute specifiers,
            ;; and then the final semicolon.
-           ((token-keywordp token2 "__attribute__")
+           ((or (token-keywordp token2 "__attribute")
+                (token-keywordp token2 "__attribute__"))
+            ;; [__extension__] specquals __attribute
             ;; [__extension__] specquals __attribute__
             (b* ((parstate (unread-token parstate))
                  ;; [__extension__] specquals
