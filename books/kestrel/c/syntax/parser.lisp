@@ -6921,30 +6921,6 @@
                                                 :attribs attrspecs)
                      (span-join span last-span)
                      parstate)))
-           ;; If token2 is the keyword '__attribute' or '__attribute__',
-           ;; GCC/Clang extensions must be supported
-           ;; (otherwise '__attribute' or '__attribute__'
-           ;; would not be a keyword).
-           ;; We parse one or more attribute specifiers,
-           ;; and then the final semicolon.
-           ((or (token-keywordp token2 "__attribute")
-                (token-keywordp token2 "__attribute__"))
-            ;; [__extension__] specquals __attribute
-            ;; [__extension__] specquals __attribute__
-            (b* ((parstate (unread-token parstate))
-                 ;; [__extension__] specquals
-                 ((erp attrspecs & parstate)
-                  ;; [__extension__] specquals [attrspecs]
-                  (parse-*-attribute-specifier parstate))
-                 ((erp last-span parstate)
-                  ;; [__extension__] specquals [attrspecs] ;
-                  (read-punctuator ";" parstate)))
-              (retok (make-struct-declon-member :extension extension
-                                                :specquals specquals
-                                                :declors nil
-                                                :attribs attrspecs)
-                     (span-join span last-span)
-                     parstate)))
            ;; If token2 is a semicolon,
            ;; we have reached the end of the structure declaration.
            ((token-punctuatorp token2 ";") ; specquals ;
