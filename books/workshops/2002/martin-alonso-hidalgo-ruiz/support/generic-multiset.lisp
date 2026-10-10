@@ -59,8 +59,20 @@
 
  (defequiv equiv)
 
+; The following local event was added by Matt Kaufmann after ACL2 Version 8.7
+; because of a soundness bug; see the discussion of termination-theorem in :DOC
+; note-8-8.  Also added: A redundant defun just below, with a measure (:? m).
+ (local
  (defun count-bag-equiv (e m)
    (declare (xargs :measure (measure m)))
+   (cond ((empty m) 0)
+	 ((equiv e (select m))
+	  (1+ (count-bag-equiv e (reduct m))))
+	 (t (count-bag-equiv e (reduct m)))))
+ )
+
+ (defun count-bag-equiv (e m)
+   (declare (xargs :measure (:? m))) ; see comment above from Matt Kaufmann
    (cond ((empty m) 0)
 	 ((equiv e (select m))
 	  (1+ (count-bag-equiv e (reduct m))))
