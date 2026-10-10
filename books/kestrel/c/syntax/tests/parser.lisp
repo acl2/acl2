@@ -751,6 +751,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-struct-declaration
+
+(test-parse
+ parse-struct-declaration
+ ";"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (struct-declon-case ast :empty))
+
+(test-parse-fail
+ parse-struct-declaration
+ ";")
+
+(test-parse
+ parse-struct-declaration
+ "int __attribute((a));"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (equal ast
+              (make-struct-declon-member
+               :extension nil
+               :specquals (list (spec/qual-typespec (type-spec-int))
+                                (spec/qual-attrib
+                                 (make-attrib-spec
+                                  :uscores nil
+                                  :attribs (list (attrib-name-only
+                                                  (attrib-name-ident
+                                                   (ident "a")))))))
+               :declors nil
+               :attribs nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-parameter-declaration
 
 (test-parse
