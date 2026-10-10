@@ -2989,7 +2989,7 @@
               (stmt-annop stmt-new))
   :returns (mv (item block-itemp) (gout goutp))
   :short "Equality lifting transformation of
-          a block items that consists of a statement."
+          a block items that is a statement."
   :long
   (xdoc::topstring
    (xdoc::p
