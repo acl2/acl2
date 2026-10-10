@@ -206,7 +206,7 @@
                            unroller-rule-alist pruning-rule-alist
                            stop-pcs
                            extra-assumption-rules
-                           proof-rules ; todo: make the alist outside this
+                           proof-rule-alist
                            remove-assumption-rules
                            normalize-xors count-hits print max-printed-term-size monitor
                            step-limit step-increment
@@ -226,7 +226,7 @@
                               (rule-alistp pruning-rule-alist)
                               (nat-listp stop-pcs)
                               (symbol-listp extra-assumption-rules)
-                              (symbol-listp proof-rules)
+                              (rule-alistp proof-rule-alist)
                               (symbol-listp remove-assumption-rules)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
@@ -396,23 +396,23 @@
 
        ((mv result info-acc state)
         (apply-tactic-prover result-dag
-                                   ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
-                                   register-type-assumptions ;TODO: We may need separateness assumptions!
-                                   nil ; interpreted-fns
-                                   :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
-                                   ;; tests ;a natp indicating how many tests to run
-                                   tactics
-                                   proof-rules
-                                   t   ; simplify-assumptions
-                                   print
-                                   ;; debug ; todo: use this?
-                                   max-conflicts
-                                   t ; call-stp-when-pruning
-                                   t ; counterexamplep
-                                   nil ; print-cex-as-signedp
-                                   rules-to-monitor
-                                   t ; normalize-xors
-                                   state))
+                             ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
+                             register-type-assumptions ;TODO: We may need separateness assumptions!
+                             nil                       ; interpreted-fns
+                             :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
+                             ;; tests ;a natp indicating how many tests to run
+                             tactics
+                             proof-rule-alist
+                             t ; simplify-assumptions
+                             print
+                             ;; debug ; todo: use this?
+                             max-conflicts
+                             t         ; call-stp-when-pruning
+                             t         ; counterexamplep
+                             nil       ; print-cex-as-signedp
+                             rules-to-monitor
+                             t ; normalize-xors
+                             state))
        ((mv elapsed state) (real-time-since start-real-time state)))
     (if (eq result *error*)
         (mv :error-in-tactic-proof nil nil state)
@@ -523,13 +523,15 @@
                                                  ;;acl2::boolif-when-quotep-arg2
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
+       ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
+       ((when erp) (mv :error-making-rule-list t state))
 
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
                             unroller-rule-alist pruning-rule-alist
                             stop-pcs
                             extra-assumption-rules
-                            proof-rules
+                            proof-rule-alist
                             remove-assumption-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
        ((when erp) (mv erp nil state))
@@ -629,7 +631,7 @@
                            assumptions-alist
                            unroller-rule-alist pruning-rule-alist
                            extra-assumption-rules
-                           proof-rules remove-assumption-rules
+                           proof-rule-alist remove-assumption-rules
                            normalize-xors count-hits
                            print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                            tactics max-conflicts
@@ -688,7 +690,7 @@
                               (lookup-equal function-name assumptions-alist)
                               unroller-rule-alist pruning-rule-alist
                               nil ;stop-pcs
-                              extra-assumption-rules proof-rules
+                              extra-assumption-rules proof-rule-alist
                               remove-assumption-rules
                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
          ((when erp) (mv erp nil state))
@@ -699,7 +701,7 @@
          (- (cw "~%")) ; blank line as separator
          )
       (test-function-list (rest function-name-strings) parsed-executable assumptions-alist
-                          unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rules
+                          unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
                           remove-assumption-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
@@ -840,12 +842,14 @@
                                                  ;;acl2::boolif-when-quotep-arg2
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
+       ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
+       ((when erp) (mv :error-making-rule-list t state))
 
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-function-list function-name-strings parsed-executable
                             assumption-alist
-                            unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rules
+                            unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
                             remove-assumption-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
