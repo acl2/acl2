@@ -893,10 +893,12 @@
                      :hints ,hints
                      :prep-lemmas
                      ((defruled lemma1
-                        (not (c::errorp nil)))
+                        (not (c::errorp nil))
+                        :in-theory '((:e c::errorp)))
                       (defruled lemma2
                         (not (c::errorp (omap::update key val map)))
-                        :enable (c::errorp omap::update))))))
+                        :induct t
+                        :in-theory '(c::errorp omap::update car-cons))))))
     (mv thm-event thm-name thm-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
