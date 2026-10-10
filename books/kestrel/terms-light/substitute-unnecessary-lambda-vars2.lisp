@@ -89,7 +89,9 @@
                   ;; 4) It is bound to a term that does not mention any of the remaining non-trivial formals.
                   (non-trivial-formals (non-trivial-formals formals args))
                   (formals-to-maybe-subst (vars-that-appear-only-once non-trivial-formals lambda-body))
-                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst (map-lookup-equal formals-to-maybe-subst formal-arg-alist) hands-off-fns))
+                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst
+                                                                        (map-lookup-equal formals-to-maybe-subst formal-arg-alist) ; todo: avoid consing?
+                                                                        hands-off-fns))
                   ;; (formals-to-drop (vars-expressible-without-clashes formals-to-maybe-subst formal-arg-alist non-trivial-formals)) ; would be ok to mention formals we are substituting?
                   ;; We can't subst for any formal whose arg mentions a non-trivial formal that remains:
                   ;(bad-arg-vars (set-difference-eq non-trivial-formals formals-to-maybe-subst))
