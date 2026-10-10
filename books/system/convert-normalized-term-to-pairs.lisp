@@ -166,4 +166,3 @@
 ; seconds on a 2011 Macbook Pro.
 
 ; [Jared] down to just a couple of seconds now...
-

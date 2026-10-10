@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -204,7 +204,7 @@
      We return an error if there is no second or third or fourth byte.
      We return an error if the encoded value is below 10000h or above 10FFFFh.
      If all these checks pass,
-     the code covers the character range from @('U+10000') to @('U+1FFFFF').")
+     the code covers the character range from @('U+10000') to @('U+10FFFF').")
    (xdoc::p
     "If the first byte read has any other value,
      either it is an invalid UTF-8 encoding (e.g. @('111...'))
@@ -371,7 +371,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           of a three-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -393,7 +393,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 1110... ~
-                                          (i.e. between 224 to 239) ~
+                                          (i.e. between 224 and 239) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -432,11 +432,14 @@
                         (and (<= #xd800 code)
                              (<= code #xdfff))))
               (reterr-msg :where parstate.position
-                          :expected "a Unicode character with code ~
-                                     in the range 9-13 or 32-126 ~
-                                     or 128-8233 or 8239-8293 or ~
-                                     or 8298-55295 or 57344-1114111"
-                          :found (char-to-msg code)))
+                          :expected (msg "a value between 800h and FFFFh, ~
+                                          but not between 202Ah and 202Eh ~
+                                          or between 2066h and 2069h ~
+                                          or between D800h and DFFFh, ~
+                                          UTF-8-encoded in the three bytes ~
+                                          (~x0 ~x1 ~x2)"
+                                         byte byte2 byte3)
+                          :found (msg "the value ~x0" code)))
              (parstate (update-parstate->bytes bytes parstate))
              (parstate (update-parstate->position
                         (position-inc-column 1 parstate.position) parstate))
@@ -463,7 +466,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           of a four-byte UTF-8 encoding"
                                          byte)
                           :found "end of file"))
@@ -485,7 +488,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -513,7 +516,7 @@
                           :expected (msg "another byte after ~
                                           the first byte ~x0 ~
                                           of the form 11110... ~
-                                          (i.e. between 240 to 247) ~
+                                          (i.e. between 240 and 247) ~
                                           and the second byte ~x1 ~
                                           of the form 10... ~
                                           (i.e. between 128 and 191) ~
@@ -572,7 +575,7 @@
              (parstate (update-parstate->size (- parstate.size 4) parstate)))
           (retok code parstate.position parstate))))
     (reterr-msg :where parstate.position
-                :expected "a byte in the range 9-13 or 32-126 or 192-223"
+                :expected "a byte in the range 9-13 or 32-126 or 192-247"
                 :found (msg "the byte ~x0" byte)))
   :guard-hints (("Goal" :in-theory (e/d (len fix natp)
                                         (acl2::commutativity-of-logand

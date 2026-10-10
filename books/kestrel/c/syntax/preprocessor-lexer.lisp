@@ -865,7 +865,7 @@
      it is an error if there is none.
      It is also an error if the character is a LF or CR (new line).
      If the character is a single quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -947,7 +947,7 @@
      it is an error if there is none.
      It is also an error if the character is a LF or CR (new line).
      If the character is a double quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -962,7 +962,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
@@ -970,7 +970,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp schar & ppstate)
         (if (utf8-= char (char-code #\\)) ; \
@@ -1111,14 +1111,14 @@
        ((unless char)
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        (qchar (q-char char))
        ((erp qchars closing-dquote-pos ppstate) (plex-*-q-char ppstate)))
@@ -1251,7 +1251,7 @@
     "This is called when we expect a header name.
      We read the next character, which must be present.
      Then we read the two kinds of header names,
-     based on whether the next character is greater-than or double quote.
+     based on whether the next character is less-than or double quote.
      If it is neither, lexing fails."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
@@ -1259,7 +1259,7 @@
     (cond
      ((not char)
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))
      ((utf8-= char (char-code #\<)) ; <
@@ -1280,7 +1280,7 @@
         (retok (plexeme-header (header-name-quotes qchars)) span ppstate)))
      (t ; other
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
   :no-function nil
