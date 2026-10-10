@@ -2600,7 +2600,7 @@
        which come after the declarator (cf. the grammar).")
      (xdoc::p
       "As explained in our ABNF grammar,
-       we also include an empty external declaration,
+       we also include an empty structure declaration,
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specquals spec/qual-list)
