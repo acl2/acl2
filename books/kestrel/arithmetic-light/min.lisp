@@ -76,3 +76,43 @@
   (implies (and (integerp x)
                 (integerp y))
            (integerp (min x y))))
+
+(defthm equal-of-min-same-arg1
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal x (min x y))
+                  (<= x y)))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm equal-of-min-same-arg2
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal y (min x y))
+                  (<= y x)))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm <-of-min-same-arg1
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (< (min x y) x)
+                  (< y x)))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm <-of-min-same-arg2
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (< (min x y) y)
+                  (< x y)))
+  :hints (("Goal" :in-theory (enable min))))
+
+(defthm <=-of-min-same-arg1-linear
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (<= (min x y) x))
+  :rule-classes :linear)
+
+(defthm <=-of-min-same-arg2-linear
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (<= (min x y) y))
+  :rule-classes :linear)
