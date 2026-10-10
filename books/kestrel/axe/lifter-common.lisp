@@ -614,7 +614,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp assumptions hits state)
+;; Returns (mv erp assumptions hits state).
+;; Uses the basic rewriter.
 (defund simplify-assumptions (assumptions rules count-hits no-warn-ground-functions state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp rules)

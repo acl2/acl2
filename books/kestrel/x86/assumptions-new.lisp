@@ -388,7 +388,7 @@
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
                                    ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                   ;; We postulate that there exists some canonical base var wrt which  the executable is loaded.
+                                   ;; We postulate that there exists some canonical base var wrt which the executable is loaded.
                                    ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                    (if (= 0 target-offset)
                                        base-address-var ; avoids adding 0
@@ -496,7 +496,8 @@
                    ;; Ensures that the canonical assumptions are satisfiable:
                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
                     (mv :bad-address nil))
-                   (first-addr-term (symbolic-bvplus-constant ''64 addr base-address-var))
+                   ;; We can use 48 here because read-bytes and disjoint-regions48p chop their addresses down to 48 bits:
+                   (first-addr-term (symbolic-bvplus-constant ''48 addr base-address-var))
                    ;; (last-addr-term (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                                                 (+ -1 addr length))
                    ;;                                           base-address-var)

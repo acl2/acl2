@@ -59,7 +59,20 @@
            (<= 0 (mod x y)))
   :rule-classes :type-prescription
   :hints (("Goal" :cases ((equal 0 y))
-           :in-theory (enable mod *-of-floor-upper-bound))))
+                  :in-theory (enable mod *-of-floor-upper-bound))))
+
+
+;; To support ACL2(r), we might have to assume (rationalp y) here.
+(defthm rationalp-of-mod
+  (implies (rationalp x)
+           (rationalp (mod x y)))
+  :rule-classes (:rewrite :type-prescription)
+  :hints (("Goal" :cases ((rationalp y)
+                          (complex-rationalp y))
+           :in-theory (enable mod
+                              floor-when-rationalp-and-complex-rationalp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm mod-of-0-arg1
   (equal (mod 0 y)
@@ -90,16 +103,6 @@
                   ;;-1)
                   ))
   :hints (("Goal" :in-theory (enable mod))))
-
-;; To support ACL2(r), we might have to assume (rationalp y) here.
-(defthm rationalp-of-mod
-  (implies (rationalp x)
-           (rationalp (mod x y)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :cases ((rationalp y)
-                          (complex-rationalp y))
-           :in-theory (enable mod
-                              floor-when-rationalp-and-complex-rationalp))))
 
 (defthm mod-when-not-acl2-numberp-arg1
   (implies (not (acl2-numberp x))

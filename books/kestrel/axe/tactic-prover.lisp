@@ -972,7 +972,7 @@
                             type ; Either :boolean (try to prove the dag is true) or :bit (try to prove the dag is 1)
                             ;;tests ;a natp indicating how many tests to run
                             tactics
-                            rules
+                            rule-alist
                             simplify-assumptionsp
                             ;;types ;does soundness depend on these or are they just for testing? these seem to be used when calling stp..
                             print
@@ -989,7 +989,7 @@
                               (symbol-listp interpreted-fns)
                               (member-eq type '(:bit :boolean))
                               (tacticsp tactics)
-                              (symbol-listp rules)
+                              (rule-alistp rule-alist)
                               (booleanp simplify-assumptionsp)
                               (print-levelp print)
                               (or (null max-conflicts)
@@ -1025,9 +1025,6 @@
         (er hard? 'apply-tactic-prover "Unexpected quotep: ~x0." dag-or-constant)
         (mv *error* nil state))
        (dag dag-or-constant) ; it was not a constant
-       ;; Make the rule-alist:
-       ((mv erp rule-alist) (make-rule-alist rules (w state)))
-       ((when erp) (mv *error* nil state))
        ;; (axe-rule-set (make-axe-rules rules state)) ;todo; don't need both of these..
        ;; Print the number of assumptions:
        (- (if (endp assumptions)
@@ -1118,13 +1115,16 @@
         (dag-or-term-to-dag-and-assumptions dag-or-term state))
        ((when erp) (mv :error-translating-input nil state))
        (all-assumptions (append assumptions assumptions2)) ; reorder args?
+       ;; Make the rule-alist:
+       ((mv erp rule-alist) (make-rule-alist rules (w state)))
+       ((when erp) (mv :error-making-rule-list nil state))
        ((mv result info-acc state)
         (apply-tactic-prover dag-or-constant
                              all-assumptions
                              interpreted-fns
                              type
                              tactics
-                             rules
+                             rule-alist
                              simplify-assumptions
                              print
                              max-conflicts
@@ -1239,9 +1239,12 @@
        ;; Make the equality:
        ((mv erp dag-or-constant) (make-equality-dag-gen dag-or-term1 dag-or-term2 different-vars-ok (w state)))
        ((when erp) (mv erp nil state))
+       ;; Make the rule-alist:
+       ((mv erp rule-alist) (make-rule-alist rules (w state)))
+       ((when erp) (mv :error-making-rule-list nil state))
        ;; Do the proof:
        ((mv result info-acc state)
-        (apply-tactic-prover dag-or-constant assumptions interpreted-fns :boolean tactics rules
+        (apply-tactic-prover dag-or-constant assumptions interpreted-fns :boolean tactics rule-alist
                              simplify-assumptions print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp
                              monitor normalize-xors state))
        ;; Remove the temp dir unless debug is set:

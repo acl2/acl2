@@ -20,18 +20,11 @@
 (local (include-book "minus"))
 (local (include-book "mod"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "numerator-and-denominator"))
 
 (in-theory (disable ceiling))
 
 (local (in-theory (disable floor)))
-
-;move
-(local
- (defthm integerp-of-*-of---arg2
-   (equal (integerp (* x (- y)))
-          (integerp (* x y)))
-   :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
-            :in-theory (disable integerp-of--)))))
 
 (defthm ceiling-of-0-arg1
   (equal (ceiling 0 j)
@@ -43,6 +36,8 @@
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
 
+;; A powerful rule for avoiding the need to reason about ceiling (we have more
+;; rules about floor):
 (defthmd ceiling-in-terms-of-floor
   (equal (ceiling i j)
          (- (floor (- i) j)))
@@ -132,7 +127,7 @@
 
   (local (defthm ceiling-upper-bound-neg
            (implies (and (< j 0) ; unusual
-                                 ;                (< 0 i) ; todo
+                         ;; (< 0 i) ; todo
                          (rationalp i)
                          (rationalp j))
                     (< (ceiling i j) (+ 1 (/ i j))))

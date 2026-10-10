@@ -13,6 +13,7 @@
 
 (local (include-book "numerator"))
 (local (include-book "denominator"))
+(local (include-book "numerator-and-denominator"))
 (local (include-book "times"))
 (local (include-book "plus"))
 (local (include-book "minus"))
@@ -21,35 +22,6 @@
 (local (include-book "nonnegative-integer-quotient"))
 (local (include-book "integerp"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
-;rename and move
-;drop?  but used below
-(local
-  (defthm floor-bound-hack-eric
-    (implies (and (<= 1 j)
-                  (<= 0 i)
-                  (rationalp i)
-                  (rationalp j))
-             (<= (* i (/ j)) i))))
-
-;move
-(defthm <-of-numerator-and-denominator-same
-  (implies (rationalp x)
-           (equal (< (numerator x) (denominator x))
-                  (if (<= x 0)
-                      t
-                    (< x 1))))
-  :hints (("Goal" :use rational-implies2
-           :in-theory (disable rational-implies2))))
-
-;where should this go?
-(defthm <-of---of-numerator-and-denominator-same
-  (implies (rationalp x)
-           (equal (< (- (numerator x)) (denominator x))
-                  (or (<= 0 x)
-                      (< -1 x))))
-  :hints (("Goal" :use (:instance <-of-numerator-and-denominator-same (x (- x)))
-           :in-theory (disable <-of-numerator-and-denominator-same))))
 
 (in-theory (disable floor))
 
@@ -229,30 +201,33 @@
   :rule-classes ((:linear :trigger-terms ((floor i j))))
   :hints (("Goal" :by my-floor-upper-bound)))
 
+;; In this version, we have multiplied through by j.
+; why disabled?
+(defthmd *-of-floor-upper-bound
+  (implies (and (< 0 j)
+                (rationalp i)
+                (rationalp j))
+           (<= (* j (floor i j)) i))
+  :hints (("Goal" :in-theory (enable floor))))
+
 (defthm *-of-floor-upper-bound-linear
   (implies (and (< 0 j)
                 (rationalp i)
                 (rationalp j))
            (<= (* j (floor i j)) i))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable floor))))
+  :hints (("Goal" :in-theory (enable *-of-floor-upper-bound))))
 
+;rename
 ;todo: compare to *-of-floor-upper-bound-linear
 (defthm floor-upper-bound-alt-linear
   (implies (and (<= 0 i)
-                (rationalp i)
                 (<= 0 j)
+                (rationalp i)
                 (rationalp j))
            (<= (* j (floor i j)) i))
   :rule-classes :linear
   :hints (("Goal" :cases ((equal j 0)))))
-
-;; In this version, we have multiplied through by j.
-(defthmd *-of-floor-upper-bound
-  (implies (and (< 0 j)
-                (rationalp i)
-                (rationalp j))
-           (<= (* j (floor i j)) i)))
 
 (defthm floor-upper-bound-strict
   (implies (and (not (integerp (/ i j)))
@@ -1020,12 +995,12 @@
            (<= (floor i j) i))
   :hints (("Goal"
            :cases ((rationalp i))
-           :use (floor-bound-hack-eric (:instance my-floor-upper-bound))
+           :use (<=-of-*-of-j-same-arg1 (:instance my-floor-upper-bound))
            :in-theory (e/d (posp) (floor-bounded-by-/ my-floor-upper-bound ;floor-bound-lemma3
                                                       ;<-*-/-left
                                                       ;<-y-*-y-x
                                                       ;<-*-/-right
-                                                      floor-bound-hack-eric
+                                                      <=-of-*-of-j-same-arg1
                                                       <-of-*-of-/-arg1
                                                       <-of-*-of-/-arg2
                                                       <-of-*-same-arg2)))))
