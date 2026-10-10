@@ -96,6 +96,31 @@
   :rule-classes :linear
   :enable len)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  ;; ACL2::EQUAL-OF-LEN-AND-1 is exactly this fact, as a biconditional on
+  ;; the length.  Its book installs a theory invariant that forbids the
+  ;; definition of LEN to be enabled, which this book and its users do
+  ;; throughout their hints, so the book is confined to this encapsulate
+  ;; and only the rule below escapes.
+  (local (include-book "kestrel/lists-light/len" :dir :system))
+
+  (defruled list-of-car-when-len-1
+    :short "A true list of length 1 is the list of its @(tsee car)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is @('acl2::equal-of-len-and-1') oriented as a rewrite rule
+       on @('(list (car x))'), which is the direction in which it is used:
+       a rebuilt one-element list is met where the unary form of a
+       construct is expected."))
+    (implies (and (true-listp x)
+                  (equal (len x) 1))
+             (equal (list (car x)) x))
+    :use acl2::equal-of-len-and-1))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled car-of-repeat
@@ -786,3 +811,19 @@
   (defret all-of-len-p-1-of-list-to-singletons
     (all-of-len-p sing-list 1)
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define three-cdrs-induct (x y z)
+  :short "Induction scheme over three lists in lockstep."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This recurs on the @(tsee cdr)s of all three lists
+     until any of them runs out.
+     It is only used to drive inductions, via @(':induct') hints,
+     for properties that relate the elements of three lists
+     at the same positions."))
+  (if (or (not (consp x)) (not (consp y)) (not (consp z)))
+      nil
+    (three-cdrs-induct (cdr x) (cdr y) (cdr z))))

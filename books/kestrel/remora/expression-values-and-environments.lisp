@@ -941,6 +941,85 @@
 
   (fty::deffixequiv-mutual check-dims-of-expr-values/denv)
 
+  ;; The checks are two-valued: all the primitive failures in the clique
+  ;; produce (RESERR NIL), so a failing check is that error, and a passing
+  ;; check on a map or an environment is :UNIT.  These are left disabled,
+  ;; since their left sides are general; they are enabled where needed.
+
+  (defthm-check-dims-of-expr-values/denv-flag
+    (defthm check-dims-of-expr-value-when-reserrp
+      (implies (reserrp (check-dims-of-expr-value val))
+               (equal (check-dims-of-expr-value val)
+                      (reserr nil)))
+      :flag check-dims-of-expr-value)
+    (defthm check-dims-of-expr-value-list-when-reserrp
+      (implies (reserrp (check-dims-of-expr-value-list vals))
+               (equal (check-dims-of-expr-value-list vals)
+                      (reserr nil)))
+      :flag check-dims-of-expr-value-list)
+    (defthm check-dims-of-primop-value-when-reserrp
+      (implies (reserrp (check-dims-of-primop-value val))
+               (equal (check-dims-of-primop-value val)
+                      (reserr nil)))
+      :flag check-dims-of-primop-value)
+    (defthm check-dims-of-string-expr-value-map-two-valued
+      (and (implies (reserrp (check-dims-of-string-expr-value-map map))
+                    (equal (check-dims-of-string-expr-value-map map)
+                           (reserr nil)))
+           (implies (not (reserrp (check-dims-of-string-expr-value-map map)))
+                    (equal (check-dims-of-string-expr-value-map map)
+                           :unit)))
+      :flag check-dims-of-string-expr-value-map)
+    (defthm check-dims-of-expr-denv-two-valued
+      (and (implies (reserrp (check-dims-of-expr-denv denv))
+                    (equal (check-dims-of-expr-denv denv)
+                           (reserr nil)))
+           (implies (not (reserrp (check-dims-of-expr-denv denv)))
+                    (equal (check-dims-of-expr-denv denv)
+                           :unit)))
+      :flag check-dims-of-expr-denv)
+    :hints (("Goal" :in-theory (enable check-dims-of-expr-value
+                                       check-dims-of-expr-value-list
+                                       check-dims-of-primop-value
+                                       check-dims-of-string-expr-value-map
+                                       check-dims-of-expr-denv
+                                       acl2::nat-listp-when-result-not-error
+                                       acl2::nat-list-listp-when-result-not-error
+                                       acl2::not-reserrp-when-nat-listp
+                                       acl2::not-reserrp-when-nat-list-listp
+                                       acl2::nat-listp-of-car-when-nat-list-listp))))
+
+  (in-theory (disable check-dims-of-expr-value-when-reserrp
+                      check-dims-of-expr-value-list-when-reserrp
+                      check-dims-of-primop-value-when-reserrp
+                      check-dims-of-string-expr-value-map-two-valued
+                      check-dims-of-expr-denv-two-valued))
+
+  ;; Consequently, the check on a map is insensitive to the order in which
+  ;; the entries are checked: updating a map at a fresh key checks the new
+  ;; value and the old map, in whatever order.
+
+  (defruled check-dims-of-string-expr-value-map-of-update
+    (implies (and (stringp key)
+                  (expr-valuep val)
+                  (string-expr-value-mapp map)
+                  (not (set::in key (omap::keys map))))
+             (equal (check-dims-of-string-expr-value-map
+                     (omap::update key val map))
+                    (if (reserrp (check-dims-of-expr-value val))
+                        (reserr nil)
+                      (check-dims-of-string-expr-value-map map))))
+    :induct (omap::size map)
+    :expand ((check-dims-of-string-expr-value-map (omap::update key val map)))
+    :enable (omap::size
+             check-dims-of-string-expr-value-map
+             omap::head-val
+             omap::keys
+             unitp
+             unitp-when-result-not-error
+             check-dims-of-expr-value-when-reserrp
+             check-dims-of-string-expr-value-map-two-valued))
+
   (defruled check-dims-of-expr-value-list-of-repeat
     (b* ((dims (check-dims-of-expr-value val))
          (dimss (check-dims-of-expr-value-list (repeat n val))))
@@ -1800,16 +1879,23 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defruledl lemma1
-    (implies (and (nat-listp dims)
-                  (not (member-equal 0 dims))
-                  (consp dims)
-                  (equal (len vals) (nat-list-product dims)))
-             (posp (* (/ (car dims)) (len vals))))
-    :enable posp
-    :use nat-list-product-divided-by-car)
+  ;; The chunking performed by the builders is exact:
+  ;; see POSP-OF-LEN-OVER-CAR-OF-DIMS (in NAT-LISTS) and this lemma.
 
-  (defruledl lemma2
+  (defruled expr-value-list-listp-of-list-split-by-len-over-car-of-dims
+    :short "Splitting a list of expression values
+            whose length is the product of non-empty, non-zero dimensions
+            into as many chunks as the first dimension
+            gives a list of lists of expression values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The chunk length is stated in the form that arises from
+       the construction of values with non-empty dimensions
+       (see @(tsee expr-value-with-nonempty-dims));
+       @(tsee posp-of-len-over-car-of-dims) is its companion.
+       It is proved here, with the builders,
+       because its proof uses their arithmetic support."))
     (implies (and (expr-value-listp vals)
                   (nat-listp dims)
                   (not (member-equal 0 dims))
@@ -1869,8 +1955,8 @@
                                 repeat
                                 car-of-repeat
                                 car-of-car-of-list-split
-                                lemma1
-                                lemma2))))
+                                posp-of-len-over-car-of-dims
+                                expr-value-list-listp-of-list-split-by-len-over-car-of-dims))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2109,7 +2195,48 @@
                               (nats (dims-of-expr-value val))))
              :in-theory (disable
                          len-of-expr-value-atoms-when-expr-value-wfp
-                         nat-list-product-0-iff-member-0)))))
+                         nat-list-product-0-iff-member-0))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled len-of-transposed-atoms
+    :short "Length of the atoms of a well-formed matrix value,
+            read off column-wise."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Splitting the atoms of a well-formed value
+       with dimensions @('m') and @('n') into @('m') rows of @('n') atoms,
+       transposing the rows, and concatenating the columns
+       yields a list of @('m * n') atoms:
+       the atoms of the transposed matrix.
+       The built-in definitions in the hints are enabled explicitly
+       because this book uses the controlled configuration."))
+    (implies (and (expr-value-wfp val1)
+                  (equal (dims-of-expr-value val1) (list m n))
+                  (posp m)
+                  (posp n))
+             (equal (len (append-all
+                          (transpose-list-list
+                           (list-split (expr-value-atoms val1) n))))
+                    (* m n)))
+    :enable (car/cdr-when-equal-cons
+             nat-list-product
+             nfix fix posp lnfix member-equal
+             car-cons cdr-cons acl2::member-of-cons
+             len-of-list-split
+             len-of-car-of-list-split
+             true-list-listp-of-list-split
+             consp-of-car-list-split
+             len-of-transpose-list-list
+             len-of-car-of-transpose-list-list
+             all-of-len-p-of-transpose-list-list
+             len-of-append-all-when-all-of-len-p-of-len-car
+             len-of-expr-value-atoms-when-expr-value-wfp
+             consp-of-expr-value-atoms
+             list-split-of-repeat
+             transpose-list-list-of-repeat-of-repeat
+             append-all-of-repeat-of-repeat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

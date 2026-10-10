@@ -249,6 +249,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection ast-free-expr-vars-additional-theorems
+  :short "Additional theorems about free expression variables."
+
+  (defrule bind-list-free-expr-vars-of-append
+    (equal (bind-list-free-expr-vars (append a b))
+           (set::union (bind-list-free-expr-vars a)
+                       (set::difference (bind-list-free-expr-vars b)
+                                        (bind-list-bound-expr-vars a))))
+    :induct t
+    :enable (bind-list-bound-expr-vars
+             append
+             union-difference-nest-identity)
+    :expand ((:free (x l) (bind-list-free-expr-vars (cons x l)))
+             (bind-list-free-expr-vars a)
+             (bind-list-free-expr-vars nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection ast-free-ispace-vars-additional-theorems
   :short "Additional theorems about free ispace variables."
 

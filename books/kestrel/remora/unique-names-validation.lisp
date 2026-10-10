@@ -10,11 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "evaluation")
-(include-book "renaming-evaluation")
-(include-book "unique-names")
-
-(include-book "kestrel/fty/deffold-reduce" :dir :system)
+(include-book "uniquify-evaluation")
 
 (include-book "portcullis")
 
@@ -62,303 +58,109 @@
      variables of) their creation environment, and applying a lambda
      evaluates the body in the captured environment.  Under the earlier,
      dynamically scoped evaluator the theorem below was falsified; the
-     counterexamples recorded in the comment preceding the theorem have
-     been re-checked by execution against the closure evaluator and no
-     longer apply.  The theorem is now believed true; it remains under
-     @(tsee acl2::skip-proofs) until its proof, outlined below, is
-     completed.")
+     counterexamples recorded in the HISTORY comment below have been
+     re-checked by execution against the closure evaluator and no longer
+     apply.  The theorem is proved below from the top-level
+     statement of its inductive core,
+     @(tsee eval-top-expr-alpha-equiv-of-expr-uniquify-names) --- that the
+     two evaluations err together and on success yield alpha-equivalent
+     values --- which is in turn the top-level instance of the induction
+     carried out in @(see uniquify-evaluation).")
    (xdoc::p
-    "The mechanical proof is in progress.  The structurally recursive
-     levels of evaluation under renamings of the ispace and type variables
-     --- dimensions, shapes, and ispaces, whose values contain no abstract
-     syntax, as well as types, whose values are related modulo renaming
-     because of the abstract syntax and captured environments embedded in
-     universal/product/sum type values --- are done, along with the value
-     side of all the renamings (including the renaming of the environments
-     captured in lambda and type values) and its commutation with the
-     evaluator's rank-polymorphic application machinery: see @(see
-     renaming-evaluation).  The invariant of the eventual induction is the
+    "The mechanical proof is organized as follows.  @(see
+     renaming-evaluation) provides the facts about the renamings of ispace
+     and type variables that the rest builds on: the renaming images of
+     sets of variables, the free-variable laws of renamed types, and the
+     environment relations for the ispace layer.  The invariant of the
+     induction is the
      alpha-relatedness of ASTs and of expression values modulo in-scope
-     renamings, defined in @(see uniquify-alpha-relations); of its three
-     consumers, the first two are proved: the bridge theorem, that the
-     output of @(tsee expr-uniquify-names) is alpha-related to its input
-     (see @(tsee expr-alpha-related-p-of-expr-uniquify-names)), and the
-     groundness collapse, proved in this book (see @(tsee
-     expr-value-alpha-related-p-when-groundp)): alpha-related values are
-     literally equal when the original is ground, since ground values
-     embed no abstract syntax and their type values are unmoved by the
-     renamings (see e.g. @(tsee
-     expr-value-rename-expr-vars-when-groundp)).  This will discharge the
-     groundness proviso of the main theorem: the eventual induction yields
-     alpha-related results, which on ground values collapses to literal
-     equality.  The remaining piece is the expression level itself, by
-     mutual induction over the @(see eval-exprs/atoms/binds) clique with
-     the dynamic environments of the two evaluations related pointwise
-     modulo the in-scope renaming of their keys and alpha-relatedness of
-     their values; before it can be attempted, the value relation needs to
-     be strengthened with the no-capture conditions on the left-hand
-     binder names (see the caveat at the end of
-     @('uniquify-alpha-relations.lisp'): the drafted relation admits
-     capturing closures, for which the application cases of the induction
-     are false).
-     Because of the @(tsee acl2::skip-proofs), this book is not included
-     in @('top.lisp'), so that the rest of the library remains free of
-     skipped proofs."))
+     renamings, defined in @(see uniquify-alpha-relations) together with
+     the freshness companion @(tsee expr-alpha-fresh-p) of the AST relation,
+     which carries the no-capture conditions on the new binder names that
+     the application cases of the induction need (see the witness-indexed
+     value relation @(tsee expr-value-alpha-related-via-p)).  Its three
+     consumers are: the bridge theorems, that the output of @(tsee
+     expr-uniquify-names) is alpha-related to its input (see @('expr-alpha-related-p-of-expr-uniquify-names')) and satisfies the
+     freshness conditions (see @(see uniquify-freshness) and @('expr-alpha-fresh-p-of-expr-uniquify-names')); the groundness collapse,
+     proved in @(see uniquify-alpha-relations) on the groundness notions of
+     @(see value-groundness) (see @('expr-value-alpha-related-via-p-when-groundp')): alpha-related values are
+     literally equal when the original is ground, since ground values embed
+     no abstract syntax and their type values are unmoved by the renamings;
+     and the induction itself, in @(see uniquify-evaluation): a mutual induction
+     over the @(see eval-exprs/atoms/binds) clique, with the dynamic
+     environments of the two evaluations related entry by entry, modulo
+     the in-scope renaming of their keys and via witnesses for their values
+     (see @(tsee expr-denv-alpha-related-via-p)), one lemma per case of
+     the evaluator, assembled into the flag theorem
+     @('eval-expr-ok-holds').  The initial environments, in which both
+     sides are evaluated, are related as the induction requires, with the
+     empty witness (see @(tsee
+     expr-denv-alpha-related-via-p-of-init-expr-denv)), and the names of
+     the primitive operations (their keys) are the induction's support
+     set.  The groundness collapse then discharges the groundness proviso
+     of the main theorem: @(tsee eval-top-expr-of-expr-uniquify-names) is
+     proved from the core by the collapse."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Groundness of values: no embedded abstract syntax.
-
-;; The type-values/denv clique includes the map from type variables to type
-;; values (for the environments captured in type values), for which
-;; DEFFOLD-REDUCE generates a theorem about the values of OMAP::ASSOC whose
-;; proof needs OMAP::ASSOC to open; the macro provides no hints for it, so
-;; we enable it locally around the fold.
-
-(encapsulate ()
-
-  (local (in-theory (enable omap::assoc)))
-
-  (fty::deffold-reduce groundp
-    :short "Check that a (type or expression) value embeds no abstract syntax."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "Base values, primitive operations, and vectors of ground values are
-       ground.  Lambda values (of all three kinds) are not, since they embed
-       the abstract syntax of their bodies; neither are the type values of
-       universal, product, and sum types, for the same reason.  The dynamic
-       environments captured in the latter are reached by the fold but do
-       not matter, since the type values containing them are never ground.")
-     (xdoc::p
-      "Ground values are unaffected by renaming the variables of the
-       expression that produced them; this is the proviso under which
-       evaluation results are literally equal in
-       @('eval-top-expr-of-expr-uniquify-names')."))
-    :types (type-values/denv
-            expr-values/denv)
-    :result booleanp
-    :default t
-    :combine and
-    :override
-    ((type-value :forall nil)
-     (type-value :pi nil)
-     (type-value :sigma nil)
-     (expr-value :lambda nil)
-     (expr-value :tlambda nil)
-     (expr-value :ilambda nil))
-    :name value-groundp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Renaming is the identity on ground values.
+; The main theorem, derived from its inductive core.
 ;
-; The renaming of a value renames just the abstract syntax embedded in it
-; (see e.g. TYPE-VALUE-RENAME-ISPACE-VARS), and a ground value embeds none,
-; so renaming a ground value gives back the value itself, for all five
-; renamings (of ispace and type variables in type values, and of expression,
-; ispace, and type variables in expression values).  These theorems will
-; discharge the groundness proviso of the main theorem: the eventual
-; induction over evaluation yields results equal modulo renaming, which on
-; ground values collapses to literal equality.
-
-(defret-mutual type-value-rename-ispace-vars-when-groundp
-  (defret type-value-rename-ispace-vars-when-groundp
-    (implies (type-value-groundp tval)
-             (equal new-tval (type-value-fix tval)))
-    :fn type-value-rename-ispace-vars)
-  (defret type-value-list-rename-ispace-vars-when-groundp
-    (implies (type-value-list-groundp tvals)
-             (equal new-tvals (type-value-list-fix tvals)))
-    :fn type-value-list-rename-ispace-vars)
-  :mutual-recursion type-value-rename-ispace-vars
-  ;; The map and environment members of the clique are skipped: they are
-  ;; reached only through the type values of universal, product, and sum
-  ;; types, which are never ground.
-  :skip-others t
-  :hints (("Goal" :in-theory (enable type-value-rename-ispace-vars
-                                     type-value-list-rename-ispace-vars
-                                     type-value-groundp
-                                     type-value-list-groundp))))
-
-(defret-mutual type-value-rename-type-vars-when-groundp
-  (defret type-value-rename-type-vars-when-groundp
-    (implies (type-value-groundp tval)
-             (equal new-tval (type-value-fix tval)))
-    :fn type-value-rename-type-vars)
-  (defret type-value-list-rename-type-vars-when-groundp
-    (implies (type-value-list-groundp tvals)
-             (equal new-tvals (type-value-list-fix tvals)))
-    :fn type-value-list-rename-type-vars)
-  :mutual-recursion type-value-rename-type-vars
-  ;; As above, the map and environment members are skipped.
-  :skip-others t
-  :hints (("Goal" :in-theory (enable type-value-rename-type-vars
-                                     type-value-list-rename-type-vars
-                                     type-value-groundp
-                                     type-value-list-groundp))))
-
-(defret-mutual expr-value-rename-expr-vars-when-groundp
-  (defret expr-value-rename-expr-vars-when-groundp
-    (implies (expr-value-groundp val)
-             (equal new-val (expr-value-fix val)))
-    :fn expr-value-rename-expr-vars)
-  (defret expr-value-list-rename-expr-vars-when-groundp
-    (implies (expr-value-list-groundp vals)
-             (equal new-vals (expr-value-list-fix vals)))
-    :fn expr-value-list-rename-expr-vars)
-  :mutual-recursion expr-value-rename-expr-vars
-  ;; As for the type values, the map and environment members of the clique
-  ;; are skipped: they are reached only through lambda values, which are
-  ;; never ground.
-  :skip-others t
-  :hints (("Goal" :in-theory (enable expr-value-rename-expr-vars
-                                     expr-value-list-rename-expr-vars
-                                     expr-value-groundp
-                                     expr-value-list-groundp))))
-
-(defret-mutual expr-value-rename-ispace-vars-when-groundp
-  (defret expr-value-rename-ispace-vars-when-groundp
-    (implies (expr-value-groundp val)
-             (equal new-val (expr-value-fix val)))
-    :fn expr-value-rename-ispace-vars)
-  (defret expr-value-list-rename-ispace-vars-when-groundp
-    (implies (expr-value-list-groundp vals)
-             (equal new-vals (expr-value-list-fix vals)))
-    :fn expr-value-list-rename-ispace-vars)
-  :mutual-recursion expr-value-rename-ispace-vars
-  ;; As for the type values, the map and environment members of the clique
-  ;; are skipped: they are reached only through lambda values, which are
-  ;; never ground.
-  :skip-others t
-  :hints (("Goal" :in-theory (enable expr-value-rename-ispace-vars
-                                     expr-value-list-rename-ispace-vars
-                                     expr-value-groundp
-                                     expr-value-list-groundp))))
-
-(defret-mutual expr-value-rename-type-vars-when-groundp
-  (defret expr-value-rename-type-vars-when-groundp
-    (implies (expr-value-groundp val)
-             (equal new-val (expr-value-fix val)))
-    :fn expr-value-rename-type-vars)
-  (defret expr-value-list-rename-type-vars-when-groundp
-    (implies (expr-value-list-groundp vals)
-             (equal new-vals (expr-value-list-fix vals)))
-    :fn expr-value-list-rename-type-vars)
-  :mutual-recursion expr-value-rename-type-vars
-  ;; As for the type values, the map and environment members of the clique
-  ;; are skipped: they are reached only through lambda values, which are
-  ;; never ground.
-  :skip-others t
-  :hints (("Goal" :in-theory (enable expr-value-rename-type-vars
-                                     expr-value-list-rename-type-vars
-                                     expr-value-groundp
-                                     expr-value-list-groundp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Alpha-relatedness collapses to equality on ground values.
+; The core below is the top-level instance of the induction of
+; UNIQUIFY-EVALUATION --- the two evaluations err together and, on success,
+; yield alpha-equivalent values, i.e. values related via SOME witness
+; (EXPR-VALUE-ALPHA-EQUIV-P).  The main theorem follows from it by the
+; groundness collapse (EXPR-VALUE-ALPHA-RELATED-VIA-P-WHEN-GROUNDP), which
+; makes alpha-related values literally equal when the original is ground.
 ;
-; This is the second consumer of the relations of UNIQUIFY-ALPHA-RELATIONS
-; (see the comment at the end of that book): ground values contain no
-; lambdas, so neither the AST relation nor the environment relations are
-; reached, and the embedded type values are ground, so the composed
-; renaming that the relation requires of them is the identity.  It will
-; discharge the groundness proviso of the main theorem below: the eventual
-; induction yields alpha-related results, which on ground values collapse
-; to literal equality.
-;
-; The local lemmas supply the final step of each case: two values of the
-; same kind with equal components have equal fixes.  They are stated as
-; conditional equalities of fixes (rather than by enabling the generated
-; EXPR-VALUE-FIX-WHEN-* rules) because those rules loop with the enabled
-; EXPR-VALUE-*-OF-FIELDS rules.
+; The initial environments, in which EVAL-TOP-EXPR evaluates both sides,
+; are related as the induction requires: at the bridge's renaming
+; bundle (empty renamings; the avoid set is immaterial to the relation),
+; with the empty witness, since the initial environment holds only the
+; primitive operations, whose values the relation compares by equality.
+; The relation on that constant map is settled by evaluation.
 
-(defruledl equal-of-expr-value-fix-when-both-base
-  (implies (and (equal (expr-value-kind x) :base)
-                (equal (expr-value-kind y) :base)
-                (equal (expr-value-base->val x) (expr-value-base->val y)))
-           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
-  :use ((:instance expr-value-fix-when-base (x x))
-        (:instance expr-value-fix-when-base (x y))))
+(defrule expr-denv-alpha-related-via-p-of-init-expr-denv
+  :short "The initial environment is alpha-related to itself
+          at the empty renamings, with the empty witness."
+  (expr-denv-alpha-related-via-p
+   (init-expr-denv)
+   (init-expr-denv)
+   (make-var-renamings :dim nil :shape nil :atom nil :array nil :expr nil
+                       :avoid avoid)
+   (make-denv-witness :types nil :exprs nil))
+  :enable (expr-denv-alpha-related-via-p
+           type-denv-alpha-related-via-p
+           type-var-type-value-map-alpha-related-via-p
+           denv-ispace-vars-covered-p
+           init-expr-denv))
 
-(defruledl equal-of-expr-value-fix-when-both-primop
-  (implies (and (equal (expr-value-kind x) :primop)
-                (equal (expr-value-kind y) :primop)
-                (equal (expr-value-primop->val x) (expr-value-primop->val y)))
-           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
-  :use ((:instance expr-value-fix-when-primop (x x))
-        (:instance expr-value-fix-when-primop (x y))))
+(defrule expr-denv-alpha-equiv-p-of-init-expr-denv
+  :short "The initial environment is alpha-equivalent to itself
+          at the empty renamings."
+  (expr-denv-alpha-equiv-p
+   (init-expr-denv)
+   (init-expr-denv)
+   (make-var-renamings :dim nil :shape nil :atom nil :array nil :expr nil
+                       :avoid avoid))
+  ;; The relation is re-established by the same evaluation as above rather
+  ;; than by that rule, whose left-hand side the prover would first have
+  ;; evaluated into a constant, past syntactic matching.
+  :use ((:instance expr-denv-alpha-equiv-p-suff
+                   (new-denv (init-expr-denv))
+                   (denv (init-expr-denv))
+                   (r (make-var-renamings :dim nil :shape nil
+                                          :atom nil :array nil
+                                          :expr nil :avoid avoid))
+                   (dw (make-denv-witness :types nil :exprs nil))))
+  :enable (expr-denv-alpha-related-via-p
+           type-denv-alpha-related-via-p
+           type-var-type-value-map-alpha-related-via-p
+           denv-ispace-vars-covered-p
+           init-expr-denv)
+  :disable expr-denv-alpha-equiv-p-suff)
 
-(defruledl equal-of-expr-value-fix-when-both-box
-  (implies (and (equal (expr-value-kind x) :box)
-                (equal (expr-value-kind y) :box)
-                (equal (expr-value-box->ispace x) (expr-value-box->ispace y))
-                (equal (expr-value-box->array x) (expr-value-box->array y))
-                (equal (expr-value-box->type x) (expr-value-box->type y)))
-           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
-  :use ((:instance expr-value-fix-when-box (x x))
-        (:instance expr-value-fix-when-box (x y))))
-
-(defruledl equal-of-expr-value-fix-when-both-vector
-  (implies (and (equal (expr-value-kind x) :vector)
-                (equal (expr-value-kind y) :vector)
-                (equal (expr-value-vector->elems x) (expr-value-vector->elems y)))
-           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
-  :use ((:instance expr-value-fix-when-vector (x x))
-        (:instance expr-value-fix-when-vector (x y))))
-
-(defruledl equal-of-expr-value-fix-when-both-vector-empty
-  (implies (and (equal (expr-value-kind x) :vector-empty)
-                (equal (expr-value-kind y) :vector-empty)
-                (equal (expr-value-vector-empty->dims x)
-                       (expr-value-vector-empty->dims y))
-                (equal (expr-value-vector-empty->elem x)
-                       (expr-value-vector-empty->elem y)))
-           (equal (equal (expr-value-fix x) (expr-value-fix y)) t))
-  :use ((:instance expr-value-fix-when-vector-empty (x x))
-        (:instance expr-value-fix-when-vector-empty (x y))))
-
-; The same collapses for the witness-indexed relations (see
-; TYPE-VALUE-ALPHA-RELATED-VIA-P and EXPR-VALUE-ALPHA-RELATED-VIA-P in
-; uniquify-alpha-relations.lisp), over which the main induction is to be
-; carried out: the witnesses are unused in the ground cases, so the proofs
-; are the same, with the type-value collapse first (the expression-value
-; relation reaches type values in its box and empty-vector cases).
-
-(defruledl equal-of-type-value-fix-when-both-base
-  (implies (and (equal (type-value-kind x) :base)
-                (equal (type-value-kind y) :base)
-                (equal (type-value-base->type x) (type-value-base->type y)))
-           (equal (equal (type-value-fix x) (type-value-fix y)) t))
-  :use ((:instance type-value-fix-when-base (x x))
-        (:instance type-value-fix-when-base (x y))))
-
-(defruledl equal-of-type-value-fix-when-both-array
-  (implies (and (equal (type-value-kind x) :array)
-                (equal (type-value-kind y) :array)
-                (equal (type-value-array->elem x) (type-value-array->elem y))
-                (equal (type-value-array->dims x) (type-value-array->dims y)))
-           (equal (equal (type-value-fix x) (type-value-fix y)) t))
-  :use ((:instance type-value-fix-when-array (x x))
-        (:instance type-value-fix-when-array (x y))))
-
-(defruledl equal-of-type-value-fix-when-both-fun
-  (implies (and (equal (type-value-kind x) :fun)
-                (equal (type-value-kind y) :fun)
-                (equal (type-value-fun->in x) (type-value-fun->in y))
-                (equal (type-value-fun->out x) (type-value-fun->out y)))
-           (equal (equal (type-value-fix x) (type-value-fix y)) t))
-  :use ((:instance type-value-fix-when-fun (x x))
-        (:instance type-value-fix-when-fun (x y))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; The main theorem, as intended; its proof is deferred (see the xdoc above).
-;
 ; HISTORY: under the earlier, dynamically scoped evaluator (lambda values
 ; captured no environment, and applying a lambda extended the environment
 ; in force at the call site), the theorem was FALSE, and this book recorded
@@ -422,29 +224,135 @@
 ; closure evaluator, and neither applies any longer: in the first, both
 ; evaluations err (the free p is unbound in the captured environment); in
 ; the second, both evaluate to 1 (the p of the closure's creation
-; environment).  So the theorem is now believed true.
+; environment).  With static scoping the theorem holds, and is proved
+; below.
 ;
-; The no-free-variables hypotheses were added when the first counterexample
-; falsified the unhypothesized statement; under static scoping they may
-; well be unnecessary, but they are kept for now, since the statement below
-; is assumed via SKIP-PROOFS and weaker assumptions are safer.  Note that
-; they currently exclude expressions that use primitive operations, since
-; primops occur as (free) variables bound by the initial environment (see
-; INIT-EXPR-DENV); weakening the hypotheses to allow exactly the primop
-; names is future work, together with the proof itself (see the xdoc
-; above), after which the SKIP-PROOFS is to be discharged.
+; The theorems need no hypothesis on the free variables of the expression
+; (which include the primitive operations it uses, bound by the initial
+; environment, see INIT-EXPR-DENV): the failure-direction relation of the
+; initial environment with itself, at the empty renamings, holds at any
+; variable sets.
 
-;; (acl2::skip-proofs
-;;  (defthm eval-top-expr-of-expr-uniquify-names
-;;    (implies (and (exprp expr)
-;;                  (natp limit)
-;;                  (set::emptyp (expr-free-expr-vars expr))
-;;                  (set::emptyp (expr-free-ispace-vars expr))
-;;                  (set::emptyp (expr-free-type-vars expr)))
-;;             (b* ((val (eval-top-expr expr limit))
-;;                  (uval (eval-top-expr (expr-uniquify-names expr) limit)))
-;;               (and (equal (reserrp uval)
-;;                           (reserrp val))
-;;                    (implies (and (not (reserrp val))
-;;                                  (expr-value-groundp val))
-;;                             (equal uval val)))))))
+; The inductive core, at the top level: the main induction (see
+; UNIQUIFY-EVALUATION) instantiated at the initial environments, the
+; bridge's renaming bundle (empty renamings, avoiding all the variable
+; names of the expression), the empty environment witness, and the names
+; of the primitive operations as the support set (the keys of the initial
+; environments).
+
+(defruled support-invariant-p-of-primop-names
+  (support-invariant-p (primop-names)
+                       (set::union (expr-free-var-names expr) (primop-names))
+                       avoid)
+  :enable (support-invariant-p
+           acl2::string-listp-when-string-setp
+           str::string-list-fix-when-string-listp
+           set::mergesort-set
+           subset-of-union-right-1
+           subset-of-union-right-2))
+
+(defruled expr-denv-keys-supported-p-of-init-expr-denv
+  (expr-denv-keys-supported-p
+   (init-expr-denv)
+   (make-var-renamings :dim nil :shape nil :atom nil :array nil :expr nil
+                       :avoid avoid)
+   (primop-names))
+  :enable (expr-denv-keys-supported-p
+           string-set-supported-p
+           init-expr-denv))
+
+(defruled string-expr-value-map-avoided-p-of-same-nil
+  (string-expr-value-map-avoided-p map map nil vars)
+  :enable (string-expr-value-map-avoided-p rename-var-string)
+  :expand ((string-sfix vars)))
+
+(defruled type-var-map-avoided-p-of-same-nil
+  (type-var-map-avoided-p map map nil nil vars)
+  :enable (type-var-map-avoided-p rename-type-var))
+
+(defruled denv-ispace-vars-avoided-p-of-same-nil
+  (denv-ispace-vars-avoided-p denv denv nil nil vars)
+  :enable (denv-ispace-vars-avoided-p rename-ispace-var))
+
+(defruled expr-denv-alpha-avoided-p-of-same-empty-renamings
+  (expr-denv-alpha-avoided-p
+   denv denv
+   (make-var-renamings :dim nil :shape nil :atom nil :array nil :expr nil
+                       :avoid avoid)
+   ivars tvars evars)
+  :enable (expr-denv-alpha-avoided-p
+           type-denv-alpha-avoided-p
+           string-expr-value-map-avoided-p-of-same-nil
+           type-var-map-avoided-p-of-same-nil
+           denv-ispace-vars-avoided-p-of-same-nil))
+
+(defrule eval-top-expr-alpha-equiv-of-expr-uniquify-names
+  :short "The inductive core at the top level:
+          the two evaluations err together and,
+          on success, yield alpha-equivalent values."
+  (implies (and (exprp expr)
+                (natp limit))
+           (b* ((val (eval-top-expr expr limit))
+                (uval (eval-top-expr (expr-uniquify-names expr) limit)))
+             (and (equal (reserrp uval)
+                         (reserrp val))
+                  (implies (not (reserrp val))
+                           (expr-value-alpha-equiv-p uval val)))))
+  :enable (eval-top-expr)
+  ;; The initial environment and the primop names are constants, which
+  ;; the prover evaluates, so the facts about them are supplied as
+  ;; instances rather than as rules (whose left-hand sides would not
+  ;; match the evaluated constants).
+  :use ((:instance eval-expr-ok-necc
+                   (denv (init-expr-denv))
+                   (new-expr (expr-uniquify-names expr))
+                   (new-denv (init-expr-denv))
+                   (r (make-var-renamings :dim nil :shape nil :atom nil
+                                          :array nil :expr nil
+                                          :avoid (expr-all-var-names expr)))
+                   (dw (make-denv-witness :types nil :exprs nil))
+                   (b (primop-names)))
+        (:instance expr-alpha-fresh-p-of-expr-uniquify-names
+                   (b (primop-names)))
+        (:instance support-invariant-p-of-primop-names
+                   (avoid (expr-all-var-names expr)))
+        (:instance expr-denv-keys-supported-p-of-init-expr-denv
+                   (avoid (expr-all-var-names expr)))
+        (:instance expr-denv-alpha-related-via-p-of-init-expr-denv
+                   (avoid (expr-all-var-names expr)))
+        (:instance expr-denv-alpha-avoided-p-of-same-empty-renamings
+                   (denv (init-expr-denv))
+                   (avoid (expr-all-var-names expr))
+                   (ivars (expr-free-ispace-vars expr))
+                   (tvars (expr-free-type-vars expr))
+                   (evars (expr-free-expr-vars expr)))))
+
+; The main theorem: from the core, by the groundness collapse.  The
+; witness of the core's existential is the one the collapse is applied
+; to, and the fixes in the collapse's conclusion vanish because both
+; results are values (neither being an error).
+
+(defrule eval-top-expr-of-expr-uniquify-names
+  :short "Uniquifying binder names preserves evaluation:
+          the two evaluations err together, and on success
+          yield equal values when the original value is ground."
+  (implies (and (exprp expr)
+                (natp limit))
+           (b* ((val (eval-top-expr expr limit))
+                (uval (eval-top-expr (expr-uniquify-names expr) limit)))
+             (and (equal (reserrp uval)
+                         (reserrp val))
+                  (implies (and (not (reserrp val))
+                                (expr-value-groundp val))
+                           (equal uval val)))))
+  :use (eval-top-expr-alpha-equiv-of-expr-uniquify-names
+        (:instance expr-value-alpha-related-via-p-when-groundp
+                   (new-val (eval-top-expr (expr-uniquify-names expr) limit))
+                   (val (eval-top-expr expr limit))
+                   (w (expr-value-alpha-equiv-p-witness
+                       (eval-top-expr (expr-uniquify-names expr) limit)
+                       (eval-top-expr expr limit)))))
+  :enable (expr-value-alpha-equiv-p
+           expr-valuep-when-result-not-error)
+  :disable (eval-top-expr-alpha-equiv-of-expr-uniquify-names
+            expr-value-alpha-related-via-p-when-groundp))

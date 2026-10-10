@@ -57,7 +57,19 @@
   (cond ((endp binds) nil)
         (t (set::union (bind-bound-ispace-vars (car binds))
                        (bind-list-bound-ispace-vars (cdr binds)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule bind-list-bound-ispace-vars-of-append
+    (equal (bind-list-bound-ispace-vars (append a b))
+           (set::union (bind-list-bound-ispace-vars a)
+                       (bind-list-bound-ispace-vars b)))
+    :induct t
+    :enable (bind-list-bound-ispace-vars
+             append
+             set::double-containment
+             set::pick-a-point-subset-strategy)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +102,19 @@
   (cond ((endp binds) nil)
         (t (set::union (bind-bound-type-vars (car binds))
                        (bind-list-bound-type-vars (cdr binds)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule bind-list-bound-type-vars-of-append
+    (equal (bind-list-bound-type-vars (append a b))
+           (set::union (bind-list-bound-type-vars a)
+                       (bind-list-bound-type-vars b)))
+    :induct t
+    :enable (bind-list-bound-type-vars
+             append
+             set::double-containment
+             set::pick-a-point-subset-strategy)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,7 +149,19 @@
   (cond ((endp binds) nil)
         (t (set::union (bind-bound-expr-vars (car binds))
                        (bind-list-bound-expr-vars (cdr binds)))))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defrule bind-list-bound-expr-vars-of-append
+    (equal (bind-list-bound-expr-vars (append a b))
+           (set::union (bind-list-bound-expr-vars a)
+                       (bind-list-bound-expr-vars b)))
+    :induct t
+    :enable (bind-list-bound-expr-vars
+             append
+             set::double-containment
+             set::pick-a-point-subset-strategy)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
