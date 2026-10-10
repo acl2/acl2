@@ -48,11 +48,12 @@
     "Since @('signed char') objects must have one sign bit and no padding bits
      [C17:6.2.6.2/2] [C23:6.2.6.2],
      they must have exactly @($\\mathtt{CHAR\\_BIT} - 1$) value bits.
-     Since the values of the value bits of a signed integer type
-     must be equal to the value bits of the unsigned integer type counterpart
+     Since each value bit of a signed integer type
+     must have the same value as the same bit
+     of the unsigned integer type counterpart
      [C17:6.2.6.2/2] [C23:6.2.6.2],
      the value bits of @('signed char') objects are the low bits of the byte,
-     and the sign is the high bit.")
+     and the sign bit is the high bit.")
    (xdoc::p
     "While the byte/bit format of @('signed char') is thus set,
      the exact values represented by this byte/bit format depend on the "
@@ -65,7 +66,7 @@
      it either is a trap representation or it is not.
      These two choices
      (i.e. the signed format,
-     and whether the specific pattern is a trap representation),
+     and whether the specific pattern is a trap representation)
      completely define the representation of @('signed char').")
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
