@@ -203,6 +203,7 @@
 
 ;; Returns (mv erp assumptions assumption-rules hits state)
 ;; todo: don't return the assumption-rules?
+;; TODO: Use an x86 rewriter instead of the basic rewriter used by simplify-assumptions.
 (defund simplify-assumptions-x86 (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
