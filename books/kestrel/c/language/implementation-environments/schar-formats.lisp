@@ -224,7 +224,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the simplest and most common format for @('signed char').")
+    "This is the simplest and most common format for @('signed char') in C17,
+     and the only one allowed in C23 for any @('CHAR_BIT').")
    (xdoc::p
     "The 8-bit size actually comes from the @(tsee uchar-format-8)
      that is intended to accompany this @(tsee schar-format) format."))
