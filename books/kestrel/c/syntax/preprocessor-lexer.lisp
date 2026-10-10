@@ -122,14 +122,9 @@
      or the next character is something else;
      in the latter case, the character is unread,
      because it could be part of the next lexeme.
-     If successful, the loop returns a list of characters (natural numbers),
+     If successful, the loop returns a list of ACL2 characters,
      which the caller combines with the first character to form a string.
-     This is an ASCII string by construction,
-     so the characters all satisfy @('(unsigned-byte-p 7)'),
-     but we use @('(unsigned-byte-p 8)')
-     in the guard of this function and in the return type of the loop,
-     because @(tsee nats=>string) has that as guard
-     (more precisely, lists of that).")
+     This is an ASCII string by construction.")
    (xdoc::p
     "Although the ABNF grammar rules for C17 and C23 identifiers vary slightly,
      they are equivalent:
@@ -145,19 +140,18 @@
        ((erp rest-chars last-pos ppstate)
         (plex-identifier-loop first-pos ppstate))
        (span (make-span :start first-pos :end last-pos))
-       (chars (cons first-char rest-chars))
-       (string (acl2::nats=>string chars)))
+       (string (str::implode (cons (code-char first-char) rest-chars))))
     (retok (make-plexeme-ident :ident string :provenance nil) span ppstate))
+  :guard-hints (("Goal" :in-theory (enable character-listp)))
 
   :prepwork
 
   ((define plex-identifier-loop ((pos-so-far positionp) (ppstate ppstatep))
      :returns (mv erp
-                  (chars (unsigned-byte-listp 8 chars)
+                  (chars character-listp
                          :hints (("Goal"
                                   :induct t
-                                  :in-theory (enable unsigned-byte-p
-                                                     integer-range-p))))
+                                  :in-theory (enable character-listp))))
                   (last-pos positionp)
                   (new-ppstate ppstatep))
      :parents nil
@@ -178,7 +172,7 @@
              (retok nil (position-fix pos-so-far) ppstate)))
           ((erp chars last-pos ppstate)
            (plex-identifier-loop pos ppstate)))
-       (retok (cons char chars) last-pos ppstate))
+       (retok (cons (code-char char) chars) last-pos ppstate))
      :measure (ppstate->size ppstate)
      :verify-guards nil ; done below
 
@@ -871,7 +865,7 @@
      it is an error if there is none.
      It is also an error if the character is a LF or CR (new line).
      If the character is a single quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -953,7 +947,7 @@
      it is an error if there is none.
      It is also an error if the character is a LF or CR (new line).
      If the character is a double quote, we end the recursion and return.
-     If the character is a backslah,
+     If the character is a backslash,
      we attempt to read an escape sequence,
      then we read zero or more additional characters and escape sequences,
      and we combine them with the escape sequence.
@@ -968,7 +962,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
@@ -976,7 +970,7 @@
         (reterr-msg :where pos
                     :expected "an escape sequence or ~
                                any character other than ~
-                               double quote or backslash"
+                               double quote or backslash or new-line"
                     :found (char-to-msg char)))
        ((erp schar & ppstate)
         (if (utf8-= char (char-code #\\)) ; \
@@ -1117,14 +1111,14 @@
        ((unless char)
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        ((when (utf8-= char (char-code #\"))) ; "
         (retok nil pos ppstate))
        ((when (or (utf8-= char 10) (utf8-= char 13))) ; new line
         (reterr-msg :where pos
                     :expected "any character other than ~
-                               greater-than or new-line"
+                               double quote or new-line"
                     :found (char-to-msg char)))
        (qchar (q-char char))
        ((erp qchars closing-dquote-pos ppstate) (plex-*-q-char ppstate)))
@@ -1257,7 +1251,7 @@
     "This is called when we expect a header name.
      We read the next character, which must be present.
      Then we read the two kinds of header names,
-     based on whether the next character is greater-than or double quote.
+     based on whether the next character is less-than or double quote.
      If it is neither, lexing fails."))
   (b* ((ppstate (ppstate-fix ppstate))
        ((reterr) (irr-plexeme) (irr-span) ppstate)
@@ -1265,7 +1259,7 @@
     (cond
      ((not char)
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))
      ((utf8-= char (char-code #\<)) ; <
@@ -1286,7 +1280,7 @@
         (retok (plexeme-header (header-name-quotes qchars)) span ppstate)))
      (t ; other
       (reterr-msg :where first-pos
-                  :expected "a greater-than ~
+                  :expected "a less-than ~
                              or a double quote"
                   :found (char-to-msg char)))))
   :no-function nil

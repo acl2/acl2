@@ -8,7 +8,7 @@
 
 (in-package "ZF")
 
-(include-book "projects/hol-in-acl2/acl2/portcullis" :dir :system)
+(include-book "portcullis")
 
 (defconst *hol-name-mapping*
 

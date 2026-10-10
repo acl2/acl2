@@ -12882,7 +12882,8 @@
            (NOT (SBVLT 32 (BVPLUS 32 4294967295 x) -1)))
   :hints (("Goal" :in-theory (e/d (sbvlt bvminus) (;BVPLUS-OF-MINUS-1
                                                    )))))
-(defthm bvlt-of-plus-hack9
+; i've see this loop
+(defthmd bvlt-of-plus-hack9
   (implies (and (syntaxp (quotep x)) ; prevent overly agressive matches
                 (bvlt 31 x y)
                 (integerp x)

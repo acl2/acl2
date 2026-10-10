@@ -453,11 +453,12 @@
    (xdoc::h4 "HOL4 to ACL2 Translator")
 
    (xdoc::p
-    "Some clean-up was made to directory @('[books]/projects/hol-in-acl2/') in
-     support of translation from HOL4 to ACL2(zfc) (see @(see zfc)).  A new
-     file, @('soundness/hol-in-acl2-supplement.pdf'), presents a soundness
-     argument; see file @('README.txt') in that @('soundness') subdirectory for
-     context.")
+    "Two subdirectories @('v1/') and @('v2/') were created, where @('v1/')
+     holds the existing work with some minor clean-up, and @('v2/') holds a new
+     version that, in particular, includes support for user-defined datatypes.
+     A new file, @('soundness/hol-in-acl2-supplement.pdf'), presents a
+     soundness argument; see file @('README.txt') in that @('soundness')
+     subdirectory for context.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -562,10 +563,11 @@
      theorems (not merely functions), to disable some rules for functions that
      it was mistakenly failing to disable, to avoid dropping suitable
      macro-aliases (see @(see macro-aliases-table)), to use bodies of @(tsee
-     defconst) forms (which can avoid slow array accesses), and to pull in
+     defconst) forms (which can avoid slow array accesses), to pull in
      well-founded relations (and their corresponding @(see
-     well-founded-relation) rules) for definitions.  Eliminated support for
-     unused utility ('with-supporters-after').")
+     well-founded-relation) rules) for definitions, and to do a more thorough
+     job of pulling in @(tsee table) events.  Eliminated support for unused
+     utility ('with-supporters-after').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
