@@ -504,7 +504,7 @@
           function-name-string))
 
        ;; WARNING: Keep this in sync with test-file-fn1:
-       (64-bitp (member-eq executable-type *executable-types64*))
+       (64-bitp (bool-fix (member-eq executable-type *executable-types64*)))
        (extra-rules (append extra-rules
                             extra-lift-rules
                             (extra-tester-lifting-rules)))
@@ -512,7 +512,7 @@
                              remove-lift-rules))
        (stop-pcs nil)
        ((mv erp unroller-rule-alist pruning-rule-alist state)
-        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state)) ; todo: don't do this each time!
+        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state))
        ((when erp) (mv erp nil state))
        (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
                                        (append remove-rules
@@ -524,7 +524,7 @@
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
        ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
-       ((when erp) (mv :error-making-rule-list t state))
+       ((when erp) (mv :error-making-rule-list nil state))
 
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
@@ -823,7 +823,7 @@
 
 
        ;; WARNING: Keep this in sync with test-function-fn:
-       (64-bitp (member-eq executable-type *executable-types64*))
+       (64-bitp (bool-fix (member-eq executable-type *executable-types64*)))
        (extra-rules (append extra-rules
                             extra-lift-rules
                             (extra-tester-lifting-rules)))
@@ -831,7 +831,7 @@
                              remove-lift-rules))
        (stop-pcs nil)
        ((mv erp unroller-rule-alist pruning-rule-alist state)
-        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state)) ; todo: don't do this each time!
+        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state))
        ((when erp) (mv erp nil state))
        (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
                                        (append remove-rules
@@ -843,7 +843,7 @@
                                                  ;;acl2::boolif-when-quotep-arg3
                                                  ))))
        ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
-       ((when erp) (mv :error-making-rule-list t state))
+       ((when erp) (mv :error-making-rule-list nil state))
 
        ;; Test the functions:
        ((mv erp result-alist state)

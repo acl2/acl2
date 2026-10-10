@@ -685,7 +685,7 @@
        (lifter-rules (set-difference-eq lifter-rules remove-rules))
        ;; Make the rule-alist for lifting:
        ((mv erp unroller-rule-alist)
-        (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
+        (make-rule-alist lifter-rules (w state)))
        ((when erp) (mv erp nil nil state))
        ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
        (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
@@ -1025,7 +1025,7 @@
        ;; Lift the function to obtain the DAG:
        ;; Get and check the executable-type:
        (executable-type (parsed-executable-type parsed-executable)) ; todo: duplicated in the -core function
-       (64-bitp (member-equal executable-type *executable-types64*))
+       (64-bitp (bool-fix (member-equal executable-type *executable-types64*)))
 
        ((mv erp unroller-rule-alist pruning-rule-alist state)
         (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state))

@@ -148,20 +148,6 @@
            (equal 'quote (nth 0 expr)))
   :rule-classes :forward-chaining)
 
-(local
-  (defthm natp-of-+-of--
-    (implies (and (integerp x)
-                  (integerp y))
-             (equal (natp (+ x (- y)))
-                    (<= y x)))))
-
-(local
-  (defthm natp-of-+-of---arg1
-    (implies (and (integerp x)
-                  (integerp y))
-             (equal (natp (+ (- x) y))
-                    (<= x y)))))
-
 ;move
 (in-theory (disable (:e nat-to-string))) ;to avoid errors being printed in proofs -- huh?
 
