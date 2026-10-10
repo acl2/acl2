@@ -17,6 +17,7 @@
 (include-book "no-duplicate-lambda-formals-in-termp")
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "termp-simple")) ; nicer definition of termp
 (local (include-book "arglistp1"))
 
@@ -66,10 +67,19 @@
                             (free-vars-in-terms terms)))
     :flag simplify-ors-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :expand ((free-vars-in-term term))
+           :expand (;(free-vars-in-term term)
+                    ;(free-vars-in-terms (cdr term))
+                    ;(free-vars-in-terms (cddr term))
+                    ;(free-vars-in-terms (cdddr term))
+                    (simplify-ors term iffp)
+                    (len (cdddr term))
+                    (len (cddr term))
+                    (len (cdr term)))
            :in-theory (enable simplify-ors
                               simplify-ors-lst
-                              free-vars-in-terms-when-symbol-listp))))
+                              free-vars-in-term
+                              free-vars-in-terms-when-symbol-listp
+                              len))))
 
 (defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors-gen
   (implies (and (subsetp-equal (free-vars-in-term term) x)
@@ -151,7 +161,7 @@
        (case fn
          (quote term)
          ;; (if test then else):
-         (if (if (not (consp (cddr (fargs term)))) ; for guard proof
+         (if (if (not (= 3 (len (fargs term)))) ; for guard proof
                  (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                          term)
                (let* ((test (fargn term 1))
@@ -167,7 +177,7 @@
                    ;; todo: cons-with-hint:
                    `(if ,test ,then ,else)))))
          ;; (not arg):
-         (not (if (not (consp (fargs term))) ; for guard proof
+         (not (if (not (= 1 (len (fargs term)))) ; for guard proof
                   (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                           term)
                 (let* ((arg (fargn term 1))
