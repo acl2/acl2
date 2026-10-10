@@ -294,3 +294,18 @@
   :rule-classes :linear
   :hints (("Goal" :cases ((equal i 0))
            :in-theory (enable acl2::truncate-becomes-floor-gen4-better-better floor-when-mod-0))))
+
+;move up?
+(defthmd truncate-when-rationalp-and-complex-rationalp
+  (implies (and (rationalp i)
+                (complex-rationalp j))
+           (equal (truncate i j)
+                  0))
+  :hints (("Goal" :in-theory (enable truncate))))
+
+;; Disabled since it turns truncate into division
+(defthmd truncate-when-integerp-of-quotient
+  (implies (integerp (* x (/ y)))
+           (equal (truncate x y)
+                  (* x (/ y))))
+  :hints (("Goal" :in-theory (enable truncate))))
