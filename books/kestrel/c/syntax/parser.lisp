@@ -897,7 +897,7 @@
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-keywordp token? "_Alignas")
-      (token-keywordp token? "__attribut")
+      (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__"))
   ///
 
