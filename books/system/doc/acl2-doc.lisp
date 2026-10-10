@@ -110203,10 +110203,11 @@ it."
  respect to their @(tsee type) @(see declaration)s.  See
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
- <p>Fixed two soundness bugs in @(see non-linear-arithmetic), both in function
- @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp') and
- @('system/tests/nonlinear-relation-variable.lisp').  Thanks to Eric Smith for
- supplying the fix for the first of these bugs..</p>
+ <p>Fixed three soundness bugs in @(see non-linear-arithmetic), both in
+ function @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp'),
+ @('system/tests/nonlinear-relation-variable.lisp'), and
+ @('system/tests/invert-var-varify.lisp').  Thanks to Eric Smith for supplying
+ the fix for the first of these bugs.</p>
 
  <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
  field returned internal stand-in symbols instead of the real stobj names.  For
