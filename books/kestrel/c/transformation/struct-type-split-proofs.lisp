@@ -15,6 +15,9 @@
 (include-book "variables-in-computation-states")
 (include-book "proof-generation")
 
+(include-book "../atc/symbolic-execution-rules/flexible-array-member")
+(include-book "../representation/shallow-deep-relation")
+
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
 (include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
@@ -2468,30 +2471,97 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is still work in progress."))
+    "This is similar to @(tsee xeq-fundef),
+     but for STS proof generation.")
+   (xdoc::p
+    "For now we require the two function definitions
+     to be identical except for possibly the body,
+     and also that both functions satisfy certain conditions
+     (currently stringent, but we plan to relax them).
+     If this and other checks fail,
+     it is not an error,
+     but we just do not generate a theorem for the function."))
   (b* (((reterr) (irr-gout))
-       (old-declor (fundef->declor old-fundef))
-       (new-declor (fundef->declor new-fundef))
-       (old-dirdeclor (declor->direct old-declor))
-       (new-dirdeclor (declor->direct new-declor))
-       ((unless (or
-                 (and (dirdeclor-case old-dirdeclor :function-params)
-                      (dirdeclor-case new-dirdeclor :function-params))
-                 (and (dirdeclor-case old-dirdeclor :function-names)
-                      (dirdeclor-case new-dirdeclor :function-names)
-                      (endp (dirdeclor-function-names->names old-dirdeclor))
-                      (endp (dirdeclor-function-names->names new-dirdeclor)))))
-        (retmsg$ "Unsupported proof generation for ~
-                  functions whose declarator does not have ~
-                  function parameters or empty function names."))
-       (old-params (if (dirdeclor-case old-dirdeclor :function-params)
-                       (dirdeclor-function-params->params old-dirdeclor)
-                     nil))
-       (new-params (if (dirdeclor-case new-dirdeclor :function-params)
-                       (dirdeclor-function-params->params new-dirdeclor)
-                     nil))
-       ((erp vartys) (stsp-param-declon-list old-params new-params))
-       (gin (change-gin gin :vartys vartys))
+       ((gin gin))
+       (gout-no-thm (gout-no-thm gin))
+       ((fundef old-fundef))
+       ((fundef new-fundef))
+       ((unless (and (fundef-formalp old-fundef)
+                     (fundef-formalp new-fundef)))
+        (retok gout-no-thm))
+       ((mv & old-tyspecs) ; ERP is NIL because FORMALP above
+        (check-decl-spec-list-all-typespec old-fundef.specs))
+       ((mv & new-tyspecs) ; ERP is NIL because FORMALP above
+        (check-decl-spec-list-all-typespec new-fundef.specs))
+       ((mv & old-tyspecseq) ; ERP is NIL because FORMALP above
+        (ldm-type-spec-list old-tyspecs))
+       ((mv & new-tyspecseq) ; ERP is NIL because FORMALP above
+        (ldm-type-spec-list new-tyspecs))
+       ((unless (equal old-tyspecseq new-tyspecseq))
+        (retmsg$ "The function definitions ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (fundef-fix old-fundef) (fundef-fix new-fundef)))
+       ((mv & old-declor) ; ERP is NIL because FORMALP above
+        (c$::ldm-declor-fun old-fundef.declor t))
+       ((mv & new-declor) ; ERP is NIL because FORMALP above
+        (c$::ldm-declor-fun new-fundef.declor t))
+       ((unless (equal old-declor new-declor))
+        (retmsg$ "The function definitions ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (fundef-fix old-fundef) (fundef-fix new-fundef)))
+       ((declor declor) old-fundef.declor)
+       ((when (consp declor.pointers)) (retok gout-no-thm))
+       ((mv okp params dirdeclor)
+        (dirdeclor-case
+         declor.direct
+         :function-params (mv t declor.direct.params declor.direct.declor)
+         :function-names (mv (endp declor.direct.names)
+                             nil
+                             declor.direct.declor)
+         :otherwise (mv nil nil (irr-dirdeclor))))
+       ((unless okp) (retok gout-no-thm))
+       ((unless (dirdeclor-case dirdeclor :ident))
+        (raise "Internal error: ~x0 is not just the function name."
+               dirdeclor)
+        (retmsg$ ""))
+       (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
+       ((unless (stringp fun))
+        (raise "Internal error: non-string identifier ~x0." fun)
+        (retmsg$ ""))
+       (params (if (c$::param-declon-list-voidp params) nil params))
+       ((mv & ldm-params) ; ERP is NIL because FORMALP above
+        (ldm-param-declon-list params))
+       ((mv okp args parargs arg-types arg-types-compst param-vartys)
+        (gen-from-params ldm-params 'old-compst (gin-fix gin)))
+       ((unless okp) (retok gout-no-thm))
+       ((mv init-scope-thm-event init-scope-thm-name thm-index)
+        (gen-init-scope-thm ldm-params
+                            args
+                            parargs
+                            arg-types
+                            gin.const-new
+                            gin.thm-index))
+       (events (cons init-scope-thm-event gin.events))
+       ((mv param-thm-events
+            & ; param-thm-names
+            thm-index)
+        (gen-param-thms arg-types-compst
+                        arg-types
+                        ldm-params
+                        args
+                        init-scope-thm-name
+                        gin.const-new
+                        thm-index
+                        'old-compst))
+       (events (append (rev param-thm-events) events))
+       (gin (change-gin gin
+                        :vartys param-vartys
+                        :events events
+                        :thm-index thm-index))
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
@@ -2500,17 +2570,19 @@
                      (endp (cdr old-items))
                      (consp new-items)
                      (endp (cdr new-items))))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies with multiple block items."))
+        (retok gout-no-thm))
        (old-item (car old-items))
        (new-item (car new-items))
        ((unless (and (block-item-case old-item :stmt)
                      (block-item-case new-item :stmt)))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies whose block item is not a statement."))
+        (retok gout-no-thm))
        (old-stmt (block-item-stmt->stmt old-item))
-       (new-stmt (block-item-stmt->stmt new-item)))
-    (stsp-stmt old-stmt new-stmt old-name newl-name newr-name gin)))
+       (new-stmt (block-item-stmt->stmt new-item))
+       ((erp gout)
+        (stsp-stmt old-stmt new-stmt old-name newl-name newr-name gin)))
+    (retok gout))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
