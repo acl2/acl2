@@ -14,6 +14,7 @@
 
 ;; Include here any books that contain theorems cited below:
 (include-book "arithmetic/binomial" :dir :system)
+(include-book "kestrel/number-theory/bertrand/bertrand" :dir :system)
 (include-book "nonstd/nsa/sqrt-2" :dir :system)
 (include-book "projects/groups/abelian" :dir :system)
 (include-book "projects/groups/quotients" :dir :system)
@@ -657,7 +658,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-     ;; "<h3 id=\"98\">98. Bertrand's Postulate</h3>"
+     "<h3 id=\"98\">98. Bertrand's Postulate</h3>"
+
+     "@(def bertrand-postulate)"
+
+     "<p>where:</p>"
+
+     "@({
+(defun-sk exists-prime-between-n-and-2n (n)
+  (exists (p)
+    (and (dm::primep p)
+         (< n p)
+         (<= p (* 2 n)))))
+     })"
+
+     "<p>By Eric Smith and Claude, in <a href=\"https://github.com/acl2/acl2/blob/master/books/kestrel/number-theory/bertrand/bertrand.lisp\">books/kestrel/number-theory/bertrand/bertrand.lisp</a>.</p>"
+
+     "<p>The same book also proves a variant with a strict upper bound, as stated in some other systems (it requires n &gt;= 2, since no integer lies strictly between 1 and 2):</p>"
+
+     "@(def bertrand-postulate-strict)"
+
+     "<p>where:</p>"
+
+     "@({
+(defun-sk exists-prime-strictly-between-n-and-2n (n)
+  (exists (p)
+    (and (dm::primep p)
+         (< n p)
+         (< p (* 2 n)))))
+     })"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
      ;; "<h3 id=\"99\">99. Buffon Needle Problem</h3>"
      ;; "<h3 id=\"100\">100. Descartes Rule of Signs</h3>"
      ))
