@@ -65,6 +65,8 @@
 (include-book "substitute-lambda-formals")
 (include-book "classify-lambda-formals")
 (include-book "count-vars")
+(include-book "make-not-with-hint")
+(include-book "make-if-with-hint")
 (include-book "make-lambda-with-hint")
 (include-book "make-lambda-nest")
 (include-book "make-lambda-nest-proofs")
