@@ -97,6 +97,7 @@
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
 (local (include-book "kestrel/utilities/set-print-base-radix" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)) ; needed for the Assumptions added: printing
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
@@ -208,17 +209,25 @@
                               (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (count-hits-argp count-hits))
-                  :stobjs state))
+                  :stobjs state
+                  :guard-hints (("Goal" :in-theory (enable acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* (;; todo: optimize:
        (assumption-rules (if 64-bitp (assumption-simplification-rules64) (assumption-simplification-rules32)))
        ;; Add the extra-assumption-rules:
        (assumption-rules (append extra-assumption-rules assumption-rules))
        ;; Remove the remove-assumption-rules:
        (assumption-rules (set-difference-eq-fast assumption-rules remove-assumption-rules))
-       ((mv erp assumptions hits state)
+       ;; Simplify the assumptions:
+       ((mv erp new-assumptions hits state)
         (acl2::simplify-assumptions assumptions assumption-rules count-hits *no-warn-ground-functions* state))
+       ;; (- (let ((assumptions-added (set-difference-equal new-assumptions assumptions))
+       ;;          (assumptions-removed (set-difference-equal assumptions new-assumptions)))
+       ;;      (if (or assumptions-added assumptions-removed)
+       ;;          (prog2$ (cw "Assumptions added: ~x0.~%" (or assumptions-added :none))
+       ;;                  (cw "Assumptions removed: ~x0.~%" (or assumptions-removed :none)))
+       ;;        (cw "No change.~%"))))
        ((when erp) (mv erp nil nil hits state)))
-    (mv nil assumptions assumption-rules hits state)))
+    (mv nil new-assumptions assumption-rules hits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
