@@ -302,7 +302,19 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
-       ((mv erp result-dag-or-quotep & & & & & state)
+
+       (64-bitp (not 32-bitp)) ; todo
+       (extra-rules (append extra-rules
+                            extra-lift-rules
+                            (extra-tester-lifting-rules)))
+       (remove-rules (append remove-rules
+                             remove-lift-rules))
+       (stop-pcs nil)
+       ((mv erp unroller-rule-alist pruning-rule-alist state)
+        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state)) ; todo: don't do this each time!
+       ((when erp) (mv erp nil nil state))
+
+       ((mv erp result-dag-or-quotep & & & & state)
         (unroll-x86-code-core
           target
           parsed-executable
@@ -320,13 +332,7 @@
           ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
-          ;; extra-rules:
-          (append extra-rules
-                  extra-lift-rules
-                  (extra-tester-lifting-rules))
-          ;; remove-rules:
-          (append remove-rules
-                  remove-lift-rules)
+          unroller-rule-alist pruning-rule-alist
           ;; extra-assumption-rules:
           (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
@@ -352,7 +358,7 @@
           remove-assumption-rules ; todo: also use the remove-rules?
           step-limit
           step-increment
-          nil ; stop-pcs
+          stop-pcs
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
           normalize-xors

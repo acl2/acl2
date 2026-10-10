@@ -657,7 +657,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state).
+;; Returns (mv erp unroller-rule-alist pruning-rule-alist state).
+(defun unroller-rule-alists (64-bitp stop-pcs extra-rules remove-rules state)
+  (declare (xargs :guard (and (booleanp 64-bitp)
+                              (nat-listp stop-pcs)
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules))
+                  :stobjs state))
+  (b* ((lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32))) ; rename
+       (symbolic-execution-rules (if stop-pcs
+                                     (if 64-bitp
+                                         (symbolic-execution-rules-with-stop-pcs64)
+                                       (symbolic-execution-rules-with-stop-pcs32))
+                                   (if 64-bitp
+                                       (symbolic-execution-rules64)
+                                     (symbolic-execution-rules32))))
+       (lifter-rules (append symbolic-execution-rules lifter-rules))
+       ;; Add any extra-rules:
+       (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
+            (and intersection
+                 (cw "Warning: The extra-rules include these rules that are already present: ~X01.~%" intersection nil))))
+       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?  sort by symbol first and merge (may break things)?
+       ;; Remove any remove-rules:
+       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
+            (and non-existent-remove-rules
+                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
+       (lifter-rules (set-difference-eq lifter-rules remove-rules))
+       ;; Make the rule-alist for lifting:
+       ((mv erp unroller-rule-alist)
+        (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
+       ((when erp) (mv erp nil nil state))
+       ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
+       (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
+       ((mv erp pruning-rule-alist)
+        (make-rule-alist pruning-rules (w state)))
+       ((when erp) (mv erp nil nil state))
+       )
+    (mv (erp-nil) unroller-rule-alist pruning-rule-alist state)))
+
+;; Returns (mv erp result-dag-or-quotep assumptions input-assumption-vars assumption-rules-used term-to-simulate state).
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
                              parsed-executable
@@ -674,8 +712,7 @@
                              output-indicator
                              prune-precise
                              prune-approx
-                             extra-rules
-                             remove-rules
+                             unroller-rule-alist pruning-rule-alist
                              extra-assumption-rules ; todo: why "extra"?
                              remove-assumption-rules
                              step-limit
@@ -710,8 +747,8 @@
                               (or (eq nil prune-approx)
                                   (eq t prune-approx)
                                   (natp prune-approx))
-                              (symbol-listp extra-rules)
-                              (symbol-listp remove-rules)
+                              (rule-alistp unroller-rule-alist)
+                              (rule-alistp pruning-rule-alist)
                               (symbol-listp extra-assumption-rules)
                               (symbol-listp remove-assumption-rules)
                               (natp step-limit)
@@ -744,7 +781,7 @@
        ((when (and (not position-independentp) ; todo: think about this:
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
-        (mv :bad-options nil nil nil nil nil nil state))
+        (mv :bad-options nil nil nil nil nil state))
        (- (if position-independentp (cw " Using position-independent lifting.~%") (cw " Using non-position-independent lifting.~%")))
        ;; (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
        ;;                                  ;; todo: remove this, but we have some unlinked ELFs without sections.  we also have some unlinked ELFs that put both the text and data segments at address 0 !
@@ -791,7 +828,7 @@
                          state))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
-        (mv erp nil nil nil nil nil nil state))
+        (mv erp nil nil nil nil nil state))
        (- (and print (progn$ (cw "(Assumptions for lifting (~x0):~%" (len assumptions))
                              (let ((assumptions (untranslate$-list assumptions nil state))) ; for readable output
                                (if (print-level-at-least-tp print)
@@ -801,7 +838,7 @@
                              (cw ")~%"))))
        ((when (not (term-listp assumptions (w state))))
         (er hard? 'unroll-x86-code-core "Bad assumptions: ~X01." assumptions nil)
-        (mv :bad-assumptions nil nil nil nil nil nil state))
+        (mv :bad-assumptions nil nil nil nil nil state))
        ;; Prepare for symbolic execution:
        (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
        (term-to-simulate (if stop-pcs
@@ -822,51 +859,22 @@
        (term-to-simulate (wrap-in-output-extractor term-to-simulate output-indicator 64-bitp state)) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-x86-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
-        (mv :error-wrapping-in-output-extractor nil nil nil nil nil nil state))
+        (mv :error-wrapping-in-output-extractor nil nil nil nil nil state))
        (- (cw "(Limiting the total steps to ~x0.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-simulate nil))
-       ((when erp) (mv erp nil nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil state))
        ((when (quotep dag-to-simulate))
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
-        (mv :unexpected-quotep nil nil nil nil nil nil state))
-       ;; Choose the lifter rules to use:
-       (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
-       (symbolic-execution-rules (if stop-pcs
-                                     (if 64-bitp
-                                         (symbolic-execution-rules-with-stop-pcs64)
-                                       (symbolic-execution-rules-with-stop-pcs32))
-                                   (if 64-bitp
-                                       (symbolic-execution-rules64)
-                                     (symbolic-execution-rules32))))
-       (lifter-rules (append symbolic-execution-rules lifter-rules))
-       ;; Add any extra-rules:
-       (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
-            (and intersection
-                 (cw "Warning: The extra-rules include these rules that are already present: ~X01.~%" intersection nil))))
-       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?  sort by symbol first and merge (may break things)?
-       ;; Remove any remove-rules:
-       (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
-            (and non-existent-remove-rules
-                 (cw "WARNING: The following rules in :remove-rules were not present: ~X01.~%" non-existent-remove-rules nil))))
-       (lifter-rules (set-difference-eq lifter-rules remove-rules))
-       ;; Make the rule-alist for lifting:
-       ((mv erp lifter-rule-alist)
-        (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
-       ((when erp) (mv erp nil nil nil nil nil nil state))
-       ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
-       (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
-       ((mv erp pruning-rule-alist)
-        (make-rule-alist pruning-rules (w state)))
-       ((when erp) (mv erp nil nil nil nil nil nil state))
+        (mv :unexpected-quotep nil nil nil nil nil state))
        ;; Decide which rules to monitor:
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        (- (and rules-to-monitor (cw "(Monitoring: ~x0)~%" rules-to-monitor)))
-       (- (acl2::print-missing-rules rules-to-monitor lifter-rule-alist))
+       (- (acl2::print-missing-rules rules-to-monitor unroller-rule-alist))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep hits2 state)
-        (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
+        (repeatedly-run 0 step-limit step-increment dag-to-simulate unroller-rule-alist pruning-rule-alist assumptions
                         ;; same rule regardless of :stop-pcs:
                         (if 64-bitp
                             (first (step-opener-rules64))
@@ -878,7 +886,7 @@
                         *incomplete-run-fns*
                         *error-fns*
                         untranslate memoizep state))
-       ((when erp) (mv erp nil nil nil nil nil nil state))
+       ((when erp) (mv erp nil nil nil nil nil state))
        (hits (combine-hits hits hits2))
        (state (unwiden-margins state))
        ((mv elapsed state) (real-time-since start-real-time state))
@@ -893,7 +901,7 @@
                     (print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars lifter-rules assumption-rules term-to-simulate state)))
+    (mv (erp-nil) result-dag-or-quotep assumptions input-assumption-vars assumption-rules term-to-simulate state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1015,10 +1023,18 @@
        ;; Translate assumptions. We do this here, outside unroll-x86-code-core, so that function can be in :logic mode:
        (extra-assumptions (translate-terms extra-assumptions 'def-unrolled-fn (w state)))
        ;; Lift the function to obtain the DAG:
-       ((mv erp result-dag-or-quotep assumptions assumption-vars lifter-rules-used assumption-rules-used term-to-simulate state)
+       ;; Get and check the executable-type:
+       (executable-type (parsed-executable-type parsed-executable)) ; todo: duplicated in the -core function
+       (64-bitp (member-equal executable-type *executable-types64*))
+
+       ((mv erp unroller-rule-alist pruning-rule-alist state)
+        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state))
+       ((when erp) (mv erp nil state))
+
+       ((mv erp result-dag-or-quotep assumptions assumption-vars assumption-rules-used term-to-simulate state)
         (unroll-x86-code-core target parsed-executable
                               extra-assumptions suppress-assumptions inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
-                              inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx extra-rules remove-rules extra-assumption-rules remove-assumption-rules
+                              inputs type-assumptions-for-array-varsp output-indicator prune-precise prune-approx unroller-rule-alist pruning-rule-alist extra-assumption-rules remove-assumption-rules
                               step-limit step-increment stop-pcs memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslate state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
@@ -1134,7 +1150,7 @@
                                 :hints ,(if restrict-theory
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                                    )))
-                                          `(("Goal" :in-theory (enable ,@lifter-rules-used
+                                          `(("Goal" :in-theory (enable ,@(acl2::rules-from-rule-alist unroller-rule-alist)
                                                                        ,@assumption-rules-used))))))
                      (defthm (if prove-theorem
                                  defthm
