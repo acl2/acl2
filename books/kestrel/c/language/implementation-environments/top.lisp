@@ -37,10 +37,12 @@
   (xdoc::topstring
    (xdoc::p
     "Some aspects of the syntax and semantics of C are implementation-dependent.
-     [C17:5] introduces the notion of translation and execution environments,
+     [C17:5] [C23:5] introduce
+     the notions of translation and execution environments,
      which specify those aspects.
      In our formalization, we introduce a notion of implementation environment,
-     which puts together the translation and execution environments in [C17].
+     which puts together
+     the translation and execution environments in [C17] [C23].
      That is, an implementation environment
      specifies the implementation-dependent aspects of C.
      We prefer to formalize one (implementation) environment,
@@ -173,7 +175,8 @@
 
 (define ienv->char-size ((ienv ienvp))
   :returns (size posp)
-  :short "The ACL2 integer value of @('CHAR_BIT') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_BIT')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -196,7 +199,8 @@
 
 (define ienv->uchar-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('UCHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -218,7 +222,8 @@
 
 (define ienv->schar-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -240,7 +245,8 @@
 
 (define ienv->schar-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('SCHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -284,7 +290,8 @@
 
 (define ienv->char-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('CHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -306,7 +313,8 @@
 
 (define ienv->char-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -546,7 +554,8 @@
 
 (define ienv->ushort-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('USHRT_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('USHRT_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->unsigned-max (ienv->short ienv))
 
   ///
@@ -574,7 +583,8 @@
 
 (define ienv->sshort-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('SHRT_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('SHRT_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-max (ienv->short ienv))
 
   ///
@@ -618,7 +628,8 @@
 
 (define ienv->sshort-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('SHRT_MIN') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('SHRT_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-min (ienv->short ienv))
 
   ///
@@ -666,7 +677,8 @@
 
 (define ienv->uint-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('UINT_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('UINT_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->unsigned-max (ienv->int ienv))
 
   ///
@@ -694,7 +706,8 @@
 
 (define ienv->sint-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('INT_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('INT_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-max (ienv->int ienv))
 
   ///
@@ -738,7 +751,8 @@
 
 (define ienv->sint-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('INT_MIN') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('INT_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-min (ienv->int ienv))
 
   ///
@@ -786,7 +800,8 @@
 
 (define ienv->ulong-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('ULONG_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('ULONG_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->unsigned-max (ienv->long ienv))
 
   ///
@@ -814,7 +829,8 @@
 
 (define ienv->slong-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('LONG_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('LONG_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-max (ienv->long ienv))
 
   ///
@@ -858,7 +874,8 @@
 
 (define ienv->slong-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('LONG_MIN') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('LONG_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-min (ienv->long ienv))
 
   ///
@@ -906,7 +923,8 @@
 
 (define ienv->ullong-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('ULLONG_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('ULLONG_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->unsigned-max (ienv->llong ienv))
 
   ///
@@ -934,7 +952,8 @@
 
 (define ienv->sllong-max ((ienv ienvp))
   :returns (max posp)
-  :short "The ACL2 integer value of @('LLONG_MAX') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('LLONG_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-max (ienv->llong ienv))
 
   ///
@@ -978,7 +997,8 @@
 
 (define ienv->sllong-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('LLONG_MIN') [C17:5.2.4.2.1]."
+  :short "The ACL2 integer value of @('LLONG_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   (integer-format->signed-min (ienv->llong ienv))
 
   ///
