@@ -127,9 +127,7 @@
 (defthm <-of-numerator-and-denominator-same
   (implies (rationalp x)
            (equal (< (numerator x) (denominator x))
-                  (if (<= x 0)
-                      t
-                    (< x 1))))
+                  (< x 1)))
   :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
 
@@ -140,7 +138,6 @@
 (defthm <-of---of-numerator-and-denominator-same
   (implies (rationalp x)
            (equal (< (- (numerator x)) (denominator x))
-                  (or (<= 0 x)
-                      (< -1 x))))
+                  (< -1 x)))
   :hints (("Goal" :use (:instance <-of-numerator-and-denominator-same (x (- x)))
            :in-theory (disable <-of-numerator-and-denominator-same))))
