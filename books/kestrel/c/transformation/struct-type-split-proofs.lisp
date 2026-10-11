@@ -1302,6 +1302,32 @@
                          c::exec-stmt-of-stmt-fix-s
                          c::errorp-of-error
                          mv-nth
+                         (:e equal)))
+          (defruled block-item-list-empty-congruence-under-compustate-equivp
+            (b* ((old nil)
+                 (new nil)
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item-list old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item-list new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (compustate-equivp old-compst new-compst))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::insert nil nil)))))
+            :in-theory '(c::exec-block-item-list
+                         c::errorp-of-error
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         (:e consp)
+                         (:e c::errorp)
+                         (:e c::stmt-value-none)
+                         (:e c::type-option-of-stmt-value)
+                         (:e set::in)
+                         (:e set::insert)
+                         mv-nth
                          (:e equal))))))
     (retok events)))
 
