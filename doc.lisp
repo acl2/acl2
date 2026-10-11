@@ -13005,6 +13005,95 @@ Subtopics
       (or (eql x 0) (eql x 1)))")
  (BODY (POINTERS)
        "See [system-utilities].")
+ (BOGUS-MEASURE
+  (TERMINATION-THEOREM MEASURE ENCAPSULATE)
+  "Illegal termination theorems inside [30m[47m[encapsulate][0m[0m events
+
+  This topic pertains to error messages such as the following.
+
+    ACL2 Error in ( ENCAPSULATE (((G * ...) ...) ...) ...):  For the following
+    function introduced by this encapsulate event, the :termination-theorem
+    may depend on local properties that are not exported from the encapsulate
+    event: F.  See :DOC bogus-exported-measures for a workaround.
+
+  Here is an event, discussed below, that leads to that error message.
+
+    (encapsulate (((g *) => *))
+      (local (defun g (x) (acl2-count x)))
+      (defun f (x)
+        (declare (xargs :measure (g x)))
+        (if (consp x) (f (cdr x)) x)))
+
+  A workaround is to use a special measure: the application of symbol
+  [30m[47m:?[0m[0m to a distinct list of the variables in the original measure.
+  The original offending definition [30m[47mD[0m[0m is replaced by [30m[47m(local D)[0m[0m, and
+  is followed by the result of replacing the measure of [30m[47mD[0m[0m with the
+  above special measure.  If we apply that workaround to the
+  [30m[47mencapsulate[0m[0m event above, we get the following event, which is
+  admitted by ACL2.
+
+    (encapsulate (((g *) => *))
+      (local (defun g (x) (acl2-count x)))
+      (local (defun f (x)
+               (declare (xargs :measure (g x)))
+               (if (consp x) (f (cdr x)) x)))
+      (defun f (x)
+        (declare (xargs :measure (:? x)))
+        (if (consp x) (f (cdr x)) x)))
+
+  We conclude this topic by explaining, for anyone interested, why ACL2
+  requires such a workaround.
+
+  Let us return to the first [30m[47mencapsulate[0m[0m event above.  If that event
+  were legal, then ACL2 would admit the following proof of [30m[47mnil[0m[0m, as
+  explained below.
+
+    (thm
+     nil
+     :hints ((\"Goal\" :use ((:instance (:functional-instance
+                                       (:termination-theorem f)
+                                       (g (lambda (x) 0)))
+                                      (x '(1)))))))
+
+  In this case, [30m[47m(:termination-theorem f)[0m[0m denotes the following formula.
+
+    (if (o-p (g x))
+        (if (not (consp x))
+            t
+            (o< (g (cdr x)) (g x)))
+        nil)
+
+  When this formula is modified by applying the [30m[47m:functional-instance[0m[0m
+  and [30m[47m:instance[0m[0m directives above, the result is essentially as
+  follows.
+
+    (if (o-p 0)
+        (if (not (consp '(1)))
+            t
+            (o< 0 0))
+        nil)
+
+  This simplifies to [30m[47m(o< 0 0)[0m[0m, which is false (i.e., [30m[47mnil[0m[0m).  So this
+  formula is equivalent to [30m[47mnil[0m[0m, which is why the proof of [30m[47mnil[0m[0m
+  succeeds for the [30m[47m[thm][0m[0m call above.  Note that the [30m[47m:use[0m[0m hint fails
+  when a special measure is used as suggested in the workaround
+  above, because ACL2 notices that the measure is a \"call\" of [30m[47m:?[0m[0m
+  rather than a true measure.
+
+  Thus, in the second pass of an [30m[47m[encapsulate][0m[0m call, ACL2 disallows the
+  use of any measure that depends on functions introduced in a
+  [signature] of that [30m[47mencapsulate[0m[0m call.  In particular, the measure
+  [30m[47m(g x)[0m[0m for [30m[47mf[0m[0m is illegal because that measure depends on [30m[47mg[0m[0m, which is
+  introduced in the enclosing [30m[47mencapsulate[0m[0m's signature.  Similarly,
+  the following is also illegal, since [30m[47mg[0m[0m supports the definition of
+  [30m[47mg2[0m[0m.
+
+    (encapsulate (((g *) => *))
+      (local (defun g (x) (acl2-count x)))
+      (defun g2 (x) (g x))
+      (defun f (x)
+        (declare (xargs :measure (g2 x)))
+        (if (consp x) (f (cdr x)) x)))")
  (BOOK-COMPILED-FILE
   (BOOKS-REFERENCE)
   "Creating and loading of compiled and expansion files for [books]
@@ -36360,6 +36449,9 @@ Miscellaneous efficiency ideas
 
 
 Subtopics
+
+  [Bogus-measure]
+      Illegal termination theorems inside [30m[47m[encapsulate][0m[0m events
 
   [Constraint]
       Restrictions on certain functions introduced in [30m[47m[encapsulate][0m[0m
@@ -77473,6 +77565,9 @@ Subtopics
 
 Subtopics
 
+  [Bogus-measure]
+      Illegal termination theorems inside [30m[47m[encapsulate][0m[0m events
+
   [Measure-debug]
       Generate markers to indicate sources of [measure] proof obligations
 
@@ -107120,10 +107215,12 @@ Bug Fixes From AI via Eric Smith
   with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
-  Fixed two soundness bugs in [non-linear-arithmetic], both in function
-  [30m[47minverse-polys[0m[0m.  See [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m and
-  [30m[47msystem/tests/nonlinear-relation-variable.lisp[0m[0m.  Thanks to Eric
-  Smith for supplying the fix for the first of these bugs..
+  Fixed three soundness bugs in [non-linear-arithmetic], both in
+  function [30m[47minverse-polys[0m[0m.  See
+  [30m[47msystem/tests/linear-inverse-polys.lisp[0m[0m,
+  [30m[47msystem/tests/nonlinear-relation-variable.lisp[0m[0m, and
+  [30m[47msystem/tests/invert-var-varify.lisp[0m[0m.  Thanks to Eric Smith for
+  supplying the fix for the first of these bugs.
 
   Fixed a soundness bug where the [30m[47mkeys[0m[0m function for a [stobj-table]
   field returned internal stand-in symbols instead of the real stobj
@@ -107304,6 +107401,13 @@ Bug Fixes From AI via Eric Smith
   error if a complex rational was passed into a function expecting a
   rational.  The bug has been fixed.  See
   [30m[47msystem/tests/tau-put-complex-evg.lisp[0m[0m.
+
+  Fixed a soundness bug caused by a bogus [30m[47m:[0m[0m[30m[47m[termination-theorem][0m[0m
+  exported from an [30m[47m[encapsulate][0m[0m event due to its dependence on
+  properties [local] to the [30m[47mencapsulate[0m[0m event.  See [bogus-measure]
+  and see [community-book] [30m[47msystem/tests/bogus-measure.lisp[0m[0m.
+
+1
 
 
 Other Bug Fixes
@@ -151270,7 +151374,13 @@ Subtopics
   [30m[47m:termination-theorem![0m[0m lemma instances, and see [tthm] for a related
   user-level query utility.  Also see [termination-theorem-example]
   for simple examples of the use of measure (termination) theorems in
-  [hints].  For a related utility, see [make-termination-theorem].")
+  [hints].  For a related utility, see [make-termination-theorem].
+
+
+Subtopics
+
+  [Bogus-measure]
+      Illegal termination theorems inside [30m[47m[encapsulate][0m[0m events")
  (TERMINATION-THEOREM-EXAMPLE
   (LEMMA-INSTANCE MEASURE HINTS)
   "How to use a previously-proved measure theorem

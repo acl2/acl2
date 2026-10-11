@@ -130,11 +130,12 @@
 
 (defun invert-var (var)
 
-; Var is an arithmetic ACL2 term.  We return a term suitable for use
-; as an unknown in a poly, but that's all we guarantee.  The idea is
-; that the term is ``relevant'' to the non-linear properties of var
-; and we try to return the multiplicative inverse.  We expect to go
-; find additional polys about this term.
+; Var is an arithmetic ACL2 term.  We return a term suitable for use as an
+; unknown in a poly, but that's all we guarantee -- use inverse-vars-p if you
+; want a guarantee that the terms are truly multiplcative inverses.  The idea
+; is that the term is ``relevant'' to the non-linear properties of var and we
+; try to return the multiplicative inverse.  We expect to go find additional
+; polys about this term.
 
   (cond ((eq (fn-symb var) 'EXPT)
          (let ((base (fargn var 1))
@@ -423,6 +424,18 @@
         (and (eql var-ubd 0)
              (eq var-ubd-rel '<))))))
 
+(defun inverse-vars-p (var inv-var)
+
+; Warning: Keep this in sync with invert-var.  We assume that inv-var =
+; (invert-var var).
+
+  (cond ((eq (fn-symb var) 'EXPT)
+         t)
+        ((eq (fn-symb var) 'UNARY-/)
+         (equal inv-var (fargn var 1)))
+        (t
+         (cons-term 'UNARY-/ (list var)))))
+
 (defun inverse-polys (var inv-var pot-lst ttree pt)
 
 ; Var and inv-var are as in add-inverse-polys.  Ttree is the ttree
@@ -446,21 +459,22 @@
 
   (if (and (good-pot-varp var)
            (good-pot-varp inv-var))
-      (let ((bounds-polys-for-var
-             (bounds-polys-with-var var pot-lst pt))
-            (bounds-polys-for-inv-var
-             (bounds-polys-with-var inv-var pot-lst pt)))
-        (mv-let (var-lbd var-lbd-rel var-lbd-ttree
-                 var-ubd var-ubd-rel var-ubd-ttree)
-          (extract-bounds bounds-polys-for-var)
-          (mv-let (inv-var-lbd inv-var-lbd-rel inv-var-lbd-ttree
-                   inv-var-ubd inv-var-ubd-rel inv-var-ubd-ttree)
-            (extract-bounds bounds-polys-for-inv-var)
-            (cond
-             ((and (or (eql var-lbd 0)
-                       (eql inv-var-lbd 0))
-                   (or (eql var-ubd 0)
-                       (eql inv-var-ubd 0)))
+      (and (inverse-vars-p var inv-var)
+           (let ((bounds-polys-for-var
+                  (bounds-polys-with-var var pot-lst pt))
+                 (bounds-polys-for-inv-var
+                  (bounds-polys-with-var inv-var pot-lst pt)))
+             (mv-let (var-lbd var-lbd-rel var-lbd-ttree
+                              var-ubd var-ubd-rel var-ubd-ttree)
+               (extract-bounds bounds-polys-for-var)
+               (mv-let (inv-var-lbd inv-var-lbd-rel inv-var-lbd-ttree
+                                    inv-var-ubd inv-var-ubd-rel inv-var-ubd-ttree)
+                 (extract-bounds bounds-polys-for-inv-var)
+                 (cond
+                  ((and (or (eql var-lbd 0)
+                            (eql inv-var-lbd 0))
+                        (or (eql var-ubd 0)
+                            (eql inv-var-ubd 0)))
 
 ; Assume that all four relations are <=.  That is a weaker assumption
 ; than whatever is really the case.  From that assumption, we conclude
@@ -470,287 +484,287 @@
 ; polys we want, including these.  Note that at least two of the four
 ; polys we are about to add are already in the pot-lst.
 
-              (list
-               ;; 0 <= var
-               (add-linear-terms :rhs var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             (cons-tag-trees var-lbd-ttree
-                                                             inv-var-lbd-ttree))
-                                            '<=
-                                            t
-                                            nil))
-               ;; var <= 0
-               (add-linear-terms :lhs var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             (cons-tag-trees var-ubd-ttree
-                                                             inv-var-ubd-ttree))
-                                            '<=
-                                            t
-                                            nil))
-               ;; 0 <= inv-var
-               (add-linear-terms :rhs inv-var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             (cons-tag-trees var-lbd-ttree
-                                                             inv-var-lbd-ttree))
-                                            '<=
-                                            t
-                                            nil))
-               ;; inv-var <= 0
-               (add-linear-terms :lhs inv-var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             (cons-tag-trees var-ubd-ttree
-                                                             inv-var-ubd-ttree))
-                                            '<=
-                                            t
-                                            nil))))
+                   (list
+                    ;; 0 <= var
+                    (add-linear-terms :rhs var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  (cons-tag-trees var-lbd-ttree
+                                                                  inv-var-lbd-ttree))
+                                                 '<=
+                                                 t
+                                                 nil))
+                    ;; var <= 0
+                    (add-linear-terms :lhs var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  (cons-tag-trees var-ubd-ttree
+                                                                  inv-var-ubd-ttree))
+                                                 '<=
+                                                 t
+                                                 nil))
+                    ;; 0 <= inv-var
+                    (add-linear-terms :rhs inv-var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  (cons-tag-trees var-lbd-ttree
+                                                                  inv-var-lbd-ttree))
+                                                 '<=
+                                                 t
+                                                 nil))
+                    ;; inv-var <= 0
+                    (add-linear-terms :lhs inv-var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  (cons-tag-trees var-ubd-ttree
+                                                                  inv-var-ubd-ttree))
+                                                 '<=
+                                                 t
+                                                 nil))))
 
-             ((or (and var-lbd
-                       (< 0 var-lbd))
-                  (and inv-var-lbd
-                       (< 0 inv-var-lbd)))
+                  ((or (and var-lbd
+                            (< 0 var-lbd))
+                       (and inv-var-lbd
+                            (< 0 inv-var-lbd)))
 
 ; We try to gather bounds polys in four stages --- a lower bound for inv-var,
 ; a lower bound for var, an upper bound for inv-var, and an upper bound
 ; for var.
 
-              (let* ((ttree1 (cons-tag-trees ttree
-                                             (cons-tag-trees var-lbd-ttree
-                                                             inv-var-lbd-ttree)))
+                   (let* ((ttree1 (cons-tag-trees ttree
+                                                  (cons-tag-trees var-lbd-ttree
+                                                                  inv-var-lbd-ttree)))
 
-                     (bounds-polys1
-                      (cond ((and var-ubd
-                                  (not (eql var-ubd 0))
-                                  (or (null inv-var-lbd)
-                                      (< inv-var-lbd (/ var-ubd))))
-                             (list
-                              ;; (/ var-ubd) [<,<=] inv-var
-                              (add-linear-terms :lhs (kwote (/ var-ubd))
-                                                :rhs inv-var
-                                                (base-poly (cons-tag-trees
-                                                            ttree1
-                                                            var-ubd-ttree)
-                                                           var-ubd-rel
-                                                           t
-                                                           nil))))
-                            ((null inv-var-lbd)
-                             (list
-                              ;; 0 < inv-var
-                              (add-linear-terms :rhs inv-var
-                                                (base-poly ttree1
-                                                           '<
-                                                           t
-                                                           nil))))
-                            (t
-                             nil)))
-                     (bounds-polys2
-                      (cond ((and inv-var-ubd
-                                  (not (eql inv-var-ubd 0))
-                                  (or (null var-lbd)
-                                      (< var-lbd (/ inv-var-ubd))))
-                             (cons
-                              ;; (/ inv-var-ubd) [<,<=] var
-                              (add-linear-terms :lhs (kwote (/ inv-var-ubd))
-                                                :rhs var
-                                                (base-poly (cons-tag-trees
-                                                            ttree1
-                                                            inv-var-ubd-ttree)
-                                                           inv-var-ubd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys1))
-                            ((null var-lbd)
-                             ;; 0 < var
-                             (cons
-                              (add-linear-terms :rhs var
-                                                (base-poly ttree1
-                                                           '<
-                                                           t
-                                                           nil))
-                              bounds-polys1))
-                            (t
-                             bounds-polys1)))
-                     (bounds-polys3
-                      (cond ((and var-lbd
-                                  (< 0 var-lbd)
-                                  (or (null inv-var-ubd)
-                                      (< (/ var-lbd) inv-var-ubd)))
-                             (cons
-                              ;; inv-var [<,<=] (/ var-lbd)
-                              (add-linear-terms :lhs inv-var
-                                                :rhs (kwote (/ var-lbd))
-                                                (base-poly ttree1
-                                                           var-lbd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys2))
-                            (t
-                             bounds-polys2)))
-                     (bounds-polys4
-                      (cond ((and inv-var-lbd
-                                  (< 0 inv-var-lbd)
-                                  (or (null var-ubd)
-                                      (< (/ inv-var-lbd) var-ubd)))
-                             (cons
-                              ;; var [<,<=] (/ inv-var-lbd)
-                              (add-linear-terms :lhs var
-                                                :rhs (kwote (/ inv-var-lbd))
-                                                (base-poly ttree1
-                                                           inv-var-lbd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys3))
-                            (t
-                             bounds-polys3))))
-                bounds-polys4))
+                          (bounds-polys1
+                           (cond ((and var-ubd
+                                       (not (eql var-ubd 0))
+                                       (or (null inv-var-lbd)
+                                           (< inv-var-lbd (/ var-ubd))))
+                                  (list
+                                   ;; (/ var-ubd) [<,<=] inv-var
+                                   (add-linear-terms :lhs (kwote (/ var-ubd))
+                                                     :rhs inv-var
+                                                     (base-poly (cons-tag-trees
+                                                                 ttree1
+                                                                 var-ubd-ttree)
+                                                                var-ubd-rel
+                                                                t
+                                                                nil))))
+                                 ((null inv-var-lbd)
+                                  (list
+                                   ;; 0 < inv-var
+                                   (add-linear-terms :rhs inv-var
+                                                     (base-poly ttree1
+                                                                '<
+                                                                t
+                                                                nil))))
+                                 (t
+                                  nil)))
+                          (bounds-polys2
+                           (cond ((and inv-var-ubd
+                                       (not (eql inv-var-ubd 0))
+                                       (or (null var-lbd)
+                                           (< var-lbd (/ inv-var-ubd))))
+                                  (cons
+                                   ;; (/ inv-var-ubd) [<,<=] var
+                                   (add-linear-terms :lhs (kwote (/ inv-var-ubd))
+                                                     :rhs var
+                                                     (base-poly (cons-tag-trees
+                                                                 ttree1
+                                                                 inv-var-ubd-ttree)
+                                                                inv-var-ubd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys1))
+                                 ((null var-lbd)
+                                  ;; 0 < var
+                                  (cons
+                                   (add-linear-terms :rhs var
+                                                     (base-poly ttree1
+                                                                '<
+                                                                t
+                                                                nil))
+                                   bounds-polys1))
+                                 (t
+                                  bounds-polys1)))
+                          (bounds-polys3
+                           (cond ((and var-lbd
+                                       (< 0 var-lbd)
+                                       (or (null inv-var-ubd)
+                                           (< (/ var-lbd) inv-var-ubd)))
+                                  (cons
+                                   ;; inv-var [<,<=] (/ var-lbd)
+                                   (add-linear-terms :lhs inv-var
+                                                     :rhs (kwote (/ var-lbd))
+                                                     (base-poly ttree1
+                                                                var-lbd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys2))
+                                 (t
+                                  bounds-polys2)))
+                          (bounds-polys4
+                           (cond ((and inv-var-lbd
+                                       (< 0 inv-var-lbd)
+                                       (or (null var-ubd)
+                                           (< (/ inv-var-lbd) var-ubd)))
+                                  (cons
+                                   ;; var [<,<=] (/ inv-var-lbd)
+                                   (add-linear-terms :lhs var
+                                                     :rhs (kwote (/ inv-var-lbd))
+                                                     (base-poly ttree1
+                                                                inv-var-lbd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys3))
+                                 (t
+                                  bounds-polys3))))
+                     bounds-polys4))
 
-             ((or (and var-ubd
-                       (< var-ubd 0))
-                  (and inv-var-ubd
-                       (< inv-var-ubd 0)))
+                  ((or (and var-ubd
+                            (< var-ubd 0))
+                       (and inv-var-ubd
+                            (< inv-var-ubd 0)))
 
 ; We try to gather bounds for polys in four stages --- an upper bound for
 ; inv-var, an upper bound for var, a lower bound for inv-var, and a lower bound
 ; for var.
 
-              (let* ((ttree1 (cons-tag-trees ttree
-                                             (cons-tag-trees var-ubd-ttree
-                                                             inv-var-ubd-ttree)))
-                     (bounds-polys1
-                      (cond ((and var-lbd
-                                  (not (eql var-lbd 0))
-                                  (or (null inv-var-ubd)
-                                      (< (/ var-lbd) inv-var-ubd)))
-                             (list
-                              ;; inv-var [<,<=] (/ var-lbd)
-                              (add-linear-terms :lhs inv-var
-                                                :rhs (kwote (/ var-lbd))
-                                                (base-poly (cons-tag-trees
-                                                            ttree1
-                                                            var-lbd-ttree)
-                                                           var-lbd-rel
-                                                           t
-                                                           nil))))
-                            ((null inv-var-ubd)
-                             (list
-                              ;; inv-var < 0
-                              (add-linear-terms :lhs inv-var
-                                                (base-poly ttree1
-                                                           '<
-                                                           t
-                                                           nil))))
-                            (t
-                             nil)))
-                     (bounds-polys2
-                      (cond ((and inv-var-lbd
-                                  (not (eql inv-var-lbd 0))
-                                  (or (null var-ubd)
-                                      (< (/ inv-var-lbd) var-ubd)))
-                             (cons
-                              ;; var [<,<=] (/ inv-var-lbd)
-                              (add-linear-terms :lhs var
-                                                :rhs (kwote (/ inv-var-lbd))
-                                                (base-poly (cons-tag-trees
-                                                            ttree1
-                                                            inv-var-lbd-ttree)
-                                                           inv-var-lbd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys1))
-                            ((null var-ubd)
-                             ;; var < 0
-                             (cons
-                              (add-linear-terms :lhs var
-                                                (base-poly ttree1
-                                                           '<
-                                                           t
-                                                           nil))
-                              bounds-polys1))
-                            (t
-                             bounds-polys1)))
-                     (bounds-polys3
-                      (cond ((and var-ubd
-                                  (< var-ubd 0)
-                                  (or (null inv-var-lbd)
-                                      (< inv-var-lbd (/ var-ubd))))
-                             (cons
-                              ;; (/ var-ubd) [<,<=] inv-var
-                              (add-linear-terms :lhs (kwote (/ var-ubd))
-                                                :rhs inv-var
-                                                (base-poly ttree1
-                                                           var-ubd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys2))
-                            (t
-                             bounds-polys2)))
-                     (bounds-polys4
-                      (cond ((and inv-var-ubd
-                                  (< inv-var-ubd 0)
-                                  (or (null var-lbd)
-                                      (< var-lbd (/ inv-var-ubd))))
-                             (cons
-                              ;; (/ inv-var-ubd) [<,<=] var
-                              (add-linear-terms :lhs (kwote (/ inv-var-ubd))
-                                                :rhs var
-                                                (base-poly ttree1
-                                                           inv-var-ubd-rel
-                                                           t
-                                                           nil))
-                              bounds-polys3))
-                            (t
-                             bounds-polys3))))
-                bounds-polys4))
+                   (let* ((ttree1 (cons-tag-trees ttree
+                                                  (cons-tag-trees var-ubd-ttree
+                                                                  inv-var-ubd-ttree)))
+                          (bounds-polys1
+                           (cond ((and var-lbd
+                                       (not (eql var-lbd 0))
+                                       (or (null inv-var-ubd)
+                                           (< (/ var-lbd) inv-var-ubd)))
+                                  (list
+                                   ;; inv-var [<,<=] (/ var-lbd)
+                                   (add-linear-terms :lhs inv-var
+                                                     :rhs (kwote (/ var-lbd))
+                                                     (base-poly (cons-tag-trees
+                                                                 ttree1
+                                                                 var-lbd-ttree)
+                                                                var-lbd-rel
+                                                                t
+                                                                nil))))
+                                 ((null inv-var-ubd)
+                                  (list
+                                   ;; inv-var < 0
+                                   (add-linear-terms :lhs inv-var
+                                                     (base-poly ttree1
+                                                                '<
+                                                                t
+                                                                nil))))
+                                 (t
+                                  nil)))
+                          (bounds-polys2
+                           (cond ((and inv-var-lbd
+                                       (not (eql inv-var-lbd 0))
+                                       (or (null var-ubd)
+                                           (< (/ inv-var-lbd) var-ubd)))
+                                  (cons
+                                   ;; var [<,<=] (/ inv-var-lbd)
+                                   (add-linear-terms :lhs var
+                                                     :rhs (kwote (/ inv-var-lbd))
+                                                     (base-poly (cons-tag-trees
+                                                                 ttree1
+                                                                 inv-var-lbd-ttree)
+                                                                inv-var-lbd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys1))
+                                 ((null var-ubd)
+                                  ;; var < 0
+                                  (cons
+                                   (add-linear-terms :lhs var
+                                                     (base-poly ttree1
+                                                                '<
+                                                                t
+                                                                nil))
+                                   bounds-polys1))
+                                 (t
+                                  bounds-polys1)))
+                          (bounds-polys3
+                           (cond ((and var-ubd
+                                       (< var-ubd 0)
+                                       (or (null inv-var-lbd)
+                                           (< inv-var-lbd (/ var-ubd))))
+                                  (cons
+                                   ;; (/ var-ubd) [<,<=] inv-var
+                                   (add-linear-terms :lhs (kwote (/ var-ubd))
+                                                     :rhs inv-var
+                                                     (base-poly ttree1
+                                                                var-ubd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys2))
+                                 (t
+                                  bounds-polys2)))
+                          (bounds-polys4
+                           (cond ((and inv-var-ubd
+                                       (< inv-var-ubd 0)
+                                       (or (null var-lbd)
+                                           (< var-lbd (/ inv-var-ubd))))
+                                  (cons
+                                   ;; (/ inv-var-ubd) [<,<=] var
+                                   (add-linear-terms :lhs (kwote (/ inv-var-ubd))
+                                                     :rhs var
+                                                     (base-poly ttree1
+                                                                inv-var-ubd-rel
+                                                                t
+                                                                nil))
+                                   bounds-polys3))
+                                 (t
+                                  bounds-polys3))))
+                     bounds-polys4))
 
-             ((and (eql var-lbd 0)
-                   (eq var-lbd-rel '<))
-              ;; 0 < inv-var
-              (list
-               (add-linear-terms :rhs inv-var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             var-lbd-ttree)
-                                            '<
-                                            t
-                                            nil))))
-             ((and (eql inv-var-lbd 0)
-                   (eq inv-var-lbd-rel '<))
-              ;; 0 < var
-              (list
-               (add-linear-terms :rhs var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             inv-var-lbd-ttree)
-                                            '<
-                                            t
-                                            nil))))
-             ((and (eql var-ubd 0)
-                   (eq var-ubd-rel '<))
-              ;; inv-var < 0
-              (list
-               (add-linear-terms :lhs inv-var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             var-ubd-ttree)
-                                            '<
-                                            t
-                                            nil))))
-             ((and (eql inv-var-ubd 0)
-                   (eq inv-var-ubd-rel '<))
-              ;; var < 0
-              (list
-               (add-linear-terms :lhs var
-                                 (base-poly (cons-tag-trees
-                                             ttree
-                                             inv-var-ubd-ttree)
-                                            '<
-                                            t
-                                            nil))))
-             (t
-              nil)))))
+                  ((and (eql var-lbd 0)
+                        (eq var-lbd-rel '<))
+                   ;; 0 < inv-var
+                   (list
+                    (add-linear-terms :rhs inv-var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  var-lbd-ttree)
+                                                 '<
+                                                 t
+                                                 nil))))
+                  ((and (eql inv-var-lbd 0)
+                        (eq inv-var-lbd-rel '<))
+                   ;; 0 < var
+                   (list
+                    (add-linear-terms :rhs var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  inv-var-lbd-ttree)
+                                                 '<
+                                                 t
+                                                 nil))))
+                  ((and (eql var-ubd 0)
+                        (eq var-ubd-rel '<))
+                   ;; inv-var < 0
+                   (list
+                    (add-linear-terms :lhs inv-var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  var-ubd-ttree)
+                                                 '<
+                                                 t
+                                                 nil))))
+                  ((and (eql inv-var-ubd 0)
+                        (eq inv-var-ubd-rel '<))
+                   ;; var < 0
+                   (list
+                    (add-linear-terms :lhs var
+                                      (base-poly (cons-tag-trees
+                                                  ttree
+                                                  inv-var-ubd-ttree)
+                                                 '<
+                                                 t
+                                                 nil))))
+                  (t
+                   nil))))))
     (er hard 'inverse-polys
         "A presumptive pot-label, ~x0,  has turned out to be illegitimate. ~
          If possible, please send a script reproducing this error ~

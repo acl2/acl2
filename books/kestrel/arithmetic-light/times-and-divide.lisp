@@ -130,3 +130,10 @@
                         (< 0 k2)
                       (< (/ k2 k1) x)))))
   :hints (("Goal" :cases ((< (* k1 x) k2)))))
+
+(defthm <=-of-*-of-j-same-arg1
+  (implies (and (<= 1 j)
+                (<= 0 i)
+                (rationalp i)
+                (rationalp j))
+           (<= (* i (/ j)) i)))
