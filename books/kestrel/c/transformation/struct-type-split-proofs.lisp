@@ -2601,13 +2601,14 @@
                    block-item-stmt-compustate-vars)
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
-                        block-item-stmt-congruence
+                        block-item-stmt-congruence-under-compustate-equivp
                         (old-stmt ',old-stmt)
                         (new-stmt ',new-stmt)
                         (types ',ctypes))
                        (:instance
                         block-item-stmt-errors
                         (stmt ',old-stmt)
+                        (compst old-compst)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
         (stsp-gen-block-item-thm (block-item-stmt stmt info)
@@ -2791,13 +2792,8 @@
         (retok gout-no-thm))
        (old-item (car old-items))
        (new-item (car new-items))
-       ((unless (and (block-item-case old-item :stmt)
-                     (block-item-case new-item :stmt)))
-        (retok gout-no-thm))
-       (old-stmt (block-item-stmt->stmt old-item))
-       (new-stmt (block-item-stmt->stmt new-item))
        ((erp gout)
-        (stsp-stmt old-stmt new-stmt old-name newl-name newr-name gin)))
+        (stsp-block-item old-item new-item old-name newl-name newr-name gin)))
     (retok gout))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
