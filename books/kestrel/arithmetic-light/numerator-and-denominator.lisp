@@ -1,6 +1,6 @@
 ; A new book about numerator and denominator
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -122,7 +122,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
 
 (defthm <-of-numerator-and-denominator-same
