@@ -2075,18 +2075,25 @@
      (xdoc::p
       "This corresponds to @('alignment-specifier') in the ABNF grammar.
        The first two cases of this fixtype correspond to
-       the two forms of @('_Alignas'),
+       the two forms of @('alignas') or @('_Alignas'),
        one for type names and one for constant expressions.
        The third case is for ambiguous forms")
      (xdoc::codeblock
+      "alignas ( X )"
       "_Alignas ( X )")
      (xdoc::p
       "where @('X') is, syntactically, both an expression or a type name.
        As discussed in @(tsee amb-expr/tyname),
-       there is a non-trivial overlap between expressions and type names."))
-    (:alignas-type ((type tyname)))
-    (:alignas-expr ((expr const-expr)))
-    (:alignas-ambig ((expr/type amb-expr/tyname)))
+       there is a non-trivial overlap between expressions and type names.")
+     (xdoc::p
+      "The @('uscore') flag keeps track of the keyword:
+       @('t') for @('_Alignas'); @('nil') for @('alignas')."))
+    (:alignas-type ((uscore bool)
+                    (type tyname)))
+    (:alignas-expr ((uscore bool)
+                    (expr const-expr)))
+    (:alignas-ambig ((uscore bool)
+                     (expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
     :layout :fulltree

@@ -5853,18 +5853,23 @@
        expr/tyname
        ;; If we parsed an expression,
        ;; we return an @('_Alignas') with an expression.
-       :expr (retok (align-spec-alignas-expr
-                      (make-const-expr :expr expr/tyname.expr))
+       :expr (retok (make-align-spec-alignas-expr
+                     :uscore t
+                     :expr (make-const-expr :expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,
        ;; we return an @('_Alignas') with a type name.
-       :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
+       :tyname (retok (make-align-spec-alignas-type
+                       :uscore t
+                       :type expr/tyname.tyname)
                       (span-join first-span last-span)
                       parstate)
        ;; If we parsed an ambiguous expression or type name,
        ;; we return an ambiguous @('_Alignas').
-       :ambig (retok (align-spec-alignas-ambig expr/tyname.expr/tyname)
+       :ambig (retok (make-align-spec-alignas-ambig
+                      :uscore t
+                      :expr/type expr/tyname.expr/tyname)
                      (span-join first-span last-span)
                      parstate)))
     :measure (two-nats-measure (parsize parstate) 0))
