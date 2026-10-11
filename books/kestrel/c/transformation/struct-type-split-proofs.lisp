@@ -2192,7 +2192,7 @@
                 the types ~x2 of the old block item list ~x3."
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
        ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
        ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
@@ -2797,6 +2797,36 @@
                           (block-item-fix old-item)
                           (block-item-fix new-item)))
      :otherwise (retok (gout-no-thm gin)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-list-empty ((gin ginp))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for the empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-list-empty),
+     but for STS proof generation."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (items nil)
+       (hints
+        `(("Goal"
+           :in-theory '((:e set::insert)
+                        block-item-list-empty-compustate-vars)
+           :use (block-item-list-empty-congruence-under-compustate-equivp))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-list-thm items
+                                      items
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index
+                                      hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
