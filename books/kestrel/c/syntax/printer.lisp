@@ -2578,7 +2578,14 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
-    (b* ((pstate (print-astring "_Alignas(" pstate))
+    (b* ((uscore (align-spec-case
+                  alignspec
+                  :alignas-type alignspec.uscore
+                  :alignas-expr alignspec.uscore
+                  :alignas-ambig alignspec.uscore))
+         (pstate (if uscore
+                     (print-astring "_Alignas(" pstate)
+                   (print-astring "alignas(" pstate)))
          (pstate
           (align-spec-case
            alignspec
