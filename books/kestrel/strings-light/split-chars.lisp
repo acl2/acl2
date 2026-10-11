@@ -163,7 +163,7 @@
   :hints (("Goal" :in-theory (enable split-chars))))
 
 (defthmd split-chars-correct-1
-  (implies (and (member char chars) ;this case
+  (implies (and (member char chars) ; this case
                 (character-listp chars))
            (and (mv-nth 0 (split-chars chars char)) ; foundp
                 (equal (append (mv-nth 1 (split-chars chars char))
@@ -175,9 +175,8 @@
            :in-theory (e/d (split-chars) (split-chars-aux-correct-1)))))
 
 (defthmd split-chars-correct-2
-  (implies (and (not (member char chars)) ;this case
-                (character-listp chars)
-                (characterp char))
+  (implies (and (not (member char chars)) ; this case
+                (character-listp chars))
            (and (not (mv-nth 0 (split-chars chars char))) ; not found
                 (equal (mv-nth 1 (split-chars chars char)) chars)
                 (equal (mv-nth 2 (split-chars chars char)) nil)))

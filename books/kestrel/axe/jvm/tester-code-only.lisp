@@ -25,7 +25,7 @@
 ;; vs after (include-book "tester-code-only"):
 (make-event
   `(acl2::with-supporters
-     (local (include-book "tester"))
+     (local (include-book "tester" :ttags :all))
      :tables (:known-booleans-table)
      :names (test-file
               test-file-and-exit
