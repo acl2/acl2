@@ -1168,8 +1168,14 @@
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (cond ((member-equal (c::binop-kind op)
-                                                        '(:mul :div :rem :add :sub
-                                                          :bitand :bitxor :bitior))
+                                                        '(:mul
+                                                          :div
+                                                          :rem
+                                                          :add
+                                                          :sub
+                                                          :bitand
+                                                          :bitxor
+                                                          :bitior))
                                           (c::uaconvert-types type1 type2))
                                          ((member-equal (c::binop-kind op)
                                                         '(:shl :shr))
