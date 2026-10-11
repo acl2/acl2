@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-;; Make a if from TEST, THEN, and ELSE, except return HINT (and avoid consing)
+;; Make an if from TEST, THEN, and ELSE, except return HINT (and avoid consing)
 ;; if HINT is that IF.
 ;; Let's try leaving this enabled, since its :logic part is nice.
 (defun make-if-with-hint (test
