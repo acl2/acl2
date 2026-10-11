@@ -1240,35 +1240,36 @@
                                    old-compst old-fenv limit)
                      (c::exec-stmt (c::stmt-return new-expr)
                                    new-compst new-fenv limit))
-            :in-theory '(c::apconvert-expr-value-when-not-array
-                         c::value-kind-not-array-when-value-integerp
-                         c::type-option-of-stmt-value
-                         c::type-of-value-option
-                         c::value-option-some->val
-                         c::not-errorp-when-stmt-valuep
-                         c::not-errorp-when-expr-valuep
-                         c::exec-expr-expr-equiv-congruence-on-e
-                         c::expr-value->value$inline-expr-value-equiv-congruence-on-x
-                         c::type-option-of-stmt-value
-                         c::errorp-of-error
-                         c::expr-option-fix-under-expr-option-equiv
-                         c::expr-option-fix-under-iff
-                         c::expr-optionp-of-expr-option-fix
-                         c::expr-value-fix-under-expr-value-equiv
-                         c::expr-valuep-of-expr-value-fix
-                         c::exprp-when-expr-optionp
-                         set::in-insert
-                         c::return-type-of-stmt-return
-                         c::return-type-of-stmt-value-return
-                         c::stmt-fix-when-stmtp
-                         c::stmt-return->value-of-stmt-return
-                         c::stmt-value-return->value?-of-stmt-value-return
-                         c::type-nonchar-integerp-of-type-of-value
-                         c::value-fix-when-valuep
-                         c::value-option-fix-when-value-optionp
-                         c::value-optionp-when-valuep
-                         c::valuep-of-expr-value->value
-                         (:t c::expr-value->value)))
+            :in-theory
+            '(c::apconvert-expr-value-when-not-array
+              c::value-kind-not-array-when-value-integerp
+              c::type-option-of-stmt-value
+              c::type-of-value-option
+              c::value-option-some->val
+              c::not-errorp-when-stmt-valuep
+              c::not-errorp-when-expr-valuep
+              c::exec-expr-expr-equiv-congruence-on-e
+              c::expr-value->value$inline-expr-value-equiv-congruence-on-x
+              c::type-option-of-stmt-value
+              c::errorp-of-error
+              c::expr-option-fix-under-expr-option-equiv
+              c::expr-option-fix-under-iff
+              c::expr-optionp-of-expr-option-fix
+              c::expr-value-fix-under-expr-value-equiv
+              c::expr-valuep-of-expr-value-fix
+              c::exprp-when-expr-optionp
+              set::in-insert
+              c::return-type-of-stmt-return
+              c::return-type-of-stmt-value-return
+              c::stmt-fix-when-stmtp
+              c::stmt-return->value-of-stmt-return
+              c::stmt-value-return->value?-of-stmt-value-return
+              c::type-nonchar-integerp-of-type-of-value
+              c::value-fix-when-valuep
+              c::value-option-fix-when-value-optionp
+              c::value-optionp-when-valuep
+              c::valuep-of-expr-value->value
+              (:t c::expr-value->value)))
           (defruled block-item-stmt-congruence-under-compustate-equivp
             (b* ((old (c::block-item-stmt old-stmt))
                  (new (c::block-item-stmt new-stmt))
