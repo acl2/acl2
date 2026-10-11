@@ -780,6 +780,41 @@
                :declors nil
                :attribs nil)))
 
+(test-parse
+ parse-struct-declaration
+ "_Alignas(int) char c;"
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (car (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 t)))))))
+
+(test-parse
+ parse-struct-declaration
+ "alignas(int) char c;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (car (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-struct-declaration
+ "char alignas(int) c;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (cadr (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 nil)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-parameter-declaration
@@ -958,6 +993,58 @@
  parse-declaration
  "int * _Nonnull ptr = 0;"
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t)) ; Clang-only extension
+
+(test-parse
+ parse-declaration
+ "_Alignas(16) int x;"
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 t)))))))
+
+(test-parse-fail
+ parse-declaration
+ "alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c17))) ; not a keyword in C17
+
+(test-parse
+ parse-declaration
+ "alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-declaration
+ "_Alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 t)))))))
+
+(test-parse
+ parse-declaration
+ "alignas(T) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-ambig)
+                          (equal (align-spec-alignas-ambig->uscore alignspec)
+                                 nil)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
