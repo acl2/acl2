@@ -1268,7 +1268,40 @@
                          c::value-option-fix-when-value-optionp
                          c::value-optionp-when-valuep
                          c::valuep-of-expr-value->value
-                         (:t c::expr-value->value))))))
+                         (:t c::expr-value->value)))
+          (defruled block-item-stmt-congruence-under-compustate-equivp
+            (b* ((old (c::block-item-stmt old-stmt))
+                 (new (c::block-item-stmt new-stmt))
+                 ((mv old-stmt-sval old-stmt-compst)
+                  (c::exec-stmt old-stmt old-compst old-fenv (1- limit)))
+                 ((mv new-stmt-sval new-stmt-compst)
+                  (c::exec-stmt new-stmt new-compst new-fenv (1- limit)))
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (equal old-stmt-sval new-stmt-sval)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-stmt-compst new-stmt-compst)
+                            (set::in
+                             (c::type-option-of-stmt-value old-stmt-sval)
+                             types))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     types))))
+            :expand ((c::exec-block-item (c::block-item-stmt old-stmt)
+                                         old-compst old-fenv limit)
+                     (c::exec-block-item (c::block-item-stmt new-stmt)
+                                         new-compst new-fenv limit))
+            :in-theory '(c::return-type-of-block-item-stmt
+                         c::block-item-stmt->get-of-block-item-stmt
+                         c::exec-stmt-of-stmt-fix-s
+                         c::errorp-of-error
+                         mv-nth
+                         (:e equal))))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
