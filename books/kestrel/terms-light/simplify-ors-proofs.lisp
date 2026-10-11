@@ -173,15 +173,14 @@
                           (equal test then))
                      ;; replace (if x x y) with (if x 't y):
                      `(if ,test 't ,else)
-                   ;; todo: cons-with-hint:
-                   `(if ,test ,then ,else)))))
+                   (make-if-with-hint test then else term)))))
          ;; (not arg):
          (not (if (not (= 1 (len (fargs term)))) ; for guard proof
                   (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                           term)
                 (let* ((arg (fargn term 1))
                        (arg (simplify-ors-induct arg t alist))) ; use a boolean context for the arg
-                  `(not ,arg))))
+                  (make-not-with-hint arg term))))
          ;; todo: build in any other functions?  myif/boolif
          (t ;; normal function call or lambda application:
           (let ((args (simplify-ors-lst-induct (fargs term) alist))) ; can't use boolean context for args
