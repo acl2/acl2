@@ -1334,7 +1334,49 @@
                          (:e set::in)
                          (:e set::insert)
                          mv-nth
-                         (:e equal))))))
+                         (:e equal)))
+          (defruled block-item-list-cons-first-congruence-under-compustate-equivp
+            (b* ((old (cons old-item old-items))
+                 (new (cons new-item new-items))
+                 ((mv old-item-sval old-item-compst)
+                  (c::exec-block-item old-item old-compst old-fenv (1- limit)))
+                 ((mv new-item-sval new-item-compst)
+                  (c::exec-block-item new-item new-compst new-fenv (1- limit)))
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item-list old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item-list new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (equal old-item-sval new-item-sval)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-item-compst new-item-compst)
+                            (equal (c::stmt-value-kind old-item-sval) :return)
+                            (set::in
+                             (c::type-option-of-stmt-value old-item-sval)
+                             first-types))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::union (set::delete nil first-types)
+                                                 rest-types)))))
+            :expand ((c::exec-block-item-list
+                      (cons old-item old-items) old-compst old-fenv limit)
+                     (c::exec-block-item-list
+                      (cons new-item new-items) new-compst new-fenv limit))
+            :in-theory '(c::type-option-of-stmt-value
+                         c::errorp-of-error
+                         c::consp-when-errorp
+                         c::stmt-value-kind-possibilities
+                         acl2::zp-compound-recognizer
+                         set::delete-in
+                         set::union-in
+                         car-cons
+                         cdr-cons
+                         mv-nth
+                         not
+                         (:e equal)
+                         (:t c::type-of-value-option))))))
     (retok events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
