@@ -10082,6 +10082,107 @@ and @(tsee include-book)"
 
  @(def bitp)")
 
+(defxdoc bogus-measure
+  :parents (termination-theorem measure encapsulate)
+  :short "Illegal termination theorems inside @(tsee encapsulate) events"
+  :long "<p>This topic pertains to error messages such as the following.</p>
+
+ @({
+ ACL2 Error in ( ENCAPSULATE (((G * ...) ...) ...) ...):  For the following
+ function introduced by this encapsulate event, the :termination-theorem
+ may depend on local properties that are not exported from the encapsulate
+ event: F.  See :DOC bogus-exported-measures for a workaround.
+ })
+
+ <p>Here is an event, discussed below, that leads to that error message.</p>
+
+ @({
+ (encapsulate (((g *) => *))
+   (local (defun g (x) (acl2-count x)))
+   (defun f (x) 
+     (declare (xargs :measure (g x)))
+     (if (consp x) (f (cdr x)) x)))
+ })
+
+ <p>A workaround is to use a special measure: the application of symbol @(':?')
+ to a distinct list of the variables in the original measure.  The original
+ offending definition @('D') is replaced by @('(local D)'), and is followed by
+ the result of replacing the measure of @('D') with the above special measure.
+ If we apply that workaround to the @('encapsulate') event above, we get the
+ following event, which is admitted by ACL2.</p>
+
+ @({
+ (encapsulate (((g *) => *))
+   (local (defun g (x) (acl2-count x)))
+   (local (defun f (x)
+            (declare (xargs :measure (g x)))
+            (if (consp x) (f (cdr x)) x)))
+   (defun f (x)
+     (declare (xargs :measure (:? x)))
+     (if (consp x) (f (cdr x)) x)))
+ })
+
+ <p>We conclude this topic by explaining, for anyone interested, why ACL2
+ requires such a workaround.</p>
+
+ <p>Let us return to the first @('encapsulate') event above.  If that event
+ were legal, then ACL2 would admit the following proof of @('nil'), as
+ explained below.</p>
+
+ @({
+ (thm
+  nil
+  :hints ((\"Goal\" :use ((:instance (:functional-instance
+                                    (:termination-theorem f)
+                                    (g (lambda (x) 0)))
+                                   (x '(1)))))))
+ })
+
+ <p>In this case, @('(:termination-theorem f)') denotes the following
+ formula.</p>
+
+ @({
+ (if (o-p (g x))
+     (if (not (consp x))
+         t
+         (o< (g (cdr x)) (g x)))
+     nil)
+ })
+
+ <p>When this formula is modified by applying the @(':functional-instance') and
+ @(':instance') directives above, the result is essentially as follows.</p>
+
+ @({
+ (if (o-p 0)
+     (if (not (consp '(1)))
+         t
+         (o< 0 0))
+     nil)
+ })
+
+ <p>This simplifies to @('(o< 0 0)'), which is false (i.e., @('nil')).  So this
+ formula is equivalent to @('nil'), which is why the proof of @('nil') succeeds
+ for the @(tsee thm) call above.  Note that the @(':use') hint fails when a
+ special measure is used as suggested in the workaround above, because ACL2
+ notices that the measure is a \"call\" of @(':?') rather than a true
+ measure.</p>
+
+ <p>Thus, in the second pass of an @(tsee encapsulate) call, ACL2 disallows the
+ use of any measure that depends on functions introduced in a @(see signature)
+ of that @('encapsulate') call.  In particular, the measure @('(g x)') for
+ @('f') is illegal because that measure depends on @('g'), which is introduced
+ in the enclosing @('encapsulate')'s signature.  Similarly, the following is
+ also illegal, since @('g') supports the definition of @('g2').</p>
+
+ @({
+ (encapsulate (((g *) => *))
+   (local (defun g (x) (acl2-count x)))
+   (defun g2 (x) (g x))
+   (defun f (x) 
+     (declare (xargs :measure (g2 x)))
+     (if (consp x) (f (cdr x)) x)))
+ })")
+
 (defxdoc book-compiled-file
   :parents (books-reference)
   :short "Creating and loading of compiled and expansion files for @(see books)"
@@ -109925,6 +110026,9 @@ it."
 ; in the above book) as recently as 10/5/2026.  Thanks to Eric Smith for
 ; passing along this issue from Anthropic's Claude.
 
+; Improved the code for bogus-exported-compliants, mostly to make the code
+; cleaner though this could also improve its efficiency.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110203,10 +110307,11 @@ it."
  respect to their @(tsee type) @(see declaration)s.  See
  @('system/tests/exploit-lambda-guard-typedecl.lisp').</p>
 
- <p>Fixed two soundness bugs in @(see non-linear-arithmetic), both in function
- @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp') and
- @('system/tests/nonlinear-relation-variable.lisp').  Thanks to Eric Smith for
- supplying the fix for the first of these bugs..</p>
+ <p>Fixed three soundness bugs in @(see non-linear-arithmetic), both in
+ function @('inverse-polys').  See @('system/tests/linear-inverse-polys.lisp'),
+ @('system/tests/nonlinear-relation-variable.lisp'), and
+ @('system/tests/invert-var-varify.lisp').  Thanks to Eric Smith for supplying
+ the fix for the first of these bugs.</p>
 
  <p>Fixed a soundness bug where the @('keys') function for a @(see stobj-table)
  field returned internal stand-in symbols instead of the real stobj names.  For
@@ -110387,6 +110492,11 @@ it."
  <p>A bug in the storage of tau rules, @('tau-put'), could lead to a Lisp error
  if a complex rational was passed into a function expecting a rational.  The
  bug has been fixed.  See @('system/tests/tau-put-complex-evg.lisp').</p>
+
+ <p>Fixed a soundness bug caused by a bogus @(':')@(tsee termination-theorem)
+ exported from an @(tsee encapsulate) event due to its dependence on properties
+ @(see local) to the @('encapsulate') event.  See @(see bogus-measure) and see
+ @(see community-book) @('system/tests/bogus-measure.lisp').</p> 1
 
  <h3>Other Bug Fixes</h3>
 

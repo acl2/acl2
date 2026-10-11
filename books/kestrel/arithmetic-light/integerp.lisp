@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+(local (include-book "times"))
+
 (local (in-theory (disable floor mod)))
 
 (defthmd integerp-squeeze
@@ -47,7 +49,6 @@
 
 (encapsulate ()
   (local (include-book "times-and-divide"))
-  (local (include-book "times"))
   (local (include-book "minus"))
   (local (include-book "plus"))
   (local (include-book "nonnegative-integer-quotient"))
@@ -144,3 +145,10 @@
            (equal (integerp (+ 1/2 (* 1/2 x)))
                   (not (integerp (* 1/2 x)))))
   :hints (("Goal" :use integerp-choice)))
+
+(local
+ (defthm integerp-of-*-of---arg2
+   (equal (integerp (* x (- y)))
+          (integerp (* x y)))
+   :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
+            :in-theory (disable integerp-of--)))))
