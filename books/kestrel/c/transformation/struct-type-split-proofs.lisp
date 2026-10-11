@@ -2830,6 +2830,116 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-block-item-list-cons ((item block-itemp)
+                                   (item-new block-itemp)
+                                   (item-thm-name symbolp)
+                                   (items block-item-listp)
+                                   (items-new block-item-listp)
+                                   (items-thm-name symbolp)
+                                   (gin ginp))
+  :guard (and (block-item-unambp item)
+              (block-item-unambp item-new)
+              (block-item-list-unambp items)
+              (block-item-list-unambp items-new)
+              (block-item-annop item)
+              (block-item-annop item-new)
+              (block-item-list-annop items)
+              (block-item-list-annop items-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a non-empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-list-cons),
+     but for STS proof generation.")
+   (xdoc::p
+    "We generate a theorem iff theorems were generated for
+     both the first item and (the list of) the rest of the items."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       (item-thm-name (symbol-lfix item-thm-name))
+       (items-thm-name (symbol-lfix items-thm-name))
+       ((unless (and item-thm-name
+                     items-thm-name))
+        (retok gout-no-thm))
+       (item (block-item-fix item))
+       (items (block-item-list-fix items))
+       (item-new (block-item-fix item-new))
+       (items-new (block-item-list-fix items-new))
+       (item+items (cons item items))
+       (item+items-new (cons item-new items-new))
+       (first-types (block-item-types item))
+       (rest-types (block-item-list-types items))
+       ((mv & old-item) (ldm-block-item item)) ; ERP must be NIL
+       ((mv & new-item) (ldm-block-item item-new)) ; ERP must be NIL
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & first-ctypes) (ldm-type-option-set first-types)) ; ERP must be NIL
+       ((mv & rest-ctypes) (ldm-type-option-set rest-types)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory
+           '(c::stmt-value-kind-possibilities
+             (:e set::delete)
+             (:e set::union)
+             c::compustate-frames-number-of-exec-block-item
+             c::compustatep-when-compustate-resultp-and-not-errorp
+             block-item-list-cons-compustate-vars)
+           :use ((:instance
+                  ,item-thm-name
+                  (limit (1- limit)))
+                 (:instance
+                  ,items-thm-name
+                  (old-compst
+                   (mv-nth 1 (c::exec-block-item
+                              ',old-item old-compst old-fenv (1- limit))))
+                  (new-compst
+                   (mv-nth 1 (c::exec-block-item
+                              ',new-item new-compst new-fenv (1- limit))))
+                  (limit (1- limit)))
+                 (:instance
+                  block-item-list-cons-first-congruence-under-compustate-equivp
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
+                 (:instance
+                  block-item-list-cons-rest-congruence-under-compustate-equivp
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
+                 (:instance
+                  block-item-list-cons-first-errors
+                  (item ',old-item)
+                  (items ',old-items)
+                  (compst old-compst)
+                  (fenv old-fenv))
+                 (:instance
+                  block-item-list-cons-rest-errors
+                  (item ',old-item)
+                  (items ',old-items)
+                  (compst old-compst)
+                  (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-list-thm item+items
+                                      item+items-new
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index
+                                      hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
                      (old-name identp)
