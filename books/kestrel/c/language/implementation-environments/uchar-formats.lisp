@@ -42,15 +42,17 @@
   (xdoc::topstring
    (xdoc::p
     "Values of the @('unsigned char') type are represented
-     using a pure binary notation [C17:6.2.6.1/3],
+     using a pure binary notation [C17:6.2.6.1/3] [C23:6.2.6.1],
      i.e. where each bit counts for a successive power of 2.
-     Footnote 50 says that a byte consists of @('CHAR_BIT') bits,
-     and implies that an @('unsigned char') consists of one byte
-     (as also implied by [C17:6.5.3.4/2] and [C17:6.5.3.4/4]).")
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2] say that
+     a byte consists of @('CHAR_BIT') bits.
+     [C17:6.5.3.4/2] [C17:6.5.3.4/4] [C23:6.5.4.5] say that
+     an @('unsigned char') consists of one byte.")
    (xdoc::p
     "Thus, the format of @('unsigned char') objects is determined
      by their number of bits, i.e. @('CHAR_BIT').
-     This is required to be at least 8 [C17:5.2.4.2.1/1].")
+     This is required to be at least 8
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2].")
    (xdoc::p
     "We use the name @('size') for the number of bits,
      i.e. the size (in bits) of @('unsigned char') objects."))
@@ -82,17 +84,16 @@
 
 (define uchar-format->max ((format uchar-formatp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('UCHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This directly derives from @('CHAR_BIT'),
-     as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C17:6.2.6.1/3],
-     which says that @('unsigned char') values
-     range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
+     as discussed in @(tsee uchar-format).")
    (xdoc::p
-    "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
+    "This is at least 255, as required by
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."))
   (1- (expt 2 (uchar-format->size format)))
 
   ///

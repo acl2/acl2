@@ -58,3 +58,15 @@
   (implies (and (natp x)
                 (natp y))
            (natp (max x y))))
+
+(defthm natp-of-+-of---arg2
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (natp (+ x (- y)))
+                  (<= y x))))
+
+(defthm natp-of-+-of---arg1
+  (implies (and (integerp x)
+                (integerp y))
+           (equal (natp (+ (- y) x))
+                  (<= y x))))

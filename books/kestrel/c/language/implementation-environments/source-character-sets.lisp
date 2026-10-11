@@ -47,7 +47,7 @@
      enabling the use of the ABNF notation for describing syntax,
      given that ABNF requires natural numbers as terminals;
      it identifies the subset of basic characters, in the following manner.
-     Although [C17] and [C23] do not require ASCII or a superset of it,
+     Although [C17] [C23] do not require ASCII or a superset of it,
      the basic characters have a natural correspondence with ASCII characters.
      We require the map to include, among its values,
      all the ASCII codes that correspond to the basic characters:
@@ -77,7 +77,7 @@
    (xdoc::p
     "To completely characterize a source character set
      we also need to model the representation of new-line characters.
-     [C17:5.2.1/3] and [C23:5.3.1] say that the standard
+     [C17:5.2.1/3] [C23:5.3.1] say that the standard
      treats them as if there were a single new-line character.
      However, we know that, in practical C implementations,
      there may be multiple ways to represent new-line characters,
@@ -86,7 +86,7 @@
      while Windows uses carriage return followed by line feed;
      but a C implementation may accept all of them,
      regardless of the underlying operating system.
-     This is not in conflict with [C17] and [C23], which say `as if',
+     This is not in conflict with [C17] [C23], which say `as if',
      leaving the door open for multiple multi-character representations.
      So our model of the source character set also includes
      a non-empty set of non-empty lists of characters,

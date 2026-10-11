@@ -78,6 +78,14 @@
              (< z y)))
   :hints (("Goal" :in-theory (enable max))))
 
+(defthm <-of-max-when-<-arg1
+  (implies (< z x)
+           (< z (max x y))))
+
+(defthm <-of-max-when-<-arg2
+  (implies (< z y)
+           (< z (max x y))))
+
 (defthm acl2-numberp-of-max
   (implies (and (acl2-numberp x)
                 (acl2-numberp y))
@@ -93,12 +101,42 @@
                 (integerp y))
            (integerp (max x y))))
 
-;rename
-(defthm less-than-max-hack
-  (implies (< z y)
-           (< z (MAX y x))))
+(defthm equal-of-max-same-arg1
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal x (max x y))
+                  (<= y x)))
+  :hints (("Goal" :in-theory (enable max))))
 
-;rename
-(defthm less-than-max-hack-alt
-  (implies (< z x)
-           (< z (MAX y x))))
+(defthm equal-of-max-same-arg2
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (equal y (max x y))
+                  (<= x y)))
+  :hints (("Goal" :in-theory (enable max))))
+
+(defthm <-of-max-same-arg1
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (< x (max x y))
+                  (< x y)))
+  :hints (("Goal" :in-theory (enable max))))
+
+(defthm <-of-max-same-arg2
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (equal (< y (max x y))
+                  (< y x)))
+  :hints (("Goal" :in-theory (enable max))))
+
+(defthm <=-of-max-same-arg1-linear
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (<= x (max x y)))
+  :rule-classes :linear)
+
+(defthm <=-of-max-same-arg2-linear
+  (implies (and (acl2-numberp x)
+                (acl2-numberp y))
+           (<= y (max x y)))
+  :rule-classes :linear)

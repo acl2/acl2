@@ -5874,7 +5874,7 @@
     ;; x86isa::canonical-address-p-between-special5-alt
     ;; x86isa::canonical-address-p-between-special6
     ;; x86isa::canonical-address-p-between-special7
-    acl2::ash-when-non-negative-becomes-*-of-expt ; todo
+    acl2::ash-becomes-*-of-expt-when-non-negative ; todo
     acl2::natp-of-*
     acl2::<-of-constant-and-+-of-constant ; for address calcs
     ;acl2::<-of-15-and-*-of-4

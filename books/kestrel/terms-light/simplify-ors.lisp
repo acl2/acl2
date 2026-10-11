@@ -15,12 +15,14 @@
 ;; TODO: Consider lambda binding the X when we don't have boolean info.
 
 (include-book "make-lambda-with-hint")
+(include-book "make-if-with-hint")
+(include-book "make-not-with-hint")
 (local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 
 ;; todo: what should we name this?  it may soon also also bool-fix constants.
 (mutual-recursion
-  ;; If iffp is true, the result must only be boolean equivalent to the input.  Otherwise it must be EQUAL.
+  ;; If iffp is true, the result need only be boolean equivalent to the input.  Otherwise it must be EQUAL.
  (defun simplify-ors (term iffp)
    (declare (xargs :guard (and (pseudo-termp term)
                                (booleanp iffp))
@@ -39,7 +41,7 @@
                 ;;   term)
                 )
          ;; (if test then else):
-         (if (if (not (consp (cddr (fargs term)))) ; for guard proof
+         (if (if (not (= 3 (len (fargs term)))) ; for guard proof
                  (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                          term)
                (let* ((test (fargn term 1))
@@ -52,15 +54,14 @@
                           (equal test then))
                      ;; replace (if x x y) with (if x 't y):
                      `(if ,test 't ,else)
-                   ;; todo: cons-with-hint:
-                   `(if ,test ,then ,else)))))
+                   (make-if-with-hint test then else term)))))
          ;; (not arg):
-         (not (if (not (consp (fargs term))) ; for guard proof
+         (not (if (not (= 1 (len (fargs term)))) ; for guard proof
                   (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                           term)
                 (let* ((arg (fargn term 1))
                        (arg (simplify-ors arg t))) ; use a boolean context for the arg
-                  `(not ,arg))))
+                  (make-not-with-hint arg term))))
          ;; todo: build in any other functions?  myif/boolif
          (t ;; normal function call or lambda application:
           (let ((args (simplify-ors-lst (fargs term)))) ; can't use boolean context for args
@@ -70,8 +71,9 @@
                        (body (lambda-body fn))
                        ;; propagate boolean context:
                        (body (simplify-ors body iffp)))
-                  `(,(make-lambda-with-hint formals body fn) ;;(lambda ,formals ,body)
-                    ,@args))
+                  (cons-with-hint (make-lambda-with-hint formals body fn) ;;(lambda ,formals ,body)
+                                  args
+                                  term))
               ;; non-lambda:
               (cons-with-hint fn args term))))))))
 

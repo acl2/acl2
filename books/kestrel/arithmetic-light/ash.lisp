@@ -37,10 +37,16 @@
 (defthm integerp-of-ash
   (integerp (ash i c)))
 
-(defthmd ash-when-non-negative-becomes-*-of-expt
-  (implies (natp c)
+(defthmd ash-becomes-*-of-expt-when-non-negative
+  (implies (<= 0 c)
            (equal (ash i c)
                   (* (ifix i) (expt 2 c))))
+  :hints (("Goal" :in-theory (enable ash))))
+
+(defthmd ash-becomes-floor-of-expt-when-non-positive
+  (implies (<= c 0)
+           (equal (ash i c)
+                  (floor (ifix i) (expt 2 (- c)))))
   :hints (("Goal" :in-theory (enable ash))))
 
 (defthm equal-of-0-and-ash
@@ -107,6 +113,7 @@
                       (* (ifix i) (expt 2 c)))))
   :hints (("Goal" :in-theory (enable ash <-of-floor-arg2-gen))))
 
+;; From an upper bound on i, we get an upper bound on (ash i c).
 (defthm <=-of-ash-when-<=-free-linear
   (implies (and (<= i free)
                 (integerp i)
@@ -115,7 +122,8 @@
   :rule-classes ((:linear :trigger-terms ((ash i c))))
   :hints (("Goal" :in-theory (enable ash))))
 
-;; or just make the definition of into a linear rule?
+;; From an upper bound on i, we get an upper bound on (ash i c).
+;; or just make the definition of ash into a linear rule?
 (defthm <-of-ash-linear-when-<-free-linear
   (implies (and (< i free)
                 (integerp i)
@@ -194,9 +202,9 @@
              (<= (* i (expt 2 c)) i))
     :rule-classes :linear))
 
+;; Right shifting can't make the value bigger.
 (defthm <=-of-ash-when-right-shift-linear
   (implies (and (<= c 0) ; right shift (or no shift)
-                ;; (integerp c)
                 (<= 0 i))
            (<= (ash i c) i))
   :rule-classes :linear
@@ -204,11 +212,92 @@
                           (and (integerp c) (not (equal c 0))))
            :in-theory (enable ash <-of-floor-arg2-gen))))
 
+;; If we right shift at least one place, any nonzero value is made smaller.
 (defthm <-of-ash-when-right-shift-linear
   (implies (and (< c 0) ; right shift
-                ;; (integerp i)
-                (< 0 i) ; positive i means the shifted value is strictly less
+                (< 0 i)
                 (integerp c))
            (< (ash i c) i))
   :rule-classes :linear
-  :hints (("Goal" :in-theory (enable ash <-of-floor-arg1-gen))))
+  :hints (("Goal" :in-theory (enable ash))))
+
+;; Left shifting can't make the value smaller.
+(defthm <=-of-ash-when-left-shift-linear
+  (implies (and (<= 0 c) ; left shift (or no shift)
+                (<= 0 i)
+                (integerp c)
+                (integerp i))
+           (<= i (ash i c)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable ash))))
+
+;; If we left shift at least one place, any nonzero value is made bigger.
+(defthm <-of-ash-when-left-shift-linear
+  (implies (and (< 0 c) ; left shift
+                (< 0 i)
+                (integerp c)
+                (integerp i))
+           (< i (ash i c)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable ash))))
+
+;; Tells linear arithmetic the value of a left shift by a constant amount,
+;; without rewriting the ash.
+(defthm ash-when-non-negative-constant-linear
+  (implies (and (syntaxp (quotep c))
+                (natp c)
+                (integerp i))
+           (equal (ash i c) (* i (expt 2 c))))
+  :rule-classes ((:linear :trigger-terms ((ash i c))))
+  :hints (("Goal" :in-theory (enable ash-becomes-*-of-expt-when-non-negative))))
+
+;; Tells linear arithmetic the value of a right shift by a constant amount,
+;; without rewriting the ash.
+(defthm ash-when-non-positive-constant-linear
+  (implies (and (syntaxp (quotep c))
+                (integerp i)
+                (<= c 0))
+           (equal (ash i c) (floor i (expt 2 (- c)))))
+  :rule-classes ((:linear :trigger-terms ((ash i c))))
+  :hints (("Goal" :in-theory (enable ash-becomes-floor-of-expt-when-non-positive))))
+
+;; Characterizes the conditions under which (ash i c) < i.  For integer i, this
+;; holds iff c is an integer and c and i are nonzero with opposite signs (a left
+;; shift of a negative, or a right shift of a positive).  For a non-integer i,
+;; (ash i c) is 0, so this holds iff (< 0 i).
+(defthm <-of-ash-same-arg1
+  (equal (< (ash i c) i)
+         (if (integerp i)
+             (and (integerp c)
+                  (or (and (< 0 c) (< i 0))   ; left shift of a negative
+                      (and (< c 0) (< 0 i)))) ; right shift of a positive
+           (< 0 i)))
+  :hints (("Goal" :cases ((< i 0) (equal i 0))
+                  :use (:instance <-of-*-and-*-cancel-gen
+                                  (x1 (expt 2 c))
+                                  (x2 1)
+                                  (y i))
+                  :in-theory (e/d (ash <-of-floor-arg1-gen)
+                                  (<-of-*-and-*-cancel-gen)))))
+
+; Characterizes the conditions under which i < (ash i c).  For integer i, this
+;; holds iff c is an integer and either c and i are both positive (a left
+;; shift of a positive) or c is negative and i is less than -1 (a right shift
+;; of a negative; -1 shifts right to itself).  For a non-integer i, (ash i c)
+;; is 0, so this holds iff (< i 0).
+(defthm <-of-ash-same-arg2
+  (equal (< i (ash i c))
+         (if (integerp i)
+             (and (integerp c)
+                  (or (and (< 0 c) (< 0 i)) ; left shift of a positive
+                      (and (< c 0) (< i -1)))) ; right shift of a negative other than -1
+           (< i 0)))
+  :hints (("Goal" :use ((:instance <-of-*-and-*-cancel-gen
+                                   (x1 (expt 2 c))
+                                   (x2 1/2)
+                                   (y i))
+                        (:instance <-of-expt-and-expt-same-base
+                                   (r 2)
+                                   (i -1)
+                                   (j c)))
+                  :in-theory (enable ash <-of-floor-arg2-gen))))
