@@ -885,7 +885,7 @@
    (xdoc::p
     "We have predicates to recognize
      the starts of type specifiers and qualifiers;
-     alignment specifiers always start with @('_Alignas').")
+     alignment specifiers always start with @('alignas') or @('_Alignas').")
    (xdoc::p
     "There is an overlap between the starts of type specifiers and qualifiers,
      namely the @('_Atomic') keyword,
@@ -896,6 +896,7 @@
      This is a keyword only if GCC/Clang extensions are supported."))
   (or (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
+      (token-keywordp token? "alignas")
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__"))
@@ -920,6 +921,7 @@
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
+      (token-keywordp token? "alignas")
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__")
@@ -4940,11 +4942,14 @@
         (retok (spec/qual-typequal (token-to-type-qualifier token))
                span
                parstate))
-       ;; If token is the keyword _Alignas,
+       ;; If token is the keyword 'alignas' or '_Alignas',
        ;; we must have an alignment specifier.
-       ((token-keywordp token "_Alignas") ; _Alignas
-        (b* (((erp alignspec last-span parstate) ; _Alignas ( ... )
-              (parse-alignment-specifier span parstate)))
+       ((or (token-keywordp token "alignas") ; alignas
+            (token-keywordp token "_Alignas")) ; _Alignas
+        (b* (((erp alignspec last-span parstate) ; alignas/_Alignas ( ... )
+              (parse-alignment-specifier span
+                                         (token-keywordp token "_Alignas")
+                                         parstate)))
           (retok (spec/qual-align alignspec)
                  (span-join span last-span)
                  parstate)))
@@ -5232,11 +5237,14 @@
         (retok (decl-spec-function (token-to-function-specifier token))
                span
                parstate))
-       ;; If token is the keyword _Alignas,
+       ;; If token is the keyword 'alignas' or '_Alignas',
        ;; we must have an alignment specifier.
-       ((token-keywordp token "_Alignas") ; _Alignas
-        (b* (((erp alignspec last-span parstate) ; _Alignas ( ... )
-              (parse-alignment-specifier span parstate)))
+       ((or (token-keywordp token "alignas") ; alignas
+            (token-keywordp token "_Alignas")) ; _Alignas
+        (b* (((erp alignspec last-span parstate) ; alignas/_Alignas ( ... )
+              (parse-alignment-specifier span
+                                         (token-keywordp token "_Alignas")
+                                         parstate)))
           (retok (decl-spec-align alignspec)
                  (span-join span last-span)
                  parstate)))
@@ -5827,7 +5835,9 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-alignment-specifier ((first-span spanp) (parstate parstatep))
+  (define parse-alignment-specifier ((first-span spanp)
+                                     (uscore booleanp)
+                                     (parstate parstatep))
     :returns (mv erp
                  (alignspec align-specp)
                  (span spanp)
@@ -5837,9 +5847,14 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "This is called after parsing the initial @('_Alignas') keyword.")
+      "This is called after parsing
+       the initial @('alignas') or @('_Alignas') keyword.")
      (xdoc::p
-      "The span of the @('_Alignas') keyword is passed as input here."))
+      "The span of the @('alignas') or @('_Alignas') keyword
+       is passed as input here.")
+     (xdoc::p
+      "The @('uscore') input distinguishes
+       @('_Alignas') (when @('t')) and @('alignas') (when @('nil'))."))
     (b* (((reterr) (irr-align-spec) (irr-span) parstate)
          ;; There must be an open parenthesis.
          ((erp & parstate) (read-punctuator "(" parstate)) ; (
@@ -5852,23 +5867,23 @@
       (amb?-expr/tyname-case
        expr/tyname
        ;; If we parsed an expression,
-       ;; we return an @('_Alignas') with an expression.
+       ;; we return an 'alignas' or '_Alignas' with an expression.
        :expr (retok (make-align-spec-alignas-expr
-                     :uscore t
+                     :uscore uscore
                      :expr (make-const-expr :expr expr/tyname.expr))
                     (span-join first-span last-span)
                     parstate)
        ;; If we parsed a type name,
-       ;; we return an @('_Alignas') with a type name.
+       ;; we return an 'alignas' or '_Alignas' with a type name.
        :tyname (retok (make-align-spec-alignas-type
-                       :uscore t
+                       :uscore uscore
                        :type expr/tyname.tyname)
                       (span-join first-span last-span)
                       parstate)
        ;; If we parsed an ambiguous expression or type name,
-       ;; we return an ambiguous @('_Alignas').
+       ;; we return an ambiguous 'alignas' or '_Alignas'.
        :ambig (retok (make-align-spec-alignas-ambig
-                      :uscore t
+                      :uscore uscore
                       :expr/type expr/tyname.expr/tyname)
                      (span-join first-span last-span)
                      parstate)))
