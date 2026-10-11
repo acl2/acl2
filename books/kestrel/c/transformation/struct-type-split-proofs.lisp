@@ -2494,7 +2494,7 @@
   (xdoc::topstring
    (xdoc::p
     "This does not perform the transformation; it only generates proofs.
-     So it takes as input both old and new expression."))
+     So it takes as input both old and new statement."))
   (b* (((reterr) (irr-gout)))
     (stmt-case
      old-stmt
@@ -2527,6 +2527,114 @@
                            was not called on ~
                            the old and new code of STRUCT-TYPE-SPLIT."
                           (stmt-fix old-stmt) (stmt-fix new-stmt)))
+     :otherwise (retok (gout-no-thm gin)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-stmt ((stmt stmtp)
+                              (stmt-new stmtp)
+                              (stmt-thm-name symbolp)
+                              info
+                              info-new
+                              (gin ginp))
+  :guard (and (stmt-unambp stmt)
+              (stmt-unambp stmt-new)
+              (stmt-annop stmt)
+              (stmt-annop stmt-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a block items that is a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-stmt),
+     but for STS proof generation."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       (stmt-thm-name (symbol-lfix stmt-thm-name))
+       ((unless stmt-thm-name) (retok gout-no-thm))
+       (types (stmt-types stmt))
+       ((mv & old-stmt) (ldm-stmt stmt)) ; ERP must be NIL
+       ((mv & new-stmt) (ldm-stmt stmt-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
+       (hints `(("Goal"
+                 :in-theory
+                 '((:e c::block-item-stmt)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-stmt->get)
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-stmt-compustate-vars)
+                 :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                       (:instance
+                        block-item-stmt-congruence
+                        (old-stmt ',old-stmt)
+                        (new-stmt ',new-stmt)
+                        (types ',ctypes))
+                       (:instance
+                        block-item-stmt-errors
+                        (stmt ',old-stmt)
+                        (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-thm (block-item-stmt stmt info)
+                                 (block-item-stmt stmt-new info-new)
+                                 gin.vartys
+                                 gin.vartys
+                                 gin.const-new
+                                 gin.thm-index
+                                 hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item ((old-item block-itemp)
+                         (new-item block-itemp)
+                         (old-name identp)
+                         (newl-name identp)
+                         (newr-name identp)
+                         (gin ginp))
+  :guard (and (block-item-unambp old-item)
+              (block-item-unambp new-item)
+              (block-item-annop old-item)
+              (block-item-annop new-item))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new block item.")
+   (xdoc::p
+    "For now only statements are supported."))
+  (b* (((reterr) (irr-gout)))
+    (block-item-case
+     old-item
+     :stmt
+     (block-item-case
+      new-item
+      :stmt (b* (((erp gout) (stsp-stmt old-item.stmt
+                                        new-item.stmt
+                                        old-name
+                                        newl-name
+                                        newr-name
+                                        gin))
+                 (stmt-thm-name (gout->thm-name gout))
+                 (gin (gin-update gin gout)))
+              (stsp-block-item-stmt old-item.stmt
+                                    new-item.stmt
+                                    stmt-thm-name
+                                    old-item.info
+                                    new-item.info
+                                    gin))
+      :otherwise (retmsg$ "The block items ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (block-item-fix old-item)
+                          (block-item-fix new-item)))
      :otherwise (retok (gout-no-thm gin)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
