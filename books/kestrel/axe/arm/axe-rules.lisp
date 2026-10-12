@@ -270,7 +270,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthmd integerp-of-uint
-  (integerp (sint n x)))
+  (integerp (uint n x)))
 
 (defthmd integerp-of-sint
   (integerp (sint n x)))
