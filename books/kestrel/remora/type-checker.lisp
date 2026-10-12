@@ -10,6 +10,7 @@
 
 (in-package "REMORA")
 
+(include-book "static-environments")
 (include-book "ispace-validator")
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-structurals")

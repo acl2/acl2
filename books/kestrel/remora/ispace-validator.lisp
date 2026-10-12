@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "static-environments")
+(include-book "ispace-static-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
