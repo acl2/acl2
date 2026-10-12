@@ -49,7 +49,7 @@
            (sortedp-<= x))
   :hints (("Goal" :in-theory (enable sortedp-<=))))
 
-(defthm sortedp-<=-of-append-simple
+(defthmd sortedp-<=-of-append-simple
   (equal (sortedp-<= (append x y))
          (if (endp x)
              (sortedp-<= y)
