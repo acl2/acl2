@@ -424,12 +424,6 @@
   (equal (PERM LST (LIST (CAR LST)))
          (equal 1 (len lst))))
 
-(defthm memberp-car-of-take
-  (equal (memberp (car lst) (take n lst))
-         (and (integerp n)
-              (< 0 n)))
-  :hints (("Goal" :in-theory (enable take))))
-
 (defthm memberp-nth-take
   (implies (and (< m n)
                 (< n (len lst))
@@ -1119,15 +1113,6 @@
                 )
            (equal (len (subrange start end lst))
                   (+ 1 end (- start)))))
-
-;rename
-(defthm subrange-split-top
-  (implies (and (natp i)
-                (<= low i)
-                (natp low)
-                (< i (len x)))
-           (equal (append (subrange low (+ -1 i) x) (list (nth i x)))
-                  (subrange low i x))))
 
 (defthmd take-split
   (implies (and (natp n)
