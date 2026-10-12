@@ -669,7 +669,7 @@
        (var (ispacevar+type->var fun-var+type))
        (rest-type (ispacevar+type->type fun-var+type))
        ((unless (check-ispace arg ienv)) (reserr nil))
-       (arg (senv-expand-ispace arg ienv))
+       (arg (ispace-senv-expand-ispace arg ienv))
        ((ok (stringdimmap+stringshapemap ispace-maps))
         (check-ispace-params-and-args (list var) (list arg)))
        (rest-type-subst
@@ -1612,7 +1612,7 @@
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
      (b* (((unless (check-ispace atom.ispace ienv)) (reserr nil))
-          (ispace (senv-expand-ispace atom.ispace ienv))
+          (ispace (ispace-senv-expand-ispace atom.ispace ienv))
           ((ok type) (type-option-case atom.type?
                                        :some atom.type?.val
                                        :none (reserr nil)))
@@ -1641,7 +1641,7 @@
                              :type? atom.type?)))
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces ienv)) (reserr nil))
-          (ispaces (senv-expand-ispace-list atom.ispaces ienv))
+          (ispaces (ispace-senv-expand-ispace-list atom.ispaces ienv))
           ((ok type) (type-option-case atom.type?
                                        :some atom.type?.val
                                        :none (reserr nil)))
@@ -1708,7 +1708,7 @@
          (vars (ispacevarlist+type->vars vars+type))
          (body-type (ispacevarlist+type->type vars+type))
          ((unless (check-ispace ie.ispace ienv)) (reserr nil))
-         (ispace (senv-expand-ispace ie.ispace ienv))
+         (ispace (ispace-senv-expand-ispace ie.ispace ienv))
          ((ok (stringdimmap+stringshapemap maps))
           (check-ispace-params-and-args (list (car vars)) (list ispace)))
          (rest-type (sigma-curried-body vars body-type))
@@ -1853,7 +1853,7 @@
        (a dimension variable is bound to a dimension,
        a shape variable is bound to a shape).
        We expand the ispace against the ispace static environment's definitions
-       (see @(tsee senv-expand-ispace)),
+       (see @(tsee ispace-senv-expand-ispace)),
        so that the stored definition is itself fully expanded,
        and we extend the ispace static environment
        to associate that definition to the bound variable.")
@@ -1874,7 +1874,7 @@
                     :dim (ispace-case bind.ispace :dim)
                     :shape (ispace-case bind.ispace :shape)))
            (reserr nil))
-          (ispace (senv-expand-ispace bind.ispace ienv)))
+          (ispace (ispace-senv-expand-ispace bind.ispace ienv)))
        (make-senvs+bind
         :ienv (ispace-senv-add-def bind.var ispace ienv)
         :tenv (type-senv-fix tenv)

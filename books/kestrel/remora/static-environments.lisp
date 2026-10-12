@@ -586,7 +586,7 @@
    (xdoc::p
     "We replace every defined type variable and ispace variable in the type
      with its definition
-     (see @(tsee senv-type-subst) and @(tsee senv-ispace-subst)).
+     (see @(tsee senv-type-subst) and @(tsee ispace-senv-ispace-subst)).
      We substitute the type variables first, and the ispace variables second.
      Since types may contain ispaces but not vice versa,
      substituting the type definitions first may expose
@@ -607,7 +607,7 @@
         (senv-type-subst (type-senv->types tenv)))
        (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
-        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+        (ispace-senv-ispace-subst (ispace-senv->ispaces ienv))))
     (type-subst-ispace-vars-alpha type isubst.dim-map isubst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;

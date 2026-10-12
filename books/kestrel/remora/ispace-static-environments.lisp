@@ -114,7 +114,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-ispace-subst ((map ispace-var-ispace-option-mapp))
+(define ispace-senv-ispace-subst ((map ispace-var-ispace-option-mapp))
   :returns (subst stringdimmap+stringshapemap-p)
   :short "Turn a map from ispace variables to optional ispaces
           into the ispace variable substitution
@@ -140,7 +140,7 @@
         (make-stringdimmap+stringshapemap :dim-map nil :shape-map nil))
        ((mv var ispace?) (omap::head map))
        ((stringdimmap+stringshapemap subst-rest)
-        (senv-ispace-subst (omap::tail map))))
+        (ispace-senv-ispace-subst (omap::tail map))))
     (ispace-option-case
      ispace?
      :none subst-rest
@@ -178,7 +178,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-expand-shape ((shape shapep) (ienv ispace-senvp))
+(define ispace-senv-expand-shape ((shape shapep) (ienv ispace-senvp))
   :returns (new-shape shapep)
   :short "Expand a shape using the ispace definitions
           in the ispace static environment."
@@ -186,15 +186,15 @@
   (xdoc::topstring
    (xdoc::p
     "We replace every defined ispace variable in the shape
-     with its definition (see @(tsee senv-ispace-subst)).
+     with its definition (see @(tsee ispace-senv-ispace-subst)).
      Since shapes contain no binders, this substitution cannot capture."))
   (b* (((stringdimmap+stringshapemap subst)
-        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+        (ispace-senv-ispace-subst (ispace-senv->ispaces ienv))))
     (shape-subst-ispace-vars shape subst.dim-map subst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-expand-ispace ((ispace ispacep) (ienv ispace-senvp))
+(define ispace-senv-expand-ispace ((ispace ispacep) (ienv ispace-senvp))
   :returns (new-ispace ispacep)
   :short "Expand an ispace using the ispace definitions
           in the ispace static environment."
@@ -202,16 +202,16 @@
   (xdoc::topstring
    (xdoc::p
     "We replace every defined ispace variable in the ispace
-     with its definition (see @(tsee senv-ispace-subst)).
+     with its definition (see @(tsee ispace-senv-ispace-subst)).
      Since ispaces contain no binders, this substitution cannot capture."))
   (b* (((stringdimmap+stringshapemap subst)
-        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+        (ispace-senv-ispace-subst (ispace-senv->ispaces ienv))))
     (ispace-subst-ispace-vars ispace subst.dim-map subst.shape-map)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection senv-expand-ispace-list ((x ispace-listp)
-                                             (ienv ispace-senvp))
+(std::defprojection ispace-senv-expand-ispace-list ((x ispace-listp)
+                                                    (ienv ispace-senvp))
   :returns (new-ispaces ispace-listp)
-  :short "Lift @(tsee senv-expand-ispace) to lists of ispaces."
-  (senv-expand-ispace x ienv))
+  :short "Lift @(tsee ispace-senv-expand-ispace) to lists of ispaces."
+  (ispace-senv-expand-ispace x ienv))
