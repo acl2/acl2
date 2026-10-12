@@ -577,7 +577,7 @@
        (var (typevar+type->var fun-var+type))
        (rest-type (typevar+type->type fun-var+type))
        ((unless (check-type arg ienv tenv)) (reserr nil))
-       ((ok arg) (senv-expand-type arg ienv tenv))
+       ((ok arg) (type-senv-expand-type arg ienv tenv))
        ((ok (string-type-map-pair type-maps))
         (check-type-params-and-args (list var) (list arg)))
        (rest-type-subst
@@ -724,7 +724,7 @@
      If the type annotation is absent, there is nothing to check.
      If it is present, it must be a valid type that,
      once expanded against the definitions in the static environments
-     (see @(tsee senv-expand-type)),
+     (see @(tsee type-senv-expand-type)),
      and once lifted to a scalar array type if it is an atom type,
      is equivalent to the calculated expression type passed as argument
      (which is already expanded).
@@ -740,7 +740,7 @@
    anno-type
    :none t
    :some (b* (((unless (check-type anno-type.val ienv tenv)) nil)
-              (anno-type (senv-expand-type anno-type.val ienv tenv))
+              (anno-type (type-senv-expand-type anno-type.val ienv tenv))
               ((when (reserrp anno-type)) nil)
               (anno-type (type-ensure-array anno-type)))
            (type-equivp expr-type anno-type))))
@@ -1013,7 +1013,7 @@
     "These functions maintain the invariant that
      every type they return is fully expanded
      with respect to the definitions in the static environments
-     (see @(tsee senv-expand-type)):
+     (see @(tsee type-senv-expand-type)):
      that is, every ispace or type variable
      that a @('let') binds to a definition
      has been replaced with that definition.
@@ -1194,7 +1194,7 @@
      :var
      (b* ((name+type (omap::assoc expr.name (expr-senv->exprs eenv)))
           ((unless name+type) (reserr nil))
-          ((ok type) (senv-expand-type (cdr name+type) ienv tenv)))
+          ((ok type) (type-senv-expand-type (cdr name+type) ienv tenv)))
        (make-type+expr :type type :expr (expr-fix expr)))
      :atom
      (b* (((ok (type+atom ta)) (check-atom expr.atom ienv tenv eenv)))
@@ -1219,7 +1219,7 @@
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type ienv tenv)) (reserr nil))
           ((unless (type-atom-kindp expr.type)) (reserr nil))
-          ((ok elem) (senv-expand-type expr.type ienv tenv)))
+          ((ok elem) (type-senv-expand-type expr.type ienv tenv)))
        (make-type+expr
         :type (make-type-array :elem elem
                                :ispace (ispace-shape
@@ -1245,7 +1245,7 @@
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type ienv tenv)) (reserr nil))
-          ((ok type) (senv-expand-type expr.type ienv tenv))
+          ((ok type) (type-senv-expand-type expr.type ienv tenv))
           ((ok (type+ispace array)) (type-match-array type)))
        (make-type+expr
         :type (make-type-array
@@ -1559,7 +1559,7 @@
      :lambda
      (b* (((ok type) (var+type?->type-or-err atom.param))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok type) (senv-expand-type type ienv tenv))
+          ((ok type) (type-senv-expand-type type ienv tenv))
           ((ok eenv)
            (expr-senv-add-var (var+type?->var atom.param) type eenv))
           ((ok (type+expr be)) (check-expr atom.body ienv tenv eenv)))
@@ -1573,7 +1573,7 @@
            (reserr nil))
           ((ok types) (var+type?-list->type-list-or-err atom.params))
           ((unless (check-type-list types ienv tenv)) (reserr nil))
-          ((ok types) (senv-expand-type-list types ienv tenv))
+          ((ok types) (type-senv-expand-type-list types ienv tenv))
           ((ok eenv)
            (expr-senv-add-vars
             (var+type?-list-set-types types atom.params)
@@ -1618,7 +1618,7 @@
                                        :none (reserr nil)))
           ((unless (type-atom-kindp type)) (reserr nil))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok box-type) (senv-expand-type type ienv tenv))
+          ((ok box-type) (type-senv-expand-type type ienv tenv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1647,7 +1647,7 @@
                                        :none (reserr nil)))
           ((unless (type-atom-kindp type)) (reserr nil))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok box-type) (senv-expand-type type ienv tenv))
+          ((ok box-type) (type-senv-expand-type type ienv tenv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1887,7 +1887,7 @@
                     :atom (type-atom-kindp bind.type)
                     :array (not (type-atom-kindp bind.type))))
            (reserr nil))
-          ((ok type) (senv-expand-type bind.type ienv tenv)))
+          ((ok type) (type-senv-expand-type bind.type ienv tenv)))
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-add-def bind.var type tenv)
@@ -1909,7 +1909,7 @@
            (reserr nil))
           ((ok types) (var+type?-list->type-list-or-err bind.params))
           ((unless (check-type-list types ienv tenv)) (reserr nil))
-          ((ok types) (senv-expand-type-list types ienv tenv))
+          ((ok types) (type-senv-expand-type-list types ienv tenv))
           ((ok eenv-body)
            (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
@@ -1992,8 +1992,8 @@
            (reserr nil))
           ((unless (check-type bind.type ienv-params tenv-params))
            (reserr nil))
-          ((ok btype) (senv-expand-type bind.type ienv-params tenv-params))
-          ((ok types) (senv-expand-type-list types ienv-params tenv-params))
+          ((ok btype) (type-senv-expand-type bind.type ienv-params tenv-params))
+          ((ok types) (type-senv-expand-type-list types ienv-params tenv-params))
           ((ok eenv-body)
            (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)

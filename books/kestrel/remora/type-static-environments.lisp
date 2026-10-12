@@ -175,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-expand-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
+(define type-senv-expand-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
   :returns (new-type type-resultp)
   :short "Expand a type using the definitions in the static environments."
   :long
@@ -209,17 +209,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define senv-expand-type-list ((types type-listp)
-                               (ienv ispace-senvp)
-                               (tenv type-senvp))
+(define type-senv-expand-type-list ((types type-listp)
+                                    (ienv ispace-senvp)
+                                    (tenv type-senvp))
   :returns (new-types type-list-resultp
                       :hints
                       (("Goal"
                         :induct t
                         :in-theory (enable type-listp-when-result-not-error))))
-  :short "Lift @(tsee senv-expand-type) to lists."
+  :short "Lift @(tsee type-senv-expand-type) to lists."
   (b* (((when (endp types)) nil)
-       ((ok type) (senv-expand-type (car types) ienv tenv))
-       ((ok types) (senv-expand-type-list (cdr types) ienv tenv)))
+       ((ok type) (type-senv-expand-type (car types) ienv tenv))
+       ((ok types) (type-senv-expand-type-list (cdr types) ienv tenv)))
     (cons type types))
   :verify-guards :after-returns)
