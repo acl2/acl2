@@ -1617,6 +1617,10 @@
 ; u belong to S (but now we restrict to measured positions in recursive
 ; calls).
 
+; Note that we check elsewhere for a different kind of subversion, in which the
+; :guard-theorem or :termination-theorem may depend on local properties; see
+; bogus-exported-compliants and bogus-exported-measures, respectively.
+
   (cond ((endp t-machines) nil)
         (t (or (subversivep fns (car t-machines) formals-and-subset-alist wrld)
                (subversive-cliquep fns (cdr t-machines)

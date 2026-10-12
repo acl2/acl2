@@ -38,46 +38,42 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Values of the @('signed char') type, like all the other values,
-     must be represented as one or more bytes [C17:6.2.6.1/4].
-     Objects of the @('signed char') type,
-     like all other signed integer objects,
-     must have no more value bits
-     than value bits of their unsigned counterpart
-     [C17:6.2.6.2/2],
-     i.e. @('unsigned char') objects in this case,
-     which consist of exactly one byte (see @(tsee uchar-format)):
-     therefore, @('signed char') objects must take exactly one byte as well.")
+    "Objects of the @('signed char') type
+     must have the same size (i.e. number of bytes)
+     as their unsigned counterpart [C17:6.2.5/6] [C23:6.2.5],
+     in this case @('unsigned char') objects,
+     which consist of exactly one byte (see @(tsee uchar-format)).
+     Therefore, @('signed char') objects must take exactly one byte as well.")
    (xdoc::p
     "Since @('signed char') objects must have one sign bit and no padding bits
-     [C17:6.2.6.2/2],
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
      they must have exactly @($\\mathtt{CHAR\\_BIT} - 1$) value bits.
-     Since the values of the value bits of a signed integer type
-     must be equal to the value bits of the unsigned integer type counterpart
-     [C17:6.2.6.2/2],
-     the value bits of @('signed char') values are the low bits of the byte,
-     and the sign is the high bit.")
+     Since each value bit of a signed integer type
+     must have the same value as the same bit
+     of the unsigned integer type counterpart
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
+     the value bits of @('signed char') objects are the low bits of the byte,
+     and the sign bit is the high bit.")
    (xdoc::p
     "While the byte/bit format of @('signed char') is thus set,
      the exact values represented by this byte/bit format depend on the "
     (xdoc::seetopic "signed-format" "signed format")
     " (when the sign bit is 1).
-     Furthermore, [C17:6.2.6.2/2] identifies one specific bit pattern,
+     Furthermore, [C17:6.2.6.2/2] (but not [C23])
+     identifies one specific bit pattern,
      for each signed format,
      as a possible trap representation:
      it either is a trap representation or it is not.
      These two choices
      (i.e. the signed format,
-     and whether the specific pattern is a trap representation),
+     and whether the specific pattern is a trap representation)
      completely define the representation of @('signed char').")
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap.")
-   (xdoc::p
-    "These choices support the alternatives allowed by C17.
-     For C23, @(tsee schar-format-wfp) requires two's complement
-     and a false trap flag."))
+     and a boolean flag saying whether the aforementioned pattern is a trap.
+     The latter flag is forced to be @('nil') in C23;
+     see @(tsee schar-format-wfp)."))
   ((signed signed-format)
    (trap bool))
   :pred schar-formatp)
@@ -113,7 +109,8 @@
 (define schar-format->max ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -152,7 +149,8 @@
 (define schar-format->min ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('SCHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -226,7 +224,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the simplest and most common format for @('signed char').")
+    "This is the simplest and most common format for @('signed char') in C17,
+     and the only one allowed in C23 for any @('CHAR_BIT').")
    (xdoc::p
     "The 8-bit size actually comes from the @(tsee uchar-format-8)
      that is intended to accompany this @(tsee schar-format) format."))

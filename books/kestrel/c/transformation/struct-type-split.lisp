@@ -2523,7 +2523,9 @@
                        (context-msg-align-spec
                          align-spec
                          (sts-split-state->dialect st)))))
-          (retok (c$::make-align-spec-alignas-type :type left-type) st))
+          (retok (c$::make-align-spec-alignas-type :uscore align-spec.uscore
+                                                   :type left-type)
+                 st))
         :alignas-expr
         (b* (((erp left-expr right-expr? st)
               (const-expr-sts-split align-spec.expr st))
@@ -2532,7 +2534,9 @@
                        (context-msg-align-spec
                          align-spec
                          (sts-split-state->dialect st)))))
-          (retok (c$::make-align-spec-alignas-expr :expr left-expr) st))
+          (retok (c$::make-align-spec-alignas-expr :uscore align-spec.uscore
+                                                   :expr left-expr)
+                 st))
         :alignas-ambig (retmsg$ "Ambiguous ASTs are unsupported.")))
     :measure (align-spec-count align-spec))
 
