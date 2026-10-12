@@ -10,10 +10,7 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-
-;; Make a if from TEST, THEN, and ELSE, except return HINT (and avoid consing)
+;; Make an if from TEST, THEN, and ELSE, except return HINT (and avoid consing)
 ;; if HINT is that IF.
 ;; Let's try leaving this enabled, since its :logic part is nice.
 (defun make-if-with-hint (test
