@@ -266,3 +266,11 @@
   (implies (equal 0 (bvchop 2 x))
            (equal (bvcat 30 (slice 31 2 x) 2 0)
                   (bvchop 32 x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd integerp-of-uint
+  (integerp (sint n x)))
+
+(defthmd integerp-of-sint
+  (integerp (sint n x)))

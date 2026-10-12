@@ -28,6 +28,7 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (in-theory (disable mv-nth))
@@ -297,12 +298,11 @@
 (defthm mv-nth-1-of-lsl_c-becomes-getbit
   (implies (and (<= shift n)
                 (natp n)
-                (unsigned-byte-p n x)
                 (integerp shift)
                 ;(< 0 shift)
                 )
            (equal (mv-nth 1 (lsl_c n x shift))
-                  (getbit (- n shift) x)))
+                  (getbit (- n shift) (bvchop n x))))
   :hints (("Goal" :in-theory (enable lsl_c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -774,12 +774,8 @@
 
 ;; Output 0 is just the sum of x and y and carry_in.
 (defthm mv-nth-0-of-AddWithCarry
-  (implies (and (posp n)
-                (integerp x)
-                (integerp y)
-                (integerp carry_in))
-           (equal (mv-nth 0 (AddWithCarry n x y carry_in))
-                  (bvplus n x (bvplus n y carry_in))))
+  (equal (mv-nth 0 (AddWithCarry n x y carry_in))
+         (bvplus n x (bvplus n y carry_in)))
   :hints (("Goal" :in-theory (enable AddWithCarry bvplus))))
 
 (local (include-book "kestrel/bv/getbit" :dir :system))

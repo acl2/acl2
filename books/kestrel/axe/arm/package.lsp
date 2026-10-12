@@ -138,7 +138,9 @@
     arm::le-condition
 
     arm::update-error ; todo: more
-    ))
+
+    arm::uint
+    arm::sint))
 
 ;; (defconst *arm-symbols-in-acl2-package*
 ;;   '(ubyte32-list-fix))
