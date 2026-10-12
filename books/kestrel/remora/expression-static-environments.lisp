@@ -10,12 +10,9 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-static-environments")
-(include-book "type-static-environments")
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-constructors")
-(include-book "variable-substitution-operations")
 
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 
