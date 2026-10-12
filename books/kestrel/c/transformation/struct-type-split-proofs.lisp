@@ -15,6 +15,9 @@
 (include-book "variables-in-computation-states")
 (include-book "proof-generation")
 
+(include-book "../atc/symbolic-execution-rules/flexible-array-member")
+(include-book "../representation/shallow-deep-relation")
+
 (include-book "kestrel/c/language/dynamic-semantics" :dir :system)
 (include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
 (include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
@@ -1165,8 +1168,14 @@
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (cond ((member-equal (c::binop-kind op)
-                                                        '(:mul :div :rem :add :sub
-                                                          :bitand :bitxor :bitior))
+                                                        '(:mul
+                                                          :div
+                                                          :rem
+                                                          :add
+                                                          :sub
+                                                          :bitand
+                                                          :bitxor
+                                                          :bitior))
                                           (c::uaconvert-types type1 type2))
                                          ((member-equal (c::binop-kind op)
                                                         '(:shl :shr))
@@ -1202,6 +1211,223 @@
                          c::expr-value->value$inline-of-expr-value-fix-x
                          mv-nth
                          iff
+                         (:e equal)))
+          (defruled stmt-return-value-congruence-under-compustate-equivp
+            (b* ((old (c::stmt-return old-expr))
+                 (new (c::stmt-return new-expr))
+                 ((mv old-expr-eval old-expr-compst)
+                  (c::exec-expr old-expr old-compst old-fenv (1- limit)))
+                 ((mv new-expr-eval new-expr-compst)
+                  (c::exec-expr new-expr new-compst new-fenv (1- limit)))
+                 (old-expr-val (c::expr-value->value old-expr-eval))
+                 (new-expr-val (c::expr-value->value new-expr-eval))
+                 ((mv old-sval old-compst1)
+                  (c::exec-stmt old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-stmt new new-compst new-fenv limit))
+                 (type (c::type-of-value old-expr-val)))
+              (implies (and old-expr
+                            new-expr
+                            (not (c::errorp old-sval))
+                            (not (c::errorp new-expr-eval))
+                            (iff old-expr-eval new-expr-eval)
+                            (equal old-expr-val new-expr-val)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-expr-compst new-expr-compst)
+                            (c::type-nonchar-integerp type))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (equal (c::stmt-value-kind old-sval) :return)
+                            (c::stmt-value-return->value? old-sval)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::insert type nil)))))
+            :expand ((c::exec-stmt (c::stmt-return old-expr)
+                                   old-compst old-fenv limit)
+                     (c::exec-stmt (c::stmt-return new-expr)
+                                   new-compst new-fenv limit))
+            :in-theory
+            '(c::apconvert-expr-value-when-not-array
+              c::value-kind-not-array-when-value-integerp
+              c::type-option-of-stmt-value
+              c::type-of-value-option
+              c::value-option-some->val
+              c::not-errorp-when-stmt-valuep
+              c::not-errorp-when-expr-valuep
+              c::exec-expr-expr-equiv-congruence-on-e
+              c::expr-value->value$inline-expr-value-equiv-congruence-on-x
+              c::type-option-of-stmt-value
+              c::errorp-of-error
+              c::expr-option-fix-under-expr-option-equiv
+              c::expr-option-fix-under-iff
+              c::expr-optionp-of-expr-option-fix
+              c::expr-value-fix-under-expr-value-equiv
+              c::expr-valuep-of-expr-value-fix
+              c::exprp-when-expr-optionp
+              set::in-insert
+              c::return-type-of-stmt-return
+              c::return-type-of-stmt-value-return
+              c::stmt-fix-when-stmtp
+              c::stmt-return->value-of-stmt-return
+              c::stmt-value-return->value?-of-stmt-value-return
+              c::type-nonchar-integerp-of-type-of-value
+              c::value-fix-when-valuep
+              c::value-option-fix-when-value-optionp
+              c::value-optionp-when-valuep
+              c::valuep-of-expr-value->value
+              (:t c::expr-value->value)))
+          (defruled block-item-stmt-congruence-under-compustate-equivp
+            (b* ((old (c::block-item-stmt old-stmt))
+                 (new (c::block-item-stmt new-stmt))
+                 ((mv old-stmt-sval old-stmt-compst)
+                  (c::exec-stmt old-stmt old-compst old-fenv (1- limit)))
+                 ((mv new-stmt-sval new-stmt-compst)
+                  (c::exec-stmt new-stmt new-compst new-fenv (1- limit)))
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (equal old-stmt-sval new-stmt-sval)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-stmt-compst new-stmt-compst)
+                            (set::in
+                             (c::type-option-of-stmt-value old-stmt-sval)
+                             types))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     types))))
+            :expand ((c::exec-block-item (c::block-item-stmt old-stmt)
+                                         old-compst old-fenv limit)
+                     (c::exec-block-item (c::block-item-stmt new-stmt)
+                                         new-compst new-fenv limit))
+            :in-theory '(c::return-type-of-block-item-stmt
+                         c::block-item-stmt->get-of-block-item-stmt
+                         c::exec-stmt-of-stmt-fix-s
+                         c::errorp-of-error
+                         mv-nth
+                         (:e equal)))
+          (defruled block-item-list-empty-congruence-under-compustate-equivp
+            (b* ((old nil)
+                 (new nil)
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item-list old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item-list new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (compustate-equivp old-compst new-compst))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::insert nil nil)))))
+            :in-theory '(c::exec-block-item-list
+                         c::errorp-of-error
+                         compustate-equivp-of-compustate-fix-old-compst
+                         compustate-equivp-of-compustate-fix-new-compst
+                         (:e consp)
+                         (:e c::errorp)
+                         (:e c::stmt-value-none)
+                         (:e c::type-option-of-stmt-value)
+                         (:e set::in)
+                         (:e set::insert)
+                         mv-nth
+                         (:e equal)))
+          (defruled block-item-list-cons-first-congruence-under-compustate-equivp
+            (b* ((old (cons old-item old-items))
+                 (new (cons new-item new-items))
+                 ((mv old-item-sval old-item-compst)
+                  (c::exec-block-item old-item old-compst old-fenv (1- limit)))
+                 ((mv new-item-sval new-item-compst)
+                  (c::exec-block-item new-item new-compst new-fenv (1- limit)))
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item-list old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item-list new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (equal old-item-sval new-item-sval)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-item-compst new-item-compst)
+                            (equal (c::stmt-value-kind old-item-sval) :return)
+                            (set::in
+                             (c::type-option-of-stmt-value old-item-sval)
+                             first-types))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::union (set::delete nil first-types)
+                                                 rest-types)))))
+            :expand ((c::exec-block-item-list
+                      (cons old-item old-items) old-compst old-fenv limit)
+                     (c::exec-block-item-list
+                      (cons new-item new-items) new-compst new-fenv limit))
+            :in-theory '(c::type-option-of-stmt-value
+                         c::errorp-of-error
+                         c::consp-when-errorp
+                         c::stmt-value-kind-possibilities
+                         acl2::zp-compound-recognizer
+                         set::delete-in
+                         set::union-in
+                         car-cons
+                         cdr-cons
+                         mv-nth
+                         not
+                         (:e equal)
+                         (:t c::type-of-value-option)))
+          (defruled block-item-list-cons-rest-congruence-under-compustate-equivp
+            (b* ((old (cons old-item old-items))
+                 (new (cons new-item new-items))
+                 ((mv old-item-sval old-item-compst)
+                  (c::exec-block-item old-item old-compst old-fenv (1- limit)))
+                 ((mv new-item-sval new-item-compst)
+                  (c::exec-block-item new-item new-compst new-fenv (1- limit)))
+                 ((mv old-items-sval old-items-compst)
+                  (c::exec-block-item-list
+                   old-items old-item-compst old-fenv (1- limit)))
+                 ((mv new-items-sval new-items-compst)
+                  (c::exec-block-item-list
+                   new-items new-item-compst new-fenv (1- limit)))
+                 ((mv old-sval old-compst1)
+                  (c::exec-block-item-list old old-compst old-fenv limit))
+                 ((mv new-sval new-compst1)
+                  (c::exec-block-item-list new new-compst new-fenv limit)))
+              (implies (and (not (c::errorp old-sval))
+                            (equal old-item-sval new-item-sval)
+                            (equal old-items-sval new-items-sval)
+                            (compustate-equivp old-compst new-compst)
+                            (compustate-equivp old-item-compst new-item-compst)
+                            (compustate-equivp old-items-compst
+                                               new-items-compst)
+                            (equal (c::stmt-value-kind old-item-sval) :none)
+                            (set::in
+                             (c::type-option-of-stmt-value old-item-sval)
+                             first-types)
+                            (set::in
+                             (c::type-option-of-stmt-value old-items-sval)
+                             rest-types))
+                       (and (not (c::errorp new-sval))
+                            (equal old-sval new-sval)
+                            (compustate-equivp old-compst1 new-compst1)
+                            (set::in (c::type-option-of-stmt-value old-sval)
+                                     (set::union (set::delete nil first-types)
+                                                 rest-types)))))
+            :expand ((c::exec-block-item-list
+                      (cons old-item old-items) old-compst old-fenv limit)
+                     (c::exec-block-item-list
+                      (cons new-item new-items) new-compst new-fenv limit))
+            :in-theory '(c::errorp-of-error
+                         c::consp-when-errorp
+                         c::stmt-value-kind-possibilities
+                         acl2::zp-compound-recognizer
+                         set::delete-in
+                         set::union-in
+                         car-cons
+                         cdr-cons
+                         mv-nth
+                         not
                          (:e equal))))))
     (retok events)))
 
@@ -1796,6 +2022,15 @@
                (thm-name symbolp)
                (updated-thm-index posp))
   :short "Generate a theorem for the STS transformation of a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-stmt-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-stmt-thm)
+     so that it can be used for STS proof generation as well."))
   (b* ((old (stmt-fix old))
        (new (stmt-fix new))
        ((unless (stmt-formalp old))
@@ -1825,12 +2060,11 @@
               ((mv new-sval new-compst1)
                (c::exec-stmt new-stmt new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
-                         (> (c::compustate-frames-number compst) 0)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
-                         (equal old-compst new-compst)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
@@ -1840,6 +2074,150 @@
                      ,formula
                      :rule-classes nil
                      :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-gen-block-item-thm ((old block-itemp)
+                                 (new block-itemp)
+                                 (vartys-pre c::ident-type-mapp)
+                                 (vartys-post c::ident-type-mapp)
+                                 (const-new symbolp)
+                                 (thm-index posp)
+                                 (hints true-listp))
+  :guard (and (block-item-unambp old)
+              (block-item-unambp new)
+              (block-item-annop old)
+              (block-item-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for the STS transformation of a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-block-item-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-block-item-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (block-item-fix old))
+       (new (block-item-fix new))
+       ((unless (block-item-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (block-item-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (types (block-item-types old))
+       ((unless (equal (block-item-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item ~x1 differ from ~
+                the types ~x2 of the old block item ~x3."
+               (block-item-types new) new types old)
+        (mv '(_) nil 1))
+       (vars-pre (gen-var-assertions vartys-pre 'old-compst))
+       (vars-post (gen-var-assertions vartys-post 'old-compst1))
+       ((mv & old-item) (ldm-block-item old)) ; ERP is NIL because FORMALP
+       ((mv & new-item) (ldm-block-item new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
+       (formula
+        `(b* ((old-item ',old-item)
+              (new-item ',new-item)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item old-item old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item new-item new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
+                         ,@vars-pre
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
+                         (set::in (c::type-option-of-stmt-value old-sval)
+                                  ',ctypes)
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@vars-post))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,(true-list-fix hints))))
+    (mv thm-event thm-name thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-gen-block-item-list-thm ((old block-item-listp)
+                                      (new block-item-listp)
+                                      (vartys c::ident-type-mapp)
+                                      (const-new symbolp)
+                                      (thm-index posp)
+                                      (hints true-listp))
+  :guard (and (block-item-list-unambp old)
+              (block-item-list-unambp new)
+              (block-item-list-annop old)
+              (block-item-list-annop new))
+  :returns (mv (thm-event pseudo-event-formp)
+               (thm-name symbolp)
+               (updated-thm-index posp))
+  :short "Generate a theorem for
+          the STS transformation of a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee gen-block-item-list-thm),
+     but it relaxes the equality of the initial computation states
+     (which is a single @('compst') variable in that function)
+     to equivalent computation states.
+     We plan to generalize @(tsee gen-block-item-list-thm)
+     so that it can be used for STS proof generation as well."))
+  (b* ((old (block-item-list-fix old))
+       (new (block-item-list-fix new))
+       ((unless (block-item-list-formalp old))
+        (raise "Internal error: ~x0 is not in the formalized subset." old)
+        (mv '(_) nil 1))
+       ((unless (block-item-list-formalp new))
+        (raise "Internal error: ~x0 is not in the formalized subset." new)
+        (mv '(_) nil 1))
+       (types (block-item-list-types old))
+       ((unless (equal (block-item-list-types new)
+                       types))
+        (raise "Internal error: ~
+                the types ~x0 of the new block item list ~x1 differ from ~
+                the types ~x2 of the old block item list ~x3."
+               (block-item-list-types new) new types old)
+        (mv '(_) nil 1))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
+       ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
+       (formula
+        `(b* ((old-items ',old-items)
+              (new-items ',new-items)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item-list old-items old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item-list new-items new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
+                         ,@vars-pre
+                         (not (c::errorp old-sval)))
+                    (and (not (c::errorp new-sval))
+                         (equal old-sval new-sval)
+                         (set::in (c::type-option-of-stmt-value old-sval)
+                                  ',ctypes)
+                         (compustate-equivp old-compst1 new-compst1)))))
+       ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
+       (thm-event
+        `(defrule ,thm-name
+           ,formula
+           :rule-classes nil
+           :hints ,(true-list-fix hints))))
     (mv thm-event thm-name thm-index))
   :no-function nil)
 
@@ -2007,13 +2385,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is similar to @(tsee xeq-expr-binary),
-     but for STS proof generation;
-     unlike that function,
-     it does not perform the transformation,
-     but it only generates proofs,
-     so it is given (the components of)
-     both the old and new expression as inputs,
-     which it sanity-checks."))
+     but for STS proof generation."))
   (b* (((reterr) (irr-gout))
        ((gin gin) gin)
        (gout-no-thm (gout-no-thm gin))
@@ -2117,9 +2489,7 @@
   (xdoc::topstring
    (xdoc::p
     "This does not perform the transformation; it only generates proofs.
-     So it takes as input both old and new expression.
-     This is very limited for now:
-     we only generate theorems for identifier expressions."))
+     So it takes as input both old and new expression."))
   (b* (((reterr) (irr-gout)))
     (expr-case
      old-expr
@@ -2216,80 +2586,427 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-param-declon-list ((old-params param-declon-listp)
-                                (new-params param-declon-listp))
-  :guard (and (param-declon-list-unambp old-params)
-              (param-declon-list-unambp new-params)
-              (param-declon-list-annop old-params)
-              (param-declon-list-annop new-params))
-  :returns (mv (erp maybe-msgp) (vartys c::ident-type-mapp))
-  :short "Generate the initial variables in scope
-          from the parameters of a function definition."
+(define stsp-stmt-return ((expr exprp)
+                          (expr-new exprp)
+                          (expr-thm-name symbolp)
+                          info
+                          (gin ginp))
+  :guard (and (expr-unambp expr)
+              (expr-unambp expr-new)
+              (expr-annop expr)
+              (expr-annop expr-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a return statement with an expression."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only add entries for parameters
-     that are non-abstract
-     and whose type is integer except @('bool') or plain @('char').
-     We skip over the parameters that do not satisfy these conditions."))
-  (b* (((reterr) nil)
-       ((when (endp old-params))
-        (if (endp new-params)
-            (retok nil)
-          (retmsg$ "The new function has more parameters than the old one, ~
-                    namely the extra parameters ~x0. ~
-                    This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
-                    was not called on ~
-                    the old and new code of STRUCT-TYPE-SPLIT."
-                   (param-declon-list-fix new-params))))
-       ((when (endp new-params))
-        (retmsg$ "The new function has more parameters than the old one, ~
-                  namely the extra parameters ~x0. ~
+    "This is similar to @(tsee xeq-stmt-return),
+     but for STS proof generation."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       ((mv & old-expr) (ldm-expr expr)) ; ERP must be NIL
+       ((mv & new-expr) (ldm-expr expr-new)) ; ERP must be NIL
+       (expr-thm-name (symbol-lfix expr-thm-name))
+       ((unless expr-thm-name) (retok gout-no-thm))
+       (hints `(("Goal"
+                 :in-theory '((:e set::insert)
+                              (:e c::stmt-return)
+                              (:e c::type-nonchar-integerp)
+                              stmt-compustate-vars)
+                 :use ((:instance ,expr-thm-name
+                                  (limit (1- limit)))
+                       (:instance
+                        stmt-return-value-congruence-under-compustate-equivp
+                        (old-expr ',old-expr)
+                        (new-expr ',new-expr))
+                       (:instance stmt-return-errors
+                                  (expr ',old-expr)
+                                  (compst old-compst)
+                                  (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-stmt-thm (stmt-return (expr-fix expr) info)
+                           (stmt-return (expr-fix expr-new) info)
+                           gin.vartys
+                           gin.const-new
+                           gin.thm-index
+                           hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-stmt ((old-stmt stmtp)
+                   (new-stmt stmtp)
+                   (old-name identp)
+                   (newl-name identp)
+                   (newr-name identp)
+                   (gin ginp))
+  :guard (and (stmt-unambp old-stmt)
+              (stmt-unambp new-stmt)
+              (stmt-annop old-stmt)
+              (stmt-annop new-stmt))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new statement."))
+  (b* (((reterr) (irr-gout)))
+    (stmt-case
+     old-stmt
+     :return
+     (stmt-case
+      new-stmt
+      :return (b* (((unless (iff old-stmt.expr? new-stmt.expr?))
+                    (retmsg$ "The statements ~x0 and ~x1 do not match. ~
+                              This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                              was not called on ~
+                              the old and new code of STRUCT-TYPE-SPLIT."
+                             (stmt-fix old-stmt) (stmt-fix new-stmt)))
+                   ((unless old-stmt.expr?)
+                    (retok (gout-no-thm gin)))
+                   ((erp gout) (stsp-expr old-stmt.expr?
+                                          new-stmt.expr?
+                                          old-name
+                                          newl-name
+                                          newr-name
+                                          gin))
+                   (expr-thm (gout->thm-name gout))
+                   (gin (gin-update gin gout)))
+                (stsp-stmt-return old-stmt.expr?
+                                  new-stmt.expr?
+                                  expr-thm
+                                  old-stmt.info
+                                  gin))
+      :otherwise (retmsg$ "The statments ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (stmt-fix old-stmt) (stmt-fix new-stmt)))
+     :otherwise (retok (gout-no-thm gin)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-stmt ((stmt stmtp)
+                              (stmt-new stmtp)
+                              (stmt-thm-name symbolp)
+                              info
+                              info-new
+                              (gin ginp))
+  :guard (and (stmt-unambp stmt)
+              (stmt-unambp stmt-new)
+              (stmt-annop stmt)
+              (stmt-annop stmt-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a block items that is a statement."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-stmt),
+     but for STS proof generation."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       (stmt-thm-name (symbol-lfix stmt-thm-name))
+       ((unless stmt-thm-name) (retok gout-no-thm))
+       (types (stmt-types stmt))
+       ((mv & old-stmt) (ldm-stmt stmt)) ; ERP must be NIL
+       ((mv & new-stmt) (ldm-stmt stmt-new)) ; ERP must be NIL
+       ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
+       (hints `(("Goal"
+                 :in-theory
+                 '((:e c::block-item-stmt)
+                   (:e c::block-item-kind)
+                   (:e c::block-item-stmt->get)
+                   c::compustate-frames-number-of-exec-stmt
+                   c::compustatep-when-compustate-resultp-and-not-errorp
+                   block-item-stmt-compustate-vars)
+                 :use ((:instance ,stmt-thm-name (limit (1- limit)))
+                       (:instance
+                        block-item-stmt-congruence-under-compustate-equivp
+                        (old-stmt ',old-stmt)
+                        (new-stmt ',new-stmt)
+                        (types ',ctypes))
+                       (:instance
+                        block-item-stmt-errors
+                        (stmt ',old-stmt)
+                        (compst old-compst)
+                        (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-thm (block-item-stmt stmt info)
+                                 (block-item-stmt stmt-new info-new)
+                                 gin.vartys
+                                 gin.vartys
+                                 gin.const-new
+                                 gin.thm-index
+                                 hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item ((old-item block-itemp)
+                         (new-item block-itemp)
+                         (old-name identp)
+                         (newl-name identp)
+                         (newr-name identp)
+                         (gin ginp))
+  :guard (and (block-item-unambp old-item)
+              (block-item-unambp new-item)
+              (block-item-annop old-item)
+              (block-item-annop new-item))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a block item."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new block item.")
+   (xdoc::p
+    "For now only statements are supported."))
+  (b* (((reterr) (irr-gout)))
+    (block-item-case
+     old-item
+     :stmt
+     (block-item-case
+      new-item
+      :stmt (b* (((erp gout) (stsp-stmt old-item.stmt
+                                        new-item.stmt
+                                        old-name
+                                        newl-name
+                                        newr-name
+                                        gin))
+                 (stmt-thm-name (gout->thm-name gout))
+                 (gin (gin-update gin gout)))
+              (stsp-block-item-stmt old-item.stmt
+                                    new-item.stmt
+                                    stmt-thm-name
+                                    old-item.info
+                                    new-item.info
+                                    gin))
+      :otherwise (retmsg$ "The block items ~x0 and ~x1 do not match. ~
+                           This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                           was not called on ~
+                           the old and new code of STRUCT-TYPE-SPLIT."
+                          (block-item-fix old-item)
+                          (block-item-fix new-item)))
+     :otherwise (retok (gout-no-thm gin)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-list-empty ((gin ginp))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for the empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-list-empty),
+     but for STS proof generation."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (items nil)
+       (hints
+        `(("Goal"
+           :in-theory '((:e set::insert)
+                        block-item-list-empty-compustate-vars)
+           :use (block-item-list-empty-congruence-under-compustate-equivp))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-list-thm items
+                                      items
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index
+                                      hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-list-cons ((item block-itemp)
+                                   (item-new block-itemp)
+                                   (item-thm-name symbolp)
+                                   (items block-item-listp)
+                                   (items-new block-item-listp)
+                                   (items-thm-name symbolp)
+                                   (gin ginp))
+  :guard (and (block-item-unambp item)
+              (block-item-unambp item-new)
+              (block-item-list-unambp items)
+              (block-item-list-unambp items-new)
+              (block-item-annop item)
+              (block-item-annop item-new)
+              (block-item-list-annop items)
+              (block-item-list-annop items-new))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a non-empty list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee xeq-block-item-list-cons),
+     but for STS proof generation.")
+   (xdoc::p
+    "We generate a theorem iff theorems were generated for
+     both the first item and (the list of) the rest of the items."))
+  (b* (((reterr) (irr-gout))
+       ((gin gin) gin)
+       (gout-no-thm (gout-no-thm gin))
+       (item-thm-name (symbol-lfix item-thm-name))
+       (items-thm-name (symbol-lfix items-thm-name))
+       ((unless (and item-thm-name
+                     items-thm-name))
+        (retok gout-no-thm))
+       (item (block-item-fix item))
+       (items (block-item-list-fix items))
+       (item-new (block-item-fix item-new))
+       (items-new (block-item-list-fix items-new))
+       (item+items (cons item items))
+       (item+items-new (cons item-new items-new))
+       (first-types (block-item-types item))
+       (rest-types (block-item-list-types items))
+       ((mv & old-item) (ldm-block-item item)) ; ERP must be NIL
+       ((mv & new-item) (ldm-block-item item-new)) ; ERP must be NIL
+       ((mv & old-items) (ldm-block-item-list items)) ; ERP must be NIL
+       ((mv & new-items) (ldm-block-item-list items-new)) ; ERP must be NIL
+       ((mv & first-ctypes) (ldm-type-option-set first-types)) ; ERP must be NIL
+       ((mv & rest-ctypes) (ldm-type-option-set rest-types)) ; ERP must be NIL
+       (hints
+        `(("Goal"
+           :in-theory
+           '(c::stmt-value-kind-possibilities
+             (:e set::delete)
+             (:e set::union)
+             c::compustate-frames-number-of-exec-block-item
+             c::compustatep-when-compustate-resultp-and-not-errorp
+             block-item-list-cons-compustate-vars)
+           :use ((:instance
+                  ,item-thm-name
+                  (limit (1- limit)))
+                 (:instance
+                  ,items-thm-name
+                  (old-compst
+                   (mv-nth 1 (c::exec-block-item
+                              ',old-item old-compst old-fenv (1- limit))))
+                  (new-compst
+                   (mv-nth 1 (c::exec-block-item
+                              ',new-item new-compst new-fenv (1- limit))))
+                  (limit (1- limit)))
+                 (:instance
+                  block-item-list-cons-first-congruence-under-compustate-equivp
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
+                 (:instance
+                  block-item-list-cons-rest-congruence-under-compustate-equivp
+                  (old-item ',old-item)
+                  (old-items ',old-items)
+                  (new-item ',new-item)
+                  (new-items ',new-items)
+                  (first-types ',first-ctypes)
+                  (rest-types ',rest-ctypes))
+                 (:instance
+                  block-item-list-cons-first-errors
+                  (item ',old-item)
+                  (items ',old-items)
+                  (compst old-compst)
+                  (fenv old-fenv))
+                 (:instance
+                  block-item-list-cons-rest-errors
+                  (item ',old-item)
+                  (items ',old-items)
+                  (compst old-compst)
+                  (fenv old-fenv))))))
+       ((mv thm-event thm-name thm-index)
+        (stsp-gen-block-item-list-thm item+items
+                                      item+items-new
+                                      gin.vartys
+                                      gin.const-new
+                                      gin.thm-index
+                                      hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-list ((old-items block-item-listp)
+                              (new-items block-item-listp)
+                              (old-name identp)
+                              (newl-name identp)
+                              (newr-name identp)
+                              (gin ginp))
+  :guard (and (block-item-list-unambp old-items)
+              (block-item-list-unambp new-items)
+              (block-item-list-annop old-items)
+              (block-item-list-annop new-items))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new lists of block items.")
+   (xdoc::p
+    "The two lists should always have the same length,
+     because the transformation does not add or remove block items.
+     If the old list is empty, we use the separate function for the empty list.
+     Otherwise, we process the first items and then the rest of the lists,
+     and we use the separate function for the non-empty list."))
+  (b* (((reterr) (irr-gout))
+       ((when (endp old-items))
+        (b* (((unless (endp new-items))
+              (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (block-item-list-fix old-items)
+                       (block-item-list-fix new-items))))
+          (stsp-block-item-list-empty gin)))
+       ((when (endp new-items))
+        (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
                   This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                   was not called on ~
                   the old and new code of STRUCT-TYPE-SPLIT."
-                 (param-declon-list-fix old-params)))
-       (old-param (car old-params))
-       (new-param (car new-params))
-       (type (param-declon-type old-param))
-       ((unless (equal type (param-declon-type new-param)))
-        (retmsg$ "The parameter types ~x0 and ~x1 do not match. ~
-                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
-                  was not called on ~
-                  the old and new code of STRUCT-TYPE-SPLIT."
-                 type (param-declon-type new-param)))
-       ((mv erp ctype) (ldm-type type))
-       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
-       ((unless (c::type-nonchar-integerp ctype))
-        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
-       (old-pdeclor (c$::param-declon->declor old-param))
-       (new-pdeclor (c$::param-declon->declor new-param))
-       ((unless (eq (c$::param-declor-kind old-pdeclor)
-                    (c$::param-declor-kind new-pdeclor)))
-        (retmsg$ "The parameter declarators ~x0 and ~x1 do not match. ~
-                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
-                  was not called on ~
-                  the old and new code of STRUCT-TYPE-SPLIT."
-                 old-pdeclor new-pdeclor))
-       ((unless (param-declor-case old-pdeclor :nonabstract))
-        (stsp-param-declon-list (cdr old-params) (cdr new-params)))
-       (ident (declor->ident (param-declor-nonabstract->declor old-pdeclor)))
-       ((unless (equal ident
-                       (declor->ident
-                        (param-declor-nonabstract->declor new-pdeclor))))
-        (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
-                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
-                  was not called on ~
-                  the old and new code of STRUCT-TYPE-SPLIT."
-                 ident
-                 (declor->ident
-                  (param-declor-nonabstract->declor new-pdeclor))))
-       ((mv erp cident) (ldm-ident ident))
-       ((when erp) (stsp-param-declon-list (cdr old-params) (cdr new-params)))
-       ((erp vartys)
-        (stsp-param-declon-list (cdr old-params) (cdr new-params))))
-    (retok (omap::update cident ctype vartys)))
-  :verify-guards :after-returns)
+                 (block-item-list-fix old-items)
+                 (block-item-list-fix new-items)))
+       (old-item (car old-items))
+       (new-item (car new-items))
+       ((erp gout-item)
+        (stsp-block-item old-item new-item old-name newl-name newr-name gin))
+       (item-thm-name (gout->thm-name gout-item))
+       (gin (gin-update gin gout-item))
+       ((erp gout-items)
+        (stsp-block-item-list (cdr old-items)
+                              (cdr new-items)
+                              old-name
+                              newl-name
+                              newr-name
+                              (change-gin gin
+                                          :vartys (gout->vartys gout-item))))
+       (items-thm-name (gout->thm-name gout-items))
+       (gin (gin-update gin gout-items)))
+    (stsp-block-item-list-cons old-item
+                               new-item
+                               item-thm-name
+                               (cdr old-items)
+                               (cdr new-items)
+                               items-thm-name
+                               gin))
+  :verify-guards :after-returns
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable block-item-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2309,61 +3026,107 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is still work in progress."))
+    "This is similar to @(tsee xeq-fundef),
+     but for STS proof generation.")
+   (xdoc::p
+    "For now we require the two function definitions
+     to be identical except for possibly the body,
+     and also that both functions satisfy certain conditions
+     (currently stringent, but we plan to relax them).
+     If this and other checks fail,
+     it is not an error,
+     but we just do not generate a theorem for the function."))
   (b* (((reterr) (irr-gout))
-       (old-declor (fundef->declor old-fundef))
-       (new-declor (fundef->declor new-fundef))
-       (old-dirdeclor (declor->direct old-declor))
-       (new-dirdeclor (declor->direct new-declor))
-       ((unless (or
-                 (and (dirdeclor-case old-dirdeclor :function-params)
-                      (dirdeclor-case new-dirdeclor :function-params))
-                 (and (dirdeclor-case old-dirdeclor :function-names)
-                      (dirdeclor-case new-dirdeclor :function-names)
-                      (endp (dirdeclor-function-names->names old-dirdeclor))
-                      (endp (dirdeclor-function-names->names new-dirdeclor)))))
-        (retmsg$ "Unsupported proof generation for ~
-                  functions whose declarator does not have ~
-                  function parameters or empty function names."))
-       (old-params (if (dirdeclor-case old-dirdeclor :function-params)
-                       (dirdeclor-function-params->params old-dirdeclor)
-                     nil))
-       (new-params (if (dirdeclor-case new-dirdeclor :function-params)
-                       (dirdeclor-function-params->params new-dirdeclor)
-                     nil))
-       ((erp vartys) (stsp-param-declon-list old-params new-params))
-       (gin (change-gin gin :vartys vartys))
+       ((gin gin))
+       (gout-no-thm (gout-no-thm gin))
+       ((fundef old-fundef))
+       ((fundef new-fundef))
+       ((unless (and (fundef-formalp old-fundef)
+                     (fundef-formalp new-fundef)))
+        (retok gout-no-thm))
+       ((mv & old-tyspecs) ; ERP is NIL because FORMALP above
+        (check-decl-spec-list-all-typespec old-fundef.specs))
+       ((mv & new-tyspecs) ; ERP is NIL because FORMALP above
+        (check-decl-spec-list-all-typespec new-fundef.specs))
+       ((mv & old-tyspecseq) ; ERP is NIL because FORMALP above
+        (ldm-type-spec-list old-tyspecs))
+       ((mv & new-tyspecseq) ; ERP is NIL because FORMALP above
+        (ldm-type-spec-list new-tyspecs))
+       ((unless (equal old-tyspecseq new-tyspecseq))
+        (retmsg$ "The function definitions ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (fundef-fix old-fundef) (fundef-fix new-fundef)))
+       ((mv & old-declor) ; ERP is NIL because FORMALP above
+        (c$::ldm-declor-fun old-fundef.declor t))
+       ((mv & new-declor) ; ERP is NIL because FORMALP above
+        (c$::ldm-declor-fun new-fundef.declor t))
+       ((unless (equal old-declor new-declor))
+        (retmsg$ "The function definitions ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (fundef-fix old-fundef) (fundef-fix new-fundef)))
+       ((declor declor) old-fundef.declor)
+       ((when (consp declor.pointers)) (retok gout-no-thm))
+       ((mv okp params dirdeclor)
+        (dirdeclor-case
+         declor.direct
+         :function-params (mv t declor.direct.params declor.direct.declor)
+         :function-names (mv (endp declor.direct.names)
+                             nil
+                             declor.direct.declor)
+         :otherwise (mv nil nil (irr-dirdeclor))))
+       ((unless okp) (retok gout-no-thm))
+       ((unless (dirdeclor-case dirdeclor :ident))
+        (raise "Internal error: ~x0 is not just the function name."
+               dirdeclor)
+        (retmsg$ ""))
+       (fun (ident->unwrap (dirdeclor-ident->ident dirdeclor)))
+       ((unless (stringp fun))
+        (raise "Internal error: non-string identifier ~x0." fun)
+        (retmsg$ ""))
+       (params (if (c$::param-declon-list-voidp params) nil params))
+       ((mv & cparams) ; ERP is NIL because FORMALP above
+        (ldm-param-declon-list params))
+       ((mv okp args parargs arg-types arg-types-compst param-vartys)
+        (gen-from-params cparams 'old-compst (gin-fix gin)))
+       ((unless okp) (retok gout-no-thm))
+       ((mv init-scope-thm-event init-scope-thm-name thm-index)
+        (gen-init-scope-thm cparams
+                            args
+                            parargs
+                            arg-types
+                            gin.const-new
+                            gin.thm-index))
+       (events (cons init-scope-thm-event gin.events))
+       ((mv param-thm-events
+            & ; param-thm-names
+            thm-index)
+        (gen-param-thms arg-types-compst
+                        arg-types
+                        cparams
+                        args
+                        init-scope-thm-name
+                        gin.const-new
+                        thm-index
+                        'old-compst))
+       (events (append (rev param-thm-events) events))
+       (gin (change-gin gin
+                        :vartys param-vartys
+                        :events events
+                        :thm-index thm-index))
        (old-body (fundef->body old-fundef))
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
        (new-items (comp-stmt->items new-body))
-       ((unless (and (consp old-items)
-                     (endp (cdr old-items))
-                     (consp new-items)
-                     (endp (cdr new-items))))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies with multiple block items."))
-       (old-item (car old-items))
-       (new-item (car new-items))
-       ((unless (and (block-item-case old-item :stmt)
-                     (block-item-case new-item :stmt)))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies whose block item is not a statement."))
-       (old-stmt (block-item-stmt->stmt old-item))
-       (new-stmt (block-item-stmt->stmt new-item))
-       ((unless (and (stmt-case old-stmt :return)
-                     (stmt-case new-stmt :return)))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies whose statement is not a retun."))
-       (old-expr? (stmt-return->expr? old-stmt))
-       (new-expr? (stmt-return->expr? new-stmt))
-       ((unless (and old-expr?
-                     new-expr?))
-        (retmsg$ "Unsupported proof generation for ~
-                  function bodies whose return statement has no expression."))
-       (old-expr old-expr?)
-       (new-expr new-expr?))
-    (stsp-expr old-expr new-expr old-name newl-name newr-name gin)))
+       ((erp gout)
+        (stsp-block-item-list
+         old-items new-items old-name newl-name newr-name gin)))
+    (retok gout))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

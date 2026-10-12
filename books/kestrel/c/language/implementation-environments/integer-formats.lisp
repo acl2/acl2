@@ -31,7 +31,11 @@
    (xdoc::p
     "We use the templates formalized in @(see integer-format-templates)
      to formalize the possible formats of the integer types
-     other than @('unsigned'), @('signed'), and plain @('char') types,
+     other than
+     @('unsigned char'),
+     @('signed char'),
+     @('char'), and
+     @('bool'),
      namely @('short'), @('int'), and larger types.
      These formats are combined with the character and boolean formats
      in @(tsee ienv), which captures their mutual constraints."))
