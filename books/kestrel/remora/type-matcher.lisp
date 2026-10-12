@@ -247,7 +247,7 @@
      atom-kind variables to atom-kind types and
      array-kind variables to array-kind types,
      as expected by the rest of the type checker
-     (e.g. see @(tsee senv-type-subst)).")
+     (e.g. see @(tsee type-senv-type-subst)).")
    (xdoc::p
     "The substitution for the kind of the variable is consulted:
      a pattern variable that is bound in the substitution
