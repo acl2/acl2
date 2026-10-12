@@ -175,7 +175,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-senv-expand-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
+(define type-senv-expand-type ((type typep)
+                               (ienv ispace-senvp)
+                               (tenv type-senvp))
   :returns (new-type type-resultp)
   :short "Expand a type using the definitions in the static environments."
   :long
