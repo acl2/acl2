@@ -117,7 +117,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define senv-type-subst ((map type-var-type-option-mapp))
+(define type-senv-type-subst ((map type-var-type-option-mapp))
   :returns (subst string-type-map-pairp)
   :short "Turn a map from type variables to optional types
           into the type variable substitution
@@ -143,7 +143,7 @@
         (make-string-type-map-pair :1st nil :2nd nil))
        ((mv var type?) (omap::head map))
        ((string-type-map-pair subst-rest)
-        (senv-type-subst (omap::tail map))))
+        (type-senv-type-subst (omap::tail map))))
     (type-option-case
      type?
      :none subst-rest
@@ -183,7 +183,7 @@
    (xdoc::p
     "We replace every defined type variable and ispace variable in the type
      with its definition
-     (see @(tsee senv-type-subst) and @(tsee ispace-senv-ispace-subst)).
+     (see @(tsee type-senv-type-subst) and @(tsee ispace-senv-ispace-subst)).
      We substitute the type variables first, and the ispace variables second.
      Since types may contain ispaces but not vice versa,
      substituting the type definitions first may expose
@@ -201,7 +201,7 @@
      @(tsee type-subst-type-vars-alpha) and @(tsee type-subst-ispace-vars-alpha)
      automatically alpha-rename the bound variables as needed to avoid it."))
   (b* (((string-type-map-pair tsubst)
-        (senv-type-subst (type-senv->types tenv)))
+        (type-senv-type-subst (type-senv->types tenv)))
        (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
        ((stringdimmap+stringshapemap isubst)
         (ispace-senv-ispace-subst (ispace-senv->ispaces ienv))))
