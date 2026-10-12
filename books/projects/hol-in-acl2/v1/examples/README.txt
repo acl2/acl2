@@ -50,7 +50,7 @@ https://raw.githubusercontent.com/HOL-Theorem-Prover/HOL/refs/heads/develop/exam
 But it may now be found in the master branch instead of the develop
 branch:
 
-https://raw.githubusercontent.com/HOL-Theorem-Prover/HOL/refs/heads/master/examples/acl2/hol-to-acl2/examples/<EX>.defhol
+https://github.com/HOL-Theorem-Prover/HOL/blob/master/examples/acl2/hol-to-acl2/examples/<EX>.defhol
 
 The events in that file are defhol events, where defhol is defined in
 ../acl2/theories.lisp.
@@ -64,7 +64,7 @@ substituting, as above, master for develop (as shown below).
 https://raw.githubusercontent.com/HOL-Theorem-Prover/HOL/refs/heads/develop/examples/acl2/hol-to-acl2/examples/<EX>Script.sml
 
 ;;; later
-https://raw.githubusercontent.com/HOL-Theorem-Prover/HOL/refs/heads/master/examples/acl2/hol-to-acl2/examples/<EX>Script.sml
+https://github.com/HOL-Theorem-Prover/HOL/blob/master/examples/acl2/hol-to-acl2/examples/<EX>Script.sml
 
 .....
 

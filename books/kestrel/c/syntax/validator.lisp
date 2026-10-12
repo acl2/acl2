@@ -4438,7 +4438,10 @@
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument ~x1 is a function type."
                       (align-spec-fix align) type)))
-         (retok (align-spec-alignas-type new-type) types vstate))
+         (retok (make-align-spec-alignas-type :uscore align.uscore
+                                              :type new-type)
+                types
+                vstate))
        :alignas-expr
        (b* (((erp new-expr type types vstate)
              (valid-const-expr align.expr vstate))
@@ -4446,7 +4449,10 @@
              (retmsg$ "In the alignment specifier ~x0, ~
                        the argument has type ~x1."
                       (align-spec-fix align) type)))
-         (retok (align-spec-alignas-expr new-expr) types vstate))
+         (retok (make-align-spec-alignas-expr :uscore align.uscore
+                                              :expr new-expr)
+                types
+                vstate))
        :alignas-ambig (prog2$ (impossible) (retmsg$ ""))))
     :measure (acl2::two-nats-measure (align-spec-count align) 0))
 

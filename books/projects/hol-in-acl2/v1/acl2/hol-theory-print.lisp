@@ -8,7 +8,7 @@
 
 (in-package "ZF")
 
-(include-book "projects/hol-in-acl2/acl2/theories" :dir :system)
+(include-book "theories")
 (include-book "kestrel/auto-termination/fms-bang-list" :dir :system)
 
 (defun defgoal-form-lst (goals tbl acc)
