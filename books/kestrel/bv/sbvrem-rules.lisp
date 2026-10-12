@@ -154,7 +154,7 @@
                                   (;bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
-(defthm sbvrem-rewrite
+(defthmd sbvrem-rewrite
   (implies (and (posp size)
                 (integerp x)
                 (integerp y)

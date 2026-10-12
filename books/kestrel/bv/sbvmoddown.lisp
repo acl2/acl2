@@ -81,7 +81,6 @@
                                   (BVCHOP-UPPER-BOUND ;for speed
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;sbvrem-rewrite
                                    )))))
 
 (defthm equal-of-+-of-expt-of-one-less-and-expt-cancel
@@ -123,7 +122,6 @@
                                    sbvlt-rewrite
                                    )
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   sbvrem-rewrite
                                    ;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;;SBVREM-BECOMES-BVMOD
@@ -179,13 +177,11 @@
                                    bvcat logapp
                                    rem-becomes-mod
                                    )
-                                  (SBVREM-REWRITE
-                                   bvmod
+                                  (bvmod
                                    BVMINUS
                                    BVuMINUS
                                    sbvlt
                                    BVCHOP-UPPER-BOUND ;for speed
-                                   ;sbvrem-rewrite
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?

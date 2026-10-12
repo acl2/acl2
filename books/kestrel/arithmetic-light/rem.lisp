@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function rem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -101,11 +101,10 @@
 (defthm rem-when-integerp-of-quotient
   (implies (integerp (* x (/ y)))
            (equal (rem x y)
-                  (if (or (not (acl2-numberp x))
-                          (and (acl2-numberp y)
-                               (not (equal 0 y))))
+                  (if (and (acl2-numberp y)
+                               (not (equal 0 y)))
                       0
-                    x)))
+                    (fix x))))
   :hints (("Goal" :cases ((acl2-numberp x))
            :in-theory (enable rem
                               truncate-when-integerp-of-quotient))))
