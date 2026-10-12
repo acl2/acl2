@@ -32916,6 +32916,9 @@
                   it is given special treatment."
                  key 'return-last-table))
                ((and val
+                     (if (consp val)
+                         (symbolp (car val))
+                       (symbolp val)) ; avoid getpropc error below
                      (let ((val2 (if (symbolp val) val (car val))))
                        (and
                         (not (getpropc val2 'macro-body nil wrld))

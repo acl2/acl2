@@ -9355,7 +9355,9 @@
 ; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
 ; calls of the machine's +.
 
-; Argument rrl is non-nil when we are to Remove Return-Last calls.
+; Argument rrl is non-nil when we are to Remove Return-Last calls.  But there
+; are cases when we need to remove return-last calls even when rrl is nil; see
+; handling of return-last calls below.
 
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
@@ -9380,14 +9382,53 @@
               ,(logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
             ,(logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
         ((eq (ffn-symb term) 'return-last)
-         (let ((arg3
-                (logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
-           (if rrl
-               arg3
-             (fcons-term* 'return-last
-                          (logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
-                          (logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
-                          arg3))))
+
+; After Version_8.7 we fixed a bug illustrated in community books
+; books/system/tests/ec-call-in-quoted-lambda.lisp and
+; books/system/tests/ec-call-lambda-bypasses-1star.lisp, by essentially
+; retaining guard-holders from the compiled lambda cache (see :DOC
+; print-cl-cache).  But that bug fix, allowed bad return-last calls, such as
+; (return-last 'cons ...) as shown in community book
+; books/system/tests/quoted-lambda-return-last-key.lisp.  When considering
+; whether to keep such guard-holders, we now keep only those that will not
+; cause such problems.  We don't keep (return-last '<NAME> ...) for <NAME> in
+; the return-last-table unless <NAME> is in *initial-return-last-table*, since
+; a table event could extend the world with removal of <NAME> in that table (by
+; binding it to nil).  We also perform checks done in translate11 on
+; return-last calls to make sure they follow intended rules, except that we
+; always allow a first argument of 'ec-call1-raw, as this is crucial; see
+; community book system/tests/ec-call-lambda-bypasses-1star.lisp.
+
+         (cond (rrl (logic-code-to-runnable-code nil (fargn term 3) rrl wrld))
+               ((and (quotep (fargn term 1))
+                     (assoc-eq (unquote (fargn term 1))
+                               *initial-return-last-table*))
+; Keep the following bindings in sync with those in the 'return-last case of
+; translate11.
+                (let* ((arg1 (nth 1 term))
+                       (arg2 (nth 2 term))
+                       (arg3 (nth 3 term))
+                       (key (and (consp arg1)
+                                 (eq (car arg1) 'quote)
+                                 (consp (cdr arg1))
+                                 (cadr arg1)))
+                       (keyp (and (symbolp key) key)))
+                  (mv-let (erp ign)
+                    (if (eq key 'ec-call1-raw) ; see above
+                        (mv nil nil)
+                      (chk-return-last-call key keyp arg2 arg3 wrld nil nil))
+                    (declare (ignore ign))
+                    (cond (erp (logic-code-to-runnable-code nil (fargn term 3)
+                                                            rrl wrld))
+                          (t (fcons-term*
+                              'return-last
+                              (fargn term 1)
+                              (logic-code-to-runnable-code nil (fargn term 2)
+                                                           rrl wrld)
+                              (logic-code-to-runnable-code nil (fargn term 3)
+                                                           rrl wrld)))))))
+               (t (logic-code-to-runnable-code nil (fargn term 3)
+                                               rrl wrld))))
         ((eq (ffn-symb term) 'do$)
 
 ; We use ec-call here in case stobjs are involved, following the use of ec-call

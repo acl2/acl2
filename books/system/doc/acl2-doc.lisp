@@ -110399,8 +110399,8 @@ it."
  some loop$-recursive functions to be incomplete or bogus.</p>
 
  <p>Fixed a soundness bug caused by removal of @(tsee guard-holders) before
- compiling @(see lambda) objects for the compiled lambda cache (see :DOC
- print-cl-cache).  An additional effect of this change (besides removing
+ compiling @(see lambda) objects for the compiled lambda cache (see @(see
+ print-cl-cache)).  An additional effect of this change (besides removing
  unsoundness) is to stop avoiding calls of @(tsee cw) and other side effects
  when using @(tsee apply$).  Consider for example an evaluation of the
  following term, where the body of the @(tsee lambda) object is the translation
@@ -110412,7 +110412,7 @@ it."
              (RETURN-LAST
               'PROGN
               (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
-                                     (PAIRLIS2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                     (PAIRLIS2 '(#\\0 #\\1 #\\2 #\\3 #\\4 #\\5 #\\6 #\\7 #\\8 #\\9)
                                                'NIL)
                                      '0
                                      'NIL
@@ -110422,8 +110422,9 @@ it."
  })
 
  <p>See also @(see community-books)
- @('system/tests/ec-call-in-quoted-lambda.lisp.lisp') and
- @('system/tests/ec-call-lambda-bypasses-1star.lisp').</p>
+ @('system/tests/ec-call-in-quoted-lambda.lisp') and
+ @('system/tests/ec-call-lambda-bypasses-1star.lisp'), and
+ @('system/tests/quoted-lambda-return-last-key.lisp').</p>
 
  <p>Fixed an error that could be inappropriately caused by running @(tsee
  apply$) on a @(tsee lambda$) expression from within a @(':')@(tsee
@@ -110496,7 +110497,15 @@ it."
  <p>Fixed a soundness bug caused by a bogus @(':')@(tsee termination-theorem)
  exported from an @(tsee encapsulate) event due to its dependence on properties
  @(see local) to the @('encapsulate') event.  See @(see bogus-measure) and see
- @(see community-book) @('system/tests/bogus-measure.lisp').</p> 1
+ @(see community-book) @('system/tests/bogus-measure.lisp').</p>
+
+ <p>Fixed a soundness bug in the handling of memoization and stobj fields that
+ are @('hash-table') or @('stobj-table') fields.  For an example see @(see
+ community-book) @('system/tests/ht-congruent-flush.lisp').</p>
+
+ <p>Fixed a soundness bug due to permitting the @(see proof-builder)'s
+ @(':SEQUENCE') instruction to be invoked directly by the user.  See @(see
+ community-book) @('system/tests/pcb-sequence-success-expr.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
