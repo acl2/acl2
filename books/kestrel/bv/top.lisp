@@ -43,6 +43,7 @@
 (include-book "logtail")
 (include-book "logext")
 (include-book "logops")
+(include-book "logcount")
 
 ;; Books about underlying functions and BV functions:
 (include-book "ash")
@@ -166,6 +167,7 @@
 (include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool-def")
+(include-book "bit-to-bool")
 
 ;; Rules to replace BV ops with more common BV ops and sizes:
 (include-book "idioms")
