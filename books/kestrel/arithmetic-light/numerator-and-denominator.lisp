@@ -1,6 +1,6 @@
 ; A new book about numerator and denominator
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -122,15 +122,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "times"))
 
 (defthm <-of-numerator-and-denominator-same
   (implies (rationalp x)
            (equal (< (numerator x) (denominator x))
-                  (if (<= x 0)
-                      t
-                    (< x 1))))
+                  (< x 1)))
   :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
 
@@ -141,7 +138,6 @@
 (defthm <-of---of-numerator-and-denominator-same
   (implies (rationalp x)
            (equal (< (- (numerator x)) (denominator x))
-                  (or (<= 0 x)
-                      (< -1 x))))
+                  (< -1 x)))
   :hints (("Goal" :use (:instance <-of-numerator-and-denominator-same (x (- x)))
            :in-theory (disable <-of-numerator-and-denominator-same))))
