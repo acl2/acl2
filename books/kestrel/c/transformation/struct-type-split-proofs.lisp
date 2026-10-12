@@ -3121,15 +3121,9 @@
        (new-body (fundef->body new-fundef))
        (old-items (comp-stmt->items old-body))
        (new-items (comp-stmt->items new-body))
-       ((unless (and (consp old-items)
-                     (endp (cdr old-items))
-                     (consp new-items)
-                     (endp (cdr new-items))))
-        (retok gout-no-thm))
-       (old-item (car old-items))
-       (new-item (car new-items))
        ((erp gout)
-        (stsp-block-item old-item new-item old-name newl-name newr-name gin)))
+        (stsp-block-item-list
+         old-items new-items old-name newl-name newr-name gin)))
     (retok gout))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
