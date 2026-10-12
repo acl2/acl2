@@ -2662,7 +2662,7 @@
      (stmt-case
       new-stmt
       :return (b* (((unless (iff old-stmt.expr? new-stmt.expr?))
-                    (retmsg$ "The statments ~x0 and ~x1 do not match. ~
+                    (retmsg$ "The statements ~x0 and ~x1 do not match. ~
                               This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                               was not called on ~
                               the old and new code of STRUCT-TYPE-SPLIT."
@@ -2937,6 +2937,76 @@
                       :thm-index thm-index
                       :thm-name thm-name
                       :vartys gin.vartys))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stsp-block-item-list ((old-items block-item-listp)
+                              (new-items block-item-listp)
+                              (old-name identp)
+                              (newl-name identp)
+                              (newr-name identp)
+                              (gin ginp))
+  :guard (and (block-item-list-unambp old-items)
+              (block-item-list-unambp new-items)
+              (block-item-list-annop old-items)
+              (block-item-list-annop new-items))
+  :returns (mv (erp maybe-msgp) (gout goutp))
+  :short "STS proof generation for a list of block items."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This does not perform the transformation; it only generates proofs.
+     So it takes as input both old and new lists of block items.")
+   (xdoc::p
+    "The two lists should always have the same length,
+     because the transformation does not add or remove block items.
+     If the old list is empty, we use the separate function for the empty list.
+     Otherwise, we process the first items and then the rest of the lists,
+     and we use the separate function for the non-empty list."))
+  (b* (((reterr) (irr-gout))
+       ((when (endp old-items))
+        (b* (((unless (endp new-items))
+              (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
+                        This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                        was not called on ~
+                        the old and new code of STRUCT-TYPE-SPLIT."
+                       (block-item-list-fix old-items)
+                       (block-item-list-fix new-items))))
+          (stsp-block-item-list-empty gin)))
+       ((when (endp new-items))
+        (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
+                  This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
+                  was not called on ~
+                  the old and new code of STRUCT-TYPE-SPLIT."
+                 (block-item-list-fix old-items)
+                 (block-item-list-fix new-items)))
+       (old-item (car old-items))
+       (new-item (car new-items))
+       ((erp gout-item)
+        (stsp-block-item old-item new-item old-name newl-name newr-name gin))
+       (item-thm-name (gout->thm-name gout-item))
+       (gin (gin-update gin gout-item))
+       ((erp gout-items)
+        (stsp-block-item-list (cdr old-items)
+                              (cdr new-items)
+                              old-name
+                              newl-name
+                              newr-name
+                              (change-gin gin
+                                          :vartys (gout->vartys gout-item))))
+       (items-thm-name (gout->thm-name gout-items))
+       (gin (gin-update gin gout-items)))
+    (stsp-block-item-list-cons old-item
+                               new-item
+                               item-thm-name
+                               (cdr old-items)
+                               (cdr new-items)
+                               items-thm-name
+                               gin))
+  :verify-guards :after-returns
+  :hooks ((:fix :hints (("Goal"
+                         :induct t
+                         :in-theory (enable block-item-list-fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
