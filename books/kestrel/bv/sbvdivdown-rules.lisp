@@ -142,7 +142,7 @@
                                    bvcat logapp
                                    truncate-becomes-floor-other
                                    bvchop-of-minus-rule
-                                   )
+                                   sbvrem-rewrite)
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
@@ -187,7 +187,7 @@
                                    bvplus
                                    bvcat logapp
                                    truncate-becomes-floor-other
-                                   )
+                                   sbvrem-rewrite)
                                   (;disabling these fixed a failure when moving to acl2 5.0:
                                    EQUAL-BVCHOP-BVCHOP-MOVE-MINUS
                                    (:REWRITE BVCHOP-OF-MINUS-1)
@@ -247,9 +247,7 @@
                                   (sbvdiv size x y)
                                   (bvplus size -1 (sbvdiv size x y))))))))
   :hints (("Goal" :use (:instance sbvdivdown-rewrite (x (bvchop size x)) (y (bvchop size y)))
-           :in-theory (disable sbvdivdown-rewrite
-                               ;;sbvdiv-rewrite
-                               sbvrem-rewrite))))
+           :in-theory (disable sbvdivdown-rewrite))))
 
 (local
  (defthm bvdiv-lemma
@@ -277,6 +275,6 @@
                                    bvchop-of-sum-cases
                                    getbit-of-+
                                    truncate-becomes-floor-gen
-                                   )
+                                   sbvrem-rewrite)
                                   (BVLT-OF-BVCHOP-ARG2
                                    BVLT-OF-BVCHOP-ARG3)))))
