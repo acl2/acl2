@@ -10,9 +10,6 @@
 
 (in-package "ACL2")
 
-(local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-
 ;; Make a NOT from ARG, except return HINT (and avoid consing)
 ;; if HINT is that NOT.
 ;; Let's try leaving this enabled, since its :logic part is nice.

@@ -61,7 +61,6 @@
   :hints (("Goal" :cases ((equal 0 y))
                   :in-theory (enable mod *-of-floor-upper-bound))))
 
-
 ;; To support ACL2(r), we might have to assume (rationalp y) here.
 (defthm rationalp-of-mod
   (implies (rationalp x)
@@ -928,3 +927,44 @@
                   (if (equal 0 j)
                       (equal k i)
                     nil))))
+
+;move up
+(defthm nonpos-of-mod-type
+  (implies (and (< y 0) ; unusual
+                (rationalp x)
+                (rationalp y))
+           (<= (mod x y) 0))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable mod))))
+
+;; Analogous to mod-bound-linear-arg2.
+(defthm mod-bound-linear-arg2-neg
+  (implies (and (< y 0) ; unusual
+                (rationalp x)
+                (rationalp y))
+           (< y (mod x y)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable mod))))
+
+;; When x is strictly between -y and y, (mod x y) is 0 only if x is 0 (in that
+;; range, the only multiple of y is 0).  This helps when the sign of x is not
+;; known, so neither mod-when-< nor mod-when-<-of-0 applies.
+(defthmd equal-of-0-and-mod-when-small
+  (implies (and (< (- y) x)
+                (< x y)
+                (rationalp x)
+                (rationalp y))
+           (equal (equal 0 (mod x y))
+                  (equal 0 x)))
+  :hints (("Goal" :cases ((< x 0) (< 0 x))
+           :in-theory (enable equal-of-0-and-mod))))
+
+(defthmd <-of-0-and-mod-when-small
+  (implies (and (< (- y) x)
+                (< x y)
+                (rationalp x)
+                (rationalp y))
+           (equal (< 0 (mod x y))
+                  (not (equal 0 x))))
+  :hints (("Goal" :use equal-of-0-and-mod-when-small
+           :in-theory (disable equal-of-0-and-mod-when-small))))
