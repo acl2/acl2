@@ -53,10 +53,14 @@
 	    sv::4vec-fix
 	    sv::4vec-p
 	    sv::4vec-part-select
+	    sv::4vec-array-select
 	    sv::4vec-parity
 	    sv::4vec-part-install
+	    sv::4vec-array-install
 	    sv::concat
 	    sv::partsel
+	    sv::arraysel
+	    sv::arrayinst
 	    sv::bitnot
 	    sv::bitand
 	    sv::rsh

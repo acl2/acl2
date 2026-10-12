@@ -97,7 +97,7 @@
     variable length array types from all other types:
     a VLA operand is evaluated, while any other operand is not evaluated
     and the result is an integer constant
-    [C17:6.5.3.4/2] [C23:6.5.4.4/2].
+    [C17:6.5.3.4/2] [C23:6.5.4.5/2].
     Thus @('sizeof') applied to a VLA is not an ICE under
     the standard ICE rules: its result is not the integer constant
     admitted for a @('sizeof') operand of an ICE
@@ -280,7 +280,7 @@
         when its result is an integer constant [C17:6.6/6] [C23:6.6/8],
         which is the case exactly when its operand
         does not have variable length array type
-        [C17:6.5.3.4/2] [C23:6.5.4.4/2].
+        [C17:6.5.3.4/2] [C23:6.5.4.5/2].
         We do not check the operand recursively:
         we only establish that the result
         corresponds to an integer constant.
@@ -307,7 +307,7 @@
       (xdoc::li
        "A valid standard alignment expression has an integer-constant result,
         and its operand is not evaluated
-        [C17:6.5.3.4/3] [C23:6.5.4.4/3],
+        [C17:6.5.3.4/3] [C23:6.5.4.5/3],
         so it is an allowed ICE operand [C17:6.6/6] [C23:6.6/8].
         As for @('sizeof'), we do not check the operand recursively.
         The GCC/Clang variants, including the expression-operand variant,

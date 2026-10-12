@@ -13,6 +13,8 @@
 (include-book "abstract-syntax-derived-fixtypes")
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-constructors")
+(include-book "variable-substitution-operations")
+(include-book "variable-substitution-alpha-operations")
 
 (local (include-book "std/lists/no-duplicatesp" :dir :system))
 
@@ -35,15 +37,61 @@
     (xdoc::seetopic "dynamic-semantics" "dynamic environment")
     ".")
    (xdoc::p
-    "There are three kinds of static environments,
+    "There are three kinds of static environments:
      for ispace variables, type variables, and expression variables.
      They correspond to, respectively,
      the sort environment @($\\Theta$),
      the kind environment @($\\Delta$), and
      the type environment @($\\Gamma$)
-     in [thesis], [arxiv], and [esop].")
+     in [thesis] [arxiv] [esop].
+     The nomenclature in [thesis] [arxiv] [esop]
+     refers to what is assigned to the variables:
+     sorts to ispace variables,
+     kinds to type variables,
+     and types to expression variables.
+     In our formalization,
+     we use a nomenclature that refers to the variables instead:
+     an ispace environment contains information about ispace variables;
+     a type environment contains information about type variables; and
+     an expression environment contains information about expression variables.
+     There are two reasons for this terminological difference:")
+   (xdoc::ul
+    (xdoc::li
+     "Our static environments do not quite assign
+      sorts to ispace variables and kinds to type variables:
+      sorts and kinds are part of our ASTs for ispace and type variables,
+      and instead our static environments may assign
+      ispaces and types to ispace and type variables,
+      to capture definitions from @('let') bindings
+      (see the details in the fixtype definitions for environments).")
+    (xdoc::li
+     "We want a clear correspondence between static and dynamic environments,
+      but the latter assign
+      ispace values to ispace variables,
+      type values to type variables, and
+      expression values to expression variables.
+      None of these involve the assignment of sorts, kinds, or types."))
    (xdoc::p
-    "Variables are in five separate name spaces:
+    "The only terminological overlap and possible confusion
+     between our formalization and [thesis] [arxiv] [esop]
+     is then `type environments',
+     which assign information to type variables in our formalization,
+     while they assign types to (expression) variables
+     in [thesis] [arxiv] [esop].
+     This is not ideal, but we see no way around it,
+     given the motivations above for our nomenclature.
+     As a weak form of disambiguation,
+     we can say that ours are actually
+     `type static environments' and `type dynamic environments',
+     while the ones in [thesis] [arxiv] [esop]
+     are just `type environments' without qualification.
+     However, when clear from context,
+     we may just say `type environment'
+     to mean either `type static environment' or `type dynamic environment',
+     and we use the same abbreviations for
+     ispace environments and expression environments as well.")
+   (xdoc::p
+    "In Remora, variables are in five separate name spaces:
      one for dimension variables,
      one for shape variables,
      one for atom types,
@@ -52,8 +100,7 @@
      E.g. @('$x'), @('@x'), @('&x'), @('*x'), and @('x')
      are all distinct variables, despite the common @('x') part;
      indeed, they are distinguished by the prefixes.
-     The variables in static environments are similarly separated,
-     in the three kinds of environments and via fixtype sum tags."))
+     The variables in static environments are similarly separated."))
   :order-subtopics t
   :default-parent t)
 
@@ -375,6 +422,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define init-ispace-senv ()
+  :returns (ienv ispace-senvp)
+  :short "Initial ispace static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, ispace static environment.
+     It is empty."))
+  (ispace-senv nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define init-type-senv ()
+  :returns (tenv type-senvp)
+  :short "Initial type static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the initial, i.e. top-level, type static environment.
+     It is empty."))
+  (type-senv nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define init-expr-senv ()
   :returns (eenv expr-senvp)
   :short "Initial expression static environment."
@@ -382,8 +453,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the initial, i.e. top-level, expression static environment.
-     It only contains the primitive operations in scope.
-     The initial ispace and type static environments are empty."))
+     It contains the primitive operations."))
   (expr-senv (primop-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -492,7 +562,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-senv-add-var+type ((var stringp) (type typep) (eenv expr-senvp))
+(define expr-senv-add-var ((var stringp) (type typep) (eenv expr-senvp))
   :returns (new-eenv expr-senvp)
   :short "Add a variable with a type to the expression static environment."
   :long
@@ -510,8 +580,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define expr-senv-add-vars+types ((vars+types var+type?-listp)
-                                  (eenv expr-senvp))
+(define expr-senv-add-vars ((vars+types var+type?-listp) (eenv expr-senvp))
   :guard (no-duplicatesp-equal (var+type?-list->var vars+types))
   :returns (new-eenv expr-senv-resultp)
   :short "Add zero or more variables with types
@@ -522,7 +591,7 @@
     "This function actually takes a list of variables with optional types,
      but it fails if some type is missing.")
    (xdoc::p
-    "This repeatedly calls @(tsee expr-senv-add-var+type).
+    "This repeatedly calls @(tsee expr-senv-add-var).
      The guard ensures that the order of the list does not matter.")
    (xdoc::p
     "Since we do not perform type inference yet,
@@ -530,5 +599,218 @@
   (b* (((when (endp vars+types)) (expr-senv-fix eenv))
        (vt (car vars+types))
        ((ok type) (var+type?->type-or-err vt))
-       (eenv (expr-senv-add-var+type (var+type?->var vt) type eenv)))
-    (expr-senv-add-vars+types (cdr vars+types) eenv)))
+       (eenv (expr-senv-add-var (var+type?->var vt) type eenv)))
+    (expr-senv-add-vars (cdr vars+types) eenv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-ispace-subst ((map ispace-var-ispace-option-mapp))
+  :returns (subst stringdimmap+stringshapemap-p)
+  :short "Turn a map from ispace variables to optional ispaces
+          into the ispace variable substitution
+          determined by the definitions in the map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to turn
+     the map in an ispace static environment
+     into a dimension substitution and a shape substitution,
+     consisting of the variables that have a definition
+     (i.e. a present optional ispace);
+     variables without an ispace do not contribute.
+     A dimension variable maps to the dimension of its (dimension) ispace,
+     and a shape variable maps to the shape of its (shape) ispace.")
+   (xdoc::p
+    "It should never be the case that the map violates sorts,
+     i.e. associates a dimension variable to a shape ispace
+     or a shape variable to a dimension ispace.
+     But we do not have that static invariant yet,
+     so we defensively throw an error if that happens."))
+  (b* (((when (omap::emptyp (ispace-var-ispace-option-map-fix map)))
+        (make-stringdimmap+stringshapemap :dim-map nil :shape-map nil))
+       ((mv var ispace?) (omap::head map))
+       ((stringdimmap+stringshapemap subst-rest)
+        (senv-ispace-subst (omap::tail map))))
+    (ispace-option-case
+     ispace?
+     :none subst-rest
+     :some
+     (ispace-var-case
+      var
+      :dim (ispace-case
+            ispace?.val
+            :dim (change-stringdimmap+stringshapemap
+                  subst-rest
+                  :dim-map (omap::update var.name
+                                         ispace?.val.dim
+                                         subst-rest.dim-map))
+            :shape (prog2$ (raise "Internal error: ~
+                                   dimension variable ~x0 ~
+                                   is associated with ~
+                                   shape ispace ~x1."
+                                  var ispace?.val)
+                           subst-rest))
+      :shape (ispace-case
+              ispace?.val
+              :dim (prog2$ (raise "Internal error: ~
+                                   shape variable ~x0 ~
+                                   is associated with ~
+                                   dimension ispace ~x1."
+                                  var ispace?.val)
+                           subst-rest)
+              :shape (change-stringdimmap+stringshapemap
+                      subst-rest
+                      :shape-map (omap::update var.name
+                                               ispace?.val.shape
+                                               subst-rest.shape-map))))))
+  :no-function nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-type-subst ((map type-var-type-option-mapp))
+  :returns (subst string-type-map-pairp)
+  :short "Turn a map from type variables to optional types
+          into the type variable substitution
+          determined by the definitions in the map."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to turn
+     the map in a type static environment
+     into an atom-kind type substitution and an array-kind type substitution,
+     consisting of the variables that have a definition
+     (i.e. a present optional type);
+     variables without a type do not contribute.
+     An atom type variable maps to its (atom-kind) type,
+     and an array type variable maps to its (array-kind) type.")
+   (xdoc::p
+    "It should never be the case that the map violates kinds,
+     i.e. associates an atom type variable to an array-kind type
+     or an array type variable to an atom-kind type.
+     But we do not have that static invariant yet,
+     so we defensively throw an error if that happens."))
+  (b* (((when (omap::emptyp (type-var-type-option-map-fix map)))
+        (make-string-type-map-pair :1st nil :2nd nil))
+       ((mv var type?) (omap::head map))
+       ((string-type-map-pair subst-rest)
+        (senv-type-subst (omap::tail map))))
+    (type-option-case
+     type?
+     :none subst-rest
+     :some
+     (type-var-case
+      var
+      :atom (if (type-atom-kindp type?.val)
+                (change-string-type-map-pair
+                 subst-rest
+                 :1st (omap::update var.name type?.val subst-rest.1st))
+              (prog2$ (raise "Internal error: ~
+                              atom type variable ~x0 ~
+                              is associated with ~
+                              array-kind type ~x1."
+                             var type?.val)
+                      subst-rest))
+      :array (if (type-atom-kindp type?.val)
+                 (prog2$ (raise "Internal error: ~
+                                 array type variable ~x0 ~
+                                 is associated with ~
+                                 atom-kind type ~x1."
+                                var type?.val)
+                         subst-rest)
+               (change-string-type-map-pair
+                subst-rest
+                :2nd (omap::update var.name type?.val subst-rest.2nd))))))
+  :no-function nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-shape ((shape shapep) (ienv ispace-senvp))
+  :returns (new-shape shapep)
+  :short "Expand a shape using the ispace definitions
+          in the ispace static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined ispace variable in the shape
+     with its definition (see @(tsee senv-ispace-subst)).
+     Since shapes contain no binders, this substitution cannot capture."))
+  (b* (((stringdimmap+stringshapemap subst)
+        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+    (shape-subst-ispace-vars shape subst.dim-map subst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-ispace ((ispace ispacep) (ienv ispace-senvp))
+  :returns (new-ispace ispacep)
+  :short "Expand an ispace using the ispace definitions
+          in the ispace static environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined ispace variable in the ispace
+     with its definition (see @(tsee senv-ispace-subst)).
+     Since ispaces contain no binders, this substitution cannot capture."))
+  (b* (((stringdimmap+stringshapemap subst)
+        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+    (ispace-subst-ispace-vars ispace subst.dim-map subst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection senv-expand-ispace-list ((x ispace-listp)
+                                             (ienv ispace-senvp))
+  :returns (new-ispaces ispace-listp)
+  :short "Lift @(tsee senv-expand-ispace) to lists of ispaces."
+  (senv-expand-ispace x ienv))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
+  :returns (new-type type-resultp)
+  :short "Expand a type using the definitions in the static environments."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We replace every defined type variable and ispace variable in the type
+     with its definition
+     (see @(tsee senv-type-subst) and @(tsee senv-ispace-subst)).
+     We substitute the type variables first, and the ispace variables second.
+     Since types may contain ispaces but not vice versa,
+     substituting the type definitions first may expose
+     additional ispace variables, occurring in those definitions,
+     which the subsequent ispace substitution then replaces.
+     Since the definitions in the static environments are fully expanded
+     (i.e. they contain no defined variables),
+     the result would be the same with the opposite order;
+     but this order does not rely on
+     the definitions in the static environments being fully expanded.")
+   (xdoc::p
+    "Because types contain binders (universal, product, and sum types),
+     the substitution could result in variable capture;
+     the capture-avoiding substitutions
+     @(tsee type-subst-type-vars-alpha) and @(tsee type-subst-ispace-vars-alpha)
+     automatically alpha-rename the bound variables as needed to avoid it."))
+  (b* (((string-type-map-pair tsubst)
+        (senv-type-subst (type-senv->types tenv)))
+       (type (type-subst-type-vars-alpha type tsubst.1st tsubst.2nd))
+       ((stringdimmap+stringshapemap isubst)
+        (senv-ispace-subst (ispace-senv->ispaces ienv))))
+    (type-subst-ispace-vars-alpha type isubst.dim-map isubst.shape-map)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define senv-expand-type-list ((types type-listp)
+                               (ienv ispace-senvp)
+                               (tenv type-senvp))
+  :returns (new-types type-list-resultp
+                      :hints
+                      (("Goal"
+                        :induct t
+                        :in-theory (enable type-listp-when-result-not-error))))
+  :short "Lift @(tsee senv-expand-type) to lists."
+  (b* (((when (endp types)) nil)
+       ((ok type) (senv-expand-type (car types) ienv tenv))
+       ((ok types) (senv-expand-type-list (cdr types) ienv tenv)))
+    (cons type types))
+  :verify-guards :after-returns)

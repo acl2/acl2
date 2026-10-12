@@ -1367,6 +1367,112 @@ shifts instead of right shifts.</p>"
                  :in-theory (enable (:t logbitp) (:t bit->bool)))))
   :otf-flg t)
 
+(def-svmask arraysel (index width in)
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0))
+             (widthval (svex-s4xeval width))
+             (indexval (svex-s4xeval index))
+             ((unless (s4vec-2vec-p widthval))
+              ;; The slot width is unknown, so INDEX does not determine a
+              ;; useful effective bit position into IN.
+              (list -1 -1 -1))
+             (widthval (s4vec->upper widthval))
+             ((when (sparseint-< widthval 0))
+              ;; A negative width produces X, independently of INDEX and IN.
+              (list 0 -1 0))
+             (widthval (sparseint-val widthval))
+             ((unless (s4vec-2vec-p indexval))
+              ;; The one useful conclusion when INDEX is unknown is the same
+              ;; as for an unknown part-select LSB: IN is irrelevant if none
+              ;; of the cared-about result bits are inside the slot width.
+              (if (sparseint-equal 0 (sparseint-concatenate widthval mask 0))
+                  (list -1 -1 0)
+                (list -1 -1 -1)))
+             (indexval (s4vec->upper indexval))
+             (lsbval (int-to-sparseint
+                      (* (sparseint-val indexval) widthval))))
+          ;; INDEX and WIDTH are statically known, so the input mask is the
+          ;; result mask, truncated to the slot width, at INDEX * WIDTH.
+          (list -1 -1
+                (sparseint-ash (sparseint-concatenate widthval mask 0)
+                               (sparseint-val lsbval))))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                    4veclist-nth-safe
+                                    4vec-array-select
+                                    4vec-part-select
+                                    4vec-times)
+                                   (hide-past-third-arg)))
+          (and stable-under-simplificationp
+               '(:in-theory (e/d (4vec-mask
+                                  4vec-concat 4vec-rsh 4vec-shift-core
+                                  4vec-zero-ext 4vec-part-select))))
+          (bitops::logbitp-reasoning)))
+
+(def-svmask arrayinst (index width in val)
+  :body (b* (((when (4vmask-empty mask))
+              ;; Don't care about any bits of the result, so we don't care
+              ;; about any of the arguments.
+              (list 0 0 0 0))
+             (indexval (svex-s4xeval index))
+             (widthval (svex-s4xeval width))
+             ((unless (s4vec-2vec-p widthval))
+              ;; The write width is unknown.  Bits of IN still line up with
+              ;; output bits, but the selected portion of VAL is unknown.
+              (list -1 -1 mask -1))
+             (widthval (s4vec->upper widthval))
+             ((when (sparseint-< widthval 0))
+              ;; A negative width produces X.
+              (list 0 -1 0 0))
+             ((unless (s4vec-2vec-p indexval))
+              ;; The write position is unknown, but VAL can be restricted to
+              ;; the known slot width.
+              (list -1 -1 mask
+                    (sparseint-concatenate (sparseint-val widthval) -1 0)))
+             (indexval (s4vec->upper indexval))
+             (lsbval (int-to-sparseint
+                      (* (sparseint-val indexval) (sparseint-val widthval))))
+             ((unless (sparseint-< lsbval 0))
+              ;; Some bits of IN, then VAL, then IN.
+              (b* ((lsbval (sparseint-val lsbval))
+                   (widthval (sparseint-val widthval))
+                   (inmask (sparseint-concatenate
+                            lsbval
+                            mask
+                            (sparseint-concatenate
+                             widthval
+                             0
+                             (sparseint-ash mask
+                                            (- (+ lsbval widthval))))))
+                   (valmask (sparseint-concatenate
+                             widthval (sparseint-rightshift lsbval mask) 0)))
+                (list -1 -1 inmask valmask)))
+             ((when (sparseint-< (sparseint-unary-minus lsbval) widthval))
+              ;; Some bits of VAL, then IN.
+              (b* ((width+lsb (sparseint-val (sparseint-plus widthval lsbval)))
+                   (inmask (sparseint-concatenate width+lsb 0
+                                                  (sparseint-rightshift width+lsb mask)))
+                   (valmask (sparseint-concatenate
+                             (sparseint-val (sparseint-unary-minus lsbval))
+                             0
+                             (sparseint-concatenate width+lsb mask 0))))
+                (list -1 -1 inmask valmask))))
+          ;; The write lies wholly below bit 0, so only the aligned IN bits
+          ;; can contribute to the result.
+          (list -1 -1 mask 0))
+  :hints (("Goal" :in-theory (e/d (svex-apply
+                                   4veclist-nth-safe
+                                   4vec-array-install
+                                   4vec-part-install
+                                   4vec-times
+                                   4vec-mask
+                                   4vec-concat 4vec-rsh 4vec-shift-core
+                                   4vec-zero-ext 4vec-part-install)))
+          (bitops::logbitp-reasoning)
+          (and stable-under-simplificationp
+               '(:in-theory (enable b-ior b-not b-and)))))
+
 
 
 (def-svmask bitand (x y)

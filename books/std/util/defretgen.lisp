@@ -333,7 +333,7 @@ set exists, then @('(:mutrec <name>)') if such a mutual recursion exists, then
   :long "<p>Usage:</p>
 
 @({
- (defretgen my-function-set
+ (def-retgen-fnset my-function-set
     (a-name
      (:fnset a-fnset-name)
      (:function a-function-name)

@@ -67,7 +67,8 @@
     "Unlike source characters,
      the ordering (i.e. collating sequence) matters for execution characters.
      It is directly determined by the numeric values.
-     We require that digits are in increasing numeric value
+     We require the value of each digit after 0
+     to be one more than the value of the previous digit
      [C17:5.2.1/3] [C23:5.3.1].")
    (xdoc::p
     "Unlike source characters,
@@ -253,7 +254,7 @@
               (set::subset (omap::values basic-chars)
                            (omap::keys chars-with-values)))
   :returns (yes/no booleanp)
-  :short "Check if the values of the digits are ordered."
+  :short "Check if the values of the digits are consecutive."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -322,7 +323,7 @@
      The character set must include the basic characters,
      whose values must all fit in plain @('char').
      The null character must have value zero.
-     The digit values must be in order.
+     The digit values must be consecutive.
      The map from ASCII characters to execution characters must be injective.")
    (xdoc::p
     "The theorem @('exec-charset-wfp-when-ascii-basic-values')
@@ -331,7 +332,7 @@
      it suffices for the composition of the two maps to equal
      the character-code map on @(tsee ascii-basic-exec-chars).
      This implies
-     the plain-@('char') bound, null value, and digit ordering requirements,
+     the plain-@('char') bound, null value, and digit value requirements,
      independently of the representation of execution characters
      and the choice of extended characters."))
   (b* (((exec-charset charset)))

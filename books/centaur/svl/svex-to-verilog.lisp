@@ -498,6 +498,32 @@
                                          (str::cat arg1 "[" (str::intstr (+ -1 s w)) ":" (str::intstr s) "]")))))
                  (svex-to-verilog-ret current-expr (nfix w) nil nil)))
 
+              ((and* (eq x.fn 'sv::arraysel)
+                     (equal-len x.args 3))
+               ;; An SVEX array is represented as a packed vector.  Emit an
+               ;; indexed part select rather than first lowering the slot
+               ;; index to a bit index in SVEX, so that the generated Verilog
+               ;; retains the array-select structure.
+               (b* ((index (first x.args))
+                    (w (second x.args))
+                    (term (third x.args))
+                    (- (or (natp w)
+                           (raise "Expected natp for the 2nd argument of arraysel: ~p0" x)))
+                    ((svex-to-verilog-ret arg1 ?width1 ?signed1)
+                     (svex-to-verilog-break-to-wire term))
+                    ((svex-to-verilog-ret arg2 ?width2 ?signed2)
+                     (svex-to-verilog-aux index))
+                    (current-expr
+                     (cond ((<= w 0)
+                            "0")
+                           ((equal w 1)
+                            (str::cat arg1 "[" arg2 "]"))
+                           (t
+                            (str::cat arg1 "[(" arg2 " * "
+                                      (str::intstr w) ") +: "
+                                      (str::intstr w) "]")))))
+                 (svex-to-verilog-ret current-expr w nil nil)))
+
               ((and* (or (eq x.fn 'sv::rsh)
                          (eq x.fn 'sv::lsh))
                      (equal-len x.args 2))

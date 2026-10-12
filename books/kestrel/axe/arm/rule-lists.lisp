@@ -906,6 +906,9 @@
      acl2::integerp-of-bvplus
      acl2::integerp-of-logext
 
+     integerp-of-uint
+     integerp-of-sint
+
 ;     riscv32im-le::stat32-fix-when-stat32p
 
      acl2::ifix-when-integerp

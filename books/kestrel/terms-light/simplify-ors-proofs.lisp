@@ -66,10 +66,19 @@
                             (free-vars-in-terms terms)))
     :flag simplify-ors-lst)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :expand ((free-vars-in-term term))
+           :expand (;(free-vars-in-term term)
+                    ;(free-vars-in-terms (cdr term))
+                    ;(free-vars-in-terms (cddr term))
+                    ;(free-vars-in-terms (cdddr term))
+                    (simplify-ors term iffp)
+                    (len (cdddr term))
+                    (len (cddr term))
+                    (len (cdr term)))
            :in-theory (enable simplify-ors
                               simplify-ors-lst
-                              free-vars-in-terms-when-symbol-listp))))
+                              free-vars-in-term
+                              free-vars-in-terms-when-symbol-listp
+                              len))))
 
 (defthm subsetp-equal-of-free-vars-in-term-of-simplify-ors-gen
   (implies (and (subsetp-equal (free-vars-in-term term) x)
@@ -151,7 +160,7 @@
        (case fn
          (quote term)
          ;; (if test then else):
-         (if (if (not (consp (cddr (fargs term)))) ; for guard proof
+         (if (if (not (= 3 (len (fargs term)))) ; for guard proof
                  (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                          term)
                (let* ((test (fargn term 1))
@@ -164,15 +173,14 @@
                           (equal test then))
                      ;; replace (if x x y) with (if x 't y):
                      `(if ,test 't ,else)
-                   ;; todo: cons-with-hint:
-                   `(if ,test ,then ,else)))))
+                   (make-if-with-hint test then else term)))))
          ;; (not arg):
-         (not (if (not (consp (fargs term))) ; for guard proof
+         (not (if (not (= 1 (len (fargs term)))) ; for guard proof
                   (prog2$ (er hard? 'simplify-ors "Bad term: ~x0." term)
                           term)
                 (let* ((arg (fargn term 1))
                        (arg (simplify-ors-induct arg t alist))) ; use a boolean context for the arg
-                  `(not ,arg))))
+                  (make-not-with-hint arg term))))
          ;; todo: build in any other functions?  myif/boolif
          (t ;; normal function call or lambda application:
           (let ((args (simplify-ors-lst-induct (fargs term) alist))) ; can't use boolean context for args

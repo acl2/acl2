@@ -830,6 +830,24 @@ for computing:</p>
   :correct-hints ((and stable-under-simplificationp
                        '(:in-theory (enable logcons acl2::bool->bit)))))
 
+(defsymbolic bfr-logbitp-stride-n2v ((place p)
+                                     (stride p)
+                                     (digit u)
+                                     (n s))
+  :returns (bit b (logbitp (* stride place digit) n))
+  :measure (len digit)
+  (b* (((mv first & end) (first/rest/end n))
+       (place (lposfix place))
+       (stride (lposfix stride))
+       ((when (or (atom digit) end))
+        first))
+    (bfr-ite (car digit)
+             (bfr-logbitp-stride-n2v (* 2 place) stride (cdr digit)
+                                      (bfr-logtail-ns (* stride place) n))
+             (bfr-logbitp-stride-n2v (* 2 place) stride (cdr digit) n)))
+  :correct-hints ((and stable-under-simplificationp
+                       '(:in-theory (enable logcons acl2::bool->bit)))))
+
 (defsymbolic bfr-logand-ss ((a s)
                             (b s))
   :returns (a&b s (logand a b))
@@ -1369,4 +1387,3 @@ for computing:</p>
                  rest))
   :correct-hints ('(:in-theory (enable zero-when-all-nil
                                        logcons))))
-

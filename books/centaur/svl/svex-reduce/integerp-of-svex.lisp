@@ -346,6 +346,12 @@
                          (integerp-of-svex (third x.args)))))
 
                  ((and* (equal-len x.args 3)
+                        (equal x.fn 'sv::arraysel))
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 3)
                         (equal x.fn 'sv::partsel))
                   (and (natp (first x.args))
                        (natp (second x.args))
@@ -362,6 +368,13 @@
                   (and (natp (first x.args))
                        (posp (second x.args))
                        (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 4)
+                        (equal x.fn 'sv::arrayinst))
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (integerp-of-svex (third x.args))
+                       (integerp-of-svex (fourth x.args))))
 
                  ((and* (equal-len x.args 4)
                         (equal x.fn 'sv::partinst))
@@ -519,6 +532,13 @@
                          (natp-of-svex (third x.args)))))
 
                  ((and* (equal-len x.args 3)
+                        (equal x.fn 'sv::arraysel))
+                  ;; An array select is zero-extended to the field width.
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 3)
                         (equal x.fn 'sv::partsel))
                   ;; always natp when arg is integer
                   (and (natp (first x.args))
@@ -537,6 +557,14 @@
                        (posp (second x.args))
                        ;; logheads and concat repeatedly.
                        (integerp-of-svex (third x.args))))
+
+                 ((and* (equal-len x.args 4)
+                        (equal x.fn 'sv::arrayinst))
+                  (and (natp (first x.args))
+                       (natp (second x.args))
+                       (natp-of-svex (third x.args))
+                       ;; Old value should be natp.
+                       (integerp-of-svex (fourth x.args))))
 
                  ((and* (equal-len x.args 4)
                         (equal x.fn 'sv::partinst))
@@ -666,6 +694,18 @@
     :hints (("goal"
              :in-theory (e/d (2vec 4vec 4vec-part-install) ()))))
 
+  (defthm integerp-of-4vec-array-install
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (integerp a3)
+                  (integerp a4))
+             (integerp (4vec-array-install a1 a2 a3 a4)))
+    :hints (("goal"
+             :in-theory (e/d (4vec-array-install
+                              4vec-part-install
+                              sv::4vec-times
+                              2vec 4vec) ()))))
+
   (defthm integerp-of-4vec-rev-blocks
     (implies (and (force (natp a1))
                   (force (posp a2))
@@ -681,6 +721,17 @@
              (integerp (sv::4vec-part-select a1 a2 a3)))
     :hints (("goal"
              :in-theory (e/d (sv::4vec-part-select) ()))))
+
+  (defthm integerp-of-4vec-array-select
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (integerp a3))
+             (integerp (sv::4vec-array-select a1 a2 a3)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-array-select
+                              sv::4vec-part-select
+                              sv::4vec-times
+                              2vec 4vec) ()))))
 
   (defthm integerp-of-4vec-bit-extract
     (implies (and (force (natp a1))
@@ -1011,6 +1062,18 @@
     :hints (("goal"
              :in-theory (e/d (2vec 4vec 4vec-part-install) ()))))
 
+  (defthm natp-of-4vec-array-install
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (natp a3)
+                  (integerp a4))
+             (natp (4vec-array-install a1 a2 a3 a4)))
+    :hints (("goal"
+             :in-theory (e/d (4vec-array-install
+                              4vec-part-install
+                              sv::4vec-times
+                              2vec 4vec) ()))))
+
   (defthm natpp-of-4vec-rev-blocks
     (implies (and (force (natp a1))
                   (force (posp a2))
@@ -1029,6 +1092,17 @@
              (natp (sv::4vec-part-select a1 a2 a3)))
     :hints (("goal"
              :in-theory (e/d (sv::4vec-part-select) ()))))
+
+  (defthm natp-of-4vec-array-select
+    (implies (and (force (natp a1))
+                  (force (natp a2))
+                  (integerp a3))
+             (natp (sv::4vec-array-select a1 a2 a3)))
+    :hints (("goal"
+             :in-theory (e/d (sv::4vec-array-select
+                              sv::4vec-part-select
+                              sv::4vec-times
+                              2vec 4vec) ()))))
 
   (defthm natp-of-4vec-bit-extract
     (implies (and (force (natp a1))

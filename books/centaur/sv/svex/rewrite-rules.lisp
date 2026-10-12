@@ -420,6 +420,9 @@
             (3valued-syntaxp (third x.args))))
       ((partinst)
        (and (3valued-syntaxp (third x.args))
+            (3valued-syntaxp (fourth x.args))))
+      ((arrayinst)
+       (and (3valued-syntaxp (third x.args))
             (3valued-syntaxp (fourth x.args))))))
 
   (defconst *3valued-syntaxp-nonmemo-cases*
@@ -458,6 +461,8 @@
         lsh)
        (3valued-syntaxp (second x.args)))
       ((partsel)
+       (3valued-syntaxp (third x.args)))
+      ((arraysel)
        (3valued-syntaxp (third x.args)))
       ((blkrev)
        (3valued-syntaxp (third x.args)))))
@@ -761,6 +766,17 @@
                       (3vec-p val))
                  (3vec-p (4vec-part-install lsb width in val)))
         :hints(("Goal" :in-theory (enable 4vec-part-install))))
+
+      (defthm 3vec-p-of-4vec-array-select
+        (implies (3vec-p in)
+                 (3vec-p (4vec-array-select index width in)))
+        :hints(("Goal" :in-theory (enable 4vec-array-select))))
+
+      (defthm 3vec-p-of-4vec-array-install
+        (implies (and (3vec-p in)
+                      (3vec-p val))
+                 (3vec-p (4vec-array-install index width in val)))
+        :hints(("Goal" :in-theory (enable 4vec-array-install))))
 
 
 
@@ -1253,6 +1269,75 @@
   :lhs (partinst lsb (unfloat width) in val)
   :rhs (partinst lsb width in val)
   :hints(("Goal" :in-theory (e/d (svex-apply 4vec-part-install)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arraysel-of-unfloat-1
+  :lhs (arraysel (unfloat index) width in)
+  :rhs (arraysel index width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-select)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arraysel-of-xdet-1
+  :lhs (arraysel (xdet index) width in)
+  :rhs (arraysel index width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-select
+                                             4vec-times 4vec-xdet)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arraysel-of-unfloat-2
+  :lhs (arraysel index (unfloat width) in)
+  :rhs (arraysel index width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-select)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arraysel-of-xdet-2
+  :lhs (arraysel index (xdet width) in)
+  :rhs (arraysel index width in)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-select
+                                             4vec-times
+                                             4vec-part-select
+                                             4vec-xdet)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arraysel-of-unfloat-3
+  :lhs (arraysel index width (unfloat in))
+  :rhs (unfloat (arraysel index width in))
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-select
+                                             4vec-part-select 4vec-zero-ext
+                                             4vec-concat 4vec-rsh 4vec-shift-core
+                                             3vec-fix 4vec-mask)
+                                    (2vec-p)))
+         (bitops::logbitp-reasoning
+          :add-hints (:in-theory (enable* bitops::logbitp-case-splits
+                                          bitops::logbitp-when-bit
+                                          bitops::bool->bit))
+          :prune-examples nil)))
+
+(def-svex-rewrite arrayinst-of-unfloat-1
+  :lhs (arrayinst (unfloat index) width in val)
+  :rhs (arrayinst index width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-install)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arrayinst-of-xdet-1
+  :lhs (arrayinst (xdet index) width in val)
+  :rhs (arrayinst index width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-install
+                                             4vec-times 4vec-xdet)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arrayinst-of-unfloat-2
+  :lhs (arrayinst index (unfloat width) in val)
+  :rhs (arrayinst index width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-install)
+                                 (2vec-p)))))
+
+(def-svex-rewrite arrayinst-of-xdet-2
+  :lhs (arrayinst index (xdet width) in val)
+  :rhs (arrayinst index width in val)
+  :hints(("Goal" :in-theory (e/d (svex-apply 4vec-array-install
+                                             4vec-times 4vec-xdet
+                                             4vec-part-install)
                                  (2vec-p)))))
 
 ;; Signx 1 is special because it simply repeats the lowest bit of X forever.
@@ -4402,6 +4487,67 @@
                                     s4vec-index-p svex-eval-when-2vec-p-of-minval))
          (svex-generalize-lookups)
          (logbitp-reasoning)))
+
+(def-svex-rewrite arraysel-of-arrayinst-same
+  :lhs (arraysel index width (arrayinst index width x val))
+  :checks ((s4vec-index-p (svex-s4xeval index))
+           (s4vec-index-p (svex-s4xeval width)))
+  :rhs (zerox width val)
+  :hints(("Goal" :in-theory (enable 4vec-array-select 4vec-array-install
+                                    4vec-part-select 4vec-part-install
+                                    4vec-zero-ext 4vec-concat 4vec-rsh
+                                    4vec-shift-core svex-apply 4vec-mask
+                                    s4vec-index-p
+                                    svex-eval-when-2vec-p-of-minval
+                                    4vec-times))
+         (svex-generalize-lookups)
+         ;; (logbitp-reasoning)
+         ))
+
+(def-svex-rewrite arrayinst-of-arrayinst-same
+  :lhs (arrayinst index width (arrayinst index width x val1) val2)
+  :rhs (arrayinst index width x val2)
+  :hints(("Goal" :in-theory (enable 4vec-array-install 4vec-part-install
+                                    4vec-zero-ext 4vec-concat 4vec-rsh
+                                    4vec-shift-core svex-apply 4vec-mask))
+         (svex-generalize-lookups)
+         (logbitp-reasoning)))
+
+(encapsulate nil
+  (local (defthm diff-of-prod-greater
+           (implies (and (integerp x)
+                         (natp y)
+                         (integerp z)
+                         (< x z))
+                    (and (<= y (+ (* z y) (- (* x y))))
+                         (<= y (+ (- (* x y)) (* z y)))))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (def-svex-rewrite arraysel-of-arrayinst-different
+    :lhs (arraysel index1 width (arrayinst index2 width x val))
+    :checks ((let index1-val (svex-s4xeval index1))
+             (s4vec-index-p index1-val)
+             (let index2-val (svex-s4xeval index2))
+             (s4vec-index-p index2-val)
+             (let width-val (svex-s4xeval width))
+             (s4vec-index-p width-val)
+             (not (sparseint-equal (s4vec->upper index1-val)
+                                   (s4vec->upper index2-val))))
+    :rhs (arraysel index1 width x)
+    :hints(("Goal" :in-theory (enable 4vec-array-select 4vec-array-install
+                                      4vec-part-select 4vec-part-install
+                                      4vec-zero-ext 4vec-concat 4vec-rsh
+                                      4vec-shift-core svex-apply 4vec-mask
+                                      s4vec-index-p
+                                      4vec-times
+                                      svex-eval-when-2vec-p-of-minval))
+           (svex-generalize-lookups)
+           (and stable-under-simplificationp
+                '(:cases ((< (4vec->lower (svex-xeval index1))
+                             (4vec->lower (svex-xeval index2))))))
+           (and stable-under-simplificationp
+                '(:cases ((< 0 (4vec->lower (svex-xeval width)))))))))
 
 
 ;; (def-svex-rewrite concat-of-partsel-same-width

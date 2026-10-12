@@ -966,6 +966,23 @@ ignored.</p>"
                   (not (member v (sv::svex-vars idx))))
              (not (member v (sv::svex-vars shift))))))
 
+(define vl-datatype-index-slot-index ((x vl-datatype-p)
+                                      (idx sv::svex-p))
+  :guard (vl-datatype-resolved-p x)
+  :returns (mv (err (iff (vl-msg-p err) err))
+               (slot-index (implies (not err) (sv::svex-p slot-index))))
+  (b* (((mv err ?size msb lsb) (vl-datatype-slot-width/range x))
+       ((when err) (mv err nil)))
+    (mv nil (sv::svex-reduce-consts
+             (if (>= msb lsb)
+                 (sv::svcall sv::b- idx (svex-int lsb))
+               (sv::svcall sv::b- (svex-int lsb) idx)))))
+  ///
+  (defret vars-of-vl-datatype-index-slot-index
+    (implies (and (not err)
+                  (not (member v (sv::svex-vars idx))))
+             (not (member v (sv::svex-vars slot-index))))))
+
 
 
 ;; #!sv
@@ -1150,13 +1167,15 @@ ignored.</p>"
        (rest-type (vl-seltrace-type (cdr x) base-type))
        (rest-type (vl-maybe-usertype-resolve rest-type))
 
-       ((mv err shift-amt)
+       ((mv err shift-amt arrayp)
         (vl-select-case step.select
           :field (b* (((mv err idx)
                        (vl-datatype-field-shift-amount rest-type step.select.name))
-                      ((when err) (mv err idx)))
-                   (mv nil (svex-int idx)))
-          :index (vl-datatype-index-shift-amount rest-type (car indices))))
+                      ((when err) (mv err idx nil)))
+                   (mv nil (svex-int idx) nil))
+          :index (b* (((mv err slot-index)
+                       (vl-datatype-index-slot-index rest-type (car indices))))
+                   (mv err slot-index t))))
        ((when err) (mv err nil))
 
        ((mv err rest) (vl-seltrace-to-svex-select
@@ -1168,7 +1187,7 @@ ignored.</p>"
                        base-svar
                        outer-ss))
        ((when err) (mv err nil)))
-    (mv err (sv::make-svex-select-part :lsb shift-amt :width size :subexp rest)))
+    (mv err (sv::make-svex-select-part :lsb shift-amt :width size :arrayp arrayp :subexp rest)))
   ///
 
   (local (in-theory (disable (:d vl-seltrace-to-svex-select))))
@@ -1388,7 +1407,7 @@ the way.</li>
        (shift-amt
         (vl-index-shift-amount slotsize dim-msb dim-lsb sel-lsb))
        (width (* slotsize (lnfix width))))
-    (mv nil (sv::make-svex-select-part :lsb shift-amt :width width :subexp x)))
+    (mv nil (sv::make-svex-select-part :lsb shift-amt :width width :arrayp nil :subexp x)))
 
   ///
   (defret vars-of-vl-plusminus-partselect->svex

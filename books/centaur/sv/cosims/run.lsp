@@ -158,6 +158,9 @@
         (acl2::read-file-lines "threevalued.data" state)))
     (acl2::read-file-lines "fourvalued.data" state)))
 
+(defconsts (*input-lines-twovalued* state)
+  (acl2::read-file-lines "twovalued.data" state))
+
 (define skip-sv-implementation-p (ctx (fname stringp) (envname stringp) &optional (state 'state))
   (b* (((mv err exists state) (oslib::regular-file-p (str::cat *testname* "/" fname)))
        ((when err)
@@ -186,6 +189,21 @@
        ((unless (eql (len lines) (len *input-lines*)))
         (er hard? 'output-lines-ncv "Wrong number of lines read: ~x0, expecting ~x1"
             (len lines) (len *input-lines*))
+        (mv nil state)))
+    (mv lines state)))
+
+(defconsts (*output-lines-verilator* state)
+  (b* (((mv skip state) (skip-sv-implementation-p 'output-lines-verilator "no_verilator" "NO_VERILATOR"))
+       ((when skip) (mv nil state))
+       ((mv lines state)
+        (acl2::read-file-lines (str::cat *testname* "/outputs.verilator.data") state))
+       ((when (stringp lines))
+        ;; indicates error
+        (er hard? 'output-lines-verilator "~@0" lines)
+        (mv nil state))
+       ((unless (eql (len lines) (len *input-lines-twovalued*)))
+        (er hard? 'output-lines-verilator "Wrong number of lines read: ~x0, expecting ~x1"
+            (len lines) (len *input-lines-twovalued*))
         (mv nil state)))
     (mv lines state)))
         
@@ -251,6 +269,8 @@
 
 (assert! (or (not *output-lines-ncv*)
              (cosims-compare *input-lines* *output-lines-ncv* *exactp* *updates* *nextstates*)))
+(assert! (or (not *output-lines-verilator*)
+             (cosims-compare *input-lines-twovalued* *output-lines-verilator* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-vcs*)
              (cosims-compare *input-lines* *output-lines-vcs* *exactp* *updates* *nextstates*)))
 (assert! (or (not *output-lines-iv*)

@@ -34,9 +34,17 @@
    (xdoc::p
     "The formats of integer objects of different types
      differ but follow a common template.
-     The @('unsigned'), @('signed'), and plain @('char') types
+     The
+     @('unsigned char'),
+     @('signed char'),
+     @('char'), and
+     @('bool')
+     types
      follow more restricted rules, and are formalized in
-     @(see uchar-formats), @(see schar-formats), and @(see char-formats).
+     @(see uchar-formats),
+     @(see schar-formats),
+     @(see char-formats), and
+     @(see bool-formats).
      The other integer types (@('short'), @('int'), etc.)
      follow the more general templates formalized here."))
   :order-subtopics t
@@ -445,8 +453,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is for unsigned integer objects
-     other than those of type @('unsigned char'),
-     which are covered by @(tsee uchar-format).
+     other than those of types @('unsigned char') and @('bool'),
+     which are covered by @(tsee uchar-format) and @(tsee bool-format).
      See [C17:6.2.6.2/1] [C23:6.2.6.2].")
    (xdoc::p
     "The format definition includes a list of bit roles,

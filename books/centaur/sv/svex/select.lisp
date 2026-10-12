@@ -45,6 +45,7 @@
          (width natp)))
   (:part ((lsb svex-p)
           (width natp)
+          (arrayp booleanp)
           (subexp svex-select-p))))
 
 (local (xdoc::set-default-parents svex-select))
@@ -62,10 +63,15 @@
   :verify-guards nil
   (svex-select-case x
     :var (svex-var x.name)
-    :part (svcall partsel x.lsb (svex-int x.width)
-                  (svex-concat (svex-select->width x.subexp)
-                               (svex-select-to-svex x.subexp)
-                               (svex-x))))
+    :part (if x.arrayp
+              (svcall arraysel x.lsb (svex-int x.width)
+                      (svex-concat (svex-select->width x.subexp)
+                                   (svex-select-to-svex x.subexp)
+                                   (svex-x)))
+            (svcall partsel x.lsb (svex-int x.width)
+                    (svex-concat (svex-select->width x.subexp)
+                                 (svex-select-to-svex x.subexp)
+                                 (svex-x)))))
   ///
   (verify-guards svex-select-to-svex))
 
@@ -76,10 +82,15 @@
   :verify-guards nil
   (svex-select-case x
     :var (svex-fix subst)
-    :part (svcall partsel x.lsb (svex-int x.width)
-                  (svex-concat (svex-select->width x.subexp)
-                               (svex-select-to-svex-with-substitution x.subexp subst)
-                               (svex-x))))
+    :part (if x.arrayp
+              (svcall arraysel x.lsb (svex-int x.width)
+                      (svex-concat (svex-select->width x.subexp)
+                                   (svex-select-to-svex-with-substitution x.subexp subst)
+                                   (svex-x)))
+            (svcall partsel x.lsb (svex-int x.width)
+                    (svex-concat (svex-select->width x.subexp)
+                                 (svex-select-to-svex-with-substitution x.subexp subst)
+                                 (svex-x)))))
   ///
   (verify-guards svex-select-to-svex-with-substitution))
    
@@ -153,8 +164,8 @@
             :expand ((svex-select->indices x)
                      (svex-select-replace-indices x indices)
                      (:free (name) (svex-select->indices (svex-select-var name width)))
-                     (:free (lsb width subexp)
-                      (svex-select->indices (svex-select-part lsb width subexp)))))))
+                     (:free (lsb width arrayp subexp)
+                      (svex-select->indices (svex-select-part lsb width arrayp subexp)))))))
             
 
 
@@ -269,8 +280,8 @@
     :hints(("Goal" :in-theory (enable svex-select-inner-width)
             :induct (svex-selects-merge outer inner)
             :expand ((svex-select->width outer)
-                     (:free (lsb width subexp)
-                      (svex-select->width (svex-select-part lsb width subexp)))))))
+                     (:free (lsb width arrayp subexp)
+                      (svex-select->width (svex-select-part lsb width arrayp subexp)))))))
 
   (defret svex-selects-merge-is-svex-compose
     (b* ((inner-var (svex-select-inner-var outer)))
@@ -288,8 +299,8 @@
                      (svex-select->indices outer)
                      (svex-select-to-svex outer)
                      (svex-select-inner-width outer)
-                     (:free (lsb width subexp)
-                      (svex-select-to-svex (svex-select-part lsb width subexp)))))
+                     (:free (lsb width arrayp subexp)
+                      (svex-select-to-svex (svex-select-part lsb width arrayp subexp)))))
            (and stable-under-simplificationp
                 '(:expand ((:free (name env) (svex-eval (svex-var name) env)))
                   :in-theory (enable svex-env-lookup)))))
@@ -301,8 +312,8 @@
     :hints (("goal" :induct (svex-selects-merge outer inner)
              :expand ((svex-selects-merge outer inner)
                       (svex-select->indices outer)
-                      (:free (lsb width subexp)
-                       (svex-select->indices (svex-select-part lsb width subexp))))))))
+                      (:free (lsb width arrayp subexp)
+                       (svex-select->indices (svex-select-part lsb width arrayp subexp))))))))
 
 
 
@@ -362,8 +373,8 @@
                 (svex-select-inner-var x)))
     :hints (("goal" :induct t
              :expand ((svex-select-inner-var x)
-                      (:free (lsb width subexp)
-                       (svex-select-inner-var (svex-select-part lsb width subexp)))
+                      (:free (lsb width arrayp subexp)
+                       (svex-select-inner-var (svex-select-part lsb width arrayp subexp)))
                       (:free (name width)
                        (svex-select-inner-var (svex-select-var name width)))))))
 
@@ -397,9 +408,13 @@
     ;;  lhs = (part-install 0 innerwidth lhs (part-install lsb width lhs[innerwidth-1:0] rhs)
     (svex-select-staticify-assignment
      x.subexp
-     (svcall partinst x.lsb (svex-int x.width)
-             (svex-select-to-svex-with-substitution x.subexp lhs-var-value)
-             rhs)
+     (if x.arrayp
+         (svcall arrayinst x.lsb (svex-int x.width)
+                 (svex-select-to-svex-with-substitution x.subexp lhs-var-value)
+                 rhs)
+       (svcall partinst x.lsb (svex-int x.width)
+               (svex-select-to-svex-with-substitution x.subexp lhs-var-value)
+               rhs))
      lhs-var-value))
   ///
   (verify-guards svex-select-staticify-assignment)
@@ -442,8 +457,9 @@
                                          :rsh 0)
                   :w x.width)))
     :part (b* ((inner-lhs (svex-select-to-lhs x.subexp))
-               (rsh (2vec->val (svex-quote->val x.lsb))))
-            (lhs-rsh rsh (lhs-concat (+ rsh x.width) inner-lhs nil))))
+               (rsh (2vec->val (svex-quote->val x.lsb)))
+               (rsh (if x.arrayp (* x.width rsh) rsh)))
+           (lhs-rsh rsh (lhs-concat (+ rsh x.width) inner-lhs nil))))
   ///
   (verify-guards svex-select-to-lhs
     :hints (("Goal" :expand ((svex-select-staticp x)))))
@@ -949,6 +965,3 @@
 ;;                        (svex-selects-merge in static-lhs)
 ;;                        rhs-expr)
 ;;                static-lhs)))))
-
-
-

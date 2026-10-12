@@ -238,7 +238,7 @@
 (defirrelevant irr-align-spec
   :short "An irrelevant alignment specifier."
   :type align-specp
-  :body (align-spec-alignas-expr (irr-const-expr)))
+  :body (align-spec-alignas-expr nil (irr-const-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

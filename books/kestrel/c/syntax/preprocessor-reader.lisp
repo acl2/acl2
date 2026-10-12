@@ -448,11 +448,14 @@
                         (and (utf8-<= #xd800 char)
                              (utf8-<= char #xdfff))))
               (reterr-msg :where pos
-                          :expected "a Unicode character with code ~
-                                     in the range 9-13 or 32-126 ~
-                                     or 128-8233 or 8239-8293 ~
-                                     or 8298-55295 or 57344-1114111"
-                          :found (char-to-msg char))))
+                          :expected (msg "a value between 800h and FFFFh, ~
+                                          but not between 202Ah and 202Eh ~
+                                          or between 2066h and 2069h ~
+                                          or between D800h and DFFFh, ~
+                                          UTF-8-encoded in the three bytes ~
+                                          (~x0 ~x1 ~x2)"
+                                         byte byte2 byte3)
+                          :found (msg "the value ~x0" char))))
           (retok char pos pos+1 bytes)))
        ;; 4-byte UTF-8:
        ((when (utf8-= (logand byte #b11111000) #b11110000)) ; 11110xyy

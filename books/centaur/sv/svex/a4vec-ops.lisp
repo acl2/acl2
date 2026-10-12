@@ -3042,6 +3042,220 @@ optimization to avoid problems due to large masks.</p>"
            (and stable-under-simplificationp
                 '(:in-theory (enable 4vec-mask))))))
 
+(define aig-nat-to-s ((x natp))
+  :short "Construct an AIG signed-bit-list for the natural number @('x')."
+  :parents (a4vec-array-select a4vec-array-install)
+  :measure (nfix x)
+  :returns (lst)
+  (b* ((x (lnfix x))
+       ((when (zp x))
+        (aig-sterm nil)))
+    (aig-scons (if (logbitp 0 x) t nil)
+               (aig-nat-to-s (logcdr x))))
+  ///
+  (defret aig-list->s-of-<fn>
+    (equal (aig-list->s lst env) (nfix x))))
+
+
+(fty::deffixequiv aig-logbitp-stride-n2v
+  :hints(("Goal" :in-theory (enable aig-logbitp-stride-n2v))))
+
+(define aig-array-select-width-mux-bit-aux ((bit natp)
+                                            (xval booleanp)
+                                            (place posp)
+                                            (base natp)
+                                            (index true-listp)
+                                            (width true-listp)
+                                            (in true-listp))
+  :short "Build one array-select bit with a decision tree over the bits of WIDTH."
+  :parents (a4vec-array-select)
+  ;; :hooks nil
+  :measure (len width)
+  :Returns (sel)
+  (b* ((bit (lnfix bit))
+       (place (lposfix place))
+       (base (lnfix base))
+       ((mv width-bit width-rest width-end) (gl::first/rest/end width))
+       ;; At a leaf, BASE is the width decoded from the width bits seen so
+       ;; far.  WIDTH-END recognizes the final sign bit, which is excluded
+       ;; from this unsigned-width mux tree.
+       ((when width-end)
+        (if (<= base bit)
+            nil
+          (aig-ite (aig-sign-s index)
+                   (mbe :logic (bool-fix xval) :exec xval)
+                   (aig-logbitp-stride-n2v
+                    1 base index in)))))
+    (aig-ite width-bit
+             (aig-array-select-width-mux-bit-aux
+             bit xval (* 2 place) (+ base place) index width-rest in)
+             (aig-array-select-width-mux-bit-aux
+              bit xval (* 2 place) base index width-rest in)))
+  ///
+  (defret <fn>-correct
+    (let* ((widthval (aig-list->s width env))
+           (full-widthval (+ (nfix base) (* (pos-fix place) widthval)))
+           (idxval (aig-list->s index env)))
+      (implies (and (<= 0 widthval))
+               (equal (aig-eval sel env)
+                      (and (< (nfix bit) full-widthval)
+                           (if (< idxval 0)
+                               (bool-fix xval)
+                             (logbitp (* idxval
+                                         full-widthval)
+                                      (aig-list->s in env)))))))
+    :hints (("goal" :induct t
+             :in-theory (enable logcons)
+             :expand ((aig-list->s width env))))))
+
+(define aig-array-select-width-mux-bit ((bit natp)
+                                        (xval booleanp)
+                                        (index true-listp)
+                                        (width true-listp)
+                                        (in true-listp))
+  :short "Build one bit of an array select with a mux tree over WIDTH.
+
+<p>@('in') is already shifted right by @('bit').</p>"
+  :parents (a4vec-array-select)
+  :returns (sel)
+  (aig-array-select-width-mux-bit-aux
+   bit xval 1 0 index width in)
+  ///
+  (defret <fn>-correct
+    (let* ((widthval (aig-list->s width env))
+           (idxval (aig-list->s index env)))
+      (implies (<= 0 widthval)
+               (equal (aig-eval sel env)
+                      (and (< (nfix bit) widthval)
+                           (if (< idxval 0)
+                               (bool-fix xval)
+                             (logbitp (* idxval widthval)
+                                      (aig-list->s in env)))))))))
+
+;; This has the same decision-tree shape as BFR-LOGBITP-STRIDE-N2V: PLACE is
+;; the weight of the WIDTH bit currently being considered, and BASE is the
+;; concrete width encoded by lower bits.  Hence each symbolic width bit adds
+;; one mux level instead of a linear chain of full-width equality tests.
+
+(define aig-array-select-width-mux ((bit natp)
+                                    (nbits natp)
+                                    (xval booleanp)
+                                    (index true-listp)
+                                    (width true-listp)
+                                    (in true-listp))
+  :short "Build an array select by muxing each output bit over possible widths."
+  :parents (a4vec-array-select)
+  :returns (sel)
+  :measure (nfix (- (nfix nbits) (nfix bit)))
+  (b* ((bit (lnfix bit))
+       (nbits (lnfix nbits))
+       ((when (>= bit nbits))
+        (aig-sterm nil)))
+    (aig-scons (aig-array-select-width-mux-bit bit xval index width in)
+               (aig-array-select-width-mux
+                (1+ bit) nbits xval index width (aig-logtail-ns 1 in))))
+  ///
+  (local (defthm loghead-when-zp
+           (implies (zp n)
+                    (equal (loghead n x) 0))
+           :hints(("Goal" :in-theory (enable bitops::loghead**)))))
+  (defret <fn>-correct
+    (let* ((widthval (aig-list->s width env))
+           (idxval (aig-list->s index env)))
+      (implies (<= 0 widthval)
+               (equal (aig-list->s sel env)
+                      (loghead (- (min widthval (nfix nbits))
+                                  (nfix bit))
+                               (if (< idxval 0)
+                                   (bool->vec xval)
+                                 (logtail (* idxval  widthval)
+                                          (aig-list->s in env)))))))
+    :hints (("goal" :induct t
+             :in-theory (enable bitops::loghead** bool->vec)))))
+
+(define a4vec-array-select ((index a4vec-p)
+                            (width a4vec-p)
+                            (in a4vec-p)
+                            (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-array-select)."
+  :returns (res a4vec-p)
+  (b* ((mask (4vmask-fix mask))
+       ((a4vec width))
+       ((a4vec index))
+       ((a4vec in))
+       ((when (sparseint-equal mask 0))
+        (a4vec-x))
+       ;; MAX-WIDTH bounds both every concrete nonnegative value WIDTH may
+       ;; take and the number of select bits that can be nonzero.  The helper
+       ;; below uses WIDTH's bit structure directly, rather than a chain of
+       ;; comparisons against candidate widths.
+       (max-width (nfix (aig-list->s-upper-bound width.upper)))
+       (maskwidth (and (sparseint-< 0 mask)
+                       (+ 1 (sparseint-length mask))))
+       (nbits (if maskwidth
+                  (min maskwidth max-width)
+                max-width))
+       (upper (aig-array-select-width-mux
+               0 nbits t index.upper width.upper in.upper))
+       (lower (aig-array-select-width-mux
+               0 nbits nil index.upper width.upper in.lower)))
+    (a4vec-ite
+     (aig-andc2 (aig-and (a2vec-p index) (a2vec-p width))
+                (aig-sign-s width.upper))
+     (a4vec upper lower)
+     (a4vec-x)))
+  ///
+  (local (defthm loghead-of-ash-prod
+           (implies (and (posp w)
+                         (negp i))
+                    (equal (loghead w (ash x (- (* i w)))) 0))
+           :hints ((bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (local (defthm loghead-of-ash-prod2
+           (implies (and (posp w)
+                         (negp i))
+                    (equal (loghead w (ash x (- (* w i)))) 0))
+           :hints (("goal" :use loghead-of-ash-prod
+                    :in-theory (disable loghead-of-ash-prod)))))
+
+  (local (defthm loghead-of-logapp-prod
+           (implies (and (posp w)
+                         (negp i))
+                    (equal (loghead w (logapp (- (* i w)) x y))
+                           (loghead w x)))
+           :hints ((bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+
+  (local (defthm loghead-of-logapp-prod2
+           (implies (and (posp w)
+                         (negp i))
+                    (equal (loghead w (logapp (- (* w i)) x y))
+                           (loghead w x)))
+           :hints (("goal" :use loghead-of-logapp-prod
+                    :in-theory (disable loghead-of-logapp-prod)))))
+           
+  
+  (defthm a4vec-array-select-correct
+    (4vec-mask-equiv (a4vec-eval (a4vec-array-select index width in mask) env)
+                     (4vec-array-select (a4vec-eval index env)
+                                        (a4vec-eval width env)
+                                        (a4vec-eval in env))
+                     mask)
+    :hints(("Goal" :in-theory (enable 4vec-array-select
+                                      4vec-mask
+                                      4vec-times
+                                      4vec-part-select
+                                      4vec-zero-ext
+                                      4vec-rsh
+                                      4vec-shift-core
+                                      4vec-concat)
+            :use ((:instance aig-list->s-upper-bound-correct
+                   (x (a4vec->upper width)) (env env)))
+            :expand ((:free (x) (hide x)))))))
+
 
 (define aig-overlap-width-ss-aux ((rev-pos true-listp)
                                   (pos-len (equal pos-len (len rev-pos)))
@@ -3673,6 +3887,307 @@ creating enormous vectors when given a huge shift amount.</p>"
                    :in-theory (enable 4vec-part-install)))
             (and stable-under-simplificationp
                  '(:in-theory (enable  4vec-zero-ext 4vec-rsh 4vec-shift-core 4vec-concat 4vec-mask))))))
+
+(local (include-book "centaur/bitops/floor-mod" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(set-induction-depth-limit 1)
+
+(fty::deffixequiv aig-=-ss
+  :hints(("Goal" :in-theory (enable aig-=-ss))))
+
+(local (defthmd logbitp-in-terms-of-logtail
+         (equal (logbitp n x)
+                (equal 1 (logcar (logtail n x))))))
+(local (defthm aig-eval-car-of-aig-logtail-ns
+         (equal (aig-eval (car (aig-logtail-ns n x)) env)
+                (logbitp n (aig-list->s x env)))
+         :hints (("goal" :use ((:instance aig-logtail-ns-correct
+                                (env env) (x x) (place n)))
+                  :expand ((aig-list->s (aig-logtail-ns n x) env))
+                  :in-theory (e/d (logbitp-in-terms-of-logtail)
+                                  (aig-logtail-ns-correct
+                                   bitops::logcar-of-logtail))))))
+
+(define aig-array-install-width-mux-bit-aux ((bit natp)
+                                             (place posp)
+                                             (base natp)
+                                             in-bit
+                                             (index true-listp)
+                                             (width true-listp)
+                                             (val true-listp))
+  :short "Build one array-install bit with a decision tree over the bits of WIDTH."
+  :parents (a4vec-array-install)
+  :returns (sel)
+  :measure (len width)
+  (b* ((bit (lnfix bit))
+       (place (lposfix place))
+       (base (lnfix base))
+       ;; A zero-width install is a no-op.  For a nonzero leaf BASE is the
+       ;; selected width; slot and field-bit are then both concrete.
+       ((mv width-bit width-rest width-end) (gl::first/rest/end width))
+       ;; At a leaf, BASE is the width decoded from the width bits seen so
+       ;; far.  WIDTH-END recognizes the final sign bit, which is excluded
+       ;; from this unsigned-width mux tree.
+       ((when width-end)
+        (if (zp base)
+            in-bit
+          (b* ((slot (floor bit base))
+               (slot-bits (aig-nat-to-s slot))
+               (val-tail (aig-logtail-ns (mod bit base) val))
+               (val-bit (mbe :logic (car val-tail) :exec (and (consp val-tail) (car val-tail)))))
+            (aig-ite (aig-=-ss index slot-bits) val-bit in-bit)))))
+    (aig-ite
+     width-bit
+     (aig-array-install-width-mux-bit-aux
+      bit (* 2 place) (+ base place) in-bit index width-rest val)
+     (aig-array-install-width-mux-bit-aux
+      bit (* 2 place) base in-bit index width-rest val)))
+  ///
+
+  (defret <fn>-correct
+    (b* ((widthval (aig-list->s width env))
+         (full-widthval (+ (nfix base) (* (pos-fix place) widthval)))
+         (idxval (aig-list->s index env))
+         (slot-start (* full-widthval idxval))
+         (slot-end (+ full-widthval slot-start)))
+      (implies (<= 0 widthval)
+               (equal (aig-eval sel env)
+                      (if (and (<= slot-start (nfix bit))
+                               (< (nfix bit) slot-end))
+                          (logbitp (- (nfix bit) slot-start)
+                                   (aig-list->s val env))
+                        (aig-eval in-bit env)))))
+    :hints (("goal" :induct t :do-not-induct t
+             :expand ((aig-list->s width env))
+             :in-theory (enable logcons mod))
+            (and stable-under-simplificationp
+                 '(:use ((:instance acl2::floor-unique
+                          (num (nfix bit))
+                          (div base)
+                          (quot (aig-list->s index env)))))))))
+
+
+
+(define aig-array-install-width-mux ((bit natp)
+                                      (nbits natp)
+                                      (index true-listp)
+                                      (width true-listp)
+                                      (in true-listp)
+                                      (val true-listp))
+  :short "Build the cared-about bits of an array install by muxing widths."
+  :parents (a4vec-array-install)
+  :measure (nfix (- (nfix nbits) (nfix bit)))
+  :returns (sel)
+  (b* ((bit (lnfix bit))
+       (nbits (lnfix nbits))
+       ((when (>= bit nbits))
+        (mbe :logic (true-list-fix in) :exec in))
+       ((mv in-bit in-rest &) (gl::first/rest/end in)))
+    (aig-scons (aig-array-install-width-mux-bit-aux
+                bit 1 0 in-bit index width val)
+               (aig-array-install-width-mux
+                (1+ bit) nbits index width in-rest val)))
+  ///
+  (local (defthm aig-logtail-ns-of-plus1
+           (implies (natp n)
+                    (equal (aig-logtail-ns (+ 1 n) x)
+                           (gl::scdr (aig-logtail-ns n x))))
+           :hints(("Goal" :in-theory (enable aig-logtail-ns)))))
+
+  (local (defthm nfix-when-lte-0
+           (implies (<= x 0)
+                    (equal (nfix x) 0))))
+  
+  (local (defthm bad-case
+           (implies (and (natp w)
+                         (negp i)
+                         (natp b))
+                    (<= (+ w (* i w)) 0))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))
+           :rule-classes :linear))
+  (defret <fn>-correct
+    :pre-bind ((in (aig-logtail-ns bit in0)))
+    (b* ((widthval (aig-list->s width env))
+         (idxval (aig-list->s index env))
+         (inval (aig-list->s in0 env))
+         (valval (aig-list->s val env))
+         (slot-start (* widthval idxval))
+         (slot-end (+ widthval slot-start)))
+      (implies (<= 0 widthval)
+               (equal (aig-list->s sel env)
+                      (logtail
+                       bit
+                       (logapp
+                        nbits
+                        (if (< idxval 0)
+                            inval
+                          (logapp slot-start
+                                  inval
+                                  (logapp widthval
+                                          valval
+                                          (logtail slot-end inval))))
+                        (logtail nbits inval))))))
+    :hints (("goal" :induct (aig-array-install-width-mux
+                             bit nbits index width (aig-logtail-ns bit in0) val)
+             :in-theory (enable bitops::equal-logcons-strong
+                                bitops::logbitp-of-logapp-split
+                                bitops::loghead**))
+            (and stable-under-simplificationp
+                 '(:cases ((<= 0 (* (aig-list->s index env)
+                                    (aig-list->s width env))))))))
+
+  (fty::deffixequiv aig-array-install-width-mux)
+  
+  (defret <fn>-correct-base
+    :pre-bind ((bit 0))
+    (b* ((widthval (aig-list->s width env))
+         (idxval (aig-list->s index env))
+         (inval (aig-list->s in env))
+         (valval (aig-list->s val env))
+         (slot-start (* widthval idxval))
+         (slot-end (+ widthval slot-start)))
+      (implies (<= 0 widthval)
+               (equal (aig-list->s sel env)
+                      (logapp
+                       nbits
+                       (if (< idxval 0)
+                           inval
+                         (logapp slot-start
+                                 inval
+                                 (logapp widthval
+                                         valval
+                                         (logtail slot-end inval))))
+                       (logtail nbits inval)))))
+    :hints (("goal" :use ((:instance <fn>-correct
+                           (bit 0) (in0 in)))
+             :in-theory (e/d (aig-logtail-ns)
+                             (<fn>-correct))))))
+
+(define a4vec-array-install ((index a4vec-p)
+                             (width a4vec-p)
+                             (in a4vec-p)
+                             (val a4vec-p)
+                             (mask 4vmask-p))
+  :short "Symbolic version of @(see 4vec-array-install)."
+  :returns (res a4vec-p)
+  (b* ((mask (4vmask-fix mask))
+       ((a4vec index))
+       ((a4vec width))
+       ((a4vec in))
+       ((a4vec val))
+       ((when (sparseint-equal mask 0))
+        (a4vec-x))
+       (max-width (aig-list->s-upper-bound width.upper))
+       (max-index (aig-list->s-upper-bound index.upper))
+       (max-write (nfix (+ max-width (* max-width max-index))))
+       (maskwidth (and (sparseint-< 0 mask)
+                       (+ 1 (sparseint-length mask))))
+       (nbits (if maskwidth
+                  (min maskwidth max-write)
+                max-write))
+       (- (and (< 10000 nbits)
+               (cw "***WARNING: a4vec-array-install of ~x0 bits***~%" nbits)))
+       (upper (aig-array-install-width-mux
+               0 nbits index.upper width.upper in.upper val.upper))
+       (lower (aig-array-install-width-mux
+               0 nbits index.upper width.upper in.lower val.lower)))
+    (a4vec-ite
+     (aig-andc2 (aig-and (a2vec-p index) (a2vec-p width))
+                (aig-sign-s width.upper))
+     (a4vec upper lower)
+     (a4vec-x)))
+  ///
+  
+  
+  (local (defthm bad-case
+           (implies (and (natp w)
+                         (negp i)
+                         (natp b))
+                    (<= (+ w (* i w)) 0))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))
+           :rule-classes :linear))
+
+  (local (Defthm logite-ident
+           (equal (logite test x x)
+                  (ifix x))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (Defthm logite-ident2
+           (equal (logite test x (logite test y z))
+                  (logite test x z))
+           :hints ((bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable b-ite))))))
+
+  (local (defthm logbitp-past-length
+           (implies (< (integer-length x) (nfix i))
+                    (equal (logbitp i x)
+                           (< (ifix x) 0)))
+           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
+  (local (defthm logite-logapp-test
+           (implies (<= 0 (ifix m))
+                    (equal (logite m x (logapp (+ 1 (integer-length m)) x y))
+                           (logapp (+ 1 (integer-length m)) x y)))
+           :hints ((bitops::logbitp-reasoning)
+                   (and stable-under-simplificationp
+                        '(:in-theory (enable b-and b-ite))))))
+
+  (local (defthm logapp-logapp-logtail-identity
+           (implies (and (<= (+ offs w) (nfix skip))
+                         (natp offs) (natp w))
+                    (equal (logapp skip (logapp offs a (logapp w b (logtail (+ w offs) x)))
+                                   (logtail skip x))
+                           (logapp offs a (logapp w b (logtail (+ w offs) x)))))
+           :hints ((bitops::logbitp-reasoning))))
+
+  (local (defthm prod-gte-0
+           (implies (and (rationalp x)
+                         (rationalp y)
+                         (<= 0 x)
+                         (<= 0 y))
+                    (<= 0 (+ y (* x y))))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))
+           :rule-classes (:rewrite :linear)))
+
+  (local (defthm upper-bound-prod-gte
+           (implies (and (rationalp x1)
+                         (rationalp x2)
+                         (rationalp y1)
+                         (Rationalp y2)
+                         (<= 0 x1)
+                         (<= 0 y1)
+                         (<= x1 x2)
+                         (<= y1 y2))
+                    (<= (+ y1 (* x1 y1)) (+ y2 (* x2 y2))))
+           :hints ((and stable-under-simplificationp
+                        '(:nonlinearp t)))))
+  
+  (defthm a4vec-array-install-correct
+    (4vec-mask-equiv
+     (a4vec-eval (a4vec-array-install index width in val mask) env)
+     (4vec-array-install (a4vec-eval index env)
+                         (a4vec-eval width env)
+                         (a4vec-eval in env)
+                         (a4vec-eval val env))
+     mask)
+    :hints (("goal" :expand ((hide (a4vec-eval (a4vec-array-install index width in val mask) env))
+                             (:free (c) (hide ((lambda (lhs) lhs) c))))
+             :in-theory (enable 4vec-mask 4vec-mask?
+                                4vec-array-install
+                                4vec-part-install
+                                4vec-times
+                                4vec-concat
+                                4vec-rsh
+                                4vec-shift-core))
+            (and stable-under-simplificationp
+                 '(:use ((:instance aig-list->s-upper-bound-correct
+                          (x (a4vec->upper width)))
+                         (:instance aig-list->s-upper-bound-correct
+                          (x (a4vec->upper index)))))))))
 
 
                                                                  
