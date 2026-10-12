@@ -109,34 +109,24 @@
   :hints (("Goal" :in-theory (enable max))))
 
 (defthm equal-of-max-same-arg2
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y))
-           (equal (equal y (max x y))
-                  (<= x y)))
+  (equal (equal y (max x y))
+         (<= x y))
   :hints (("Goal" :in-theory (enable max))))
 
 (defthm <-of-max-same-arg1
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y))
-           (equal (< x (max x y))
-                  (< x y)))
+  (equal (< x (max x y))
+         (< x y))
   :hints (("Goal" :in-theory (enable max))))
 
 (defthm <-of-max-same-arg2
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y))
-           (equal (< y (max x y))
-                  (< y x)))
+  (equal (< y (max x y))
+         (< y x))
   :hints (("Goal" :in-theory (enable max))))
 
 (defthm <=-of-max-same-arg1-linear
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y))
-           (<= x (max x y)))
+  (<= x (max x y))
   :rule-classes :linear)
 
 (defthm <=-of-max-same-arg2-linear
-  (implies (and (acl2-numberp x)
-                (acl2-numberp y))
-           (<= y (max x y)))
+  (<= y (max x y))
   :rule-classes :linear)

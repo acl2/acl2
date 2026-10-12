@@ -116,8 +116,7 @@
 ;; From an upper bound on i, we get an upper bound on (ash i c).
 (defthm <=-of-ash-when-<=-free-linear
   (implies (and (<= i free)
-                (integerp i)
-                (integerp c))
+                (integerp i))
            (<= (ash i c) (* free (expt 2 c))))
   :rule-classes ((:linear :trigger-terms ((ash i c))))
   :hints (("Goal" :in-theory (enable ash))))
@@ -280,7 +279,7 @@
                   :in-theory (e/d (ash <-of-floor-arg1-gen)
                                   (<-of-*-and-*-cancel-gen)))))
 
-; Characterizes the conditions under which i < (ash i c).  For integer i, this
+;; Characterizes the conditions under which i < (ash i c).  For integer i, this
 ;; holds iff c is an integer and either c and i are both positive (a left
 ;; shift of a positive) or c is negative and i is less than -1 (a right shift
 ;; of a negative; -1 shifts right to itself).  For a non-integer i, (ash i c)
