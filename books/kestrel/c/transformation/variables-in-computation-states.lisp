@@ -485,3 +485,131 @@
     :enable (c::objdesign-of-var
              c::read-object
              c::compustate-has-var-with-type-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled c::compustate-has-static-var-with-type-p-of-enter-scope
+  :short "Preservation of @(tsee c::compustate-has-static-var-with-type-p)
+          under @(tsee c::enter-scope)."
+  (implies (c::compustate-has-static-var-with-type-p var type compst)
+           (c::compustate-has-static-var-with-type-p var
+                                                     type
+                                                     (c::enter-scope compst)))
+  :enable (c::compustate-has-static-var-with-type-p
+           c::compustate-has-var-with-type-p
+           c::objdesign-of-var-of-enter-scope
+           c::read-object-of-enter-scope
+           c::not-errorp-when-valuep
+           c::valuep-of-read-object-of-objdesign-of-var))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-compustate-static-vars-theorems
+  :short "Theorems about
+          static variables in computation states w.r.t. execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These theorems are about @(tsee c::compustate-has-static-var-with-type-p),
+     and how the execution of constructs preserve and/or modify it."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (local (in-theory (disable acl2::member-of-cons)))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled expr-compustate-static-vars
+    (b* (((mv result compst1) (c::exec-expr expr compst fenv limit)))
+      (implies (and (not (c::errorp result))
+                    (c::compustate-has-static-var-with-type-p var type compst))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :enable (c::compustate-has-static-var-with-type-p
+             c::compustate-has-var-with-type-p
+             expr-compustate-vars
+             c::var-resolve-of-exec-expr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled stmt-compustate-static-vars
+    (b* (((mv sval compst1) (c::exec-stmt stmt compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp sval))
+                    (c::compustate-has-static-var-with-type-p var type compst))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :enable (c::compustate-has-static-var-with-type-p
+             c::compustate-has-var-with-type-p
+             stmt-compustate-vars
+             c::var-resolve-of-exec-stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled initer-compustate-static-vars
+    (b* (((mv result compst1)
+          (c::exec-initer initer compst fenv limit)))
+      (implies (and (> (c::compustate-frames-number compst) 0)
+                    (not (c::errorp result))
+                    (c::compustate-has-static-var-with-type-p var type compst))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :enable (c::compustate-has-static-var-with-type-p
+             c::compustate-has-var-with-type-p
+             initer-compustate-vars
+             c::var-resolve-of-exec-initer))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled block-item-stmt-compustate-static-vars
+    (b* ((stmt (c::block-item-stmt->get item))
+         ((mv & compst0) (c::exec-stmt stmt compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit)))
+      (implies (and (equal (c::block-item-kind item) :stmt)
+                    (not (c::errorp result))
+                    (c::compustate-has-static-var-with-type-p var type compst0))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :expand (c::exec-block-item item compst fenv limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled block-item-declon-compustate-static-vars
+    (b* ((declon (c::block-item-declon->get item))
+         (compst0 (c::exec-obj-declon declon compst fenv (1- limit)))
+         ((mv result compst1) (c::exec-block-item item compst fenv limit)))
+      (implies (and (equal (c::block-item-kind item) :declon)
+                    (not (c::errorp result))
+                    (c::compustate-has-static-var-with-type-p var type compst0))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :expand (c::exec-block-item item compst fenv limit))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled block-item-list-empty-compustate-static-vars
+    (b* (((mv result compst1)
+          (c::exec-block-item-list items compst fenv limit)))
+      (implies (and (equal items nil)
+                    (not (c::errorp result))
+                    (c::compustate-has-static-var-with-type-p var type compst))
+               (c::compustate-has-static-var-with-type-p var type compst1)))
+    :enable (c::exec-block-item-list
+             c::compustate-has-static-var-with-type-p))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defruled block-item-list-cons-compustate-static-vars
+    (b* ((item (car item+items))
+         (items (cdr item+items))
+         ((mv result0 compst0)
+          (c::exec-block-item item compst fenv (1- limit)))
+         ((mv & compst1)
+          (c::exec-block-item-list items compst0 fenv (1- limit)))
+         ((mv result2 compst2)
+          (c::exec-block-item-list item+items compst fenv limit)))
+      (implies (and (consp item+items)
+                    (not (c::errorp result2))
+                    (or (and (equal (c::stmt-value-kind result0) :return)
+                             (c::compustate-has-static-var-with-type-p
+                              var type compst0))
+                        (and (equal (c::stmt-value-kind result0) :none)
+                             (c::compustate-has-static-var-with-type-p
+                              var type compst1))))
+               (c::compustate-has-static-var-with-type-p var type compst2)))
+    :enable c::exec-block-item-list))
