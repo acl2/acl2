@@ -858,6 +858,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-object-hyps ((old-name identp)
+                          (newl-name identp)
+                          (newr-name identp)
+                          (old-tag identp)
+                          (newl-tag identp)
+                          (newr-tag identp)
+                          (old-compst-var symbolp)
+                          (new-compst-var symbolp))
+  :returns (hyps true-listp "A list of terms.")
+  :short "Generate the hypotheses about
+          the struct objects in the computation states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The exact variables (symbols) to use for the computation states
+     are passed as inputs to this function."))
+  (b* (((mv erp old-cname) (ldm-ident old-name))
+       ((when erp) (raise "Internal error: ~@0" erp))
+       ((mv erp newl-cname) (ldm-ident newl-name))
+       ((when erp) (raise "Internal error: ~@0" erp))
+       ((mv erp newr-cname) (ldm-ident newr-name))
+       ((when erp) (raise "Internal error: ~@0" erp))
+       ((mv erp old-ctag) (ldm-ident old-tag))
+       ((when erp) (raise "Internal error: ~@0" erp))
+       ((mv erp newl-ctag) (ldm-ident newl-tag))
+       ((when erp) (raise "Internal error: ~@0" erp))
+       ((mv erp newr-ctag) (ldm-ident newr-tag))
+       ((when erp) (raise "Internal error: ~@0" erp)))
+    `((c::compustate-has-static-var-with-type-p
+       ',old-cname
+       (c::type-struct ',old-ctag)
+       ,(symbol-lfix old-compst-var))
+      (c::compustate-has-static-var-with-type-p
+       ',newl-cname
+       (c::type-struct ',newl-ctag)
+       ,(symbol-lfix new-compst-var))
+      (c::compustate-has-static-var-with-type-p
+       ',newr-cname
+       (c::type-struct ',newr-ctag)
+       ,(symbol-lfix new-compst-var))))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-compustate-equiv ((old-name identp)
                                (newl-name identp)
                                (newr-name identp)
@@ -900,12 +944,9 @@
                        (c::compustate->frames new-compst))
                 (equal (c::compustate->heap old-compst)
                        (c::compustate->heap new-compst))
-                (c::compustate-has-static-var-with-type-p
-                 ',old-cname (c::type-struct ',old-ctag) old-compst)
-                (c::compustate-has-static-var-with-type-p
-                 ',newl-cname (c::type-struct ',newl-ctag) new-compst)
-                (c::compustate-has-static-var-with-type-p
-                 ',newr-cname (c::type-struct ',newr-ctag) new-compst))
+                ,@(stsp-object-hyps old-name newl-name newr-name
+                                    old-tag newl-tag newr-tag
+                                    'old-compst 'new-compst))
            :guard-simplify :limited
            :guard-hints
            (("Goal"
