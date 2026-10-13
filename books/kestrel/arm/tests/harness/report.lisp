@@ -388,6 +388,14 @@
            (true-listp (mv-nth 2 (apply-waivers mismatches name word pc arch waivers used))))
   :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
 
+(defthm true-listp-of-mv-nth-0-of-apply-waivers
+  (true-listp (mv-nth 0 (apply-waivers mismatches name word pc arch waivers used)))
+  :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
+
+(defthm true-listp-of-mv-nth-1-of-apply-waivers
+  (true-listp (mv-nth 1 (apply-waivers mismatches name word pc arch waivers used)))
+  :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tallies.
@@ -531,6 +539,14 @@
            (true-listp (mv-nth 3 (classify-record record waivers used))))
   :hints (("Goal" :in-theory (enable classify-record))))
 
+(defthm true-listp-of-mv-nth-1-of-classify-record
+  (true-listp (mv-nth 1 (classify-record record waivers used)))
+  :hints (("Goal" :in-theory (enable classify-record))))
+
+(defthm true-listp-of-mv-nth-2-of-classify-record
+  (true-listp (mv-nth 2 (classify-record record waivers used)))
+  :hints (("Goal" :in-theory (enable classify-record))))
+
 ;; Adds RECORD to the summary that summarize-records accumulates.  Returns (mv
 ;; counts by-name gaps mismatches waived unknown used).
 (defund summarize-record (record waivers
@@ -582,6 +598,14 @@
                 (true-listp (mv-nth 6 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))))
   :hints (("Goal" :in-theory (enable summarize-record))))
 
+;; Each entry of the lists of mismatches and of waived mismatches is a list.
+(defthm true-list-listp-of-summarize-record-entries
+  (and (implies (true-list-listp mismatches)
+                (true-list-listp (mv-nth 3 (summarize-record record waivers counts by-name gaps mismatches waived unknown used))))
+       (implies (true-list-listp waived)
+                (true-list-listp (mv-nth 4 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))))
+  :hints (("Goal" :in-theory (enable summarize-record))))
+
 ;; Accumulates the summary of RECORDS.  Returns (mv counts by-name gaps
 ;; mismatches waived unknown used), with the lists of vectors in the order of
 ;; RECORDS.
@@ -619,10 +643,28 @@
                 (count-alistp (mv-nth 2 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
                 (true-listp (mv-nth 6 (summarize-records records waivers counts by-name gaps mismatches waived unknown used))))))
 
+(local
+  (defthm true-list-listp-of-revappend
+    (implies (and (true-list-listp x)
+                  (true-list-listp y))
+             (true-list-listp (revappend x y)))))
+
+(defthm summarize-records-list-types
+  (implies (and (count-alistp counts)
+                (by-name-alistp by-name)
+                (count-alistp gaps)
+                (true-list-listp mismatches)
+                (true-list-listp waived)
+                (true-listp unknown)
+                (true-listp used))
+           (and (true-list-listp (mv-nth 3 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
+                (true-list-listp (mv-nth 4 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
+                (true-listp (mv-nth 5 (summarize-records records waivers counts by-name gaps mismatches waived unknown used))))))
+
 ;; Summarizes RECORDS under the name NAME.  NAMES lists the names of all the
 ;; instructions of the model, WAIVERS are the waivers to apply, and NOT-RUN is
 ;; the alist for the summary's :not-run.
-(defun summarize-results (name records names waivers not-run)
+(defund summarize-results (name records names waivers not-run)
   (declare (xargs :guard (and (stringp name)
                               (report-record-listp records)
                               (true-listp names)
@@ -665,6 +707,12 @@
       (null x)
     (and (summaryp (car x))
          (summary-listp (cdr x)))))
+
+(defthm summaryp-of-summarize-results
+  (implies (and (stringp name)
+                (count-alistp not-run))
+           (summaryp (summarize-results name records names waivers not-run)))
+  :hints (("Goal" :in-theory (enable summarize-results report-get))))
 
 ;; Whether SUMMARY has no mismatch that a waiver did not excuse.
 (defun check-summary (summary)
@@ -728,7 +776,7 @@
 ;; Combines SUMMARIES, which must not be empty, into one summary named NAME.
 ;; An instruction is unexercised, and a waiver unused, if it is so in every
 ;; summary.
-(defun merge-summaries (name summaries)
+(defund merge-summaries (name summaries)
   (declare (xargs :guard (and (stringp name)
                               (summary-listp summaries)
                               (consp summaries))))
@@ -743,6 +791,40 @@
         :unknown (append-lists :unknown summaries)
         :unexercised (intersect-lists :unexercised summaries)
         :unused-waivers (intersect-lists :unused-waivers summaries)))
+
+(defthm natp-of-sum-vectors
+  (implies (summary-listp summaries)
+           (natp (sum-vectors summaries))))
+
+(defthm by-name-alistp-of-merge-by-name
+  (implies (and (summary-listp summaries)
+                (by-name-alistp by-name))
+           (by-name-alistp (merge-by-name summaries by-name))))
+
+(local
+  (defthm true-list-listp-of-append
+    (implies (and (true-list-listp x)
+                  (true-list-listp y))
+             (true-list-listp (append x y)))))
+
+(defthm append-lists-types
+  (and (true-listp (append-lists key summaries))
+       (implies (and (summary-listp summaries)
+                     (member-eq key '(:mismatches :waived)))
+                (true-list-listp (append-lists key summaries)))))
+
+(defthm true-listp-of-intersect-lists
+  (implies (and (summary-listp summaries)
+                (member-eq key '(:unexercised :unused-waivers)))
+           (true-listp (intersect-lists key summaries))))
+
+(defthm summaryp-of-merge-summaries
+  (implies (and (stringp name)
+                (summary-listp summaries))
+           (summaryp (merge-summaries name summaries)))
+  :hints (("Goal" :in-theory (e/d (merge-summaries report-get)
+                                  (sum-vectors merge-counts merge-by-name
+                                   append-lists intersect-lists)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,7 +964,7 @@
 ;; Writes SUMMARY to the file FILENAME, for tools and for comparing runs.  It
 ;; is pretty-printed, so that a list too long for one line, such as the
 ;; mismatches, has an element per line.  Returns (mv erp state).
-(defun write-summary (summary filename state)
+(defund write-summary (summary filename state)
   (declare (xargs :guard (and (summaryp summary)
                               (stringp filename))
                   :stobjs state
@@ -897,3 +979,9 @@
                                     :print-right-margin 100))
              (state (close-output-channel channel state)))
         (mv nil state)))))
+
+(defthm state-p1-of-mv-nth-1-of-write-summary
+  (implies (and (stringp filename)
+                (state-p1 state))
+           (state-p1 (mv-nth 1 (write-summary summary filename state))))
+  :hints (("Goal" :in-theory (enable write-summary))))
