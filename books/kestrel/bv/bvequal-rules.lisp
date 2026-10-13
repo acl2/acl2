@@ -23,12 +23,12 @@
          (bvequal size y z))
   :hints (("Goal" :in-theory (enable bvequal))))
 
-(defthm bvequal-of-bvplus-arg2-cancel-1
+(defthm bvequal-of-bvplus-arg3-cancel-1
   (equal (bvequal size x (bvplus size x y))
          (bvequal size 0 y))
   :hints (("Goal" :in-theory (enable bvequal))))
 
-(defthm bvequal-of-bvplus-arg1-cancel-1
+(defthm bvequal-of-bvplus-arg2-cancel-1
   (equal (bvequal size (bvplus size x y) x)
          (bvequal size y 0))
   :hints (("Goal" :in-theory (enable bvequal))))

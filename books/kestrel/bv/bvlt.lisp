@@ -57,8 +57,7 @@
   (implies (bvlt freesize y x)
            (not (equal x y))))
 
-;rename
-(defthm bvlt-trim-constant-arg2
+(defthm bvlt-trim-constant-arg3
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (unsigned-byte-p size k))
@@ -68,8 +67,7 @@
                   (bvlt size x (bvchop size k))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-;rename
-(defthm bvlt-trim-constant-arg1
+(defthm bvlt-trim-constant-arg2
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (not (unsigned-byte-p size k))

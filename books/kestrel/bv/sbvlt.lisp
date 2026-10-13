@@ -234,21 +234,21 @@
            (not (sbvlt 32 k2 x)))
   :hints (("Goal" :in-theory (enable sbvlt))))
 
-(defthm sbvlt-of-+-of-expt-arg1
+(defthm sbvlt-of-+-of-expt-arg2
   (implies (and (integerp x)
                 (posp size))
            (equal (sbvlt size (+ x (expt 2 size)) y)
                   (sbvlt size x y)))
   :hints (("Goal" :in-theory (e/d (sbvlt) (expt)))))
 
-(defthm sbvlt-of-+-of-expt-arg2
+(defthm sbvlt-of-+-of-expt-arg3
   (implies (and (integerp y)
                 (posp size))
            (equal (sbvlt size x (+ y (expt 2 size)))
                   (sbvlt size x y)))
   :hints (("Goal" :in-theory (e/d (sbvlt) (expt)))))
 
-(defthm sbvlt-of-+-of-expt-arg2-gen
+(defthm sbvlt-of-+-of-expt-arg3-gen
  (implies (and (<= size size2)
                (integerp size2)
                (integerp y)
