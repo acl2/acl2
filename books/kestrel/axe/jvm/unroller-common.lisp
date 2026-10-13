@@ -239,14 +239,14 @@
                                          (and vars-for-array-elements
                                               ;; todo: make this an error?
                                               (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1).~%" parameter-name vars-for-array-elements))
-                                          `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
-                                            (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p or unsigned-byte-listp or bv-arrayp?  what about bit arrays?
-                                            (unsigned-byte-p '31 (len ,parameter-name)) ; max length of a Java array is 2^31-1
-                                            ;; todo: consider array-ref-or-nullp here:
-                                            (array-refp ,local-term
-                                                        (cons (len ,parameter-name) 'nil) ;; no constant length to use here
-                                                        ',component-type
-                                                        ,heap-term))))
+                                         `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
+                                           (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p or unsigned-byte-listp or bv-arrayp?  what about bit arrays?
+                                           (unsigned-byte-p '31 (len ,parameter-name)) ; max length of a Java array is 2^31-1
+                                           ;; todo: consider array-ref-or-nullp here:
+                                           (array-refp ,local-term
+                                                       (cons (len ,parameter-name) 'nil) ;; no constant length to use here
+                                                       ',component-type
+                                                       ,heap-term))))
                                     (if (member-eq component-type '(:float :double))
                                         ;; One-dimensional array of floats/doubles:
                                         (if maybe-len

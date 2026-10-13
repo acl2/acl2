@@ -292,21 +292,43 @@
                                     FROM LOWER TO UPPER COLLECT (SQUARE I))
                             (global-val 'loop$-alist (w state))))
           :term)
-  '(COLLECT$ '(LAMBDA (LOOP$-IVAR)
-                      (DECLARE (TYPE INTEGER LOOP$-IVAR)
-                               (XARGS :GUARD (INTEGERP LOOP$-IVAR)
-                                      :SPLIT-TYPES T)
-                               (IGNORABLE LOOP$-IVAR))
-                      (RETURN-LAST 'PROGN
-                                   '(LAMBDA$ (LOOP$-IVAR)
-                                             (DECLARE (TYPE INTEGER LOOP$-IVAR))
-                                             (LET ((I LOOP$-IVAR))
-                                               (DECLARE (IGNORABLE I))
-                                               (SQUARE I)))
-                                   ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
-             ((LAMBDA (LOOP$-LO LOOP$-HI LOOP$-BY)
-                      (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY))
-              LOWER UPPER '1))))
+  '(COLLECT$
+    '(LAMBDA (LOOP$-IVAR)
+             (DECLARE (TYPE INTEGER LOOP$-IVAR)
+                      (XARGS :GUARD (INTEGERP LOOP$-IVAR)
+                             :SPLIT-TYPES T)
+                      (IGNORABLE LOOP$-IVAR))
+             (RETURN-LAST 'PROGN
+                          '(LAMBDA$ (LOOP$-IVAR)
+                                    (DECLARE (TYPE INTEGER LOOP$-IVAR))
+                                    (LET ((I LOOP$-IVAR))
+                                         (DECLARE (IGNORABLE I))
+                                         (SQUARE I)))
+                          ((LAMBDA (I) (SQUARE I)) LOOP$-IVAR)))
+    ((LAMBDA (LOOP$-LO LOOP$-HI LOOP$-BY)
+             (RETURN-LAST
+              'PROGN
+              (RETURN-LAST 'PROGN
+                           (CHECK-DCL-GUARDIAN (INTEGERP LOOP$-LO)
+                                               '(INTEGERP LOOP$-LO))
+                           (RETURN-LAST 'PROGN
+                                        (CHECK-DCL-GUARDIAN (INTEGERP LOOP$-HI)
+                                                            '(INTEGERP LOOP$-HI))
+                                        (CHECK-DCL-GUARDIAN (INTEGERP LOOP$-BY)
+                                                            '(INTEGERP LOOP$-BY))))
+              (RETURN-LAST 'PROGN
+                           ((LAMBDA (LOOP$-FINAL)
+                                    (RETURN-LAST 'PROGN
+                                                 (CHECK-DCL-GUARDIAN (INTEGERP LOOP$-FINAL)
+                                                                     '(INTEGERP LOOP$-FINAL))
+                                                 LOOP$-FINAL))
+                            (+ LOOP$-LO
+                               (+ LOOP$-BY
+                                  (* LOOP$-BY
+                                     (FLOOR (+ LOOP$-HI (- LOOP$-LO))
+                                            LOOP$-BY)))))
+                           (FROM-TO-BY LOOP$-LO LOOP$-HI LOOP$-BY))))
+     LOWER UPPER '1))))
 
 (assert! ; may be able to use assert-event after a bug fix is in place
  (equal

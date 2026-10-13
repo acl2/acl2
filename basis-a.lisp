@@ -8844,7 +8844,7 @@
               (k v ,var)
               ,@(and inline (list *stobj-inline-declare*))
               (progn
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (setf (gethash ,key (the hash-table ,fld))
                       v)
                 ,var))
@@ -8881,7 +8881,7 @@
               ,@(and inline (list *stobj-inline-declare*))
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (remhash ,key (the hash-table ,fld))
                 ,var))
              (,count-name
@@ -8895,7 +8895,7 @@
               (,var)
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (clrhash (the hash-table ,fld))
                 ,@(and (not single-fieldp)
                        (list var))))
@@ -8903,7 +8903,7 @@
               (ht-size rehash-size rehash-threshold ,var)
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (setf ,fld
                       (make-hash-table-with-defaults ',hash-test
                                                      ht-size

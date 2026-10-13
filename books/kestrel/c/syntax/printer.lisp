@@ -3493,7 +3493,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
     (b* (((statassert statassert) statassert)
-         (pstate (print-astring "_Static_assert(" pstate))
+         (pstate (if statassert.uscore
+                     (print-astring "_Static_assert(" pstate)
+                   (print-astring "static_assert(" pstate)))
          (pstate (print-const-expr statassert.test pstate))
          (pstate (print-astring ", " pstate))
          ((unless statassert.message)
