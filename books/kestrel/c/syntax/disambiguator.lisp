@@ -2988,7 +2988,9 @@
     (b* (((reterr) (irr-statassert) (irr-dstate))
          ((statassert statassert) statassert)
          ((erp new-test dstate) (dimb-const-expr statassert.test dstate)))
-      (retok (make-statassert :test new-test :message statassert.message)
+      (retok (make-statassert :uscore statassert.uscore
+                              :test new-test
+                              :message statassert.message)
              dstate))
     :measure (statassert-count statassert))
 

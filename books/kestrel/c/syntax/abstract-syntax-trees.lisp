@@ -2739,8 +2739,14 @@
       "We use a list of string literals,
        which should be non-empty, but we do not capture this constraint.
        This mirrors the ABNF grammar:
-       this way, we preserve the information about adjacent string literals."))
-    ((test const-expr)
+       this way, we preserve the information about adjacent string literals.")
+     (xdoc::p
+      "We also keep track, via a boolean flag,
+       of whether the keyword in the concrete syntax is
+       @('_Static_assert') (flag @('t')) or @('static_assert') (flag @('nil');
+       the latter is only in C23."))
+    ((uscore bool)
+     (test const-expr)
      (message stringlit-list))
     :pred statassertp
     :layout :fulltree

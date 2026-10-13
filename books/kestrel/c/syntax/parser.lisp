@@ -4304,7 +4304,9 @@
          ((erp stringlits & parstate) (parse-*-stringlit parstate))
          ((erp & parstate) (read-punctuator ")" parstate))
          ((erp last-span parstate) (read-punctuator ";" parstate)))
-      (retok (make-statassert :test cexpr :message (cons stringlit stringlits))
+      (retok (make-statassert :uscore t
+                              :test cexpr
+                              :message (cons stringlit stringlits))
              (span-join first-span last-span)
              parstate))
     :measure (two-nats-measure (parsize parstate) 0))

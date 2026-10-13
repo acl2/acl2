@@ -1634,7 +1634,8 @@
          ((mv new-test (gout gout-test))
           (simpadd0-const-expr statassert.test gin))
          (gin (gin-update gin gout-test)))
-      (mv (make-statassert :test new-test
+      (mv (make-statassert :uscore statassert.uscore
+                           :test new-test
                            :message statassert.message)
           (gout-no-thm gin)))
     :measure (statassert-count statassert))
