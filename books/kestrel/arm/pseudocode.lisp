@@ -799,8 +799,6 @@
                                    ;;acl2::unsigned-byte-p-false-when-not-longer
                                    )))))
 
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-
 ;; ;gen
 ;; (local
 ;;  (defthm equal-of-+-of-bvchop-same-7-8

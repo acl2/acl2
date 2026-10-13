@@ -952,8 +952,7 @@
 (defthmd equal-of-0-and-mod-when-small
   (implies (and (< (- y) x)
                 (< x y)
-                (rationalp x)
-                (rationalp y))
+                (rationalp x))
            (equal (equal 0 (mod x y))
                   (equal 0 x)))
   :hints (("Goal" :cases ((< x 0) (< 0 x))
