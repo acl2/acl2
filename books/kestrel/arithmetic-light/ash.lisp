@@ -125,8 +125,7 @@
 ;; or just make the definition of ash into a linear rule?
 (defthm <-of-ash-linear-when-<-free-linear
   (implies (and (< i free)
-                (integerp i)
-                (integerp c))
+                (integerp i))
            (< (ash i c) (* free (expt 2 c))))
   :rule-classes ((:linear :trigger-terms ((ash i c))))
   :hints (("Goal" :in-theory (enable ash))))
