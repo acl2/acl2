@@ -231,7 +231,9 @@
     ;; todo: qsub
     ;; todo: qsub16
     ;; todo: qsub8
-    ;; todo: rbit
+
+    ;; (:rbit (cond 4) 0 1 1 0 1 1 1 1 (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4)) ; ready
+
     (:rev (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
     (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
     (:revsh (cond 4) 0 1 1 0 1 _ 1 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
@@ -255,7 +257,8 @@
     (:sbc-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
     (:sbc-register-shifted-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
-    ;; todo: sbfx
+    ;; (:sbfx (cond 4) 0 1 1 1 1 _ 0 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+
     ;; todo: sdiv
     ;; todo: sel
     ;; todo: setend
@@ -276,8 +279,13 @@
     ;; todo: smlawb/smlawt
     ;; todo: smlsd
     ;; todo: smlsld
-    ;; todo: smmla
-    ;; todo: smmls
+
+    ;; also covers SMMLAR:
+    ;; (:smmla (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 0 0 r 1 (rn 4)) ; ready
+
+    ;; also covers SMMLSR:
+    ;; (:smmls (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 1 1 r 1 (rn 4)) ; ready
+
     ;; todo: smmul
     ;; todo: smuad
 
@@ -353,7 +361,9 @@
     ;; todo: uadd16
     ;; todo: uadd8
     ;; todo: uasx
-    ;; todo: ubfx
+
+    ;; (:ubfx (cond 4) 0 1 1 1 1 _ 1 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+
     ;; todo: udf
     ;; todo: udiv
     ;; todo: uhadd16
