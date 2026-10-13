@@ -162,7 +162,7 @@
    (xdoc::p
     "The map must return execution characters.
      We do not require surjectivity,
-     since execution characters may be also denoted via escapes
+     since execution characters may also be denoted via escapes
      in character constants and string literals.")
    (xdoc::p
     "We require basic source characters to be mapped to
