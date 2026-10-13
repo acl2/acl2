@@ -9944,8 +9944,7 @@
                                   logapp
                                   sbvlt-rewrite)
                            (bvcat-of-getbit-and-x-adjacent
-                            bvcat-equal-rewrite-alt
-                            getbit-when->-free)))))
+                            bvcat-equal-rewrite-alt)))))
 
 (defthm boolor-of-sbvlt-combine-gen-better-alt
   (implies (and (syntaxp (and (quotep k)
