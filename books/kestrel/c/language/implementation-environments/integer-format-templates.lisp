@@ -659,7 +659,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('M') of value bits,
-     the signed format, and possibly the trap/non-value representations
+     the signed format, and, in C17, possibly a trap representation
      [C17:6.2.6.2/2] [C23:6.2.6.2],
      where @('M') is @('N-1') in C23,
      where @('N') is the number of value bits
