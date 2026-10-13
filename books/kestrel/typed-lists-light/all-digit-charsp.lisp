@@ -1,6 +1,6 @@
 ; Recognize a list of digit-chars.
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
-(in-theory (disable digit-char-p)) ;expensive to open
+;; This may often be a good idea, but we make it local
+;; here so as not to break others' proofs:
+(local (in-theory (disable digit-char-p))) ;expensive to open
 
 (defund all-digit-charsp (chars radix)
   (declare (xargs :guard (and (character-listp chars)
