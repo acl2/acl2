@@ -359,6 +359,7 @@
            (unsigned-byte-p 31 dim))
   :hints (("Goal" :in-theory (enable array-refp))))
 
+;rename
 (defthm unsigned-byte-p-when-array-refp
   (implies (and (array-refp ad (cons dim dims) type heap) ;free vars here
                 (natp size)
@@ -596,6 +597,20 @@
            :in-theory (enable array-ref-listp
                               array-refp
                               (:i true-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We should probably use this more
+(defund array-ref-or-nullp (ref dims element-type heap)
+  (declare (xargs :guard (and (nat-listp dims)
+                              (consp dims) ; must be at least one dimension
+                              (jvm::typep element-type)
+                              (not (jvm::is-array-typep element-type))
+                              (jvm::heapp heap))))
+  (or (null-refp ref)
+      (array-refp ref dims element-type heap)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;; addresses-of-array-ref

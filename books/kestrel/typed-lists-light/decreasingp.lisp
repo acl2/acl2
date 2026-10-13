@@ -101,10 +101,10 @@
            (all-< nums bound))
   :hints (("Goal" :in-theory (enable all-< decreasingp))))
 
-(local
-  (defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
-    (implies (and (decreasingp nums)
-                  (all-integerp nums)
-                  (consp nums))
-             (not (equal (nth 1 nums) (nth 0 nums))))
-    :hints (("Goal" :in-theory (enable decreasingp all-integerp)))))
+;; not used?
+(defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
+  (implies (and (decreasingp nums)
+                (all-integerp nums)
+                (consp nums))
+           (not (equal (nth 1 nums) (nth 0 nums))))
+  :hints (("Goal" :in-theory (enable decreasingp all-integerp))))
