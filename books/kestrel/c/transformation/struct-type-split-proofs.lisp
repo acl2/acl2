@@ -928,6 +928,9 @@
        ((erp old-ctag) (ldm-ident old-tag) :iferr "")
        ((erp newl-ctag) (ldm-ident newl-tag) :iferr "")
        ((erp newr-ctag) (ldm-ident newr-tag) :iferr "")
+       (obj-hyps (stsp-object-hyps old-name newl-name newr-name
+                                   old-tag newl-tag newr-tag
+                                   'old-compst 'new-compst))
        (event
         `(define compustate-equivp ((old-compst c::compustatep)
                                     (new-compst c::compustatep))
@@ -943,10 +946,7 @@
                 (equal (c::compustate->frames old-compst)
                        (c::compustate->frames new-compst))
                 (equal (c::compustate->heap old-compst)
-                       (c::compustate->heap new-compst))
-                ,@(stsp-object-hyps old-name newl-name newr-name
-                                    old-tag newl-tag newr-tag
-                                    'old-compst 'new-compst))
+                       (c::compustate->heap new-compst)))
            :guard-simplify :limited
            :guard-hints
            (("Goal"
@@ -961,8 +961,7 @@
                '(compustate-equivp
                  c::compustate->static$inline-of-compustate-fix-x
                  c::compustate->frames$inline-of-compustate-fix-x
-                 c::compustate->heap$inline-of-compustate-fix-x
-                 c::compustate-has-static-var-with-type-p-of-compustate-fix-compst)))))
+                 c::compustate->heap$inline-of-compustate-fix-x)))))
            ///
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
@@ -974,7 +973,8 @@
                   (newr-val
                    (c::read-object (c::objdesign-of-var ',newr-cname new-compst)
                                    new-compst)))
-               (implies (compustate-equivp old-compst new-compst)
+               (implies (and (compustate-equivp old-compst new-compst)
+                             ,@obj-hyps)
                         (struct-value-equivp old-val newl-val newr-val)))
              :use ((:instance
                     c::read-object-when-compustate-has-static-var-with-type-p
@@ -1003,6 +1003,7 @@
                (:e c::identp)))
            (defruled objdesign-of-var-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
+                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname)))
@@ -1019,6 +1020,7 @@
                           c::scopep-of-compustate->static))
            (defruled read-object-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
+                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname))
@@ -1048,6 +1050,7 @@
                           (:e equal)))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
+                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname)))
@@ -1072,7 +1075,10 @@
 
 (define stsp-exec-expr-congruences ((old-name identp)
                                     (newl-name identp)
-                                    (newr-name identp))
+                                    (newr-name identp)
+                                    (old-tag identp)
+                                    (newl-tag identp)
+                                    (newr-tag identp))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate congruence theorems for expression execution."
@@ -1093,6 +1099,12 @@
        ((erp old-cname) (ldm-ident old-name) :iferr "")
        ((erp newl-cname) (ldm-ident newl-name) :iferr "")
        ((erp newr-cname) (ldm-ident newr-name) :iferr "")
+       (obj-hyps (stsp-object-hyps old-name newl-name newr-name
+                                   old-tag newl-tag newr-tag
+                                   'old-compst 'new-compst))
+       (obj-hyps1 (stsp-object-hyps old-name newl-name newr-name
+                                    old-tag newl-tag newr-tag
+                                    'old-compst1 'new-compst1))
        (events
         `((defruled expr-ident-congruence-under-compustate-equivp
             (b* ((expr (c::expr-ident var))
@@ -1107,6 +1119,7 @@
                             (not (equal (c::ident-fix var) ',newr-cname))
                             (not (c::errorp old-eval))
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (c::compustate-has-var-with-type-p var
                                                                type
                                                                old-compst))
@@ -1114,26 +1127,29 @@
                             (iff old-eval new-eval)
                             (equal old-val new-val)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (c::type-fix type)))))
             :use (objdesign-of-var-when-compustate-equivp
                   read-object-when-compustate-equivp)
-            :in-theory '(c::exec-expr
-                         c::exec-ident
-                         c::compustate-has-var-with-type-p
-                         c::return-type-of-expr-ident
-                         c::expr-ident->get-of-expr-ident
-                         c::exec-ident-of-ident-fix-id
-                         c::expr-value->value-of-expr-value
-                         c::type-of-value-of-value-fix-val
-                         c::errorp-of-error
-                         compustate-equivp-of-compustate-fix-old-compst
-                         compustate-equivp-of-compustate-fix-new-compst
-                         (:t c::expr-value)
-                         mv-nth
-                         iff
-                         (:e equal)))
+            :in-theory
+            '(c::exec-expr
+              c::exec-ident
+              c::compustate-has-var-with-type-p
+              c::return-type-of-expr-ident
+              c::expr-ident->get-of-expr-ident
+              c::exec-ident-of-ident-fix-id
+              c::expr-value->value-of-expr-value
+              c::type-of-value-of-value-fix-val
+              c::errorp-of-error
+              compustate-equivp-of-compustate-fix-old-compst
+              compustate-equivp-of-compustate-fix-new-compst
+              c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
+              (:t c::expr-value)
+              mv-nth
+              iff
+              (:e equal)))
           (defruled expr-const-congruence-under-compustate-equivp
             (b* ((expr (c::expr-const const))
                  ((mv old-eval old-compst1)
@@ -1147,22 +1163,26 @@
               (implies (and (equal (c::const-kind const) :int)
                             (c::typep type)
                             (not (c::errorp old-eval))
-                            (compustate-equivp old-compst new-compst))
+                            (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps)
                        (and (not (c::errorp new-eval))
                             (iff old-eval new-eval)
                             (equal old-val new-val)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             old-eval
                             (equal (c::type-of-value old-val) type))))
             :use (:instance expr-const-congruence (compst old-compst))
-            :in-theory '(c::exec-expr
-                         c::return-type-of-expr-const
-                         c::expr-const->get-of-expr-const
-                         compustate-equivp-of-compustate-fix-old-compst
-                         compustate-equivp-of-compustate-fix-new-compst
-                         mv-nth
-                         iff
-                         (:e equal)))
+            :in-theory
+            '(c::exec-expr
+              c::return-type-of-expr-const
+              c::expr-const->get-of-expr-const
+              compustate-equivp-of-compustate-fix-old-compst
+              compustate-equivp-of-compustate-fix-new-compst
+              c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
+              mv-nth
+              iff
+              (:e equal)))
           (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
             (b* ((old (c::expr-binary op old-arg1 old-arg2))
                  (new (c::expr-binary op new-arg1 new-arg2))
@@ -1198,14 +1218,24 @@
                             (equal old-arg1-val new-arg1-val)
                             (equal old-arg2-val new-arg2-val)
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (compustate-equivp old-arg1-compst new-arg1-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-arg1-compst
+                                                'new-arg1-compst)
                             (compustate-equivp old-arg2-compst new-arg2-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-arg2-compst
+                                                'new-arg2-compst)
                             (c::type-nonchar-integerp type1)
                             (c::type-nonchar-integerp type2))
                        (and (not (c::errorp new-eval))
                             (iff old-eval new-eval)
                             (equal old-val new-val)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             old-eval
                             (equal (c::type-of-value old-val)
                                    (cond ((member-equal (c::binop-kind op)
@@ -1274,11 +1304,17 @@
                             (iff old-expr-eval new-expr-eval)
                             (equal old-expr-val new-expr-val)
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (compustate-equivp old-expr-compst new-expr-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-expr-compst
+                                                'new-expr-compst)
                             (c::type-nonchar-integerp type))
                        (and (not (c::errorp new-sval))
                             (equal old-sval new-sval)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             (equal (c::stmt-value-kind old-sval) :return)
                             (c::stmt-value-return->value? old-sval)
                             (set::in (c::type-option-of-stmt-value old-sval)
@@ -1331,13 +1367,19 @@
               (implies (and (not (c::errorp old-sval))
                             (equal old-stmt-sval new-stmt-sval)
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (compustate-equivp old-stmt-compst new-stmt-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-stmt-compst
+                                                'new-stmt-compst)
                             (set::in
                              (c::type-option-of-stmt-value old-stmt-sval)
                              types))
                        (and (not (c::errorp new-sval))
                             (equal old-sval new-sval)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             (set::in (c::type-option-of-stmt-value old-sval)
                                      types))))
             :expand ((c::exec-block-item (c::block-item-stmt old-stmt)
@@ -1358,24 +1400,28 @@
                  ((mv new-sval new-compst1)
                   (c::exec-block-item-list new new-compst new-fenv limit)))
               (implies (and (not (c::errorp old-sval))
-                            (compustate-equivp old-compst new-compst))
+                            (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps)
                        (and (not (c::errorp new-sval))
                             (equal old-sval new-sval)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             (set::in (c::type-option-of-stmt-value old-sval)
                                      (set::insert nil nil)))))
-            :in-theory '(c::exec-block-item-list
-                         c::errorp-of-error
-                         compustate-equivp-of-compustate-fix-old-compst
-                         compustate-equivp-of-compustate-fix-new-compst
-                         (:e consp)
-                         (:e c::errorp)
-                         (:e c::stmt-value-none)
-                         (:e c::type-option-of-stmt-value)
-                         (:e set::in)
-                         (:e set::insert)
-                         mv-nth
-                         (:e equal)))
+            :in-theory
+            '(c::exec-block-item-list
+              c::errorp-of-error
+              compustate-equivp-of-compustate-fix-old-compst
+              compustate-equivp-of-compustate-fix-new-compst
+              c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
+              (:e consp)
+              (:e c::errorp)
+              (:e c::stmt-value-none)
+              (:e c::type-option-of-stmt-value)
+              (:e set::in)
+              (:e set::insert)
+              mv-nth
+              (:e equal)))
           (defruled block-item-list-cons-first-congruence-under-compustate-equivp
             (b* ((old (cons old-item old-items))
                  (new (cons new-item new-items))
@@ -1390,7 +1436,12 @@
               (implies (and (not (c::errorp old-sval))
                             (equal old-item-sval new-item-sval)
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (compustate-equivp old-item-compst new-item-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-item-compst
+                                                'new-item-compst)
                             (equal (c::stmt-value-kind old-item-sval) :return)
                             (set::in
                              (c::type-option-of-stmt-value old-item-sval)
@@ -1398,6 +1449,7 @@
                        (and (not (c::errorp new-sval))
                             (equal old-sval new-sval)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             (set::in (c::type-option-of-stmt-value old-sval)
                                      (set::union (set::delete nil first-types)
                                                  rest-types)))))
@@ -1439,9 +1491,18 @@
                             (equal old-item-sval new-item-sval)
                             (equal old-items-sval new-items-sval)
                             (compustate-equivp old-compst new-compst)
+                            ,@obj-hyps
                             (compustate-equivp old-item-compst new-item-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-item-compst
+                                                'new-item-compst)
                             (compustate-equivp old-items-compst
                                                new-items-compst)
+                            ,@(stsp-object-hyps old-name newl-name newr-name
+                                                old-tag newl-tag newr-tag
+                                                'old-items-compst
+                                                'new-items-compst)
                             (equal (c::stmt-value-kind old-item-sval) :none)
                             (set::in
                              (c::type-option-of-stmt-value old-item-sval)
@@ -1452,6 +1513,7 @@
                        (and (not (c::errorp new-sval))
                             (equal old-sval new-sval)
                             (compustate-equivp old-compst1 new-compst1)
+                            ,@obj-hyps1
                             (set::in (c::type-option-of-stmt-value old-sval)
                                      (set::union (set::delete nil first-types)
                                                  rest-types)))))
@@ -1475,7 +1537,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-exec-struct-thm ((onlr (member-eq onlr '(old newl newr)))
-                              (name identp))
+                              (name identp)
+                              (tag identp))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate the theorem saying
@@ -1483,10 +1546,13 @@
   (b* (((reterr) '(_))
        (thm-name (packn-pos (list 'exec- onlr '-struct) 'struct-value-))
        ((erp cname) (ldm-ident name) :iferr "")
+       ((erp ctag) (ldm-ident tag) :iferr "")
        (compst (if (eq onlr 'old) 'old-compst 'new-compst)))
     (retok
      `(defruled ,thm-name
         (implies (and (compustate-equivp old-compst new-compst)
+                      (c::compustate-has-static-var-with-type-p
+                       ',cname (c::type-struct ',ctag) ,compst)
                       (equal expr (c::expr-ident ',cname))
                       (not (zp limit)))
                  (equal (c::exec-expr expr ,compst old-fenv limit)
@@ -1514,7 +1580,10 @@
                           (lmems ident-listp)
                           (old-name identp)
                           (newl-name identp)
-                          (newr-name identp))
+                          (newr-name identp)
+                          (old-tag identp)
+                          (newl-tag identp)
+                          (newr-tag identp))
   :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
@@ -1553,9 +1622,9 @@
                            'newrp))
                    'struct-value-))
        (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
-                          'struct-value-))
+                           'struct-value-))
        (new-acc (packn-pos (list 'struct-value- new '- (c::ident->name cmem))
-                          'struct-value-))
+                           'struct-value-))
        (valuep-of-old-acc (packn-pos (list 'valuep-of- old-acc) 'struct-value-))
        (valuep-of-new-acc (packn-pos (list 'valuep-of- new-acc) 'struct-value-))
        (type-of-value-of-old-acc
@@ -1573,12 +1642,18 @@
                 (old-val (c::expr-value->value old-eval))
                 (new-val (c::expr-value->value new-eval)))
              (implies (and (compustate-equivp old-compst new-compst)
+                           ,@(stsp-object-hyps old-name newl-name newr-name
+                                               old-tag newl-tag newr-tag
+                                               'old-compst 'new-compst)
                            (not (c::errorp old-eval)))
                       (and (not (c::errorp new-eval))
                            old-eval
                            new-eval
                            (equal old-val new-val)
                            (compustate-equivp old-compst1 new-compst1)
+                           ,@(stsp-object-hyps old-name newl-name newr-name
+                                               old-tag newl-tag newr-tag
+                                               'old-compst1 'new-compst1)
                            (equal (c::type-of-value old-val) ',ctype))))
            :use (struct-value-equivp-when-compustate-equivp
                  lemma)
@@ -1588,44 +1663,46 @@
                     (c::exec-expr ',(c::expr-member (c::expr-ident new-cname)
                                                     cmem)
                                   new-compst new-fenv limit))
-           :in-theory '(exec-old-struct
-                        ,exec-new-struct
-                        c::not-errorp-when-expr-valuep
-                        c::not-errorp-when-valuep
-                        c::exec-member
-                        c::apconvert-expr-value-when-not-array
-                        struct-value-equivp
-                        value-kind-when-struct-value-oldp
-                        ,value-kind-when-struct-value-newp
-                        ,value-struct-read-mem-when-struct-value-oldp
-                        ,value-struct-read-mem-when-struct-value-newp
-                        ,valuep-of-old-acc
-                        ,valuep-of-new-acc
-                        ,type-of-value-of-old-acc
-                        ,type-of-value-of-new-acc
-                        c::expr-value->value-of-expr-value
-                        c::expr-value-fix-when-expr-valuep
-                        c::expr-valuep-of-expr-value
-                        c::value-kind$inline-of-value-fix-x
-                        c::value-struct-read-of-value-fix-struct
-                        c::value-fix-when-valuep
-                        c::type-of-value-of-value-fix-val
-                        compustate-equivp-of-compustate-fix-old-compst
-                        compustate-equivp-of-compustate-fix-new-compst
-                        c::errorp-of-error
-                        car-cons
-                        cdr-cons
-                        mv-nth
-                        zp
-                        (:t c::expr-value)
-                        (:e c::expr-ident)
-                        (:e c::expr-member)
-                        (:e c::expr-kind)
-                        (:e c::expr-member->target)
-                        (:e c::expr-member->name)
-                        (:e equal)
-                        (:e binary-+)
-                        (:e <))
+           :in-theory
+           '(exec-old-struct
+             ,exec-new-struct
+             c::not-errorp-when-expr-valuep
+             c::not-errorp-when-valuep
+             c::exec-member
+             c::apconvert-expr-value-when-not-array
+             struct-value-equivp
+             value-kind-when-struct-value-oldp
+             ,value-kind-when-struct-value-newp
+             ,value-struct-read-mem-when-struct-value-oldp
+             ,value-struct-read-mem-when-struct-value-newp
+             ,valuep-of-old-acc
+             ,valuep-of-new-acc
+             ,type-of-value-of-old-acc
+             ,type-of-value-of-new-acc
+             c::expr-value->value-of-expr-value
+             c::expr-value-fix-when-expr-valuep
+             c::expr-valuep-of-expr-value
+             c::value-kind$inline-of-value-fix-x
+             c::value-struct-read-of-value-fix-struct
+             c::value-fix-when-valuep
+             c::type-of-value-of-value-fix-val
+             compustate-equivp-of-compustate-fix-old-compst
+             compustate-equivp-of-compustate-fix-new-compst
+             c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
+             c::errorp-of-error
+             car-cons
+             cdr-cons
+             mv-nth
+             zp
+             (:t c::expr-value)
+             (:e c::expr-ident)
+             (:e c::expr-member)
+             (:e c::expr-kind)
+             (:e c::expr-member->target)
+             (:e c::expr-member->name)
+             (:e equal)
+             (:e binary-+)
+             (:e <))
            :prep-lemmas
            ((defruled lemma
               (b* ((old-expr
@@ -1652,7 +1729,8 @@
                            (:e <))))))
        ((erp events)
         (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
-                          old-name newl-name newr-name)))
+                          old-name newl-name newr-name
+                          old-tag newl-tag newr-tag)))
     (retok (cons event events)))
   :hooks ((:fix :hints (("Goal"
                          :induct t
@@ -1813,12 +1891,13 @@
         (stsp-compustate-equiv old-name newl-name newr-name
                                old-tag newl-tag newr-tag))
        ((erp exec-congs)
-        (stsp-exec-expr-congruences old-name newl-name newr-name))
-       ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name))
-       ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name))
-       ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name))
+        (stsp-exec-expr-congruences old-name newl-name newr-name tag tag tag2))
+       ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name tag))
+       ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name tag))
+       ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name tag2))
        ((erp exec-members)
-        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name)))
+        (stsp-exec-mem-eq
+         mems types lmems old-name newl-name newr-name tag tag tag2)))
     (retok old-name
            newl-name
            newr-name
@@ -1975,7 +2054,13 @@
                            (vartys c::ident-type-mapp)
                            (const-new symbolp)
                            (thm-index posp)
-                           (hints true-listp))
+                           (hints true-listp)
+                           (old-name identp)
+                           (newl-name identp)
+                           (newr-name identp)
+                           (old-tag identp)
+                           (newl-tag identp)
+                           (newr-tag identp))
   :guard (and (expr-unambp old)
               (expr-unambp new)
               (expr-annop old)
@@ -2027,6 +2112,9 @@
               (old-val (c::expr-value->value old-eval))
               (new-val (c::expr-value->value new-eval)))
            (implies (and (compustate-equivp old-compst new-compst)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-eval)))
                     (and (not (c::errorp new-eval))
@@ -2038,6 +2126,9 @@
                                (equal old-val new-val)
                                (equal (c::type-of-value old-val) ',ctype)))
                          (compustate-equivp old-compst1 new-compst1)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
@@ -2054,7 +2145,13 @@
                            (vartys c::ident-type-mapp)
                            (const-new symbolp)
                            (thm-index posp)
-                           (hints true-listp))
+                           (hints true-listp)
+                           (old-name identp)
+                           (newl-name identp)
+                           (newr-name identp)
+                           (old-tag identp)
+                           (newl-tag identp)
+                           (newr-tag identp))
   :guard (and (stmt-unambp old)
               (stmt-unambp new)
               (stmt-annop old)
@@ -2102,13 +2199,19 @@
                (c::exec-stmt new-stmt new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
-                         ,@vars-pre
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst 'new-compst)
+                         ,@Vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
@@ -2126,7 +2229,13 @@
                                  (vartys-post c::ident-type-mapp)
                                  (const-new symbolp)
                                  (thm-index posp)
-                                 (hints true-listp))
+                                 (hints true-listp)
+                                 (old-name identp)
+                                 (newl-name identp)
+                                 (newr-name identp)
+                                 (old-tag identp)
+                                 (newl-tag identp)
+                                 (newr-tag identp))
   :guard (and (block-item-unambp old)
               (block-item-unambp new)
               (block-item-annop old)
@@ -2174,6 +2283,9 @@
                (c::exec-block-item new-item new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
@@ -2181,6 +2293,9 @@
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -2198,7 +2313,13 @@
                                       (vartys c::ident-type-mapp)
                                       (const-new symbolp)
                                       (thm-index posp)
-                                      (hints true-listp))
+                                      (hints true-listp)
+                                      (old-name identp)
+                                      (newl-name identp)
+                                      (newr-name identp)
+                                      (old-tag identp)
+                                      (newl-tag identp)
+                                      (newr-tag identp))
   :guard (and (block-item-list-unambp old)
               (block-item-list-unambp new)
               (block-item-list-annop old)
@@ -2246,13 +2367,19 @@
                (c::exec-block-item-list new-items new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
-                         (compustate-equivp old-compst1 new-compst1)))))
+                         (compustate-equivp old-compst1 new-compst1)
+                         ,@(stsp-object-hyps old-name newl-name newr-name
+                                             old-tag newl-tag newr-tag
+                                             'old-compst1 'new-compst1)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
         `(defrule ,thm-name
@@ -2270,6 +2397,9 @@
                          (old-name identp)
                          (newl-name identp)
                          (newr-name identp)
+                         (old-tag identp)
+                         (newl-tag identp)
+                         (newr-tag identp)
                          (gin ginp))
   :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for an identifier expression (i.e. variable)."
@@ -2342,7 +2472,13 @@
                            gin.vartys
                            gin.const-new
                            gin.thm-index
-                           hints)))
+                           hints
+                           old-name
+                           newl-name
+                           newr-name
+                           old-tag
+                           newl-tag
+                           newr-tag)))
     (retok
      (make-gout :events (cons thm-event gin.events)
                 :thm-index thm-index
@@ -2411,6 +2547,12 @@
                           (arg2-thm-name symbolp)
                           (info1 type-vinfop)
                           (info2 type-vinfop)
+                          (old-name identp)
+                          (newl-name identp)
+                          (newr-name identp)
+                          (old-tag identp)
+                          (newl-tag identp)
+                          (newr-tag identp)
                           (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -2500,7 +2642,13 @@
                                gin.vartys
                                gin.const-new
                                gin.thm-index
-                               hints)))
+                               hints
+                               old-name
+                               newl-name
+                               newr-name
+                               old-tag
+                               newl-tag
+                               newr-tag)))
         (retok
          (make-gout :events (cons thm-event gin.events)
                     :thm-index thm-index
@@ -2519,6 +2667,9 @@
                    (old-name identp)
                    (newl-name identp)
                    (newr-name identp)
+                   (old-tag identp)
+                   (newl-tag identp)
+                   (newr-tag identp)
                    (gin ginp))
   :guard (and (expr-unambp old-expr)
               (expr-unambp new-expr)
@@ -2543,6 +2694,9 @@
                               old-name
                               newl-name
                               newr-name
+                              old-tag
+                              newl-tag
+                              newr-tag
                               gin)
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2563,6 +2717,9 @@
                                           old-name
                                           newl-name
                                           newr-name
+                                          old-tag
+                                          newl-tag
+                                          newr-tag
                                           gin))
                    (arg-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2595,6 +2752,9 @@
                                           old-name
                                           newl-name
                                           newr-name
+                                          old-tag
+                                          newl-tag
+                                          newr-tag
                                           gin))
                    (arg1-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout))
@@ -2603,6 +2763,9 @@
                                           old-name
                                           newl-name
                                           newr-name
+                                          old-tag
+                                          newl-tag
+                                          newr-tag
                                           gin))
                    (arg2-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2615,6 +2778,12 @@
                                   arg2-thm-name
                                   old-expr.info
                                   new-expr.info
+                                  old-name
+                                  newl-name
+                                  newr-name
+                                  old-tag
+                                  newl-tag
+                                  newr-tag
                                   gin))
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2631,6 +2800,12 @@
                           (expr-new exprp)
                           (expr-thm-name symbolp)
                           info
+                          (old-name identp)
+                          (newl-name identp)
+                          (newr-name identp)
+                          (old-tag identp)
+                          (newl-tag identp)
+                          (newr-tag identp)
                           (gin ginp))
   :guard (and (expr-unambp expr)
               (expr-unambp expr-new)
@@ -2671,7 +2846,13 @@
                            gin.vartys
                            gin.const-new
                            gin.thm-index
-                           hints)))
+                           hints
+                           old-name
+                           newl-name
+                           newr-name
+                           old-tag
+                           newl-tag
+                           newr-tag)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -2684,6 +2865,9 @@
                    (old-name identp)
                    (newl-name identp)
                    (newr-name identp)
+                   (old-tag identp)
+                   (newl-tag identp)
+                   (newr-tag identp)
                    (gin ginp))
   :guard (and (stmt-unambp old-stmt)
               (stmt-unambp new-stmt)
@@ -2715,6 +2899,9 @@
                                           old-name
                                           newl-name
                                           newr-name
+                                          old-tag
+                                          newl-tag
+                                          newr-tag
                                           gin))
                    (expr-thm (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2722,6 +2909,12 @@
                                   new-stmt.expr?
                                   expr-thm
                                   old-stmt.info
+                                  old-name
+                                  newl-name
+                                  newr-name
+                                  old-tag
+                                  newl-tag
+                                  newr-tag
                                   gin))
       :otherwise (retmsg$ "The statments ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2737,6 +2930,12 @@
                               (stmt-thm-name symbolp)
                               info
                               info-new
+                              (old-name identp)
+                              (newl-name identp)
+                              (newr-name identp)
+                              (old-tag identp)
+                              (newl-tag identp)
+                              (newr-tag identp)
                               (gin ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new)
@@ -2784,7 +2983,13 @@
                                  gin.vartys
                                  gin.const-new
                                  gin.thm-index
-                                 hints)))
+                                 hints
+                                 old-name
+                                 newl-name
+                                 newr-name
+                                 old-tag
+                                 newl-tag
+                                 newr-tag)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -2797,6 +3002,9 @@
                          (old-name identp)
                          (newl-name identp)
                          (newr-name identp)
+                         (old-tag identp)
+                         (newl-tag identp)
+                         (newr-tag identp)
                          (gin ginp))
   :guard (and (block-item-unambp old-item)
               (block-item-unambp new-item)
@@ -2822,6 +3030,9 @@
                                         old-name
                                         newl-name
                                         newr-name
+                                        old-tag
+                                        newl-tag
+                                        newr-tag
                                         gin))
                  (stmt-thm-name (gout->thm-name gout))
                  (gin (gin-update gin gout)))
@@ -2830,6 +3041,12 @@
                                     stmt-thm-name
                                     old-item.info
                                     new-item.info
+                                    old-name
+                                    newl-name
+                                    newr-name
+                                    old-tag
+                                    newl-tag
+                                    newr-tag
                                     gin))
       :otherwise (retmsg$ "The block items ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2841,7 +3058,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-block-item-list-empty ((gin ginp))
+(define stsp-block-item-list-empty ((old-name identp)
+                                    (newl-name identp)
+                                    (newr-name identp)
+                                    (old-tag identp)
+                                    (newl-tag identp)
+                                    (newr-tag identp)
+                                    (gin ginp))
   :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for the empty list of block items."
   :long
@@ -2863,7 +3086,13 @@
                                       gin.vartys
                                       gin.const-new
                                       gin.thm-index
-                                      hints)))
+                                      hints
+                                      old-name
+                                      newl-name
+                                      newr-name
+                                      old-tag
+                                      newl-tag
+                                      newr-tag)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -2877,6 +3106,12 @@
                                    (items block-item-listp)
                                    (items-new block-item-listp)
                                    (items-thm-name symbolp)
+                                   (old-name identp)
+                                   (newl-name identp)
+                                   (newr-name identp)
+                                   (old-tag identp)
+                                   (newl-tag identp)
+                                   (newr-tag identp)
                                    (gin ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new)
@@ -2973,7 +3208,13 @@
                                       gin.vartys
                                       gin.const-new
                                       gin.thm-index
-                                      hints)))
+                                      hints
+                                      old-name
+                                      newl-name
+                                      newr-name
+                                      old-tag
+                                      newl-tag
+                                      newr-tag)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -2986,6 +3227,9 @@
                               (old-name identp)
                               (newl-name identp)
                               (newr-name identp)
+                              (old-tag identp)
+                              (newl-tag identp)
+                              (newr-tag identp)
                               (gin ginp))
   :guard (and (block-item-list-unambp old-items)
               (block-item-list-unambp new-items)
@@ -3013,7 +3257,13 @@
                         the old and new code of STRUCT-TYPE-SPLIT."
                        (block-item-list-fix old-items)
                        (block-item-list-fix new-items))))
-          (stsp-block-item-list-empty gin)))
+          (stsp-block-item-list-empty old-name
+                                      newl-name
+                                      newr-name
+                                      old-tag
+                                      newl-tag
+                                      newr-tag
+                                      gin)))
        ((when (endp new-items))
         (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
                   This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -3024,7 +3274,15 @@
        (old-item (car old-items))
        (new-item (car new-items))
        ((erp gout-item)
-        (stsp-block-item old-item new-item old-name newl-name newr-name gin))
+        (stsp-block-item old-item
+                         new-item
+                         old-name
+                         newl-name
+                         newr-name
+                         old-tag
+                         newl-tag
+                         newr-tag
+                         gin))
        (item-thm-name (gout->thm-name gout-item))
        (gin (gin-update gin gout-item))
        ((erp gout-items)
@@ -3033,6 +3291,9 @@
                               old-name
                               newl-name
                               newr-name
+                              old-tag
+                              newl-tag
+                              newr-tag
                               (change-gin gin
                                           :vartys (gout->vartys gout-item))))
        (items-thm-name (gout->thm-name gout-items))
@@ -3043,6 +3304,12 @@
                                (cdr old-items)
                                (cdr new-items)
                                items-thm-name
+                               old-name
+                               newl-name
+                               newr-name
+                               old-tag
+                               newl-tag
+                               newr-tag
                                gin))
   :verify-guards :after-returns
   :hooks ((:fix :hints (("Goal"
@@ -3056,6 +3323,9 @@
                      (old-name identp)
                      (newl-name identp)
                      (newr-name identp)
+                     (old-tag identp)
+                     (newl-tag identp)
+                     (newr-tag identp)
                      (gin ginp))
   :guard (and (fundef-unambp old-fundef)
               (fundef-unambp new-fundef)
@@ -3163,8 +3433,15 @@
        (old-items (comp-stmt->items old-body))
        (new-items (comp-stmt->items new-body))
        ((erp gout)
-        (stsp-block-item-list
-         old-items new-items old-name newl-name newr-name gin)))
+        (stsp-block-item-list old-items
+                              new-items
+                              old-name
+                              newl-name
+                              newr-name
+                              old-tag
+                              newl-tag
+                              newr-tag
+                              gin)))
     (retok gout))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
@@ -3229,6 +3506,9 @@
                         (stsp-stage-objects->old-name stage)
                         (stsp-stage-objects->newl-name stage)
                         (stsp-stage-objects->newr-name stage)
+                        tag
+                        tag
+                        tag2
                         gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
