@@ -38,7 +38,7 @@
   :returns (yes/no booleanp)
   :short "Check if a computation state includes
           a variable with a given name
-          containing a value of the given type."
+          containing a value of a given type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -448,6 +448,14 @@
                                                   (type c::typep)
                                                   (compst c::compustatep))
   :returns (yes/no booleanp)
+  :short "Check if a computataion state includes
+          a variable in static storage with a given name
+          containing a value of a given type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is like @(tsee c::compustate-has-var-with-type-p),
+     but it requires the variable to be in static storage."))
   (and (c::compustate-has-var-with-type-p var type compst)
        (equal (c::objdesign-kind (c::objdesign-of-var var compst)) :static))
   :guard-hints (("Goal" :in-theory (enable c::compustate-has-var-with-type-p)))
