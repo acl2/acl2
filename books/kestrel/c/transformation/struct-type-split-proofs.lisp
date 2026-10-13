@@ -917,10 +917,7 @@
     "This says that
      the static stores are equivalent,
      the frame stacks are the same,
-     the heaps are the same,
-     the old computation state has the old struct object in static store,
-     and the new computation state has
-     the new left and right struct objects in static store."))
+     and the heaps are the same."))
   (b* (((reterr) '(_))
        ((erp old-cname) (ldm-ident old-name) :iferr "")
        ((erp newl-cname) (ldm-ident newl-name) :iferr "")
