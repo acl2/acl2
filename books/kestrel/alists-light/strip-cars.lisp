@@ -80,13 +80,6 @@
 
 (theory-invariant (incompatible (:rewrite strip-cars-of-cdr) (:definition strip-cars)))
 
-(defthmd member-equal-of-strip-cars-iff
-  (implies (or (alistp alist)
-               key)
-           (iff (member-equal key (strip-cars alist))
-                (assoc-equal key alist)))
-  :hints (("Goal" :in-theory (enable assoc-equal member-equal strip-cars))))
-
 ;; Also in pairlis-dollar.lisp
 (defthm strip-cars-of-pairlis$
   (equal (strip-cars (pairlis$ x y))

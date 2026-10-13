@@ -561,7 +561,6 @@
   :hints (("subgoal *1/4"  :use (:instance main (body (lambda-body (car term))) (formals (lambda-formals (car term))) (args (fargs term)))
            :in-theory (e/d (subst-var-alt
                             subst-var-alt-lst
-     ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             make-lambda-terms-simple
                             ;;make-lambda-term-simple
                             empty-eval-of-fncall-args
@@ -580,7 +579,6 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (subst-var-alt
                             subst-var-alt-lst
-     ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             make-lambda-terms-simple
                             ;;make-lambda-term-simple
                             empty-eval-of-fncall-args

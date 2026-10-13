@@ -211,7 +211,7 @@
                                      free-vars-in-term
                                      free-vars-in-terms
                                      assoc-equal
-                                     member-equal-of-strip-cars-iff))))
+                                     member-equal-of-strip-cars-iff-assoc-equal))))
 
 (defthm subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-gen
   (implies (and (alistp alist)
@@ -274,7 +274,7 @@
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple
                             sublis-var-simple-lst
-                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            member-equal-of-strip-cars-iff-assoc-equal
                             make-lambda-terms-simple
                             ;;make-lambda-term-simple
                             empty-eval-of-fncall-args
@@ -309,7 +309,7 @@
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple
                             sublis-var-simple-lst
-                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            member-equal-of-strip-cars-iff-assoc-equal
                             make-lambda-terms-simple
                             ;;make-lambda-term-simple
                             empty-eval-of-fncall-args
@@ -343,7 +343,7 @@
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (e/d (sublis-var-simple
                             sublis-var-simple-lst
-                            MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                            member-equal-of-strip-cars-iff-assoc-equal
                             make-lambda-terms-simple
                             ;;make-lambda-term-simple
                             empty-eval-of-fncall-args

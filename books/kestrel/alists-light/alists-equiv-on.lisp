@@ -109,7 +109,7 @@
                                      (:d set-difference-equal)
                                      (:i intersection-equal)
                                      intersection-equal
-                                     member-equal-of-strip-cars-iff))))
+                                     member-equal-of-strip-cars-iff-assoc-equal))))
 
 (defthm alists-equiv-on-of-append-arg2
   (implies (alistp x)
@@ -123,7 +123,7 @@
   :hints (("Goal" :in-theory (enable alists-equiv-on
                                      (:d set-difference-equal)
                                      intersection-equal
-                                     member-equal-of-strip-cars-iff))))
+                                     member-equal-of-strip-cars-iff-assoc-equal))))
 
 (defthm alists-equiv-on-of-intersection-equal-when-alists-equiv-on-arg1
   (implies (alists-equiv-on keys1 alist1 alist2)

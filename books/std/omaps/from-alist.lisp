@@ -16,6 +16,7 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/alists-light/remove-assoc-equal" :dir :system))
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 
 (include-book "core")
@@ -84,7 +85,7 @@
                   (mergesort (strip-cars alist))))
   :enable (set::expensive-rules
            in-of-keys-to-assoc
-           acl2::member-equal-of-strip-cars-iff))
+           acl2::member-equal-of-strip-cars-iff-assoc-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
