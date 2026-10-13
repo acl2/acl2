@@ -3157,8 +3157,8 @@
          ;; end EncodingSpecificOperations
          (operand1 (if n_high (slice 31 16 (reg* nval arm)) (slice 15 0 (reg* nval arm))))
          (operand2 (if m_high (slice 31 16 (reg* mval arm)) (slice 15 0 (reg* mval arm))))
-         (result (* (sint 32 operand1)
-                    (sint 32 operand2)))
+         (result (* (sint 16 operand1)
+                    (sint 16 operand2)))
          (arm (set-reg d (slice 31 0 result) arm))
          (arm (advance-pc arm)))
       arm))
