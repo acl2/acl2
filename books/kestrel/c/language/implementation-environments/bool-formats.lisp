@@ -69,10 +69,13 @@
      In particular, index 0 denotes the least significant bit
      of the byte at the lowest address.
      We also include information (for now unconstrained)
-     about possible trap representations [C17:6.2.6.1/5] [C23:6.2.6.1]."))
+     about representations that do not represent values
+     [C17:6.2.6.1/5] [C23:6.2.6.1],
+     called `trap representations' in C17
+     and `non-value representations' in C23."))
   ((byte-size pos)
    (value-index nat)
-   (trap any))
+   (trap/nonval any))
   :pred bool-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,10 +103,10 @@
   :returns (format bool-formatp)
   :short "The @('bool') format defined by a single byte
           with its least significant bit as the value bit,
-          and no trap representations."
+          and no trap/non-value representations."
   (make-bool-format :byte-size 1
                     :value-index 0
-                    :trap nil)
+                    :trap/nonval nil)
 
   ///
 
