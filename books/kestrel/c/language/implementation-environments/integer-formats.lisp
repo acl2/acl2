@@ -494,7 +494,7 @@
   :short "The (@('unsigned') and @('signed')) @('short') format defined by
           16 bits with increasing values,
           two's complement,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -551,7 +551,7 @@
   :short "The (@('unsigned') and @('signed')) @('int') format defined by
           16 bits with increasing values,
           two's complement,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -610,7 +610,7 @@
   :short "The (@('unsigned') and @('signed')) @('long') format defined by
           32 bits with increasing values,
           two's complement,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -669,7 +669,7 @@
   :short "The (@('unsigned') and @('signed')) @('long long') format defined by
           64 bits with increasing values,
           two's complement,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
