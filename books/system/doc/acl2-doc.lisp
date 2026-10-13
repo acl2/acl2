@@ -110512,6 +110512,9 @@ it."
  @(':SEQUENCE') instruction to be invoked directly by the user.  See @(see
  community-book) @('system/tests/pcb-sequence-success-expr.lisp').</p>
 
+ <p>Fixed a soundness bug in @(see forward-chaining) that failed to record
+ forced hypotheses in certain cases.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

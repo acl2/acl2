@@ -107420,6 +107420,9 @@ Bug Fixes From AI via Eric Smith
   [30m[47m:SEQUENCE[0m[0m instruction to be invoked directly by the user.  See
   [community-book] [30m[47msystem/tests/pcb-sequence-success-expr.lisp[0m[0m.
 
+  Fixed a soundness bug in [forward-chaining] that failed to record
+  forced hypotheses in certain cases.
+
 
 Other Bug Fixes
 
