@@ -76,7 +76,7 @@
      We plan to flesh this out in the future."))
   ((byte-size pos)
    (value-index nat)
-   (trap/nonval any))
+   (traps/nonvals any))
   :pred bool-formatp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +107,7 @@
           and no trap/non-value representations."
   (make-bool-format :byte-size 1
                     :value-index 0
-                    :trap/nonval nil)
+                    :traps/nonvals nil)
 
   ///
 
