@@ -1003,7 +1003,6 @@
                (:e c::identp)))
            (defruled objdesign-of-var-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname)))
@@ -1020,7 +1019,6 @@
                           c::scopep-of-compustate->static))
            (defruled read-object-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname))
@@ -1050,7 +1048,6 @@
                           (:e equal)))
            (defruled compustate-has-var-with-type-p-when-compustate-equivp
              (implies (and (compustate-equivp old-compst new-compst)
-                           ,@obj-hyps
                            (not (equal (c::ident-fix var) ',old-cname))
                            (not (equal (c::ident-fix var) ',newl-cname))
                            (not (equal (c::ident-fix var) ',newr-cname)))
@@ -2202,7 +2199,7 @@
                          ,@(stsp-object-hyps old-name newl-name newr-name
                                              old-tag newl-tag newr-tag
                                              'old-compst 'new-compst)
-                         ,@Vars-pre
+                         ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
