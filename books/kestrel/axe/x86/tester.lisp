@@ -526,6 +526,7 @@
        ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
        ((when erp) (mv :error-making-rule-list nil state))
 
+       ;; Test the function:
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
                             unroller-rule-alist pruning-rule-alist
@@ -824,14 +825,14 @@
 
        ;; WARNING: Keep this in sync with test-function-fn:
        (64-bitp (bool-fix (member-eq executable-type *executable-types64*)))
-       (extra-rules (append extra-rules
-                            extra-lift-rules
-                            (extra-tester-lifting-rules)))
-       (remove-rules (append remove-rules
-                             remove-lift-rules))
+       (extra-unroller-rules (append extra-rules
+                                     extra-lift-rules
+                                     (extra-tester-lifting-rules)))
+       (remove-unroller-rules (append remove-rules
+                                      remove-lift-rules))
        (stop-pcs nil)
        ((mv erp unroller-rule-alist pruning-rule-alist state)
-        (unroller-rule-alists 64-bitp stop-pcs extra-rules remove-rules state))
+        (unroller-rule-alists 64-bitp stop-pcs extra-unroller-rules remove-unroller-rules state))
        ((when erp) (mv erp nil state))
        (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
                                        (append remove-rules
