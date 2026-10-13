@@ -160,7 +160,7 @@
      and the pattern with sign bit 1 and all value bits 0
      is not a trap representation)
      or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
-     (if the signed format is ones' complement or sign-and-magnitude,
+     (if the signed format is ones' complement or sign and magnitude,
      or it is two's complement
      but the pattern with sign bit 1 and all value bits 0
      is a trap representation).")
