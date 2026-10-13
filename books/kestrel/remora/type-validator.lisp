@@ -38,7 +38,7 @@
 
   (define check-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
     :returns (yes/no booleanp)
-    :parents (type-checker check-types)
+    :parents (type-validator check-types)
     :short "Check a type."
     :long
     (xdoc::topstring
@@ -105,7 +105,7 @@
                            (ienv ispace-senvp)
                            (tenv type-senvp))
     :returns (yes/no booleanp)
-    :parents (type-checker check-types)
+    :parents (type-validator check-types)
     :short "Check a list of types."
     :long
     (xdoc::topstring
