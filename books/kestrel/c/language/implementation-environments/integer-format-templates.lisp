@@ -1211,7 +1211,8 @@
   (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (integer-format->bit-size (integer-format-inc-sign-tcnpnt size))
+             (equal (integer-format->bit-size
+                     (integer-format-inc-sign-tcnpnt size))
                     size))
     :enable (integer-format->bit-size
              uinteger-format-inc-npnt

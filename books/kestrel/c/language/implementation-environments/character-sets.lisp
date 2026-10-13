@@ -491,7 +491,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We combine @(tsee source-charset-unicode) with @(tsee exec-charset-unicode).
+    "We combine @(tsee source-charset-unicode)
+     with @(tsee exec-charset-unicode).
      Both character sets use the Unicode scalar values as characters,
      so the mapping from source to execution characters is the identity.")
    (xdoc::p
