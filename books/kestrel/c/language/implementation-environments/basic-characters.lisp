@@ -86,7 +86,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the source character ones plus a few more control characters:
+    "These are the basic source characters plus a few more control characters:
      the null character [C17:5.2.1/2] [C23:5.3.1],
      and characters representing
      alert, backspace, carriage return, and new line
