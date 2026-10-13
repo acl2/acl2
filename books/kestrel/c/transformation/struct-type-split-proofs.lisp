@@ -1547,8 +1547,7 @@
        (compst (if (eq onlr 'old) 'old-compst 'new-compst)))
     (retok
      `(defruled ,thm-name
-        (implies (and (compustate-equivp old-compst new-compst)
-                      (c::compustate-has-static-var-with-type-p
+        (implies (and (c::compustate-has-static-var-with-type-p
                        ',cname (c::type-struct ',ctag) ,compst)
                       (equal expr (c::expr-ident ',cname))
                       (not (zp limit)))
@@ -1562,7 +1561,6 @@
         :in-theory
         '(c::exec-expr
           c::exec-ident
-          compustate-equivp
           c::objdesign-of-var-when-compustate-has-static-var-with-type-p
           (:e c::expr-ident)
           (:e c::expr-kind)
