@@ -280,8 +280,8 @@
     ;; todo: smmls
     ;; todo: smmul
     ;; todo: smuad
-    ;; todo: smulbb/smulbt/smultb/smultt
 
+    (:smulbb/smulbt/smultb/smultt (cond 4) 0 0 0 1 0 1 1 0 (rd 4) (0) (0) (0) (0) (rm 4) 1 m n 0 (rn 4))
     (:smull (cond 4) 0 0 0 0 1 1 0 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
 
     ;; todo: smulwb/smulwt
@@ -336,9 +336,11 @@
     ;; todo: sxtab
     ;; todo: sxtab16
     ;; todo: sxtah
-    ;; todo: sxtb
-    ;; todo: sxtb16
-    ;; todo: sxth
+
+    (:sxtb (cond 4) 0 1 1 0 1 0 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+    (:sxtb16 (cond 4) 0 1 1 0 1 0 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+
+    (:sxth (cond 4) 0 1 1 0 1 0 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:teq-immediate (cond 4) 0 0 _ 1 _ 1 0 0 1 _ 1 (rn 4) (0) (0) (0) (0) (imm12 12))
     (:teq-register (cond 4) 0 0 _ 0 _ 1 0 0 1 _ 1 (rn 4) (0) (0) (0) (0) (imm5 5) (type 2) 0 (rm 4))
@@ -383,8 +385,7 @@
     ;; todo: uxtah
 
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
-
-    ;; todo: uxt16
+    (:uxtb16 (cond 4) 0 1 1 0 1 1 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:uxth (cond 4) 0 1 1 0 1 1 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 

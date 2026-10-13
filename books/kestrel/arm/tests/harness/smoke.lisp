@@ -105,10 +105,10 @@
      :pc #x1000 :code (#xEB000002)
      :expect (:pc #x1010 :regs ((14 . #x1004))))
 
-    ;; An instruction the model does not support yet decodes to an error.
-    (:id "sxtb r0, r0 (unsupported)"
+    ;; Sign extend byte.
+    (:id "sxtb r0, r0"
      :pc #x1000 :code (#xE6AF0070)
-     :expect (:error :decoding-error))
+     :expect (:pc #x1004))
 
     ;; Before ARMv6, a multiply whose destination equals its first source is
     ;; UNPREDICTABLE, which the model reports as an error.
