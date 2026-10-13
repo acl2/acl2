@@ -534,7 +534,6 @@
      and negative zero for the other signed formats.
      This component corresponds to the @('trap') component
      of @(tsee schar-format).
-     This only applies to C17:
      [C23] does not allow this trap representation;
      in a separate predicate that takes the C standard as additional input,
      we require @('special-trap') to be @('nil').
