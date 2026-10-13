@@ -2743,7 +2743,7 @@
      (xdoc::p
       "We also keep track, via a boolean flag,
        of whether the keyword in the concrete syntax is
-       @('_Static_assert') (flag @('t')) or @('static_assert') (flag @('nil');
+       @('_Static_assert') (flag @('t')) or @('static_assert') (flag @('nil'));
        the latter is only in C23."))
     ((uscore bool)
      (test const-expr)
