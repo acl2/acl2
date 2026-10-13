@@ -205,6 +205,7 @@
                            assumptions ; untranslated terms
                            unroller-rule-alist pruning-rule-alist
                            stop-pcs
+                           64-bitp
                            extra-assumption-rules
                            proof-rule-alist
                            remove-assumption-rules
@@ -225,6 +226,7 @@
                               (rule-alistp unroller-rule-alist)
                               (rule-alistp pruning-rule-alist)
                               (nat-listp stop-pcs)
+                              (booleanp 64-bitp)
                               (symbol-listp extra-assumption-rules)
                               (rule-alistp proof-rule-alist)
                               (symbol-listp remove-assumption-rules)
@@ -258,8 +260,7 @@
   (b* (((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "~%(Testing ~x0.~%" function-name-string))
        (- (ensure-x86 parsed-executable))
-       (executable-type (parsed-executable-type parsed-executable))
-       (32-bitp (member-eq executable-type *executable-types32*))
+       (32-bitp (not 64-bitp))
        ;; This could perhaps be removed once we have some 32-bit formal unit tests:
        ((when 32-bitp)
         (er hard? 'test-function-core "32-bit mode is not yet supported in the Formal Unit Tester.")
@@ -530,7 +531,7 @@
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
                             unroller-rule-alist pruning-rule-alist
-                            stop-pcs
+                            stop-pcs 64-bitp
                             extra-assumption-rules
                             proof-rule-alist
                             remove-assumption-rules
@@ -630,6 +631,8 @@
 (defun test-function-list (function-name-strings
                            parsed-executable
                            assumptions-alist
+                           stop-pcs ; currently always nil
+                           64-bitp
                            unroller-rule-alist pruning-rule-alist
                            extra-assumption-rules
                            proof-rule-alist remove-assumption-rules
@@ -649,6 +652,8 @@
                               (and (alistp assumptions-alist)
                                    (string-listp (strip-cars assumptions-alist))
                                    (true-list-listp (strip-cdrs assumptions-alist)))
+                              (nat-listp stop-pcs)
+                              (booleanp 64-bitp)
                               (rule-alistp unroller-rule-alist)
                               (rule-alistp pruning-rule-alist)
                               (symbol-listp extra-assumption-rules)
@@ -690,7 +695,8 @@
                               :none ; todo: some way to pass in param-names?
                               (lookup-equal function-name assumptions-alist)
                               unroller-rule-alist pruning-rule-alist
-                              nil ;stop-pcs
+                              stop-pcs
+                              64-bitp
                               extra-assumption-rules proof-rule-alist
                               remove-assumption-rules
                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
@@ -701,7 +707,7 @@
                             :pass))
          (- (cw "~%")) ; blank line as separator
          )
-      (test-function-list (rest function-name-strings) parsed-executable assumptions-alist
+      (test-function-list (rest function-name-strings) parsed-executable assumptions-alist stop-pcs 64-bitp
                           unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
                           remove-assumption-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
@@ -830,7 +836,7 @@
                                      (extra-tester-lifting-rules)))
        (remove-unroller-rules (append remove-rules
                                       remove-lift-rules))
-       (stop-pcs nil)
+       (stop-pcs nil) ; we could add support for a map from functions to stop-pcs
        ((mv erp unroller-rule-alist pruning-rule-alist state)
         (unroller-rule-alists 64-bitp stop-pcs extra-unroller-rules remove-unroller-rules state))
        ((when erp) (mv erp nil state))
@@ -849,7 +855,7 @@
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-function-list function-name-strings parsed-executable
-                            assumption-alist
+                            assumption-alist stop-pcs 64-bitp
                             unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
                             remove-assumption-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
