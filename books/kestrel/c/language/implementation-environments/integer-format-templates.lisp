@@ -543,7 +543,8 @@
      here we use just the name @('special-trap') since it only applies to C17.")
    (xdoc::p
     "The @('other-traps/nonvals') component is a placeholder for
-     trap representations caused by combinations of padding bits
+     representations that do not represent integer values
+     due to combinations of padding bits
      [C17:6.2.6.2/5] [C23:6.2.6.2],
      called `trap representations' in C17
      and `non-value representations' in C23.
