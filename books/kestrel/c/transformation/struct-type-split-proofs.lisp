@@ -1884,8 +1884,8 @@
        ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name newl-tag))
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name newr-tag))
        ((erp exec-members)
-        (stsp-exec-mem-eq
-         mems types lmems old-name newl-name newr-name tag tag tag2)))
+        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name
+                          old-tag newl-tag newr-tag)))
     (retok old-name
            newl-name
            newr-name
