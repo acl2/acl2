@@ -939,8 +939,7 @@
                             (("Goal"
                               :in-theory
                               '(booleanp-compound-recognizer
-                                compustate-equivp
-                                (:t c::compustate-has-static-var-with-type-p)))))
+                                compustate-equivp))))
            (and (static-equivp (c::compustate->static old-compst)
                                (c::compustate->static new-compst))
                 (equal (c::compustate->frames old-compst)
@@ -948,11 +947,7 @@
                 (equal (c::compustate->heap old-compst)
                        (c::compustate->heap new-compst)))
            :guard-simplify :limited
-           :guard-hints
-           (("Goal"
-             :in-theory '(c::scopep-of-compustate->static
-                          c::return-type-of-type-struct
-                          (:e c::identp))))
+           :guard-hints (("Goal" :in-theory '(c::scopep-of-compustate->static)))
            :hooks
            ((:fix
              :hints
