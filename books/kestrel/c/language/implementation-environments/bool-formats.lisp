@@ -72,7 +72,8 @@
      about representations that do not represent values
      [C17:6.2.6.1/5] [C23:6.2.6.1],
      called `trap representations' in C17
-     and `non-value representations' in C23."))
+     and `non-value representations' in C23.
+     We plan to flesh this out in the future."))
   ((byte-size pos)
    (value-index nat)
    (trap/nonval any))
