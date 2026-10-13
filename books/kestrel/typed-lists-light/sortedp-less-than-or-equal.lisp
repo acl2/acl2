@@ -1,7 +1,7 @@
 ; Recognizing a sorted (ascending) list of rationals
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -47,4 +47,15 @@
 (defthm sortedp-<=-when-not-consp-of-cdr
   (implies (not (consp (cdr x)))
            (sortedp-<= x))
+  :hints (("Goal" :in-theory (enable sortedp-<=))))
+
+(defthmd sortedp-<=-of-append-simple
+  (equal (sortedp-<= (append x y))
+         (if (endp x)
+             (sortedp-<= y)
+           (if (endp y)
+               (sortedp-<= x)
+             (and (sortedp-<= x)
+                  (sortedp-<= y)
+                  (<= (car (last x)) (car y))))))
   :hints (("Goal" :in-theory (enable sortedp-<=))))

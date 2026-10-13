@@ -1,7 +1,7 @@
 ; BV Lists Library: theorems about packbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 ;(include-book "all-unsigned-byte-p")
 ;(include-book "../bv/bvcat-def")
 (include-book "../bv/getbit")
-(include-book "../lists-light/repeat")
+(include-book "../lists-light/repeat-def")
 (local (include-book "../bv/bvcat"))
 (local (include-book "../bv/slice"))
 (local (include-book "../bv/unsigned-byte-p"))
@@ -28,7 +28,7 @@
 (local (include-book "../arithmetic-light/minus"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
-(local (include-book "../../meta/meta-plus-lessp"))
+;(local (include-book "../../meta/meta-plus-lessp"))
 
 ;(local (in-theory (disable mod-x-y-=-x+y-for-rationals))) ;bad
 
