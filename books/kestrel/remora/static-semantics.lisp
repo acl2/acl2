@@ -12,6 +12,7 @@
 
 (include-book "static-environments")
 (include-book "ispace-validator")
+(include-book "type-validator")
 (include-book "dimension-polynomials")
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
@@ -45,6 +46,7 @@
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
                     ispace-validator
+                    type-validator
                     dimension-polynomials
                     ispace-equivalence-checker
                     type-equivalence-checker
