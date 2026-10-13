@@ -110426,6 +110426,11 @@ it."
  @('system/tests/ec-call-lambda-bypasses-1star.lisp'), and
  @('system/tests/quoted-lambda-return-last-key.lisp').</p>
 
+ <p>Fixed a soundness bug pertaining to removal of @(see guard-holders),
+ analogous to the one discussed immediately above for @(tsee lambda) objects
+ but instead pertaining to @(tsee loop$) expressions.  See @(see
+ community-book) @('system/tests/loop-alist-stripped-holders.lisp').</p>
+
  <p>Fixed an error that could be inappropriately caused by running @(tsee
  apply$) on a @(tsee lambda$) expression from within a @(':')@(tsee
  program)-mode function.  Below is an example that formerly caused an error, as

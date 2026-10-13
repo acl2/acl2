@@ -107332,6 +107332,11 @@ Bug Fixes From AI via Eric Smith
   and [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m, and
   [30m[47msystem/tests/quoted-lambda-return-last-key.lisp[0m[0m.
 
+  Fixed a soundness bug pertaining to removal of [guard-holders],
+  analogous to the one discussed immediately above for [30m[47m[lambda][0m[0m
+  objects but instead pertaining to [30m[47m[loop$][0m[0m expressions.  See
+  [community-book] [30m[47msystem/tests/loop-alist-stripped-holders.lisp[0m[0m.
+
   Fixed an error that could be inappropriately caused by running
   [30m[47m[apply$][0m[0m on a [30m[47m[lambda$][0m[0m expression from within a [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode
   function.  Below is an example that formerly caused an error, as

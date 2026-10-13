@@ -9337,7 +9337,7 @@
 
 (mutual-recursion
 
-(defun logic-code-to-runnable-code (already-in-mv-listp term rrl wrld)
+(defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
 
 ; Note: This function used to be called ``twoify''.
 
@@ -9355,10 +9355,6 @@
 ; y z) versus (+ x (+ y z)), so we do not flatten +-nests -- both result in two
 ; calls of the machine's +.
 
-; Argument rrl is non-nil when we are to Remove Return-Last calls.  But there
-; are cases when we need to remove return-last calls even when rrl is nil; see
-; handling of return-last calls below.
-
   (declare (xargs :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
   (cond ((variablep term) term)
@@ -9374,13 +9370,12 @@
          (cons (list 'lambda (lambda-formals (ffn-symb term))
                      (logic-code-to-runnable-code nil
                                                   (lambda-body (ffn-symb term))
-                                                  rrl
                                                   wrld))
-               (logic-code-to-runnable-code-lst (fargs term) rrl wrld)))
+               (logic-code-to-runnable-code-lst (fargs term) wrld)))
         ((eq (ffn-symb term) 'if)
-         `(if ,(logic-code-to-runnable-code nil (fargn term 1) rrl wrld)
-              ,(logic-code-to-runnable-code nil (fargn term 2) rrl wrld)
-            ,(logic-code-to-runnable-code nil (fargn term 3) rrl wrld)))
+         `(if ,(logic-code-to-runnable-code nil (fargn term 1) wrld)
+              ,(logic-code-to-runnable-code nil (fargn term 2) wrld)
+            ,(logic-code-to-runnable-code nil (fargn term 3) wrld)))
         ((eq (ffn-symb term) 'return-last)
 
 ; After Version_8.7 we fixed a bug illustrated in community books
@@ -9399,8 +9394,7 @@
 ; always allow a first argument of 'ec-call1-raw, as this is crucial; see
 ; community book system/tests/ec-call-lambda-bypasses-1star.lisp.
 
-         (cond (rrl (logic-code-to-runnable-code nil (fargn term 3) rrl wrld))
-               ((and (quotep (fargn term 1))
+         (cond ((and (quotep (fargn term 1))
                      (assoc-eq (unquote (fargn term 1))
                                *initial-return-last-table*))
 ; Keep the following bindings in sync with those in the 'return-last case of
@@ -9419,16 +9413,15 @@
                       (chk-return-last-call key keyp arg2 arg3 wrld nil nil))
                     (declare (ignore ign))
                     (cond (erp (logic-code-to-runnable-code nil (fargn term 3)
-                                                            rrl wrld))
+                                                            wrld))
                           (t (fcons-term*
                               'return-last
                               (fargn term 1)
                               (logic-code-to-runnable-code nil (fargn term 2)
-                                                           rrl wrld)
+                                                           wrld)
                               (logic-code-to-runnable-code nil (fargn term 3)
-                                                           rrl wrld)))))))
-               (t (logic-code-to-runnable-code nil (fargn term 3)
-                                               rrl wrld))))
+                                                           wrld)))))))
+               (t (logic-code-to-runnable-code nil (fargn term 3) wrld))))
         ((eq (ffn-symb term) 'do$)
 
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
@@ -9437,7 +9430,7 @@
          (let* ((do$-stobjs-out (do$-stobjs-out (fargs term)))
                 (call `(ec-call (do$ ,@(logic-code-to-runnable-code-lst
                                         (fargs term)
-                                        rrl wrld)))))
+                                        wrld)))))
            (convert-to-dfs
             (if (cdr (do$-stobjs-out (fargs term)))
                 `(values-list ,call)
@@ -9451,7 +9444,7 @@
 ; have to transform its subterms.
 
          `(mv-list ,(fargn term 1)
-                   ,(logic-code-to-runnable-code t (fargn term 2) rrl wrld)))
+                   ,(logic-code-to-runnable-code t (fargn term 2) wrld)))
         (t (let* ((fn (ffn-symb term))
                   (stobjs-out (stobjs-out fn wrld))
                   (pair (assoc-eq fn *primitive-untranslate-alist*))
@@ -9485,7 +9478,7 @@
 ; the former rules out stobj creators.
                         (not (and (all-nils stobjs-out)
                                   (all-nils (stobjs-in fn wrld))))))
-                  (args (logic-code-to-runnable-code-lst (fargs term) rrl wrld))
+                  (args (logic-code-to-runnable-code-lst (fargs term) wrld))
                   (call (if pair ; hence not ec-call-p
                             (cons (cdr pair) args)
                           (let ((call0 (cons-with-hint fn args term)))
@@ -9498,12 +9491,12 @@
                `(mv-list ',(length stobjs-out) ,call))
               (t call))))))
 
-(defun logic-code-to-runnable-code-lst (terms rrl wrld)
+(defun logic-code-to-runnable-code-lst (terms wrld)
   (declare (xargs :guard (and (pseudo-term-listp terms)
                               (plist-worldp wrld))))
   (cond ((endp terms) nil)
-        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) rrl wrld)
-                           (logic-code-to-runnable-code-lst (cdr terms) rrl wrld)
+        (t (cons-with-hint (logic-code-to-runnable-code nil (car terms) wrld)
+                           (logic-code-to-runnable-code-lst (cdr terms) wrld)
                            terms)))))
 
 (defun authenticate-tagged-lambda$ (x state)
@@ -9658,12 +9651,11 @@
                                               (cdr (assoc-eq 'xargs
                                                              (cdr dcl)))))
                          *t*)
-                     nil
                      wrld))
           `(LAMBDA ,formals
                    ,@(let ((d (remove-double-float-types (cdr dcl))))
                        (and d `((declare ,@d))))
-                   ,(logic-code-to-runnable-code nil body nil wrld)))))))
+                   ,(logic-code-to-runnable-code nil body wrld)))))))
 
 (defun convert-tagged-loop$s-to-pairs (lst flg wrld)
 
@@ -9677,7 +9669,6 @@
                              :term (logic-code-to-runnable-code
                                     nil
                                     (fargn (car lst) 3)
-                                    t
                                     wrld)
                              :flg flg))
                  (convert-tagged-loop$s-to-pairs (cdr lst) flg wrld)))))
@@ -9719,7 +9710,6 @@
                  (equal (logic-code-to-runnable-code
                          nil
                          (fargn tkey 3)
-                         t
                          wrld)
                         val-term))
 
@@ -9754,7 +9744,6 @@
                   (logic-code-to-runnable-code
                    nil
                    (fargn tkey 3)
-                   t
                    wrld)
                   val-term))))))))
 
