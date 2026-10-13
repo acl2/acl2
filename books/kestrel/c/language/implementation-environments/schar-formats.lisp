@@ -63,7 +63,7 @@
      identifies one specific bit pattern,
      for each signed format,
      as a possible trap representation:
-     it either is a trap representation or it is not.
+     either it is a trap representation or it is not.
      These two choices
      (i.e. the signed format,
      and whether the specific pattern is a trap representation)
@@ -73,7 +73,10 @@
      a specification of signed format
      and a boolean flag saying whether the aforementioned pattern is a trap.
      The latter flag is forced to be @('nil') in C23;
-     see @(tsee schar-format-wfp)."))
+     see @(tsee schar-format-wfp).
+     Although C23 uses the term `non-value representation'
+     for what C17 calls `trap representation',
+     here we use just the name @('trap') since it only applies to C17."))
   ((signed signed-format)
    (trap bool))
   :pred schar-formatp)
