@@ -240,15 +240,15 @@
 
 
      ;; CMP rules:
-     ;; the order here comes from the values of conditionpassed for 0-13
+     ;; (The order here comes from the values of conditionpassed for 0-13.)
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
      arm::cs-condition-of-cmp-carry
      arm::cc-condition-of-cmp-carry
      arm::mi-condition-of-cmp-sign
      arm::pl-condition-of-cmp-sign
-     ;; vs ; todo
-     ;; vc ; todo
+     arm::vs-condition-of-cmp-overflow
+     arm::vc-condition-of-cmp-overflow
      arm::hi-condition-of-cmp-carry-and-cmp-zero
      arm::ls-condition-of-cmp-carry-and-cmp-zero
      arm::ge-condition-cmp-idiom

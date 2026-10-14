@@ -14,6 +14,8 @@
 (include-book "instructions")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvxor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -177,39 +179,101 @@
 ;;     :hints (("Goal" :in-theory (enable acl2::sbvlt-rewrite bvlt bvplus acl2::bvchop-of-sum-cases)))))
 
 ;; todo: improve the rhs? e.g., using sbvlt-32-of-bvminus-1-and-bvminus-1
+;; (local
+;;  (defthmd cmp-overflow-elim
+;;    (implies (and (unsigned-byte-p 32 x)
+;;                  (unsigned-byte-p 32 y))
+;;             (equal (cmp-overflow x y)
+;;                    (bool-to-bit (or ;; see signed-addition-overflowsp:
+;;                                  (and (sbvle 32 0 x)
+;;                                       (sbvlt 32 (bvminus 32 (bvminus 32 2147483647 x) 1)
+;;                                              (bvminus 32 (bvuminus 32 y) 1)))
+;;                                  ;; see signed-addition-underflowsp:
+;;                                  (and (sbvlt 32 x 0)
+;;                                       (sbvlt 32 (bvminus 32 (bvuminus 32 y) 1)
+;;                                              (bvminus 32 (bvminus 32 -2147483648 x) 1)))))))
+;;    :hints (("Goal" :in-theory (e/d (cmp-overflow addwithcarry-overflow acl2::bvnot-becomes-bvminus-of-bvuminus-and-1)
+;;                                    (acl2::bvminus-becomes-bvplus-of-bvuminus))))))
+
+;; When x and y have the same sign, x <s y iff the sign bit of x - y is set
+;; (no signed overflow is possible).
+; unlocalize and move?
 (local
- (defthmd cmp-overflow-elim
-   (implies (and (unsigned-byte-p 32 x)
+ (defthmd getbit-of-bvminus-top-bit-when-same-sign-32 ; gen the 32!
+   (implies (and (equal (getbit 31 x) (getbit 31 y))
+                 (unsigned-byte-p 32 x)
                  (unsigned-byte-p 32 y))
-            (equal (cmp-overflow x y)
-                   (bool-to-bit (or ;; see signed-addition-overflowsp:
-                                 (and (sbvle 32 0 x)
-                                      (sbvlt 32 (bvminus 32 (bvminus 32 2147483647 x) 1)
-                                             (bvminus 32 (bvuminus 32 y) 1)))
-                                 ;; see signed-addition-underflowsp:
-                                 (and (sbvlt 32 x 0)
-                                      (sbvlt 32 (bvminus 32 (bvuminus 32 y) 1)
-                                             (bvminus 32 (bvminus 32 -2147483648 x) 1)))))))
-   :hints (("Goal" :in-theory (e/d (cmp-overflow addwithcarry-overflow acl2::bvnot-becomes-bvminus-of-bvuminus-and-1)
-                                   (acl2::bvminus-becomes-bvplus-of-bvuminus))))))
+            (equal (getbit 31 (bvminus 32 x y))
+                   (bool-to-bit (sbvlt 32 x y))))
+   :hints (("Goal" :use ((:instance acl2::split-bv (x y) (n 32) (m 31))
+                         (:instance acl2::split-bv (x x) (n 32) (m 31)))
+                   :in-theory (enable acl2::sbvlt-rewrite bvminus bvplus acl2::getbit-of-+
+                                      bvlt acl2::bvchop-of-sum-cases)))))
+
+;localize?
+(defthm equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (equal (cmp-sign x y) (cmp-overflow x y))
+                  (sbvle 32 y x)))
+  :hints (("Goal"
+           :use (:instance acl2::split-bv (x y) (n 32) (m 31))
+           :in-theory (enable cmp-sign
+                              cmp-overflow
+                              addwithcarry-overflow
+                              acl2::sbvlt-rewrite
+                              bvminus
+                              bvplus
+                              acl2::getbit-of-+
+                              bvlt
+                              acl2::bvchop-of-sum-cases
+                              bvnot
+                              ;; bvcat
+                              ;; logapp
+                              lognot
+                              bvuminus))))
+;; V = N xor (x <s y).
+;; Follows from the existing rule saying N = V iff y <=s x.
+(defthmd cmp-overflow-elim-1
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmp-overflow x y)
+                  (acl2::bitxor (getbit 31 (bvminus 32 x y))
+                                (acl2::bool-to-bit (sbvlt 32 x y)))))
+  :hints (("Goal" :use (equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
+                        (:instance unsigned-byte-p-of-cmp-overflow (size 1)))
+                  :cases ((equal 0 (cmp-overflow x y)))
+                  :in-theory (e/d (cmp-sign acl2::bool-to-bit)
+                                  (equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
+                                   unsigned-byte-p-of-cmp-overflow)))))
+
+;; V = sign bit of (x xor y) and (x xor (x - y)).
+(defthmd cmp-overflow-elim-2
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cmp-overflow x y)
+                  (getbit 31 (bvand 32 (bvxor 32 x y) (bvxor 32 x (bvminus 32 x y))))))
+  :hints (("Goal" :cases ((equal (getbit 31 x) (getbit 31 y)))
+                  :in-theory (enable getbit-of-bvminus-top-bit-when-same-sign-32
+                                     acl2::sbvlt-rewrite
+                                     cmp-overflow-elim-1))))
+
+;; The 14 rules for CMP:
 
 (defthm eq-condition-of-cmp-zero
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
            (equal (eq-condition (cmp-zero x y))
                   (equal x y)))
-  :hints (("Goal" :in-theory (enable eq-condition
-                                     cmp-zero-elim))))
+  :hints (("Goal" :in-theory (enable eq-condition cmp-zero-elim))))
 
 (defthm ne-condition-of-cmp-zero
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
            (equal (ne-condition (cmp-zero x y))
                   (not (equal x y))))
-  :hints (("Goal" :in-theory (enable ne-condition
-                                     cmp-zero-elim))))
+  :hints (("Goal" :in-theory (enable ne-condition cmp-zero-elim))))
 
-;;todo: more like this?
 (defthm cs-condition-of-cmp-carry
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -240,21 +304,26 @@
                   (equal 0 (getbit 31 (bvminus 32 x y)))))
   :hints (("Goal" :in-theory (enable pl-condition cmp-sign))))
 
-;; (defthm vs-condition-of-cmp-overflow
-;;   (implies (and (unsigned-byte-p 32 x)
-;;                 (unsigned-byte-p 32 y))
-;;            (equal (vs-condition (cmp-overflow x y))
-;;                   (equal 1 (addwithcarry-overflow 32 x (bvnot 32 y) 1))))
-;;   :hints (("Goal" :in-theory (enable vs-condition cmp-overflow addwithcarry-overflow acl2::bvnot-becomes-bvminus-of-bvuminus-and-1))))
+;; todo: improve RHS?
+;; todo: special case for same sign?
+(defthm vs-condition-of-cmp-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (vs-condition (cmp-overflow x y))
+                  (not (equal (getbit 31 (bvminus 32 x y))
+                              (bool-to-bit (sbvlt 32 x y))))))
+  :hints (("Goal" :in-theory (enable vs-condition cmp-overflow-elim-1))))
 
-;; (defthm vc-condition-of-cmp-overflow
-;;   (implies (and (unsigned-byte-p 32 x)
-;;                 (unsigned-byte-p 32 y))
-;;            (equal (vc-condition (cmp-overflow x y))
-;;                   z))
-;;   :hints (("Goal" :in-theory (enable vc-condition cmp-overflow addwithcarry-overflow acl2::bvnot-becomes-bvminus-of-bvuminus-and-1))))
+;; todo: improve RHS?
+;; todo: special case for same sign?
+(defthm vc-condition-of-cmp-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (vc-condition (cmp-overflow x y))
+                  (equal (getbit 31 (bvminus 32 x y))
+                         (bool-to-bit (sbvlt 32 x y)))))
+  :hints (("Goal" :in-theory (enable vc-condition cmp-overflow-elim-1))))
 
-;; todo: need more of these!
 (defthm hi-condition-of-cmp-carry-and-cmp-zero
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -268,31 +337,6 @@
            (equal (ls-condition (cmp-carry x y) (cmp-zero x y))
                   (bvle 32 x y)))
   :hints (("Goal" :in-theory (enable ls-condition cmp-zero-elim cmp-carry-elim))))
-
-
-
-;localize?
-(defthm equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (equal (cmp-sign x y) (cmp-overflow x y))
-                  (sbvle 32 y x)))
-  :hints (("Goal"
-           :use (:instance acl2::split-bv (x y) (n 32) (m 31))
-           :in-theory (enable cmp-sign
-                              cmp-overflow
-                              addwithcarry-overflow
-                              acl2::sbvlt-rewrite
-                              bvminus
-                              bvplus
-                              acl2::getbit-of-+
-                              bvlt
-                              acl2::bvchop-of-sum-cases
-                              bvnot
-                              ;; bvcat
-                              ;; logapp
-                              lognot
-                              bvuminus))))
 
 (defthm le-condition-cmp-idiom
   (implies (and (unsigned-byte-p 32 x)
