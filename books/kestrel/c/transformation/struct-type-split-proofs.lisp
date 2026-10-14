@@ -3338,6 +3338,123 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stsp-struct-objects-after-push-frame ((parargs "A term.")
+                                              (arg-types true-listp)
+                                              (const-new symbolp)
+                                              (thm-index posp)
+                                              (old-name identp)
+                                              (newl-name identp)
+                                              (newr-name identp)
+                                              (old-tag identp)
+                                              (newl-tag identp)
+                                              (newr-tag identp))
+  :returns (mv (events pseudo-event-form-listp)
+               (old-thm-name symbolp)
+               (newl-thm-name symbolp)
+               (newr-thm-name symbolp)
+               (udpated-thm-index posp))
+  :short "Generate theorems about the struct objects after pushing a frame."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the generate proofs for function definitions.
+     In that proof, among other things, we need to show that
+     if the global struct objects are in the initial states
+     (i.e. the states just before the function call),
+     they are also there after pushing the initial frame.
+     This is not as trivial as it may seem at first sight,
+     based on the fact that pushing a frame does not modify static storage:
+     we need to establish @(tsee c::compustate-has-static-var-with-type-p),
+     which says that those names in fact resolve to those objects,
+     and not merely that the objects are present.
+     The proof is not difficult,
+     but it depends on the fact that
+     the function parameters have names that differ
+     from the names of the struct objects.")
+   (xdoc::p
+    "The @('parargs') and @('arg-types') of this function are
+     the homomynous outputs of @(tsee gen-from-params)."))
+  (b* (((mv erp old-cname) (ldm-ident old-name))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv erp newl-cname) (ldm-ident newl-name))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv erp newr-cname) (ldm-ident newr-name))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv erp old-ctag) (ldm-ident old-tag))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv erp newl-ctag) (ldm-ident newl-tag))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv erp newr-ctag) (ldm-ident newr-tag))
+       ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
+       ((mv old-thm-name thm-index) (gen-thm-name const-new thm-index))
+       ((mv newl-thm-name thm-index) (gen-thm-name const-new thm-index))
+       ((mv newr-thm-name thm-index) (gen-thm-name const-new thm-index))
+       (old-thm-event
+        `(defruled ,old-thm-name
+           (b* ((old-compst (c::push-frame (c::frame fun (list ,parargs))
+                                           old-compst0)))
+             (implies (and ,@arg-types
+                           (c::compustate-has-static-var-with-type-p
+                            ',old-cname
+                            (c::type-struct ',old-ctag)
+                            old-compst0))
+                      (c::compustate-has-static-var-with-type-p
+                       ',old-cname
+                       (c::type-struct ',old-ctag)
+                       old-compst)))
+           :enable (c::compustate-has-static-var-with-type-p
+                    c::compustate-has-var-with-type-p
+                    c::top-frame
+                    c::read-object
+                    c::objdesign-of-var
+                    c::objdesign-of-var-aux)))
+       (newl-thm-event
+        `(defruled ,newl-thm-name
+           (b* ((new-compst (c::push-frame (c::frame fun (list ,parargs))
+                                           new-compst0)))
+             (implies (and ,@arg-types
+                           (c::compustate-has-static-var-with-type-p
+                            ',newl-cname
+                            (c::type-struct ',newl-ctag)
+                            new-compst0))
+                      (c::compustate-has-static-var-with-type-p
+                       ',newl-cname
+                       (c::type-struct ',newl-ctag)
+                       new-compst)))
+           :enable (c::compustate-has-static-var-with-type-p
+                    c::compustate-has-var-with-type-p
+                    c::top-frame
+                    c::read-object
+                    c::objdesign-of-var
+                    c::objdesign-of-var-aux)))
+       (newr-thm-event
+        `(defruled ,newr-thm-name
+           (b* ((new-compst (c::push-frame (c::frame fun (list ,parargs))
+                                           new-compst0)))
+             (implies (and ,@arg-types
+                           (c::compustate-has-static-var-with-type-p
+                            ',newr-cname
+                            (c::type-struct ',newr-ctag)
+                            new-compst0))
+                      (c::compustate-has-static-var-with-type-p
+                       ',newr-cname
+                       (c::type-struct ',newr-ctag)
+                       new-compst)))
+           :enable (c::compustate-has-static-var-with-type-p
+                    c::compustate-has-var-with-type-p
+                    c::top-frame
+                    c::read-object
+                    c::objdesign-of-var
+                    c::objdesign-of-var-aux))))
+    (mv (list old-thm-event newl-thm-event newr-thm-event)
+        old-thm-name
+        newl-thm-name
+        newr-thm-name
+        thm-index))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
                      (old-name identp)
@@ -3444,6 +3561,22 @@
                         thm-index
                         'old-compst))
        (events (append (rev param-thm-events) events))
+       ((mv structs-push-events
+            & ; old-thm-name
+            & ; newl-thm-name
+            & ; newr-thm-name
+            thm-index)
+        (stsp-struct-objects-after-push-frame parargs
+                                              arg-types
+                                              gin.const-new
+                                              thm-index
+                                              old-name
+                                              newl-name
+                                              newr-name
+                                              old-tag
+                                              newl-tag
+                                              newr-tag))
+       (events (append (rev structs-push-events) events))
        (gin (change-gin gin
                         :vartys param-vartys
                         :events events
