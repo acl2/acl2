@@ -3609,6 +3609,7 @@
             integer-range-p unsigned-byte-p min
             left-pad-with-blanks
             len msgp length keywordp
+            state-p1-forward ; for speed only
             ))
 
 (defthm-flag-fmt0

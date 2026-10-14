@@ -1665,6 +1665,7 @@
          ((mv test env)
           (const-prop-const-expr statassert.test env)))
       (mv (make-statassert
+            :uscore statassert.uscore
             :test test
             :message statassert.message)
           env))

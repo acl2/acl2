@@ -50,14 +50,6 @@
 
 ;bozo had to enable take a lot to prove subrange rules - prove take rules first instead??
 
-;; (in-theory (disable take))
-
-;; (defthm take-becomes-firstn
-;;   (implies (< n (len lst))
-;;            (equal (take n lst)
-;;                   (firstn n lst)))
-;;   :hints (("Goal" :in-theory (enable take firstn))))
-
 ;; (defthmd firstn-lemma-hack
 ;;  (IMPLIES (AND (EQUAL (NTH N LST1) (NTH N LST2))
 ;;                (< 0 N)
@@ -84,8 +76,6 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (take subrange update-nth append equal-of-append)
                            (take-update-nth)))))
-
-;(local (in-theory (enable equal-of-append)))
 
 ;bozo do this stuff better...
 (defthm subrange-of-update-nth-hack-expensive
@@ -126,26 +116,23 @@
            (equal (equal lst1 lst2)
                   (equal (take (+ -1 (len lst1)) lst1)
                          (take (+ -1 (len lst1)) lst2))))
-  :hints (("Goal" :in-theory (e/d (take ;len
+  :hints (("Goal" :in-theory (e/d (take
                                    nth-of-0
-                                   equal-when-equal-of-car-and-car
-                                   )
-                                  (len
-                                   CONSP-FROM-LEN-CHEAP ;why?
-                                   TAKE-OF-CDR
-                                   ;;TRUE-LISTP
+                                   equal-when-equal-of-car-and-car)
+                                  (consp-from-len-cheap ;why?
+                                   take-of-cdr
+                                   ;;true-listp
                                    cdr-iff ;disable?
                                    ))
-           :induct (double-cdr-induct lst1 lst2)
-           :do-not '(generalize eliminate-destructors))))
+           :induct (double-cdr-induct lst1 lst2))))
 
 ;move
 (defthm memberp-when-perm-of-update-nth
   (implies (perm x (update-nth n a y))
            (memberp a x))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH))))
+  :hints (("Goal" :in-theory (enable update-nth))))
 
-(local (in-theory (disable NTH-OF-CDR)))
+(local (in-theory (disable nth-of-cdr)))
 
 (defthmd memberp-nth-and-cdr-safe
   (implies (and (< n (len lst))
@@ -154,8 +141,7 @@
   :hints (("Goal" :in-theory (e/d (nth
                                    nth-when-n-is-zp)
                                   (;cancel_plus-lessp-correct
-                                   ))
-           :do-not '(generalize eliminate-destructors))))
+                                   )))))
 
 ;this can loop if we are turning car into nth 0...
 (defthmd memberp-nth-and-cdr
@@ -166,8 +152,7 @@
   :hints (("Goal" :in-theory (e/d (nth
                                    nth-when-n-is-zp)
                                   (;cancel_plus-lessp-correct
-                                   ))
-           :do-not '(generalize eliminate-destructors))))
+                                   )))))
 
 (theory-invariant (incompatible (:rewrite memberp-nth-and-cdr) (:rewrite CAR-BECOMES-NTH-OF-0)))
 
@@ -184,8 +169,7 @@
                   (if (zp n)
                       t
                     (equal (nth (+ -1 n) (cdr lst)) (car lst)))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable nth))))
+  :hints (("Goal" :in-theory (enable nth))))
 
 ;; (defthmd update-nth-rewrite-helper
 ;;   (implies (and (< n (len lst))
@@ -363,15 +347,28 @@
                 (integerp end)
                 (<= start end)
                 (<= 0 start)
-    ;               (<= 0 k)
+                ;; (<= 0 k)
                 )
            (subsetp-equal (SUBRANGE (+ 1 ;k
-                                      start) end lst)
-                         (SUBRANGE start end lst))
-           )
+                                       start) end lst)
+                          (SUBRANGE start end lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (subrange take-of-nthcdr) (nthcdr-of-take)))))
+                  :in-theory (e/d (subrange take-of-nthcdr) (nthcdr-of-take)))))
 
+;; (defthm subsetp-equal-of-subranges-hack-gen
+;;   (implies (and (< end (len lst))
+;;                 (integerp start)
+;;                 (integerp end)
+;;                 (<= start end)
+;;                 (<= 0 start)
+;;                 (natp k)
+;;                 )
+;;            (subsetp-equal (SUBRANGE (+ k start) end lst)
+;;                           (SUBRANGE start end lst)))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (e/d (subrange take-of-nthcdr nthcdr take) (nthcdr-of-take)))))
+
+;rename
 (defthm cons-nth-onto-nthcdr-alt
   (implies (consp lst)
            (equal (cons (car lst) (nthcdr 1 lst))
@@ -385,14 +382,6 @@
  (equal (< (len lst) 2)
         (or (endp lst)
             (perm lst (list (car lst))))))
-
-;use polarity here?
-;this just seems bad
-(defthmd len-less-than-2-rewrite-alt
-  (implies (true-listp lst)
-           (equal (< (LEN LST) 2)
-                  (or (endp lst)
-                      (equal lst (list (car lst)))))))
 
 ;; (defthm subsetp-equal-of-singleton
 ;;   (implies (and (not (consp (cdr lst2)))
@@ -423,12 +412,6 @@
 (defthm perm-with-singleton-of-own-car
   (equal (PERM LST (LIST (CAR LST)))
          (equal 1 (len lst))))
-
-(defthm memberp-car-of-take
-  (equal (memberp (car lst) (take n lst))
-         (and (integerp n)
-              (< 0 n)))
-  :hints (("Goal" :in-theory (enable take))))
 
 (defthm memberp-nth-take
   (implies (and (< m n)
@@ -719,8 +702,6 @@
 ;;          (AND (LIST::EQUIV X (FIRSTN (LEN X) Z))
 ;;               (EQUAL Y (NTHCDR (LEN X) Z))))
 ;;   :hints (("Goal" :in-theory (enable LIST::EQUAL-APPEND-REDUCTION!))))
-
-;(in-theory (disable len)) ;new
 
 ;add to lists
 (defthm len-of-update-nth-last-val
@@ -1119,15 +1100,6 @@
                 )
            (equal (len (subrange start end lst))
                   (+ 1 end (- start)))))
-
-;rename
-(defthm subrange-split-top
-  (implies (and (natp i)
-                (<= low i)
-                (natp low)
-                (< i (len x)))
-           (equal (append (subrange low (+ -1 i) x) (list (nth i x)))
-                  (subrange low i x))))
 
 (defthmd take-split
   (implies (and (natp n)

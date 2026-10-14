@@ -6834,7 +6834,9 @@
                    (statassert-fix statassert)
                    type))
          ((erp &) (valid-stringlit-list statassert.message ienv)))
-      (retok (make-statassert :test new-test :message statassert.message)
+      (retok (make-statassert :uscore statassert.uscore
+                              :test new-test
+                              :message statassert.message)
              types
              vstate))
     :measure (acl2::two-nats-measure (statassert-count statassert) 0))

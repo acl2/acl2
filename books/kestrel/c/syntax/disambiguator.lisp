@@ -2988,7 +2988,9 @@
     (b* (((reterr) (irr-statassert) (irr-dstate))
          ((statassert statassert) statassert)
          ((erp new-test dstate) (dimb-const-expr statassert.test dstate)))
-      (retok (make-statassert :test new-test :message statassert.message)
+      (retok (make-statassert :uscore statassert.uscore
+                              :test new-test
+                              :message statassert.message)
              dstate))
     :measure (statassert-count statassert))
 
@@ -3942,6 +3944,8 @@
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
+                        :asm? fundef.asm?
+                        :attribs fundef.attribs
                         :declons new-declons
                         :body new-body
                         :info fundef.info)

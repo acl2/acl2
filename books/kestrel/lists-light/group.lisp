@@ -43,11 +43,6 @@
 
 ;; todo: consider putting back the stuff that uses list::equiv
 
-;(local (in-theory (disable LIST::FIRSTN-1-REWRITE-STRONG)))
-
-;(in-theory (disable list::equal-append-reduction!-alt list::equal-append-reduction!))
-(local (in-theory (disable equal-of-append)))
-
 ;todo: move some of these rules:
 
 ;move
