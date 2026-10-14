@@ -70,7 +70,7 @@
      talk about values of the source and execution character sets,
      and how the values of the digit characters must be sequential;
      however, the values of source characters are never really used.
-     The mapping from multi-byte characters to the source character sets
+     The mapping from multibyte characters to the source character set
      is implementation-defined [C17:5.1.1.2/1] [C23:5.2.1.2],
      so we do not need to model it in any explicit way
      (which is where the source character values could come into play).")
