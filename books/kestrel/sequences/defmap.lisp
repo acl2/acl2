@@ -190,7 +190,7 @@
                        (fresh-var (fresh-symbol-aux list-formal 0 all-formals))
                        ;;have each name reflect the formal it's replacing?
                        (fresh-vars (fresh-var-names (len fixed-formals) 'tmp (cons fresh-var all-formals)))
-                       (fresh-var-alist (pairlis$ fixed-formals fresh-vars) )
+                       (fresh-var-alist (pairlis$ fixed-formals fresh-vars))
                        (fresh-formals (sublis-var-simple-lst fresh-var-alist all-formals))
                        (fresh-term (sublis-var-simple fresh-var-alist term))
                        (fixed-formal-bindings (make-doublets fresh-vars fixed-formals))
