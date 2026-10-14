@@ -815,6 +815,32 @@
                           (equal (align-spec-alignas-type->uscore alignspec)
                                  nil)))))))
 
+(test-parse
+ parse-struct-declaration
+ "_Static_assert(1, \"m\");"
+ :cond (and (struct-declon-case ast :statassert)
+            (b* ((statassert (struct-declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
+(test-parse
+ parse-struct-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :statassert)
+            (b* ((statassert (struct-declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-struct-declaration-list
+
+(test-parse
+ parse-struct-declaration-list
+ "int x; static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (equal (len ast) 2)
+            (struct-declon-case (cadr ast) :statassert)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-parameter-declaration
@@ -1046,6 +1072,34 @@
                           (equal (align-spec-alignas-ambig->uscore alignspec)
                                  nil)))))))
 
+(test-parse
+ parse-declaration
+ "_Static_assert(1, \"m\");"
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
+(test-parse-fail
+ parse-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c17))) ; not a keyword in C17
+
+(test-parse
+ parse-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) nil))))
+
+(test-parse
+ parse-declaration
+ "_Static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-statement
@@ -1199,6 +1253,16 @@
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
 
+(test-parse
+ parse-block-item
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (block-item-case ast :declon)
+            (b* ((declon (block-item-declon->declon ast)))
+              (and (declon-case declon :statassert)
+                   (b* ((statassert (declon-statassert->statassert declon)))
+                     (equal (statassert->uscore statassert) nil))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-external-declaration
@@ -1208,6 +1272,16 @@
  ";"
  :cond (ext-declon-case ast :empty)
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-external-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (ext-declon-case ast :declon)
+            (b* ((declon (ext-declon-declon->declon ast)))
+              (and (declon-case declon :statassert)
+                   (b* ((statassert (declon-statassert->statassert declon)))
+                     (equal (statassert->uscore statassert) nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

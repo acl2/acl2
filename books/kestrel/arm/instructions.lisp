@@ -26,8 +26,8 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
-(include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvmult-def" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
@@ -37,10 +37,12 @@
 (include-book "std/util/bstar" :dir :system)
 ;(include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+(local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvmult" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
@@ -54,8 +56,9 @@
              (integerp x))))
 
 (local (in-theory (disable symbol-alistp ; prevent induction
-                           acl2::unsigned-byte-p-from-bounds ; for speed
-                           )))
+                           ;; for speed:
+                           acl2::unsigned-byte-p-from-bounds
+                           true-list-listp-forward-to-true-listp-assoc-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1365,7 +1368,8 @@
                               (not (and (eq shift_t *SRType_RRX*) ; todo: check this (here and elsewhere)
                                         (not (equal shift_n 1))))
                               (natp shift_n))
-                  :stobjs arm))
+                  :stobjs arm
+                  :guard-hints (("Goal" :in-theory (enable acl2::rationalp-when-natp)))))
   (b* ((arm (NullCheckIfThumbEE n arm))
        (offset (if register_form (Shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)) imm32))
        (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
@@ -1374,7 +1378,7 @@
        (arm (if postindex
                 (set-reg n offset_addr arm)
               arm))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (slice 1 0 address) #b00))
                 (set-reg tval data arm)
               (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
@@ -1475,7 +1479,7 @@
                 (if (== (slice 1 0 address) #b00)
                     (LoadWritePC data arm)
                   (update-error *unpredictable* arm))
-              (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+              (let* ((arm (if (or (UnalignedSupport arm) (== (slice 1 0 address) #b00))
                               (set-reg tval data arm)
                             (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
                                 (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)
@@ -1532,7 +1536,7 @@
                   (if (== (slice 1 0 address) #b00)
                       (LoadWritePC data arm)
                     (update-error *unpredictable* arm))
-                (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+                (let* ((arm (if (or (UnalignedSupport arm) (== (slice 1 0 address) #b00))
                                 (set-reg tval data arm)
                               (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))
                        (arm (advance-pc arm)))
@@ -1578,7 +1582,7 @@
                   (if (== (slice 1 0 address) #b00)
                       (LoadWritePC data arm)
                     (update-error *unpredictable* arm))
-                (let* ((arm (if (or (UnalignedSupport) (== (slice 1 0 address) #b00))
+                (let* ((arm (if (or (UnalignedSupport arm) (== (slice 1 0 address) #b00))
                                 (set-reg tval data arm)
                               (set-reg tval (ROR 32 data (* 8 (uint 2 (slice 1 0 address)))) arm)))
                        (arm (advance-pc arm)))
@@ -1949,7 +1953,7 @@
        (arm (if postindex
                 (set-reg n offset_addr arm)
               arm))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (ZeroExtend data 32) arm)
               (set-reg tval (unknown-bits 32 :ldrht-common arm) arm)))
@@ -2042,7 +2046,7 @@
        (base (align (pcvalue inst-address) 4))
        (address (if add (bvplus 32 base imm32) (bvminus 32 base imm32)))
        (data (MemU address 2 arm))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (ZeroExtend data 32) arm)
               (set-reg tval (unknown-bits 32 :ldrh-literal-core arm) arm)))
@@ -2075,7 +2079,7 @@
          (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback (set-reg n offset_addr arm) arm))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                   (set-reg tval (ZeroExtend data 32) arm)
                 (set-reg tval (unknown-bits 32 :ldrh-immediate arm) arm)))
@@ -2115,7 +2119,7 @@
          (arm (if wback
                   (set-reg n offset_addr arm)
                 arm))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                   (set-reg tval (ZeroExtend data 32) arm)
                 (set-reg tval (unknown-bits 32 :ldrh-register arm) arm)))
@@ -3143,6 +3147,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :smulbb/smulbt/smultb/smultt
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (nval (uint 4 rn)) ; avoids name clash with N bit in the instruction
+         (mval (uint 4 rm)) ; avoids name clash with M bit in the instruction
+         (n_high (== N #b1))
+         (m_high (== M #b1))
+         ((when (or (== d 15)
+                    (== nval 15)
+                    (== mval 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (operand1 (if n_high (slice 31 16 (reg* nval arm)) (slice 15 0 (reg* nval arm))))
+         (operand2 (if m_high (slice 31 16 (reg* mval arm)) (slice 15 0 (reg* mval arm))))
+         (result (* (sint 16 operand1)
+                    (sint 16 operand2)))
+         (arm (set-reg d (slice 31 0 result) arm))
+         (arm (advance-pc arm)))
+      arm))
+
 (def-inst :smull
     (b* (;; EncodingSpecificOperations:
          (dLo (uint 4 RdLo))
@@ -3780,7 +3804,7 @@
        (arm (if postindex
                 (set-reg n offset_addr arm)
               arm))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
               (set-reg tval (unknown-bits 32 :ldrsht-common arm) arm)))
@@ -3872,7 +3896,7 @@
        (base (align (pcvalue inst-address) 4))
        (address (if add (bvplus 32 base imm32) (bvminus 32 base imm32)))
        (data (MemU address 2 arm))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
               (set-reg tval (unknown-bits 32 :ldrsh-literal-core arm) arm)))
@@ -3906,7 +3930,7 @@
          (address (if index offset_addr (reg* n arm)))
          (data (MemU address 2 arm))
          (arm (if wback (set-reg n offset_addr arm) arm))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                 (set-reg tval (SignExtend data 16 32) arm)
                 (set-reg tval (unknown-bits 32 :ldrsh-immediate arm) arm)))
@@ -3946,7 +3970,7 @@
          (arm (if wback
                   (set-reg n offset_addr arm)
                 arm))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                   (set-reg tval (SignExtend data 16 32) arm)
                 (set-reg tval (unknown-bits 32 :ldrsh-register arm) arm)))
@@ -3977,7 +4001,7 @@
        (data (if (== tval 15)
                  (PCStoreValue inst-address)
                (reg* tval arm)))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (slice 1 0 address) #b00)
                     (== (CurrentInstrSet arm) *InstrSet_ARM*))
                 (write_MemU_unpriv address 4 data arm)
@@ -4262,7 +4286,7 @@
          (data (if (== tval 15)
                    (PCStoreValue inst-address)
                  (reg* tval arm)))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (slice 1 0 address) #b00)
                       (== (CurrentInstrSet arm) *InstrSet_ARM*))
                   (write_MemU address 4 data arm)
@@ -4442,7 +4466,7 @@
        (offset (if register_form (reg* m arm) imm32))
        (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
        (address (if postindex (reg* n arm) offset_addr))
-       (arm (if (or (UnalignedSupport)
+       (arm (if (or (UnalignedSupport arm)
                     (== (getbit 0 address) #b0))
                 (write_MemU_unpriv address 2 (slice 15 0 (reg* tval arm)) arm)
               (write_MemU_unpriv address 2 (unknown-bits 16 :strht-common arm) arm)))
@@ -4529,7 +4553,7 @@
          ;; end EncodingSpecificOperations
          (offset_addr (if add (bvplus 32 (reg* n arm) imm32) (bvminus 32 (reg* n arm) imm32)))
          (address (if index offset_addr (reg* n arm)))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                   (write_MemU address 2 (slice 15 0 (reg* tval arm)) arm)
                 (write_MemU address 2 (unknown-bits 16 :strh-immediate arm) arm)))
@@ -4568,7 +4592,7 @@
          (offset (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
          (offset_addr (if add (bvplus 32 (reg* n arm) offset) (bvminus 32 (reg* n arm) offset)))
          (address (if index offset_addr (reg* n arm)))
-         (arm (if (or (UnalignedSupport)
+         (arm (if (or (UnalignedSupport arm)
                       (== (getbit 0 address) #b0))
                   (write_MemU address 2 (slice 15 0 (reg* tval arm)) arm)
                 (write_MemU address 2 (unknown-bits 16 :strh-register arm) arm)))
@@ -4753,6 +4777,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :sxtb
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (SignExtend (slice 7 0 rotated) 8 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :sxtb16
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (bvcat 16 (SignExtend (slice 23 16 rotated) 8 16)
+                                16 (SignExtend (slice 7 0 rotated) 8 16))
+                       arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :sxth
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (SignExtend (slice 15 0 rotated) 16 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :uxtb
     (b* (;; EncodingSpecificOperations:
          (d (uint 4 rd))
@@ -4764,6 +4838,24 @@
          ;; end EncodingSpecificOperations
          (rotated (ROR 32 (reg* m arm) rotation))
          (arm (set-reg d (ZeroExtend (slice 7 0 rotated) 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :uxtb16
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (bvcat 16 (ZeroExtend (slice 23 16 rotated) 16)
+                                16 (ZeroExtend (slice 7 0 rotated) 16))
+                       arm))
          (arm (advance-pc arm)))
       arm))
 

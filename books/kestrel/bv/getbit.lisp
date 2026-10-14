@@ -691,9 +691,9 @@
   :hints (("Goal" :use getbit-when->=
                   :in-theory (disable getbit-when->=))))
 
-(defthm getbit-when->-free
+(defthmd getbit-when->-free
   (implies (and (< free x)
-                (<= (+ -1 (expt 2 n)) free) ; gets computed
+                (<= (+ -1 (expt 2 n)) free)
                 (unsigned-byte-p (+ 1 n) x)
                 (natp n)
                 ;; (natp x) ;could allow some negatives?

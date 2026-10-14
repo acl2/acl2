@@ -38,6 +38,7 @@
 (include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
+(include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-arrays/array-patterns" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
@@ -430,7 +431,9 @@
                               (enquote target-offset)))
        (assumptions (append `((equal (reg '15 arm) ,target-address-term) ; the PC
                               (armp arm)
-                              (equal (library-map arm) ',library-map))
+                              (equal (library-map arm) ',library-map)
+                              (equal (bvchop '2 (reg '13 arm)) '0) ; the stack pointer is 4-byte aligned
+                              )
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))

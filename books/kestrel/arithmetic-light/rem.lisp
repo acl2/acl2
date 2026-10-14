@@ -102,7 +102,7 @@
   (implies (integerp (* x (/ y)))
            (equal (rem x y)
                   (if (and (acl2-numberp y)
-                               (not (equal 0 y)))
+                           (not (equal 0 y)))
                       0
                     (fix x))))
   :hints (("Goal" :cases ((acl2-numberp x))

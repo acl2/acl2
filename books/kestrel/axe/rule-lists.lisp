@@ -374,8 +374,8 @@
     bitxor-of-constant-chop-arg2
     ;; todo: more like this?
     ;; todo: rename these 4?:
-    bvlt-trim-constant-arg1
     bvlt-trim-constant-arg2
+    bvlt-trim-constant-arg3
     sbvlt-trim-constant-left
     sbvlt-trim-constant-right))
 
@@ -1331,7 +1331,7 @@
      bvequal-convert-arg3-to-bv-axe
      bvequal-of-bvplus-and-bvplus-cancel-1+-1+
      bvequal-of-bvplus-arg2-cancel-1
-     bvequal-of-bvplus-arg1-cancel-1
+     bvequal-of-bvplus-arg3-cancel-1
      bvequal-trim-arg2-axe-all
      bvequal-trim-arg3-axe-all
      bvequal-of-constant-and-bvplus-of-constant
@@ -3064,8 +3064,8 @@
 ;; Only used in the equivalence checker (rarely or never)
 (defun strengthening-rules ()
   (declare (xargs :guard t))
-  (append '(bvlt-trim-constant-arg1 ; replace with a general trim rule?
-            bvlt-trim-constant-arg2 ; replace with a general trim rule?
+  (append '(bvlt-trim-constant-arg2 ; replace with a general trim rule?
+            bvlt-trim-constant-arg3 ; replace with a general trim rule?
             bvlt-when-bvlt-wider
             not-bvlt-when-not-bvlt-narrower
             not-bvlt-when-not-bvlt-narrower2
