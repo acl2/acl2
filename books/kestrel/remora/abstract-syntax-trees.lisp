@@ -607,22 +607,14 @@
 (fty::defoption type-option
   type
   :short "Fixtype of optional types."
-  :pred type-optionp)
+  :pred type-optionp
 
-;;;;;;;;;;
+  ///
 
-(defruled type-option-some->val-when-typep
-  :short "A type, as an optional type, is its own value."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is left disabled because its left side is general enough
-     to interfere elsewhere (it perturbs the @(tsee fty::deffixequiv) proofs
-     of some predicates over optional types);
-     it is enabled where type annotations are unfolded."))
-  (implies (typep x)
-           (equal (type-option-some->val x) x))
-  :enable type-option-some->val)
+  (defruled type-option-some->val-when-typep
+    (implies (typep x)
+             (equal (type-option-some->val x) x))
+    :enable type-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
