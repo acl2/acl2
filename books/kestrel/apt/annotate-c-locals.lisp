@@ -32,7 +32,6 @@
 (include-book "kestrel/terms-light/reconstruct-lets-in-term" :dir :system)
 (include-book "kestrel/terms-light/non-trivial-formals" :dir :system)
 (include-book "kestrel/terms-light/replace-corresponding-arg" :dir :system)
-(include-book "kestrel/typed-lists-light/symbol-listp" :dir :system)
 (include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
 (include-book "kestrel/c/atc/let-designations" :dir :system)
 (include-book "std/system/check-mbt-call" :dir :system)
@@ -44,6 +43,7 @@
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/utilities/flatten-ands-in-lit" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (local (in-theory (disable symbol-listp mv-nth true-listp plist-worldp member-equal)))

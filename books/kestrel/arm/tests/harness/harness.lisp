@@ -87,6 +87,8 @@
        (arm (update-endianstate 0 arm))
        (arm (update-error nil arm))
        (arm (update-arch-version (vec-get :arch vec 7) arm))
+       (arm (update-sctlr.a 0 arm))
+       (arm (update-sctlr.u 1 arm))
        (arm (update-library-map nil arm))
        (arm (set-unknown-filling filling arm))
        (arm (write-words (vec-get :pc vec 0) (vec-get :code vec nil) arm))
@@ -133,7 +135,7 @@
   (local
     (defthm armp-facts
       (implies (armp x)
-               (and (equal (len x) 10)
+               (and (equal (len x) 12)
                     (true-listp (nth *registersi* x))
                     (equal (len (nth *registersi* x)) 16)))
       :rule-classes nil
@@ -210,7 +212,9 @@
                               update-apsr update-isetstate update-itstate
                               update-endianstate update-error
                               update-arch-version update-library-map
-                              update-oracle)
+                              update-oracle
+                              update-sctlr.u
+                              update-sctlr.a)
                              (acl2::update-nth-becomes-append
                               acl2::cdr-of-update-nth
                               len default-car default-cdr))))))

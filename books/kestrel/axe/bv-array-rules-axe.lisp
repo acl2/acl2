@@ -22,7 +22,7 @@
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/bv-arrays/bv-arrays" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
-(include-book "kestrel/bv/bvlt" :dir :system)
+(include-book "kestrel/bv/bvlt-def" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
 (include-book "kestrel/bv-lists/map-bvplus-val" :dir :system)
