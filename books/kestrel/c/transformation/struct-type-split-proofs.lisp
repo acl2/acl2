@@ -3546,6 +3546,7 @@
        (params (if (c$::param-declon-list-voidp params) nil params))
        ((mv & cparams) ; ERP is NIL because FORMALP above
         (ldm-param-declon-list params))
+       (types (fundef-types old-fundef))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
         (gen-from-params cparams 'old-compst (gin-fix gin)))
        ((unless okp) (retok gout-no-thm))
@@ -3558,7 +3559,7 @@
                             gin.thm-index))
        (events (cons init-scope-thm-event gin.events))
        ((mv param-thm-events
-            & ; param-thm-names
+            param-thm-names
             thm-index)
         (gen-param-thms arg-types-compst
                         arg-types
@@ -3570,9 +3571,9 @@
                         'old-compst))
        (events (append (rev param-thm-events) events))
        ((mv structs-push-events
-            & ; old-thm-name
-            & ; newl-thm-name
-            & ; newr-thm-name
+            old-thm-name
+            newl-thm-name
+            newr-thm-name
             thm-index)
         (stsp-struct-objects-after-push-frame parargs
                                               arg-types
@@ -3602,10 +3603,113 @@
                               old-tag
                               newl-tag
                               newr-tag
-                              gin)))
-    (retok gout))
+                              gin))
+       (body-thm-name (gout->thm-name gout))
+       ((unless body-thm-name) (retok gout-no-thm))
+       ((gin gin) (gin-update gin gout))
+       ((mv thm-name thm-index) (gen-thm-name gin.const-new gin.thm-index))
+       (formula
+        `(b* ((old ',(fundef-fix old-fundef))
+              (new ',(fundef-fix new-fundef))
+              (fun (mv-nth 1 (ldm-ident (ident ,fun))))
+              ((mv old-val old-compst1)
+               (c::exec-fun fun (list ,@args) old-compst old-fenv limit))
+              ((mv new-val new-compst1)
+               (c::exec-fun fun (list ,@args) new-compst new-fenv limit)))
+           (implies (and (compustate-equivp old-compst new-compst)
+                         ,@(stsp-object-hyps old-name
+                                             newl-name
+                                             newr-name
+                                             old-tag
+                                             newl-tag
+                                             newr-tag
+                                             'old-compst
+                                             'new-compst)
+                         ,@arg-types
+                         (equal (c::fun-env-lookup fun old-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (ldm-fundef old))))
+                         (equal (c::fun-env-lookup fun new-fenv)
+                                (c::fun-info-from-fundef
+                                 (mv-nth 1 (ldm-fundef new))))
+                         (not (c::errorp old-val)))
+                    (and (not (c::errorp new-val))
+                         (equal old-val new-val)
+                         (compustate-equivp old-compst1 new-compst1)
+                         (set::in (c::type-of-value-option old-val)
+                                  (mv-nth 1 (ldm-type-set ',types)))))))
+       (hints
+        `(("Goal"
+           :expand ((c::exec-fun
+                     ',(c::ident fun) (list ,@args) old-compst old-fenv limit)
+                    (c::exec-fun
+                     ',(c::ident fun) (list ,@args) new-compst new-fenv limit))
+           :use (,init-scope-thm-name
+                 ,@(stsp-fundef-loop param-thm-names fun)
+                 (:instance ,body-thm-name
+                            (old-compst
+                             (c::push-frame
+                              (c::frame (mv-nth 1 (ldm-ident
+                                                   (ident ,fun)))
+                                        (list
+                                         (c::init-scope
+                                          ',cparams
+                                          (list ,@args))))
+                              old-compst))
+                            (new-compst
+                             (c::push-frame
+                              (c::frame (mv-nth 1 (ldm-ident
+                                                   (ident ,fun)))
+                                        (list
+                                         (c::init-scope
+                                          ',cparams
+                                          (list ,@args))))
+                              new-compst))
+                            (limit (1- limit))))
+           :in-theory '(,old-thm-name
+                        ,newl-thm-name
+                        ,newr-thm-name
+                        compustate-equivp-of-push-frame
+                        compustate-equivp-of-pop-frame
+                        (:e c::fun-info->body$inline)
+                        (:e c::fun-info->params$inline)
+                        (:e c::fun-info->result$inline)
+                        (:e c::fun-info-from-fundef)
+                        (:e ident)
+                        (:e ldm-fundef)
+                        (:e ldm-ident)
+                        (:e ldm-type)
+                        (:e ldm-type-set)
+                        (:e ldm-comp-stmt)
+                        (:e c::tyname-to-type)
+                        (:e c::block-item-list-nocallsp)
+                        (:e set::in)
+                        c::errorp-of-error
+                        c::compustate-frames-number-of-push-frame
+                        (:t c::compustate-frames-number)))))
+       (thm-event `(defrule ,thm-name
+                     ,formula
+                     :rule-classes nil
+                     :hints ,hints)))
+    (retok (make-gout :events (cons thm-event gin.events)
+                      :thm-index thm-index
+                      :thm-name thm-name
+                      :vartys nil)))
   :no-function nil
-  :guard-hints (("Goal" :in-theory (enable fundef-formalp))))
+  :guard-hints (("Goal" :in-theory (enable fundef-formalp)))
+  :prepwork
+  ((define stsp-fundef-loop ((thms symbol-listp) (fun stringp))
+     :returns (lemma-instances true-listp)
+     :parents nil
+     (b* (((when (endp thms)) nil)
+          (thm (car thms))
+          (lemma-instance
+           `(:instance ,(symbol-lfix thm)
+                       (fun (mv-nth 1 (ldm-ident (ident ,(str::str-fix fun)))))
+                       (old-compst0 old-compst)))
+          (more-lemma-instances
+           (stsp-fundef-loop (cdr thms) fun)))
+       (cons lemma-instance more-lemma-instances)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
