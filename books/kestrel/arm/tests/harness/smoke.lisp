@@ -105,10 +105,25 @@
      :pc #x1000 :code (#xEB000002)
      :expect (:pc #x1010 :regs ((14 . #x1004))))
 
-    ;; Sign extend byte.
+    ;; Sign extend byte: bit 7 of r0 is copied into bits 31:8.
     (:id "sxtb r0, r0"
      :pc #x1000 :code (#xE6AF0070)
-     :expect (:pc #x1004))
+     :regs ((0 . #x80))
+     :expect (:pc #x1004 :regs ((0 . #xFFFFFF80))))
+
+    ;; Signed multiply of the bottom halfwords, #x8001 (-32767) and #x7FFF
+    ;; (32767).
+    (:id "smulbb r0, r1, r2"
+     :pc #x1000 :code (#xE1600281)
+     :regs ((1 . #x00038001) (2 . #x00047FFF))
+     :expect (:pc #x1004 :regs ((0 . #xC000FFFF))))
+
+    ;; An instruction the model does not support decodes to an error.  VFP is
+    ;; outside the model's scope, so this one stays unsupported as integer
+    ;; instructions are added.
+    (:id "vadd.f32 s0, s0, s0 (unsupported)"
+     :pc #x1000 :code (#xEE300A00)
+     :expect (:error :decoding-error))
 
     ;; Before ARMv6, a multiply whose destination equals its first source is
     ;; UNPREDICTABLE, which the model reports as an error.
