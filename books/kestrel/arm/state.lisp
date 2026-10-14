@@ -83,7 +83,8 @@
 
   ;; System Control Register
   ;; Currently, we only model the bits of this that we need.
-  ;; Initial values come from Figure B4-1.
+  ;; Initial values come from Figure B4-1, but note that some values
+  ;; don't make sense for earlier ARM versions (see Table D12-1)!
   (sctlr.a :type bit :initially 0)
   (sctlr.u :type bit :initially 1)
 

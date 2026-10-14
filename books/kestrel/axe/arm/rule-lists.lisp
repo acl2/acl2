@@ -179,6 +179,7 @@
             arm::push-encoding-a2-core
             arm::push-loop-base
             arm::push-loop-unroll
+            arm::rrx-core
             arm::stm-loop-base
             arm::stm-loop-unroll
             arm::stmdb-core
@@ -237,31 +238,57 @@
      ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
      ;; arm::conditionpassed-of-write
 
-     ;; cmn rules: ; todo: add the rest!
-     arm::eq-condition-of-cmn-zero
-     arm::ne-condition-of-cmn-zero
 
-     arm::eq-condition-of-sub-zero
-     arm::ne-condition-of-sub-zero
-
-     arm::cs-condition-of-sub-carry
-     arm::cc-condition-of-sub-carry
-
-     ;; cmp rules: ; todo: add the rest!
+     ;; CMP rules:
+     ;; (The order here comes from the values of conditionpassed for 0-13.)
      arm::eq-condition-of-cmp-zero
      arm::ne-condition-of-cmp-zero
-     arm::hi-condition-of-cmp-carry-and-cmp-zero
-     arm::ls-condition-of-cmp-carry-and-cmp-zero
-     arm::le-condition-cmp-idiom
-     arm::gt-condition-cmp-idiom
-     arm::ge-condition-cmp-idiom
-     arm::lt-condition-cmp-idiom
-
-     ;; sub rules: ; todo: add more!
-     arm::lt-condition-of-sub-sign-and-sub-overflow
-
      arm::cs-condition-of-cmp-carry
      arm::cc-condition-of-cmp-carry
+     arm::mi-condition-of-cmp-sign
+     arm::pl-condition-of-cmp-sign
+     arm::vs-condition-of-cmp-overflow
+     arm::vc-condition-of-cmp-overflow
+     arm::hi-condition-of-cmp-carry-and-cmp-zero
+     arm::ls-condition-of-cmp-carry-and-cmp-zero
+     arm::ge-condition-cmp-idiom
+     arm::lt-condition-cmp-idiom
+     arm::gt-condition-cmp-idiom
+     arm::le-condition-cmp-idiom
+
+     ;; CMN rules:
+     arm::eq-condition-of-cmn-zero
+     arm::ne-condition-of-cmn-zero
+     arm::cs-condition-of-cmn-carry
+     arm::cs-condition-of-cmn-carry-alt
+     arm::cc-condition-of-cmn-carry
+     arm::cc-condition-of-cmn-carry-alt
+     arm::mi-condition-of-cmn-sign
+     arm::pl-condition-of-cmn-sign
+     arm::vs-condition-of-cmn-overflow
+     arm::vc-condition-of-cmn-overflow
+     arm::hi-condition-of-cmn-carry-and-cmn-zero
+     arm::ls-condition-of-cmn-carry-and-cmn-zero
+     arm::ge-condition-cmn-idiom
+     arm::lt-condition-cmn-idiom
+     arm::gt-condition-cmn-idiom
+     arm::le-condition-cmn-idiom
+
+     ;; SUB rules:
+     arm::eq-condition-of-sub-zero
+     arm::ne-condition-of-sub-zero
+     arm::cs-condition-of-sub-carry
+     arm::cc-condition-of-sub-carry
+     ;; mi ; todo: add these missing ones
+     ;; pl
+     ;; vs
+     ;; vc
+     ;; hi
+     ;; ls
+     ;; ge
+     arm::lt-condition-of-sub-sign-and-sub-overflow
+     ;; gt
+     ;; le
 
      ;; hope these are ok:
      arm::cmn-sign-constant-opener
