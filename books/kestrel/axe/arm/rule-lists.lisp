@@ -179,6 +179,7 @@
             arm::push-encoding-a2-core
             arm::push-loop-base
             arm::push-loop-unroll
+            arm::rrx-core
             arm::stm-loop-base
             arm::stm-loop-unroll
             arm::stmdb-core
@@ -237,31 +238,37 @@
      ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
      ;; arm::conditionpassed-of-write
 
+
+     ;; CMP rules:
+     ;; the order here comes from the values of conditionpassed for 0-13
+     arm::eq-condition-of-cmp-zero
+     arm::ne-condition-of-cmp-zero
+     arm::cs-condition-of-cmp-carry
+     arm::cc-condition-of-cmp-carry
+     arm::mi-condition-of-cmp-sign
+     arm::pl-condition-of-cmp-sign
+     ;; vs ; todo
+     ;; vc ; todo
+     arm::hi-condition-of-cmp-carry-and-cmp-zero
+     arm::ls-condition-of-cmp-carry-and-cmp-zero
+     arm::ge-condition-cmp-idiom
+     arm::lt-condition-cmp-idiom
+     arm::gt-condition-cmp-idiom
+     arm::le-condition-cmp-idiom
+
      ;; cmn rules: ; todo: add the rest!
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
 
+
      arm::eq-condition-of-sub-zero
      arm::ne-condition-of-sub-zero
+     ;; sub rules: ; todo: add more!
+     arm::lt-condition-of-sub-sign-and-sub-overflow
 
      arm::cs-condition-of-sub-carry
      arm::cc-condition-of-sub-carry
 
-     ;; cmp rules: ; todo: add the rest!
-     arm::eq-condition-of-cmp-zero
-     arm::ne-condition-of-cmp-zero
-     arm::hi-condition-of-cmp-carry-and-cmp-zero
-     arm::ls-condition-of-cmp-carry-and-cmp-zero
-     arm::le-condition-cmp-idiom
-     arm::gt-condition-cmp-idiom
-     arm::ge-condition-cmp-idiom
-     arm::lt-condition-cmp-idiom
-
-     ;; sub rules: ; todo: add more!
-     arm::lt-condition-of-sub-sign-and-sub-overflow
-
-     arm::cs-condition-of-cmp-carry
-     arm::cc-condition-of-cmp-carry
 
      ;; hope these are ok:
      arm::cmn-sign-constant-opener
