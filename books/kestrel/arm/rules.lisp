@@ -409,20 +409,41 @@
   :hints (("Goal" :in-theory (enable ne-condition
                                      cmn-zero-elim))))
 
+;; nice if y is constant
 (defthm cs-condition-of-cmn-carry
-  (implies (and (unsigned-byte-p 32 x)
+  (implies (and (syntaxp (quotep y))
+                (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
            (equal (cs-condition (cmn-carry x y))
                   (and (not (equal y 0))
                        (not (bvlt 32 x (bvuminus 32 y))))))
   :hints (("Goal" :in-theory (enable cs-condition cmn-carry-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
 
+(defthm cs-condition-of-cmn-carry-alt
+  (implies (and (syntaxp (not (quotep y))) ; for constant y, the other rule is better
+                (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (cmn-carry x y))
+                  (bvlt 32 (bvplus 32 x y) x)))
+  :hints (("Goal" :in-theory (enable cs-condition cmn-carry-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+;; nice if y is constant
 (defthm cc-condition-of-cmn-carry
-  (implies (and (unsigned-byte-p 32 x)
+  (implies (and (syntaxp (quotep y))
+                (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
            (equal (cc-condition (cmn-carry x y))
                   (or (equal y 0)
                       (bvlt 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :use cs-condition-of-cmn-carry
+                  :in-theory (e/d (cs-condition cc-condition) (cs-condition-of-cmn-carry)))))
+
+(defthm cc-condition-of-cmn-carry-alt
+  (implies (and (syntaxp (not (quotep y))) ; for constant y, the other rule is better
+                (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (cmn-carry x y))
+                  (not (bvlt 32 (bvplus 32 x y) x))))
   :hints (("Goal" :use cs-condition-of-cmn-carry
                   :in-theory (e/d (cs-condition cc-condition) (cs-condition-of-cmn-carry)))))
 

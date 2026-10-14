@@ -260,7 +260,9 @@
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
      arm::cs-condition-of-cmn-carry
+     arm::cs-condition-of-cmn-carry-alt
      arm::cc-condition-of-cmn-carry
+     arm::cc-condition-of-cmn-carry-alt
      arm::mi-condition-of-cmn-sign
      arm::pl-condition-of-cmn-sign
      arm::vs-condition-of-cmn-overflow
