@@ -418,6 +418,28 @@
      arm::isetstate-of-if
      arm::update-isetstate-when-equal-of-isetstate
 
+     arm::sctlr.a-of-set-reg
+     acl2::sctlr.a-of-update-sctlr.a
+     arm::sctlr.a-of-set-apsr.n
+     arm::sctlr.a-of-set-apsr.z
+     arm::sctlr.a-of-set-apsr.c
+     arm::sctlr.a-of-set-apsr.v
+     arm::sctlr.a-of-set-apsr.q
+     arm::sctlr.a-of-write
+     arm::sctlr.a-of-if
+     ;; arm::update-sctlr.a-when-equal-of-sctlr.a
+
+     arm::sctlr.u-of-set-reg
+     acl2::sctlr.u-of-update-sctlr.u
+     arm::sctlr.u-of-set-apsr.n
+     arm::sctlr.u-of-set-apsr.z
+     arm::sctlr.u-of-set-apsr.c
+     arm::sctlr.u-of-set-apsr.v
+     arm::sctlr.u-of-set-apsr.q
+     arm::sctlr.u-of-write
+     arm::sctlr.u-of-if
+     ;; arm::update-sctlr.u-when-equal-of-sctlr.u
+
      arm::library-map-of-set-reg
      arm::library-map-of-update-isetstate
      arm::library-map-of-set-apsr.n
