@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in functions floor and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -47,8 +47,7 @@
   :hints (("Goal" :in-theory (e/d (floor-normalize-denominator
                                    expt-of-+)
                                   (;divisibility-in-terms-of-floor ;looped
-                                   floor-of-*-of-/-and-1
-                                   )))))
+                                   floor-of-*-of-/-and-1)))))
 
 ; we shift right, chop, then shift back.  then doing it again with a smaller
 ; shift amount has no effect.
@@ -85,7 +84,7 @@
                           (expt 2 size2))
                    (floor i (expt 2 (- size2 size)))))
   :hints (("Goal" :in-theory (e/d (floor-normalize-denominator expt-of-+)
-                                  (FLOOR-OF-*-OF-/-AND-1)))))
+                                  (floor-of-*-of-/-and-1)))))
 
 (defthm unsigned-byte-p-of-floor-of-expt
   (implies (and (integerp x)
