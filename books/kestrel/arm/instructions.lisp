@@ -26,8 +26,8 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/bvnot" :dir :system)
-(include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvmult-def" :dir :system)
 (include-book "kestrel/bv/repeatbit" :dir :system)
@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvmult" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
@@ -54,8 +55,9 @@
              (integerp x))))
 
 (local (in-theory (disable symbol-alistp ; prevent induction
-                           acl2::unsigned-byte-p-from-bounds ; for speed
-                           )))
+                           ;; for speed:
+                           acl2::unsigned-byte-p-from-bounds
+                           true-list-listp-forward-to-true-listp-assoc-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
