@@ -15,6 +15,12 @@
 ;; TODO: Continue fleshing this out and use it to replace numerator.lisp and
 ;; denominator.lisp?
 
+(local (include-book "times-and-divide")) ; for equal-of-*-of-/
+(local (include-book "times"))
+(local (include-book "minus"))
+(local (include-book "numerator"))
+(local (include-book "denominator"))
+
 (defthm denominator-when-integerp
   (implies (integerp x)
            (equal (denominator x)
@@ -43,8 +49,6 @@
   :hints (("Goal" :cases ((not (rationalp x))
                           (and (rationalp x)
                                (< x 0))))))
-
-(include-book "times-and-divide") ; for equal-of-*-of-/
 
 (defthmd denominator-redef
   (implies (rationalp x)
@@ -122,18 +126,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (include-book "times"))
-
 (defthm <-of-numerator-and-denominator-same
   (implies (rationalp x)
            (equal (< (numerator x) (denominator x))
                   (< x 1)))
   :hints (("Goal" :use rational-implies2
            :in-theory (disable rational-implies2))))
-
-(local (include-book "minus"))
-(local (include-book "numerator"))
-(local (include-book "denominator"))
 
 (defthm <-of---of-numerator-and-denominator-same
   (implies (rationalp x)
