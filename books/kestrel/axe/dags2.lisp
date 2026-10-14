@@ -557,7 +557,7 @@
         (split-dag-at-node (rest dag) nodenum (cons (first dag) high-nodes-acc))))))
 
 ;move:
-;(defconst *test-dag* '((4 foo 3 '200) (3 bar 2 1) (2 . v) (1 . '100) (0 . v2) ))
+;(defconst *test-dag* '((4 foo 3 '200) (3 bar 2 1) (2 . v) (1 . '100) (0 . v2)))
 ;(pseudo-dagp *test-dag*)
 ;(split-dag-at-node (reverse *test-dag*) 2 nil)
 

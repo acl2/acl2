@@ -59,7 +59,7 @@
 ;;  ;; a general tail recursive function (of one parameter)
 ;;  ;; can we use the lambda trick to extend this result to functions of more than one parameter?
 ;;  (defun foo (x)
-;;    (declare (xargs :measure (measure x) ))
+;;    (declare (xargs :measure (measure x)))
 ;;    (if (exit-test x)
 ;;        (base-val x) ;bad name?
 ;;      (foo (update x))))
