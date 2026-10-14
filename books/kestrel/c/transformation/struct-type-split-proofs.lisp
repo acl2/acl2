@@ -955,6 +955,38 @@
                  c::compustate->frames$inline-of-compustate-fix-x
                  c::compustate->heap$inline-of-compustate-fix-x)))))
            ///
+           (defruled compustate-equivp-of-push-frame
+             (equal (compustate-equivp (c::push-frame frame old-compst)
+                                       (c::push-frame frame new-compst))
+                    (compustate-equivp old-compst new-compst))
+             :in-theory
+             '(static-equivp-scope-equiv-congruence-on-new-static
+               static-equivp-scope-equiv-congruence-on-old-static
+               compustate-equivp
+               c::push-frame
+               c::compustate->frames-of-compustate
+               c::compustate->heap-of-compustate
+               c::compustate->static-of-compustate
+               cons-equal
+               c::frame-list-fix-of-cons
+               c::frame-list-fix-when-frame-listp
+               c::frame-listp-of-compustate->frames
+               c::heap-fix-when-heapp
+               c::heapp-of-compustate->heap
+               c::scope-fix-under-scope-equiv))
+           (defruled compustate-equivp-of-pop-frame
+             (implies (compustate-equivp old-compst new-compst)
+                      (compustate-equivp (c::pop-frame old-compst)
+                                         (c::pop-frame new-compst)))
+             :in-theory
+             '(static-equivp-scope-equiv-congruence-on-new-static
+               static-equivp-scope-equiv-congruence-on-old-static
+               compustate-equivp
+               c::pop-frame
+               c::compustate->frames-of-compustate
+               c::compustate->heap-of-compustate
+               c::compustate->static-of-compustate
+               c::scope-fix-under-scope-equiv))
            (defruled struct-value-equivp-when-compustate-equivp
              (b* ((old-val
                    (c::read-object (c::objdesign-of-var ',old-cname old-compst)
