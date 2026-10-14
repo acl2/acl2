@@ -431,7 +431,9 @@
                               (enquote target-offset)))
        (assumptions (append `((equal (reg '15 arm) ,target-address-term) ; the PC
                               (armp arm)
-                              (equal (library-map arm) ',library-map))
+                              (equal (library-map arm) ',library-map)
+                              (equal (bvchop '2 (reg '13 arm)) '0) ; the stack pointer is 4-byte aligned
+                              )
                           assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))
