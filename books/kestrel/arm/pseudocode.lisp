@@ -1030,11 +1030,15 @@
   (declare (xargs :stobjs arm))
   (isetstate arm))
 
+(defthm natp-of-CurrentInstrSet
+  (implies (armp arm)
+           (natp (CurrentInstrSet arm)))
+  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+
 (defthm natp-of-CurrentInstrSet-type
   (implies (armp arm)
            (natp (CurrentInstrSet arm)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+  :rule-classes :type-prescription)
 
 (defund SelectInstrSet (iset arm)
   (declare (xargs :guard (member iset (list *InstrSet_ARM*
@@ -1186,9 +1190,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun UnalignedSupport ()
-  (declare (xargs :guard t))
-  t)
+;; See D16.7.30.
+(defund UnalignedSupport (arm)
+  (declare (xargs :stobjs arm)
+           (ignore arm) ; todo
+           )
+  t
+  ;; todo: put this in, but it broke things:
+  ;; (if (equal 7 (arch-version arm))
+  ;;     t
+  ;;   (if (equal 6 (arch-version arm))
+  ;;       (== (sctlr.u arm) #b1)
+  ;;     nil))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
