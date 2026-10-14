@@ -315,6 +315,8 @@
                           (:unsupported . 1)
                           (:unpredictable . 1)
                           (:skipped . 0)))
+                 (equal (report-get :gap-words summary nil)
+                        '(("27:20=7F,7:4=F" (#xE7F000F0 . 1))))
                  (equal (report-get :mismatches summary nil)
                         '(("str pc, [r1] on ARMv4, PC+16 expected"
                            :str-immediate #xE581F000
