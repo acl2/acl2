@@ -195,6 +195,14 @@
   (iff (member-equal x (list y))
        (equal x y)))
 
+; make a cheap version?
+(defthmd member-equal-of-singleton-iff
+  (implies (equal 1 (len lst))
+           (iff (member-equal x lst)
+                (equal x (first lst))))
+  :hints (("Goal" :expand ((member-equal x lst)
+                           (len (cdr lst))))))
+
 ;use polarities?
 (defthm member-equal-of-constant-trim
   (implies (and (syntaxp (quotep k))
@@ -212,7 +220,7 @@
 
 (defthm member-equal-of-singleton-constant-iff
   (implies (and (syntaxp (quotep lst))
-                (= 1 (len lst)))
+                (equal 1 (len lst)))
            (iff (member-equal x lst)
                 (equal x (first lst))))
   :hints (("Goal" :expand ((member-equal x lst)

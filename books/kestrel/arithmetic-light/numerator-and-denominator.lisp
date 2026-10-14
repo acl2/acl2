@@ -1,6 +1,6 @@
 ; A new book about numerator and denominator
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,15 @@
 (in-package "ACL2")
 
 ;; This book doesn't include any libraries outside arithmetic-light/.
-;; TODO: Continue fleshing this out and use it to replace numerator.lisp and denominator.lisp.
+
+;; TODO: Continue fleshing this out and use it to replace numerator.lisp and
+;; denominator.lisp?
+
+(local (include-book "times-and-divide")) ; for equal-of-*-of-/
+(local (include-book "times"))
+(local (include-book "minus"))
+(local (include-book "numerator"))
+(local (include-book "denominator"))
 
 (defthm denominator-when-integerp
   (implies (integerp x)
@@ -41,8 +49,6 @@
   :hints (("Goal" :cases ((not (rationalp x))
                           (and (rationalp x)
                                (< x 0))))))
-
-(include-book "times-and-divide") ; for equal-of-*-of-/
 
 (defthmd denominator-redef
   (implies (rationalp x)
@@ -94,7 +100,7 @@
          (* -1 x))))
 
 (local
- (defthm *-of---arg1
+ (defthm *-of---arg1-alt ; todo: remove
   (equal (* (- x) y)
          (- (* x y)))
   :hints (("Goal" :in-theory (enable --becomes-*-of--1)))))
@@ -117,3 +123,19 @@
                   (signum x))))
 
 ;; TODO: Next prove numerator-of--.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm <-of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (numerator x) (denominator x))
+                  (< x 1)))
+  :hints (("Goal" :use rational-implies2
+           :in-theory (disable rational-implies2))))
+
+(defthm <-of---of-numerator-and-denominator-same
+  (implies (rationalp x)
+           (equal (< (- (numerator x)) (denominator x))
+                  (< -1 x)))
+  :hints (("Goal" :use (:instance <-of-numerator-and-denominator-same (x (- x)))
+           :in-theory (disable <-of-numerator-and-denominator-same))))

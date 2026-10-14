@@ -121,7 +121,7 @@
                 (unsigned-byte-p 1 bit))
            (equal (myif (equal bit 0) 0 k)
                   (bvcat 1 bit (+ -1 (integer-length k)) 0)))
-  :hints (("Goal" :use (:instance myif-equal-bit-0-expt-2-n (n (+ -1 (integer-length k)) )))))
+  :hints (("Goal" :use (:instance myif-equal-bit-0-expt-2-n (n (+ -1 (integer-length k)))))))
 
 ;BOZO can this loop?
 (defthm bvchop-32-times-subst

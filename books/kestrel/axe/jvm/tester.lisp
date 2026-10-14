@@ -641,6 +641,14 @@
                        (cw ")~%"))))
        (- (cw "(Applying tactic prover:~%"))
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
+       ;; Make the rule-alist:
+       (rules (append extra-rules
+                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
+                                         (append ;; (bool-intro-rules)
+                                          remove-rules))))
+       ((mv erp rule-alist) (make-rule-alist rules (w state)))
+       ((when erp) (mv :error-making-rule-list t state))
+       ;; Call the tactic-prover:
        ((mv result
             & ;info-acc
             state)
@@ -651,10 +659,7 @@
                              nil ;interpreted-fns
                              :bit ;type
                              '(:rewrite :stp) ;todo: maybe prune? ;; tactics
-                             (append extra-rules
-                                     (set-difference-eq (formal-unit-testing-extra-simplification-rules)
-                                                        (append ;; (bool-intro-rules)
-                                                                remove-rules)))
+                             rule-alist
                              nil ;simplify-assumptions
                              print
                              nil ;*default-stp-max-conflicts* ;max-conflicts ;a number of conflicts, or nil for no max

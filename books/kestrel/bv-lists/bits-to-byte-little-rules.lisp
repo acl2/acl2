@@ -1,6 +1,6 @@
 ; BV Lists Library: Rules about bits-to-byte-little
 ;
-; Copyright (C) 2021-2025 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,4 +26,8 @@
 (defthm bits-to-byte-little-of-update-nth
   (equal (bits-to-byte-little (update-nth n bit bits))
          (putbit 8 (nfix n) bit (bits-to-byte-little bits)))
-  :hints (("Goal" :in-theory (enable bits-to-byte-little))))
+  :hints (("Goal" :in-theory (e/d (bits-to-byte-little)
+                                  (;; for speed:
+                                   slice-too-high-is-0
+                                   bvcat-equal-rewrite-alt
+                                   bvcat-equal-rewrite)))))

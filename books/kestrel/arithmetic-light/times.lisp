@@ -547,16 +547,16 @@
            (< (* x1 y1) (* x2 y2)))
   :rule-classes :linear
   :hints (("Goal"
-           :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
+           :use ((:instance <-of-*-and-*-same-linear-1
                             (y y1))
-                 (:instance <-OF-*-AND-*-SAME-LINEAR-1
+                 (:instance <-of-*-and-*-same-linear-1
                             (x1 y1)
                             (x2 y2)
                             (y x2)))
            :in-theory (disable <-of-*-and-*-cancel
-                               <-OF-*-AND-*-SAME-HELPER
-                               <-OF-*-AND-*-SAME-FORWARD-1
-                               <-OF-*-AND-*-SAME-FORWARD-2))))
+                               <-of-*-and-*-same-helper
+                               <-of-*-and-*-same-forward-1
+                               <-of-*-and-*-same-forward-2))))
 
 (defthm <-of-*-and-*
   (implies (and (< x1 x2)  ; strict
@@ -571,16 +571,16 @@
                       (< 0 (* x2 y2))
                     t)))
   :hints (("Goal"
-           :use ((:instance <-OF-*-AND-*-SAME-LINEAR-1
+           :use ((:instance <-of-*-and-*-same-linear-1
                             (y y1))
-                 (:instance <-OF-*-AND-*-SAME-LINEAR-1
+                 (:instance <-of-*-and-*-same-linear-1
                             (x1 y1)
                             (x2 y2)
                             (y x2)))
            :in-theory (disable <-of-*-and-*-cancel
-                               <-OF-*-AND-*-SAME-HELPER
-                               <-OF-*-AND-*-SAME-FORWARD-1
-                               <-OF-*-AND-*-SAME-FORWARD-2))))
+                               <-of-*-and-*-same-helper
+                               <-of-*-and-*-same-forward-1
+                               <-of-*-and-*-same-forward-2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

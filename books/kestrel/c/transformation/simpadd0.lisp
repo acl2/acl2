@@ -804,12 +804,12 @@
        :alignas-type (b* (((mv new-type (gout gout-type))
                            (simpadd0-tyname alignspec.type gin))
                           (gin (gin-update gin gout-type)))
-                       (mv (align-spec-alignas-type new-type)
+                       (mv (align-spec-alignas-type alignspec.uscore new-type)
                            (gout-no-thm gin)))
        :alignas-expr (b* (((mv new-expr (gout gout-expr))
                            (simpadd0-const-expr alignspec.expr gin))
                           (gin (gin-update gin gout-expr)))
-                       (mv (align-spec-alignas-expr new-expr)
+                       (mv (align-spec-alignas-expr alignspec.uscore new-expr)
                            (gout-no-thm gin)))
        :alignas-ambig (prog2$ (impossible)
                               (mv (irr-align-spec) (irr-gout)))))
@@ -1634,7 +1634,8 @@
          ((mv new-test (gout gout-test))
           (simpadd0-const-expr statassert.test gin))
          (gin (gin-update gin gout-test)))
-      (mv (make-statassert :test new-test
+      (mv (make-statassert :uscore statassert.uscore
+                           :test new-test
                            :message statassert.message)
           (gout-no-thm gin)))
     :measure (statassert-count statassert))

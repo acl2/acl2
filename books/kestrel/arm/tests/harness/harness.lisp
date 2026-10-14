@@ -87,6 +87,10 @@
        (arm (update-endianstate 0 arm))
        (arm (update-error nil arm))
        (arm (update-arch-version (vec-get :arch vec 7) arm))
+       (arm (update-sctlr.a (vec-get :sctlr.a vec 0) arm))
+       (arm (update-sctlr.u (vec-get :sctlr.u vec
+                                     (default-sctlr.u (vec-get :arch vec 7)))
+                            arm))
        (arm (update-library-map nil arm))
        (arm (set-unknown-filling filling arm))
        (arm (write-words (vec-get :pc vec 0) (vec-get :code vec nil) arm))
@@ -133,7 +137,7 @@
   (local
     (defthm armp-facts
       (implies (armp x)
-               (and (equal (len x) 10)
+               (and (equal (len x) 12)
                     (true-listp (nth *registersi* x))
                     (equal (len (nth *registersi* x)) 16)))
       :rule-classes nil
@@ -210,7 +214,9 @@
                               update-apsr update-isetstate update-itstate
                               update-endianstate update-error
                               update-arch-version update-library-map
-                              update-oracle)
+                              update-oracle
+                              update-sctlr.u
+                              update-sctlr.a)
                              (acl2::update-nth-becomes-append
                               acl2::cdr-of-update-nth
                               len default-car default-cdr))))))
@@ -546,7 +552,7 @@
 
 ;; Runs VECS and summarizes the results under the name NAME (see report.lisp),
 ;; with WAIVERS applied.  NOT-RUN is the alist for the summary's :not-run.
-(defun summarize-vectors (name vecs waivers not-run)
+(defund summarize-vectors (name vecs waivers not-run)
   (declare (xargs :guard (and (stringp name)
                               (test-vector-listp vecs)
                               (waiver-listp waivers)
@@ -558,3 +564,9 @@
                        *arm32-instruction-names*
                        waivers
                        not-run)))
+
+(defthm summaryp-of-summarize-vectors
+  (implies (and (stringp name)
+                (count-alistp not-run))
+           (summaryp (summarize-vectors name vecs waivers not-run)))
+  :hints (("Goal" :in-theory (enable summarize-vectors))))

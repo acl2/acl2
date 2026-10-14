@@ -2014,19 +2014,26 @@
        alignspec
        :alignas-type
        (b* (((erp new-type dstate) (dimb-tyname alignspec.type dstate)))
-         (retok (align-spec-alignas-type new-type) dstate))
+         (retok (make-align-spec-alignas-type :uscore alignspec.uscore
+                                              :type new-type)
+                dstate))
        :alignas-expr
        (b* (((erp new-expr dstate) (dimb-const-expr alignspec.expr dstate)))
-         (retok (align-spec-alignas-expr new-expr) dstate))
+         (retok (make-align-spec-alignas-expr :uscore alignspec.uscore
+                                              :expr new-expr)
+                dstate))
        :alignas-ambig
        (b* (((erp expr/tyname dstate)
              (dimb-amb-expr/tyname alignspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (align-spec-alignas-expr
-                         (make-const-expr :expr expr/tyname.expr))
+          :expr (retok (make-align-spec-alignas-expr
+                        :uscore alignspec.uscore
+                        :expr (make-const-expr :expr expr/tyname.expr))
                        dstate)
-          :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
+          :tyname (retok (make-align-spec-alignas-type
+                          :uscore alignspec.uscore
+                          :type expr/tyname.tyname)
                          dstate)))))
     :measure (align-spec-count alignspec))
 
@@ -2981,7 +2988,9 @@
     (b* (((reterr) (irr-statassert) (irr-dstate))
          ((statassert statassert) statassert)
          ((erp new-test dstate) (dimb-const-expr statassert.test dstate)))
-      (retok (make-statassert :test new-test :message statassert.message)
+      (retok (make-statassert :uscore statassert.uscore
+                              :test new-test
+                              :message statassert.message)
              dstate))
     :measure (statassert-count statassert))
 
@@ -3935,6 +3944,8 @@
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
+                        :asm? fundef.asm?
+                        :attribs fundef.attribs
                         :declons new-declons
                         :body new-body
                         :info fundef.info)

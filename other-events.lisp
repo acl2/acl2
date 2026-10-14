@@ -6102,15 +6102,15 @@
          infectious-fns
          fns))))
 
-(defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
-                                        wrld)
+(defun bogus-exported-compliants (names exports-with-sig-ancestors wrld)
 
 ; Names is a list of function symbols exported from an encapsulate event.
 ; Exports-with-sig-ancestors contains each element of names that has at least
 ; one signature function of that encapsulate among its ancestors.  We return
 ; those elements of names whose body or guard has at least one ancestor in
-; sig-fns, except for those that are constrained, because the guard proof
-; obligations may depend on local properties.  Consider the following example.
+; signature functions, except for those that are constrained, because the guard
+; proof obligations may depend on local properties.  Consider the following
+; example.
 
 ; (encapsulate
 ;  ((f (x) t))
@@ -6126,6 +6126,8 @@
 ; with their guard verification, it seems appropriate to insist that the guard
 ; proof obligation really does hold in the theory produced by the encapsulate,
 ; not merely in the temporary theory of the first pass of the encapsulate.
+; More importantly, it is important that the :guard-theorem is really a
+; theorem!
 
 ; See also the comment about this function in intro-udf.
 
@@ -6143,16 +6145,43 @@
 ; signature functions as ancestors.
 
               (or (member-eq (car names) exports-with-sig-ancestors)
-                  (intersectp-eq sig-fns (instantiable-ancestors
-                                          (all-fnnames
-                                           (guard (car names) nil wrld))
-                                          wrld
-                                          nil))))
+                  (intersectp-eq exports-with-sig-ancestors
+                                 (all-fnnames (guard (car names) nil wrld)))))
          (cons (car names)
                (bogus-exported-compliants
-                (cdr names) exports-with-sig-ancestors sig-fns wrld)))
+                (cdr names) exports-with-sig-ancestors wrld)))
         (t (bogus-exported-compliants
-            (cdr names) exports-with-sig-ancestors sig-fns wrld))))
+            (cdr names) exports-with-sig-ancestors wrld))))
+
+(defun bogus-exported-measures (names exports-with-sig-ancestors wrld)
+
+; This check is to guarantee that the :termination-theorem is really a theorem.
+
+  (cond
+   ((endp names) nil)
+   (t
+    (let ((just (getpropc (car names) 'justification nil wrld)))
+      (cond
+       (just
+        (let* ((measure (access justification just :measure))
+               (mp (access justification just :mp))
+               (wf-rel (access justification just :rel))
+               (bogus-measure (intersectp-eq exports-with-sig-ancestors
+                                             (all-fnnames measure)))
+               (bogus-mp (member-eq mp exports-with-sig-ancestors))
+               (bogus-wf-rel (member-eq wf-rel exports-with-sig-ancestors)))
+          (cond
+           ((or bogus-measure bogus-mp bogus-wf-rel)
+            (cons (car names)
+                  (bogus-exported-measures (cdr names)
+                                           exports-with-sig-ancestors
+                                           wrld)))
+           (t (bogus-exported-measures (cdr names)
+                                       exports-with-sig-ancestors
+                                       wrld)))))
+       (t (bogus-exported-measures (cdr names)
+                                   exports-with-sig-ancestors
+                                   wrld)))))))
 
 (defun remove-type-prescription-cert-data (cert-data)
   (remove1-assoc-eq :type-prescription cert-data))
@@ -6558,7 +6587,11 @@
                               (state (set-w 'extension wrld2 state))
                               (bogus-exported-compliants
                                (bogus-exported-compliants
-                                exported-names exports-with-sig-ancestors sig-fns
+                                exported-names exports-with-sig-ancestors
+                                wrld2))
+                              (bogus-exported-measures
+                               (bogus-exported-measures
+                                exported-names exports-with-sig-ancestors
                                 wrld2)))
                          (cond
                           (bogus-exported-compliants
@@ -6571,7 +6604,16 @@
                                 verification until after the encapsulate ~
                                 event, for example by using :verify-guards ~
                                 nil."
-                               bogus-exported-compliants))
+                               (reverse bogus-exported-compliants)))
+                          (bogus-exported-measures
+                           (er soft ctx
+                               "For the following function~#0~[~/s~] ~
+                                introduced by this encapsulate event, the ~
+                                :termination-theorem may depend on local ~
+                                properties that are not exported from the ~
+                                encapsulate event: ~&0.  See :DOC ~
+                                bogus-exported-measures for a workaround."
+                               (reverse bogus-exported-measures)))
                           (t (value
                               (if only-pass-p
                                   (cons expansion-alist retval)
@@ -20861,7 +20903,9 @@
                           (if (eq (car type) 'hash-table)
                               (putprop
                                accessor?-fn 'stobjs-in (list nil name)
-                               wrld)
+                               (putprop
+                                accessor?-fn 'stobjs-out (list stobj-flg nil)
+                                wrld))
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
@@ -32874,6 +32918,9 @@
                   it is given special treatment."
                  key 'return-last-table))
                ((and val
+                     (if (consp val)
+                         (symbolp (car val))
+                       (symbolp val)) ; avoid getpropc error below
                      (let ((val2 (if (symbolp val) val (car val))))
                        (and
                         (not (getpropc val2 'macro-body nil wrld))

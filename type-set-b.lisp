@@ -11884,7 +11884,7 @@
               (let ((int (ts-intersection ts1 ts2)))
                 (cond
                  ((ts= int *ts-empty*)
-                  (mv 'contradiction nil (puffert ttree)))
+                  (mv 'contradiction nil (puffert (cons-tag-trees ttree0 ttree))))
                  ((ts= ts1 ts2)
                   (mv hitp
                       (return-type-alist hitp (car type-alist)

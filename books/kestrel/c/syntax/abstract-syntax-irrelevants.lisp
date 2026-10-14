@@ -238,7 +238,7 @@
 (defirrelevant irr-align-spec
   :short "An irrelevant alignment specifier."
   :type align-specp
-  :body (align-spec-alignas-expr (irr-const-expr)))
+  :body (align-spec-alignas-expr nil (irr-const-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,7 +366,8 @@
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
-  :body (make-statassert :test (irr-const-expr)
+  :body (make-statassert :uscore nil
+                         :test (irr-const-expr)
                          :message (list (irr-stringlit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

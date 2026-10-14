@@ -203,8 +203,12 @@
                            parsed-executable
                            param-names ; todo: can we somehow get these from the executable?
                            assumptions ; untranslated terms
-                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                           unroller-rule-alist pruning-rule-alist
+                           stop-pcs
+                           64-bitp
+                           extra-assumption-rules
+                           proof-rule-alist
+                           remove-assumption-rules
                            normalize-xors count-hits print max-printed-term-size monitor
                            step-limit step-increment
                            prune-precise prune-approx tactics
@@ -219,14 +223,13 @@
   (declare (xargs :guard (and (stringp function-name-string)
                               (parsed-executablep parsed-executable)
                               ;; param-names
-                              (symbol-listp extra-rules)
+                              (rule-alistp unroller-rule-alist)
+                              (rule-alistp pruning-rule-alist)
+                              (nat-listp stop-pcs)
+                              (booleanp 64-bitp)
                               (symbol-listp extra-assumption-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
+                              (rule-alistp proof-rule-alist)
                               (symbol-listp remove-assumption-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -257,8 +260,7 @@
   (b* (((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "~%(Testing ~x0.~%" function-name-string))
        (- (ensure-x86 parsed-executable))
-       (executable-type (parsed-executable-type parsed-executable))
-       (32-bitp (member-eq executable-type *executable-types32*))
+       (32-bitp (not 64-bitp))
        ;; This could perhaps be removed once we have some 32-bit formal unit tests:
        ((when 32-bitp)
         (er hard? 'test-function-core "32-bit mode is not yet supported in the Formal Unit Tester.")
@@ -302,7 +304,8 @@
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Unroll the computation:
        ;; TODO: Need this to return assumptions that may be needed in the proof (e.g., about separateness of memory regions)
-       ((mv erp result-dag-or-quotep & & & & & state)
+
+       ((mv erp result-dag-or-quotep & & & & state)
         (unroll-x86-code-core
           target
           parsed-executable
@@ -320,13 +323,7 @@
           ;; t                   ; use-internal-contextsp
           prune-precise
           prune-approx
-          ;; extra-rules:
-          (append extra-rules
-                  extra-lift-rules
-                  (extra-tester-lifting-rules))
-          ;; remove-rules:
-          (append remove-rules
-                  remove-lift-rules)
+          unroller-rule-alist pruning-rule-alist
           ;; extra-assumption-rules:
           (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
@@ -352,7 +349,7 @@
           remove-assumption-rules ; todo: also use the remove-rules?
           step-limit
           step-increment
-          nil ; stop-pcs
+          stop-pcs
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
           normalize-xors
@@ -397,34 +394,26 @@
        (- (and (not (dag-is-purep result-dag)) ; TODO: This was saying an IF is not pure (why?).  Does it still?
                (cw "WARNING: Result of lifting is not pure (see above).~%")))
        ;; Prove the test routine always returns 1 (we pass :bit for the type):
-       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
-                                       (append remove-rules
-                                               remove-proof-rules
-                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
-                                               ;; todo: why is boolor bad?
-                                               '(;;acl2::boolif-x-x-y-becomes-boolor ;drop?
-                                                 ;;acl2::boolif-when-quotep-arg2
-                                                 ;;acl2::boolif-when-quotep-arg3
-                                                 ))))
+
        ((mv result info-acc state)
         (apply-tactic-prover result-dag
-                                   ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
-                                   register-type-assumptions ;TODO: We may need separateness assumptions!
-                                   nil ; interpreted-fns
-                                   :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
-                                   ;; tests ;a natp indicating how many tests to run
-                                   tactics
-                                   proof-rules
-                                   t   ; simplify-assumptions
-                                   print
-                                   ;; debug ; todo: use this?
-                                   max-conflicts
-                                   t ; call-stp-when-pruning
-                                   t ; counterexamplep
-                                   nil ; print-cex-as-signedp
-                                   rules-to-monitor
-                                   t ; normalize-xors
-                                   state))
+                             ;; These are needed because their presence during rewriting can cause BVCHOPs to be dropped:
+                             register-type-assumptions ;TODO: We may need separateness assumptions!
+                             nil                       ; interpreted-fns
+                             :bit ; type (means try to prove that the DAG is 1) ; todo: should it be "nonzero"?
+                             ;; tests ;a natp indicating how many tests to run
+                             tactics
+                             proof-rule-alist
+                             t ; simplify-assumptions
+                             print
+                             ;; debug ; todo: use this?
+                             max-conflicts
+                             t         ; call-stp-when-pruning
+                             t         ; counterexamplep
+                             nil       ; print-cex-as-signedp
+                             rules-to-monitor
+                             t ; normalize-xors
+                             state))
        ((mv elapsed state) (real-time-since start-real-time state)))
     (if (eq result *error*)
         (mv :error-in-tactic-proof nil nil state)
@@ -514,10 +503,38 @@
         (if (eq executable-type :mach-o-64)
             (concatenate 'string "_" function-name-string) ; todo: why do we always have to add the underscore?
           function-name-string))
+
+       ;; WARNING: Keep this in sync with test-file-fn1:
+       (64-bitp (bool-fix (member-eq executable-type *executable-types64*)))
+       (extra-unroller-rules (append extra-rules
+                                     extra-lift-rules
+                                     (extra-tester-lifting-rules)))
+       (remove-unroller-rules (append remove-rules
+                                      remove-lift-rules))
+       (stop-pcs nil)
+       ((mv erp unroller-rule-alist pruning-rule-alist state)
+        (unroller-rule-alists 64-bitp stop-pcs extra-unroller-rules remove-unroller-rules state))
+       ((when erp) (mv erp nil state))
+       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                       (append remove-rules
+                                               remove-proof-rules
+                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
+                                               ;; todo: why is boolor bad?
+                                               '(;;acl2::boolif-x-x-y-becomes-boolor ;drop?
+                                                 ;;acl2::boolif-when-quotep-arg2
+                                                 ;;acl2::boolif-when-quotep-arg3
+                                                 ))))
+       ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
+       ((when erp) (mv :error-making-rule-list nil state))
+
+       ;; Test the function:
        ((mv erp passedp elapsed state)
         (test-function-core function-name-string parsed-executable param-names assumptions
-                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                            unroller-rule-alist pruning-rule-alist
+                            stop-pcs 64-bitp
+                            extra-assumption-rules
+                            proof-rule-alist
+                            remove-assumption-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
@@ -614,8 +631,11 @@
 (defun test-function-list (function-name-strings
                            parsed-executable
                            assumptions-alist
-                           extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                           remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                           stop-pcs ; currently always nil
+                           64-bitp
+                           unroller-rule-alist pruning-rule-alist
+                           extra-assumption-rules
+                           proof-rule-alist remove-assumption-rules
                            normalize-xors count-hits
                            print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                            tactics max-conflicts
@@ -632,14 +652,12 @@
                               (and (alistp assumptions-alist)
                                    (string-listp (strip-cars assumptions-alist))
                                    (true-list-listp (strip-cdrs assumptions-alist)))
-                              (symbol-listp extra-rules)
+                              (nat-listp stop-pcs)
+                              (booleanp 64-bitp)
+                              (rule-alistp unroller-rule-alist)
+                              (rule-alistp pruning-rule-alist)
                               (symbol-listp extra-assumption-rules)
-                              (symbol-listp extra-lift-rules)
-                              (symbol-listp extra-proof-rules)
-                              (symbol-listp remove-rules)
                               (symbol-listp remove-assumption-rules)
-                              (symbol-listp remove-lift-rules)
-                              (symbol-listp remove-proof-rules)
                               (normalize-xors-optionp normalize-xors)
                               (count-hits-argp count-hits)
                               ;; print
@@ -676,8 +694,11 @@
           (test-function-core function-name parsed-executable
                               :none ; todo: some way to pass in param-names?
                               (lookup-equal function-name assumptions-alist)
-                              extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                              remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                              unroller-rule-alist pruning-rule-alist
+                              stop-pcs
+                              64-bitp
+                              extra-assumption-rules proof-rule-alist
+                              remove-assumption-rules
                               normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
@@ -686,9 +707,9 @@
                             :pass))
          (- (cw "~%")) ; blank line as separator
          )
-      (test-function-list (rest function-name-strings) parsed-executable assumptions-alist
-                          extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                          remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+      (test-function-list (rest function-name-strings) parsed-executable assumptions-alist stop-pcs 64-bitp
+                          unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
+                          remove-assumption-rules
                           normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                           tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                           expected-failures
@@ -806,12 +827,37 @@
                                    (er hard? 'test-functions-fn "Ill-formed assumptions: ~X01." assumptions nil))
                                ;; it's a list of (untranslated) terms to be used as assumptions for every function:
                                (pairlis$ function-name-strings (repeat (len function-name-strings) assumptions))))))
+
+
+       ;; WARNING: Keep this in sync with test-function-fn:
+       (64-bitp (bool-fix (member-eq executable-type *executable-types64*)))
+       (extra-unroller-rules (append extra-rules
+                                     extra-lift-rules
+                                     (extra-tester-lifting-rules)))
+       (remove-unroller-rules (append remove-rules
+                                      remove-lift-rules))
+       (stop-pcs nil) ; we could add support for a map from functions to stop-pcs
+       ((mv erp unroller-rule-alist pruning-rule-alist state)
+        (unroller-rule-alists 64-bitp stop-pcs extra-unroller-rules remove-unroller-rules state))
+       ((when erp) (mv erp nil state))
+       (proof-rules (set-difference-eq (append (tester-proof-rules) extra-rules extra-proof-rules)
+                                       (append remove-rules
+                                               remove-proof-rules
+                                               ;; these can introduce boolor: todo: remove from tester-proof-rules?
+                                               ;; todo: why is boolor bad?
+                                               '(;;acl2::boolif-x-x-y-becomes-boolor ;drop?
+                                                 ;;acl2::boolif-when-quotep-arg2
+                                                 ;;acl2::boolif-when-quotep-arg3
+                                                 ))))
+       ((mv erp proof-rule-alist) (make-rule-alist proof-rules (w state)))
+       ((when erp) (mv :error-making-rule-list nil state))
+
        ;; Test the functions:
        ((mv erp result-alist state)
         (test-function-list function-name-strings parsed-executable
-                            assumption-alist
-                            extra-rules extra-assumption-rules extra-lift-rules extra-proof-rules
-                            remove-rules remove-assumption-rules remove-lift-rules remove-proof-rules
+                            assumption-alist stop-pcs 64-bitp
+                            unroller-rule-alist pruning-rule-alist extra-assumption-rules proof-rule-alist
+                            remove-assumption-rules
                             normalize-xors count-hits print max-printed-term-size monitor step-limit step-increment prune-precise prune-approx
                             tactics max-conflicts inputs-disjoint-from assume-bytes stack-slots existing-stack-slots position-independent feature-flags
                             expected-failures

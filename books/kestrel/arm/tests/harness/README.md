@@ -37,6 +37,11 @@ Contents (alphabetical order):
   merges, and checks summaries.  Waivers must give a reason from a fixed list
   and a citation.  Another model's harness could use it unchanged.
 
+* run-vector-files.lisp: Runs a corpus whose vectors were made outside ACL2,
+  each of its files a file of vectors and a file of the number of tests not
+  made into vectors, by reason; prints and writes each file's summary, and
+  prints the summary of them all.  A corpus script calls run-corpus.
+
 * smoke.lisp: Hand-computed vectors, checked when the book is certified: the
   smoke tests proper, vectors whose results include UNKNOWN values, vectors
   for the APSR's GE bits (compared only from ARMv6), and one vector for each
@@ -59,7 +64,7 @@ writes to smoke.cert.out among the other output; for example:
 
 ```
   % grep 'smoke.*vectors' smoke.cert.out
-  smoke: 14 vectors, 14 pass, 0 mismatch
+  smoke: 16 vectors, 16 pass, 0 mismatch
   smoke UNKNOWN: 2 vectors, 0 mismatch, 2 UNKNOWN-dependent
   smoke GE: 3 vectors, 2 pass, 1 mismatch
   smoke classes: 10 vectors, 1 pass, 3 mismatch, 3 waived, 1 coverage gap, 1 unsupported, 1 unpredictable

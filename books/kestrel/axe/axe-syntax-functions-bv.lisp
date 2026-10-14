@@ -22,7 +22,7 @@
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 ;; Since this book knows about the BV functions:
 (include-book "kestrel/bv/defs" :dir :system)
-(include-book "kestrel/bv/bool-to-bit" :dir :system)
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-read" :dir :system) ; reduce?
 (include-book "kestrel/bv/leftrotate" :dir :system) ; reduce?
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; reduce?
@@ -33,6 +33,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bvnot" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/bvxor" :dir :system))

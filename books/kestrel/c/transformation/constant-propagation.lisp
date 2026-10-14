@@ -1073,10 +1073,12 @@
         alignspec
         :alignas-type (b* (((mv type env)
                             (const-prop-tyname alignspec.type env)))
-                        (mv (align-spec-alignas-type type) env))
+                        (mv (align-spec-alignas-type alignspec.uscore type)
+                            env))
         :alignas-expr (b* (((mv expr env)
                             (const-prop-const-expr alignspec.expr env)))
-                        (mv (align-spec-alignas-expr expr) env))
+                        (mv (align-spec-alignas-expr alignspec.uscore expr)
+                            env))
         :alignas-ambig (prog2$ (raise "Misusage error: ~x0."
                                       (align-spec-fix alignspec))
                                (mv (align-spec-fix alignspec) env))))
@@ -1663,6 +1665,7 @@
          ((mv test env)
           (const-prop-const-expr statassert.test env)))
       (mv (make-statassert
+            :uscore statassert.uscore
             :test test
             :message statassert.message)
           env))

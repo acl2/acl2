@@ -751,6 +751,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; parse-struct-declaration
+
+(test-parse
+ parse-struct-declaration
+ ";"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (struct-declon-case ast :empty))
+
+(test-parse-fail
+ parse-struct-declaration
+ ";")
+
+(test-parse
+ parse-struct-declaration
+ "int __attribute((a));"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (equal ast
+              (make-struct-declon-member
+               :extension nil
+               :specquals (list (spec/qual-typespec (type-spec-int))
+                                (spec/qual-attrib
+                                 (make-attrib-spec
+                                  :uscores nil
+                                  :attribs (list (attrib-name-only
+                                                  (attrib-name-ident
+                                                   (ident "a")))))))
+               :declors nil
+               :attribs nil)))
+
+(test-parse
+ parse-struct-declaration
+ "_Alignas(int) char c;"
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (car (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 t)))))))
+
+(test-parse
+ parse-struct-declaration
+ "alignas(int) char c;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (car (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-struct-declaration
+ "char alignas(int) c;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :member)
+            (b* ((specqual (cadr (struct-declon-member->specquals ast))))
+              (and (spec/qual-case specqual :align)
+                   (b* ((alignspec (spec/qual-align->spec specqual)))
+                     (and (align-spec-case alignspec :alignas-type)
+                          (equal (align-spec-alignas-type->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-struct-declaration
+ "_Static_assert(1, \"m\");"
+ :cond (and (struct-declon-case ast :statassert)
+            (b* ((statassert (struct-declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
+(test-parse
+ parse-struct-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (struct-declon-case ast :statassert)
+            (b* ((statassert (struct-declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; parse-struct-declaration-list
+
+(test-parse
+ parse-struct-declaration-list
+ "int x; static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (equal (len ast) 2)
+            (struct-declon-case (cadr ast) :statassert)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; parse-parameter-declaration
 
 (test-parse
@@ -928,6 +1020,86 @@
  "int * _Nonnull ptr = 0;"
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t)) ; Clang-only extension
 
+(test-parse
+ parse-declaration
+ "_Alignas(16) int x;"
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 t)))))))
+
+(test-parse-fail
+ parse-declaration
+ "alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c17))) ; not a keyword in C17
+
+(test-parse
+ parse-declaration
+ "alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-declaration
+ "_Alignas(16) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-expr)
+                          (equal (align-spec-alignas-expr->uscore alignspec)
+                                 t)))))))
+
+(test-parse
+ parse-declaration
+ "alignas(T) int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (b* ((declspec (car (declon-declon->specs ast))))
+              (and (decl-spec-case declspec :align)
+                   (b* ((alignspec (decl-spec-align->spec declspec)))
+                     (and (align-spec-case alignspec :alignas-ambig)
+                          (equal (align-spec-alignas-ambig->uscore alignspec)
+                                 nil)))))))
+
+(test-parse
+ parse-declaration
+ "_Static_assert(1, \"m\");"
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
+(test-parse-fail
+ parse-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c17))) ; not a keyword in C17
+
+(test-parse
+ parse-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) nil))))
+
+(test-parse
+ parse-declaration
+ "_Static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :statassert)
+            (b* ((statassert (declon-statassert->statassert ast)))
+              (equal (statassert->uscore statassert) t))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-statement
@@ -1081,6 +1253,16 @@
  :cond (and (block-item-case ast :stmt)
             (stmt-case (block-item-stmt->stmt ast) :return-attrib)))
 
+(test-parse
+ parse-block-item
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (block-item-case ast :declon)
+            (b* ((declon (block-item-declon->declon ast)))
+              (and (declon-case declon :statassert)
+                   (b* ((statassert (declon-statassert->statassert declon)))
+                     (equal (statassert->uscore statassert) nil))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-external-declaration
@@ -1090,6 +1272,16 @@
  ";"
  :cond (ext-declon-case ast :empty)
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-external-declaration
+ "static_assert(1, \"m\");"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (ext-declon-case ast :declon)
+            (b* ((declon (ext-declon-declon->declon ast)))
+              (and (declon-case declon :statassert)
+                   (b* ((statassert (declon-statassert->statassert declon)))
+                     (equal (statassert->uscore statassert) nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

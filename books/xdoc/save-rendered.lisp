@@ -80,29 +80,37 @@
             (princ$ " " channel state)
             (acl2-doc-print-fix-symbol-lst (cdr lst) channel state)))))
 
-(defun remove-sgr-1 (s i len acc)
+(defun princ$-remove-sgr-1 (s i len channel state)
   (let ((p (search *sgr-prefix* s :start2 i)))
     (cond
      (p (let ((p2 (search "m" s :start2 (+ 2 p))))
           (assert$
            p2
-           (remove-sgr-1 s (1+ p2) len
-                         (concatenate 'string
-                                      acc
-                                      (subseq s i p))))))
-     (t (concatenate 'string acc (subseq s i len))))))
+           (pprogn (if (< i p)
+                       (princ$ (subseq s i p) channel state)
+                     state)
+                   (princ$-remove-sgr-1 s (1+ p2) len channel state)))))
+     ((< i len) (princ$ (subseq s i len) channel state))
+     (t state))))
 
-(defun remove-sgr (s)
+(defun princ$-remove-sgr (s channel state)
+
+; Print string s to channel, omitting its SGR control sequences.
 
 ; The acl2-doc search file, acl2-doc-search, needs to avoid having any SGR
 ; control sequences, so that searches there can match up with searches in the
 ; acl2-doc buffer, where those markings have been removed.  See comments in the
 ; definition of sgr-prefix in display.lisp for more on SGR.
 
-  (let ((p (search *sgr-prefix* s :start2 0)))
-    (cond ((null p)
-           s)
-          (t (remove-sgr-1 s p (length s) (subseq s 0 p))))))
+; We print the pieces between SGR sequences directly, rather than first
+; building a string with the sequences removed.  The previous code (function
+; remove-sgr) built that string by repeatedly concatenating onto an
+; accumulator, which is quadratic in the length of a topic.  Some generated
+; topics (e.g., the *grammar*-tree-operations topics) render to more than 2 MB
+; with tens of thousands of SGR sequences.  Printing the
+; pieces directly takes time linear in the length of s.
+
+  (princ$-remove-sgr-1 s 0 (length s) channel state))
 
 (defun acl2-doc-print-topic-index (tuple channel state)
 
@@ -141,11 +149,11 @@
               (if (eq (nth 0 tuple) 'TOP)
                   state
                 (pprogn (princ$ ":DOC source: " channel state)
-                        (princ$ (remove-sgr (nth 3 tuple)) channel state)
+                        (princ$-remove-sgr (nth 3 tuple) channel state)
                         (newline channel state)))
             (pprogn (princ$ ":DOC source: ACL2 Sources" channel state)
                     (newline channel state)))
-          (princ$ (remove-sgr (nth 2 tuple)) channel state)
+          (princ$-remove-sgr (nth 2 tuple) channel state)
           (newline channel state)))
 
 (defun acl2-doc-print-topic-index-lst (tuple-lst channel state)

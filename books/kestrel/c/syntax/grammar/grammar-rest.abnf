@@ -274,8 +274,8 @@ nullability-qualifier = %s"_Nonnull"
 function-specifier = inline-keyword
                    / %s"_Noreturn"
 
-alignment-specifier = %s"_Alignas" "(" type-name ")"
-                    / %s"_Alignas" "(" constant-expression ")"
+alignment-specifier = alignas-keyword "(" type-name ")"
+                    / alignas-keyword "(" constant-expression ")"
 
 declarator = [ pointer ] direct-declarator
 
@@ -359,7 +359,7 @@ designator = "[" constant-expression
            / "." identifier
 
 static-assert-declaration =
-    %s"_Static_assert" "(" constant-expression "," 1*string-literal ")" ";"
+   static-assert-keyword "(" constant-expression "," 1*string-literal ")" ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

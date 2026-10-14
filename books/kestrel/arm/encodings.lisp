@@ -231,7 +231,9 @@
     ;; todo: qsub
     ;; todo: qsub16
     ;; todo: qsub8
-    ;; todo: rbit
+
+    ;; (:rbit (cond 4) 0 1 1 0 1 1 1 1 (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4)) ; ready
+
     (:rev (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
     (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
     (:revsh (cond 4) 0 1 1 0 1 _ 1 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
@@ -255,7 +257,8 @@
     (:sbc-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
     (:sbc-register-shifted-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
-    ;; todo: sbfx
+    ;; (:sbfx (cond 4) 0 1 1 1 1 _ 0 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+
     ;; todo: sdiv
     ;; todo: sel
     ;; todo: setend
@@ -272,16 +275,29 @@
     (:smlal (cond 4) 0 0 0 0 1 1 1 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
 
     ;; todo: smlalbb/smlalbt/smlaltb/smlaltt
-    ;; todo: smlald
+
+    ;; also covers SMLALDX:
+    ;; (:smlald (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 0 m 1 (rn 4)) ; ready
+
     ;; todo: smlawb/smlawt
     ;; todo: smlsd
-    ;; todo: smlsld
-    ;; todo: smmla
-    ;; todo: smmls
-    ;; todo: smmul
-    ;; todo: smuad
-    ;; todo: smulbb/smulbt/smultb/smultt
 
+    ;; also covers SMLSLDX:
+    ;; (:smlsld (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 1 m 1 (rn 4)) ; ready
+
+
+    ;; also covers SMMLAR:
+    ;; (:smmla (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 0 0 r 1 (rn 4)) ; ready
+
+    ;; also covers SMMLSR:
+    ;; (:smmls (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 1 1 r 1 (rn 4)) ; ready
+
+    ;; also covers SMMULR:
+    ;; (:smmul (cond 4) 0 1 1 1 0 1 0 1 (rd 4) 1 1 1 1 (rm 4) 0 0 r 1 (rn 4)) ; ready
+
+    ;; todo: smuad
+
+    (:smulbb/smulbt/smultb/smultt (cond 4) 0 0 0 1 0 1 1 0 (rd 4) (0) (0) (0) (0) (rm 4) 1 m n 0 (rn 4))
     (:smull (cond 4) 0 0 0 0 1 1 0 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
 
     ;; todo: smulwb/smulwt
@@ -333,12 +349,16 @@
 
     (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
 
-    ;; todo: sxtab
+    ;; (:sxtab (cond 4) 0 1 1 0 1 0 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+
     ;; todo: sxtab16
-    ;; todo: sxtah
-    ;; todo: sxtb
-    ;; todo: sxtb16
-    ;; todo: sxth
+
+    ;; (:sxtah (cond 4) 0 1 1 0 1 0 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+
+    (:sxtb (cond 4) 0 1 1 0 1 0 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+    (:sxtb16 (cond 4) 0 1 1 0 1 0 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
+
+    (:sxth (cond 4) 0 1 1 0 1 0 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:teq-immediate (cond 4) 0 0 _ 1 _ 1 0 0 1 _ 1 (rn 4) (0) (0) (0) (0) (imm12 12))
     (:teq-register (cond 4) 0 0 _ 0 _ 1 0 0 1 _ 1 (rn 4) (0) (0) (0) (0) (imm5 5) (type 2) 0 (rm 4))
@@ -351,7 +371,9 @@
     ;; todo: uadd16
     ;; todo: uadd8
     ;; todo: uasx
-    ;; todo: ubfx
+
+    ;; (:ubfx (cond 4) 0 1 1 1 1 _ 1 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+
     ;; todo: udf
     ;; todo: udiv
     ;; todo: uhadd16
@@ -360,8 +382,8 @@
     ;; todo: uhsax
     ;; todo: uhsub16
     ;; todo: uhsub8
-    ;; todo: umaal
 
+    ;; (:umaal (cond 4) 0 0 0 0 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4)) ; ready
     (:umlal (cond 4) 0 0 0 0 1 0 1 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
     (:umull (cond 4) 0 0 0 0 1 0 0 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
 
@@ -378,13 +400,15 @@
     ;; todo: usax
     ;; todo: usub16
     ;; todo: usub8
-    ;; todo: uxtab
+
+    ;; (:uxtab (cond 4) 0 1 1 0 1 1 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+
     ;; todo: uxtab16
-    ;; todo: uxtah
+
+    ;; (:uxtah (cond 4) 0 1 1 0 1 1 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
 
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
-
-    ;; todo: uxt16
+    (:uxtb16 (cond 4) 0 1 1 0 1 1 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:uxth (cond 4) 0 1 1 0 1 1 1 1 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 

@@ -26,7 +26,7 @@
 (in-theory (disable truncate))
 
 (defthm truncate-of-0-arg1
-  (equal (truncate 0 y)
+  (equal (truncate 0 j)
          0)
   :hints (("Goal" :in-theory (enable truncate))))
 
@@ -270,8 +270,8 @@
                             <-of-*-of-/-arg1)))))
 
 (defthm truncate-same
-  (equal (truncate x x)
-         (if (equal 0 (fix x))
+  (equal (truncate i i)
+         (if (equal 0 (fix i))
              0
            1))
   :hints (("Goal" :in-theory (enable truncate))))
@@ -294,3 +294,18 @@
   :rule-classes :linear
   :hints (("Goal" :cases ((equal i 0))
            :in-theory (enable acl2::truncate-becomes-floor-gen4-better-better floor-when-mod-0))))
+
+;move up?
+(defthmd truncate-when-rationalp-and-complex-rationalp
+  (implies (and (rationalp i)
+                (complex-rationalp j))
+           (equal (truncate i j)
+                  0))
+  :hints (("Goal" :in-theory (enable truncate))))
+
+;; Disabled since it turns truncate into division
+(defthmd truncate-when-integerp-of-quotient
+  (implies (integerp (* i (/ j)))
+           (equal (truncate i j)
+                  (* i (/ j))))
+  :hints (("Goal" :in-theory (enable truncate))))

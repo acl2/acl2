@@ -157,6 +157,7 @@
            (ALL-<=-ALL x y))
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
+;See also sortedp-<=-of-append-simple
 (defthm sortedp-<=-of-append
   (equal (sortedp-<= (append x y))
          (and (sortedp-<= x)

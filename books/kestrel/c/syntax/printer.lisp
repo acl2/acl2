@@ -2578,7 +2578,14 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
-    (b* ((pstate (print-astring "_Alignas(" pstate))
+    (b* ((uscore (align-spec-case
+                  alignspec
+                  :alignas-type alignspec.uscore
+                  :alignas-expr alignspec.uscore
+                  :alignas-ambig alignspec.uscore))
+         (pstate (if uscore
+                     (print-astring "_Alignas(" pstate)
+                   (print-astring "alignas(" pstate)))
          (pstate
           (align-spec-case
            alignspec
@@ -3486,7 +3493,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
     (b* (((statassert statassert) statassert)
-         (pstate (print-astring "_Static_assert(" pstate))
+         (pstate (if statassert.uscore
+                     (print-astring "_Static_assert(" pstate)
+                   (print-astring "static_assert(" pstate)))
          (pstate (print-const-expr statassert.test pstate))
          (pstate (print-astring ", " pstate))
          ((unless statassert.message)

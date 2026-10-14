@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integerp.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,6 +10,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+(local (include-book "times"))
 
 (local (in-theory (disable floor mod)))
 
@@ -47,7 +49,6 @@
 
 (encapsulate ()
   (local (include-book "times-and-divide"))
-  (local (include-book "times"))
   (local (include-book "minus"))
   (local (include-book "plus"))
   (local (include-book "nonnegative-integer-quotient"))
@@ -144,3 +145,9 @@
            (equal (integerp (+ 1/2 (* 1/2 x)))
                   (not (integerp (* 1/2 x)))))
   :hints (("Goal" :use integerp-choice)))
+
+(defthm integerp-of-*-of---arg2
+  (equal (integerp (* x (- y)))
+         (integerp (* x y)))
+  :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
+                  :in-theory (disable integerp-of--))))

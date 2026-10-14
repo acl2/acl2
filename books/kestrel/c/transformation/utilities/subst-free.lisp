@@ -448,16 +448,19 @@
      align-spec
      :alignas-type
      (align-spec-alignas-type
+       (c$::align-spec-alignas-type->uscore align-spec)
        (tyname-subst-free
          (c$::align-spec-alignas-type->type align-spec)
          subst bound-vars))
      :alignas-expr
      (align-spec-alignas-expr
+       (c$::align-spec-alignas-expr->uscore align-spec)
        (const-expr-subst-free
          (c$::align-spec-alignas-expr->expr align-spec)
          subst bound-vars))
      :alignas-ambig
      (c$::align-spec-alignas-ambig
+       (c$::align-spec-alignas-ambig->uscore align-spec)
        (amb-expr/tyname-subst-free
          (c$::align-spec-alignas-ambig->expr/type align-spec)
          subst bound-vars)))
@@ -1070,6 +1073,7 @@
                                  (bound-vars ident-setp))
     :returns (result statassertp)
     (statassert
+     (c$::statassert->uscore statassert)
      (const-expr-subst-free (c$::statassert->test statassert)
                             subst bound-vars)
      (c$::statassert->message statassert))

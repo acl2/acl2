@@ -12,22 +12,29 @@
 
 (include-book "state")
 (include-book "memory")
-(include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/repeatbit" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
+(include-book "kestrel/bv/bvor-def" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
+(include-book "kestrel/bv/repeatbit-def" :dir :system)
 (include-book "kestrel/bv/bvcount-def" :dir :system)
-(include-book "kestrel/bv/bool-to-bit" :dir :system)
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
+(include-book "kestrel/bv/bvshr-def" :dir :system)
+(include-book "kestrel/bv/bvashr-def" :dir :system)
+(include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/rightrotate" :dir :system)
-(include-book "kestrel/bv/overflow-and-underflow" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/overflow-and-underflow" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (in-theory (disable mv-nth))
@@ -297,12 +304,11 @@
 (defthm mv-nth-1-of-lsl_c-becomes-getbit
   (implies (and (<= shift n)
                 (natp n)
-                (unsigned-byte-p n x)
                 (integerp shift)
                 ;(< 0 shift)
                 )
            (equal (mv-nth 1 (lsl_c n x shift))
-                  (getbit (- n shift) x)))
+                  (getbit (- n shift) (bvchop n x))))
   :hints (("Goal" :in-theory (enable lsl_c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -774,12 +780,8 @@
 
 ;; Output 0 is just the sum of x and y and carry_in.
 (defthm mv-nth-0-of-AddWithCarry
-  (implies (and (posp n)
-                (integerp x)
-                (integerp y)
-                (integerp carry_in))
-           (equal (mv-nth 0 (AddWithCarry n x y carry_in))
-                  (bvplus n x (bvplus n y carry_in))))
+  (equal (mv-nth 0 (AddWithCarry n x y carry_in))
+         (bvplus n x (bvplus n y carry_in)))
   :hints (("Goal" :in-theory (enable AddWithCarry bvplus))))
 
 (local (include-book "kestrel/bv/getbit" :dir :system))
@@ -802,8 +804,6 @@
                                    acl2::usb-plus-from-bounds
                                    ;;acl2::unsigned-byte-p-false-when-not-longer
                                    )))))
-
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;; ;gen
 ;; (local
@@ -1030,11 +1030,15 @@
   (declare (xargs :stobjs arm))
   (isetstate arm))
 
+(defthm natp-of-CurrentInstrSet
+  (implies (armp arm)
+           (natp (CurrentInstrSet arm)))
+  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+
 (defthm natp-of-CurrentInstrSet-type
   (implies (armp arm)
            (natp (CurrentInstrSet arm)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+  :rule-classes :type-prescription)
 
 (defund SelectInstrSet (iset arm)
   (declare (xargs :guard (member iset (list *InstrSet_ARM*
@@ -1186,9 +1190,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun UnalignedSupport ()
-  (declare (xargs :guard t))
-  t)
+;; See D16.7.30.
+(defund UnalignedSupport (arm)
+  (declare (xargs :stobjs arm)
+           (ignore arm) ; todo
+           )
+  t
+  ;; todo: put this in, but it broke things:
+  ;; (if (equal 7 (arch-version arm))
+  ;;     t
+  ;;   (if (equal 6 (arch-version arm))
+  ;;       (== (sctlr.u arm) #b1)
+  ;;     nil))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

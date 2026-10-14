@@ -20,18 +20,11 @@
 (local (include-book "minus"))
 (local (include-book "mod"))
 (local (include-book "nonnegative-integer-quotient"))
+(local (include-book "numerator-and-denominator"))
 
 (in-theory (disable ceiling))
 
 (local (in-theory (disable floor)))
-
-;move
-(local
- (defthm integerp-of-*-of---arg2
-   (equal (integerp (* x (- y)))
-          (integerp (* x y)))
-   :hints (("Goal" :use (:instance integerp-of-- (x (* x y)))
-            :in-theory (disable integerp-of--)))))
 
 (defthm ceiling-of-0-arg1
   (equal (ceiling 0 j)
@@ -43,6 +36,8 @@
          0)
   :hints (("Goal" :in-theory (enable ceiling floor))))
 
+;; A powerful rule for avoiding the need to reason about ceiling (we have more
+;; rules about floor):
 (defthmd ceiling-in-terms-of-floor
   (equal (ceiling i j)
          (- (floor (- i) j)))
@@ -118,8 +113,8 @@
 ;;  (implies (and (rationalp x)
 ;;                (posp n) ;gen?
 ;;                )
-;;           (equal (CEILING (+ (- N) x) N)
-;;                  (+ -1 (CEILING x N))))
+;;           (equal (ceiling (+ (- n) x) n)
+;;                  (+ -1 (ceiling x n))))
 ;;  :hints (("Goal" :in-theory (enable ceiling))))
 
 (encapsulate ()
@@ -132,7 +127,7 @@
 
   (local (defthm ceiling-upper-bound-neg
            (implies (and (< j 0) ; unusual
-                                 ;                (< 0 i) ; todo
+                         ;; (< 0 i) ; todo
                          (rationalp i)
                          (rationalp j))
                     (< (ceiling i j) (+ 1 (/ i j))))
@@ -151,8 +146,7 @@
                 (rationalp j))
            (< (* j (ceiling i j)) (+ j i)))
   :rule-classes ((:linear :trigger-terms ((* j (ceiling i j)))))
-  :hints (("Goal" :use ((:instance ceiling-upper-bound)
-                        )
+  :hints (("Goal" :use ((:instance ceiling-upper-bound))
            :in-theory (disable ceiling-upper-bound))))
 
 ;; We've multiplied through by j (and flipped the inequality since j is negative)
@@ -234,8 +228,7 @@
            :in-theory (e/d (ceiling-in-terms-of-floor)
                            (my-floor-lower-bound-alt
                             <-of-*-of-/-arg2-arg1
-                            <-of-*-of-/-arg2-arg2
-                            )))))
+                            <-of-*-of-/-arg2-arg2)))))
 
 ;; k is bigger than the ceiling if it at least the quotient plus 1
 (defthm <-of-ceiling-arg2

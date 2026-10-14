@@ -707,7 +707,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define gen-from-params ((params c::param-declon-listp) (gin ginp))
+(define gen-from-params ((params c::param-declon-listp)
+                         (compst-var symbolp)
+                         (gin ginp))
   :returns (mv (okp booleanp)
                (args symbol-listp)
                (parargs "A term.")
@@ -739,7 +741,8 @@
     (xdoc::li
      "A list @('arg-types-compst') of terms that assert that
       each parameter in @('params') can be read from a computation state
-      and its reading yields a value of the appropriate type.")
+      and its reading yields a value of the appropriate type.
+      The specific computation state variable to use is passed as input.")
     (xdoc::li
      "A variable-type map corresponding to the parameters in the obvious way."))
    (xdoc::p
@@ -761,14 +764,14 @@
        (arg-type `(and (c::valuep ,arg)
                        (equal (c::type-of-value ,arg) ',type)))
        (arg-type-compst
-        `(c::compustate-has-var-with-type-p ',ident ',type compst))
+        `(c::compustate-has-var-with-type-p ',ident ',type ,compst-var))
        ((mv okp
             more-args
             parargs
             more-arg-types
             more-arg-types-compst
             more-vartys)
-        (gen-from-params (cdr params) gin))
+        (gen-from-params (cdr params) compst-var gin))
        ((unless okp) (mv nil nil nil nil nil nil))
        (parargs `(omap::update (c::ident ,par) ,arg ,parargs))
        (vartys (omap::update ident type more-vartys)))
@@ -890,10 +893,12 @@
                      :hints ,hints
                      :prep-lemmas
                      ((defruled lemma1
-                        (not (c::errorp nil)))
+                        (not (c::errorp nil))
+                        :in-theory '((:e c::errorp)))
                       (defruled lemma2
                         (not (c::errorp (omap::update key val map)))
-                        :enable (c::errorp omap::update))))))
+                        :induct t
+                        :in-theory '(c::errorp omap::update car-cons))))))
     (mv thm-event thm-name thm-index)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -904,7 +909,8 @@
                         (all-args symbol-listp)
                         (init-scope-thm symbolp)
                         (const-new symbolp)
-                        (thm-index posp))
+                        (thm-index posp)
+                        (compst-var symbolp))
   :returns (mv (thm-events pseudo-event-form-listp)
                (thm-names symbol-listp)
                (updated-thm-index posp
@@ -932,15 +938,21 @@
      pushing the initial scope to the frame stack,
      if the value corresponding to the parameter has a certain type,
      then reading the parameter from the computation state
-     succeeds and yields a value of that type."))
+     succeeds and yields a value of that type.")
+   (xdoc::p
+    "The variable to use for the computation state is passed as input.
+     It must be the same passed to the call to @(tsee gen-from-params)
+     whose results are passed to this function.
+     The starting computation state variable in the generated binding
+     is obtained by adding @('0') to the variable."))
   (b* (((when (endp arg-types-compst)) (mv nil nil (pos-fix thm-index)))
        (formula
-        `(b* ((compst
+        `(b* ((,compst-var
                (c::push-frame
                 (c::frame fun
                           (list
                            (c::init-scope ',all-params (list ,@all-args))))
-                compst0)))
+                ,(add-suffix-to-fn compst-var "0"))))
            (implies (and ,@all-arg-types)
                     ,(car arg-types-compst))))
        (hints
@@ -1000,7 +1012,8 @@
                         all-args
                         init-scope-thm
                         const-new
-                        thm-index)))
+                        thm-index
+                        compst-var)))
     (mv (cons thm-event more-thm-events)
         (cons thm-name more-thm-names)
         thm-index))
@@ -2976,7 +2989,7 @@
               (stmt-annop stmt-new))
   :returns (mv (item block-itemp) (gout goutp))
   :short "Equality lifting transformation of
-          a block items that consists of a statement."
+          a block items that is a statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3467,7 +3480,7 @@
        ((when erp) (mv new-fundef gout-no-thm))
        (types (fundef-types fundef))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
-        (gen-from-params ldm-params gin))
+        (gen-from-params ldm-params 'compst gin))
        ((unless okp) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
         (gen-init-scope-thm ldm-params
@@ -3484,7 +3497,8 @@
                         args
                         init-scope-thm-name
                         gin.const-new
-                        thm-index))
+                        thm-index
+                        'compst))
        (events (append (rev param-thm-events) events))
        ((mv thm-name thm-index) (gen-thm-name gin.const-new thm-index))
        (global-vartys (omap::delete* (omap::keys param-vartys) gin.vartys))
