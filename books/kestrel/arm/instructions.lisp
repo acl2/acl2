@@ -3143,6 +3143,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :smulbb/smulbt/smultb/smultt
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (nval (uint 4 rn)) ; avoids name clash with N bit in the instruction
+         (mval (uint 4 rm)) ; avoids name clash with M bit in the instruction
+         (n_high (== N #b1))
+         (m_high (== M #b1))
+         ((when (or (== d 15)
+                    (== nval 15)
+                    (== mval 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (operand1 (if n_high (slice 31 16 (reg* nval arm)) (slice 15 0 (reg* nval arm))))
+         (operand2 (if m_high (slice 31 16 (reg* mval arm)) (slice 15 0 (reg* mval arm))))
+         (result (* (sint 16 operand1)
+                    (sint 16 operand2)))
+         (arm (set-reg d (slice 31 0 result) arm))
+         (arm (advance-pc arm)))
+      arm))
+
 (def-inst :smull
     (b* (;; EncodingSpecificOperations:
          (dLo (uint 4 RdLo))
@@ -4753,6 +4773,56 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def-inst :sxtb
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (SignExtend (slice 7 0 rotated) 8 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :sxtb16
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (bvcat 16 (SignExtend (slice 23 16 rotated) 8 16)
+                                16 (SignExtend (slice 7 0 rotated) 8 16))
+                       arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :sxth
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (SignExtend (slice 15 0 rotated) 16 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-inst :uxtb
     (b* (;; EncodingSpecificOperations:
          (d (uint 4 rd))
@@ -4764,6 +4834,24 @@
          ;; end EncodingSpecificOperations
          (rotated (ROR 32 (reg* m arm) rotation))
          (arm (set-reg d (ZeroExtend (slice 7 0 rotated) 32) arm))
+         (arm (advance-pc arm)))
+      arm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-inst :uxtb16
+    (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (m (uint 4 rm))
+         (rotation (uint 32 (bvcat 2 rotate 3 0)))
+         ((when (or (== d 15)
+                    (== m 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (rotated (ROR 32 (reg* m arm) rotation))
+         (arm (set-reg d (bvcat 16 (ZeroExtend (slice 23 16 rotated) 16)
+                                16 (ZeroExtend (slice 7 0 rotated) 16))
+                       arm))
          (arm (advance-pc arm)))
       arm))
 

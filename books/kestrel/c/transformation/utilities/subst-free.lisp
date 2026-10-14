@@ -1073,6 +1073,7 @@
                                  (bound-vars ident-setp))
     :returns (result statassertp)
     (statassert
+     (c$::statassert->uscore statassert)
      (const-expr-subst-free (c$::statassert->test statassert)
                             subst bound-vars)
      (c$::statassert->message statassert))

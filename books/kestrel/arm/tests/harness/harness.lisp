@@ -546,7 +546,7 @@
 
 ;; Runs VECS and summarizes the results under the name NAME (see report.lisp),
 ;; with WAIVERS applied.  NOT-RUN is the alist for the summary's :not-run.
-(defun summarize-vectors (name vecs waivers not-run)
+(defund summarize-vectors (name vecs waivers not-run)
   (declare (xargs :guard (and (stringp name)
                               (test-vector-listp vecs)
                               (waiver-listp waivers)
@@ -558,3 +558,9 @@
                        *arm32-instruction-names*
                        waivers
                        not-run)))
+
+(defthm summaryp-of-summarize-vectors
+  (implies (and (stringp name)
+                (count-alistp not-run))
+           (summaryp (summarize-vectors name vecs waivers not-run)))
+  :hints (("Goal" :in-theory (enable summarize-vectors))))

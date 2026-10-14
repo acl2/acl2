@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function integer-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,7 @@
   :hints (("Goal" :in-theory (enable take integer-listp))))
 
 ;; better than the version in books/centaur/fty/baselists.lisp
-(defthm integerp-of-car-when-integer-listp-better
+(defthmd integerp-of-car-when-integer-listp-better
   (implies (integer-listp x)
            (equal (integerp (car x))
                   (consp x)))
