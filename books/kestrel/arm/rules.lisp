@@ -389,6 +389,10 @@
                                       mv-nth-1-of-addwithcarry
                                       bvnot bvplus bvlt lognot acl2::getbit-of-+)))))
 
+(defthm bitp-of-cmn-carry-type
+  (bitp (cmn-carry x y))
+  :rule-classes :type-prescription)
+
 (defthm eq-condition-of-cmn-zero
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))
@@ -405,6 +409,189 @@
   :hints (("Goal" :in-theory (enable ne-condition
                                      cmn-zero-elim))))
 
+(defthm cs-condition-of-cmn-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cs-condition (cmn-carry x y))
+                  (and (not (equal y 0))
+                       (not (bvlt 32 x (bvuminus 32 y))))))
+  :hints (("Goal" :in-theory (enable cs-condition cmn-carry-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+(defthm cc-condition-of-cmn-carry
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (cc-condition (cmn-carry x y))
+                  (or (equal y 0)
+                      (bvlt 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :use cs-condition-of-cmn-carry
+                  :in-theory (e/d (cs-condition cc-condition) (cs-condition-of-cmn-carry)))))
+
+(defthm mi-condition-of-cmn-sign
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (mi-condition (cmn-sign x y))
+                  (sbvlt 32 (bvplus 32 x y) 0)))
+  :hints (("Goal" :in-theory (enable mi-condition cmn-sign acl2::sbvlt-rewrite))))
+
+(defthm pl-condition-of-cmn-sign
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (pl-condition (cmn-sign x y))
+                  (sbvle 32 0 (bvplus 32 x y))))
+  :hints (("Goal" :use mi-condition-of-cmn-sign
+                  :in-theory (e/d (mi-condition pl-condition) (mi-condition-of-cmn-sign)))))
+
+;; The overflow flag says that the 32-bit sum differs from the true signed sum.
+(local
+ (defthmd cmn-overflow-elim-logext
+   (implies (and (unsigned-byte-p 32 x)
+                 (unsigned-byte-p 32 y))
+            (equal (cmn-overflow x y)
+                   (bool-to-bit (not (equal (logext 32 (bvplus 32 x y))
+                                            (+ (logext 32 x) (logext 32 y)))))))
+   :hints (("Goal" :use (:instance mv-nth-2-of-addwithcarry (n 32) (carry_in 0))
+                   :in-theory (e/d (cmn-overflow addwithcarry sint uint bvplus bool-to-bit)
+                                   (mv-nth-2-of-addwithcarry))))))
+
+;move
+(local
+ (defthmd getbit-31-when-unsigned-byte-p-32
+   (implies (unsigned-byte-p 32 v)
+            (equal (getbit 31 v)
+                   (if (< v 2147483648) 0 1)))
+   :hints (("Goal" :use (:instance acl2::bvchop-top-bit-cases (size 32) (x v))
+                   :in-theory (e/d (bvcat acl2::logapp) (acl2::bvchop-top-bit-cases))))))
+
+;move
+(local
+ (defthmd logext-32-when-unsigned-byte-p-32
+   (implies (unsigned-byte-p 32 v)
+            (equal (logext 32 v)
+                   (if (< v 2147483648) v (- v 4294967296))))
+   :hints (("Goal" :use (:instance acl2::bvchop-top-bit-cases (size 32) (x v))
+                   :in-theory (e/d (acl2::logext-cases bvcat acl2::logapp getbit-31-when-unsigned-byte-p-32)
+                                   (acl2::bvchop-top-bit-cases))))))
+
+;; AI: Keeps the sum's wrap-around explicit, so that later proofs need not open bvplus.
+(local
+ (defthmd logext-32-of-bvplus-32
+   (implies (and (unsigned-byte-p 32 x)
+                 (unsigned-byte-p 32 y))
+            (equal (logext 32 (bvplus 32 x y))
+                   (let ((s (if (< (+ x y) 4294967296) (+ x y) (- (+ x y) 4294967296))))
+                     (if (< s 2147483648) s (- s 4294967296)))))
+   :hints (("Goal" :use (:instance logext-32-when-unsigned-byte-p-32 (v (bvplus 32 x y)))
+                   :in-theory (enable bvplus acl2::bvchop-of-sum-cases)))))
+
+;; AI: Signed overflow of x + y, as a BV comparison: the 32-bit sum is less than x
+;; exactly when y is negative, unless the addition overflowed.
+(local
+ (defthmd cmn-overflow-elim
+   (implies (and (unsigned-byte-p 32 x)
+                 (unsigned-byte-p 32 y))
+            (equal (cmn-overflow x y)
+                   (bool-to-bit (not (equal (sbvlt 32 (bvplus 32 x y) x)
+                                            (sbvlt 32 y 0))))))
+   :hints (("Goal" :cases ((< (+ x y) 4294967296))
+                   :in-theory (enable cmn-overflow-elim-logext
+                                      logext-32-of-bvplus-32
+                                      logext-32-when-unsigned-byte-p-32
+                                      sbvlt)))))
+
+(defthm vs-condition-of-cmn-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (vs-condition (cmn-overflow x y))
+                  (if (sbvlt 32 y 0)
+                      (not (sbvlt 32 (bvplus 32 x y) x))
+                    (sbvlt 32 (bvplus 32 x y) x))))
+  :hints (("Goal" :in-theory (enable vs-condition cmn-overflow-elim))))
+
+(defthm vc-condition-of-cmn-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (vc-condition (cmn-overflow x y))
+                  (if (sbvlt 32 y 0)
+                      (sbvlt 32 (bvplus 32 x y) x)
+                    (not (sbvlt 32 (bvplus 32 x y) x)))))
+  :hints (("Goal" :in-theory (enable vc-condition cmn-overflow-elim))))
+
+(defthm hi-condition-of-cmn-carry-and-cmn-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (hi-condition (cmn-carry x y) (cmn-zero x y))
+                  (and (not (equal y 0))
+                       (not (bvle 32 x (bvuminus 32 y))))))
+  :hints (("Goal" :in-theory (enable hi-condition cmn-carry-elim cmn-zero-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+(defthm ls-condition-of-cmn-carry-and-cmn-zero
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ls-condition (cmn-carry x y) (cmn-zero x y))
+                  (or (equal y 0)
+                      (bvle 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable ls-condition cmn-carry-elim cmn-zero-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
+
+;; AI: Signed conditions (N, V, Z).  The guard on y = 2^31 is needed because
+;; then -y does not exist: x + y >= 0 is false for every x, but
+;; (sbvle 32 (bvuminus 32 y) x) is true for every x.
+
+;; N = V iff the true signed sum is non-negative.
+(local
+ (defthmd equal-of-cmn-sign-and-cmn-overflow-helper
+   (implies (and (unsigned-byte-p 32 x)
+                 (unsigned-byte-p 32 y))
+            (equal (equal (cmn-sign x y) (cmn-overflow x y))
+                   (<= 0 (+ (logext 32 x) (logext 32 y)))))
+   :hints (("Goal" :cases ((< (+ x y) 4294967296))
+                   :in-theory (enable cmn-sign cmn-overflow-elim-logext
+                                      getbit-31-when-unsigned-byte-p-32
+                                      logext-32-when-unsigned-byte-p-32
+                                      bvplus acl2::bvchop-of-sum-cases)))))
+
+;; Analogous to equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle.
+(defthm equal-of-cmn-sign-and-cmn-overflow-becomes-sbvle
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (equal (cmn-sign x y) (cmn-overflow x y))
+                  (and (not (equal y 2147483648))
+                       (sbvle 32 (bvuminus 32 y) x))))
+  :hints (("Goal" :cases ((equal y 0) (< y 2147483648))
+                  :in-theory (enable equal-of-cmn-sign-and-cmn-overflow-helper
+                                     logext-32-when-unsigned-byte-p-32
+                                     sbvlt bvuminus))))
+
+(defthm ge-condition-cmn-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (ge-condition (cmn-sign x y) (cmn-overflow x y))
+                  (and (not (equal y 2147483648))
+                       (sbvge 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable ge-condition))))
+
+(defthm lt-condition-cmn-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (lt-condition (cmn-sign x y) (cmn-overflow x y))
+                  (or (equal y 2147483648)
+                      (sbvlt 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable lt-condition))))
+
+(defthm gt-condition-cmn-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (gt-condition (cmn-sign x y) (cmn-overflow x y) (cmn-zero x y))
+                  (and (not (equal y 2147483648))
+                       (sbvlt 32 (bvuminus 32 y) x))))
+  :hints (("Goal" :in-theory (enable gt-condition cmn-zero-elim sbvlt-when-not-equal-weaken))))
+
+(defthm le-condition-cmn-idiom
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (le-condition (cmn-sign x y) (cmn-overflow x y) (cmn-zero x y))
+                  (or (equal y 2147483648)
+                      (sbvle 32 x (bvuminus 32 y)))))
+  :hints (("Goal" :in-theory (enable le-condition cmn-zero-elim sbvlt-when-not-equal-weaken))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

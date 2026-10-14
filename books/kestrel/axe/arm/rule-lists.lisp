@@ -256,19 +256,37 @@
      arm::gt-condition-cmp-idiom
      arm::le-condition-cmp-idiom
 
-     ;; cmn rules: ; todo: add the rest!
+     ;; CMN rules:
      arm::eq-condition-of-cmn-zero
      arm::ne-condition-of-cmn-zero
+     arm::cs-condition-of-cmn-carry
+     arm::cc-condition-of-cmn-carry
+     arm::mi-condition-of-cmn-sign
+     arm::pl-condition-of-cmn-sign
+     arm::vs-condition-of-cmn-overflow
+     arm::vc-condition-of-cmn-overflow
+     arm::hi-condition-of-cmn-carry-and-cmn-zero
+     arm::ls-condition-of-cmn-carry-and-cmn-zero
+     arm::ge-condition-cmn-idiom
+     arm::lt-condition-cmn-idiom
+     arm::gt-condition-cmn-idiom
+     arm::le-condition-cmn-idiom
 
-
+     ;; SUB rules:
      arm::eq-condition-of-sub-zero
      arm::ne-condition-of-sub-zero
-     ;; sub rules: ; todo: add more!
-     arm::lt-condition-of-sub-sign-and-sub-overflow
-
      arm::cs-condition-of-sub-carry
      arm::cc-condition-of-sub-carry
-
+     ;; mi ; todo: add these missing ones
+     ;; pl
+     ;; vs
+     ;; vc
+     ;; hi
+     ;; ls
+     ;; ge
+     arm::lt-condition-of-sub-sign-and-sub-overflow
+     ;; gt
+     ;; le
 
      ;; hope these are ok:
      arm::cmn-sign-constant-opener
