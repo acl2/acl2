@@ -3389,6 +3389,29 @@
        ((mv old-thm-name thm-index) (gen-thm-name const-new thm-index))
        ((mv newl-thm-name thm-index) (gen-thm-name const-new thm-index))
        ((mv newr-thm-name thm-index) (gen-thm-name const-new thm-index))
+       (theory '(c::compustate-has-static-var-with-type-p
+                 c::compustate-has-var-with-type-p
+                 c::objdesign-of-var
+                 c::objdesign-of-var-aux
+                 c::read-object
+                 c::compustate->static-of-push-frame
+                 c::top-frame-of-push-frame
+                 c::frame->scopes-of-frame
+                 c::frame-fix-under-frame-equiv
+                 c::scope-fix-when-scopep
+                 c::scope-list-fix-of-cons
+                 c::scopep-of-update
+                 c::objdesign-kind-of-objdesign-of-var-aux
+                 omap::assoc-of-update
+                 car-cons
+                 cdr-cons
+                 (:e omap::assoc)
+                 (:e c::ident)
+                 (:e c::ident-fix)
+                 (:e c::identp)
+                 (:e c::scope-list-fix)
+                 (:e c::scopep)
+                 c::frame->scopes$inline-frame-equiv-congruence-on-x))
        (old-thm-event
         `(defruled ,old-thm-name
            (b* ((old-compst (c::push-frame (c::frame fun (list ,parargs))
@@ -3402,12 +3425,7 @@
                        ',old-cname
                        (c::type-struct ',old-ctag)
                        old-compst)))
-           :enable (c::compustate-has-static-var-with-type-p
-                    c::compustate-has-var-with-type-p
-                    c::top-frame
-                    c::read-object
-                    c::objdesign-of-var
-                    c::objdesign-of-var-aux)))
+           :in-theory ',theory))
        (newl-thm-event
         `(defruled ,newl-thm-name
            (b* ((new-compst (c::push-frame (c::frame fun (list ,parargs))
@@ -3421,12 +3439,7 @@
                        ',newl-cname
                        (c::type-struct ',newl-ctag)
                        new-compst)))
-           :enable (c::compustate-has-static-var-with-type-p
-                    c::compustate-has-var-with-type-p
-                    c::top-frame
-                    c::read-object
-                    c::objdesign-of-var
-                    c::objdesign-of-var-aux)))
+           :in-theory ',theory))
        (newr-thm-event
         `(defruled ,newr-thm-name
            (b* ((new-compst (c::push-frame (c::frame fun (list ,parargs))
@@ -3440,12 +3453,7 @@
                        ',newr-cname
                        (c::type-struct ',newr-ctag)
                        new-compst)))
-           :enable (c::compustate-has-static-var-with-type-p
-                    c::compustate-has-var-with-type-p
-                    c::top-frame
-                    c::read-object
-                    c::objdesign-of-var
-                    c::objdesign-of-var-aux))))
+           :in-theory ',theory)))
     (mv (list old-thm-event newl-thm-event newr-thm-event)
         old-thm-name
         newl-thm-name
