@@ -15,6 +15,10 @@
 ;;
 ;;   :id      a string naming the test, unique in its list
 ;;   :arch    the architecture version, 4 to 7 (default 7)
+;;   :sctlr.a the SCTLR.A bit, which enables alignment checking (default 0)
+;;   :sctlr.u the SCTLR.U bit, which selects the alignment model; it is 0
+;;            before ARMv6 and 1 in ARMv7, and either in ARMv6 (DDI 0406C.d
+;;            D12.3.1, Table D12-1, page D12-2492) (default 0 before ARMv7)
 ;;   :pc      the address of the instruction to execute
 ;;   :code    a list of 32-bit instruction words, stored from :pc upward
 ;;   :regs    an alist from register numbers to initial values (others are 0)
@@ -42,9 +46,10 @@
 ;; they are read does not matter.  See smoke.lisp for examples.
 ;;
 ;; The recognizers below also check what the harness needs no guard for:
-;; each key is one of those above and appears at most once, :expect gives at
-;; most one of :error and :trap, and it gives a :pc unless it gives one of
-;; them.  A misspelled key would otherwise make its check silently vanish.
+;; each key is one of those above and appears at most once, :sctlr.u is
+;; permitted by :arch, :expect gives at most one of :error and :trap, and it
+;; gives a :pc unless it gives one of them.  A misspelled key would otherwise
+;; make its check silently vanish.
 
 (include-book "../../memory") ; for addressp
 (include-book "kestrel/bv-lists/unsigned-byte-listp-def" :dir :system)
@@ -82,7 +87,14 @@
            (unsigned-byte-p (* 8 (second triple)) (third triple))
            (mem-triple-listp (cdr x))))))
 
-(defconst *test-vector-keys* '(:id :arch :pc :code :regs :apsr :mem :expect))
+;; The value of SCTLR.U when a vector does not give one: in ARMv6, 0 selects
+;; the legacy alignment model, as before ARMv6.
+(defun default-sctlr.u (arch)
+  (declare (xargs :guard (integerp arch)))
+  (if (< arch 7) 0 1))
+
+(defconst *test-vector-keys*
+  '(:id :arch :sctlr.a :sctlr.u :pc :code :regs :apsr :mem :expect))
 
 (defconst *expect-keys* '(:error :trap :pc :regs :apsr :apsr-mask :mem))
 
@@ -110,7 +122,12 @@
        (no-duplicatesp-equal (evens x))
        (stringp (vec-get :id x ""))
        (let ((arch (vec-get :arch x 7)))
-         (and (integerp arch) (<= 4 arch) (<= arch 7)))
+         (and (integerp arch) (<= 4 arch) (<= arch 7)
+              (bitp (vec-get :sctlr.a x 0))
+              (let ((u (vec-get :sctlr.u x (default-sctlr.u arch))))
+                (if (= arch 6)
+                    (bitp u)
+                  (equal u (default-sctlr.u arch))))))
        (addressp (vec-get :pc x 0))
        (acl2::unsigned-byte-listp 32 (vec-get :code x nil))
        (reg-alistp (vec-get :regs x nil))
