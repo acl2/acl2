@@ -938,6 +938,16 @@
          (isetstate arm))
   :hints (("Goal" :in-theory (enable write-byte isetstate))))
 
+(defthm sctlr.a-of-write-byte
+  (equal (sctlr.a (write-byte addr byte arm))
+         (sctlr.a arm))
+  :hints (("Goal" :in-theory (enable write-byte sctlr.a))))
+
+(defthm sctlr.u-of-write-byte
+  (equal (sctlr.u (write-byte addr byte arm))
+         (sctlr.u arm))
+  :hints (("Goal" :in-theory (enable write-byte sctlr.u))))
+
 (defthm library-map-of-write-byte
   (equal (library-map (write-byte addr byte arm))
          (library-map arm))
@@ -1160,6 +1170,16 @@
 (defthm isetstate-of-write
   (equal (isetstate (write n addr val arm))
          (isetstate arm))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm sctlr.a-of-write
+  (equal (sctlr.a (write n addr val arm))
+         (sctlr.a arm))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm sctlr.u-of-write
+  (equal (sctlr.u (write n addr val arm))
+         (sctlr.u arm))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthm library-map-of-write

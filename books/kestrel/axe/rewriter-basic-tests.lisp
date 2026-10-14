@@ -1,7 +1,7 @@
 ; Tests of rewriter-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (include-book "make-equality-dag-basic")
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
 
 ;;;
 ;;; tests of simplify-term-to-term-basic (which returns a term)

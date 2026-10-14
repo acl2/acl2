@@ -107211,8 +107211,8 @@ Bug Fixes From AI via Eric Smith
   [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
   [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
 
-  Fixed a soundness bug in the evaluation of lambda forms, specifically
-  with respect to their [30m[47m[type][0m[0m [declaration]s.  See
+  Fixed a soundness bug in the evaluation of (@tsee lambda) forms,
+  specifically with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
   Fixed three soundness bugs in [non-linear-arithmetic], both in
@@ -107308,8 +107308,8 @@ Bug Fixes From AI via Eric Smith
   bogus.
 
   Fixed a soundness bug caused by removal of [30m[47m[guard-holders][0m[0m before
-  compiling [lambda] objects for the compiled lambda cache (see :DOC
-  print-cl-cache).  An additional effect of this change (besides
+  compiling [lambda] objects for the compiled lambda cache (see
+  [print-cl-cache]).  An additional effect of this change (besides
   removing unsoundness) is to stop avoiding calls of [30m[47m[cw][0m[0m and other
   side effects when using [30m[47m[apply$][0m[0m.  Consider for example an
   evaluation of the following term, where the body of the [30m[47m[lambda][0m[0m
@@ -107320,7 +107320,7 @@ Bug Fixes From AI via Eric Smith
                 (RETURN-LAST
                  'PROGN
                  (FMT-TO-COMMENT-WINDOW '\"Hello~%\"
-                                        (PAIRLIS2 '(#0 #1 #2 #3 #4 #5 #6 #7 #8 #9)
+                                        (PAIRLIS2 '(#\\0 #\\1 #\\2 #\\3 #\\4 #\\5 #\\6 #\\7 #\\8 #\\9)
                                                   'NIL)
                                         '0
                                         'NIL
@@ -107328,9 +107328,14 @@ Bug Fixes From AI via Eric Smith
                  'NIL))
              nil)
 
-  See also [community-books]
-  [30m[47msystem/tests/ec-call-in-quoted-lambda.lisp.lisp[0m[0m and
-  [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m.
+  See also [community-books] [30m[47msystem/tests/ec-call-in-quoted-lambda.lisp[0m[0m
+  and [30m[47msystem/tests/ec-call-lambda-bypasses-1star.lisp[0m[0m, and
+  [30m[47msystem/tests/quoted-lambda-return-last-key.lisp[0m[0m.
+
+  Fixed a soundness bug pertaining to removal of [guard-holders],
+  analogous to the one discussed immediately above for [30m[47m[lambda][0m[0m
+  objects but instead pertaining to [30m[47m[loop$][0m[0m expressions.  See
+  [community-book] [30m[47msystem/tests/loop-alist-stripped-holders.lisp[0m[0m.
 
   Fixed an error that could be inappropriately caused by running
   [30m[47m[apply$][0m[0m on a [30m[47m[lambda$][0m[0m expression from within a [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode
@@ -107407,7 +107412,35 @@ Bug Fixes From AI via Eric Smith
   properties [local] to the [30m[47mencapsulate[0m[0m event.  See [bogus-measure]
   and see [community-book] [30m[47msystem/tests/bogus-measure.lisp[0m[0m.
 
-1
+  Fixed a soundness bug in the handling of memoization and stobj fields
+  that are [30m[47mhash-table[0m[0m or [30m[47mstobj-table[0m[0m fields.  For an example see
+  [community-book] [30m[47msystem/tests/ht-congruent-flush.lisp[0m[0m.
+
+  Fixed a soundness bug due to permitting the [proof-builder]'s
+  [30m[47m:SEQUENCE[0m[0m instruction to be invoked directly by the user.  See
+  [community-book] [30m[47msystem/tests/pcb-sequence-success-expr.lisp[0m[0m.
+
+  Fixed a soundness bug in [forward-chaining] that failed to record
+  forced hypotheses in certain cases.
+
+  Fixed a soundness bug in the evaluation of calls of [30m[47m[apply$][0m[0m on
+  [30m[47m[lambda][0m[0m objects that contain [30m[47m[mv-list][0m[0m calls.  For an example, see
+  [community-book] [30m[47msystem/tests/mv-list-quoted-lambda.lisp[0m[0m.
+
+  Fixed a soundness bug due to incorrect handling of the output of the
+  ``get?'' function of a [stobj] hash table, to accommodate [df]
+  values (and perhaps stobj values) from the hash table.  For an
+  example see [community-book]
+  [30m[47msystem/tests/ht-get-boundp-stobjs-out.lisp[0m[0m.
+
+  Fixed a soundness bug in the raw Lisp definitions of [stobj]
+  recognizers, which had failed to guarantee that stobj recognizers
+  return Boolean values.  See [community-book]
+  [30m[47msystem/tests/stobj-recognizer-boolean.lisp[0m[0m for an example.
+
+  It was possible to modify a user-defined [stobj] inside a [wormhole]
+  by using [30m[47m[with-global-stobj][0m[0m.  This bug has been fixed; see
+  [community-book] [30m[47msystem/tests/wormhole-global-stobj.lisp[0m[0m.
 
 
 Other Bug Fixes

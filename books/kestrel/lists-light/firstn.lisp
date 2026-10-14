@@ -111,6 +111,12 @@
            nil))
   :hints (("Goal" :in-theory (enable firstn take))))
 
+(defthmd take-becomes-firstn
+  (implies (< n (len lst))
+           (equal (take n lst)
+                  (firstn n lst)))
+  :hints (("Goal" :in-theory (enable take firstn))))
+
 (defthm firstn-of-1
   (equal (firstn 1 lst)
          (if (consp lst)

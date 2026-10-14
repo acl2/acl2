@@ -96,6 +96,9 @@
 ;;                    classes to numbers of vectors
 ;;   :gaps            an alist from gap keys to numbers of coverage gaps,
 ;;                    largest first
+;;   :gap-words       an alist from gap keys to alists from instruction words
+;;                    to numbers of coverage gaps, so that the instructions
+;;                    can be named
 ;;   :mismatches      for each vector of class :mismatch, a list (ID NAME WORD
 ;;                    . MISMATCHES) of the mismatches no waiver excused
 ;;   :waived          for each vector with excused mismatches, a list (ID NAME
@@ -388,6 +391,14 @@
            (true-listp (mv-nth 2 (apply-waivers mismatches name word pc arch waivers used))))
   :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
 
+(defthm true-listp-of-mv-nth-0-of-apply-waivers
+  (true-listp (mv-nth 0 (apply-waivers mismatches name word pc arch waivers used)))
+  :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
+
+(defthm true-listp-of-mv-nth-1-of-apply-waivers
+  (true-listp (mv-nth 1 (apply-waivers mismatches name word pc arch waivers used)))
+  :hints (("Goal" :in-theory (e/d (apply-waivers) (find-waiver)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Tallies.
@@ -430,7 +441,8 @@
   (implies (and (count-alistp counts2) (count-alistp counts))
            (count-alistp (add-counts counts2 counts))))
 
-;; An alist from instruction names to count alists.
+;; An alist to count alists, from instruction names for :by-name and from gap
+;; keys for :gap-words.
 (defun by-name-alistp (x)
   (declare (xargs :guard t))
   (if (atom x)
@@ -467,6 +479,51 @@
 (defthm by-name-alistp-of-add-by-name
   (implies (and (by-name-alistp by-name2) (by-name-alistp by-name))
            (by-name-alistp (add-by-name by-name2 by-name))))
+
+;; Adds N coverage gaps of the instruction word WORD, tallied by KEY, to
+;; GAP-WORDS (see :gap-words).  A new word goes in front of KEY's words, not
+;; at the end as add-count would put it, because a corpus of random words can
+;; give a key thousands of words, which add-count would copy for each one.
+(defun add-gap-word (key word n gap-words)
+  (declare (xargs :guard (and (natp n) (by-name-alistp gap-words))))
+  (if (endp gap-words)
+      (list (cons key (list (cons word n))))
+    (if (equal key (caar gap-words))
+        (let ((words (cdar gap-words)))
+          (cons (cons key (if (assoc-equal word words)
+                              (add-count word n words)
+                            (cons (cons word n) words)))
+                (cdr gap-words)))
+      (cons (car gap-words) (add-gap-word key word n (cdr gap-words))))))
+
+(defthm by-name-alistp-of-add-gap-word
+  (implies (and (natp n) (by-name-alistp gap-words))
+           (by-name-alistp (add-gap-word key word n gap-words))))
+
+;; Adds the words in the count alist WORDS, tallied by KEY, to GAP-WORDS.
+(defun add-gap-word-counts (key words gap-words)
+  (declare (xargs :guard (and (count-alistp words) (by-name-alistp gap-words))))
+  (if (endp words)
+      gap-words
+    (add-gap-word-counts key (cdr words)
+                         (add-gap-word key (caar words) (cdar words) gap-words))))
+
+(defthm by-name-alistp-of-add-gap-word-counts
+  (implies (and (count-alistp words) (by-name-alistp gap-words))
+           (by-name-alistp (add-gap-word-counts key words gap-words))))
+
+;; Adds each entry of GAP-WORDS2 to GAP-WORDS.
+(defun add-gap-words (gap-words2 gap-words)
+  (declare (xargs :guard (and (by-name-alistp gap-words2) (by-name-alistp gap-words))))
+  (if (endp gap-words2)
+      gap-words
+    (add-gap-words (cdr gap-words2)
+                   (add-gap-word-counts (caar gap-words2) (cdar gap-words2)
+                                        gap-words))))
+
+(defthm by-name-alistp-of-add-gap-words
+  (implies (and (by-name-alistp gap-words2) (by-name-alistp gap-words))
+           (by-name-alistp (add-gap-words gap-words2 gap-words))))
 
 ;; Inserts the pair (KEY . COUNT) into the sorted count alist COUNTS, which has
 ;; larger counts first, and equal counts in lexorder of their keys.
@@ -531,15 +588,24 @@
            (true-listp (mv-nth 3 (classify-record record waivers used))))
   :hints (("Goal" :in-theory (enable classify-record))))
 
+(defthm true-listp-of-mv-nth-1-of-classify-record
+  (true-listp (mv-nth 1 (classify-record record waivers used)))
+  :hints (("Goal" :in-theory (enable classify-record))))
+
+(defthm true-listp-of-mv-nth-2-of-classify-record
+  (true-listp (mv-nth 2 (classify-record record waivers used)))
+  :hints (("Goal" :in-theory (enable classify-record))))
+
 ;; Adds RECORD to the summary that summarize-records accumulates.  Returns (mv
-;; counts by-name gaps mismatches waived unknown used).
+;; counts by-name gaps gap-words mismatches waived unknown used).
 (defund summarize-record (record waivers
-                                 counts by-name gaps mismatches waived unknown used)
+                                 counts by-name gaps gap-words mismatches waived unknown used)
   (declare (xargs :guard (and (report-recordp record)
                               (waiver-listp waivers)
                               (count-alistp counts)
                               (by-name-alistp by-name)
                               (count-alistp gaps)
+                              (by-name-alistp gap-words)
                               (true-listp used))))
   (b* ((id (report-get :id record nil))
        (name (report-get :name record nil))
@@ -554,6 +620,9 @@
         (if (eq class :coverage-gap)
             (add-count (report-get :gap-key record nil) 1 gaps)
           gaps)
+        (if (eq class :coverage-gap)
+            (add-gap-word (report-get :gap-key record nil) word 1 gap-words)
+          gap-words)
         (if unwaived
             (cons (list* id name word unwaived) mismatches)
           mismatches)
@@ -569,75 +638,108 @@
   (implies (and (count-alistp counts)
                 (by-name-alistp by-name)
                 (count-alistp gaps)
+                (by-name-alistp gap-words)
                 (true-listp mismatches)
                 (true-listp waived)
                 (true-listp unknown)
                 (true-listp used))
-           (and (count-alistp (mv-nth 0 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (by-name-alistp (mv-nth 1 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (count-alistp (mv-nth 2 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (true-listp (mv-nth 3 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (true-listp (mv-nth 4 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (true-listp (mv-nth 5 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))
-                (true-listp (mv-nth 6 (summarize-record record waivers counts by-name gaps mismatches waived unknown used)))))
+           (and (count-alistp (mv-nth 0 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (by-name-alistp (mv-nth 1 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (count-alistp (mv-nth 2 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (by-name-alistp (mv-nth 3 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 4 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 5 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 6 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 7 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))))
+  :hints (("Goal" :in-theory (enable summarize-record))))
+
+;; Each entry of the lists of mismatches and of waived mismatches is a list.
+(defthm true-list-listp-of-summarize-record-entries
+  (and (implies (true-list-listp mismatches)
+                (true-list-listp (mv-nth 4 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used))))
+       (implies (true-list-listp waived)
+                (true-list-listp (mv-nth 5 (summarize-record record waivers counts by-name gaps gap-words mismatches waived unknown used)))))
   :hints (("Goal" :in-theory (enable summarize-record))))
 
 ;; Accumulates the summary of RECORDS.  Returns (mv counts by-name gaps
-;; mismatches waived unknown used), with the lists of vectors in the order of
-;; RECORDS.
+;; gap-words mismatches waived unknown used), with the lists of vectors in the
+;; order of RECORDS.
 (defun summarize-records (records waivers
-                                  counts by-name gaps mismatches waived unknown used)
+                                  counts by-name gaps gap-words mismatches waived unknown used)
   (declare (xargs :guard (and (report-record-listp records)
                               (waiver-listp waivers)
                               (count-alistp counts)
                               (by-name-alistp by-name)
                               (count-alistp gaps)
+                              (by-name-alistp gap-words)
                               (true-listp mismatches)
                               (true-listp waived)
                               (true-listp unknown)
                               (true-listp used))))
   (if (endp records)
-      (mv counts by-name gaps
+      (mv counts by-name gaps gap-words
           (reverse mismatches) (reverse waived) (reverse unknown)
           used)
-    (b* (((mv counts by-name gaps mismatches waived unknown used)
+    (b* (((mv counts by-name gaps gap-words mismatches waived unknown used)
           (summarize-record (car records) waivers
-                            counts by-name gaps mismatches waived unknown used)))
+                            counts by-name gaps gap-words mismatches waived unknown used)))
       (summarize-records (cdr records) waivers
-                         counts by-name gaps mismatches waived unknown used))))
+                         counts by-name gaps gap-words mismatches waived unknown used))))
 
 (defthm summarize-records-return-types
   (implies (and (count-alistp counts)
                 (by-name-alistp by-name)
                 (count-alistp gaps)
+                (by-name-alistp gap-words)
                 (true-listp mismatches)
                 (true-listp waived)
                 (true-listp unknown)
                 (true-listp used))
-           (and (count-alistp (mv-nth 0 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
-                (by-name-alistp (mv-nth 1 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
-                (count-alistp (mv-nth 2 (summarize-records records waivers counts by-name gaps mismatches waived unknown used)))
-                (true-listp (mv-nth 6 (summarize-records records waivers counts by-name gaps mismatches waived unknown used))))))
+           (and (count-alistp (mv-nth 0 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (by-name-alistp (mv-nth 1 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (count-alistp (mv-nth 2 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (by-name-alistp (mv-nth 3 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 7 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used))))))
+
+(local
+  (defthm true-list-listp-of-revappend
+    (implies (and (true-list-listp x)
+                  (true-list-listp y))
+             (true-list-listp (revappend x y)))))
+
+(defthm summarize-records-list-types
+  (implies (and (count-alistp counts)
+                (by-name-alistp by-name)
+                (count-alistp gaps)
+                (by-name-alistp gap-words)
+                (true-list-listp mismatches)
+                (true-list-listp waived)
+                (true-listp unknown)
+                (true-listp used))
+           (and (true-list-listp (mv-nth 4 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-list-listp (mv-nth 5 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used)))
+                (true-listp (mv-nth 6 (summarize-records records waivers counts by-name gaps gap-words mismatches waived unknown used))))))
 
 ;; Summarizes RECORDS under the name NAME.  NAMES lists the names of all the
 ;; instructions of the model, WAIVERS are the waivers to apply, and NOT-RUN is
 ;; the alist for the summary's :not-run.
-(defun summarize-results (name records names waivers not-run)
+(defund summarize-results (name records names waivers not-run)
   (declare (xargs :guard (and (stringp name)
                               (report-record-listp records)
                               (true-listp names)
                               (waiver-listp waivers)
                               (count-alistp not-run))))
-  (b* (((mv counts by-name gaps mismatches waived unknown used)
+  (b* (((mv counts by-name gaps gap-words mismatches waived unknown used)
         (summarize-records records waivers
                            (pairlis$ *outcome-classes* '(0 0 0 0 0 0 0 0))
-                           nil nil nil nil nil nil)))
+                           nil nil nil nil nil nil nil)))
     (list :name name
           :vectors (len records)
           :not-run not-run
           :counts counts
           :by-name by-name
           :gaps (sort-counts gaps)
+          :gap-words gap-words
           :mismatches mismatches
           :waived waived
           :unknown unknown
@@ -653,6 +755,7 @@
        (count-alistp (report-get :counts x nil))
        (by-name-alistp (report-get :by-name x nil))
        (count-alistp (report-get :gaps x nil))
+       (by-name-alistp (report-get :gap-words x nil))
        (true-list-listp (report-get :mismatches x nil))
        (true-list-listp (report-get :waived x nil))
        (true-listp (report-get :unknown x nil))
@@ -665,6 +768,12 @@
       (null x)
     (and (summaryp (car x))
          (summary-listp (cdr x)))))
+
+(defthm summaryp-of-summarize-results
+  (implies (and (stringp name)
+                (count-alistp not-run))
+           (summaryp (summarize-results name records names waivers not-run)))
+  :hints (("Goal" :in-theory (enable summarize-results report-get))))
 
 ;; Whether SUMMARY has no mismatch that a waiver did not excuse.
 (defun check-summary (summary)
@@ -706,6 +815,15 @@
     (merge-by-name (cdr summaries)
                    (add-by-name (report-get :by-name (car summaries) nil) by-name))))
 
+(defun merge-gap-words (summaries gap-words)
+  (declare (xargs :guard (and (summary-listp summaries)
+                              (by-name-alistp gap-words))))
+  (if (endp summaries)
+      gap-words
+    (merge-gap-words (cdr summaries)
+                     (add-gap-words (report-get :gap-words (car summaries) nil)
+                                    gap-words))))
+
 ;; Appends the lists under KEY in SUMMARIES.
 (defun append-lists (key summaries)
   (declare (xargs :guard (and (member-eq key '(:mismatches :waived :unknown))
@@ -728,7 +846,7 @@
 ;; Combines SUMMARIES, which must not be empty, into one summary named NAME.
 ;; An instruction is unexercised, and a waiver unused, if it is so in every
 ;; summary.
-(defun merge-summaries (name summaries)
+(defund merge-summaries (name summaries)
   (declare (xargs :guard (and (stringp name)
                               (summary-listp summaries)
                               (consp summaries))))
@@ -738,11 +856,52 @@
         :counts (merge-counts :counts summaries nil)
         :by-name (merge-by-name summaries nil)
         :gaps (sort-counts (merge-counts :gaps summaries nil))
+        :gap-words (merge-gap-words summaries nil)
         :mismatches (append-lists :mismatches summaries)
         :waived (append-lists :waived summaries)
         :unknown (append-lists :unknown summaries)
         :unexercised (intersect-lists :unexercised summaries)
         :unused-waivers (intersect-lists :unused-waivers summaries)))
+
+(defthm natp-of-sum-vectors
+  (implies (summary-listp summaries)
+           (natp (sum-vectors summaries))))
+
+(defthm by-name-alistp-of-merge-by-name
+  (implies (and (summary-listp summaries)
+                (by-name-alistp by-name))
+           (by-name-alistp (merge-by-name summaries by-name))))
+
+(defthm by-name-alistp-of-merge-gap-words
+  (implies (and (summary-listp summaries)
+                (by-name-alistp gap-words))
+           (by-name-alistp (merge-gap-words summaries gap-words))))
+
+(local
+  (defthm true-list-listp-of-append
+    (implies (and (true-list-listp x)
+                  (true-list-listp y))
+             (true-list-listp (append x y)))))
+
+(defthm append-lists-types
+  (and (true-listp (append-lists key summaries))
+       (implies (and (summary-listp summaries)
+                     (member-eq key '(:mismatches :waived)))
+                (true-list-listp (append-lists key summaries)))))
+
+(defthm true-listp-of-intersect-lists
+  (implies (and (summary-listp summaries)
+                (member-eq key '(:unexercised :unused-waivers)))
+           (true-listp (intersect-lists key summaries))))
+
+(defthm summaryp-of-merge-summaries
+  (implies (and (stringp name)
+                (summary-listp summaries))
+           (summaryp (merge-summaries name summaries)))
+  :hints (("Goal" :in-theory (e/d (merge-summaries report-get)
+                                  (sum-vectors merge-counts merge-by-name
+                                   merge-gap-words append-lists
+                                   intersect-lists)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -882,7 +1041,7 @@
 ;; Writes SUMMARY to the file FILENAME, for tools and for comparing runs.  It
 ;; is pretty-printed, so that a list too long for one line, such as the
 ;; mismatches, has an element per line.  Returns (mv erp state).
-(defun write-summary (summary filename state)
+(defund write-summary (summary filename state)
   (declare (xargs :guard (and (summaryp summary)
                               (stringp filename))
                   :stobjs state
@@ -897,3 +1056,9 @@
                                     :print-right-margin 100))
              (state (close-output-channel channel state)))
         (mv nil state)))))
+
+(defthm state-p1-of-mv-nth-1-of-write-summary
+  (implies (and (stringp filename)
+                (state-p1 state))
+           (state-p1 (mv-nth 1 (write-summary summary filename state))))
+  :hints (("Goal" :in-theory (enable write-summary))))

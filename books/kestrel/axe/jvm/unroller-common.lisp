@@ -210,7 +210,7 @@
                                       ;; contents with a symbolic array term
                                       ;; One-dimensional array of BVS:
                                       (if maybe-len
-                                          ;; One-dimensional array of BVS of known (constant) length:
+                                          ;; One-dimensional array of BVs of known (constant) length:
                                           (append (if (eq t vars-for-array-elements)
                                                       ;; Puts in a var for each element (byte, int, etc.) of the array:
                                                       `((equal ,contents-term
@@ -234,17 +234,19 @@
                                                                 (cons ',maybe-len 'nil) ;; here we use the constant known length
                                                                 ',component-type
                                                                 ,heap-term)))
-                                        ;; One-dimensional array of BVS of unknown length:
+                                        ;; One-dimensional array of BVs of unknown length:
                                         (prog2$
-                                          (and vars-for-array-elements
-                                               (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1).~%" parameter-name vars-for-array-elements))
-                                          ;; todo: error here id vars-for-array-elements is not nil?
-                                          `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
-                                            (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p ?
-                                            (array-refp ,local-term
-                                                        (cons (len ,parameter-name) 'nil) ;; no constant length to use here
-                                                        ',component-type
-                                                        ,heap-term))))
+                                         (and vars-for-array-elements
+                                              ;; todo: make this an error?
+                                              (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1).~%" parameter-name vars-for-array-elements))
+                                         `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
+                                           (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p or unsigned-byte-listp or bv-arrayp?  what about bit arrays?
+                                           (unsigned-byte-p '31 (len ,parameter-name)) ; max length of a Java array is 2^31-1
+                                           ;; todo: consider array-ref-or-nullp here:
+                                           (array-refp ,local-term
+                                                       (cons (len ,parameter-name) 'nil) ;; no constant length to use here
+                                                       ',component-type
+                                                       ,heap-term))))
                                     (if (member-eq component-type '(:float :double))
                                         ;; One-dimensional array of floats/doubles:
                                         (if maybe-len

@@ -20903,7 +20903,9 @@
                           (if (eq (car type) 'hash-table)
                               (putprop
                                accessor?-fn 'stobjs-in (list nil name)
-                               wrld)
+                               (putprop
+                                accessor?-fn 'stobjs-out (list stobj-flg nil)
+                                wrld))
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
@@ -32916,6 +32918,9 @@
                   it is given special treatment."
                  key 'return-last-table))
                ((and val
+                     (if (consp val)
+                         (symbolp (car val))
+                       (symbolp val)) ; avoid getpropc error below
                      (let ((val2 (if (symbolp val) val (car val))))
                        (and
                         (not (getpropc val2 'macro-body nil wrld))

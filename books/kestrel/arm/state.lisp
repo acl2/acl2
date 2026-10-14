@@ -81,6 +81,13 @@
 
   (oracle :type (satisfies true-listp))
 
+  ;; System Control Register
+  ;; Currently, we only model the bits of this that we need.
+  ;; Initial values come from Figure B4-1, but note that some values
+  ;; don't make sense for earlier ARM versions (see Table D12-1)!
+  (sctlr.a :type bit :initially 0)
+  (sctlr.u :type bit :initially 1)
+
   ;; This avoids actually allocating 4GB of memory for the MEMORY field (even
   ;; though that only takes a few seconds).  See add-global-stobj if you want
   ;; execution for this stobj.  See also the "large stobj" discussion on Zulip.
@@ -89,6 +96,26 @@
   ;; GCL 2.7.1 (and probably any version of GCL starting with 2.7.0).  It is
   ;; also too big for 32-bit CMUCL (compilation error, apparently).
   :non-executable t)
+
+(defthm bitp-of-sctlr.a
+  (implies (armp arm)
+           (bitp (sctlr.a arm)))
+  :hints (("Goal" :in-theory (enable armp sctlr.ap sctlr.a))))
+
+(defthm bitp-of-sctlr.a-type
+  (implies (armp arm)
+           (bitp (sctlr.a arm)))
+  :rule-classes :type-prescription)
+
+(defthm bitp-of-sctlr.u
+  (implies (armp arm)
+           (bitp (sctlr.u arm)))
+  :hints (("Goal" :in-theory (enable armp sctlr.up sctlr.u))))
+
+(defthm bitp-of-sctlr.u-type
+  (implies (armp arm)
+           (bitp (sctlr.u arm)))
+  :rule-classes :type-prescription)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -270,6 +297,16 @@
          (isetstate arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+(defthm sctlr.a-of-set-reg
+  (equal (sctlr.a (set-reg n val arm))
+         (sctlr.a arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm sctlr.u-of-set-reg
+  (equal (sctlr.u (set-reg n val arm))
+         (sctlr.u arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
 (defthm library-map-of-set-reg
   (equal (library-map (set-reg n val arm))
          (library-map arm))
@@ -279,6 +316,14 @@
 (defthm isetstate-of-if
   (equal (isetstate (if test tp ep))
          (if test (isetstate tp) (isetstate ep))))
+
+(defthm sctlr.a-of-if
+  (equal (sctlr.a (if test tp ep))
+         (if test (sctlr.a tp) (sctlr.a ep))))
+
+(defthm sctlr.u-of-if
+  (equal (sctlr.u (if test tp ep))
+         (if test (sctlr.u tp) (sctlr.u ep))))
 
 ;move
 (defthm library-map-of-if
@@ -422,6 +467,20 @@
 (defthm isetstate-of-set-apsr.v (equal (isetstate (set-apsr.v bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
 (defthm isetstate-of-set-apsr.q (equal (isetstate (set-apsr.q bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
 (defthm isetstate-of-set-apsr.ge (equal (isetstate (set-apsr.ge bits arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm sctlr.a-of-set-apsr.n (equal (sctlr.a (set-apsr.n bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm sctlr.a-of-set-apsr.z (equal (sctlr.a (set-apsr.z bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm sctlr.a-of-set-apsr.c (equal (sctlr.a (set-apsr.c bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm sctlr.a-of-set-apsr.v (equal (sctlr.a (set-apsr.v bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm sctlr.a-of-set-apsr.q (equal (sctlr.a (set-apsr.q bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
+(defthm sctlr.a-of-set-apsr.ge (equal (sctlr.a (set-apsr.ge bits arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm sctlr.u-of-set-apsr.n (equal (sctlr.u (set-apsr.n bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm sctlr.u-of-set-apsr.z (equal (sctlr.u (set-apsr.z bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm sctlr.u-of-set-apsr.c (equal (sctlr.u (set-apsr.c bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm sctlr.u-of-set-apsr.v (equal (sctlr.u (set-apsr.v bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm sctlr.u-of-set-apsr.q (equal (sctlr.u (set-apsr.q bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
+(defthm sctlr.u-of-set-apsr.ge (equal (sctlr.u (set-apsr.ge bits arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
 
 (defthm library-map-of-set-apsr.n (equal (library-map (set-apsr.n bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
 (defthm library-map-of-set-apsr.z (equal (library-map (set-apsr.z bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))

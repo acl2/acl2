@@ -20,23 +20,22 @@
 
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
-(include-book "kestrel/bv/bvplus" :dir :system)
-(include-book "kestrel/bv/bvlt" :dir :system)
-(include-book "kestrel/bv/sbvlt" :dir :system)
-(include-book "kestrel/bv/bvdiv" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
+(include-book "kestrel/bv/bvlt-def" :dir :system)
+(include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/trim" :dir :system)
-(include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
-(include-book "kestrel/arithmetic-light/lg" :dir :system)
+(include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (local (include-book "rules3")) ;drop?
 (local (include-book "kestrel/bv/rules" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system)) ; for EXPT-BOUND-LINEAR-2
+(local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 
 (defthmd bvlt-tighten-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))

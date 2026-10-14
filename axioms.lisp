@@ -1108,7 +1108,7 @@
 ; read-byte$, read-object, prin1-with-slashes, read-idate, read-run-time,
 ; prin1$, wormhole1, wormhole-p, wormhole-eval,
 ; sync-ephemeral-whs-with-persistent-whs, one-output,
-; write-user-stobj-alist-raw, make-closure-expr-with-acl2-bindings, set-w,
+; with-global-stobj-fn, make-closure-expr-with-acl2-bindings, set-w,
 ; oneify-cltl-code, ld-loop, ld-fn-body, and ev-rec.  These functions are not
 ; in the nexus, they are not necessarily even called by wormhole but instead
 ; may be called by the read-eval-print loop in ld, as determined by user input.
@@ -22920,6 +22920,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     initialize-pc-acl2
     pc-single-step-primitive
     pc-single-step
+    pc-top pc-main pc-main-loop pc-main1 install-initial-state-stack
     assign-event-name-and-rule-classes
     save-fn
     ))

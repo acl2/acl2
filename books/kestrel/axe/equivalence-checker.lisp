@@ -100,6 +100,8 @@
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
                        (acl2-count symbol-alistp default-car default-cdr))))
 
+(ensure-rules-known (strengthening-rules)) ; mentioned below but rarely or never used?
+
 (defthm not-<-of-maxelem-and-nth
   (implies (and (< n (len x))
                 (natp n))

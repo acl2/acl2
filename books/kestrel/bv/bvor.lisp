@@ -273,7 +273,7 @@
                   (slice highbit lowbit (bvor (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (e/d (slice bvor natp bvchop-of-logtail)
-                           (slice-becomes-bvchop )))))
+                           (slice-becomes-bvchop)))))
 
 (defthm slice-of-bvor-too-high
   (implies (and (<= n low)
@@ -443,55 +443,21 @@
                   (bvor newsize x y)))
   :hints (("Goal" :in-theory (enable bvor))))
 
-(defthm bvor-of-slice-tighten
+(defthm bvor-of-slice-tighten-arg2
    (implies (and (<= size (- high low))
-                 (natp size)
-                 (< 0 size)
                  (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y)
-                 )
+                 (natp high))
+            (equal (bvor size (slice high low x) y)
+                   (bvor size (slice (+ low size -1) low x) y)))
+   :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-slice-tighten-arg3
+   (implies (and (<= size (- high low))
+                 (natp low)
+                 (natp high))
             (equal (bvor size x (slice high low y))
                    (bvor size x (slice (+ low size -1) low y))))
    :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-slice-tighten-alt
-   (implies (and (<= size (- high low))
-                 (natp size)
-                 (< 0 size)
-                 (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y)
-                 )
-            (equal (bvor size (slice high low y) x)
-                   (bvor size (slice (+ low size -1) low y) x)))
-   :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-slice-tighten-2
-  (implies (and (< size (+ 1 high (- low)))
-                (< 0 size)
-                (natp size)
-                (natp low)
-                (natp high)
-                (integerp x)
-                (integerp y))
-           (equal (bvor size y (slice high low x))
-                  (bvor size y (slice (+ low size -1) low x))))
-  :hints (("Goal" :in-theory (enable bvor))))
-
-(defthm bvor-of-slice-tighten-1
-   (implies (and (< size (+ 1 high (- low)))
-                 (< 0 size)
-                 (natp size)
-                 (natp low)
-                 (natp high)
-                 (integerp x)
-                 (integerp y))
-            (equal (bvor size (slice high low x) y)
-                   (bvor size (slice (+ low size -1) low x) y)))
-  :hints (("Goal" :in-theory (enable bvor))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
