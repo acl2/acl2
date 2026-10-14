@@ -1387,7 +1387,7 @@
            (equal (slice highbit lowbit (bvmult size x y))
                   (slice highbit lowbit (bvmult (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
-                  :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop )))))
+                  :in-theory (e/d (slice bvor natp bvmult bvchop-of-logtail) (slice-becomes-bvchop)))))
 
 ;todo: just use a trim rule?
 (defthm getbit-of-bvmult-tighten
@@ -1989,15 +1989,15 @@
 ;bbozo gen!
 (defthm high-slice-of-logext-31-7-8-hack
   (implies (integerp x)
-           (equal (SLICE 31 7 (LOGEXT 8 X))
+           (equal (slice 31 7 (logext 8 x))
                   (repeatbit 25 (getbit 7 x))))
-  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL )))))
+  :hints (("Goal" :in-theory (e/d (slice logext) (bvchop-of-logtail)))))
 
 (defthm high-slice-of-logext-31-7-8
   (implies (integerp x)
            (equal (slice 31 7 (logext 8 x))
                   (bvsx 25 1 (getbit 7 x))))
-  :hints (("Goal" :in-theory (e/d (slice LOGEXT) (BVCHOP-OF-LOGTAIL)))))
+  :hints (("Goal" :in-theory (e/d (slice logext) (bvchop-of-logtail)))))
 
 ;; ;bozo gen
 (defthm bvplus-of-logext-arg1-32-8
@@ -2011,19 +2011,15 @@
 (defthm unsigned-byte-p-pow2-hack
   (implies (and (integerp high)
                 (integerp low)
-                (<= low high)
-                )
-           (UNSIGNED-BYTE-P (+ 1 HIGH (- LOW))
-                            (+ -1
-                               (* 2 (EXPT 2 HIGH) (/ (EXPT 2 LOW))))))
-
+                (<= low high))
+           (unsigned-byte-p (+ 1 high (- low))
+                            (+ -1 (* 2 (expt 2 high) (/ (expt 2 low))))))
   :hints (("Goal"
-;           :use (:instance EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1 (r 2) (i 0) (j (+ 1 high (- low))))
-           :in-theory (e/d (UNSIGNED-BYTE-P expt-of-+) (;EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
-                                              ;EXPONENTS-ADD
-                                              )))))
-
-
+;           :use (:instance expt-is-weakly-increasing-for-base>1 (r 2) (i 0) (j (+ 1 high (- low))))
+           :in-theory (e/d (unsigned-byte-p expt-of-+)
+                           (;expt-is-weakly-increasing-for-base>1
+                            ;; exponents-add
+                            )))))
 
 ;BOZO do this for all ops
 (defthm bvminus-bound-2
@@ -2044,8 +2040,7 @@
 ;bozo
 (defthm natp-32-bvminus-5
   (natp (+ 32 (- (bvminus 5 0 amt))))
-  :hints (("Goal" :in-theory (e/d (bvminus) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
+  :hints (("Goal" :in-theory (e/d (bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
 ;; for des encrypt:
 

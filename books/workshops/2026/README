@@ -1,0 +1,89 @@
+Below is a list of all papers accepted for ACL2 Workshop 2025,
+alphabetized by first author.  Each is associated (or, to be
+associated) with the corresponding directory containing supporting
+materials.  Directories starting with "[books]" are the indicated
+subdirectories of the community books; the others are subdirectories
+of this README's directory, i.e., of [books]/workshops/2026/.
+
+------------------------------
+
+Mohammad Bin Monjil and Sandip Ray
+Formalizing the Chandy–Lamport Distributed Snapshot Reordering Theorem in ACL2
+
+------------------------------
+
+Kuter Bora and Mark Greenstreet Erlang in ACL2: a Continuation-Passing-Style Evaluator
+
+------------------------------
+
+Pablo Cayuela
+Mechanized Verification of Complex-to-Vector Derivations in a Three-Phase AC Machine Model
+
+------------------------------
+
+Pablo Cayuela
+Mechanized Formal Verification of q-Pulse Rectifier Voltage Equations Using ACL2
+
+------------------------------
+
+Christopher Chen, Mark Greenstreet and Margo Seltzer
+Smtlink 3: Rewrite-driven Compilation to SMT-LIB
+
+------------------------------
+
+Alessandro Coglio and Grant Jurgensen
+Inductive Definitions via Inference Rules in ACL2
+
+------------------------------
+
+Ruben Gamboa
+A Mechanical Proof of Stirling's Approximation in ACL2(r)
+
+------------------------------
+
+Ruben Gamboa
+An Alternative Proof in ACL2(r) of Euler's Solution to the Basel Problem
+
+------------------------------
+
+Ruben Gamboa
+Towards Formalizing the Semantics of Lifting Argument Frames When Evaluating Remora Expressions
+
+------------------------------
+
+David Hardin
+Arrayset Revisited
+
+------------------------------
+
+Grant Jurgensen
+Treesets: Efficient Finite Sets with Unique Representations
+
+------------------------------
+
+Matt Kaufmann
+An Integration of Axiomatic Set Theory with ACL2 (Extended Abstract)
+
+[books]/projects/set-theory/
+
+------------------------------
+
+Quan Luu, Zeke Medley and Panagiotis Manolios
+Formalizing a Connectivity Proof for the Matrix Multiplication Flip Graph in ACL2
+
+------------------------------
+
+Eric McCarthy
+Verifying RustCrypto's Fixsliced AES-128 in ACL2: An Aeneas Backend and an Executable MIR Semantics
+
+------------------------------
+
+David Russinoff
+A Formalization of Elementary Linear Algebra: Part III
+
+------------------------------
+
+David Russinoff
+A Formal Theory of Algebraic Field Extensions
+
+------------------------------

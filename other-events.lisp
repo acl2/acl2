@@ -20903,7 +20903,9 @@
                           (if (eq (car type) 'hash-table)
                               (putprop
                                accessor?-fn 'stobjs-in (list nil name)
-                               wrld)
+                               (putprop
+                                accessor?-fn 'stobjs-out (list stobj-flg nil)
+                                wrld))
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 

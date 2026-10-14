@@ -104,8 +104,8 @@
   (implies (rationalp n)
            (equal (floor (* 1/4 n) 16)
                   (floor n 64)))
-  :hints (("Goal" :in-theory (e/d (FLOOR-NORMALIZE-DENOMINATOR)
-                                  (FLOOR-OF-*-OF-/-AND-1))))
+  :hints (("Goal" :in-theory (e/d (floor-normalize-denominator)
+                                  (floor-of-*-of-/-and-1))))
 ;  :hints (("Goal" :use (:instance floor-floor-integer (i 4) (j 16) (x n))))
   )
 
@@ -122,7 +122,7 @@
 (defthm floor-bound-lemma3
   (implies (and (rationalp i)
                 (rationalp j)
-                (< 0 j ))
+                (< 0 j))
            (not (< i (* j (floor i j)))))
   :hints (("Goal" :use (:instance my-floor-upper-bound))))
 
@@ -177,27 +177,27 @@
 ;gen
 ;move
 (defthm floor-of-*-bound-arg2
-  (IMPLIES (AND (INTEGERP I)
-                (< 0 I)
-                (INTEGERP J1)
-                (< 0 J1)
-                (INTEGERP J2)
-                (< 0 J2))
-           (<= (* J2 (FLOOR I (* J1 J2)))
-               (FLOOR I J1)))
+  (implies (and (integerp i)
+                (< 0 i)
+                (integerp j1)
+                (< 0 j1)
+                (integerp j2)
+                (< 0 j2))
+           (<= (* j2 (floor i (* j1 j2)))
+               (floor i j1)))
   :hints (("Goal" :use (:instance my-floor-upper-bound
-                                  (j (* j1 j2))
-                                  )
+                                  (j (* j1 j2)))
            :in-theory (disable my-floor-upper-bound))))
 
+;move?
 (defthm <=-of-mod-and-mod-of-*-same
-  (IMPLIES (AND (INTEGERP I)
-                (< 0 I)
-                (INTEGERP J1)
-                (< 0 J1)
-                (INTEGERP J2)
-                (< 0 J2))
-           (<= (MOD I J1) (MOD I (* J1 J2))))
+  (implies (and (integerp i)
+                (< 0 i)
+                (integerp j1)
+                (< 0 j1)
+                (integerp j2)
+                (< 0 j2))
+           (<= (mod i j1) (mod i (* j1 j2))))
   :hints (("Goal" :in-theory (enable mod))))
 
 
@@ -272,7 +272,7 @@
 
 (encapsulate ()
 ; (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
- ;(local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
+ ;(local (in-theory (disable /r-when-abs-numerator=1)))
  (defthmd mod-of-floor-equal-rewrite
    (implies (and (posp n)
                  (posp j)
@@ -302,11 +302,10 @@
                              mod-less-than-1
                              default-*-2
                              ;; for speed:
-                             <-OF-*-SAME-LINEAR-2
-                             <-OF-*-SAME-LINEAR-SPECIAL
-                             <=-OF-*-AND-*-SAME-LINEAR
-                             <-OF-*-AND-*-SAME-LINEAR-2
-                             ))))))
+                             <-of-*-same-linear-2
+                             <-of-*-same-linear-special
+                             <=-of-*-and-*-same-linear
+                             <-of-*-and-*-same-linear-2))))))
 
 ;bozo gen the 1/4
 (defthm quotient-is-multiple
@@ -316,8 +315,8 @@
                   (equal (mod i (* 4 k)) 0)))
   :hints (("Goal" :use (:instance integerp-of-* (x (* 1/4 (/ K) i)) (y k))
            :in-theory (e/d (;mod-=-0
-                            EQUAL-OF-0-AND-MOD
-                            ) (integerp-of-*)))))
+                            equal-of-0-and-mod)
+                           (integerp-of-*)))))
 
 ;FIXME gen
 (defthm floor-of-plus-of-floor-15-3-4-16
@@ -343,7 +342,7 @@
 ;;                                                 FLOOR-WHEN-DIVISIBLE)))))
 
 ;; ;from arithmetic/mod-gcd.lisp
-;; (defun nonneg-int-mod ( n d )
+;; (defun nonneg-int-mod (n d)
 ;;   (declare (xargs :guard (and (integerp n)
 ;;                            (>= n 0)
 ;;                            (integerp d)
@@ -354,7 +353,7 @@
 ;;        (nfix n)
 ;;      (nonneg-int-mod (- n d) d))))
 
-;; (defun nonneg-int-gcd ( x y )
+;; (defun nonneg-int-gcd (x y)
 ;;   (declare (xargs :guard (and (integerp x)
 ;;                            (>= x 0)
 ;;                            (integerp y)
@@ -430,7 +429,7 @@
                 (rationalp x)
                 (rationalp y)
                 )
-           (equal (< (FLOOR x y) 1)
+           (equal (< (floor x y) 1)
                   (< x y))))
 
 (defthm floor-when-<=

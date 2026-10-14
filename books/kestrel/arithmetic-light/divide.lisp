@@ -202,11 +202,6 @@
                                   (low 0)
                                   (x (* (/ y) x))))))
 
-
-
-
-
-
 ;;;
 ;;; Characterize division of complex numbers
 ;;;
@@ -330,8 +325,8 @@
                                   (x1 z)
                                   (x2 (* x (/ y))))
            :in-theory (disable <-of-*-and-*-cancel-gen
-                               ;<-*-/-RIGHT
-                               <-OF-*-OF-/-arg1))))
+                               ;; <-*-/-right
+                               <-of-*-of-/-arg1))))
 
 ;; commutes the * in the lhs
 (defthm <-of-*-of-/-arg2-alt
@@ -403,7 +398,7 @@
            (equal (< k (/ x))
                   (< x (/ k))))
   :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
-  :hints (("Goal" )))
+  )
 
 ;gen?
 (defthm /-equal-constant-alt

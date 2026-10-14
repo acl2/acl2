@@ -478,13 +478,16 @@
      The list of bit roles must be well-formed.")
    (xdoc::p
     "We also include a placeholder component meant to define
-     which bit values are trap representations [C17:6.2.6.2/5] [C23:6.2.6.2].
+     which bit values do not represent integer values
+     [C17:6.2.6.2/5] [C23:6.2.6.2],
+     called `trap representations' in C17
+     and `non-value representations' in C23.
      We plan to flesh this out in the future."))
   ((bits uinteger-bit-role-listp
          :reqfix (if (uinteger-bit-roles-wfp bits)
                      bits
                    (list (uinteger-bit-role-value 0))))
-   traps)
+   traps/nonvals)
   :require (uinteger-bit-roles-wfp bits)
   :pred uinteger-formatp)
 
@@ -531,14 +534,19 @@
      and negative zero for the other signed formats.
      This component corresponds to the @('trap') component
      of @(tsee schar-format).
-     This only applies to C17:
      [C23] does not allow this trap representation;
      in a separate predicate that takes the C standard as additional input,
-     we require @('special-trap') to be @('nil').")
+     we require @('special-trap') to be @('nil').
+     Although C23 uses the term `non-value representation'
+     for what C17 calls `trap representation',
+     here we use just the name @('special-trap') since it only applies to C17.")
    (xdoc::p
-    "The @('other-traps') component is a placeholder for
-     trap representations caused by combinations of padding bits
-     [C17:6.2.6.2/5] [C23:6.2.6.2].
+    "The @('other-traps/nonvals') component is a placeholder for
+     representations that do not represent integer values
+     due to combinations of padding bits
+     [C17:6.2.6.2/5] [C23:6.2.6.2],
+     called `trap representations' in C17
+     and `non-value representations' in C23.
      We plan to flesh this out in the future."))
   ((bits sinteger-bit-role-listp
          :reqfix (if (sinteger-bit-roles-wfp bits)
@@ -547,7 +555,7 @@
                          (sinteger-bit-role-value 0))))
    (signed signed-format)
    (special-trap bool)
-   other-traps)
+   other-traps/nonvals)
   :require (sinteger-bit-roles-wfp bits)
   :pred sinteger-formatp)
 
@@ -567,8 +575,8 @@
      while C23 requires it to be false [C23:6.2.6.2].
      See @(tsee sinteger-format).")
    (xdoc::p
-    "The @('other-traps') component remains unconstrained,
-     pending a model of padding-related trap representations."))
+    "The @('other-traps/nonvals') component remains unconstrained,
+     pending a model of padding-related trap/non-value representations."))
   (and (signed-format-wfp (sinteger-format->signed format) std)
        (standard-case std
                       :c17 t
@@ -650,7 +658,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is determined by the number @('M') of value bits,
-     the signed format, and possibly the trap representations
+     the signed format, and, in C17, possibly a trap representation
      [C17:6.2.6.2/2] [C23:6.2.6.2],
      where @('M') is @('N-1') in C23,
      where @('N') is the number of value bits
@@ -661,7 +669,7 @@
      If the signed format is two's complement,
      there are two possibilities:
      if the representation with sign bit 1 and all value bits 0
-     is a trap representation,
+     is a trap representation (only possible in C17),
      the minimum value is @('- (2^M - 1)');
      otherwise, it is @('- 2^M').
      The @('special-trap') component of @(tsee sinteger-format)
@@ -737,7 +745,7 @@
                        (make-uinteger-format
                         :bits (list (uinteger-bit-role-value 0)
                                     (uinteger-bit-role-value 1))
-                        :traps nil)))
+                        :traps/nonvals nil)))
    (signed sinteger-format
            :reqfix (if (uinteger-sinteger-bit-roles-wfp
                         (uinteger-format->bits unsigned)
@@ -748,7 +756,7 @@
                                   (sinteger-bit-role-sign))
                       :signed (signed-format-twos-complement)
                       :special-trap nil
-                      :other-traps nil))))
+                      :other-traps/nonvals nil))))
   :require (uinteger-sinteger-bit-roles-wfp
             (uinteger-format->bits unsigned)
             (sinteger-format->bits signed))
@@ -1086,14 +1094,14 @@
   :short "The unsigned integer format defined by
           @('n') increasing value bits,
           no padding bits,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is parameterized over @('n'), which must be positive."))
   (make-uinteger-format
    :bits (uinteger-bit-roles-inc-n (pos-fix n))
-   :traps nil)
+   :traps/nonvals nil)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
@@ -1115,7 +1123,7 @@
           a sign bit at the end,
           two's complement signed format,
           no padding bits,
-          and no trap representations."
+          and no trap/non-value representations."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1124,7 +1132,7 @@
    :bits (sinteger-bit-roles-inc-n-and-sign (pos-fix n))
    :signed (signed-format-twos-complement)
    :special-trap nil
-   :other-traps nil)
+   :other-traps/nonvals nil)
   :guard-hints (("Goal" :in-theory (enable (:e tau-system))))
 
   ///
@@ -1161,7 +1169,7 @@
           a sign bit at the end (for the signed format),
           two's complement signed format,
           no padding bits,
-          and no trap representations."
+          and no trap/non-value representations."
   (make-integer-format
    :unsigned (uinteger-format-inc-npnt size)
    :signed (sinteger-format-inc-sign-tcnpnt (1- (pos-fix size))))
@@ -1211,7 +1219,8 @@
   (defruled integer-format->bit-size-of-integer-format-inc-sign-tcnpnt
     (implies (and (posp size)
                   (not (equal size 1)))
-             (equal (integer-format->bit-size (integer-format-inc-sign-tcnpnt size))
+             (equal (integer-format->bit-size
+                     (integer-format-inc-sign-tcnpnt size))
                     size))
     :enable (integer-format->bit-size
              uinteger-format-inc-npnt

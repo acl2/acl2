@@ -646,7 +646,8 @@
                        :basic-chars basic-chars))
 
   :prepwork
-  ((local (in-theory (enable acl2::character-any-mapp-when-character-nat-mapp))))
+  ((local
+    (in-theory (enable acl2::character-any-mapp-when-character-nat-mapp))))
 
   ///
 

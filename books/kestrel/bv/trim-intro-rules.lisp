@@ -231,7 +231,7 @@
                 (integerp xsize))
            (equal (slice high low x)
                   (slice high low (trim (+ high 1) x))))
-  :hints (("Goal" :in-theory (enable trim) )))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
