@@ -1,7 +1,7 @@
 ; A formalization of 2D arrays of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,8 @@
 
 (include-book "kestrel/bv-arrays/bv-arrayp" :dir :system)
 (include-book "arrays-2d")
-(include-book "kestrel/lists-light/repeat" :dir :system)
-(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/lists-light/repeat-def" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
