@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operations * and /.
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -131,7 +131,7 @@
                       (< (/ k2 k1) x)))))
   :hints (("Goal" :cases ((< (* k1 x) k2)))))
 
-(defthm <=-of-*-of-j-same-arg1
+(defthm <=-of-*-of-/-same-arg1
   (implies (and (<= 1 j)
                 (<= 0 i)
                 (rationalp i)

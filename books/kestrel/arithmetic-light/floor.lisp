@@ -995,12 +995,12 @@
            (<= (floor i j) i))
   :hints (("Goal"
            :cases ((rationalp i))
-           :use (<=-of-*-of-j-same-arg1 (:instance my-floor-upper-bound))
+           :use (<=-of-*-of-/-same-arg1 (:instance my-floor-upper-bound))
            :in-theory (e/d (posp) (floor-bounded-by-/ my-floor-upper-bound ;floor-bound-lemma3
                                                       ;<-*-/-left
                                                       ;<-y-*-y-x
                                                       ;<-*-/-right
-                                                      <=-of-*-of-j-same-arg1
+                                                      <=-of-*-of-/-same-arg1
                                                       <-of-*-of-/-arg1
                                                       <-of-*-of-/-arg2
                                                       <-of-*-same-arg2)))))
