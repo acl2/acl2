@@ -23,9 +23,9 @@
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "kestrel/terms-light/bound-vars-in-term" :dir :system)
 (include-book "kestrel/lists-light/remove-nth" :dir :system)
-(include-book "kestrel/typed-lists-light/symbol-listp" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
 (local (in-theory (disable symbol-listp mv-nth)))
