@@ -107211,8 +107211,8 @@ Bug Fixes From AI via Eric Smith
   [30m[47mcar[0m[0m); and when the function symbol was introduced in support of a
   [stobj], i.e., with a [30m[47m[defstobj][0m[0m or [30m[47m[defabsstobj][0m[0m event.
 
-  Fixed a soundness bug in the evaluation of lambda forms, specifically
-  with respect to their [30m[47m[type][0m[0m [declaration]s.  See
+  Fixed a soundness bug in the evaluation of (@tsee lambda) forms,
+  specifically with respect to their [30m[47m[type][0m[0m [declaration]s.  See
   [30m[47msystem/tests/exploit-lambda-guard-typedecl.lisp[0m[0m.
 
   Fixed three soundness bugs in [non-linear-arithmetic], both in
@@ -107422,6 +107422,25 @@ Bug Fixes From AI via Eric Smith
 
   Fixed a soundness bug in [forward-chaining] that failed to record
   forced hypotheses in certain cases.
+
+  Fixed a soundness bug in the evaluation of calls of [30m[47m[apply$][0m[0m on
+  [30m[47m[lambda][0m[0m objects that contain [30m[47m[mv-list][0m[0m calls.  For an example, see
+  [community-book] [30m[47msystem/tests/mv-list-quoted-lambda.lisp[0m[0m.
+
+  Fixed a soundness bug due to incorrect handling of the output of the
+  ``get?'' function of a [stobj] hash table, to accommodate [df]
+  values (and perhaps stobj values) from the hash table.  For an
+  example see [community-book]
+  [30m[47msystem/tests/ht-get-boundp-stobjs-out.lisp[0m[0m.
+
+  Fixed a soundness bug in the raw Lisp definitions of [stobj]
+  recognizers, which had failed to guarantee that stobj recognizers
+  return Boolean values.  See [community-book]
+  [30m[47msystem/tests/stobj-recognizer-boolean.lisp[0m[0m for an example.
+
+  It was possible to modify a user-defined [stobj] inside a [wormhole]
+  by using [30m[47m[with-global-stobj][0m[0m.  This bug has been fixed; see
+  [community-book] [30m[47msystem/tests/wormhole-global-stobj.lisp[0m[0m.
 
 
 Other Bug Fixes

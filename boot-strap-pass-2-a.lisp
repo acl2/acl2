@@ -1487,9 +1487,13 @@
 
 #-acl2-loop-only
 (defun write-user-stobj-alist-raw (st val state)
+
+; At one time we caused an error here when *wormholep*.  But we should already
+; have caused an error in that case; see with-global-stobj-fn.  We check that
+; here using assert$, but we might consider removing that check at some point.
+
+  (assert (not *wormholep*))
   (cond
-   (*wormholep*
-    (wormhole-er 'write-user-stobj-alist (list st val 'state)))
    ((live-state-p state)
     (loop for pair of-type cons in *user-stobj-alist*
           when (eq (car pair) st)
@@ -1499,6 +1503,6 @@
           finally (error "Unknown stobj, ~s" st)))
    (t
     (error "Illegal call of write-user-stobj-alist: State argument is not the ~
-           `live' ACL2 state."))))
+            `live' ACL2 state."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
