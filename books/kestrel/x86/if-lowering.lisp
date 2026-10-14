@@ -1,6 +1,6 @@
 ; Lowering IFs when appropriate
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,12 +33,12 @@
 (defthmd if-of-set-flag-arg2-64
   (implies (and (mergeable-states64p x86_1 x86_2)
                 (member-equal flag *flags*))
-           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))) )
+           (equal (if test (set-flag flag val x86_1) x86_2) (set-flag flag (if test val (get-flag flag x86_2)) (if test x86_1 x86_2)))))
 
 (defthmd if-of-set-flag-arg3-64
   (implies (and (mergeable-states64p x86_1 x86_2)
                 (member-equal flag *flags*))
-           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))) )
+           (equal (if test x86_1 (set-flag flag val x86_2)) (set-flag flag (if test (get-flag flag x86_1) val) (if test x86_1 x86_2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -2100,7 +2100,7 @@
                                      bvplus
                                      bvuminus
                                      bvminus
-                                     acl2::bvchop-of-sum-cases))) )
+                                     acl2::bvchop-of-sum-cases))))
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
@@ -2114,7 +2114,7 @@
                               bvplus
                               bvuminus
                               bvminus
-                              acl2::bvchop-of-sum-cases))) )
+                              acl2::bvchop-of-sum-cases))))
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt-alt
   (implies (and (sep-eff-addr-ranges eff-addr2 n2 eff-addr1 n1)
@@ -2127,7 +2127,7 @@
                                      bvplus
                                      bvuminus
                                      bvminus
-                                     acl2::bvchop-of-sum-cases))) )
+                                     acl2::bvchop-of-sum-cases))))
 
 ;; potentially could mess things up
 (defthmd sep-eff-addr-ranges-swap
