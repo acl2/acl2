@@ -87,8 +87,10 @@
        (arm (update-endianstate 0 arm))
        (arm (update-error nil arm))
        (arm (update-arch-version (vec-get :arch vec 7) arm))
-       (arm (update-sctlr.a 0 arm))
-       (arm (update-sctlr.u 1 arm))
+       (arm (update-sctlr.a (vec-get :sctlr.a vec 0) arm))
+       (arm (update-sctlr.u (vec-get :sctlr.u vec
+                                     (default-sctlr.u (vec-get :arch vec 7)))
+                            arm))
        (arm (update-library-map nil arm))
        (arm (set-unknown-filling filling arm))
        (arm (write-words (vec-get :pc vec 0) (vec-get :code vec nil) arm))
