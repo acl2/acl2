@@ -116,7 +116,7 @@
     (implies (and (refined-assumption-alistp acc)
                   (refined-assumption-alistp alist))
              (refined-assumption-alistp (uniquify-alist-eq-aux alist acc)))
-    :hints (("Goal" :in-theory (enable refined-assumption-alistp)))))
+    :hints (("Goal" :in-theory (enable refined-assumption-alistp uniquify-alist-eq-aux)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -269,7 +269,7 @@
   (implies (and (refined-assumption-alistp refined-assumption-alist)
                 (all-dag-function-call-exprp exprs))
            (refined-assumption-alistp (extend-refined-assumption-alist exprs refined-assumption-alist)))
-  :hints (("Goal" :in-theory (enable extend-refined-assumption-alist))))
+  :hints (("Goal" :in-theory (enable extend-refined-assumption-alist uniquify-alist-eq))))
 
 (defthm bounded-refined-assumption-alistp-of-extend-refined-assumption-alist
   (implies (and (bounded-refined-assumption-alistp refined-assumption-alist bound)
@@ -277,7 +277,8 @@
                 (bounded-dag-expr-listp bound exprs))
            (bounded-refined-assumption-alistp (extend-refined-assumption-alist exprs refined-assumption-alist) bound))
   :hints (("Goal" :in-theory (enable bounded-refined-assumption-alistp extend-refined-assumption-alist
-                                     dag-function-call-exprp))))
+                                     dag-function-call-exprp
+                                     uniquify-alist-eq))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -80,7 +80,7 @@
   (implies (and (rule-alistp alist)
                 (rule-alistp acc))
            (rule-alistp (uniquify-alist-eq-aux alist acc)))
-  :hints (("Goal" :in-theory (enable rule-alistp acons))))
+  :hints (("Goal" :in-theory (enable rule-alistp acons uniquify-alist-eq-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,7 +267,8 @@
   (declare (xargs :guard (and (axe-rule-listp axe-rules)
                               ; (booleanp remove-duplicate-rulesp)
                               (alistp priorities)
-                              (rule-alistp rule-alist))))
+                              (rule-alistp rule-alist))
+                  :guard-hints (("Goal" :in-theory (enable uniquify-alist-eq)))))
   (let* ((rule-alist (extend-unprioritized-rule-alist axe-rules remove-duplicate-rulesp rule-alist))
          (rule-alist (uniquify-alist-eq rule-alist))
          (rule-alist (if priorities
@@ -281,7 +282,7 @@
                 (alistp priorities)
                 (axe-rule-listp axe-rules))
            (rule-alistp (extend-rule-alist axe-rules remove-duplicate-rulesp priorities rule-alist)))
-  :hints (("Goal" :in-theory (enable extend-rule-alist))))
+  :hints (("Goal" :in-theory (enable extend-rule-alist uniquify-alist-eq))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
