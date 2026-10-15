@@ -393,17 +393,11 @@
 ; stay well formed (the parameter helpers below), and the lists that
 ; AST-WFP constrains the length of keep their length (the LEN facts).
 
-(defrule len-of-uniq-name-list-new-names
-  :short "Freshening a list of names preserves its length."
-  (equal (len (mv-nth 1 (uniq-name-list names used avoid)))
-         (len names))
-  :induct (uniq-name-list names used avoid)
-  :enable (uniq-name-list len))
-
-; LEN-OF-UNIQ-EXPR-PARAMS, LEN-OF-UNIQ-TYPE-VAR-PARAMS,
-; LEN-OF-VAR+TYPE?-LIST-RENAME-ALL-VARS, and LEN-OF-TYPE-LIST-RENAME-ALL-VARS
-; are now proved in UNIQUE-NAMES (in the respective functions' ///), since
-; the :LAMBDAN, :TLAMBDAN, and :TAPPN guards there need them.
+; The LEN facts (LEN-OF-UNIQ-NAME-LIST-NEW-NAMES, LEN-OF-UNIQ-EXPR-PARAMS,
+; LEN-OF-UNIQ-TYPE-VAR-PARAMS, LEN-OF-VAR+TYPE?-LIST-RENAME-ALL-VARS, and
+; LEN-OF-TYPE-LIST-RENAME-ALL-VARS) are proved in UNIQUE-NAMES (in the
+; respective functions' ///), since the :LAMBDAN, :TLAMBDAN, and :TAPPN
+; guards there need them.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

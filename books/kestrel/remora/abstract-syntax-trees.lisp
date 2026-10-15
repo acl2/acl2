@@ -607,7 +607,14 @@
 (fty::defoption type-option
   type
   :short "Fixtype of optional types."
-  :pred type-optionp)
+  :pred type-optionp
+
+  ///
+
+  (defruled type-option-some->val-when-typep
+    (implies (typep x)
+             (equal (type-option-some->val x) x))
+    :enable type-option-some->val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1154,7 +1161,12 @@
       (consp (expr-let->binds expr))
       :rule-classes :type-prescription
       :use (:instance expr-let-requirements (x expr))
-      :disable expr-let-requirements))
+      :disable expr-let-requirements)
+
+    (defrule expr-count-positive
+      (< 0 (expr-count x))
+      :rule-classes :linear
+      :expand ((expr-count x))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
