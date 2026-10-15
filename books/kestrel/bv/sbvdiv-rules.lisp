@@ -265,7 +265,7 @@
                              )))))
 
 ;can we tighten any of the sizes?
-(defthm sbvdiv-rewrite
+(defthmd sbvdiv-rewrite
   (implies (and ;(integerp x)
                 ;(integerp y)
                 (posp size))
@@ -313,7 +313,8 @@
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
                                (EQUAL (BVCHOP (+ -1 SIZE) X) 0)))
-           :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
+           :in-theory (e/d (sbvdiv-rewrite
+                            ;;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv
                             unsigned-byte-p

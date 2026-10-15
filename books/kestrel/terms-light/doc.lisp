@@ -48,14 +48,11 @@
       @('no-duplicate-lambda-formals-in-termp'),
       @('no-nils-in-termp').")
 
-    ;; Note: COUNT-OCCURENCES-IN-TERM is spelled with one 'r', matching
-    ;; the function name, even though the file is count-occurrences-in-term.lisp
-    ;; (two 'r's).
     (xdoc::li
      (xdoc::b "Free-variable and bound-variable analysis")
      " &mdash;
       @('free-vars-in-term'), @('bound-vars-in-term'), @('let-vars-in-term'),
-      @('count-occurences-in-term'), and multiple utilities for counting
+      @('count-occurrences-in-term'), and multiple utilities for counting
       variable occurrences in @('count-vars.lisp').")
 
     (xdoc::li
