@@ -1,6 +1,8 @@
 ; This book, modified only as noted below, was produced by Claude and passed
 ; along by Eric Smith.  It illustrates a soundness bug in ACL2 Version 8.7
-; fixed before ACL2 Version 8.8.
+; fixed before ACL2 Version 8.8.  We exclude GCL, however, since (code-char
+; 300) returns nil in a version of GCL circa 2025 or 2026.
+; cert_param: (non-gcl)
 
 ; Finding 67: ev-synp evaluates a bind-free term without safe-mode, and
 ; bad-synp-alist1 accepts (QUOTE <anything>) as a "legal term", so a bind-free
