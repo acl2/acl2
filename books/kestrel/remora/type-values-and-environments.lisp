@@ -401,7 +401,19 @@
   (change-type-denv denv
                     :ienv (ispace-denv-add-ispace var
                                                   ival
-                                                  (type-denv->ienv denv))))
+                                                  (type-denv->ienv denv)))
+
+  ///
+
+  (defrule type-denv->ienv-of-type-denv-add-ispace
+    (equal (type-denv->ienv (type-denv-add-ispace var ival denv))
+           (ispace-denv-add-ispace var ival (type-denv->ienv denv)))
+    :enable type-denv-add-ispace)
+
+  (defrule type-denv->types-of-type-denv-add-ispace
+    (equal (type-denv->types (type-denv-add-ispace var ival denv))
+           (type-denv->types denv))
+    :enable type-denv-add-ispace))
 
 ;;;;;;;;;;
 
@@ -438,7 +450,14 @@
   (change-type-denv denv
                     :types (omap::update (type-var-fix var)
                                          (type-value-fix tval)
-                                         (type-denv->types denv))))
+                                         (type-denv->types denv)))
+
+  ///
+
+  (defrule type-denv->ienv-of-type-denv-add-type
+    (equal (type-denv->ienv (type-denv-add-type var tval denv))
+           (type-denv->ienv denv))
+    :enable type-denv-add-type))
 
 ;;;;;;;;;;
 

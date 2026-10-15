@@ -584,6 +584,13 @@
     :induct (uniq-ispace-var-params params used avoid dim-renam shape-renam)
     :enable (uniq-ispace-var-params ispace-var-list->name ispace-var->name))
 
+  (defrule len-of-uniq-name-list-new-names
+    :short "Freshening a list of names preserves its length."
+    (equal (len (mv-nth 1 (uniq-name-list names used avoid)))
+           (len names))
+    :induct (uniq-name-list names used avoid)
+    :enable (uniq-name-list len))
+
 ; Freshness and USED-growth facts, in the four-conjunct form that the main
 ; traversal's DEFRET-MUTUAL below uses uniformly: the produced names are
 ; duplicate-free and disjoint from the incoming USED, they are contained in
@@ -991,6 +998,9 @@
      (type-rename-ispace-vars ty r.dim r.shape)
      r.atom r.array)))
 
+(fty::deffixequiv type-rename-all-vars
+  :hints (("Goal" :in-theory (enable type-rename-all-vars))))
+
 (define type-option-rename-all-vars ((ty? type-optionp) (r var-renamings-p))
   :returns (new-ty? type-optionp)
   :short "Apply all five renamings to an optional type."
@@ -998,6 +1008,9 @@
     (type-option-rename-type-vars
      (type-option-rename-ispace-vars ty? r.dim r.shape)
      r.atom r.array)))
+
+(fty::deffixequiv type-option-rename-all-vars
+  :hints (("Goal" :in-theory (enable type-option-rename-all-vars))))
 
 (define type-list-rename-all-vars ((tys type-listp) (r var-renamings-p))
   :returns (new-tys type-listp)
@@ -1013,6 +1026,9 @@
     :hints (("Goal" :in-theory (enable len-of-type-list-rename-type-vars
                                        len-of-type-list-rename-ispace-vars)))))
 
+(fty::deffixequiv type-list-rename-all-vars
+  :hints (("Goal" :in-theory (enable type-list-rename-all-vars))))
+
 (define type-list-option-rename-all-vars ((tys? type-list-optionp)
                                           (r var-renamings-p))
   :returns (new-tys? type-list-optionp)
@@ -1021,6 +1037,9 @@
     (type-list-option-rename-type-vars
      (type-list-option-rename-ispace-vars tys? r.dim r.shape)
      r.atom r.array)))
+
+(fty::deffixequiv type-list-option-rename-all-vars
+  :hints (("Goal" :in-theory (enable type-list-option-rename-all-vars))))
 
 (define var+type?-list-rename-all-vars ((params var+type?-listp)
                                         (r var-renamings-p))
@@ -1039,6 +1058,9 @@
            (len params))
     :hints (("Goal" :in-theory (enable len-of-var+type?-list-rename-type-vars
                                        len-of-var+type?-list-rename-ispace-vars)))))
+
+(fty::deffixequiv var+type?-list-rename-all-vars
+  :hints (("Goal" :in-theory (enable var+type?-list-rename-all-vars))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1783,16 +1805,19 @@
   :mutual-recursion uniquify-names-impl
   :hints
   (("Goal"
-     :expand ((uniq-expr x used r)
+     :expand ((expr-binder-names x)
+              (expr-list-binder-names x)
+              (atom-binder-names x)
+              (atom-list-binder-names x)
+              (bind-binder-names x)
+              (bind-list-binder-names x)
+              (uniq-expr x used r)
               (uniq-expr-list x used r)
               (uniq-atom x used r)
               (uniq-atom-list x used r)
               (uniq-bind x used r)
               (uniq-bind-list x used r))
-     :in-theory (e/d (expr-binder-names expr-list-binder-names
-                                        atom-binder-names atom-list-binder-names
-                                        bind-binder-names bind-list-binder-names
-                                        bind-list-names bind-name
+     :in-theory (e/d (bind-list-names bind-name
                                         expr-binder-names-of-expr-bracket-when-consp
                                         expr-list-fix atom-list-fix bind-list-fix
                                         ispace-var-list-fix
@@ -1811,7 +1836,6 @@
                                         acl2::not-member-equal-when-not-intersectp-equal
                                         acl2::not-member-equal-when-subsetp-equal-2
                                         acl2::subsetp-equal-transitive-alt
-                                        acl2::subsetp-equal-transitive-2-alt
                                         acl2::member-equal-when-subsetp-equal-1
                                         len
                                         len-of-uniq-ispace-var-params
@@ -1829,7 +1853,14 @@
                       string-listp-of-uniq-expr-params.new-used
                       string-listp-of-uniq-type-var-params.new-used
                       string-listp-of-uniq-ispace-var-params.new-used
-                      string-listp-of-uniq-name-list.new-used)))))
+                      string-listp-of-uniq-name-list.new-used
+                      acl2::consp-when-member-equal-of-cons-listp
+                      acl2::subsetp-of-append-when-subset-of-either
+                      (:rewrite acl2::subsetp-member . 3)
+                      acl2::subsetp-when-atom-right
+                      acl2::consp-by-len
+                      binary-append
+                      acl2::append-atom-under-list-equiv)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

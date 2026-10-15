@@ -66,7 +66,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is 1 if the list is empty."))
+    "This is 1 if the list is empty.")
+   (xdoc::p
+    "The theorem @('posp-of-len-over-car-of-dims') shows that
+     splitting a list whose length is
+     the product of non-empty, non-zero dimensions
+     into as many chunks as the first dimension,
+     gives chunks of positive length.
+     The chunk length is stated in the form that arises
+     from @(tsee list-split)."))
   (cond ((endp nats) 1)
         (t (* (lnfix (car nats)) (nat-list-product (cdr nats)))))
 
@@ -94,7 +102,16 @@
   (defruled nat-list-product-divided-by-car
     (implies (and (nat-listp dims)
                   (consp dims))
-             (integerp (/ (nat-list-product dims) (car dims))))))
+             (integerp (/ (nat-list-product dims) (car dims)))))
+
+  (defruled posp-of-len-over-car-of-dims
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (posp (* (/ (car dims)) (len vals))))
+    :enable posp
+    :use nat-list-product-divided-by-car))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
