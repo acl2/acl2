@@ -1102,7 +1102,8 @@
        (make-type+expr
         :type (make-type-array :elem type
                                :ispace (ispace-shape
-                                        (shape-dims (dim-const-list expr.dims))))
+                                        (shape-dims
+                                         (dim-const-list expr.dims))))
         :expr (make-expr-array :dims expr.dims :atoms tas.atoms)))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
