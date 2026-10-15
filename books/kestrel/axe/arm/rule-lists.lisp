@@ -139,6 +139,7 @@
             arm::cmp-immediate-argsp
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
+            arm::mul-argsp
             arm::sub-immediate-argsp
             arm::sub-register-argsp
             arm::sub-register-shifted-register-argsp
