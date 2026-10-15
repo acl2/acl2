@@ -942,22 +942,22 @@
   (fty::deffixequiv-mutual check-dims-of-expr-values/denv)
 
   (defthm-check-dims-of-expr-values/denv-flag
-    (defthm check-dims-of-expr-value-when-reserrp
+    (defthmd check-dims-of-expr-value-when-reserrp
       (implies (reserrp (check-dims-of-expr-value val))
                (equal (check-dims-of-expr-value val)
                       (reserr nil)))
       :flag check-dims-of-expr-value)
-    (defthm check-dims-of-expr-value-list-when-reserrp
+    (defthmd check-dims-of-expr-value-list-when-reserrp
       (implies (reserrp (check-dims-of-expr-value-list vals))
                (equal (check-dims-of-expr-value-list vals)
                       (reserr nil)))
       :flag check-dims-of-expr-value-list)
-    (defthm check-dims-of-primop-value-when-reserrp
+    (defthmd check-dims-of-primop-value-when-reserrp
       (implies (reserrp (check-dims-of-primop-value val))
                (equal (check-dims-of-primop-value val)
                       (reserr nil)))
       :flag check-dims-of-primop-value)
-    (defthm check-dims-of-string-expr-value-map-two-valued
+    (defthmd check-dims-of-string-expr-value-map-two-valued
       (and (implies (reserrp (check-dims-of-string-expr-value-map map))
                     (equal (check-dims-of-string-expr-value-map map)
                            (reserr nil)))
@@ -965,7 +965,7 @@
                     (equal (check-dims-of-string-expr-value-map map)
                            :unit)))
       :flag check-dims-of-string-expr-value-map)
-    (defthm check-dims-of-expr-denv-two-valued
+    (defthmd check-dims-of-expr-denv-two-valued
       (and (implies (reserrp (check-dims-of-expr-denv denv))
                     (equal (check-dims-of-expr-denv denv)
                            (reserr nil)))
@@ -983,12 +983,6 @@
                                        acl2::not-reserrp-when-nat-listp
                                        acl2::not-reserrp-when-nat-list-listp
                                        acl2::nat-listp-of-car-when-nat-list-listp))))
-
-  (in-theory (disable check-dims-of-expr-value-when-reserrp
-                      check-dims-of-expr-value-list-when-reserrp
-                      check-dims-of-primop-value-when-reserrp
-                      check-dims-of-string-expr-value-map-two-valued
-                      check-dims-of-expr-denv-two-valued))
 
   ;; Consequently, the check on a map is insensitive to the order in which
   ;; the entries are checked: updating a map at a fresh key checks the new
