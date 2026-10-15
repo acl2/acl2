@@ -13,7 +13,6 @@
 (include-book "abstract-syntax-trees")
 (include-book "all-variable-operations")
 (include-book "static-environments")
-(include-book "type-checker")
 (include-book "type-environments")
 (include-book "abstract-syntax-well-formedness")
 (include-book "free-variable-operations")
@@ -199,7 +198,7 @@
 ; local (a primitive operation, or a top-level definition) is in scope
 ; wherever the definition is placed, so it is referred to there, not
 ; passed.  This is [impl]'s CAPTURED.  The set of local names is kept
-; separately from the type environment, which the type checker may fail to
+; separately from the type environment, which the validator may fail to
 ; extend: a variable must be captured whether or not its type is known.
 
 ; The captured variables are the @(tsee set::intersect) of the free variables
@@ -335,7 +334,7 @@
   (xdoc::topstring
    (xdoc::p
     "That is, an arrow, possibly as the element type of an array; the
-     type checker gives a function variable an array type over an arrow."))
+     validator gives a function variable an array type over an arrow."))
   (b* ((ty (type-fix ty))
        (elem (type-case ty :array ty.elem :otherwise ty)))
     (or (type-case elem :fun)

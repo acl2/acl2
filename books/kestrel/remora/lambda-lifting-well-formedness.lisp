@@ -311,7 +311,7 @@
   :induct (extend-tenv-with-params params tenv)
   :enable (extend-tenv-with-params var+type?-list-wfp var+type?-wfp))
 
-; The environment is extended by the checker only through values that pass
+; The environment is extended by the validator only through values that pass
 ; the executable check, or not at all.
 
 (defrule type-map-wfp-of-update*

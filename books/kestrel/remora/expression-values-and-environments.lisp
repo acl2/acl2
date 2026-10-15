@@ -3331,7 +3331,7 @@
      for a lambda abstraction, it is the body type stored in the value,
      which must be present,
      because evaluation is only meaningful on
-     type-checked-and-annotated Remora code,
+     validated and annotated Remora code,
      and we will explicate this as an invariant,
      but for now we return an error if there is no type.
      If instead the function value is an empty array,

@@ -10,7 +10,7 @@
 
 (in-package "REMORA")
 
-(include-book "static-environments")
+(include-book "ispace-static-environments")
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-validator
-  :parents (static-semantics)
+  :parents (validator)
   :short "Validator of ispaces, including dimensions and shapes."
   :long
   (xdoc::topstring

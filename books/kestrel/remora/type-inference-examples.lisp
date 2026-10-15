@@ -11,7 +11,7 @@
 (in-package "REMORA")
 
 (include-book "parser-interface")
-(include-book "type-checker")
+(include-book "validator")
 (include-book "evaluation")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,7 +86,7 @@ remora interpret -e '(let ((fun (@vec-length (&t) ($d) (vec (A &t (dims $d))) : 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Type-check the examples.
+; Validate the examples.
 
 (defconst *long-int-type+expr*
   (check-top-expr *long-int-ast*))

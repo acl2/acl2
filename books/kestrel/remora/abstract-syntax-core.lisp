@@ -115,7 +115,7 @@
    (xdoc::p
     "but, as signified by the @('?'), which is a required type,
      we do not know which type to use.
-     This can be known via type checking,
+     This can be known via validation,
      but the desugaring transformation is just a syntactic one,
      at least for now.")
    (xdoc::p

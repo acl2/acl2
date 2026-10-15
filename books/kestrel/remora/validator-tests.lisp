@@ -12,12 +12,12 @@
 (in-package "REMORA")
 
 (include-book "parser-interface")
-(include-book "type-checker")
+(include-book "validator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test that a standalone Remora expression
-; parses and type-checks without error.
+; parses and validates without error.
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs
 ; parse-top-exp-from-string followed by check-top-expr,
@@ -36,11 +36,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test that a standalone Remora expression
-; parses but does not type-check.
+; parses but does not validate.
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs
 ; parse-top-exp-from-string followed by check-top-expr,
-; and passes when type checking returns an error.
+; and passes when validation returns an error.
 ; The error is printed to the comment window for manual inspection.
 
 (defmacro test-check-top-expr-fail (code)
@@ -139,7 +139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The tests below are commented out because they currently fail:
-; the type checker accepts these expressions,
+; the validator accepts these expressions,
 ; but each one gets stuck (a dynamic shape error) when evaluated,
 ; so each should be rejected.
 ; They exploit shadowing of ispace variables rather than escaping witnesses:
@@ -148,7 +148,7 @@
 ; The escape check in the unbox case of check-expr cannot see them,
 ; because the escaping type is closed in each case;
 ; rejecting them requires binder freshness,
-; e.g. uniquification of bound variables before type checking
+; e.g. uniquification of bound variables before validation
 ; (see unique-names.lisp)
 ; or freshness checks at every ispace binder.
 ; If freshness is enforced, these should become passing tests.
@@ -219,7 +219,7 @@
 ; and the body of the universal type binds its own @s in a product type,
 ; which must be renamed apart when the argument is substituted.
 ; The instantiated function is then applied to a vector of functions
-; whose type mentions the outer @s, which type-checks only without capture.
+; whose type mentions the outer @s, which is valid only without capture.
 (test-check-top-expr
  "(i-fn (@s)
   (fn ((f (A (-> (A Int @s) (A Int (dims))) (dims 2))))
@@ -423,7 +423,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The tests below are commented out because they currently fail:
-; the type checker accepts these expressions, but it should reject them.
+; the validator accepts these expressions, but it should reject them.
 ; The parameter x has the abstract type &t (or the abstract length $d),
 ; bound by the enclosing abstraction;
 ; the body then defines &t (or $d),
@@ -1160,7 +1160,7 @@
 
 ; The explicit input shape must match the argument,
 ; but the type does not relate the sizes of the input and output shapes:
-; a reshape to an incompatible size type-checks,
+; a reshape to an incompatible size passes validation,
 ; and the mismatch is only detected by evaluation (see prim-reshape).
 (test-check-top-expr-fail
  "(@reshape (Int) ([3] [2 2]) [1 2 3 4])")

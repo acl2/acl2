@@ -61,7 +61,7 @@
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
-     These are calculated by type checking/inference.")
+     These are calculated by validation.")
    (xdoc::p
     "Our ASTs are, in certain parts, more general than the concrete syntax,
      e.g. they allow certain required type information to be omitted.
@@ -1003,7 +1003,7 @@
        and if there is just one we use the unary form).
        Both forms of unboxing are optionally annotated by
        the type of the whole unboxing expression;
-       this type is absent after parsing, calculated by the type checker.")
+       this type is absent after parsing, calculated by the validator.")
      (xdoc::p
       "A bracketed expression must have at least one sub-expression.")
      (xdoc::p
@@ -1206,7 +1206,7 @@
        and if there is just one we use the unary forms).")
      (xdoc::p
       "The optional type of the body of a lambda abstraction
-       is calculated and stored by the type checker.
+       is calculated and stored by the validator.
        It is absent after parsing.")
      (xdoc::p
       "The @(':box') summand is the main, core form of boxing,
@@ -1219,11 +1219,11 @@
        it is always present in the concrete syntax,
        but it is absent in the inner boxes of
        the nest that an n-ary box desugars to,
-       because those types can only be computed during type checking;
+       because those types can only be computed by the validator;
        this matches [impl].
        Unlike the optional types of abstractions and unboxing expressions,
        the type of a box cannot be calculated from its array,
-       so the type checker accepts a box without a type
+       so the validator accepts a box without a type
        only as an inner box of such a nest.")
      (xdoc::p
       "[impl] has only unary ASTs for abstractions and boxing."))

@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-matcher
-  :parents (static-semantics)
+  :parents (validator)
   :short "A matcher for ispaces."
   :long
   (xdoc::topstring
@@ -515,6 +515,255 @@
            (dim-add-match-known (dim-subst-dim-vars addend subst) const rest))
           ((unless okp) (mv nil 0 nil nil)))
        (dim-add-match-loop (cdr addends) subst const rest unbound)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-pattern-polys-mul ((known1 dim-polyp)
+                               (unknown1 dim-polyp)
+                               (known2 dim-polyp)
+                               (unknown2 dim-polyp))
+  :returns (mv (okp booleanp) (known dim-polyp) (unknown dim-polyp))
+  :short "Multiply two pairs of known and unknown polynomials,
+          if the product is linear in the unknowns."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to turn multiplication patterns into polynomials
+     (see @(tsee dim-pattern-polys-product));
+     the meaning of the known and unknown polynomials of a pattern
+     is explained in @(see dim-patterns-to-polys).
+     A pair denotes the sum of its two polynomials,
+     so the product of the pairs @('(K1, U1)') and @('(K2, U2)')
+     denotes @('(K1 + U1) * (K2 + U2)').
+     We compute it only when the result is still a known polynomial
+     plus a linear polynomial in the unknowns without constant term:
+     if @('U1') and @('U2') are both 0,
+     the product is @('(K1 * K2, 0)');
+     if @('U1') is 0 and @('K1') is a constant,
+     the product is @('(K1 * K2, K1 * U2)'),
+     because multiplying the linear polynomial @('U2') by a constant
+     yields a linear polynomial without constant term,
+     e.g. @('(2, 0)') times @('(1, $i)') is @('(2, 2 $i)');
+     symmetrically, if @('U2') is 0 and @('K2') is a constant,
+     the product is @('(K1 * K2, K2 * U1)').")
+   (xdoc::p
+    "In all other cases we fail,
+     returning @('nil') as the flag,
+     and also as the polynomials, which are irrelevant in that case.
+     The product of two unknown polynomials,
+     e.g. for the patterns @('(* $i $j)') and @('(* $i $i)'),
+     is not linear in the unknowns.
+     The product of an unknown polynomial by a non-constant known polynomial,
+     e.g. for the pattern @('(* $k $i)') with @('$k') bound to @('$l'),
+     would give the unknowns non-constant coefficients,
+     which the matching does not handle;
+     we may extend this in the future."))
+  (cond ((and (omap::emptyp (dim-poly-fix unknown1))
+              (omap::emptyp (dim-poly-fix unknown2)))
+         (mv t (dim-poly-mul known1 known2) nil))
+        ((and (omap::emptyp (dim-poly-fix unknown1))
+              (dim-poly-constp known1))
+         (mv t (dim-poly-mul known1 known2) (dim-poly-mul known1 unknown2)))
+        ((and (omap::emptyp (dim-poly-fix unknown2))
+              (dim-poly-constp known2))
+         (mv t (dim-poly-mul known1 known2) (dim-poly-mul known2 unknown1)))
+        (t (mv nil nil nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-pattern-polys-product ((knowns dim-poly-listp)
+                                   (unknowns dim-poly-listp))
+  :returns (mv (okp booleanp) (known dim-polyp) (unknown dim-polyp))
+  :short "Multiply a list of pairs of known and unknown polynomials,
+          if the product is linear in the unknowns."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The pairs are passed as two parallel lists,
+     of known polynomials and of unknown polynomials,
+     which have the same length in the intended use;
+     if they do not, the extra elements of the longer list are ignored.
+     We multiply the pairs via @(tsee dim-pattern-polys-mul),
+     failing as soon as a product fails.
+     The product of no pairs is @('(1, 0)')."))
+  (b* (((when (or (endp knowns) (endp unknowns)))
+        (mv t (dim-poly-const 1) nil))
+       ((mv okp known unknown)
+        (dim-pattern-polys-product (cdr knowns) (cdr unknowns)))
+       ((unless okp) (mv nil nil nil)))
+    (dim-pattern-polys-mul (car knowns) (car unknowns) known unknown))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines dim-patterns-to-polys
+  :short "Turn patterns and lists of patterns
+          into known and unknown polynomials."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A pattern is a dimension whose variables are pattern variables,
+     some of which may be already bound in a substitution
+     (see @(tsee dims-match)).
+     Since dimension equivalence is equality of polynomials
+     (see @(see dimension-polynomials)),
+     matching a dimension to a pattern modulo equivalence
+     amounts to solving a polynomial equation:
+     the polynomial of the dimension must be equal to
+     the polynomial of the pattern instantiated with the substitution,
+     whose unbound pattern variables are the unknowns.
+     For instance, matching @('5') to the pattern @('(+ 1 $i)')
+     amounts to solving @('5 = 1 + $i') for @('$i'),
+     and matching @('(+ 4 (* 2 $k))') to the pattern @('(* 2 $i)')
+     amounts to solving @('4 + 2 $k = 2 $i') for @('$i').")
+   (xdoc::p
+    "These functions turn a pattern into the right-hand side of the equation,
+     split into two polynomials:
+     the known polynomial, which is the polynomial of
+     the part of the pattern without unbound pattern variables,
+     with each bound pattern variable replaced by its binding;
+     and the unknown polynomial,
+     which is a linear polynomial in the unbound pattern variables,
+     with integer coefficients and no constant term.
+     For instance, the pattern @('(+ 1 $i $i)') yields
+     the known polynomial @('1') and the unknown polynomial @('2 $i'),
+     while the pattern @('(+ $i $j)'), with @('$i') bound to @('(+ 1 $k)'),
+     yields the known polynomial @('1 + $k') and the unknown polynomial @('$j').
+     The pattern instantiated with any values of the unbound variables
+     denotes the sum of the known polynomial
+     and of the unknown polynomial instantiated with those values:
+     e.g. @('(+ 1 $i $i)') with @('$i') instantiated to @('3')
+     denotes @('1 + 2 * 3'), i.e. @('7').
+     Thus, if @('D') is the polynomial of the dimension being matched
+     and @('K') and @('U') are the known and unknown polynomials,
+     the matching must find values of the unknowns such that @('K + U = D'),
+     i.e. such that @('U = D - K').")
+   (xdoc::p
+    "The two polynomials are kept separate, and must not be added together,
+     because the bindings may mention variables of the dimension being matched
+     that have the same names as pattern variables
+     (see @(tsee dims-match)):
+     with @('$i') bound to @('$j'),
+     the pattern @('(+ $i $j)') yields
+     the known polynomial @('$j'),
+     where @('$j') is a variable of the dimension,
+     and the unknown polynomial @('$j'),
+     where @('$j') is a pattern variable;
+     adding them would conflate the two.
+     For the same reason, we do not apply the substitution to the pattern:
+     we go through the pattern, looking up the bindings of its variables.")
+   (xdoc::p
+    "A product of unknowns,
+     e.g. for the patterns @('(* $i $j)') and @('(* $i $i)'),
+     would make the unknown polynomial non-linear,
+     and a product of an unknown by a non-constant known polynomial,
+     e.g. for the pattern @('(* $k $i)') with @('$k') bound to @('$l'),
+     would give the unknowns non-constant coefficients:
+     the matching does not handle these cases,
+     so these functions fail on such patterns
+     (see @(tsee dim-pattern-polys-mul)),
+     returning @('nil') as the flag,
+     and also as the polynomials, which are irrelevant in that case."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dim-pattern-to-polys ((pat dimp) (subst string-dim-mapp))
+    :returns (mv (okp booleanp) (known dim-polyp) (unknown dim-polyp))
+    :parents (ispace-matcher dim-patterns-to-polys)
+    :short "Turn a pattern into its known and unknown polynomials."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "See @(see dim-patterns-to-polys) for the meaning of the two polynomials.
+       The rules follow @(tsee dim-to-poly),
+       with the two polynomials computed side by side.")
+     (xdoc::p
+      "A pattern variable bound in the substitution yields
+       the polynomial of its binding as the known polynomial
+       and 0 as the unknown polynomial;
+       this is the only place where the substitution is consulted.
+       A pattern variable not bound in the substitution yields
+       0 as the known polynomial
+       and itself, as a factor with coefficient 1, as the unknown polynomial.
+       A constant yields itself as the known polynomial
+       and 0 as the unknown polynomial.")
+     (xdoc::p
+      "An addition yields the sums of
+       the known polynomials and of the unknown polynomials of its addends.
+       A subtraction with one operand yields the negations of
+       the known polynomial and of the unknown polynomial of the operand;
+       with two or more operands, it yields
+       the known polynomial and the unknown polynomial of the first operand
+       minus the sums of the ones of the other operands;
+       the invalid subtraction with no operands is an indeterminate,
+       as in @(tsee dim-to-poly).")
+     (xdoc::p
+      "A multiplication yields the product of
+       the pairs of polynomials of its factors
+       (see @(tsee dim-pattern-polys-product)),
+       which exists only if the result is linear in the unknowns:
+       e.g. @('(* 2 $i)') yields 0 and @('2 $i'),
+       while @('(* $i $j)') fails."))
+    (dim-case
+     pat
+     :var (b* ((var+dim (omap::assoc pat.name (string-dim-map-fix subst))))
+            (if var+dim
+                (mv t (dim-to-poly (cdr var+dim)) nil)
+              (mv t nil (dim-poly-factor (dim-var pat.name)))))
+     :const (mv t (dim-poly-const pat.val) nil)
+     :add (b* (((mv okp knowns unknowns)
+                (dim-list-pattern-to-polys pat.dims subst))
+               ((unless okp) (mv nil nil nil)))
+            (mv t (dim-poly-list-sum knowns) (dim-poly-list-sum unknowns)))
+     :mul (b* (((mv okp knowns unknowns)
+                (dim-list-pattern-to-polys pat.dims subst))
+               ((unless okp) (mv nil nil nil)))
+            (dim-pattern-polys-product knowns unknowns))
+     :sub (b* (((when (endp pat.dims))
+                (mv t (dim-poly-factor (dim-sub nil)) nil))
+               ((mv okp known unknown)
+                (dim-pattern-to-polys (car pat.dims) subst))
+               ((unless okp) (mv nil nil nil))
+               ((when (endp (cdr pat.dims)))
+                (mv t (dim-poly-neg known) (dim-poly-neg unknown)))
+               ((mv okp knowns unknowns)
+                (dim-list-pattern-to-polys (cdr pat.dims) subst))
+               ((unless okp) (mv nil nil nil)))
+            (mv t
+                (dim-poly-sub known (dim-poly-list-sum knowns))
+                (dim-poly-sub unknown (dim-poly-list-sum unknowns)))))
+    :measure (dim-count pat))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define dim-list-pattern-to-polys ((pats dim-listp) (subst string-dim-mapp))
+    :returns (mv (okp booleanp)
+                 (knowns dim-poly-listp)
+                 (unknowns dim-poly-listp))
+    :parents (ispace-matcher dim-patterns-to-polys)
+    :short "Turn a list of patterns into
+            the lists of their known and unknown polynomials."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The two lists are parallel to the list of patterns.
+       We fail if any pattern fails."))
+    (b* (((when (endp pats)) (mv t nil nil))
+         ((mv okp known unknown) (dim-pattern-to-polys (car pats) subst))
+         ((unless okp) (mv nil nil nil))
+         ((mv okp knowns unknowns)
+          (dim-list-pattern-to-polys (cdr pats) subst))
+         ((unless okp) (mv nil nil nil)))
+      (mv t (cons known knowns) (cons unknown unknowns)))
+    :measure (dim-list-count pats))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual dim-patterns-to-polys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

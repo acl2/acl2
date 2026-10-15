@@ -695,6 +695,12 @@
 
   't)
 
+#+acl2-loop-only
+(defconst *global-package-prefix* "ACL2_GLOBAL_")
+
+#+acl2-loop-only
+(defconst *1*-package-prefix* "ACL2_*1*_")
+
 (defconst *stobj-inline-declare*
 
 ; This constant is being introduced in v2-8.  In this file it is only used in

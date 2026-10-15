@@ -10,7 +10,8 @@
 
 (in-package "REMORA")
 
-(include-book "ispace-validator")
+(include-book "type-validator")
+(include-book "expression-static-environments")
 (include-book "abstract-syntax-constructors")
 (include-book "abstract-syntax-structurals")
 (include-book "abstract-syntax-matching-operations")
@@ -53,126 +54,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-checker
-  :parents (static-semantics)
-  :short "A type checker for Remora."
+(defxdoc+ expression-validator
+  :parents (validator)
+  :short "Validator of expressions, including atoms."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a high-level executable type checker
-     that is meant to enforce exactly the inference rules
-     that define the static semantics of Remora
-     in [thesis] and [arxiv].")
-   (xdoc::p
-    "This type checker is not designed for efficiency
-     or to provide informative error messages.
-     It is designed for simplicity.")
-   (xdoc::p
-    "Besides checking, this type checker performs
-     a limited form of type inference:
-     when a function with a universal or product type
-     is applied to an argument
-     without explicit type and ispace applications,
-     the type and ispace arguments are inferred from the argument type,
-     and the corresponding applications are added to the expression
-     (see @(tsee check/infer-app)).
-     We plan to extend this inference."))
+    "This implements the specification in @(see expression-validity)."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines check-types
-  :short "Check types and lists of types."
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define check-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
-    :returns (yes/no booleanp)
-    :parents (type-checker check-types)
-    :short "Check a type."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We return @('t') if the check is successful, otherwise @('nil').")
-     (xdoc::p
-      "A variable must be in the environment.")
-     (xdoc::p
-      "A base type is always valid.")
-     (xdoc::p
-      "An array type is valid iff
-       its element type is valid and atom-kinded (i.e. not an array type),
-       and its ispace is valid.")
-     (xdoc::p
-      "A bracket type is valid iff
-       its element type is valid and atom-kinded (i.e. not an array type),
-       and its ispaces are valid.")
-     (xdoc::p
-      "The atom-kind requirement on the element type of
-       an array or bracket type is the only kind constraint:
-       as explained in @(tsee type),
-       an atom-kinded type may otherwise be used
-       wherever an array-kinded type is expected,
-       being auto-lifted to a zero-rank array type.")
-     (xdoc::p
-      "A function type is valid iff
-       its input types and its output type are all valid.")
-     (xdoc::p
-      "A universal type is valid iff its body is valid
-       in the environment extended with the bound type variables.")
-     (xdoc::p
-      "A product type is valid iff its body is valid
-       in the environment extended with the bound ispace variables.")
-     (xdoc::p
-      "A sum type is valid iff its body is valid
-       in the environment extended with the bound ispace variables."))
-    (type-case
-     type
-     :var (consp (omap::assoc type.var (type-senv->types tenv)))
-     :base t
-     :array (and (check-type type.elem ienv tenv)
-                 (type-atom-kindp type.elem)
-                 (check-ispace type.ispace ienv))
-     :bracket (and (check-type type.elem ienv tenv)
-                   (type-atom-kindp type.elem)
-                   (check-ispace-list type.ispaces ienv))
-     :fun (and (check-type type.in ienv tenv)
-               (check-type type.out ienv tenv))
-     :funn (and (check-type-list type.in ienv tenv)
-                (check-type type.out ienv tenv))
-     :forall (check-type type.body ienv (type-senv-add-var type.param tenv))
-     :foralln (check-type type.body ienv (type-senv-add-vars type.params tenv))
-     :pi (check-type type.body (ispace-senv-add-var type.param ienv) tenv)
-     :pin (check-type type.body (ispace-senv-add-vars type.params ienv) tenv)
-     :sigma (check-type type.body (ispace-senv-add-var type.param ienv) tenv)
-     :sigman (check-type type.body
-                         (ispace-senv-add-vars type.params ienv)
-                         tenv))
-    :measure (type-count type))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define check-type-list ((types type-listp)
-                           (ienv ispace-senvp)
-                           (tenv type-senvp))
-    :returns (yes/no booleanp)
-    :parents (type-checker check-types)
-    :short "Check a list of types."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "We check each type in turn,
-       returning @('t') iff they are all valid."))
-    (or (endp types)
-        (and (check-type (car types) ienv tenv)
-             (check-type-list (cdr types) ienv tenv)))
-    :measure (type-list-count types))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  ///
-
-  (fty::deffixequiv-mutual check-types))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,7 +466,7 @@
        (var (typevar+type->var fun-var+type))
        (rest-type (typevar+type->type fun-var+type))
        ((unless (check-type arg ienv tenv)) (reserr nil))
-       ((ok arg) (senv-expand-type arg ienv tenv))
+       ((ok arg) (type-senv-expand-type arg ienv tenv))
        ((ok (string-type-map-pair type-maps))
         (check-type-params-and-args (list var) (list arg)))
        (rest-type-subst
@@ -668,7 +558,7 @@
        (var (ispacevar+type->var fun-var+type))
        (rest-type (ispacevar+type->type fun-var+type))
        ((unless (check-ispace arg ienv)) (reserr nil))
-       (arg (senv-expand-ispace arg ienv))
+       (arg (ispace-senv-expand-ispace arg ienv))
        ((ok (stringdimmap+stringshapemap ispace-maps))
         (check-ispace-params-and-args (list var) (list arg)))
        (rest-type-subst
@@ -723,7 +613,7 @@
      If the type annotation is absent, there is nothing to check.
      If it is present, it must be a valid type that,
      once expanded against the definitions in the static environments
-     (see @(tsee senv-expand-type)),
+     (see @(tsee type-senv-expand-type)),
      and once lifted to a scalar array type if it is an atom type,
      is equivalent to the calculated expression type passed as argument
      (which is already expanded).
@@ -739,7 +629,7 @@
    anno-type
    :none t
    :some (b* (((unless (check-type anno-type.val ienv tenv)) nil)
-              (anno-type (senv-expand-type anno-type.val ienv tenv))
+              (anno-type (type-senv-expand-type anno-type.val ienv tenv))
               ((when (reserrp anno-type)) nil)
               (anno-type (type-ensure-array anno-type)))
            (type-equivp expr-type anno-type))))
@@ -1012,12 +902,12 @@
     "These functions maintain the invariant that
      every type they return is fully expanded
      with respect to the definitions in the static environments
-     (see @(tsee senv-expand-type)):
+     (see @(tsee type-senv-expand-type)):
      that is, every ispace or type variable
      that a @('let') binds to a definition
      has been replaced with that definition.
      The invariant is established by
-     expanding every syntactic type or ispace as it enters the checker
+     expanding every syntactic type or ispace as it enters the validator
      (in the empty array and frame expressions,
      the lambda and box atoms,
      the type and ispace application arguments,
@@ -1050,7 +940,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check an expression; if successful,
             return its type and the type-augmented expression."
     :long
@@ -1064,7 +954,7 @@
      (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
-       We type-check all the atoms,
+       We check all the atoms,
        which must have all equivalent types.
        We pick the first type from the list of types (which must be non-empty)
        as the atom type for the array type.
@@ -1193,7 +1083,7 @@
      :var
      (b* ((name+type (omap::assoc expr.name (expr-senv->exprs eenv)))
           ((unless name+type) (reserr nil))
-          ((ok type) (senv-expand-type (cdr name+type) ienv tenv)))
+          ((ok type) (type-senv-expand-type (cdr name+type) ienv tenv)))
        (make-type+expr :type type :expr (expr-fix expr)))
      :atom
      (b* (((ok (type+atom ta)) (check-atom expr.atom ienv tenv eenv)))
@@ -1212,17 +1102,19 @@
        (make-type+expr
         :type (make-type-array :elem type
                                :ispace (ispace-shape
-                                        (shape-dims (dim-const-list expr.dims))))
+                                        (shape-dims
+                                         (dim-const-list expr.dims))))
         :expr (make-expr-array :dims expr.dims :atoms tas.atoms)))
      :array-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type ienv tenv)) (reserr nil))
           ((unless (type-atom-kindp expr.type)) (reserr nil))
-          ((ok elem) (senv-expand-type expr.type ienv tenv)))
+          ((ok elem) (type-senv-expand-type expr.type ienv tenv)))
        (make-type+expr
         :type (make-type-array :elem elem
                                :ispace (ispace-shape
-                                        (shape-dims (dim-const-list expr.dims))))
+                                        (shape-dims
+                                         (dim-const-list expr.dims))))
         :expr (expr-fix expr)))
      :frame
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
@@ -1244,7 +1136,7 @@
      :frame-empty
      (b* (((unless (member-equal 0 expr.dims)) (reserr nil))
           ((unless (check-type expr.type ienv tenv)) (reserr nil))
-          ((ok type) (senv-expand-type expr.type ienv tenv))
+          ((ok type) (type-senv-expand-type expr.type ienv tenv))
           ((ok (type+ispace array)) (type-match-array type)))
        (make-type+expr
         :type (make-type-array
@@ -1419,7 +1311,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (types+exprs types+exprs-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of expressions; if successful,
             return their types and the type-augmented expressions."
     :long
@@ -1469,7 +1361,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (type+atom type+atom-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check an atom; if successful,
             return its type and the type-augmented atom."
     :long
@@ -1558,7 +1450,7 @@
      :lambda
      (b* (((ok type) (var+type?->type-or-err atom.param))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok type) (senv-expand-type type ienv tenv))
+          ((ok type) (type-senv-expand-type type ienv tenv))
           ((ok eenv)
            (expr-senv-add-var (var+type?->var atom.param) type eenv))
           ((ok (type+expr be)) (check-expr atom.body ienv tenv eenv)))
@@ -1572,7 +1464,7 @@
            (reserr nil))
           ((ok types) (var+type?-list->type-list-or-err atom.params))
           ((unless (check-type-list types ienv tenv)) (reserr nil))
-          ((ok types) (senv-expand-type-list types ienv tenv))
+          ((ok types) (type-senv-expand-type-list types ienv tenv))
           ((ok eenv)
            (expr-senv-add-vars
             (var+type?-list-set-types types atom.params)
@@ -1611,13 +1503,13 @@
         :atom (make-atom-ilambdan :params atom.params :body be.expr)))
      :box
      (b* (((unless (check-ispace atom.ispace ienv)) (reserr nil))
-          (ispace (senv-expand-ispace atom.ispace ienv))
+          (ispace (ispace-senv-expand-ispace atom.ispace ienv))
           ((ok type) (type-option-case atom.type?
                                        :some atom.type?.val
                                        :none (reserr nil)))
           ((unless (type-atom-kindp type)) (reserr nil))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok box-type) (senv-expand-type type ienv tenv))
+          ((ok box-type) (type-senv-expand-type type ienv tenv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1640,13 +1532,13 @@
                              :type? atom.type?)))
      :boxn
      (b* (((unless (check-ispace-list atom.ispaces ienv)) (reserr nil))
-          (ispaces (senv-expand-ispace-list atom.ispaces ienv))
+          (ispaces (ispace-senv-expand-ispace-list atom.ispaces ienv))
           ((ok type) (type-option-case atom.type?
                                        :some atom.type?.val
                                        :none (reserr nil)))
           ((unless (type-atom-kindp type)) (reserr nil))
           ((unless (check-type type ienv tenv)) (reserr nil))
-          ((ok box-type) (senv-expand-type type ienv tenv))
+          ((ok box-type) (type-senv-expand-type type ienv tenv))
           ((ok vars+type) (type-match-sum box-type))
           (vars (ispacevarlist+type->vars vars+type))
           (body-type (ispacevarlist+type->type vars+type))
@@ -1673,7 +1565,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check the array expression of a unary boxing atom
             against the expected type."
     :long
@@ -1707,7 +1599,7 @@
          (vars (ispacevarlist+type->vars vars+type))
          (body-type (ispacevarlist+type->type vars+type))
          ((unless (check-ispace ie.ispace ienv)) (reserr nil))
-         (ispace (senv-expand-ispace ie.ispace ienv))
+         (ispace (ispace-senv-expand-ispace ie.ispace ienv))
          ((ok (stringdimmap+stringshapemap maps))
           (check-ispace-params-and-args (list (car vars)) (list ispace)))
          (rest-type (sigma-curried-body vars body-type))
@@ -1736,7 +1628,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (types+atoms types+atoms-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of atoms; if successful,
             return their types and the type-augmented atoms."
     :long
@@ -1780,7 +1672,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (senvs+bind senvs+bind-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a binding; if successful,
             extend the static environments
             and return the type-augmented binding."
@@ -1852,7 +1744,7 @@
        (a dimension variable is bound to a dimension,
        a shape variable is bound to a shape).
        We expand the ispace against the ispace static environment's definitions
-       (see @(tsee senv-expand-ispace)),
+       (see @(tsee ispace-senv-expand-ispace)),
        so that the stored definition is itself fully expanded,
        and we extend the ispace static environment
        to associate that definition to the bound variable.")
@@ -1873,7 +1765,7 @@
                     :dim (ispace-case bind.ispace :dim)
                     :shape (ispace-case bind.ispace :shape)))
            (reserr nil))
-          (ispace (senv-expand-ispace bind.ispace ienv)))
+          (ispace (ispace-senv-expand-ispace bind.ispace ienv)))
        (make-senvs+bind
         :ienv (ispace-senv-add-def bind.var ispace ienv)
         :tenv (type-senv-fix tenv)
@@ -1886,7 +1778,7 @@
                     :atom (type-atom-kindp bind.type)
                     :array (not (type-atom-kindp bind.type))))
            (reserr nil))
-          ((ok type) (senv-expand-type bind.type ienv tenv)))
+          ((ok type) (type-senv-expand-type bind.type ienv tenv)))
        (make-senvs+bind
         :ienv (ispace-senv-fix ienv)
         :tenv (type-senv-add-def bind.var type tenv)
@@ -1908,7 +1800,7 @@
            (reserr nil))
           ((ok types) (var+type?-list->type-list-or-err bind.params))
           ((unless (check-type-list types ienv tenv)) (reserr nil))
-          ((ok types) (senv-expand-type-list types ienv tenv))
+          ((ok types) (type-senv-expand-type-list types ienv tenv))
           ((ok eenv-body)
            (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
@@ -1991,8 +1883,9 @@
            (reserr nil))
           ((unless (check-type bind.type ienv-params tenv-params))
            (reserr nil))
-          ((ok btype) (senv-expand-type bind.type ienv-params tenv-params))
-          ((ok types) (senv-expand-type-list types ienv-params tenv-params))
+          ((ok btype) (type-senv-expand-type bind.type ienv-params tenv-params))
+          ((ok types)
+           (type-senv-expand-type-list types ienv-params tenv-params))
           ((ok eenv-body)
            (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
@@ -2035,7 +1928,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (senvs+binds senvs+binds-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of bindings; if successful,
             extend the static environments
             and return the type-augmented bindings."
@@ -2076,18 +1969,3 @@
   (verify-guards check-expr)
 
   (fty::deffixequiv-mutual check-exprs/atoms/binds))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define check-top-expr ((expr exprp))
-  :returns (type+expr type+expr-resultp)
-  :short "Check a standalone (top-level) expression,
-          returning its type and the expression if successful."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We check the expression, using the initial static environments.
-     We return its type, together with the expression, if successful;
-     the returned expression is currently identical to the input,
-     as in @(tsee check-exprs/atoms/binds)."))
-  (check-expr expr (init-ispace-senv) (init-type-senv) (init-expr-senv)))

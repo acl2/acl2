@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-matcher
-  :parents (static-semantics)
+  :parents (validator)
   :short "A matcher for types."
   :long
   (xdoc::topstring
@@ -246,8 +246,8 @@
      This way, the substitutions always bind
      atom-kind variables to atom-kind types and
      array-kind variables to array-kind types,
-     as expected by the rest of the type checker
-     (e.g. see @(tsee senv-type-subst)).")
+     as expected by the rest of the validator
+     (e.g. see @(tsee type-senv-type-subst)).")
    (xdoc::p
     "The substitution for the kind of the variable is consulted:
      a pattern variable that is bound in the substitution

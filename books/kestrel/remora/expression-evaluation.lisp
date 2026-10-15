@@ -425,7 +425,7 @@
      and evaluate the deferred body,
      analogously to @(tsee eval-iapp) on a product type value.
      The sort check on the witness is expected to always succeed
-     for a box value that comes from type checking;
+     for a box value that comes from validation;
      we plan to eliminate it via a well-formedness invariant."))
   (b* (((when (endp ivals)) (reserr nil))
        ((when (endp (cdr ivals)))
@@ -588,8 +588,8 @@
        and then we evaluate the unboxing over the resulting value
        via a separate ACL2 function (see @(tsee eval-unbox)).
        The optional type must be present:
-       evaluation is only meaningful on type-checked, type-annotated ASTs.
-       Our type checker will annotate the ASTs appropriately.")
+       evaluation is only meaningful on validated, type-annotated ASTs.
+       Our validator will annotate the ASTs appropriately.")
      (xdoc::p
       "For a bracket expression,
        we evaluate the sub-expressions,
@@ -985,7 +985,7 @@
        we also evaluate it here, ignoring the resulting type value for now.
        A function binding with no parameters
        is treated as a plain value binding,
-       consistently with the type checker and with [impl],
+       consistently with the validator and with [impl],
        whose parser turns such a binding
        directly into a value binding.")
      (xdoc::p
@@ -1035,7 +1035,7 @@
        Each layer is formed only if
        the corresponding parameters are present;
        an absent parameter list and an empty one are treated alike,
-       consistently with the type checker and with [impl].
+       consistently with the validator and with [impl].
        With no parameters at all,
        the binding is treated as a plain value binding.")
      (xdoc::p
@@ -1825,7 +1825,7 @@
        of the unboxing expression,
        while @('type') is the result type of the body,
        already evaluated to a type value.
-       The type checker is required to have annotated this type;
+       The validator is required to have annotated this type;
        @(tsee eval-expr) returns an error if it is absent.")
      (xdoc::p
       "If the target is a scalar box value,

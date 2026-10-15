@@ -56,6 +56,22 @@
 (assert-equal (dim-poly-const 0)
               nil)
 
+; A constant polynomial is a constant term or 0;
+; a polynomial with a non-empty monomial is not constant.
+
+(assert-equal (dim-poly-constp (dim-poly-const 3))
+              t)
+
+(assert-equal (dim-poly-constp nil)
+              t)
+
+(assert-equal (dim-poly-constp (list (cons (list (dim-var "i")) 1)))
+              nil)
+
+(assert-equal (dim-poly-constp (list (cons nil 1)
+                                     (cons (list (dim-var "i")) 1)))
+              nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; One-factor polynomials: a variable, and the nullary subtraction.
@@ -216,6 +232,58 @@
                                           (dim-poly-const 1)))
               (list (cons nil -1)
                     (cons (list (dim-var "i") (dim-var "i")) 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Nonnegativity: all the coefficients must be nonnegative;
+; the zero polynomial is nonnegative.
+
+(assert-equal (dim-poly-nonnegp nil)
+              t)
+
+(assert-equal (dim-poly-nonnegp (list (cons nil 1)
+                                      (cons (list (dim-var "i")) 2)))
+              t)
+
+(assert-equal (dim-poly-nonnegp (list (cons nil -1)
+                                      (cons (list (dim-var "i")) 1)))
+              nil)
+
+(assert-equal (dim-poly-nonnegp (list (cons (list (dim-var "i")) -1)))
+              nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Division by a positive integer:
+; exact when every coefficient is a multiple of the divisor,
+; e.g. (6 + 4 i) / 2 = 3 + 2 i, and any polynomial divided by 1 is itself;
+; not exact otherwise, e.g. (7 + 4 i) / 2 and (2 + i) / 2;
+; the zero polynomial is divisible by any divisor.
+
+(assert-equal (mv-list 2 (dim-poly-div (list (cons nil 6)
+                                             (cons (list (dim-var "i")) 4))
+                                       2))
+              (list t (list (cons nil 3)
+                            (cons (list (dim-var "i")) 2))))
+
+(assert-equal (mv-list 2 (dim-poly-div (list (cons nil 6)
+                                             (cons (list (dim-var "i")) 4))
+                                       1))
+              (list t (list (cons nil 6)
+                            (cons (list (dim-var "i")) 4))))
+
+(assert-equal (mv-list 2 (dim-poly-div (list (cons nil 7)
+                                             (cons (list (dim-var "i")) 4))
+                                       2))
+              (list nil nil))
+
+(assert-equal (mv-list 2 (dim-poly-div (list (cons nil 2)
+                                             (cons (list (dim-var "i")) 1))
+                                       2))
+              (list nil nil))
+
+(assert-equal (mv-list 2 (dim-poly-div nil 3))
+              (list t nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

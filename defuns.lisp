@@ -6044,9 +6044,11 @@
 
 ; This constant should map to t all function symbols that might violate an ACL2
 ; invariant.  See check-invariant-risk.  We don't include compress1 or
-; compress2 because we believe they don't write out of bounds.  We explicitly
-; map some function symbols to nil to indicate that our trust that they don't
-; have invariant-risk (in spite of calling a function that does).
+; compress2 because we believe they don't write out of bounds (as we cause an
+; error if they are applied to an argument not satisfying array1p or array2p,
+; respectively).  We explicitly map some function symbols to nil to indicate
+; that our trust that they don't have invariant-risk (in spite of calling a
+; function that does).
 
 ; In the case of mutual-recursion, only the first name in the nest should be a
 ; key of this alist; see put-invariant-risk.
@@ -6061,6 +6063,16 @@
 ; untouchable.  The only exceptions are those mapped to t below, as is checked
 ; by the function check-invariant-risk.  If new exceptions arise, then we
 ; should map them to t below.
+
+; Note that there is no need to mark aref1, zp, or other functions that can
+; give a different answer in raw Lisp than in the logic on ill-guarded calls.
+; For example, if we make the definition
+; (defun foo () (declare (xargs :mode :program)) (zp -3))
+; then even though we can prove (thm (zp -3)), nevertheless, (foo) evaluates to
+; nil.  This is unfortunate but there is no invariant violation -- that is, no
+; lingering effects of the evaluation leave ACL2 in a bad way.  We simply do
+; not make soundness claims about results from evaluating user-defined
+; program-mode functions.
 
   '((aset1 . t) ; could write past the end of the real array
     (aset2 . t) ; could write past the end of the real array

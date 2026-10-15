@@ -11,13 +11,7 @@
 (in-package "REMORA")
 
 (include-book "static-environments")
-(include-book "ispace-validator")
-(include-book "dimension-polynomials")
-(include-book "ispace-equivalence-checker")
-(include-book "type-equivalence-checker")
-(include-book "ispace-matcher")
-(include-book "type-matcher")
-(include-book "type-checker")
+(include-book "validator")
 (include-book "ispace-validity")
 (include-book "type-validity")
 (include-book "ispace-equivalence")
@@ -40,17 +34,11 @@
     "The static semantics of Remora is defined via inference rules,
      in the Remora publications [thesis] [arxiv] [esop].
      While we are working on formalizing those inference rules,
-     we also provide an executable type checker,
+     we also provide an executable validator,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
-                    ispace-validator
-                    dimension-polynomials
-                    ispace-equivalence-checker
-                    type-equivalence-checker
-                    ispace-matcher
-                    type-matcher
-                    type-checker
+                    validator
                     ispace-validity
                     type-validity
                     ispace-equivalence

@@ -56,7 +56,7 @@
     "All these well-formedness constraints on ASTs
      are established by the syntax abstraction mapping,
      and are preserved by all the transformations of the ASTs,
-     including type checking/inference.
+     including validation.
      We plan to prove these properties.")
    (xdoc::p
     "Although the well-formedness constraints come from the grammar,
@@ -75,7 +75,7 @@
      that is inverse of the syntax abstract mapping,
      although we have not defined this concretization mapping yet),
      but may be violated in between,
-     particularly by type checking/inference."))
+     particularly by validation."))
   :order-subtopics t
   :default-parent t)
 

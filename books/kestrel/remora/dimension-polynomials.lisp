@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dimension-polynomials
-  :parents (static-semantics)
+  :parents (validator)
   :short "Polynomials over the integers in the dimension variables."
   :long
   (xdoc::topstring
@@ -188,6 +188,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim-poly-constp ((poly dim-polyp))
+  :returns (yes/no booleanp)
+  :short "Check if a polynomial is constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A constant polynomial has no monomials other than the empty one:
+     it is either a constant term or the zero polynomial.
+     We express this by saying that
+     it is the constant polynomial of its constant coefficient."))
+  (equal (dim-poly-fix poly)
+         (dim-poly-const (dim-poly-coeff nil poly))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dim-poly-factor ((factor dimp))
   :returns (poly dim-polyp)
   :short "Polynomial consisting of a single factor, with coefficient 1."
@@ -283,6 +298,46 @@
        ((mv mono coeff) (omap::head poly1)))
     (dim-poly-add (dim-poly-mul-term mono coeff poly2)
                   (dim-poly-mul (omap::tail poly1) poly2)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-poly-nonnegp ((poly dim-polyp))
+  :returns (yes/no booleanp)
+  :short "Check if all the coefficients of a polynomial are nonnegative."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The zero polynomial has no coefficients, so it satisfies this check."))
+  (b* (((when (omap::emptyp (dim-poly-fix poly))) t)
+       ((mv & coeff) (omap::head poly)))
+    (and (>= coeff 0)
+         (dim-poly-nonnegp (omap::tail poly)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dim-poly-div ((poly dim-polyp) (divisor posp))
+  :returns (mv (okp booleanp) (quotient dim-polyp))
+  :short "Divide a polynomial by a positive integer, if the division is exact."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The division is exact when every coefficient is a multiple of the divisor;
+     in that case, we return @('t') and the polynomial
+     whose coefficients are the quotients of the coefficients.
+     Otherwise, we return @('nil') as the flag,
+     and also as the polynomial, which is irrelevant in that case.")
+   (xdoc::p
+    "The quotients are nonzero, because the coefficients are,
+     so the canonical representation of polynomials is maintained
+     (see @(see dimension-polynomials))."))
+  (b* (((when (omap::emptyp (dim-poly-fix poly))) (mv t nil))
+       ((mv mono coeff) (omap::head poly))
+       (quot (/ coeff (lposfix divisor)))
+       ((unless (integerp quot)) (mv nil nil))
+       ((mv okp quotient) (dim-poly-div (omap::tail poly) divisor))
+       ((unless okp) (mv nil nil)))
+    (mv t (omap::update (dim-list-fix mono) quot quotient)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

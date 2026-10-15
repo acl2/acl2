@@ -976,7 +976,7 @@
     (atom-case a
       :base (base-lit-to-pdoc a.lit)
       ;; We do not print the optional body type (a.type?):
-      ;; it has no concrete syntax (it is computed by type checking).
+      ;; it has no concrete syntax (it is computed by the validator).
       :lambda (b* (((ok pat) (pat-to-pdoc a.param))
                    ((ok body) (expr-to-pdoc a.body)))
                 (pdoc-prefix-form
