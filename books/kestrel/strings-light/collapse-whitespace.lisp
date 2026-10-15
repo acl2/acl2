@@ -87,7 +87,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *whitespace-chars*
-  '(#\Space #\Tab #\Newline #\Return))
+  '(#\Space #\Tab #\Newline #\Return #\Page))
 
 ;; Collapses all whitespace down to a single space.
 (defund collapse-whitespace-in-char-list (chars)
