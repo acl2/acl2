@@ -232,7 +232,7 @@
     ;; todo: qsub16
     ;; todo: qsub8
 
-    ;; (:rbit (cond 4) 0 1 1 0 1 1 1 1 (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4)) ; ready
+    ;;; (:rbit (cond 4) 0 1 1 0 1 1 1 1 (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
 
     (:rev (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 0 0 1 1 (rm 4))
     (:rev16 (cond 4) 0 1 1 0 1 _ 0 _ 1 1 _ (1) (1) (1) (1) (rd 4) (1) (1) (1) (1) 1 0 1 1 (rm 4))
@@ -257,7 +257,7 @@
     (:sbc-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (imm5 5) (type 2) 0 (rm 4))
     (:sbc-register-shifted-register (cond 4) 0 0 _ 0 _ 0 1 1 0 s (rn 4) (rd 4) (rs 4) 0 (type 2) 1 (rm 4))
 
-    ;; (:sbfx (cond 4) 0 1 1 1 1 _ 0 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+    ;;; (:sbfx (cond 4) 0 1 1 1 1 _ 0 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4))
 
     ;; todo: sdiv
     ;; todo: sel
@@ -277,23 +277,22 @@
     ;; todo: smlalbb/smlalbt/smlaltb/smlaltt
 
     ;; also covers SMLALDX:
-    ;; (:smlald (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 0 m 1 (rn 4)) ; ready
+    ;;; (:smlald (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 0 m 1 (rn 4))
 
     ;; todo: smlawb/smlawt
     ;; todo: smlsd
 
     ;; also covers SMLSLDX:
-    ;; (:smlsld (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 1 m 1 (rn 4)) ; ready
-
+    ;;; (:smlsld (cond 4) 0 1 1 1 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 0 1 m 1 (rn 4))
 
     ;; also covers SMMLAR:
-    ;; (:smmla (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 0 0 r 1 (rn 4)) ; ready
+    ;;; (:smmla (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 0 0 r 1 (rn 4))
 
     ;; also covers SMMLSR:
-    ;; (:smmls (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 1 1 r 1 (rn 4)) ; ready
+    ;;; (:smmls (cond 4) 0 1 1 1 0 1 0 1 (rd 4) (ra 4) (rm 4) 1 1 r 1 (rn 4))
 
     ;; also covers SMMULR:
-    ;; (:smmul (cond 4) 0 1 1 1 0 1 0 1 (rd 4) 1 1 1 1 (rm 4) 0 0 r 1 (rn 4)) ; ready
+    ;;; (:smmul (cond 4) 0 1 1 1 0 1 0 1 (rd 4) 1 1 1 1 (rm 4) 0 0 r 1 (rn 4))
 
     ;; todo: smuad
 
@@ -349,11 +348,11 @@
 
     (:swp/swpb (cond 4) 0 0 0 1 0 b 0 0 (rn 4) (rt 4) (0) (0) (0) (0) 1 0 0 1 (rt2 4))
 
-    ;; (:sxtab (cond 4) 0 1 1 0 1 0 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+    ;;; (:sxtab (cond 4) 0 1 1 0 1 0 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     ;; todo: sxtab16
 
-    ;; (:sxtah (cond 4) 0 1 1 0 1 0 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+    ;;; (:sxtah (cond 4) 0 1 1 0 1 0 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:sxtb (cond 4) 0 1 1 0 1 0 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
     (:sxtb16 (cond 4) 0 1 1 0 1 0 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
@@ -372,7 +371,7 @@
     ;; todo: uadd8
     ;; todo: uasx
 
-    ;; (:ubfx (cond 4) 0 1 1 1 1 _ 1 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4)) ; ready
+    ;;; (:ubfx (cond 4) 0 1 1 1 1 _ 1 _ 1 _ (widthm1 5) (rd 4) (lsb 5) 1 0 1 (rn 4))
 
     ;; todo: udf
     ;; todo: udiv
@@ -383,7 +382,7 @@
     ;; todo: uhsub16
     ;; todo: uhsub8
 
-    ;; (:umaal (cond 4) 0 0 0 0 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4)) ; ready
+    ;;; (:umaal (cond 4) 0 0 0 0 0 1 0 0 (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
     (:umlal (cond 4) 0 0 0 0 1 0 1 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
     (:umull (cond 4) 0 0 0 0 1 0 0 s (rdhi 4) (rdlo 4) (rm 4) 1 0 0 1 (rn 4))
 

@@ -18,9 +18,8 @@
 
 ;;(include-book "list-rules")
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
-(include-book "kestrel/bv/unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/repeatbit" :dir :system)
+(include-book "kestrel/bv/repeatbit-def" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/rules" :dir :system) ; why?
 ;(include-book "kestrel/bv-lists/bvnth" :dir :system) ; todo: split out

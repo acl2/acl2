@@ -22,8 +22,8 @@
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 ;(include-book "lenconsmeta") ;todo: did this speed things up?  try with and without...
-(include-book "kestrel/utilities/myif" :dir :system)
-;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(include-book "kestrel/utilities/myif-def" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 ;(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 ;(local (include-book "kestrel/lists-light/len" :dir :system))
@@ -34,8 +34,8 @@
 ;(local (include-book "kestrel/lists-light/cdr" :dir :system))
 ;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 ;(include-book "kestrel/lists-light/memberp-def" :dir :system) ; todo
-(include-book "kestrel/lists-light/subrange" :dir :system)
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
+(local (include-book "kestrel/lists-light/subrange" :dir :system))
 
 ;; (local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
 ;;                            ;usb-plus-from-bounds

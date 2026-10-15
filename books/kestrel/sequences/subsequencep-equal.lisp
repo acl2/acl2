@@ -1,6 +1,6 @@
 ; The mathematical subsequence predicate for lists.
 ;
-; Copyright (C) 2017-2025 Kestrel Institute
+; Copyright (C) 2017-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -324,12 +324,12 @@
 
 ;;; prefixp theorems
 (defthm prefixp-take
-  (implies (and (true-listp l) (<= i (length l)) )
+  (implies (and (true-listp l) (<= i (length l)))
            (prefixp (take i l) l))
   :hints (("Goal" :in-theory (enable take prefixp))))
 
 (defthm prefixp-firstn
-  (implies (and (true-listp l) (<= i (length l)) )
+  (implies (and (true-listp l) (<= i (length l)))
            (prefixp (firstn i l) l))
   :hints (("Goal" :in-theory (enable firstn prefixp))))
 
@@ -410,7 +410,7 @@
                   :use (:instance sublistp-transitive
                                   (x (take (+ (- i) j) (nthcdr i l)))
                                   (y (nthcdr i l))
-                                  (z l)) )))
+                                  (z l)))))
 
 ;; (defstub p (*) => *)
 

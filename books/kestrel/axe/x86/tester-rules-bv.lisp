@@ -326,7 +326,7 @@
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-  (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2) ))
+  (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2)))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
                                   truncate-becomes-floor-gen

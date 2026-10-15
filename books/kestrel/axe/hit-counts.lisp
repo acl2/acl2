@@ -73,7 +73,7 @@
     (implies (and (hit-count-info-worldp hit-counts)
                   (hit-count-info-worldp acc))
              (hit-count-info-worldp (uniquify-alist-eq-aux hit-counts acc)))
-    :hints (("Goal" :in-theory (enable hit-count-info-worldp acons)))))
+    :hints (("Goal" :in-theory (enable hit-count-info-worldp acons uniquify-alist-eq-aux)))))
 
 (local
   (defthmd symbol-alistp-when-hit-count-info-worldp
@@ -277,13 +277,14 @@
 
 ;; This gets rid of the mention of :fake.
 (defund make-hit-count-alist (hit-counts)
-  (declare (xargs :guard (hit-count-info-worldp hit-counts)))
+  (declare (xargs :guard (hit-count-info-worldp hit-counts)
+                  :guard-hints (("Goal" :in-theory (enable uniquify-alist-eq)))))
   (make-hit-count-alist-aux (uniquify-alist-eq hit-counts) nil))
 
 (defthm hit-count-alistp-of-make-hit-count-alist
   (implies (hit-count-info-worldp hit-counts)
            (hit-count-alistp (make-hit-count-alist hit-counts)))
-  :hints (("Goal" :in-theory (enable make-hit-count-alist))))
+  :hints (("Goal" :in-theory (enable make-hit-count-alist uniquify-alist-eq))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

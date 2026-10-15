@@ -21,7 +21,7 @@
                        (mv-nth))))
 
 ;; Splits the string STR into two parts, the substring before the last
-;; occurence of CHAR and the substring after the last occurrence of CHAR.
+;; occurrence of CHAR and the substring after the last occurrence of CHAR.
 ;; Returns (mv foundp string-before string-after).  If CHAR does not occur in
 ;; STR, FOUNDP will be nil, STRING-BEFORE will be STR and STRING-AFTER will be
 ;; the empty string "".

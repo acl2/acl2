@@ -1,7 +1,7 @@
 ; Assigning counts to symbols
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -133,11 +133,19 @@
            (all-cdrs-rationalp (make-count-alist world acc)))
   :hints (("Goal" :in-theory (enable symbol-count-worldp all-cdrs-rationalp))))
 
-(defthm symbol-count-worldp-of-uniquify-alist-eq-aux
-  (implies (and (symbol-count-worldp world)
-                (symbol-count-worldp acc))
-           (symbol-count-worldp (uniquify-alist-eq-aux world acc)))
-  :hints (("Goal" :in-theory (enable symbol-count-worldp acons))))
+(local
+ (defthm symbol-count-worldp-of-uniquify-alist-eq-aux
+   (implies (and (symbol-count-worldp world)
+                 (symbol-count-worldp acc))
+            (symbol-count-worldp (uniquify-alist-eq-aux world acc)))
+   :hints (("Goal" :in-theory (enable symbol-count-worldp acons uniquify-alist-eq-aux)))))
+
+(local
+ (defthm symbol-count-worldp-of-uniquify-alist-eq
+   (implies (and (symbol-count-worldp world)
+                 (symbol-count-worldp acc))
+            (symbol-count-worldp (uniquify-alist-eq world)))
+   :hints (("Goal" :in-theory (enable uniquify-alist-eq)))))
 
 (defthm symbol-alistp-when-symbol-count-worldp
   (implies (symbol-count-worldp world)
@@ -146,7 +154,7 @@
 
 ;; TODO: Consider optimizing this by looping through all the rule names and
 ;; just looking up their counts, instead of calling uniquify-alist-eq.
-(defun summarize-symbol-count-world (world)
+(defund summarize-symbol-count-world (world)
   (declare (xargs :guard (symbol-count-worldp world)))
   (let* ((world (uniquify-alist-eq world)) ;does this not use the fast lookup into the world?
          (count-alist (make-count-alist world nil))

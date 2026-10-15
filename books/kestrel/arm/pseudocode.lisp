@@ -655,18 +655,25 @@
         (carry_out (getbit 0 x)))
     (mv result carry_out)))
 
-(defthm unsigned-byte-p-of-mv-nth-0-of-rrx_c
-  (implies (and ;(unsigned-byte-p n x)
-                ;(integerp shift)
-                (posp n))
-           (unsigned-byte-p n (mv-nth 0 (rrx_c n x shift))))
+;; Disabled since we have mv-nth-0-of-rrx_c
+(defthmd unsigned-byte-p-of-mv-nth-0-of-rrx_c
+  (implies (posp n)
+           (unsigned-byte-p n (mv-nth 0 (rrx_c n x carry_in))))
   :hints (("Goal" :in-theory (enable rrx_c))))
 
-(defthm unsigned-byte-p-1-of-mv-nth-1-of-rrx_c
-  (implies (and ;(unsigned-byte-p n x)
-                ;(integerp shift)
-                )
-           (unsigned-byte-p 1 (mv-nth 1 (rrx_c n x shift))))
+(defthm mv-nth-0-of-rrx_c
+  (equal (mv-nth 0 (rrx_c n x carry_in))
+         (bvcat 1 carry_in (- n 1) (slice (- n 1) 1 x)))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+;; Disabled since we have mv-nth-1-of-rrx_c
+(defthmd unsigned-byte-p-1-of-mv-nth-1-of-rrx_c
+  (unsigned-byte-p 1 (mv-nth 1 (rrx_c n x carry_in)))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+(defthm mv-nth-1-of-rrx_c
+  (equal (mv-nth 1 (rrx_c n x carry_in))
+         (getbit 0 x))
   :hints (("Goal" :in-theory (enable rrx_c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

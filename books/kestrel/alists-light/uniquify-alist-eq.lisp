@@ -15,7 +15,7 @@
 
 ;; See also the deshadow function from the alist books.
 ;the first binding for each key is the one kept
-(defun uniquify-alist-eq-aux (alist acc)
+(defund uniquify-alist-eq-aux (alist acc)
   (declare (xargs :guard (and (symbol-alistp acc)
                               (symbol-alistp alist))))
   (if (atom alist)
@@ -28,12 +28,14 @@
 
 (defthm true-listp-of-uniquify-alist-eq-aux
   (equal (true-listp (uniquify-alist-eq-aux alist acc))
-         (true-listp acc)))
+         (true-listp acc))
+  :hints (("Goal" :in-theory (enable uniquify-alist-eq-aux))))
 
 (defthm assoc-equal-of-uniquify-alist-eq-aux-when-assoc-equal-arg2
   (implies (assoc-equal key acc)
            (equal (assoc-equal key (uniquify-alist-eq-aux alist acc))
-                  (assoc-equal key acc))))
+                  (assoc-equal key acc)))
+  :hints (("Goal" :in-theory (enable uniquify-alist-eq-aux))))
 
 ;; for when we want the whole pair
 (defthm assoc-equal-of-uniquify-alist-eq-aux
@@ -42,7 +44,7 @@
                   (if (assoc-equal key acc)
                       (assoc-equal key acc)
                     (assoc-equal key alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+  :hints (("Goal" :in-theory (enable assoc-equal uniquify-alist-eq-aux))))
 
 ;; for when we only want the value (no alistp hyp)
 (defthm cdr-of-assoc-equal-of-uniquify-alist-eq-aux
@@ -50,13 +52,13 @@
          (if (assoc-equal key acc)
              (cdr (assoc-equal key acc))
            (cdr (assoc-equal key alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+  :hints (("Goal" :in-theory (enable assoc-equal uniquify-alist-eq-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Removes shadowed pairs from ALIST (that is, pairs that bind keys already
 ;; bound by earlier pairs).  The first binding for each key is the one kept.
-(defun uniquify-alist-eq (alist)
+(defund uniquify-alist-eq (alist)
   (declare (xargs :guard (symbol-alistp alist)))
   (uniquify-alist-eq-aux alist nil))
 
@@ -64,8 +66,10 @@
 (defthm assoc-equal-of-uniquify-alist-eq
   (implies (alistp alist)
            (equal (assoc-equal key (uniquify-alist-eq alist))
-                  (assoc-equal key alist))))
+                  (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable uniquify-alist-eq))))
 
 (defthm cdr-of-assoc-equal-of-uniquify-alist-eq
   (equal (cdr (assoc-equal key (uniquify-alist-eq alist)))
-         (cdr (assoc-equal key alist))))
+         (cdr (assoc-equal key alist)))
+  :hints (("Goal" :in-theory (enable uniquify-alist-eq))))
