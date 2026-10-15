@@ -12600,7 +12600,7 @@ its attachment is ignored during proofs"))))
 
                         nil t)))))
 
-(defun ev-synp (synp-term unify-subst mfc state)
+(defun ev-synp (synp-term unify-subst mfc actual-synp-fn rune state)
 
 ; Synp-term is the quotation of the term to be evaluated.  Unify-subst is the
 ; unifying substitution presently in force, and mfc is the meta-level context
@@ -12612,6 +12612,7 @@ its attachment is ignored during proofs"))))
 ; bad-synp-hyp-msg (called in chk-acceptable-rewrite-rule2) that synp-term has
 ; a form that we know how to handle.
 
+  #+acl2-loop-only (declare (ignore actual-synp-fn rune))
   (let* (#-acl2-loop-only
          (*metafunction-context* mfc)
          (unify-subst1 (if mfc
@@ -12623,14 +12624,39 @@ its attachment is ignored during proofs"))))
                                  unify-subst1)
                          unify-subst)))
 
-; It is tempting to bind the state global safe-mode to t here, using
-; state-global-let*.  However, we cannot do that without returning state, which
-; we want to avoid since the caller, relieve-hyp, does not return state.  Since
-; synp is only used heuristically, it really isn't necessary to use safe mode,
-; although it would have been nice for avoiding hard errors (e.g., from car of
-; a non-nil atom).
+; We need some sort of safety mechanism here, because when synp is introduced
+; by expanding a call of bind-free, it can introduce a bad Lisp object into the
+; proof; see for example community book
+; books/system/tests/ev-synp-bind-free.lisp.  We considered binding the state
+; global safe-mode to t here, using state-global-let*.  However, we could not
+; do that without returning state, which we want to avoid since the caller,
+; relieve-hyp, does not return state.  We could probably just use
+; state-free-global-let* instead.  And safe-mode is nice because it can avoid
+; hard errors when evaluating calls of program-mode functions, for example when
+; invoking from car on a non-nil atom.
 
-    (ev (get-evg synp-term 'ev-synp) unify-subst2 state nil t t)))
+; But as of October 2026, we recall no user complaints about such hard errors
+; after many years of using no protection here.  So rather than slow down
+; evaluation using safe-mode, we check that the result is an ACL2 object, which
+; we suspect is faster (sometimes much faster) on large problems than using
+; safe-mode.
+
+    (mv-let (erp val latches)
+      (ev (get-evg synp-term 'ev-synp) unify-subst2 state nil t t)
+      (prog2$ #-acl2-loop-only (let ((msg (bad-lisp-objectp val)))
+                                 (and msg
+                                      (er hard 'ev-synp
+                                          "The value produced by evaluating ~
+                                           the ~x0 hypothesis with argument ~
+                                           ~x1 of the rule named ~x2 is not ~
+                                           an ACL2 object.  ~@3"
+                                          actual-synp-fn
+                                          (assert$ (quotep synp-term)
+                                                   (unquote synp-term))
+                                          rune
+                                          msg)))
+              #+acl2-loop-only t
+              (mv erp val latches)))))
 
 (defun bad-synp-alist1 (alist unify-subst vars-to-be-bound wrld)
 
@@ -14185,6 +14211,7 @@ its attachment is ignored during proofs"))))
 ; (mv wonp failure-reason unify-subst' ttree'')
 
   (let* ((synp-fn (car (get-evg (fargn hyp0 2) 'relieve-hyp)))
+         (actual-synp-fn (if (eq synp-fn 'syntaxp) synp-fn 'bind-free))
          (mfc (if (member-eq 'state (all-vars (get-evg (fargn hyp0 3)
                                                        'relieve-hyp)))
                   (make metafunction-context
@@ -14206,17 +14233,13 @@ its attachment is ignored during proofs"))))
 
 ; Bkptr is nil when we turn off tracking, e.g. for show-rewrites.
 
-                                    (push-gframe 'synp
-                                                 bkptr
-                                                 (if (eq synp-fn 'syntaxp)
-                                                     synp-fn
-                                                   'bind-free))
+                                    (push-gframe 'synp bkptr actual-synp-fn)
                                   gstack)
                         :ttree ttree
                         :unify-subst unify-subst)
                 nil)))
     (mv-let (erp val latches)
-            (ev-synp (fargn hyp0 3) unify-subst mfc state)
+            (ev-synp (fargn hyp0 3) unify-subst mfc actual-synp-fn rune state)
             (declare (ignore latches))
             #-acl2-loop-only (setq *deep-gstack* gstack)
             (cond

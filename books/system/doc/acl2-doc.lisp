@@ -110029,6 +110029,15 @@ it."
 ; Improved the code for bogus-exported-compliants, mostly to make the code
 ; cleaner though this could also improve its efficiency.
 
+; Claude has reported that aref1 is guilty of causing an invariant-risk
+; violation.  A new comment in *boot-strap-invariant-risk-alist* explains why
+; this is not the case.
+
+; String-downcase had a patch for some SBCL versions prior to SBCL 2.4.6, to
+; fix downcasing when the string contains (code-char 192) so that this
+; character is replaced by (code-char 224).  But that patch (specifically,
+; source function string-downcase-sbcl) had a bug, which has been fixed.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110532,6 +110541,16 @@ it."
  <p>It was possible to modify a user-defined @(see stobj) inside a @(see
  wormhole) by using @(tsee with-global-stobj).  This bug has been fixed; see
  @(see community-book) @('system/tests/wormhole-global-stobj.lisp').</p>
+
+ <p>The strings @(`*global-package-prefix*`) and @(`*1*-package-prefix*`) are
+ used internally by ACL2 as @(see package) prefixes, so they need to be
+ prohibited as prefixes of strings supplied to @(tsee defpkg).  However, only
+ the latter of these was prohibited.  That has been fixed; see community book
+ file @('system/tests/defpkg-acl2-global-prefix.lsp').</p>
+
+ <p>Fixed a soundness bug due to allowing @(tsee bind-free) to introduce
+ objects values that are not legal ACL2 objects.  See for example @(see
+ community-book) @('system/tests/ev-synp-bind-free.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
