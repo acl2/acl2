@@ -941,11 +941,6 @@
 
   (fty::deffixequiv-mutual check-dims-of-expr-values/denv)
 
-  ;; The checks are two-valued: all the primitive failures in the clique
-  ;; produce (RESERR NIL), so a failing check is that error, and a passing
-  ;; check on a map or an environment is :UNIT.  These are left disabled,
-  ;; since their left sides are general; they are enabled where needed.
-
   (defthm-check-dims-of-expr-values/denv-flag
     (defthm check-dims-of-expr-value-when-reserrp
       (implies (reserrp (check-dims-of-expr-value val))
