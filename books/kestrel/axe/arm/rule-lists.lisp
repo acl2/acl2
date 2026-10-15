@@ -204,456 +204,461 @@
 
             arm::execute-unconditional-instruction)))
 
-(defun lifter-rules32 ()
+(defund state-rules ()
+  (declare (xargs :guard t))
+  '(;; acl2::armp-of-update-registersi ; todo: change the package of rules like this
+    arm::armp-of-set-reg
+    ;; acl2::armp-of-update-apsr
+    arm::armp-of-set-apsr.n
+    arm::armp-of-set-apsr.z
+    arm::armp-of-set-apsr.c
+    arm::armp-of-set-apsr.v
+    arm::armp-of-set-apsr.q
+    ;; acl2::armp-of-update-memoryi
+    ;; arm::armp-of-write-byte
+    arm::armp-of-write
+    acl2::armp-of-update-arch-version
+    ;; acl2::armp-of-update-error
+    acl2::armp-of-update-endianstate
+    acl2::armp-of-update-itstate
+    acl2::armp-of-update-isetstate
+
+    arm::reg-of-set-reg
+    arm::reg-of-update-itstate
+    arm::reg-of-update-isetstate
+    arm::reg-of-set-apsr.n
+    arm::reg-of-set-apsr.z
+    arm::reg-of-set-apsr.c
+    arm::reg-of-set-apsr.v
+    arm::reg-of-set-apsr.q
+    ;; arm::reg-of-write-byte
+    arm::reg-of-write
+
+    acl2::error-of-update-itstate ; todo: package for these defstobj+ rules
+    acl2::error-of-update-isetstate
+    arm::error-of-set-reg
+    arm::error-of-set-apsr.n
+    arm::error-of-set-apsr.z
+    arm::error-of-set-apsr.c
+    arm::error-of-set-apsr.v
+    arm::error-of-set-apsr.q
+    arm::error-of-write
+    arm::error-of-if
+
+    arm::read-of-update-itstate
+    arm::read-of-update-isetstate
+    arm::read-of-set-reg
+    arm::read-of-set-apsr.n
+    arm::read-of-set-apsr.z
+    arm::read-of-set-apsr.c
+    arm::read-of-set-apsr.v
+    arm::read-of-set-apsr.q
+
+    acl2::arch-version-of-update-arch-version
+    acl2::arch-version-of-update-endianstate
+    acl2::arch-version-of-update-itstate
+    acl2::arch-version-of-update-isetstate
+    ;; acl2::arch-version-of-update-error
+    ;; acl2::arch-version-of-update-registersi
+    arm::arch-version-of-set-reg
+    ;; acl2::arch-version-of-update-apsr
+    arm::arch-version-of-set-apsr.n
+    arm::arch-version-of-set-apsr.z
+    arm::arch-version-of-set-apsr.c
+    arm::arch-version-of-set-apsr.v
+    arm::arch-version-of-set-apsr.q
+    ;; arm::arch-version-of-write-byte
+    ;; acl2::arch-version-of-update-memoryi
+    arm::arch-version-of-write
+
+    arm::isetstate-of-set-reg
+    acl2::isetstate-of-update-isetstate
+    arm::isetstate-of-set-apsr.n
+    arm::isetstate-of-set-apsr.z
+    arm::isetstate-of-set-apsr.c
+    arm::isetstate-of-set-apsr.v
+    arm::isetstate-of-set-apsr.q
+    arm::isetstate-of-write
+    arm::isetstate-of-if
+    arm::update-isetstate-when-equal-of-isetstate
+
+    arm::sctlr.a-of-set-reg
+    acl2::sctlr.a-of-update-sctlr.a
+    arm::sctlr.a-of-set-apsr.n
+    arm::sctlr.a-of-set-apsr.z
+    arm::sctlr.a-of-set-apsr.c
+    arm::sctlr.a-of-set-apsr.v
+    arm::sctlr.a-of-set-apsr.q
+    arm::sctlr.a-of-write
+    arm::sctlr.a-of-if
+    ;; arm::update-sctlr.a-when-equal-of-sctlr.a
+
+    arm::sctlr.u-of-set-reg
+    acl2::sctlr.u-of-update-sctlr.u
+    arm::sctlr.u-of-set-apsr.n
+    arm::sctlr.u-of-set-apsr.z
+    arm::sctlr.u-of-set-apsr.c
+    arm::sctlr.u-of-set-apsr.v
+    arm::sctlr.u-of-set-apsr.q
+    arm::sctlr.u-of-write
+    arm::sctlr.u-of-if
+    ;; arm::update-sctlr.u-when-equal-of-sctlr.u
+
+    arm::library-map-of-set-reg
+    arm::library-map-of-update-isetstate
+    arm::library-map-of-set-apsr.n
+    arm::library-map-of-set-apsr.z
+    arm::library-map-of-set-apsr.c
+    arm::library-map-of-set-apsr.v
+    arm::library-map-of-set-apsr.q
+    arm::library-map-of-write
+    arm::library-map-of-if
+
+         ;;;
+
+    arm::apsr.n-of-set-apsr.n
+    arm::apsr.n-of-set-apsr.z
+    arm::apsr.n-of-set-apsr.c
+    arm::apsr.n-of-set-apsr.v
+    arm::apsr.n-of-set-apsr.q
+
+    arm::apsr.z-of-set-apsr.n
+    arm::apsr.z-of-set-apsr.z
+    arm::apsr.z-of-set-apsr.c
+    arm::apsr.z-of-set-apsr.v
+    arm::apsr.z-of-set-apsr.q
+
+    arm::apsr.c-of-set-apsr.n
+    arm::apsr.c-of-set-apsr.z
+    arm::apsr.c-of-set-apsr.c
+    arm::apsr.c-of-set-apsr.v
+    arm::apsr.c-of-set-apsr.q
+
+    arm::apsr.v-of-set-apsr.n
+    arm::apsr.v-of-set-apsr.z
+    arm::apsr.v-of-set-apsr.c
+    arm::apsr.v-of-set-apsr.v
+    arm::apsr.v-of-set-apsr.q
+
+    arm::apsr.q-of-set-apsr.n
+    arm::apsr.q-of-set-apsr.z
+    arm::apsr.q-of-set-apsr.c
+    arm::apsr.q-of-set-apsr.v
+    arm::apsr.q-of-set-apsr.q
+
+    arm::apsr.n-of-set-reg
+    arm::apsr.z-of-set-reg
+    arm::apsr.c-of-set-reg
+    arm::apsr.v-of-set-reg
+    arm::apsr.q-of-set-reg
+
+    arm::apsr.n-of-write
+    arm::apsr.z-of-write
+    arm::apsr.c-of-write
+    arm::apsr.v-of-write
+    arm::apsr.q-of-write
+
+     ;;;
+
+    arm::set-apsr.n-of-set-reg
+    arm::set-apsr.z-of-set-reg
+    arm::set-apsr.c-of-set-reg
+    arm::set-apsr.v-of-set-reg
+    arm::set-apsr.q-of-set-reg
+
+    arm::set-apsr.n-of-set-apsr.n ;same flag
+    arm::set-apsr.z-of-set-apsr.z
+    arm::set-apsr.c-of-set-apsr.c
+    arm::set-apsr.v-of-set-apsr.v
+    arm::set-apsr.q-of-set-apsr.q
+
+    arm::set-apsr.z-of-set-apsr.n ; different flags
+    arm::set-apsr.c-of-set-apsr.n
+    arm::set-apsr.v-of-set-apsr.n
+    arm::set-apsr.q-of-set-apsr.n
+    arm::set-apsr.c-of-set-apsr.z
+    arm::set-apsr.v-of-set-apsr.z
+    arm::set-apsr.q-of-set-apsr.z
+    arm::set-apsr.v-of-set-apsr.c
+    arm::set-apsr.q-of-set-apsr.c
+    arm::set-apsr.q-of-set-apsr.v
+
+    arm::set-apsr.n-of-write
+    arm::set-apsr.z-of-write
+    arm::set-apsr.c-of-write
+    arm::set-apsr.v-of-write
+    arm::set-apsr.q-of-write))
+
+;; These do not get used in pruning (todo: split out the state rules and other
+;; stuff we don't need in pruning, but consider including the other stuff)
+(defund arm-simplification-helpers ()
+  (declare (xargs :guard t))
+  '(arm::arm32-decode-constant-opener ;; could drop if we add to the evaluator
+
+    arm::lookup-eq2
+
+    arm::reg*
+    arm::r0 ; we expand these aliases
+    arm::r1
+    arm::r2
+    arm::r3
+    arm::r4
+    arm::r5
+    arm::r6
+    arm::r7
+    arm::r8
+    arm::r9
+    arm::r10
+    arm::r11
+    arm::r12
+    arm::r13
+    arm::r14
+    arm::r15
+
+    arm::conditionpassed-of-0 ;; FIXME: Need to add rules to handle all combinations of the resulting condition functions with things like cmp-zero/cmn-zero
+    arm::conditionpassed-of-1
+    arm::conditionpassed-of-2
+    arm::conditionpassed-of-3
+    arm::conditionpassed-of-4
+    arm::conditionpassed-of-5
+    arm::conditionpassed-of-6
+    arm::conditionpassed-of-7
+    arm::conditionpassed-of-8
+    arm::conditionpassed-of-9
+    arm::conditionpassed-of-10
+    arm::conditionpassed-of-11
+    arm::conditionpassed-of-12
+    arm::conditionpassed-of-13
+    arm::conditionpassed-of-14
+    arm::conditionpassed-of-15
+    ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
+    ;; arm::conditionpassed-of-write
+
+
+    ;; CMP rules:
+    ;; (The order here comes from the values of conditionpassed for 0-13.)
+    arm::eq-condition-of-cmp-zero
+    arm::ne-condition-of-cmp-zero
+    arm::cs-condition-of-cmp-carry
+    arm::cc-condition-of-cmp-carry
+    arm::mi-condition-of-cmp-sign
+    arm::pl-condition-of-cmp-sign
+    arm::vs-condition-of-cmp-overflow
+    arm::vc-condition-of-cmp-overflow
+    arm::hi-condition-of-cmp-carry-and-cmp-zero
+    arm::ls-condition-of-cmp-carry-and-cmp-zero
+    arm::ge-condition-cmp-idiom
+    arm::lt-condition-cmp-idiom
+    arm::gt-condition-cmp-idiom
+    arm::le-condition-cmp-idiom
+
+    ;; CMN rules:
+    arm::eq-condition-of-cmn-zero
+    arm::ne-condition-of-cmn-zero
+    arm::cs-condition-of-cmn-carry
+    arm::cs-condition-of-cmn-carry-alt
+    arm::cc-condition-of-cmn-carry
+    arm::cc-condition-of-cmn-carry-alt
+    arm::mi-condition-of-cmn-sign
+    arm::pl-condition-of-cmn-sign
+    arm::vs-condition-of-cmn-overflow
+    arm::vc-condition-of-cmn-overflow
+    arm::hi-condition-of-cmn-carry-and-cmn-zero
+    arm::ls-condition-of-cmn-carry-and-cmn-zero
+    arm::ge-condition-cmn-idiom
+    arm::lt-condition-cmn-idiom
+    arm::gt-condition-cmn-idiom
+    arm::le-condition-cmn-idiom
+
+    ;; SUB rules:
+    arm::eq-condition-of-sub-zero
+    arm::ne-condition-of-sub-zero
+    arm::cs-condition-of-sub-carry
+    arm::cc-condition-of-sub-carry
+    ;; mi ; todo: add these missing ones
+    ;; pl
+    ;; vs
+    ;; vc
+    ;; hi
+    ;; ls
+    ;; ge
+    arm::lt-condition-of-sub-sign-and-sub-overflow
+    ;; gt
+    ;; le
+
+    ;; hope these are ok:
+    arm::cmn-sign-constant-opener
+    arm::cmn-zero-constant-opener
+    arm::cmn-carry-constant-opener
+    arm::cmn-overflow-constant-opener
+    arm::cmp-sign-constant-opener
+    arm::cmp-zero-constant-opener
+    arm::cmp-carry-constant-opener
+    arm::cmp-overflow-constant-opener
+    arm::sub-sign-constant-opener
+    arm::sub-zero-constant-opener
+    arm::sub-carry-constant-opener
+    arm::sub-overflow-constant-opener
+
+    arm::eq-condition-constant-opener
+    arm::ne-condition-constant-opener
+    arm::cs-condition-constant-opener
+    arm::cc-condition-constant-opener
+    arm::mi-condition-constant-opener
+    arm::pl-condition-constant-opener
+    arm::vs-condition-constant-opener
+    arm::vc-condition-constant-opener
+    arm::hi-condition-constant-opener
+    arm::ls-condition-constant-opener
+    arm::ge-condition-constant-opener
+    arm::lt-condition-constant-opener
+    arm::gt-condition-constant-opener
+    arm::le-condition-constant-opener
+
+    arm::lsl_c-constant-opener
+    arm::lsl-constant-opener
+    arm::lsr_c-constant-opener
+    arm::lsr-constant-opener
+    arm::SignExtend-constant-opener
+    arm::asr_c-constant-opener
+    arm::ror_c-constant-opener
+    arm::ror-constant-opener
+    arm::rrx_c-constant-opener
+    arm::rrx-constant-opener
+    arm::shift_c-constant-opener
+    arm::shift-constant-opener
+    arm::addwithcarry-constant-opener ; more?
+    arm::addwithcarry-overflow-constant-opener ; more?
+
+    arm::sint-constant-opener
+
+    arm::countleadingzerobits-constant-opener
+    arm::highestsetbit-constant-opener
+    arm::highestsetbit-aux-constant-opener
+
+    acl2::lookup-eq-becomes-lookup-equal
+    arm::==$inline
+    arm::signextend ; exposes BVSX
+    arm::uint
+    arm::zeroextend
+    arm::nullcheckifthumbee
+    arm::pcvalue
+    ;; arm::align ; redef?
+    arm::bvchop-2-of-align-of-4
+    arm::align-of-4-when-aligned
+    ;; arm::div
+    arm::div-becomes-bvdiv
+    arm::memu
+    arm::mema
+    arm::advance-pc
+    arm::pc ; exposes the call to REG ; should we open this? if so, do it in the assumptions too
+    arm::sp ; exposes the call to REG
+    arm::lr ; exposes the call to REG
+
+    arm::register-numberp
+    arm::add-to-address
+
+    arm::archversion ; exposes the stobj accessor
+    arm::currentinstrset ; exposes the stobj accessor
+    arm::selectinstrset ; restrict?
+
+    ;; Read-of-write rules (some commented-out rules are not currently
+    ;; needed due to our current choice of normal forms):
+
+    acl2::lookup-becomes-lookup-equal ; for when the library map is empty
+    acl2::lookup-equal-of-nil ; for when the library map is empty
+
+    arm::branchto
+    arm::pcstorevalue
+    arm::loadwritepc
+    arm::bxwritepc
+    arm::branchwritepc
+    arm::aluwritepc
+
+    arm::and32 ; exposes bvand
+    arm::or32 ; exposes bvor
+    arm::eor32 ; exposes bvxor
+
+    arm::armexpandimm
+    arm::armexpandimm_c
+    arm::shift
+    arm::shift_c
+
+    ;; left shifts:
+    arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
+    arm::mv-nth-1-of-lsl_c-becomes-getbit
+    arm::lsl-becomes-bvshl ; arm::lsl
+
+    ;; right shifts:
+    arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
+    arm::mv-nth-1-of-lsr_c-becomes-getbit
+    arm::lsr-becomes-bvshr ; arm::lsr
+
+    ;; right rotation:
+    arm::ror_c-redef
+    ;; arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
+    ;; arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
+    arm::ror-becomes-rightrotate ; arm::ror
+
+    arm::bitcount
+    arm::write_memu
+    arm::write_mema
+    arm::!=$inline
+    arm::zeros
+    arm::ones
+    arm::replicate
+    acl2::repeatbit-of-0-arg2 ; add to core-rules-bv?
+
+    arm::unalignedsupport ; why?
+
+    acl2::bvcount-constant-opener
+    arm::integerp-of-reg
+    arm::unsigned-byte-p-32-of-reg
+    arm::bvchop-of-reg ; rename?
+    arm::getbit-of-reg-too-high
+    ;; arm::write-byte-of-set-reg ; we always use write as the normal form
+    arm::write-of-set-reg
+    arm::set-reg-of-set-reg-same
+    arm::set-reg-of-set-reg-diff-2
+    arm::set-reg-of-if-arg3
+    arm::set-reg-of-pc-and-bvif
+
+    arm::decodeimmshift
+    arm::decoderegshift
+    arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
+    arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
+    arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
+    arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
+    arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
+    arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
+    arm::iszerobit
+    arm::iszero
+
+    arm::unsigned-byte-p-of-mv-nth-0-of-asr_c ; todo: more like this!
+    arm::mv-nth-0-of-asr_c-becomes-rightrotate
+
+    arm::unsigned-byte-p-of-cmn-sign
+    arm::unsigned-byte-p-of-cmn-zero
+    arm::unsigned-byte-p-of-cmn-carry
+    arm::unsigned-byte-p-of-cmn-overflow
+
+    arm::unsigned-byte-p-of-cmp-sign
+    arm::unsigned-byte-p-of-cmp-zero
+    arm::unsigned-byte-p-of-cmp-carry
+    arm::unsigned-byte-p-of-cmp-overflow
+
+    arm::unsigned-byte-p-of-sub-sign
+    arm::unsigned-byte-p-of-sub-zero
+    arm::unsigned-byte-p-of-sub-carry
+    arm::unsigned-byte-p-of-sub-overflow
+
+    acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
+    ))
+
+;; These get used in pruning too, so they should not require the ARM rewriter.
+(defund arm-simplification-rules ()
   (declare (xargs :guard t))
   (append
-   (instruction-semantic-functions)
-   '(arm::lookup-eq2
-
-     arm::r0
-     arm::r1
-     arm::r2
-     arm::r3
-     arm::r4
-     arm::r5
-     arm::r6
-     arm::r7
-     arm::r8
-     arm::r9
-     arm::r10
-     arm::r11
-     arm::r12
-     arm::r13
-     arm::r14
-     arm::r15
-
-     arm::conditionpassed-of-0 ;; FIXME: Need to add rules to handle all combinations of the resulting condition functions with things like cmp-zero/cmn-zero
-     arm::conditionpassed-of-1
-     arm::conditionpassed-of-2
-     arm::conditionpassed-of-3
-     arm::conditionpassed-of-4
-     arm::conditionpassed-of-5
-     arm::conditionpassed-of-6
-     arm::conditionpassed-of-7
-     arm::conditionpassed-of-8
-     arm::conditionpassed-of-9
-     arm::conditionpassed-of-10
-     arm::conditionpassed-of-11
-     arm::conditionpassed-of-12
-     arm::conditionpassed-of-13
-     arm::conditionpassed-of-14
-     arm::conditionpassed-of-15
-     ;; arm::conditionpassed-of-set-reg ; these are not needed if we always can open conditionpassed
-     ;; arm::conditionpassed-of-write
-
-
-     ;; CMP rules:
-     ;; (The order here comes from the values of conditionpassed for 0-13.)
-     arm::eq-condition-of-cmp-zero
-     arm::ne-condition-of-cmp-zero
-     arm::cs-condition-of-cmp-carry
-     arm::cc-condition-of-cmp-carry
-     arm::mi-condition-of-cmp-sign
-     arm::pl-condition-of-cmp-sign
-     arm::vs-condition-of-cmp-overflow
-     arm::vc-condition-of-cmp-overflow
-     arm::hi-condition-of-cmp-carry-and-cmp-zero
-     arm::ls-condition-of-cmp-carry-and-cmp-zero
-     arm::ge-condition-cmp-idiom
-     arm::lt-condition-cmp-idiom
-     arm::gt-condition-cmp-idiom
-     arm::le-condition-cmp-idiom
-
-     ;; CMN rules:
-     arm::eq-condition-of-cmn-zero
-     arm::ne-condition-of-cmn-zero
-     arm::cs-condition-of-cmn-carry
-     arm::cs-condition-of-cmn-carry-alt
-     arm::cc-condition-of-cmn-carry
-     arm::cc-condition-of-cmn-carry-alt
-     arm::mi-condition-of-cmn-sign
-     arm::pl-condition-of-cmn-sign
-     arm::vs-condition-of-cmn-overflow
-     arm::vc-condition-of-cmn-overflow
-     arm::hi-condition-of-cmn-carry-and-cmn-zero
-     arm::ls-condition-of-cmn-carry-and-cmn-zero
-     arm::ge-condition-cmn-idiom
-     arm::lt-condition-cmn-idiom
-     arm::gt-condition-cmn-idiom
-     arm::le-condition-cmn-idiom
-
-     ;; SUB rules:
-     arm::eq-condition-of-sub-zero
-     arm::ne-condition-of-sub-zero
-     arm::cs-condition-of-sub-carry
-     arm::cc-condition-of-sub-carry
-     ;; mi ; todo: add these missing ones
-     ;; pl
-     ;; vs
-     ;; vc
-     ;; hi
-     ;; ls
-     ;; ge
-     arm::lt-condition-of-sub-sign-and-sub-overflow
-     ;; gt
-     ;; le
-
-     ;; hope these are ok:
-     arm::cmn-sign-constant-opener
-     arm::cmn-zero-constant-opener
-     arm::cmn-carry-constant-opener
-     arm::cmn-overflow-constant-opener
-     arm::cmp-sign-constant-opener
-     arm::cmp-zero-constant-opener
-     arm::cmp-carry-constant-opener
-     arm::cmp-overflow-constant-opener
-     arm::sub-sign-constant-opener
-     arm::sub-zero-constant-opener
-     arm::sub-carry-constant-opener
-     arm::sub-overflow-constant-opener
-
-     arm::eq-condition-constant-opener
-     arm::ne-condition-constant-opener
-     arm::cs-condition-constant-opener
-     arm::cc-condition-constant-opener
-     arm::mi-condition-constant-opener
-     arm::pl-condition-constant-opener
-     arm::vs-condition-constant-opener
-     arm::vc-condition-constant-opener
-     arm::hi-condition-constant-opener
-     arm::ls-condition-constant-opener
-     arm::ge-condition-constant-opener
-     arm::lt-condition-constant-opener
-     arm::gt-condition-constant-opener
-     arm::le-condition-constant-opener
-
-     arm::lsl_c-constant-opener
-     arm::lsl-constant-opener
-     arm::lsr_c-constant-opener
-     arm::lsr-constant-opener
-     arm::SignExtend-constant-opener
-     arm::asr_c-constant-opener
-     arm::ror_c-constant-opener
-     arm::ror-constant-opener
-     arm::rrx_c-constant-opener
-     arm::rrx-constant-opener
-     arm::shift_c-constant-opener
-     arm::shift-constant-opener
-     arm::addwithcarry-constant-opener ; more?
-     arm::addwithcarry-overflow-constant-opener ; more?
-
-     arm::sint-constant-opener
-
-     arm::countleadingzerobits-constant-opener
-     arm::highestsetbit-constant-opener
-     arm::highestsetbit-aux-constant-opener
-
-     acl2::lookup-eq-becomes-lookup-equal
-     arm::==$inline
-     arm::signextend ; exposes BVSX
-     arm::uint
-     arm::zeroextend
-     arm::nullcheckifthumbee
-     arm::pcvalue
-     ;; arm::align ; redef?
-     arm::bvchop-2-of-align-of-4
-     arm::align-of-4-when-aligned
-     ;; arm::div
-     arm::div-becomes-bvdiv
-     arm::memu
-     arm::mema
-     arm::advance-pc
-     arm::pc ; exposes the call to REG ; should we open this? if so, do it in the assumptions too
-     arm::sp ; exposes the call to REG
-     arm::lr ; exposes the call to REG
-
-     arm::register-numberp
-     arm::add-to-address
-
-     arm::archversion ; exposes the stobj accessor
-     arm::currentinstrset ; exposes the stobj accessor
-     arm::selectinstrset ; restrict?
-
-     ;; Read-of-write rules (some commented-out rules are not currently
-     ;; needed due to our current choice of normal forms):
-
-     ;; acl2::armp-of-update-registersi ; todo: change the package of rules like this
-     arm::armp-of-set-reg
-     ;; acl2::armp-of-update-apsr
-     arm::armp-of-set-apsr.n
-     arm::armp-of-set-apsr.z
-     arm::armp-of-set-apsr.c
-     arm::armp-of-set-apsr.v
-     arm::armp-of-set-apsr.q
-     ;; acl2::armp-of-update-memoryi
-     ;; arm::armp-of-write-byte
-     arm::armp-of-write
-     acl2::armp-of-update-arch-version
-     ;; acl2::armp-of-update-error
-     acl2::armp-of-update-endianstate
-     acl2::armp-of-update-itstate
-     acl2::armp-of-update-isetstate
-
-     arm::reg-of-set-reg
-     arm::reg-of-update-itstate
-     arm::reg-of-update-isetstate
-     arm::reg-of-set-apsr.n
-     arm::reg-of-set-apsr.z
-     arm::reg-of-set-apsr.c
-     arm::reg-of-set-apsr.v
-     arm::reg-of-set-apsr.q
-     ;; arm::reg-of-write-byte
-     arm::reg-of-write
-
-     acl2::error-of-update-itstate ; todo: package for these defstobj+ rules
-     acl2::error-of-update-isetstate
-     arm::error-of-set-reg
-     arm::error-of-set-apsr.n
-     arm::error-of-set-apsr.z
-     arm::error-of-set-apsr.c
-     arm::error-of-set-apsr.v
-     arm::error-of-set-apsr.q
-     arm::error-of-write
-     arm::error-of-if
-
-     arm::read-of-update-itstate
-     arm::read-of-update-isetstate
-     arm::read-of-set-reg
-     arm::read-of-set-apsr.n
-     arm::read-of-set-apsr.z
-     arm::read-of-set-apsr.c
-     arm::read-of-set-apsr.v
-     arm::read-of-set-apsr.q
-
-     acl2::arch-version-of-update-arch-version
-     acl2::arch-version-of-update-endianstate
-     acl2::arch-version-of-update-itstate
-     acl2::arch-version-of-update-isetstate
-     ;; acl2::arch-version-of-update-error
-     ;; acl2::arch-version-of-update-registersi
-     arm::arch-version-of-set-reg
-     ;; acl2::arch-version-of-update-apsr
-     arm::arch-version-of-set-apsr.n
-     arm::arch-version-of-set-apsr.z
-     arm::arch-version-of-set-apsr.c
-     arm::arch-version-of-set-apsr.v
-     arm::arch-version-of-set-apsr.q
-     ;; arm::arch-version-of-write-byte
-     ;; acl2::arch-version-of-update-memoryi
-     arm::arch-version-of-write
-
-     arm::isetstate-of-set-reg
-     acl2::isetstate-of-update-isetstate
-     arm::isetstate-of-set-apsr.n
-     arm::isetstate-of-set-apsr.z
-     arm::isetstate-of-set-apsr.c
-     arm::isetstate-of-set-apsr.v
-     arm::isetstate-of-set-apsr.q
-     arm::isetstate-of-write
-     arm::isetstate-of-if
-     arm::update-isetstate-when-equal-of-isetstate
-
-     arm::sctlr.a-of-set-reg
-     acl2::sctlr.a-of-update-sctlr.a
-     arm::sctlr.a-of-set-apsr.n
-     arm::sctlr.a-of-set-apsr.z
-     arm::sctlr.a-of-set-apsr.c
-     arm::sctlr.a-of-set-apsr.v
-     arm::sctlr.a-of-set-apsr.q
-     arm::sctlr.a-of-write
-     arm::sctlr.a-of-if
-     ;; arm::update-sctlr.a-when-equal-of-sctlr.a
-
-     arm::sctlr.u-of-set-reg
-     acl2::sctlr.u-of-update-sctlr.u
-     arm::sctlr.u-of-set-apsr.n
-     arm::sctlr.u-of-set-apsr.z
-     arm::sctlr.u-of-set-apsr.c
-     arm::sctlr.u-of-set-apsr.v
-     arm::sctlr.u-of-set-apsr.q
-     arm::sctlr.u-of-write
-     arm::sctlr.u-of-if
-     ;; arm::update-sctlr.u-when-equal-of-sctlr.u
-
-     arm::library-map-of-set-reg
-     arm::library-map-of-update-isetstate
-     arm::library-map-of-set-apsr.n
-     arm::library-map-of-set-apsr.z
-     arm::library-map-of-set-apsr.c
-     arm::library-map-of-set-apsr.v
-     arm::library-map-of-set-apsr.q
-     arm::library-map-of-write
-     arm::library-map-of-if
-
-     acl2::lookup-becomes-lookup-equal ; for when the library map is empty
-     acl2::lookup-equal-of-nil ; for when the library map is empty
-
-     ;;;
-
-     arm::apsr.n-of-set-apsr.n
-     arm::apsr.n-of-set-apsr.z
-     arm::apsr.n-of-set-apsr.c
-     arm::apsr.n-of-set-apsr.v
-     arm::apsr.n-of-set-apsr.q
-
-     arm::apsr.z-of-set-apsr.n
-     arm::apsr.z-of-set-apsr.z
-     arm::apsr.z-of-set-apsr.c
-     arm::apsr.z-of-set-apsr.v
-     arm::apsr.z-of-set-apsr.q
-
-     arm::apsr.c-of-set-apsr.n
-     arm::apsr.c-of-set-apsr.z
-     arm::apsr.c-of-set-apsr.c
-     arm::apsr.c-of-set-apsr.v
-     arm::apsr.c-of-set-apsr.q
-
-     arm::apsr.v-of-set-apsr.n
-     arm::apsr.v-of-set-apsr.z
-     arm::apsr.v-of-set-apsr.c
-     arm::apsr.v-of-set-apsr.v
-     arm::apsr.v-of-set-apsr.q
-
-     arm::apsr.q-of-set-apsr.n
-     arm::apsr.q-of-set-apsr.z
-     arm::apsr.q-of-set-apsr.c
-     arm::apsr.q-of-set-apsr.v
-     arm::apsr.q-of-set-apsr.q
-
-     arm::apsr.n-of-set-reg
-     arm::apsr.z-of-set-reg
-     arm::apsr.c-of-set-reg
-     arm::apsr.v-of-set-reg
-     arm::apsr.q-of-set-reg
-
-     arm::apsr.n-of-write
-     arm::apsr.z-of-write
-     arm::apsr.c-of-write
-     arm::apsr.v-of-write
-     arm::apsr.q-of-write
-
-     ;;;
-
-     arm::set-apsr.n-of-set-reg
-     arm::set-apsr.z-of-set-reg
-     arm::set-apsr.c-of-set-reg
-     arm::set-apsr.v-of-set-reg
-     arm::set-apsr.q-of-set-reg
-
-     arm::set-apsr.n-of-set-apsr.n ;same flag
-     arm::set-apsr.z-of-set-apsr.z
-     arm::set-apsr.c-of-set-apsr.c
-     arm::set-apsr.v-of-set-apsr.v
-     arm::set-apsr.q-of-set-apsr.q
-
-     arm::set-apsr.z-of-set-apsr.n ; different flags
-     arm::set-apsr.c-of-set-apsr.n
-     arm::set-apsr.v-of-set-apsr.n
-     arm::set-apsr.q-of-set-apsr.n
-     arm::set-apsr.c-of-set-apsr.z
-     arm::set-apsr.v-of-set-apsr.z
-     arm::set-apsr.q-of-set-apsr.z
-     arm::set-apsr.v-of-set-apsr.c
-     arm::set-apsr.q-of-set-apsr.c
-     arm::set-apsr.q-of-set-apsr.v
-
-     arm::set-apsr.n-of-write
-     arm::set-apsr.z-of-write
-     arm::set-apsr.c-of-write
-     arm::set-apsr.v-of-write
-     arm::set-apsr.q-of-write
-
-     arm::branchto
-     arm::pcstorevalue
-     arm::loadwritepc
-     arm::bxwritepc
-     arm::branchwritepc
-     arm::aluwritepc
-
-     arm::and32 ; exposes bvand
-     arm::or32 ; exposes bvor
-     arm::eor32 ; exposes bvxor
-
-     arm::armexpandimm
-     arm::armexpandimm_c
-     arm::shift
-     arm::shift_c
-     arm::mv-nth-0-of-rrx_c
-     arm::mv-nth-1-of-rrx_c
-     arm::rrx ; open to expose mv-nth 0 of rrx_c
-
-     ;; left shifts:
-     arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
-     arm::mv-nth-1-of-lsl_c-becomes-getbit
-     arm::lsl-becomes-bvshl ; arm::lsl
-
-     ;; right shifts:
-     arm::mv-nth-0-of-lsr_c-becomes-bvshr ; arm::lsr_c
-     arm::mv-nth-1-of-lsr_c-becomes-getbit
-     arm::lsr-becomes-bvshr ; arm::lsr
-
-     ;; right rotation:
-     arm::ror_c-redef
-     ;; arm::mv-nth-0-of-ror_c-becomes-rightrotate ; arm::ror_c
-     ;; arm::mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
-     arm::ror-becomes-rightrotate ; arm::ror
-
-     arm::bitcount
-     arm::write_memu
-     arm::write_mema
-     arm::!=$inline
-     arm::zeros
-     arm::ones
-     arm::replicate
-     acl2::repeatbit-of-0-arg2 ; add to core-rules-bv?
-
-     arm::unalignedsupport ; why?
-
-     acl2::bvcount-constant-opener
-     arm::integerp-of-reg
-     arm::unsigned-byte-p-32-of-reg
-     arm::bvchop-of-reg ; rename?
-     arm::getbit-of-reg-too-high
-     ;; arm::write-byte-of-set-reg ; we always use write as the normal form
-     arm::write-of-set-reg
-     arm::set-reg-of-set-reg-same
-     arm::set-reg-of-set-reg-diff-2
-     arm::set-reg-of-if-arg3
-     arm::set-reg-of-pc-and-bvif
-
-     arm::decodeimmshift
-     arm::decoderegshift
-     arm::unsigned-byte-p-of-mv-nth-0-of-AddWithCarry ; could drop these if the replacement rule always fires
-     arm::unsigned-byte-p-of-mv-nth-1-of-AddWithCarry
-     arm::unsigned-byte-p-of-mv-nth-2-of-AddWithCarry
-     arm::mv-nth-0-of-AddWithCarry ;;     arm::addwithcarry
-     arm::mv-nth-1-of-AddWithCarry ;;     arm::addwithcarry
-     arm::mv-nth-2-of-AddWithCarry ; todo: 32-bit only!
-     arm::iszerobit
-     arm::iszero
-
-     arm::unsigned-byte-p-of-mv-nth-0-of-asr_c ; todo: more like this!
-     arm::mv-nth-0-of-asr_c-becomes-rightrotate
-
-     arm::unsigned-byte-p-of-cmn-sign
-     arm::unsigned-byte-p-of-cmn-zero
-     arm::unsigned-byte-p-of-cmn-carry
-     arm::unsigned-byte-p-of-cmn-overflow
-
-     arm::unsigned-byte-p-of-cmp-sign
-     arm::unsigned-byte-p-of-cmp-zero
-     arm::unsigned-byte-p-of-cmp-carry
-     arm::unsigned-byte-p-of-cmp-overflow
-
-     arm::unsigned-byte-p-of-sub-sign
-     arm::unsigned-byte-p-of-sub-zero
-     arm::unsigned-byte-p-of-sub-carry
-     arm::unsigned-byte-p-of-sub-overflow
-
-     acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
-
-     )
-   (shadowed-write-rules32)
    (acl2::base-rules) ; gets us if-same-branches, for example
    (acl2::core-rules-bv)
    (acl2::unsigned-byte-p-forced-rules)
@@ -673,10 +678,7 @@
      acl2::integerp-of-bv-list-read-chunk-little
      acl2::bvchop-32-of-bv-list-read-chunk-little)
    '(arm::len-of-read-bytes arm::nth-of-read-bytes) ; for output-indicator handling
-   '(;; error32p-of-set-reg
-     ;; error32p-of-write
-     ;; error32p-of-set-pc
-
+   '(
      ;; Rules about read:
      arm::integerp-of-read
      arm::natp-of-read
@@ -719,7 +721,6 @@
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p
      arm::disjoint-regions32p-when-disjoint-regions32p-and-subregion32p-and-subregion32p-alt
 
-     ;; UNCOMMENT
      arm::read-when-equal-of-read-bytes-and-subregion32p ; for when the bytes are a constant
      arm::read-when-equal-of-read-bytes-and-subregion32p-alt ; for when the bytes are a constant
      arm::read-when-equal-of-read-bytes ; note rule priority
@@ -754,34 +755,34 @@
      not-in-region32p-when-disjoint-regions32p-special
      ;; not-in-region32p-when-disjoint-regions32p-one ; looped -- why?
      ;; not-in-region32p-when-disjoint-regions32p-two
-     ;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
+;acl2::bvlt-of-bvplus-constant-and-constant-gen ; bad?
      bvlt-of-read-and-constant
 
-    arm::in-region32p-cancel-constants-1-1+
-    arm::in-region32p-cancel-constants-1+-1
-    arm::in-region32p-cancel-constants-1+-1+
-    arm::in-region32p-cancel-1-1+
-    arm::in-region32p-cancel-1+-1
-    arm::in-region32p-cancel-1+-1+
-    arm::in-region32p-cancel-1-2
-    arm::in-region32p-cancel-2-1
-    arm::in-region32p-cancel-1+-2
-    arm::in-region32p-cancel-2-1+
-    arm::in-region32p-cancel-2+-1
-    arm::in-region32p-cancel-1-3
-    arm::in-region32p-cancel-3-1
-    arm::in-region32p-cancel-2-2
-    arm::in-region32p-when-non-negative-and-negative-range
-    ;; arm::in-region32p-of-0-arg3 ; introduces bvlt
-    arm::in-region32p-of-bvchop-arg1
-    arm::in-region32p-of-bvchop-arg3
-    arm::in-region32p-of-bvsx-arg1
-    arm::in-region32p-of-bvsx-arg3
-    arm::in-region32p-same
+     arm::in-region32p-cancel-constants-1-1+
+     arm::in-region32p-cancel-constants-1+-1
+     arm::in-region32p-cancel-constants-1+-1+
+     arm::in-region32p-cancel-1-1+
+     arm::in-region32p-cancel-1+-1
+     arm::in-region32p-cancel-1+-1+
+     arm::in-region32p-cancel-1-2
+     arm::in-region32p-cancel-2-1
+     arm::in-region32p-cancel-1+-2
+     arm::in-region32p-cancel-2-1+
+     arm::in-region32p-cancel-2+-1
+     arm::in-region32p-cancel-1-3
+     arm::in-region32p-cancel-3-1
+     arm::in-region32p-cancel-2-2
+     arm::in-region32p-when-non-negative-and-negative-range
+     ;; arm::in-region32p-of-0-arg3 ; introduces bvlt
+     arm::in-region32p-of-bvchop-arg1
+     arm::in-region32p-of-bvchop-arg3
+     arm::in-region32p-of-bvsx-arg1
+     arm::in-region32p-of-bvsx-arg3
+     arm::in-region32p-same
 
      ;in-region32p-byte-special ; have the memory machinery generate this?
 
-;;     arm::write-byte-becomes-write UNCOMMENT
+     ;;     arm::write-byte-becomes-write UNCOMMENT
      arm::read-normalize-constant-arg2
      ;; arm::write-normalize-constant-arg2 UNCOMMENT
      ;; arm::write-normalize-constant-arg3
@@ -809,8 +810,8 @@
      arm::subregion32p-cancel-constants-1+-1+
 
      ;; todo: UNCOMMENT
-     ;set-pc-convert-arg1-to-bv-axe
-     ;set-reg-convert-arg2-to-bv-axe
+;set-pc-convert-arg1-to-bv-axe
+;set-reg-convert-arg2-to-bv-axe
 
      acl2::bvplus-convert-arg2-to-bv-axe
      acl2::bvplus-convert-arg3-to-bv-axe
@@ -835,44 +836,6 @@
      acl2::<-becomes-bvlt-axe-bind-free-arg1 ; or use stronger rules?
      acl2::<-becomes-bvlt-axe-bind-free-arg2
 
-     ;; read32-pc-becomes-pc ; introduces PC, our normal form
-     ;; write32-pc-becomes-set-pc ; introduces SET-PC, our normal form
-     ;; read32-xreg-unsigned-becomes-reg ; introduces REG, our normal form
-     ;; write32-xreg-becomes-set-reg ; introduces SET-REG, our normal form
-
-     ;; read32-xreg-signed ; open to the unsigned one
-
-     ;; set-reg-of-set-reg-same
-     ;; set-reg-of-set-reg-diff
-     ;; ;; reg-of-write-byte
-     ;; reg-of-set-pc
-     ;; reg-of-if
-
-     ;; set-reg-of-bvchop
-     ;; set-reg-does-nothing
-     ;; set-reg-of-0 ; setting register 0 has no effect!
-
-     ;; set-pc-of-set-pc
-     ;; pc-of-write
-     ;; write-of-set-reg
-
-     ;; read-of-set-pc
-     ;; read-of-set-reg
-
-     ;; ;; normalizing nests of writes:
-     ;; set-reg-of-set-pc
-     ;; write-of-set-pc
-
-     ;; stat32p-of-set-reg
-     ;; stat32p-of-write
-     ;; stat32p-of-set-pc ; uncomment?
-
-     ;; register names (we expand these to REG):
-;     x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
-     ;; register aliases:
-     ;; zero
-;     ra sp gp tp t0 t1 t2 s0 fp s1 a0 a1 a2 a3 a4 a5
-
      arm::subregion32p-constant-opener ; todo: think about package on these
      arm::in-region32p-constant-opener
      arm::disjoint-regions32p-constant-opener
@@ -880,57 +843,6 @@
      acl2::bv-array-write-of-if-arg4 ; introduces bvif
 
      acl2::bv-array-read-chunk-little-constant-opener
-
-     ;; riscv::feat
-     ;; riscv::feat->base$inline
-     ;; riscv::feat->m$inline-constant-opener ; should all of these be constant-openers?
-
-
-     ;; riscv32im-le::feat-rv32im-le ; todo: use constant-openers more for these?
-
-     ;; riscv::feat-endian-little
-     ;; riscv::feat-endian-fix$inline
-     ;; riscv::feat-endian-kind$inline
-
-     ;; riscv::feat-base-rv32i
-
-     ;; riscv::feat-base-fix$inline
-     ;; riscv::feat-base-kind$inline
-     ;; riscv::feat-mp
-     ;; riscv::feat-embedp
-
-     ;; riscv::branch-funct-fix$inline
-     ;; riscv::branch-funct-kind$inline
-
-     ;; riscv::op-imms-funct-fix$inline
-     ;; riscv::op-imms-funct-kind$inline
-
-     arm::arm32-decode-constant-opener ;; ;; riscv::decodex-constant-opener ; not needed since the evaluator knows about this function
-     ;; acl2::ubyte32-fix-constant-opener
-     ;; acl2::ubyte32p-constant-opener
-     ;; riscv::get-fields-itype-constant-opener
-     ;; riscv::get-fields-jtype-constant-opener
-     ;; riscv::get-rd-constant-opener
-     ;; riscv::get-rs1-constant-opener
-     ;; riscv::get-rs2-constant-opener
-     ;; riscv::get-funct3-constant-opener
-     ;; riscv::get-funct7-constant-opener
-
-     ;; riscv::get-opcode-constant-opener
-     ;; riscv::get-imm-btype-constant-opener
-     ;; riscv::get-imm-itype-constant-opener
-     ;; riscv::get-imm-jtype-constant-opener
-     ;; riscv::get-imm-stype-constant-opener
-     ;; riscv::get-imm-utype-constant-opener
-     ;; bitops::part-select-low-high$inline-constant-opener
-     ;; bitops::part-select-width-low$inline-constant-opener
-     ;; riscv::feat-64p-constant-opener
-     ;; riscv::get-fields-btype-constant-opener
-     ;; riscv::get-fields-rtype-constant-opener
-     ;; riscv::get-fields-utype-constant-opener
-     ;; riscv::get-fields-stype-constant-opener
-
-     ;; riscv::instr-op-imm-constant-opener
 
      acl2::logtail$inline-constant-opener
      acl2::expt2$inline-constant-opener
@@ -958,8 +870,6 @@
      acl2::bvminus-of-bvplus-of-constant-and-bvplus-of-constant
      acl2::bvminus-becomes-bvplus-of-bvuminus-constant-version
 
-;     eff32-addr
-
      acl2::integerp-of-+-when-integerp-1
      acl2::integerp-of-+-when-integerp-2
      acl2::fix-when-integerp
@@ -968,8 +878,6 @@
 
      integerp-of-uint
      integerp-of-sint
-
-;     riscv32im-le::stat32-fix-when-stat32p
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
@@ -982,7 +890,15 @@
      arm::getbit-0-of-cmp-sign
      arm::getbit-0-of-cmp-overflow
 
-     arm::reg*)))
+     )))
+
+(defun lifter-rules32 ()
+  (declare (xargs :guard t))
+  (append (instruction-semantic-functions)
+          (state-rules)
+          (arm-simplification-helpers)
+          (shadowed-write-rules32)
+          (arm-simplification-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
