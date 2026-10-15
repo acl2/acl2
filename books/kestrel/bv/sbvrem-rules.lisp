@@ -1,7 +1,7 @@
 ; Rules about sbvrem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,14 +13,16 @@
 (in-package "ACL2")
 
 (include-book "sbvrem")
-(include-book "bvuminus")
-(include-book "sbvlt")
-(include-book "sbvlt-rules") ; for sbvlt-rewrite
-(include-book "bvcat") ; for BVCHOP-WHEN-TOP-BIT-1
-(include-book "slice-rules")
+(include-book "bvmod")
+(include-book "bvuminus-def")
+(include-book "sbvlt-def")
+(include-book "bvcat-def") ; for BVCHOP-WHEN-TOP-BIT-1
+(local (include-book "sbvlt-rules")) ; for sbvlt-rewrite
+(local (include-book "slice-rules"))
 (local (include-book "logapp"))
 (local (include-book "logext"))
 (local (include-book "getbit"))
+(local (include-book "bvcat"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

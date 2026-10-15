@@ -54,6 +54,7 @@
 (include-book "kestrel/bv/sbvdiv-rules" :dir :system)
 (include-book "kestrel/bv/bvor" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system)
+(include-book "kestrel/bv/bvuminus" :dir :system)
 (include-book "kestrel/bv/bvxor" :dir :system)
 (include-book "kestrel/bv/bvif2" :dir :system)
 (include-book "kestrel/bv/rules6" :dir :system)

@@ -61,6 +61,7 @@
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
