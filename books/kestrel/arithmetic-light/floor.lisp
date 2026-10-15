@@ -1363,7 +1363,7 @@
                   (and (integerp val)
                        (<= val (/ i j))
                        (< (/ i j) (+ 1 val)))))
-  :hints (("goal" :in-theory (disable <-of-*-of-/-arg1
+  :hints (("Goal" :in-theory (disable <-of-*-of-/-arg1
                                       <-of-*-of-/-arg1-alt))))
 
 ;disable?
