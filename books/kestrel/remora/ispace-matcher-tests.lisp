@@ -235,6 +235,271 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of DIM-PATTERN-POLYS-MUL and DIM-PATTERN-POLYS-PRODUCT.
+; Each test compares the three results
+; (success flag, known polynomial, and unknown polynomial)
+; with the expected ones.
+; The polynomials are written as polynomials of dimensions (see DIM-TO-POLY),
+; except for the zero polynomial, which is NIL.
+; The unknown polynomials use the pattern variables i and j;
+; the known polynomials use the variables k and l.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Without unknown polynomials, the known polynomials are multiplied.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-mul (dim-to-poly (dim-var "k"))
+                                   nil
+                                   (dim-to-poly (dim-const 3))
+                                   nil))
+ (list t
+       (dim-to-poly (dim-mul (list (dim-const 3) (dim-var "k"))))
+       nil))
+
+; A constant pair multiplies both polynomials of the other pair,
+; on either side.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-mul (dim-to-poly (dim-const 2))
+                                   nil
+                                   (dim-to-poly (dim-const 1))
+                                   (dim-to-poly (dim-var "i"))))
+ (list t
+       (dim-to-poly (dim-const 2))
+       (dim-to-poly (dim-mul (list (dim-const 2) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-mul (dim-to-poly (dim-const 1))
+                                   (dim-to-poly (dim-var "i"))
+                                   (dim-to-poly (dim-const 2))
+                                   nil))
+ (list t
+       (dim-to-poly (dim-const 2))
+       (dim-to-poly (dim-mul (list (dim-const 2) (dim-var "i"))))))
+
+; A non-constant known polynomial does not multiply an unknown polynomial,
+; and two unknown polynomials are not multiplied.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-mul (dim-to-poly (dim-var "k"))
+                                   nil
+                                   nil
+                                   (dim-to-poly (dim-var "i"))))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-mul nil
+                                   (dim-to-poly (dim-var "i"))
+                                   nil
+                                   (dim-to-poly (dim-var "j"))))
+ (list nil nil nil))
+
+; The product of no pairs is (1, 0),
+; the product of several pairs multiplies them all,
+; and it fails if any product fails.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-product nil nil))
+ (list t
+       (dim-to-poly (dim-const 1))
+       nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-product (list (dim-to-poly (dim-const 2))
+                                             (dim-to-poly (dim-const 3))
+                                             nil)
+                                       (list nil
+                                             nil
+                                             (dim-to-poly (dim-var "i")))))
+ (list t
+       nil
+       (dim-to-poly (dim-mul (list (dim-const 6) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-polys-product (list (dim-to-poly (dim-const 2))
+                                             nil
+                                             nil)
+                                       (list nil
+                                             (dim-to-poly (dim-var "i"))
+                                             (dim-to-poly (dim-var "j")))))
+ (list nil nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tests of DIM-PATTERN-TO-POLYS and DIM-LIST-PATTERN-TO-POLYS.
+; Each test compares the three results
+; (success flag, known polynomial(s), and unknown polynomial(s))
+; with the expected ones.
+; The expected polynomials are written as polynomials of dimensions
+; (see DIM-TO-POLY), except for the zero polynomial, which is NIL.
+; The pattern variables are i and j, and k when bound;
+; the bindings use the variables k and l.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Pattern variables and constants:
+; an unbound variable is unknown,
+; a bound variable is known through its binding,
+; and a constant is known.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-var "i") nil))
+ (list t nil (dim-to-poly (dim-var "i"))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-var "i")
+                                  (omap::update "i"
+                                                (dim-add (list (dim-const 1)
+                                                               (dim-var "k")))
+                                                nil)))
+ (list t (dim-to-poly (dim-add (list (dim-const 1) (dim-var "k")))) nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-const 3) nil))
+ (list t (dim-to-poly (dim-const 3)) nil))
+
+; Additions:
+; the known and unknown polynomials of the addends are summed separately,
+; like terms are collected,
+; and a bound variable contributes to the known polynomial,
+; even if its binding mentions a variable homonymous with an unbound one.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add (list (dim-const 1) (dim-var "i")))
+                                  nil))
+ (list t (dim-to-poly (dim-const 1)) (dim-to-poly (dim-var "i"))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add (list (dim-const 1)
+                                                 (dim-var "i")
+                                                 (dim-var "i")))
+                                  nil))
+ (list t
+       (dim-to-poly (dim-const 1))
+       (dim-to-poly (dim-mul (list (dim-const 2) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add (list (dim-var "i") (dim-var "j")))
+                                  (omap::update "i" (dim-const 3) nil)))
+ (list t (dim-to-poly (dim-const 3)) (dim-to-poly (dim-var "j"))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add (list (dim-var "i") (dim-var "j")))
+                                  (omap::update "i"
+                                                (dim-add (list (dim-const 1)
+                                                               (dim-var "j")))
+                                                nil)))
+ (list t
+       (dim-to-poly (dim-add (list (dim-const 1) (dim-var "j"))))
+       (dim-to-poly (dim-var "j"))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add nil) nil))
+ (list t nil nil))
+
+; Subtractions:
+; the known and unknown polynomials are negated and subtracted separately,
+; and the nullary subtraction is a known indeterminate.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-sub (list (dim-var "i") (dim-const 1)))
+                                  nil))
+ (list t
+       (dim-to-poly (dim-sub (list (dim-const 1))))
+       (dim-to-poly (dim-var "i"))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-sub (list (dim-const 3) (dim-var "i")))
+                                  nil))
+ (list t
+       (dim-to-poly (dim-const 3))
+       (dim-to-poly (dim-sub (list (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-sub (list (dim-var "i"))) nil))
+ (list t nil (dim-to-poly (dim-sub (list (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-sub nil) nil))
+ (list t (dim-to-poly (dim-sub nil)) nil))
+
+; Multiplications:
+; a constant factor multiplies the unknown polynomial,
+; a bound variable is a known factor,
+; and the product fails if it is not linear in the unknowns,
+; i.e. with two unknown factors, or with an unknown and a non-constant factor.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-const 2) (dim-var "i")))
+                                  nil))
+ (list t nil (dim-to-poly (dim-mul (list (dim-const 2) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-const 2)
+                                                 (dim-add (list (dim-const 1)
+                                                                (dim-var "i")))))
+                                  nil))
+ (list t
+       (dim-to-poly (dim-const 2))
+       (dim-to-poly (dim-mul (list (dim-const 2) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-var "i") (dim-var "k")))
+                                  (omap::update "k" (dim-const 3) nil)))
+ (list t nil (dim-to-poly (dim-mul (list (dim-const 3) (dim-var "i"))))))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-var "i") (dim-var "k")))
+                                  (omap::update "k" (dim-var "l") nil)))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-var "i") (dim-var "j")))
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul (list (dim-var "i") (dim-var "i")))
+                                  nil))
+ (list nil nil nil))
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-mul nil) nil))
+ (list t (dim-to-poly (dim-const 1)) nil))
+
+; A failure propagates to the enclosing pattern.
+
+(assert-equal
+ (mv-list 3 (dim-pattern-to-polys (dim-add (list (dim-const 1)
+                                                 (dim-mul (list (dim-var "i")
+                                                                (dim-var "j")))))
+                                  nil))
+ (list nil nil nil))
+
+; Lists of patterns: the two lists of polynomials are parallel to the list,
+; and a failure propagates.
+
+(assert-equal
+ (mv-list 3 (dim-list-pattern-to-polys nil nil))
+ (list t nil nil))
+
+(assert-equal
+ (mv-list 3 (dim-list-pattern-to-polys (list (dim-var "i") (dim-const 2))
+                                       nil))
+ (list t
+       (list nil (dim-to-poly (dim-const 2)))
+       (list (dim-to-poly (dim-var "i")) nil)))
+
+(assert-equal
+ (mv-list 3 (dim-list-pattern-to-polys (list (dim-const 2)
+                                             (dim-mul (list (dim-var "i")
+                                                            (dim-var "j"))))
+                                       nil))
+ (list nil nil nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of DIM-MATCH and DIM-LIST-MATCH.
 ; Each test compares the two results (success flag and substitution)
 ; with the expected ones.
