@@ -75,6 +75,7 @@
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
