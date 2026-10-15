@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/sets/sets" :dir :system)
-(include-book "kestrel/lists-light/subrange" :dir :system) ;todo: just include the def?
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
