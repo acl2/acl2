@@ -23,11 +23,14 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable remove1-assoc-equal))))
 
+;; The syntaxp hyp defeats ACL2's match of the CONS term with a constant
 (defthm remove1-assoc-equal-of-cons
-  (equal (remove1-assoc-equal key (cons pair alist))
-         (if (equal key (car pair))
-             alist
-           (cons pair (remove1-assoc-equal key alist))))
+  (implies (syntaxp (not (and (quotep pair)
+                              (quotep alist))))
+           (equal (remove1-assoc-equal key (cons pair alist))
+                  (if (equal key (car pair))
+                      alist
+                    (cons pair (remove1-assoc-equal key alist)))))
   :hints (("Goal" :in-theory (enable remove1-assoc-equal))))
 
 ;; todo: non-standard param name is to match std

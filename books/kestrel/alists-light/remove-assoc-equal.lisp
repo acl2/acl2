@@ -128,9 +128,12 @@
                  (remove-assoc-equal x alist2)))
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
 
+;; The syntaxp hyp defeats ACL2's match of the CONS term with a constant
 (defthm remove-assoc-equal-of-cons
-  (equal (remove-assoc-equal key (cons pair alist))
-         (if (equal key (car pair))
-             (remove-assoc-equal key alist)
-           (cons pair (remove-assoc-equal key alist))))
+  (implies (syntaxp (not (and (quotep pair)
+                              (quotep alist))))
+           (equal (remove-assoc-equal key (cons pair alist))
+                  (if (equal key (car pair))
+                      (remove-assoc-equal key alist)
+                    (cons pair (remove-assoc-equal key alist)))))
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))
