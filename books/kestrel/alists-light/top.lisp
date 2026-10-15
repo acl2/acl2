@@ -43,6 +43,7 @@
 
 ;; Books mixing built-in and new functions:
 (include-book "strip-cars2")
+(include-book "strip-cdrs2")
 
 ;; Typed alists (TODO: Consider moving to a new dir):
 (include-book "symbol-alistp")

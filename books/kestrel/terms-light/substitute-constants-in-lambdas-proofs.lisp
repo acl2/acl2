@@ -121,7 +121,7 @@
              :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
              :in-theory (e/d (substitute-constants-in-lambdas-aux
                               substitute-constants-in-lambdas-aux-lst
-                              ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
+                              ;;
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
 ;                            true-listp-when-symbol-alistp
@@ -322,13 +322,11 @@
 ;;            :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (e/d (substitute-constants-in-lambdas-aux
 ;;                             substitute-constants-in-lambdas-aux-lst
-;;                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
 ;;                             ;; make-lambda-terms-simple
 ;;                             ;; ;;make-lambda-term-simple
 ;;                             ;;true-listp-when-symbol-alistp
 ;;                             free-vars-in-terms
-;;                             free-vars-in-term-when-quotep
-;;                             member-equal-of-strip-cars-iff)
+;;                             free-vars-in-term-when-quotep)
 ;;                            (;; pairlis$
 ;;                             ;; set-difference-equal
 ;;                             )))))
@@ -354,7 +352,6 @@
 ;;            :do-not '(generalize eliminate-destructors)
 ;;            :in-theory (e/d (substitute-constants-in-lambdas-aux
 ;;                             substitute-constants-in-lambdas-aux-lst
-;;                             ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
 ;;                             ;; make-lambda-terms-simple
 ;;                             ;; ;;make-lambda-term-simple
 ;;                             ;;true-listp-when-symbol-alistp
@@ -427,14 +424,13 @@
              :do-not '(generalize eliminate-destructors)
              :in-theory (e/d (substitute-constants-in-lambdas-aux
                               substitute-constants-in-lambdas-aux-lst
-                              ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
                               ;;true-listp-when-symbol-alistp
                               free-vars-in-terms
                               free-vars-in-term-when-quotep
-                              member-equal-of-strip-cars-iff
-                              lambdas-closed-in-termp)
+                              lambdas-closed-in-termp
+                              member-equal-of-strip-cars-iff-assoc-equal)
                              (;; pairlis$
                               ;; set-difference-equal
                               ))))))
@@ -622,7 +618,6 @@
              :expand   (lambdas-closed-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
              :in-theory (e/d (substitute-constants-in-lambdas-aux
                               substitute-constants-in-lambdas-aux-lst
-                              ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
 ;                            true-listp-when-symbol-alistp
@@ -662,12 +657,10 @@
              :expand   (no-duplicate-lambda-formals-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
              :in-theory (e/d (substitute-constants-in-lambdas-aux
                               substitute-constants-in-lambdas-aux-lst
-                              ;; MEMBER-EQUAL-OF-STRIP-CARS-IFF
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
-;                            true-listp-when-symbol-alistp
-                              no-duplicate-lambda-formals-in-termp
-                              )
+                              ;; true-listp-when-symbol-alistp
+                              no-duplicate-lambda-formals-in-termp)
                              (;; pairlis$
                               ;; set-difference-equal
                               ))))))
