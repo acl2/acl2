@@ -1161,7 +1161,12 @@
       (consp (expr-let->binds expr))
       :rule-classes :type-prescription
       :use (:instance expr-let-requirements (x expr))
-      :disable expr-let-requirements))
+      :disable expr-let-requirements)
+
+    (defrule expr-count-positive
+      (< 0 (expr-count x))
+      :rule-classes :linear
+      :expand ((expr-count x))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1382,19 +1387,6 @@
     :true-listp t
     :elementp-of-nil nil
     :pred bind-listp))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule expr-count-positive
-  :short "The size of an expression is positive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is a linear rule, for the termination of functions
-     whose measures are sums of sizes of expressions."))
-  (< 0 (expr-count x))
-  :rule-classes :linear
-  :expand ((expr-count x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
