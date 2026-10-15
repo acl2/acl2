@@ -86,10 +86,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defconst *whitespace-chars*
+  '(#\Space #\Tab #\Newline #\Return))
+
 ;; Collapses all whitespace down to a single space.
 (defund collapse-whitespace-in-char-list (chars)
   (declare (xargs :guard (character-listp chars)))
-  (replace-runs chars '(#\Space #\Tab #\Newline #\Return) '(#\Space)))
+  (replace-runs chars *whitespace-chars* '(#\Space)))
 
 (local
   (defthm character-listp-of-collapse-whitespace-in-char-list
@@ -116,7 +119,7 @@
 ;; Removes all whitespace.
 (defund remove-whitespace-in-char-list (chars)
   (declare (xargs :guard (character-listp chars)))
-  (replace-runs chars '(#\Space #\Tab #\Newline #\Return) nil))
+  (replace-runs chars *whitespace-chars* nil))
 
 (local
   (defthm character-listp-of-remove-whitespace-in-char-list
