@@ -62,17 +62,23 @@
                          (maxelem y))))
     :hints (("Goal" :in-theory (enable maxelem append)))))
 
+(local
+ (defthm maxelem-of-append-when-not-consp-arg2
+   (implies (not (consp y))
+            (equal (maxelem (append x y))
+                   (maxelem x)))
+   :hints (("Goal" :in-theory (enable maxelem append)))))
+
 (defthm maxelem-of-append
-  (implies (true-listp y) ;drop?
-           (equal (maxelem (append x y))
-                  (if (not (consp x))
-                      (maxelem y)
-                    (if (not (consp y))
-                        (maxelem x)
-                      (max (maxelem x)
-                           (maxelem y))))))
+  (equal (maxelem (append x y))
+         (if (not (consp x))
+             (maxelem y)
+           (if (not (consp y))
+               (maxelem x)
+             (max (maxelem x)
+                  (maxelem y)))))
   :hints (("Goal" :in-theory (disable (:e maxelem))
-           :use maxelem-of-append-helper)))
+                  :use maxelem-of-append-helper)))
 
 (defthm maxelem-singleton
   (equal (maxelem (cons a nil))
@@ -174,12 +180,14 @@
   :rule-classes (:rewrite ; todo: split out
                  (:linear :trigger-terms ((maxelem lst)))))
 
-;BOZO seems gross
-(defthm nth-0-<-maxelem
+(defthmd <=-of-nth-0-and-maxelem
+  (implies (consp x)
+           (<= (nth 0 x) (maxelem x))))
+
+(defthm <=-of-nth-0-and-maxelem-linear
   (implies (consp x)
            (<= (nth 0 x) (maxelem x)))
-  :rule-classes ((:linear :trigger-terms ((maxelem x)))
-                 :rewrite))
+  :rule-classes ((:linear :trigger-terms ((maxelem x)))))
 
 (defthm rationalp-of-maxelem
   (implies (and (consp items)
