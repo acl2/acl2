@@ -10,6 +10,13 @@
 
 (in-package "REMORA")
 
+(include-book "ispace-validator")
+(include-book "type-validator")
+(include-book "dimension-polynomials")
+(include-book "ispace-equivalence-checker")
+(include-book "type-equivalence-checker")
+(include-book "ispace-matcher")
+(include-book "type-matcher")
 (include-book "expression-validator")
 
 (acl2::controlled-configuration)
@@ -33,7 +40,15 @@
      this validator performs type checking,
      but also a limited form of type inference.
      We plan to extend the power of this type inference."))
-  :order-subtopics t
+  :order-subtopics (ispace-validator
+                    type-validator
+                    dimension-polynomials
+                    ispace-equivalence-checker
+                    type-equivalence-checker
+                    ispace-matcher
+                    type-matcher
+                    expression-validator
+                    t)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

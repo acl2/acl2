@@ -11,14 +11,6 @@
 (in-package "REMORA")
 
 (include-book "static-environments")
-(include-book "ispace-validator")
-(include-book "type-validator")
-(include-book "dimension-polynomials")
-(include-book "ispace-equivalence-checker")
-(include-book "type-equivalence-checker")
-(include-book "ispace-matcher")
-(include-book "type-matcher")
-(include-book "expression-validator")
 (include-book "validator")
 (include-book "ispace-validity")
 (include-book "type-validity")
@@ -46,14 +38,6 @@
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
-                    ispace-validator
-                    type-validator
-                    dimension-polynomials
-                    ispace-equivalence-checker
-                    type-equivalence-checker
-                    ispace-matcher
-                    type-matcher
-                    expression-validator
                     validator
                     ispace-validity
                     type-validity
