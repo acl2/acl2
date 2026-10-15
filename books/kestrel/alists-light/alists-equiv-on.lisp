@@ -18,6 +18,9 @@
 ;; Checks whether ALIST1 and ALIST2 are equivalent wrt the KEYS.  For these
 ;; purposes, not having a binding for a key is equivalent to binding it to nil.
 (defund alists-equiv-on (keys alist1 alist2)
+  (declare (xargs :guard (and (true-listp keys)
+                              (alistp alist1)
+                              (alistp alist2))))
   (if (endp keys)
       t
     (let ((key (first keys)))
