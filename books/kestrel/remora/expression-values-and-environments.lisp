@@ -610,6 +610,18 @@
 
 (fty::deflist expr-value-list-list
   :short "Fixtype of lists of lists of expression values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem
+     @('expr-value-list-listp-of-list-split-by-len-over-car-of-dims')
+     says that splitting a list of expression values
+     whose length is the product of non-empty, non-zero dimensions
+     into as many chunks as the first dimension
+     gives a list of lists of expression values.
+     In that theorem,
+     the chunk length is stated in the form that arises
+     from splitting the list via @(tsee list-split)."))
   :elt-type expr-value-list
   :true-listp t
   :elementp-of-nil t
@@ -634,6 +646,21 @@
              lt-to-zero-when-divided-by-pos
              nfix
              posp)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defruled expr-value-list-listp-of-list-split-by-len-over-car-of-dims
+    (implies (and (expr-value-listp vals)
+                  (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (expr-value-list-listp
+              (list-split vals (* (/ (car dims)) (len vals)))))
+    :enable posp
+    :disable expr-value-list-listp-of-list-split
+    :use (nat-list-product-divided-by-car
+          (:instance expr-value-list-listp-of-list-split
+                     (n (/ (len vals) (car dims)))))
     :prep-books ((include-book "arithmetic-3/top" :dir :system)))
 
   (defrule expr-value-listp-of-car-list
@@ -1829,7 +1856,12 @@
        is a repetition of the same list of dimensions,
        which consists of the dimensions passed as input
        concatenated with the common dimensions of all the expression values
-       (we extract the latter via @(tsee car) of @(tsee car)."))
+       (we extract the latter via @(tsee car) of @(tsee car).")
+     (xdoc::p
+      "The chunking performed by the builders is exact:
+       see @('posp-of-len-over-car-of-dims) in @(tsee nat-list-product)
+       and @('expr-value-list-listp-of-list-split-by-len-over-car-of-dims')
+       in @(tsee expr-value-list-list)."))
     (cond ((endp valss) nil)
           (t (cons (expr-value-with-nonempty-dims dims (car valss))
                    (expr-value-list-with-nonempty-dims dims (cdr valss)))))
@@ -1873,36 +1905,6 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; The chunking performed by the builders is exact:
-  ;; see POSP-OF-LEN-OVER-CAR-OF-DIMS (in NAT-LISTS) and this lemma.
-
-  (defruled expr-value-list-listp-of-list-split-by-len-over-car-of-dims
-    :short "Splitting a list of expression values
-            whose length is the product of non-empty, non-zero dimensions
-            into as many chunks as the first dimension
-            gives a list of lists of expression values."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The chunk length is stated in the form that arises from
-       the construction of values with non-empty dimensions
-       (see @(tsee expr-value-with-nonempty-dims));
-       @(tsee posp-of-len-over-car-of-dims) is its companion.
-       It is proved here, with the builders,
-       because its proof uses their arithmetic support."))
-    (implies (and (expr-value-listp vals)
-                  (nat-listp dims)
-                  (not (member-equal 0 dims))
-                  (consp dims)
-                  (equal (len vals) (nat-list-product dims)))
-             (expr-value-list-listp
-              (list-split vals (* (/ (car dims)) (len vals)))))
-    :enable posp
-    :disable expr-value-list-listp-of-list-split
-    :use (nat-list-product-divided-by-car
-          (:instance expr-value-list-listp-of-list-split
-                     (n (/ (len vals) (car dims))))))
-
   (defret-mutual check-dims-of-expr-values-with-nonempty-dims
     (defret check-dims-of-expr-value-with-nonempty-dims
       (b* ((dims1 (check-dims-of-expr-value val)))
@@ -1935,22 +1937,24 @@
       :fn expr-value-list-with-nonempty-dims)
     :mutual-recursion expr-values-with-nonempty-dims
     :hints (("Goal"
-             :in-theory (enable expr-value-with-nonempty-dims
-                                expr-value-list-with-nonempty-dims
-                                check-dims-of-expr-value
-                                check-dims-of-expr-value-list
-                                acl2::not-reserrp-when-nat-listp
-                                acl2::not-reserrp-when-nat-list-listp
-                                expr-value-wfp
-                                dims-of-expr-value
-                                dims-of-expr-value-list-list
-                                nat-list-product-of-cdr-to-ratio
-                                list-repeatp
-                                repeat
-                                car-of-repeat
-                                car-of-car-of-list-split
-                                posp-of-len-over-car-of-dims
-                                expr-value-list-listp-of-list-split-by-len-over-car-of-dims))))
+             :in-theory
+             (enable
+              expr-value-with-nonempty-dims
+              expr-value-list-with-nonempty-dims
+              check-dims-of-expr-value
+              check-dims-of-expr-value-list
+              acl2::not-reserrp-when-nat-listp
+              acl2::not-reserrp-when-nat-list-listp
+              expr-value-wfp
+              dims-of-expr-value
+              dims-of-expr-value-list-list
+              nat-list-product-of-cdr-to-ratio
+              list-repeatp
+              repeat
+              car-of-repeat
+              car-of-car-of-list-split
+              posp-of-len-over-car-of-dims
+              expr-value-list-listp-of-list-split-by-len-over-car-of-dims))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
