@@ -425,7 +425,7 @@
      and evaluate the deferred body,
      analogously to @(tsee eval-iapp) on a product type value.
      The sort check on the witness is expected to always succeed
-     for a box value that comes from type checking;
+     for a box value that comes from validation;
      we plan to eliminate it via a well-formedness invariant."))
   (b* (((when (endp ivals)) (reserr nil))
        ((when (endp (cdr ivals)))
@@ -588,7 +588,7 @@
        and then we evaluate the unboxing over the resulting value
        via a separate ACL2 function (see @(tsee eval-unbox)).
        The optional type must be present:
-       evaluation is only meaningful on type-checked, type-annotated ASTs.
+       evaluation is only meaningful on validated, type-annotated ASTs.
        Our validator will annotate the ASTs appropriately.")
      (xdoc::p
       "For a bracket expression,

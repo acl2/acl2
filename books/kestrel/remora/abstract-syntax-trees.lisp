@@ -61,7 +61,7 @@
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
-     These are calculated by type checking/inference.")
+     These are calculated by validation.")
    (xdoc::p
     "Our ASTs are, in certain parts, more general than the concrete syntax,
      e.g. they allow certain required type information to be omitted.
@@ -1207,7 +1207,7 @@
        it is always present in the concrete syntax,
        but it is absent in the inner boxes of
        the nest that an n-ary box desugars to,
-       because those types can only be computed during type checking;
+       because those types can only be computed by the validator;
        this matches [impl].
        Unlike the optional types of abstractions and unboxing expressions,
        the type of a box cannot be calculated from its array,

@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test that a standalone Remora expression
-; parses, type-checks, and evaluates without error.
+; parses, validates, and evaluates without error.
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs the full pipeline
 ; (parse-top-exp-from-string,
@@ -229,7 +229,7 @@
                          1000)
         (iv 6)))
 
-; End-to-end: parse, type-check, and evaluate a reduce expression.
+; End-to-end: parse, validate, and evaluate a reduce expression.
 (test-eval-top-expr
  "(@reduce (Int) (2 []) + [1 2 3])")
 
@@ -280,7 +280,7 @@
                          1000)
         (iv 16)))
 
-; End-to-end: parse, type-check, and evaluate a fold expression.
+; End-to-end: parse, validate, and evaluate a fold expression.
 (test-eval-top-expr
  "(@fold (Int Int) (2 [] []) + 10 [1 2 3])")
 

@@ -29,7 +29,7 @@
   :guard-hints (("Goal" :in-theory (enable filep-when-result-not-error
                                            exprp-when-result-not-error
                                            type+expr-p-when-result-not-error)))
-  :short "Parse a Remora source file, type-check it, run it,
+  :short "Parse a Remora source file, validate it, run it,
           and print the resulting value."
   :long
   (xdoc::topstring
@@ -38,12 +38,12 @@
      (via @(tsee parse-from-file)),
      reduces it to the expression that running it evaluates
      (via @(tsee file-to-expr)),
-     type-checks that (via @(tsee check-top-expr)),
+     validates that (via @(tsee check-top-expr)),
      and evaluates it with @(tsee eval-top-expr), printing the resulting
      expression value in Remora concrete syntax via @(tsee print-expr-value).
      Returns @('(mv successp state)'), where @('successp') is @('t')
      if the value was computed and printed, and @('nil') if parsing,
-     reduction, type checking, evaluation, or printing the value fails.
+     reduction, validation, evaluation, or printing the value fails.
      The expression that is evaluated is the one returned by the validator
      (currently identical to the one reduced from the file;
      see @(tsee check-top-expr)).")
@@ -72,7 +72,7 @@
           (mv nil state)))
        (type+expr (check-top-expr expr))
        ((when (reserrp type+expr))
-        (b* ((- (cw "Type checking ~s0 failed: ~x1~%" filename type+expr)))
+        (b* ((- (cw "Validating ~s0 failed: ~x1~%" filename type+expr)))
           (mv nil state)))
        ((type+expr te) type+expr)
        (val (eval-top-expr te.expr limit))

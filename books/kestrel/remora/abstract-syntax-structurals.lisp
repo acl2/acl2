@@ -989,7 +989,7 @@
      The boxing atoms have no types:
      this function builds the inner boxes of
      the nest that an n-ary boxing atom desugars to,
-     whose types can only be computed during type checking
+     whose types can only be computed during validation
      (see @(tsee atom))."))
   (cond ((endp ispaces) (expr-fix body))
         (t (make-expr-array
