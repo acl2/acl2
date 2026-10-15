@@ -669,7 +669,7 @@
       (if (and (consp subterm) ; not a var
                (symbolp (ffn-symb subterm)) ; not a lambda
                (not (eq 'quote (ffn-symb subterm))) ; not a quoted constant
-               (< 1 (count-occurences-in-term subterm formula)) ; for now, we only generalize terms that appear more than once
+               (< 1 (count-occurrences-in-term subterm formula)) ; for now, we only generalize terms that appear more than once
                )
           (let ((technique `(:generalize ,subterm)))
             (if (member-equal technique old-techniques)

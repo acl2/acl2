@@ -274,7 +274,7 @@
                    :hints (("Goal" :in-theory (enable vex-prefixes-byte0-p))))
     :short "Get the @('vvvv') field of @('vex-prefixes');
             cognizant of the two- or three-byte VEX prefixes form."
-    ;; We inline these to avoid slow compilation in the
+    ;; We avoid inlining these to avoid slow compilation in the
     ;; vex-opcodes-dispatch book:
     :inline nil
     (case (vex-prefixes->byte0 vex-prefixes)
@@ -474,7 +474,7 @@
   (define evex->aaa ((evex-prefixes evex-prefixes-p))
     :returns (aaa (unsigned-byte-p 3 aaa) :hyp :guard)
     :short "Get the @('aaa') field of @('evex-prefixes')."
-    ;; We inline these to avoid slow compilation in the
+    ;; We avoid inlining these to avoid slow compilation in the
     ;; evex-opcodes-dispatch book:
     :inline nil
     (evex-byte3->aaa (evex-prefixes->byte3 evex-prefixes)))
