@@ -117,7 +117,9 @@
                                arm::execute-cmn-register
                                arm::execute-cmn-register-shifted-register
                                arm::execute-mul
-                               arm::execute-sub-immediate))
+                               arm::execute-sub-immediate
+                               arm::execute-sub-register
+                               arm::execute-sub-register-shifted-register))
           (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
             arm::execute-cmp-register-alt
@@ -127,6 +129,8 @@
             arm::execute-cmn-register-shifted-register-alt
             arm::execute-mul-alt
             arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
+            arm::execute-sub-register-alt
+            arm::execute-sub-register-shifted-register-alt
 
             ;; These support relieving hyps of the -alt rules:
             arm::cmn-immediate-argsp
@@ -136,6 +140,8 @@
             arm::cmp-register-argsp
             arm::cmp-register-shifted-register-argsp
             arm::sub-immediate-argsp
+            arm::sub-register-argsp
+            arm::sub-register-shifted-register-argsp
 
             ;; Additional rules needed for the instruction semantics:
             arm::adr-common

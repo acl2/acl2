@@ -3300,24 +3300,28 @@
        (imm32 (ARMExpandImm imm12 arm))
        ;; end EncodingSpecificOperations
        (regn (reg* n arm))
-       ((mv result & &) (AddWithCarry 32 regn (bvnot 32 imm32) 1)))
+       (result (bvminus 32 regn imm32)))
     (if (== d 15)
         (ALUWritePC result arm)
       (b* ((arm (set-reg d result arm))
            (arm (if setflags
-                    (let* ((arm (set-apsr.n (sub-sign regn imm32) arm))
-                           (arm (set-apsr.z (sub-zero regn imm32) arm))
-                           (arm (set-apsr.c (sub-carry regn imm32) arm))
-                           (arm (set-apsr.v (sub-overflow regn imm32) arm)))
+                    ;; We can reuse the CMP functions here:
+                    (let* ((arm (set-apsr.n (cmp-sign regn imm32) arm))
+                           (arm (set-apsr.z (cmp-zero regn imm32) arm))
+                           (arm (set-apsr.c (cmp-carry regn imm32) arm))
+                           (arm (set-apsr.v (cmp-overflow regn imm32) arm)))
                       arm)
                   arm))
            (arm (advance-pc arm)))
         arm)))
-  :alt-body-hints (("Goal" :in-theory '(execute-sub-immediate
-                                        sub-sign
-                                        sub-zero
-                                        sub-carry
-                                        sub-overflow))))
+  :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
+                                              cmp-sign
+                                              cmp-zero
+                                              cmp-carry
+                                              cmp-overflow
+                                              sint uint
+                                              acl2::bvnot-becomes-bvminus-of-bvuminus-and-1
+                                              acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (def-inst :sub-register
     (b* (;; EncodingSpecificOperations:
@@ -3345,7 +3349,43 @@
                         arm)
                     arm))
              (arm (advance-pc arm)))
-          arm))))
+          arm)))
+  :alt-body
+  (b* (;; EncodingSpecificOperations:
+         ((when (and (== rd #b1111)
+                     (== s #b1)))
+          ;; todo:
+          (update-error (list *unsupported* :sub-register) arm))
+         ;; No need to check for SUB (SP minus register)
+         (d (uint 4 rd))
+         (n (uint 4 rn))
+         (m (uint 4 rm))
+         (setflags (== s #b1))
+         ((mv shift_t shift_n) (decodeImmShift type imm5))
+         ;; end EncodingSpecificOperations
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (regn (reg* n arm))
+         (result (bvminus 32 regn shifted)))
+      (if (== d 15)
+          (ALUWritePC result arm)
+        (b* ((arm (set-reg d result arm))
+             (arm (if setflags
+                      (let* ((arm (set-apsr.n (cmp-sign regn shifted) arm))
+                             (arm (set-apsr.z (cmp-zero regn shifted) arm))
+                             (arm (set-apsr.c (cmp-carry regn shifted) arm))
+                             (arm (set-apsr.v (cmp-overflow regn shifted) arm)))
+                        arm)
+                    arm))
+             (arm (advance-pc arm)))
+          arm)))
+    :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
+                                                cmp-sign
+                                                cmp-zero
+                                                cmp-carry
+                                                cmp-overflow
+                                                sint uint
+                                                acl2::bvnot-becomes-bvminus-of-bvuminus-and-1
+                                                acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 (def-inst :sub-register-shifted-register
     (b* (;; EncodingSpecificOperations:
@@ -3373,7 +3413,43 @@
                     arm)
                 arm))
          (arm (advance-pc arm)))
-      arm))
+      arm)
+  :alt-body
+      (b* (;; EncodingSpecificOperations:
+         (d (uint 4 rd))
+         (n (uint 4 rn))
+         (m (uint 4 rm))
+         (sval (uint 4 rs)) ; use sval since S is a field of the inst
+         (setflags (== s #b1))
+         (shift_t (DecodeRegShift type))
+         ((when (or (== d 15)
+                    (== n 15)
+                    (== m 15)
+                    (== sval 15)))
+          (update-error *unpredictable* arm))
+         ;; end EncodingSpecificOperations
+         (shift_n (uint 8 (slice 7 0 (reg* sval arm))))
+         (shifted (shift 32 (reg* m arm) shift_t shift_n (apsr.c arm)))
+         (regn (reg* n arm))
+         (result (bvminus 32 regn shifted))
+         (arm (set-reg d result arm))
+         (arm (if setflags
+                  (let* ((arm (set-apsr.n (cmp-sign regn shifted) arm))
+                         (arm (set-apsr.z (cmp-zero regn shifted) arm))
+                         (arm (set-apsr.c (cmp-carry regn shifted) arm))
+                         (arm (set-apsr.v (cmp-overflow regn shifted) arm)))
+                    arm)
+                arm))
+         (arm (advance-pc arm)))
+      arm)
+  :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
+                                                cmp-sign
+                                                cmp-zero
+                                                cmp-carry
+                                                cmp-overflow
+                                                sint uint
+                                                acl2::bvnot-becomes-bvminus-of-bvuminus-and-1
+                                                acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
