@@ -797,13 +797,14 @@
     (if p
         (if end
             (concatenate 'string
-                         (subseq x 0 p)
+                         (funcall *old-string-downcase* (subseq x 0 p))
                          (coerce (loop for i from p to (1- end)
                                        collect (char-downcase (char x i)))
                                  'string)
-                         (subseq x end (length x)))
+                         (funcall *old-string-downcase*
+                                  (subseq x end (length x))))
           (concatenate 'string
-                       (subseq x 0 p)
+                       (funcall *old-string-downcase* (subseq x 0 p))
                        (coerce (loop for i from p to (1- (length x))
                                      collect (char-downcase (char x i)))
                                'string)))

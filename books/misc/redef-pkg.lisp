@@ -290,21 +290,9 @@
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
-        ((let ((len (length *1*-pkg-prefix*)))
-           (and (<= len (length name))
-                (string-equal (subseq name 0 len) *1*-pkg-prefix*)))
-
-; The use of string-equal could be considered overkill; probably equal provides
-; enough of a check.  But we prefer not to consider the possibility that some
-; Lisp has case-insensitive package names.  Probably we should similarly use
-; member-string-equal instead of member-equal below.
-
-         (er soft ctx
-             "It is illegal for a package name to start (even ignoring case) ~
-              with the string \"~@0\".  ACL2 makes internal use of package ~
-              names starting with that string."
-             *1*-pkg-prefix*))
         (t (value nil)))
+       (chk-pkg-prefix name *global-package-prefix* ctx state)
+       (chk-pkg-prefix name *1*-package-prefix* ctx state)
 
 ; At one time we checked that if the package exists, i.e. (member-equal name
 ; all-names), and we are not in the boot-strap, then name must previously have

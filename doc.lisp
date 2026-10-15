@@ -107442,6 +107442,16 @@ Bug Fixes From AI via Eric Smith
   by using [30m[47m[with-global-stobj][0m[0m.  This bug has been fixed; see
   [community-book] [30m[47msystem/tests/wormhole-global-stobj.lisp[0m[0m.
 
+  The strings [30m[47m\"ACL2_GLOBAL_\"[0m[0m and [30m[47m\"ACL2_*1*_\"[0m[0m are used internally by
+  ACL2 as [package] prefixes, so they need to be prohibited as
+  prefixes of strings supplied to [30m[47m[defpkg][0m[0m.  However, only the latter
+  of these was prohibited.  That has been fixed; see community book
+  file [30m[47msystem/tests/defpkg-acl2-global-prefix.lsp[0m[0m.
+
+  Fixed a soundness bug due to allowing [30m[47m[bind-free][0m[0m to introduce
+  objects values that are not legal ACL2 objects.  See for example
+  [community-book] [30m[47msystem/tests/ev-synp-bind-free.lisp[0m[0m.
+
 
 Other Bug Fixes
 
