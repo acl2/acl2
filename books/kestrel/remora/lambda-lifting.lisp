@@ -13,7 +13,6 @@
 (include-book "abstract-syntax-trees")
 (include-book "all-variable-operations")
 (include-book "static-environments")
-(include-book "type-checker")
 (include-book "type-environments")
 (include-book "abstract-syntax-well-formedness")
 (include-book "free-variable-operations")

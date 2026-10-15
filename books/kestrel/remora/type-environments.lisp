@@ -12,7 +12,7 @@
 
 (include-book "abstract-syntax-trees")
 (include-book "static-environments")
-(include-book "type-checker")
+(include-book "expression-validator")
 (include-book "well-formedness-support")
 (include-book "free-variable-operations")
 (include-book "lists")
