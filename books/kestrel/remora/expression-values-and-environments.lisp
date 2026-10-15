@@ -28,6 +28,7 @@
 
 (local (include-book "arithmetic"))
 
+(local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
@@ -645,8 +646,7 @@
              expr-value-list-listp
              lt-to-zero-when-divided-by-pos
              nfix
-             posp)
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+             posp))
 
   (defruled expr-value-list-listp-of-list-split-by-len-over-car-of-dims
     (implies (and (expr-value-listp vals)
@@ -660,8 +660,7 @@
     :disable expr-value-list-listp-of-list-split
     :use (nat-list-product-divided-by-car
           (:instance expr-value-list-listp-of-list-split
-                     (n (/ (len vals) (car dims)))))
-    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+                     (n (/ (len vals) (car dims))))))
 
   (defrule expr-value-listp-of-car-list
     (implies (expr-value-list-listp x)
@@ -1060,8 +1059,7 @@
              check-dims-of-expr-value
              repeat
              len
-             acl2::not-reserrp-when-nat-list-listp)
-    :prep-books ((local (include-book "arithmetic-3/top" :dir :system))))
+             acl2::not-reserrp-when-nat-list-listp))
 
   (defruled check-dims-of-expr-value-list-of-append
     (equal (check-dims-of-expr-value-list (append vals1 vals2))
@@ -1391,8 +1389,7 @@
     :enable (expr-value-base-list
              dims-of-expr-value
              check-dims-of-expr-value
-             repeat)
-    :prep-books ((local (include-book "arithmetic-3/top" :dir :system))))
+             repeat))
 
   (defruled dims-of-expr-value-list-when-expr-value-list-wfp
     (implies (expr-value-list-wfp vals)
@@ -1880,8 +1877,6 @@
 
   :verify-guards :after-returns
 
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
-
   :guard-hints (("Goal"
                  :in-theory (e/d
                              (true-list-listp-when-expr-value-list-listp
@@ -2073,8 +2068,6 @@
       (append (expr-value-atoms (car vals))
               (expr-value-list-atoms (cdr vals))))
     :measure (expr-value-list-count vals))
-
-  :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///
 
