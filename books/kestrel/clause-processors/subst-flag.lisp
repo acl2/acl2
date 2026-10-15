@@ -449,7 +449,6 @@
                            )
            :in-theory (e/d (sublis-var-and-simplify
                             sublis-var-and-simplify-lst
-                            ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             alistp ;why?
@@ -509,7 +508,6 @@
                            )
            :in-theory (e/d (sublis-var-and-simplify
                             sublis-var-and-simplify-lst
-                            ;MEMBER-EQUAL-OF-STRIP-CARS-IFF
                             ;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             alistp ;why?
@@ -564,7 +562,6 @@
                            )
            :in-theory (e/d (sublis-var-and-simplify
                             sublis-var-and-simplify-lst
-                            ;;member-equal-of-strip-cars-iff
                             ;;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             equality-eval-of-fncall-args)

@@ -35,6 +35,13 @@
            (member-equal key1 (strip-cars alist))))
   :hints (("Goal" :in-theory (enable acons-unique))))
 
+(defthm assoc-equal-of-acons-unique
+  (equal (assoc-equal key1 (acons-unique key2 val alist))
+         (if (equal key1 key2)
+             (cons key1 val)
+           (assoc-equal key1 alist)))
+  :hints (("Goal" :in-theory (enable acons-unique))))
+
 (defthmd no-duplicatesp-equal-of-strip-cars-of-acons-unique
   (implies (no-duplicatesp-equal (strip-cars alist))
            (no-duplicatesp-equal (strip-cars (acons-unique key val alist))))

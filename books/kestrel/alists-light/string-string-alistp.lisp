@@ -26,3 +26,10 @@
            (alistp x))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable string-string-alistp))))
+
+(defthm string-string-alistp-of-cons-of-cons
+  (equal (string-string-alistp (cons (cons key val) x))
+         (and (stringp key)
+              (stringp val)
+              (string-string-alistp x)))
+  :hints (("Goal" :in-theory (enable string-string-alistp))))
