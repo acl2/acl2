@@ -613,12 +613,6 @@
           (+ (bind-cfun-count bind) (defs-weight defs)))
    :hints (("Goal" :expand ((defs-weight (cons (cons name bind) defs)))))))
 
-(local
- (defthm expr-count-positive
-   (< 0 (expr-count x))
-   :rule-classes :linear
-   :hints (("Goal" :expand ((expr-count x))))))
-
 ; Guard lemmas for looking up definition binds in the scope environment.
 
 (local
