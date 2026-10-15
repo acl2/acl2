@@ -9982,8 +9982,7 @@
   (and (symbolp x)
        (let ((pkg-name (ignore-errors (symbol-package-name x))))
          (and pkg-name
-              (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
-                              pkg-name)))))
+              (string-prefixp *1*-package-prefix* pkg-name)))))
 
 (mutual-recursion
 
