@@ -940,7 +940,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check an expression; if successful,
             return its type and the type-augmented expression."
     :long
@@ -1309,7 +1309,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (types+exprs types+exprs-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of expressions; if successful,
             return their types and the type-augmented expressions."
     :long
@@ -1359,7 +1359,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (type+atom type+atom-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check an atom; if successful,
             return its type and the type-augmented atom."
     :long
@@ -1563,7 +1563,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (type+expr type+expr-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check the array expression of a unary boxing atom
             against the expected type."
     :long
@@ -1626,7 +1626,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (types+atoms types+atoms-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of atoms; if successful,
             return their types and the type-augmented atoms."
     :long
@@ -1670,7 +1670,7 @@
                       (tenv type-senvp)
                       (eenv expr-senvp))
     :returns (senvs+bind senvs+bind-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a binding; if successful,
             extend the static environments
             and return the type-augmented binding."
@@ -1925,7 +1925,7 @@
                            (tenv type-senvp)
                            (eenv expr-senvp))
     :returns (senvs+binds senvs+binds-resultp)
-    :parents (type-checker check-exprs/atoms/binds)
+    :parents (expression-validator check-exprs/atoms/binds)
     :short "Check a list of bindings; if successful,
             extend the static environments
             and return the type-augmented bindings."
