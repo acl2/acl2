@@ -632,13 +632,6 @@ SLOW_BOOKS += $(X86ISA_BOOKS)
 FILESYSTEM_BOOKS := $(filter projects/filesystems/%, $(OK_CERTS))
 SLOW_BOOKS += $(FILESYSTEM_BOOKS)
 
-SLOW_BOOK_TARGETS :=
-
-SLOW_BOOK_TARGETS += milawa-test-basic
-
-# Now SLOW_BOOKS is defined as the list above.
-SLOW_BOOKS += $(SLOW_BOOK_TARGETS)
-
 # We used to filter out the slow books here. As of mid-2020, we do it later, as
 # part of the `regression` target
 # OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
