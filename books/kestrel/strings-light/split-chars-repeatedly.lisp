@@ -1,6 +1,6 @@
 ; A utility to split a list of characters at all occurrences of a given char
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,7 @@
 ;Example (split-chars-repeatedly '(#\a #\b #\0 #\d #\e #\0 #\f #\g) #\0)
 ;Example (split-chars-repeatedly '(#\0 #\a #\b #\0 #\d #\e #\0 #\f #\g #\0) #\0)
 
-(defthm character-list-listp-split-chars-repeatedly
+(defthm character-list-listp-of-split-chars-repeatedly
   (implies (character-listp chars)
            (character-list-listp (split-chars-repeatedly chars char)))
   :hints (("Goal" :in-theory (enable split-chars-repeatedly))))
