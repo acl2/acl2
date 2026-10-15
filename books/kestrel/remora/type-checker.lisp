@@ -53,7 +53,5 @@
   (xdoc::topstring
    (xdoc::p
     "We check the expression, using the initial static environments.
-     We return its type, together with the expression, if successful;
-     the returned expression is currently identical to the input,
-     as in @(tsee check-exprs/atoms/binds)."))
+     We return its type, together with the expression, if successful."))
   (check-expr expr (init-ispace-senv) (init-type-senv) (init-expr-senv)))
