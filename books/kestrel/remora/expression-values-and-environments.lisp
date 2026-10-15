@@ -912,6 +912,15 @@
     :parents (expression-values-and-environments check-dims-of-expr-values/denv)
     :short "Check dimension constraints on (the expression values in)
             a map from strings to expression values."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The check on a map is insensitive to
+       the order in which the entries are checked:
+       updating a map at a fresh key checks the new value and the old map,
+       in whatever order.
+       See the theorem @('check-dims-of-string-expr-value-map-of-update') =
+       below."))
     (b* (((when (omap::emptyp (string-expr-value-map-fix map))) :unit)
          (eval (omap::head-val map))
          ((ok &) (check-dims-of-expr-value eval))
@@ -983,10 +992,6 @@
                                        acl2::not-reserrp-when-nat-listp
                                        acl2::not-reserrp-when-nat-list-listp
                                        acl2::nat-listp-of-car-when-nat-list-listp))))
-
-  ;; Consequently, the check on a map is insensitive to the order in which
-  ;; the entries are checked: updating a map at a fresh key checks the new
-  ;; value and the old map, in whatever order.
 
   (defruled check-dims-of-string-expr-value-map-of-update
     (implies (and (stringp key)
