@@ -570,6 +570,9 @@
      arm::armexpandimm_c
      arm::shift
      arm::shift_c
+     arm::mv-nth-0-of-rrx_c
+     arm::mv-nth-1-of-rrx_c
+     arm::rrx ; open to expose mv-nth 0 of rrx_c
 
      ;; left shifts:
      arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
