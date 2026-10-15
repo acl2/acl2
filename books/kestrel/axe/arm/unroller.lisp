@@ -506,10 +506,11 @@
         (make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil ; nil nil nil nil nil
                        state))
-       ;; Make the rule-alist for pruning (must exclude rules that require the x86 rewriter):
-       (pruning-rules lifter-rules
-                      ;(set-difference-eq lifter-rules (x86-rewriter-rules))
-                      ) ; optimize?  should we pre-sort rule-lists?
+       ;; Make the rule-alist for pruning (these should not require any specialized rewriter):
+       ;; todo: support adding and removing rules for pruning:
+       (pruning-rules (arm-simplification-rules)  ; optimize?  should we pre-sort/pre-make rule-lists?
+                      )
+       ;; (- (cw "Pruning rules: ~x0~%" pruning-rules))
        ((mv erp pruning-rule-alist)
         (make-rule-alist pruning-rules (w state)))
        ((when erp) (mv erp nil ; nil nil nil nil nil
