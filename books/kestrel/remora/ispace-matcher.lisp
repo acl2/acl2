@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-matcher
-  :parents (static-semantics)
+  :parents (validator)
   :short "A matcher for ispaces."
   :long
   (xdoc::topstring

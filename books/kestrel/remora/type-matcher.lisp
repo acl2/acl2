@@ -31,7 +31,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-matcher
-  :parents (static-semantics)
+  :parents (validator)
   :short "A matcher for types."
   :long
   (xdoc::topstring

@@ -19,7 +19,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-validator
-  :parents (static-semantics)
+  :parents (validator)
   :short "Validator of ispaces, including dimensions and shapes."
   :long
   (xdoc::topstring

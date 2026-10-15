@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dimension-polynomials
-  :parents (static-semantics)
+  :parents (validator)
   :short "Polynomials over the integers in the dimension variables."
   :long
   (xdoc::topstring

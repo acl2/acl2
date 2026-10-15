@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-validator
-  :parents (static-semantics)
+  :parents (validator)
   :short "Validator of types."
   :long
   (xdoc::topstring

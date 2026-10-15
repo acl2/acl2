@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ expression-validator
-  :parents (static-semantics)
+  :parents (validator)
   :short "Validator of expressions, including atoms."
   :long
   (xdoc::topstring

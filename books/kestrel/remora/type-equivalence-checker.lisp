@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ type-equivalence-checker
-  :parents (static-semantics)
+  :parents (validator)
   :short "A checker for the equivalence of types."
   :long
   (xdoc::topstring
