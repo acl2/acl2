@@ -116,6 +116,7 @@
                                arm::execute-cmn-immediate
                                arm::execute-cmn-register
                                arm::execute-cmn-register-shifted-register
+                               arm::execute-mul
                                arm::execute-sub-immediate))
           (arm::library-model-rules)
           '(arm::execute-cmp-immediate-alt
@@ -124,6 +125,7 @@
             arm::execute-cmn-immediate-alt
             arm::execute-cmn-register-alt
             arm::execute-cmn-register-shifted-register-alt
+            arm::execute-mul-alt
             arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
 
             ;; These support relieving hyps of the -alt rules:
