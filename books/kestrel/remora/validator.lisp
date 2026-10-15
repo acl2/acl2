@@ -16,30 +16,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ type-checker
+(defxdoc+ validator
   :parents (static-semantics)
-  :short "A type checker for Remora."
+  :short "A validator for Remora."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define a high-level executable type checker
+    "We define a high-level executable validator
      that is meant to enforce exactly the inference rules
-     that define the static semantics of Remora
-     in [thesis] and [arxiv].")
+     that define the static semantics of Remora.
+     This validator is not designed for efficiency
+     or to provide informative error messages;
+     it is designed for simplicity, at least for now.")
    (xdoc::p
-    "This type checker is not designed for efficiency
-     or to provide informative error messages.
-     It is designed for simplicity.")
-   (xdoc::p
-    "Besides checking, this type checker performs
-     a limited form of type inference:
-     when a function with a universal or product type
-     is applied to an argument
-     without explicit type and ispace applications,
-     the type and ispace arguments are inferred from the argument type,
-     and the corresponding applications are added to the expression
-     (see @(tsee check/infer-app)).
-     We plan to extend this inference."))
+    "In typical programming language terminology,
+     this validator performs type checking,
+     but also a limited form of type inference.
+     We plan to extend the power of this type inference."))
   :order-subtopics t
   :default-parent t)
 
