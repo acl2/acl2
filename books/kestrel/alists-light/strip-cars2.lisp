@@ -10,6 +10,8 @@
 
 (in-package "ACL2")
 
+;; See also strip-cars.lisp.
+
 (include-book "kestrel/lists-light/reverse-list" :dir :system)
 
 (defthm strip-cars-of-reverse-list
