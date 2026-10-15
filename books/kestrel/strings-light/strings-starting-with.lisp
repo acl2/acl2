@@ -14,7 +14,7 @@
 (include-book "string-starts-withp")
 
 ;; Filter the STRINGS, keeping only those that start with PREFIX
-(defun strings-starting-with (prefix strings)
+(defund strings-starting-with (prefix strings)
   (declare (xargs :guard (and (string-listp strings)
                               (stringp prefix))))
   (if (endp strings)
@@ -27,4 +27,5 @@
 
 (defthm string-listp-of-strings-starting-with
   (implies (string-listp strings)
-           (string-listp (strings-starting-with prefix strings))))
+           (string-listp (strings-starting-with prefix strings)))
+  :hints (("Goal" :in-theory (enable strings-starting-with))))
