@@ -80,8 +80,8 @@
   (defthm character-listp-of-replace-runs
     (implies (and (character-listp elems)
                   ;; (character-listp target-elems)
-                  (character-listp rev-replacement-elems))
-             (character-listp (replace-runs elems target-elems rev-replacement-elems)))
+                  (character-listp replacement-elems))
+             (character-listp (replace-runs elems target-elems replacement-elems)))
     :hints (("Goal" :in-theory (enable replace-runs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

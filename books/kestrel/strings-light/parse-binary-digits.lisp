@@ -1,4 +1,4 @@
-; Lightweight utilities for parsing binary digits from strings
+; Lightweight utilities for parsing binary digits from character-lists
 ;
 ; Copyright (C) 2022-2026 Kestrel Institute
 ;

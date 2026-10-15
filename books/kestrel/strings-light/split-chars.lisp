@@ -102,7 +102,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Splits the CHARS into two parts, the characters before the first occurence
+;; Splits the CHARS into two parts, the characters before the first occurrence
 ;; of CHAR and the characters after the first occurrence of CHAR.  Returns (mv
 ;; foundp chars-before chars-after).  If CHAR does not occur in CHARS, FOUNDP
 ;; will be nil, CHARS-BEFORE will contain all the chars, and CHARS-AFTER will
@@ -182,7 +182,7 @@
                 (equal (mv-nth 2 (split-chars chars char)) nil)))
   :hints (("Goal" :use (:instance split-chars-aux-correct-2
                                   (acc nil))
-           :in-theory (e/d (split-chars) (split-chars-aux-correct-1)))))
+           :in-theory (e/d (split-chars) (split-chars-aux-correct-2)))))
 
 (defthm split-chars-when-not-consp
   (implies (not (consp chars))
