@@ -907,7 +907,7 @@
      that a @('let') binds to a definition
      has been replaced with that definition.
      The invariant is established by
-     expanding every syntactic type or ispace as it enters the checker
+     expanding every syntactic type or ispace as it enters the validator
      (in the empty array and frame expressions,
      the lambda and box atoms,
      the type and ispace application arguments,
@@ -954,7 +954,7 @@
      (xdoc::p
       "For a (non-empty) array, there must be no zero dimension,
        and the number of atoms must match the product of the dimensions.
-       We type-check all the atoms,
+       We check all the atoms,
        which must have all equivalent types.
        We pick the first type from the list of types (which must be non-empty)
        as the atom type for the array type.

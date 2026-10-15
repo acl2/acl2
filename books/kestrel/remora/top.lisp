@@ -104,4 +104,4 @@
                     parsing-and-printing
                     static-semantics
                     dynamic-semantics
-                    monomorphize-top-expr))
+                    monomorphize))

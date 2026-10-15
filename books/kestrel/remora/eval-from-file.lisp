@@ -45,8 +45,9 @@
      if the value was computed and printed, and @('nil') if parsing,
      reduction, validation, evaluation, or printing the value fails.
      The expression that is evaluated is the one returned by the validator
-     (currently identical to the one reduced from the file;
-     see @(tsee check-top-expr)).")
+     (see @(tsee check-top-expr)),
+     i.e. the one reduced from the file
+     augmented with some type information.")
    (xdoc::p
     "Running a file means running its @('main') entry point, in the scope
      of the declarations that precede it.  The file must therefore have an

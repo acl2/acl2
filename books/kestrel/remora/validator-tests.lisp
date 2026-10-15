@@ -148,7 +148,7 @@
 ; The escape check in the unbox case of check-expr cannot see them,
 ; because the escaping type is closed in each case;
 ; rejecting them requires binder freshness,
-; e.g. uniquification of bound variables before type checking
+; e.g. uniquification of bound variables before validation
 ; (see unique-names.lisp)
 ; or freshness checks at every ispace binder.
 ; If freshness is enforced, these should become passing tests.
@@ -219,7 +219,7 @@
 ; and the body of the universal type binds its own @s in a product type,
 ; which must be renamed apart when the argument is substituted.
 ; The instantiated function is then applied to a vector of functions
-; whose type mentions the outer @s, which type-checks only without capture.
+; whose type mentions the outer @s, which is valid only without capture.
 (test-check-top-expr
  "(i-fn (@s)
   (fn ((f (A (-> (A Int @s) (A Int (dims))) (dims 2))))
@@ -1160,7 +1160,7 @@
 
 ; The explicit input shape must match the argument,
 ; but the type does not relate the sizes of the input and output shapes:
-; a reshape to an incompatible size type-checks,
+; a reshape to an incompatible size passes validation,
 ; and the mismatch is only detected by evaluation (see prim-reshape).
 (test-check-top-expr-fail
  "(@reshape (Int) ([3] [2 2]) [1 2 3 4])")

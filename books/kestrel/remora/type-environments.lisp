@@ -107,7 +107,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Restricting a type environment to a set of keys, and turning it into the
-; static environment the checker checks against.
+; static environment the validator checks against.
 
 (define restrict-to-keys ((keys string-setp) (tenv string-type-mapp))
   :returns (new-tenv string-type-mapp)
@@ -160,15 +160,15 @@
      type.  This is what lets a lambda that captures a locally defined
      function abstract over it with a type.")
    (xdoc::p
-    "The checker sees the primitive operations too, since the bindings may
+    "The validator sees the primitive operations too, since the bindings may
      use them; but only the entries for the variables these bindings bind
      are taken from its result, so that the environment stays local, and a
-     primitive is never taken for a captured variable.  The checker is run
+     primitive is never taken for a captured variable.  The validator is run
      with no ispace or type variables in scope; if it fails, as it will for
      bindings that mention those, the environment is left as it was.  The
      types it supplies are also required to pass @(tsee type-map-all-wfp),
      which they do; this keeps the invariant that the environment holds only
-     well-formed types provable without a theorem about the checker."))
+     well-formed types provable without a theorem about the validator."))
   (b* ((tenv (string-type-map-fix tenv))
        (sbs (check-bind-list binds
                              (init-ispace-senv)
