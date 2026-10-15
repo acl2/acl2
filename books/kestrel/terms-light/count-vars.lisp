@@ -1,6 +1,6 @@
 ; Counting variable occurrences in terms
 ;
-; Copyright (C) 2014-2024 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,7 +15,7 @@
 ;; TODO: Add tests, especially for lambdas
 (mutual-recursion
  ;; Count how many times VAR appears freely in TERM (except look past trivial lambda bindings).
- (defun count-free-occurences-in-term (var term)
+ (defun count-free-occurrences-in-term (var term)
    (declare (xargs :guard (and (symbolp var)
                                (pseudo-termp term))))
    (if (variablep term)
@@ -33,27 +33,27 @@
                      ;; The var is a non-trivial lambda-formal, so count occs
                      ;; in all the args but not in the body (because that var
                      ;; in the body has a different meaning):
-                     (count-free-occurences-in-terms var (fargs term))
+                     (count-free-occurrences-in-terms var (fargs term))
                    ;; The var is a trivial lambda-formal, so count occs in the
                    ;; other args and occs in the body (where the var has the
                    ;; same meaning):
-                   (+ (count-free-occurences-in-terms var (fargs term))
+                   (+ (count-free-occurrences-in-terms var (fargs term))
                       -1 ; for the trivial binding
-                      (count-free-occurences-in-term var (lambda-body (ffn-symb term)))))
+                      (count-free-occurrences-in-term var (lambda-body (ffn-symb term)))))
                ;; The var is not a lambda-formal, so count occs in the args
                ;; (the var does not appear in the lambda body):
-               (count-free-occurences-in-terms var (fargs term))))
+               (count-free-occurrences-in-terms var (fargs term))))
          ;; normal function call: count occurrences in args
-         (count-free-occurences-in-terms var (fargs term))))))
+         (count-free-occurrences-in-terms var (fargs term))))))
 
  ;; Count how many times VAR appears freely in TERMS.
- (defun count-free-occurences-in-terms (var terms)
+ (defun count-free-occurrences-in-terms (var terms)
    (declare (xargs :guard (and (symbolp var)
                                (pseudo-term-listp terms))))
    (if (endp terms)
        0
-     (+ (count-free-occurences-in-term var (car terms))
-        (count-free-occurences-in-terms var (cdr terms))))))
+     (+ (count-free-occurrences-in-term var (car terms))
+        (count-free-occurrences-in-terms var (cdr terms))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -64,7 +64,7 @@
   (if (endp vars)
       nil
     (let ((var (first vars)))
-      (if (<= (count-free-occurences-in-term var term) 1) ; optimize?
+      (if (<= (count-free-occurrences-in-term var term) 1) ; optimize?
           (cons var (vars-that-appear-only-once (rest vars) term))
         (vars-that-appear-only-once (rest vars) term)))))
 
