@@ -11,10 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
-(include-book "logext")
-(include-book "bvmod")
+(include-book "bvchop-def")
+(include-book "logext-def")
 (include-book "unsigned-byte-p-forced")
+(local (include-book "bvmod"))
+(local (include-book "bvchop"))
+(local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))

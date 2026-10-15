@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
+(include-book "bvplus-def")
 (include-book "logext")
 (include-book "bvmod")
 (include-book "bvcat")
