@@ -1112,7 +1112,8 @@
        (make-type+expr
         :type (make-type-array :elem elem
                                :ispace (ispace-shape
-                                        (shape-dims (dim-const-list expr.dims))))
+                                        (shape-dims
+                                         (dim-const-list expr.dims))))
         :expr (expr-fix expr)))
      :frame
      (b* (((when (member-equal 0 expr.dims)) (reserr nil))
@@ -1882,7 +1883,8 @@
           ((unless (check-type bind.type ienv-params tenv-params))
            (reserr nil))
           ((ok btype) (type-senv-expand-type bind.type ienv-params tenv-params))
-          ((ok types) (type-senv-expand-type-list types ienv-params tenv-params))
+          ((ok types)
+           (type-senv-expand-type-list types ienv-params tenv-params))
           ((ok eenv-body)
            (expr-senv-add-vars
             (var+type?-list-set-types types bind.params)
