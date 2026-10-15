@@ -19,7 +19,7 @@
 (include-book "ispace-matcher")
 (include-book "type-matcher")
 (include-book "expression-validator")
-(include-book "type-checker")
+(include-book "validator")
 (include-book "ispace-validity")
 (include-book "type-validity")
 (include-book "ispace-equivalence")
@@ -54,7 +54,7 @@
                     ispace-matcher
                     type-matcher
                     expression-validator
-                    type-checker
+                    validator
                     ispace-validity
                     type-validity
                     ispace-equivalence

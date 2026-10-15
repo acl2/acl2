@@ -12,7 +12,7 @@
 (in-package "REMORA")
 
 (include-book "parser-interface")
-(include-book "type-checker")
+(include-book "validator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
