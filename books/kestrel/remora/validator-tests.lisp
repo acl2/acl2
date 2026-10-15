@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test that a standalone Remora expression
-; parses and type-checks without error.
+; parses and validates without error.
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs
 ; parse-top-exp-from-string followed by check-top-expr,
@@ -36,11 +36,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Test that a standalone Remora expression
-; parses but does not type-check.
+; parses but does not validate.
 ; The argument is a string of Remora source for a standalone expression.
 ; The macro expands to an assert-event that runs
 ; parse-top-exp-from-string followed by check-top-expr,
-; and passes when type checking returns an error.
+; and passes when validation returns an error.
 ; The error is printed to the comment window for manual inspection.
 
 (defmacro test-check-top-expr-fail (code)
