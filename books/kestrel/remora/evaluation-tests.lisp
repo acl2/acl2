@@ -288,7 +288,7 @@
 
 ; End-to-end with inferred type and ispace applications
 ; (see check/infer-app):
-; the type checker adds the applications to the expression,
+; the validator adds the applications to the expression,
 ; which is then evaluated.
 
 ; Universal type over product type, from a combined function binding.

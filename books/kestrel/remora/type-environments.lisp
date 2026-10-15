@@ -36,7 +36,7 @@
     "A type environment is a @(tsee string-type-mapp) from variable names to
      their types.  These operations look up, record, and restrict the types
      of locally bound variables, and turn a type environment into the
-     @(tsee expr-senv) the type checker checks against.  They are used by
+     @(tsee expr-senv) the validator checks against.  They are used by
      @(tsee lambda-lifting) and by @(tsee monomorphize)."))
   :order-subtopics t
   :default-parent t)
@@ -137,14 +137,14 @@
 
 ; Recording the types of the variables a list of bindings binds.  A binding
 ; does not in general state the type of the variable it binds, so the
-; bindings are handed to the type checker, whose resulting environment has
+; bindings are handed to the validator, whose resulting environment has
 ; every bound variable typed; only the entries for the variables these
 ; bindings bind are taken from its result, so that the environment stays
-; local.  The checker is run with no ispace or type variables in scope; if
+; local.  The validator is run with no ispace or type variables in scope; if
 ; it fails, the environment is left as it was.  The types it supplies are
 ; also required to pass @(tsee type-map-all-wfp), which keeps the invariant
 ; that the environment holds only well-formed types provable without a
-; theorem about the checker.
+; theorem about the validator.
 
 (define extend-tenv-with-binds ((binds bind-listp) (tenv string-type-mapp))
   :returns (new-tenv string-type-mapp)
@@ -154,7 +154,7 @@
    (xdoc::p
     "A binding does not in general state the type of the variable it binds:
      a @(':fun') states its result type, and a @(':val') may state nothing.
-     So the bindings are handed to the type checker, @(tsee
+     So the bindings are handed to the validator, @(tsee
      check-bind-list), whose resulting environment has every bound variable
      typed --- a function by its function type, a value by its inferred
      type.  This is what lets a lambda that captures a locally defined

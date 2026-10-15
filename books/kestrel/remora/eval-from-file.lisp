@@ -44,7 +44,7 @@
      Returns @('(mv successp state)'), where @('successp') is @('t')
      if the value was computed and printed, and @('nil') if parsing,
      reduction, type checking, evaluation, or printing the value fails.
-     The expression that is evaluated is the one returned by the type checker
+     The expression that is evaluated is the one returned by the validator
      (currently identical to the one reduced from the file;
      see @(tsee check-top-expr)).")
    (xdoc::p

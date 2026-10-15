@@ -246,7 +246,7 @@
      This way, the substitutions always bind
      atom-kind variables to atom-kind types and
      array-kind variables to array-kind types,
-     as expected by the rest of the type checker
+     as expected by the rest of the validator
      (e.g. see @(tsee type-senv-type-subst)).")
    (xdoc::p
     "The substitution for the kind of the variable is consulted:

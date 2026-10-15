@@ -139,7 +139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The tests below are commented out because they currently fail:
-; the type checker accepts these expressions,
+; the validator accepts these expressions,
 ; but each one gets stuck (a dynamic shape error) when evaluated,
 ; so each should be rejected.
 ; They exploit shadowing of ispace variables rather than escaping witnesses:
@@ -423,7 +423,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The tests below are commented out because they currently fail:
-; the type checker accepts these expressions, but it should reject them.
+; the validator accepts these expressions, but it should reject them.
 ; The parameter x has the abstract type &t (or the abstract length $d),
 ; bound by the enclosing abstraction;
 ; the body then defines &t (or $d),
