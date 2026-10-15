@@ -273,7 +273,7 @@
                   (slice highbit lowbit (bvor (+ 1 highbit) x y))))
   :hints (("Goal" :cases ((<= lowbit highbit))
            :in-theory (e/d (slice bvor natp bvchop-of-logtail)
-                           (slice-becomes-bvchop )))))
+                           (slice-becomes-bvchop)))))
 
 (defthm slice-of-bvor-too-high
   (implies (and (<= n low)

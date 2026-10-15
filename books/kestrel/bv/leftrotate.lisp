@@ -148,7 +148,7 @@
                          amount
                          (slice (+ -1 width)
                                 (+ (- amount) width)
-                                val) )))
+                                val))))
   :hints (("Goal" ;:cases ((equal amount width))
            :in-theory (enable leftrotate))))
 
@@ -166,7 +166,7 @@
                              amount
                              (slice (+ -1 width)
                                     (+ (- amount) width)
-                                    val) )
+                                    val))
                     (slice (+ -1 (- amount) size width)
                            (+ (- amount) width)
                            val))))

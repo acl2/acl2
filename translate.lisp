@@ -19839,6 +19839,25 @@
      (t
       `(let ((,st (,(if rawp 'read-user-stobj-alist-raw 'read-user-stobj-alist)
                    ',st state)))
+         ,@(and rawp
+                `((when *wormholep*
+
+; This is an error.  As discussed in the comment on
+; <wormhole-test-for-functions-with-user-stobjs> in interface-raw.lisp,
+; ``proper updates on state are allowed inside wormholes since the wormhole can
+; properly "undo" these side effects upon completion.''  We check for such
+; "proper updates" by evaluating (set-difference-eq stobjs-out '(nil :df
+; state)) in oneify-cltl-code-1.  But a wormhole does not undo changes to
+; user-defined-stobjs, and those changes that are made using with-global-stobj
+; are not checked by the set-difference-eq call above.  So it's up to us here
+; to cause an error, so that user-defined stobjs are not modified by
+; with-global-stobj within a wormhole.
+
+; We pass only (car x) to wormhole-er below, because the last member of x can
+; be a call of a *1* function, which satisfies bad-lisp-objectp and has an ugly
+; representation when being printed by wormhole-er.
+
+                    (wormhole-er 'with-global-stobj '(,(car x))))))
          ,(with-global-stobj-fn1 st sig body rawp))))))
 
 (defmacro with-global-stobj (&rest args)

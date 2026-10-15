@@ -1,6 +1,6 @@
 ; Recognizer for an alist indicating how to rename functions
 ;
-; Copyright (C) 2014-2021 Kestrel Institute
+; Copyright (C) 2014-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 
 (defun function-renamingp (alist)
   (declare (xargs :guard t))

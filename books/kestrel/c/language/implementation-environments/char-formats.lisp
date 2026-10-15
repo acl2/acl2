@@ -54,7 +54,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
+    "As explained in [C17:5.2.4.2.1/2] [C23:5.3.5.3.2],
      this is the same as either @('UCHAR_MAX') or @('SCHAR_MAX')."))
   (if (char-format->signedp char-format)
       (schar-format->max schar-format uchar-format)
@@ -86,7 +86,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C17:5.2.4.2.1/2] and implied in [C23:5.3.5.3.2],
+    "As explained in [C17:5.2.4.2.1/2] [C23:5.3.5.3.2],
      this is either 0 or the same as @('SCHAR_MIN')."))
   (if (char-format->signedp char-format)
       (schar-format->min schar-format uchar-format)

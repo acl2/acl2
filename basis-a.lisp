@@ -8707,6 +8707,25 @@
              (the hash-table *current-stobj-gensym-ht*))
     (merge-sort-lexorder keys)))
 
+(defun hashp-init (etype init)
+
+; Etype is the element-type for a stobj hash table, and init is the constant
+; specified by the user for the initial value.  We return a suitable expression
+; for the initial value.
+
+  (if (eq etype 'double-float)
+
+; For efficiency, it would be nice to write `(quote ,(to-df init)), to avoid
+; re-evaluating to-df each time there's a hash-table miss.  However, to-df is
+; not yet defined in the boot-strap.  It doesn't seem important enough to deal
+; with this issue in general, but init is probably often 0 so we optimize for
+; that case.
+
+      (if (eql init 0)
+          '(df0)
+        `(to-df (quote ,init)))
+    `(quote ,init)))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -8824,20 +8843,7 @@
                             ,(cond (stobj-creator
                                     (assert$ hashp `(,stobj-creator)))
                                    (init
-                                    (assert$
-                                     hashp
-                                     (if (eq etype0 'double-float)
-
-; For efficiency, it would be nice to write `(quote ,(to-df init)), to avoid
-; re-evaluating to-df each time there's a hash-table miss.  However, to-df is
-; not yet defined in the boot-strap.  It doesn't seem important enough to deal
-; with this issue in general, but init is probably often 0 so we optimize for
-; that case.
-
-                                         (if (eql init 0)
-                                             '(df0)
-                                           `(to-df (quote ,init)))
-                                       `(quote ,init))))
+                                    (assert$ hashp (hashp-init etype0 init)))
                                    (t
                                     (assert$ stobj-tablep 'v)))))))))
              (,updater-name
@@ -8873,7 +8879,7 @@
                         (if boundp
                             (mv val t)
                           (mv ,(cond (stobj-creator `(,stobj-creator))
-                                     (init `(quote ,init))
+                                     (init (hashp-init etype0 init))
                                      (t nil))
                               nil))))))
              (,remove-name
@@ -9445,7 +9451,8 @@
                 (t (and (true-listp ,name)
                         (= (length ,name) ,(length field-templates))
                         ,@(defstobj-component-recognizer-calls
-                            field-templates 0 name nil)))))
+                            field-templates 0 name nil)
+                        t))))
        (,creator ()
                  ,(defstobj-raw-init template))
        ,@(defstobj-field-fns-raw-defs

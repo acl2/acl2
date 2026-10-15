@@ -315,6 +315,8 @@
                           (:unsupported . 1)
                           (:unpredictable . 1)
                           (:skipped . 0)))
+                 (equal (report-get :gap-words summary nil)
+                        '(("27:20=7F,7:4=F" (#xE7F000F0 . 1))))
                  (equal (report-get :mismatches summary nil)
                         '(("str pc, [r1] on ARMv4, PC+16 expected"
                            :str-immediate #xE581F000
@@ -327,3 +329,9 @@
                            ((:mem #x3000) :expected #x5559 :actual #x5555))))
                  (equal (report-get :unused-waivers summary nil)
                         (last *class-waivers*))))))
+
+;; SCTLR.U can be either bit only in ARMv6, so a vector that sets it to 1
+;; before ARMv6 or to 0 in ARMv7 is rejected.
+(assert-event (test-vectorp '(:arch 6 :sctlr.u 1 :expect (:pc 4))))
+(assert-event (not (test-vectorp '(:arch 4 :sctlr.u 1 :expect (:pc 4)))))
+(assert-event (not (test-vectorp '(:arch 7 :sctlr.u 0 :expect (:pc 4)))))
