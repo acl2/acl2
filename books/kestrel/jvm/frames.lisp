@@ -17,7 +17,7 @@
 (include-book "ads")
 (include-book "operand-stacks")
 (include-book "methods")
-(include-book "kestrel/utilities/myif" :dir :system)
+(local (include-book "kestrel/utilities/myif" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))

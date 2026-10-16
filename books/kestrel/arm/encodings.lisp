@@ -400,11 +400,11 @@
     ;; todo: usub16
     ;; todo: usub8
 
-    ;; (:uxtab (cond 4) 0 1 1 0 1 1 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+    ;;; (:uxtab (cond 4) 0 1 1 0 1 1 1 0 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     ;; todo: uxtab16
 
-    ;; (:uxtah (cond 4) 0 1 1 0 1 1 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4)) ; ready
+    ;;; (:uxtah (cond 4) 0 1 1 0 1 1 1 1 (rn 4) (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
 
     (:uxtb (cond 4) 0 1 1 0 1 1 1 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))
     (:uxtb16 (cond 4) 0 1 1 0 1 1 0 0 _ 1 1 1 1 _ (rd 4) (rotate 2) (0) (0) 0 1 1 1 (rm 4))

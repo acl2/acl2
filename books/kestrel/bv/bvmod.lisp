@@ -185,14 +185,13 @@
 
 (theory-invariant (incompatible (:rewrite mod-becomes-bvmod-free-and-free) (:definition bvmod)))
 
-(defthm bvmod-of-1-arg1
+(defthm bvmod-of-1-arg2
   (implies (posp size)
            (equal (bvmod size 1 x)
                   (if (equal (bvchop size x) 1)
                       0
                     1)))
   :hints (("Goal" :in-theory (enable bvmod))))
-
 
 (defthm bvmod-when-size-is-not-positive
   (implies (<= size 0)

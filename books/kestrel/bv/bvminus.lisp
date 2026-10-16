@@ -29,7 +29,14 @@
 (defthm natp-of-bvminus
   (natp (bvminus size x y)))
 
+;; Another rule may turn the RHS into a call of bvuminus.
 (defthm bvminus-when-arg2-is-not-an-integer
+  (implies (not (integerp x))
+           (equal (bvminus size x y)
+                  (bvminus size 0 y)))
+  :hints (("Goal" :in-theory (enable bvminus))))
+
+(defthm bvminus-when-arg3-is-not-an-integer
   (implies (not (integerp y))
            (equal (bvminus size x y)
                   (bvchop size x)))
@@ -152,12 +159,7 @@
                                      bvuminus
                                      bvminus))))
 
-;; Another rule may turn the RHS into a call of bvuminus.
-(defthm bvminus-when-arg1-is-not-an-integer
-  (implies (not (integerp x))
-           (equal (bvminus size x y)
-                  (bvminus size 0 y)))
-  :hints (("Goal" :in-theory (enable bvminus))))
+
 
 ;; Should we leave this enabled?  Perhaps we should, so we only have to deal with addition and unary negation, not subtraction.
 (defthmd bvminus-becomes-bvplus-of-bvuminus

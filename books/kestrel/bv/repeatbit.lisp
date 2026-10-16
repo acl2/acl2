@@ -1,7 +1,7 @@
 ; Creating BVs of all ones or all zeros
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -62,21 +62,13 @@
   :hints (("Goal" :in-theory (enable repeatbit))))
 
 (defthm repeatbit-equal-0-rewrite-2
-  (implies (and (< 0 n)
-                (integerp n))
+  (implies (posp n)
            (equal (equal (repeatbit n bit) 0)
                   (equal 0 (bvchop 1 bit))))
   :hints (("Goal" :in-theory (enable repeatbit))))
 
-(defthm repeatbit-equal-0-rewrite
-  (implies (posp n)
-           (equal (equal (repeatbit n bit) 0)
-                  (equal (bvchop 1 bit) 0)))
-  :hints (("Goal" :in-theory (enable repeatbit))))
-
 (defthm repeatbit-equal-0-rewrite-1
-  (implies (and (< 0 n)
-                (integerp n))
+  (implies (posp n)
            (equal (equal 0 (repeatbit n bit))
                   (equal 0 (bvchop 1 bit))))
   :hints (("Goal" :in-theory (enable repeatbit))))

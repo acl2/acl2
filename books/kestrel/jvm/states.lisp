@@ -19,6 +19,7 @@
 (include-book "array-building")
 (local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 (defthm intern-table-okp-of-initialize-one-dim-array
   (implies (not (set::in ad (acl2::rkeys heap)))

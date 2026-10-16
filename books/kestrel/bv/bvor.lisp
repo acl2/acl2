@@ -362,7 +362,7 @@
            :in-theory (disable <-of-bvor-and-expt))))
 
 ;drop?
-(defthmd bvor-logtail-arg1
+(defthmd bvor-of-logtail-arg2
   (implies (and (natp size)
                 (< 0 size)
                 (natp n))
@@ -371,7 +371,7 @@
   :hints (("Goal" :in-theory (enable bvor bvchop-of-logtail-becomes-slice))))
 
 ;drop?
-(defthmd bvor-logtail-arg2
+(defthmd bvor-of-logtail-arg3
   (implies (and (natp size)
                 (< 0 size)
                 (natp n))

@@ -131,13 +131,13 @@
            (equal (bvchop size1 (bvplus size2 y z))
                   (bvplus size2 y z))))
 
-(defthm bvplus-when-arg1-is-not-an-integer
+(defthm bvplus-when-arg2-is-not-an-integer
   (implies (not (integerp x))
            (equal (bvplus size x y)
                   (bvchop size y)))
   :hints (("Goal" :in-theory (enable bvplus))))
 
-(defthm bvplus-when-arg2-is-not-an-integer
+(defthm bvplus-when-arg3-is-not-an-integer
   (implies (not (integerp y))
            (equal (bvplus size x y)
                   (bvchop size x)))

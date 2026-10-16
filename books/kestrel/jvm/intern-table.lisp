@@ -16,6 +16,7 @@
 (include-book "classes")
 (include-book "heap0")
 (include-book "heap") ; for init-ref-in-heap
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 (local (in-theory (disable strip-cdrs))) ;make unlocal?
 

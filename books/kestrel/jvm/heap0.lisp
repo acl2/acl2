@@ -19,7 +19,7 @@
 ;the new-ad functions (and related functions are guaranteed to return fresh addresses, without needing a heap invariant)
 
 (include-book "kestrel/maps/maps" :dir :system)
-(include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (include-book "adstop")
 (include-book "types")
 (include-book "fields")

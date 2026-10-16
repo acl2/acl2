@@ -31,14 +31,16 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/lists-light/len-at-least" :dir :system)
-(include-book "kestrel/lists-light/memberp" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
+(include-book "kestrel/lists-light/memberp-def" :dir :system) ;drop
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "classes") ; this brings in defforall
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system)) ;for EQUAL-OF-BOOLEANS
+(local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/remove-equal" :dir :system))
