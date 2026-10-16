@@ -142,8 +142,7 @@
 
 (local
  (defthm symbol-count-worldp-of-uniquify-alist-eq
-   (implies (and (symbol-count-worldp world)
-                 (symbol-count-worldp acc))
+   (implies (symbol-count-worldp world)
             (symbol-count-worldp (uniquify-alist-eq world)))
    :hints (("Goal" :in-theory (enable uniquify-alist-eq)))))
 
