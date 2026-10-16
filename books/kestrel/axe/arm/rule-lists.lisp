@@ -472,20 +472,20 @@
     arm::le-condition-cmn-idiom
 
     ;; SUB rules:
-    arm::eq-condition-of-sub-zero
-    arm::ne-condition-of-sub-zero
-    arm::cs-condition-of-sub-carry
-    arm::cc-condition-of-sub-carry
-    ;; mi ; todo: add these missing ones
-    ;; pl
-    ;; vs
-    ;; vc
-    ;; hi
-    ;; ls
-    ;; ge
-    arm::lt-condition-of-sub-sign-and-sub-overflow
-    ;; gt
-    ;; le
+    ;; arm::eq-condition-of-sub-zero
+    ;; arm::ne-condition-of-sub-zero
+    ;; arm::cs-condition-of-sub-carry
+    ;; arm::cc-condition-of-sub-carry
+    ;; ;; mi ; todo: add these missing ones
+    ;; ;; pl
+    ;; ;; vs
+    ;; ;; vc
+    ;; ;; hi
+    ;; ;; ls
+    ;; ;; ge
+    ;; arm::lt-condition-of-sub-sign-and-sub-overflow
+    ;; ;; gt
+    ;; ;; le
 
     ;; hope these are ok:
     arm::cmn-sign-constant-opener
@@ -496,10 +496,10 @@
     arm::cmp-zero-constant-opener
     arm::cmp-carry-constant-opener
     arm::cmp-overflow-constant-opener
-    arm::sub-sign-constant-opener
-    arm::sub-zero-constant-opener
-    arm::sub-carry-constant-opener
-    arm::sub-overflow-constant-opener
+    ;; arm::sub-sign-constant-opener
+    ;; arm::sub-zero-constant-opener
+    ;; arm::sub-carry-constant-opener
+    ;; arm::sub-overflow-constant-opener
 
     arm::eq-condition-constant-opener
     arm::ne-condition-constant-opener
@@ -651,12 +651,12 @@
     arm::unsigned-byte-p-of-cmp-carry
     arm::unsigned-byte-p-of-cmp-overflow
 
-    arm::unsigned-byte-p-of-sub-sign
-    arm::unsigned-byte-p-of-sub-zero
-    arm::unsigned-byte-p-of-sub-carry
-    arm::unsigned-byte-p-of-sub-overflow
+    ;; arm::unsigned-byte-p-of-sub-sign
+    ;; arm::unsigned-byte-p-of-sub-zero
+    ;; arm::unsigned-byte-p-of-sub-carry
+    ;; arm::unsigned-byte-p-of-sub-overflow
 
-    acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to sub-sign, etc.
+    acl2::getbit-identity ; overkill?  but we need to drop getbit 0 when applied to cmp-sign, etc.
     ))
 
 ;; These get used in pruning too, so they should not require the ARM rewriter.

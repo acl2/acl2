@@ -3208,51 +3208,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund sub-sign (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
-    (getbit 31 result)))
+;; (defund sub-sign (x y)
+;;   (declare (xargs :guard (and (unsigned-byte-p 32 x)
+;;                               (unsigned-byte-p 32 y))))
+;;   (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+;;     (getbit 31 result)))
 
-(defthm unsigned-byte-p-of-sub-sign
-  (implies (posp size)
-           (unsigned-byte-p size (sub-sign x y)))
-  :hints (("Goal" :in-theory (enable sub-sign))))
+;; (defthm unsigned-byte-p-of-sub-sign
+;;   (implies (posp size)
+;;            (unsigned-byte-p size (sub-sign x y)))
+;;   :hints (("Goal" :in-theory (enable sub-sign))))
 
-(defund sub-zero (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
-    (IsZeroBit 32 result)))
+;; (defund sub-zero (x y)
+;;   (declare (xargs :guard (and (unsigned-byte-p 32 x)
+;;                               (unsigned-byte-p 32 y))))
+;;   (b* (((mv result & &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+;;     (IsZeroBit 32 result)))
 
-(defthm unsigned-byte-p-of-sub-zero
-  (implies (posp size)
-           (unsigned-byte-p size (sub-zero x y)))
-  :hints (("Goal" :in-theory (enable sub-zero))))
+;; (defthm unsigned-byte-p-of-sub-zero
+;;   (implies (posp size)
+;;            (unsigned-byte-p size (sub-zero x y)))
+;;   :hints (("Goal" :in-theory (enable sub-zero))))
 
-(defund sub-carry (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  (b* (((mv & carry &) (AddWithCarry 32 x (bvnot 32 y) 1)))
-    carry))
+;; (defund sub-carry (x y)
+;;   (declare (xargs :guard (and (unsigned-byte-p 32 x)
+;;                               (unsigned-byte-p 32 y))))
+;;   (b* (((mv & carry &) (AddWithCarry 32 x (bvnot 32 y) 1)))
+;;     carry))
 
-(defthm unsigned-byte-p-of-sub-carry
-  (implies (posp size)
-           (unsigned-byte-p size (sub-carry x y)))
-  :hints (("Goal" :in-theory (enable sub-carry))))
+;; (defthm unsigned-byte-p-of-sub-carry
+;;   (implies (posp size)
+;;            (unsigned-byte-p size (sub-carry x y)))
+;;   :hints (("Goal" :in-theory (enable sub-carry))))
 
-;; Also includes underflow
-(defund sub-overflow (x y)
-  (declare (xargs :guard (and (unsigned-byte-p 32 x)
-                              (unsigned-byte-p 32 y))))
-  ;; todo: simplify:
-  (b* (((mv & & overflow) (AddWithCarry 32 x (bvnot 32 y) 1)))
-    overflow))
+;; ;; Also includes underflow
+;; (defund sub-overflow (x y)
+;;   (declare (xargs :guard (and (unsigned-byte-p 32 x)
+;;                               (unsigned-byte-p 32 y))))
+;;   ;; todo: simplify:
+;;   (b* (((mv & & overflow) (AddWithCarry 32 x (bvnot 32 y) 1)))
+;;     overflow))
 
-(defthm unsigned-byte-p-of-sub-overflow
-  (implies (posp size)
-           (unsigned-byte-p size (sub-overflow x y)))
-  :hints (("Goal" :in-theory (enable sub-overflow))))
+;; (defthm unsigned-byte-p-of-sub-overflow
+;;   (implies (posp size)
+;;            (unsigned-byte-p size (sub-overflow x y)))
+;;   :hints (("Goal" :in-theory (enable sub-overflow))))
 
 (def-inst :sub-immediate
     (b* (;; EncodingSpecificOperations:
