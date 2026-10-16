@@ -74,7 +74,7 @@
                   0))
   :hints (("Goal" :in-theory (enable sbvdiv sbvdivdown logext logapp))))
 
-(defthm sbvdivdown-rewrite-case-2
+(defthmd sbvdivdown-rewrite-case-2
   (implies (and (not (equal 0 (bvchop size y)))
                 (and (sbvle size 0 x)
                      (sbvle size 0 y))

@@ -157,6 +157,7 @@
 ;;                   (BVAND size1 x (BVCHOP size1 y))))
 ;;   :hints (("Goal" :in-theory (enable bvand))))
 
+;rename
 (defthm bvand-of-bvchop-1
   (implies (and (<= size size2)
                 (integerp size2))
@@ -164,11 +165,12 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-of-bvchop-arg1-same
+(defthm bvand-of-bvchop-arg2-same
   (equal (bvand size (bvchop size x) y)
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))
 
+;rename
 (defthm bvand-of-bvchop-2
   (implies (and (<= size size2)
                 (integerp size2))
@@ -176,7 +178,7 @@
                   (bvand size x y)))
   :hints (("Goal" :in-theory (enable bvand))))
 
-(defthm bvand-of-bvchop-arg2-same
+(defthm bvand-of-bvchop-arg3-same
   (equal (bvand size x (bvchop size y))
          (bvand size x y))
   :hints (("Goal" :in-theory (enable bvand))))

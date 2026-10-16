@@ -296,7 +296,7 @@
 
 
 ;todo: prove without opening up so much stuff
-(defthm equal-of-0-and-bvchop
+(defthm equal-of-0-and-logext
   (implies (posp n)
            (equal (equal 0 (logext n x))
                   (equal 0 (bvchop n x))))

@@ -2091,8 +2091,8 @@
   (declare (xargs :guard t))
   '(; bvand-logtail-arg1 ;trying without these (logtail now never appears?) Thu Mar  3 01:55:15 2011
 ;    bvand-logtail-arg2
-;    bvor-logtail-arg1
-;    bvor-logtail-arg2
+;    bvor-of-logtail-arg2
+;    bvor-of-logtail-arg3
 ;    bvxor-logtail-arg1
 ;    bvxor-logtail-arg2
     ;; logtail-of-bvcat-when-extends-into-upper
