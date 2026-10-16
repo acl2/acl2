@@ -146,7 +146,6 @@
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;;SBVDIV-rewrite
                                    )))))
 
 
@@ -199,9 +198,7 @@
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;SBVDIV-rewrite
-                                   EXPT-HALF-LINEAR
-                                   )))))
+                                   EXPT-HALF-LINEAR)))))
 
 ;need to turn sbvdivdown into STP primitives (sbvdiv may be further turned into bvdiv?)
 (defthmd sbvdivdown-rewrite
