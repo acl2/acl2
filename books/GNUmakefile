@@ -1126,7 +1126,7 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
 
 
 .PHONY: workshops \
-        workshop1999 workshop2000 workshop2001 workshop2002 \
+        workshop1999 workshop2000 workshop2002 \
         workshop2003 workshop2004 workshop2006 workshop2007 \
         workshop2009 workshop2011 workshop2013 workshop2014 \
         workshop2015 workshop2017 workshop2018 workshop2020 \
@@ -1135,7 +1135,6 @@ smtlink: $(filter workshops/2015/peng-greenstreet/%, $(OK_CERTS))
 workshops: $(filter workshops/%, $(OK_CERTS))
 workshop1999: $(filter workshops/1999/%, $(OK_CERTS))
 workshop2000: $(filter workshops/2000/%, $(OK_CERTS))
-workshop2001: $(filter workshops/2001/%, $(OK_CERTS))
 workshop2002: $(filter workshops/2002/%, $(OK_CERTS))
 workshop2003: $(filter workshops/2003/%, $(OK_CERTS))
 workshop2004: $(filter workshops/2004/%, $(OK_CERTS))
