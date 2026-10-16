@@ -319,7 +319,7 @@
 ;;  Defining this separately so we can disable it
 (defund parse-element-name-chars ()
   (declare (xargs :guard t))
-   (append *whitespace-chars* '(#\> #\/ #\<)))
+   (append *xml-whitespace-chars* '(#\> #\/ #\<)))
 (in-theory (disable (:e parse-element-name-chars))) ;TODO: Without this, some goals printed below are quite weird
 
 (defthm character-listp-of-parse-element-name-chars

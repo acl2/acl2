@@ -88,7 +88,6 @@
                            BVCHOP-WHEN-TOP-BIT-1-CHEAP
                            BVCHOP-UPPER-BOUND-LINEAR-STRONG ;slow
                            <=-OF-BVCHOP-SAME-LINEAR ;slow
-                           SBVDIV-REWRITE ;move?
                            mod-of-*-of-/-arg2-arg2
 
                            ;; rules that come in via ihs book above:
@@ -3933,7 +3932,6 @@
                     equal-of-0-and-getbit-of-bvplus-big-k
                     rewrite-bv-equality-when-sizes-dont-match-1
                     rewrite-bv-equality-when-sizes-dont-match-2
-                    sbvdiv-rewrite
                     sbvmoddown-rewrite
                     unsigned-byte-p-of-bvplus-when-unsigned-byte-p))
 

@@ -121,10 +121,9 @@
              :expand   (no-nils-in-termp (cons (car term) (substitute-constants-in-lambdas-aux-lst (cdr term) alist)))
              :in-theory (e/d (substitute-constants-in-lambdas-aux
                               substitute-constants-in-lambdas-aux-lst
-                              ;;
                               ;; make-lambda-terms-simple
                               ;; ;;make-lambda-term-simple
-;                            true-listp-when-symbol-alistp
+                              ;; true-listp-when-symbol-alistp
                               no-nils-in-termp)
                              (;; pairlis$
                               ;; set-difference-equal
