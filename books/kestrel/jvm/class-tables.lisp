@@ -13,7 +13,7 @@
 
 (include-book "classes")
 (include-book "kestrel/maps/maps" :dir :system)
-(include-book "kestrel/lists-light/memberp" :dir :system)
+(include-book "kestrel/lists-light/memberp-def" :dir :system)
 (local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "utilities"))
 (local (include-book "std/lists/union" :dir :system))

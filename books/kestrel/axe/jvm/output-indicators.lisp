@@ -20,6 +20,7 @@
 (include-book "kestrel/jvm/class-tables" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (local (include-book "tools/flag" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;; TODO: Move to jvm dir.
 ;; Recognizes an alist from class-names to class-infos.
