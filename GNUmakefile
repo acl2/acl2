@@ -653,7 +653,7 @@ check-acl2-exports: check-books
 # of date with respect to books/system/doc/acl2-doc.lisp.  Consider
 # using the DOC target instead.
 doc/home-page.html: doc/home-page.lisp
-	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
+	cd doc ; rm -rf HTML ; ./create-doc > create-doc.out 2>&1
 
 # The following will implicitly use ACL2=acl2 unless ACL2 is set.
 # Note that books/system/doc/acl2-manual.lisp ends in a call of
@@ -903,7 +903,7 @@ devel-check:
 		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for check-system-events' ;\
 	else \
-		echo '**FAILED** for check-new-system-events;' ;\
+		echo '**FAILED** for check-system-events;' ;\
 		echo '           output log follows:' ;\
 		cat devel-check.out ;\
 		rm -f workxxx.devel-check ;\
