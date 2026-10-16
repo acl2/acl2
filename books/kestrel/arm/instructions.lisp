@@ -3314,8 +3314,7 @@
                   arm))
            (arm (advance-pc arm)))
         arm)))
-  :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
-                                              cmp-sign
+  :alt-body-hints (("Goal" :in-theory (enable cmp-sign
                                               cmp-zero
                                               cmp-carry
                                               cmp-overflow
@@ -3378,8 +3377,7 @@
                     arm))
              (arm (advance-pc arm)))
           arm)))
-    :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
-                                                cmp-sign
+    :alt-body-hints (("Goal" :in-theory (enable cmp-sign
                                                 cmp-zero
                                                 cmp-carry
                                                 cmp-overflow
@@ -3442,14 +3440,13 @@
                 arm))
          (arm (advance-pc arm)))
       arm)
-  :alt-body-hints (("Goal" :in-theory (enable execute-sub-immediate
-                                                cmp-sign
-                                                cmp-zero
-                                                cmp-carry
-                                                cmp-overflow
-                                                sint uint
-                                                acl2::bvnot-becomes-bvminus-of-bvuminus-and-1
-                                                acl2::bvminus-becomes-bvplus-of-bvuminus))))
+  :alt-body-hints (("Goal" :in-theory (enable cmp-sign
+                                              cmp-zero
+                                              cmp-carry
+                                              cmp-overflow
+                                              sint uint
+                                              acl2::bvnot-becomes-bvminus-of-bvuminus-and-1
+                                              acl2::bvminus-becomes-bvplus-of-bvuminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
