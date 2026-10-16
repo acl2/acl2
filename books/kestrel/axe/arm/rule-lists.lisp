@@ -128,7 +128,7 @@
             arm::execute-cmn-register-alt
             arm::execute-cmn-register-shifted-register-alt
             arm::execute-mul-alt
-            arm::execute-sub-immediate-alt ; todo: need alt defs for other sub rules
+            arm::execute-sub-immediate-alt
             arm::execute-sub-register-alt
             arm::execute-sub-register-shifted-register-alt
 
