@@ -17,7 +17,7 @@
 
 ;TODO: Perhaps someday use BVP here instead of UNSIGNED-BYTE-P
 
-(include-book "kestrel/bv/unsigned-byte-p" :dir :system)
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 ;; Note that some of these values are signed, but here they are encoded into
 ;; bit-vectors, which are always unsigned.
