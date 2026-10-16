@@ -354,4 +354,4 @@
                               (* y1 y2) ;(bvchop size (* y1 y2))
                               )
                     0)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv-of-sbvdiv-arg2) (sbvdiv-rewrite)))))
+  :hints (("Goal" :in-theory (enable sbvdiv-of-sbvdiv-arg2))))

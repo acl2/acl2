@@ -351,12 +351,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *whitespace-chars*
+;; Does not include formfeed
+(defconst *xml-whitespace-chars*
   '(#\Space #\Tab #\Return #\Newline))
 
 (defund whitespace-char-p (char)
   (declare (xargs :guard t))
-  (member char *whitespace-chars*))
+  (member char *xml-whitespace-chars*))
 
 (defun all-whitespace-char-p (chars)
   (declare (xargs :guard (character-listp chars)))

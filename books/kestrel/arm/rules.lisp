@@ -618,47 +618,47 @@
 
 ;; Condition rules for SUB
 
-(local
- (defthmd sub-carry-elim
-   (implies (and (unsigned-byte-p 32 x)
-                 (unsigned-byte-p 32 y))
-            (equal (sub-carry x y)
-                   (bool-to-bit (bvle 32 y x))))
-   :hints (("Goal" :in-theory (enable sub-carry
-                                      mv-nth-1-of-addwithcarry
-                                      bvnot bvplus bvlt lognot acl2::getbit-of-+)))))
+;; (local
+;;  (defthmd sub-carry-elim
+;;    (implies (and (unsigned-byte-p 32 x)
+;;                  (unsigned-byte-p 32 y))
+;;             (equal (sub-carry x y)
+;;                    (bool-to-bit (bvle 32 y x))))
+;;    :hints (("Goal" :in-theory (enable sub-carry
+;;                                       mv-nth-1-of-addwithcarry
+;;                                       bvnot bvplus bvlt lognot acl2::getbit-of-+)))))
 
-(defthm eq-condition-of-sub-zero
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (eq-condition (sub-zero x y))
-                  (equal x y)))
-  :hints (("Goal" :in-theory (enable eq-condition
-                                     sub-zero
-                                     bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
+;; (defthm eq-condition-of-sub-zero
+;;   (implies (and (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;            (equal (eq-condition (sub-zero x y))
+;;                   (equal x y)))
+;;   :hints (("Goal" :in-theory (enable eq-condition
+;;                                      sub-zero
+;;                                      bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
 
-(defthm ne-condition-of-sub-zero
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (ne-condition (sub-zero x y))
-                  (not (equal x y))))
-  :hints (("Goal" :in-theory (enable ne-condition
-                                     sub-zero
-                                     bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
+;; (defthm ne-condition-of-sub-zero
+;;   (implies (and (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;            (equal (ne-condition (sub-zero x y))
+;;                   (not (equal x y))))
+;;   :hints (("Goal" :in-theory (enable ne-condition
+;;                                      sub-zero
+;;                                      bvplus bvnot lognot acl2::bvchop-of-sum-cases))))
 
-(defthm cs-condition-of-sub-carry
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (cs-condition (sub-carry x y))
-                  (bvle 32 y x)))
-  :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
+;; (defthm cs-condition-of-sub-carry
+;;   (implies (and (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;            (equal (cs-condition (sub-carry x y))
+;;                   (bvle 32 y x)))
+;;   :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
 
-(defthm cc-condition-of-sub-carry
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (cc-condition (sub-carry x y))
-                  (not (bvle 32 y x))))
-  :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
+;; (defthm cc-condition-of-sub-carry
+;;   (implies (and (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;            (equal (cc-condition (sub-carry x y))
+;;                   (not (bvle 32 y x))))
+;;   :hints (("Goal" :in-theory (enable cs-condition sub-carry-elim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -776,18 +776,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: more like this
-(defthm lt-condition-of-sub-sign-and-sub-overflow
-  (implies (and (unsigned-byte-p 32 x)
-                (unsigned-byte-p 32 y))
-           (equal (lt-condition (sub-sign x y) (sub-overflow x y))
-                  (sbvlt 32 x y)))
-  :hints (("Goal" :in-theory (enable lt-condition sub-sign sub-overflow addwithcarry uint sint
-                                     acl2::bvchop-of-sum-cases
-                                     sbvlt
-                                     bvlt
-                                     bvnot
-                                     bvplus
-                                     lognot
-                                     acl2::logext-cases
-                                     acl2::getbit-of-+))))
+;; ;; todo: more like this
+;; (defthm lt-condition-of-sub-sign-and-sub-overflow
+;;   (implies (and (unsigned-byte-p 32 x)
+;;                 (unsigned-byte-p 32 y))
+;;            (equal (lt-condition (sub-sign x y) (sub-overflow x y))
+;;                   (sbvlt 32 x y)))
+;;   :hints (("Goal" :in-theory (enable lt-condition sub-sign sub-overflow addwithcarry uint sint
+;;                                      acl2::bvchop-of-sum-cases
+;;                                      sbvlt
+;;                                      bvlt
+;;                                      bvnot
+;;                                      bvplus
+;;                                      lognot
+;;                                      acl2::logext-cases
+;;                                      acl2::getbit-of-+))))
