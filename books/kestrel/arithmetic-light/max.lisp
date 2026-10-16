@@ -66,11 +66,35 @@
                   x))
   :hints (("Goal" :in-theory (enable max))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm <-of-max-arg1
   (equal (< (max x y) z)
          (and (< x z)
               (< y z)))
   :hints (("Goal" :in-theory (enable max))))
+
+;; In case we disable <-of-max-arg1
+(defthm not-<-of-max-when-<-arg1-arg1
+  (implies (<= z x)
+           (not (< (max x y) z))))
+
+;; In case we disable <-of-max-arg1
+(defthm not-<-of-max-when-<-arg1-arg2
+  (implies (<= z y)
+           (not (< (max x y) z))))
+
+;; In case we disable <-of-max-arg1
+(defthm not-<-of-max-same-arg1-arg1
+  (not (< (max x y) x))
+  :hints (("Goal" :in-theory (enable max))))
+
+;; In case we disable <-of-max-arg1
+(defthm not-<-of-max-same-arg1-arg2
+  (not (< (max x y) y))
+  :hints (("Goal" :in-theory (enable max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm <-of-max-arg2
   (equal (< z (max x y))
@@ -99,6 +123,8 @@
   (equal (< y (max x y))
          (< y x))
   :hints (("Goal" :in-theory (enable max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm acl2-numberp-of-max
   (implies (and (acl2-numberp x)
