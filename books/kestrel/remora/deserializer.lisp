@@ -106,7 +106,11 @@
      types (see @(tsee type-fromJSON)),
      type parameters (see @(tsee type-var-fromJSON)),
      type annotations (which are dropped in all modes),
-     and variables (see @(tsee name-fromJSON))."))
+     and variables (see @(tsee name-fromJSON)).
+     The parameters of @('TEForall') belong to the types,
+     not to the type parameters:
+     they are @('TypeParamExp')s in both @(':unchecked') and @(':unique') mode
+     (see @(tsee type-param-exp-fromJSON))."))
   (:unchecked ())
   (:unique ())
   (:checked ())
@@ -547,10 +551,18 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-var-fromJSON ((j json::valuep) (mode ast-modep))
+(define type-param-exp-fromJSON ((j json::valuep) (mode ast-modep))
   :returns (mv erp (x type-varp))
-  :short "Convert a JSON value encoding a @('TypeParamExp') or a @('TypeParam')
-          to a @(tsee type-var)."
+  :short "Convert a JSON value encoding a @('TypeParamExp') to a @(tsee type-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('TypeParamExp') is an atom or array type parameter
+     as written in the source.
+     It is the type parameter of unchecked ASTs
+     (see @(tsee type-var-fromJSON)).
+     It is also the type of the parameters of @('TEForall') in every mode,
+     so the mode affects only how the names are decoded."))
   (b* (((acl2::reterr)
         (make-type-var-atom :name "")))
     (if (json::value-case j :object)
@@ -559,36 +571,87 @@
           (if (json::value-case tag-j :string)
               (b* ((tag
                     (json::value-string->get tag-j)))
-                (ast-mode-case
-                 mode
-                 :unchecked
-                 (cond
-                   ((equal tag "TEAtomTypeParam")
-                    (b* ((name-j
-                          (json::object-member-value "name" j))
-                         ((acl2::erp name)
-                          (name-fromJSON name-j mode)))
-                      (acl2::retok (make-type-var-atom :name name))))
-                   ((equal tag "TEArrayTypeParam")
-                    (b* ((name-j
-                          (json::object-member-value "name" j))
-                         ((acl2::erp name)
-                          (name-fromJSON name-j mode)))
-                      (acl2::retok (make-type-var-array :name name))))
-                   (t
-                    (acl2::reterr (msg "~x0 is not a recognized tag for a TypeParamExp." tag))))
-                 :otherwise
-                 (cond
-                   ((equal tag "AtomTypeParam")
-                    (b* ((name-j
-                          (json::object-member-value "name" j))
-                         ((acl2::erp name)
-                          (name-fromJSON name-j mode)))
-                      (acl2::retok (make-type-var-atom :name name))))
-                   (t
-                    (acl2::reterr (msg "~x0 is not a recognized tag for a TypeParam." tag))))))
+                (cond
+                  ((equal tag "TEAtomTypeParam")
+                   (b* ((name-j
+                         (json::object-member-value "name" j))
+                        ((acl2::erp name)
+                         (name-fromJSON name-j mode)))
+                     (acl2::retok (make-type-var-atom :name name))))
+                  ((equal tag "TEArrayTypeParam")
+                   (b* ((name-j
+                         (json::object-member-value "name" j))
+                        ((acl2::erp name)
+                         (name-fromJSON name-j mode)))
+                     (acl2::retok (make-type-var-array :name name))))
+                  (t
+                   (acl2::reterr (msg "~x0 is not a recognized tag for a TypeParamExp." tag)))))
             (acl2::reterr (msg "The \"tag\" member of a TypeParamExp object must be a string, but ~x0 is not." tag-j))))
       (acl2::reterr (msg "A JSON value representing a TypeParamExp must be a JSON object, but ~x0 is not." j)))))
+
+(define type-param-exp-list-fromJSON ((js json::value-listp) (mode ast-modep))
+  :returns (mv erp (x type-var-listp))
+  :measure (json::value-list-count js)
+  :short "Convert a JSON array's elements, each encoding a @('TypeParamExp'),
+          to a @(tsee type-var-listp)."
+  (b* (((acl2::reterr) nil))
+    (if (consp js)
+        (b* (((acl2::erp hd)
+              (type-param-exp-fromJSON (car js) mode))
+             ((acl2::erp tl)
+              (type-param-exp-list-fromJSON (cdr js) mode)))
+          (acl2::retok (cons hd tl)))
+      (acl2::retok nil))))
+
+(define type-param-fromJSON ((j json::valuep) (mode ast-modep))
+  :returns (mv erp (x type-varp))
+  :short "Convert a JSON value encoding a @('TypeParam') to a @(tsee type-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('TypeParam') is an atom type parameter.
+     It is the type parameter of uniquified and checked ASTs
+     (see @(tsee type-var-fromJSON)),
+     and the type of the parameter of a checked @('Forall') type."))
+  (b* (((acl2::reterr)
+        (make-type-var-atom :name "")))
+    (if (json::value-case j :object)
+        (b* ((tag-j
+              (json::object-member-value "tag" j)))
+          (if (json::value-case tag-j :string)
+              (b* ((tag
+                    (json::value-string->get tag-j)))
+                (cond
+                  ((equal tag "AtomTypeParam")
+                   (b* ((name-j
+                         (json::object-member-value "name" j))
+                        ((acl2::erp name)
+                         (name-fromJSON name-j mode)))
+                     (acl2::retok (make-type-var-atom :name name))))
+                  (t
+                   (acl2::reterr (msg "~x0 is not a recognized tag for a TypeParam." tag)))))
+            (acl2::reterr (msg "The \"tag\" member of a TypeParam object must be a string, but ~x0 is not." tag-j))))
+      (acl2::reterr (msg "A JSON value representing a TypeParam must be a JSON object, but ~x0 is not." j)))))
+
+(define type-var-fromJSON ((j json::valuep) (mode ast-modep))
+  :returns (mv erp (x type-varp))
+  :short "Convert a JSON value encoding a type parameter of the AST
+          to a @(tsee type-var)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type parameter of [impl]'s ASTs is
+     a @('TypeParamExp') in unchecked ASTs
+     and a @('TypeParam') in uniquified and checked ASTs.
+     It occurs as the parameter of @('TLambda'),
+     the variable of @('BindType'),
+     and the parameters of @('BindTFun').
+     The parameters of @('TEForall') are @('TypeParamExp')s in every mode
+     (see @(tsee type-param-exp-fromJSON))."))
+  (ast-mode-case
+   mode
+   :unchecked (type-param-exp-fromJSON j mode)
+   :otherwise (type-param-fromJSON j mode)))
 
 (define type-var-list-fromJSON ((js json::value-listp) (mode ast-modep))
   :returns (mv erp (x type-var-listp))
@@ -700,7 +763,7 @@
                             (b* ((params-js
                                   (json::value-array->elements params-j))
                                  ((acl2::erp params)
-                                  (type-var-list-fromJSON params-js mode))
+                                  (type-param-exp-list-fromJSON params-js mode))
                                  ((acl2::erp body)
                                   (type-fromJSON body-j mode)))
                               (if (consp params)
@@ -808,7 +871,7 @@
                           (body-j
                            (json::object-member-value "body" j))
                           ((acl2::erp param)
-                           (type-var-fromJSON param-j mode))
+                           (type-param-fromJSON param-j mode))
                           ((acl2::erp body)
                            (array-type-fromJSON body-j mode)))
                        (acl2::retok (make-type-forall
