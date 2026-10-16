@@ -584,6 +584,9 @@
     arm::armexpandimm_c
     arm::shift
     arm::shift_c
+    arm::mv-nth-0-of-rrx_c
+    arm::mv-nth-1-of-rrx_c
+    arm::rrx
 
     ;; left shifts:
     arm::mv-nth-0-of-lsl_c-becomes-bvshl ; arm::lsl_c
