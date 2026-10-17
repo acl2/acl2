@@ -26,6 +26,8 @@ cayuela-ac-machine/
 Pablo Cayuela
 Mechanized Formal Verification of q-Pulse Rectifier Voltage Equations Using ACL2
 
+cayuela-rectifiers/
+
 ------------------------------
 
 Christopher Chen, Mark Greenstreet and Margo Seltzer
