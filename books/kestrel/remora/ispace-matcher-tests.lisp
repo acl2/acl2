@@ -500,6 +500,270 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Tests of DIM-POLY-MATCH.
+; Each test compares the two results (success flag and substitution)
+; with the expected ones.
+; The pattern variables are i and j, and k and m when bound;
+; the dimensions being matched use the variables k, l, m, and n.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A single unbound pattern variable is bound to the remainder,
+; i.e. the dimension minus the known part of the pattern,
+; which may be a constant, a variable, an addition, or 0.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 5)
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-const 4) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1) (dim-var "k")))
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 2) (dim-var "k")))
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-add (list (dim-const 1) (dim-var "k"))) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 1)
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-const 0) nil)))
+
+; The dimension and the pattern need not be additions,
+; and need not be normalized.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-var "k")
+                            (dim-add (list (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1)
+                                           (dim-add (list (dim-const 2)
+                                                          (dim-var "k")))))
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-add (list (dim-const 2) (dim-var "k"))) nil)))
+
+; A bound pattern variable contributes its binding to the known part,
+; including a variable bound to itself.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 3) (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "j")))
+                            (omap::update "i" (dim-const 3) nil)))
+ (list t (omap::update "i" (dim-const 3)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1) (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "k")))
+                            (omap::update "k" (dim-var "k") nil)))
+ (list t (omap::update "i" (dim-const 1)
+                       (omap::update "k" (dim-var "k") nil))))
+
+; Without unbound pattern variables,
+; the known part must account for the whole dimension,
+; and the substitution is unchanged.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 3) (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "j")))
+                            (omap::update "i" (dim-const 3)
+                                          (omap::update "j" (dim-var "k") nil))))
+ (list t (omap::update "i" (dim-const 3)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 3) (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "j")))
+                            (omap::update "i" (dim-const 3)
+                                          (omap::update "j" (dim-var "l") nil))))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 3) (dim-var "k")))
+                            (dim-add (list (dim-var "i")))
+                            (omap::update "i" (dim-const 3) nil)))
+ (list nil nil))
+
+; A constant pattern matches only an equivalent dimension.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1) (dim-const 2)))
+                            (dim-const 3)
+                            nil))
+ (list t nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-var "k") (dim-const 3) nil))
+ (list nil nil))
+
+; Two unbound pattern variables make the solution non-unique:
+; the match fails.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 3) (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "j")))
+                            nil))
+ (list nil nil))
+
+; The remainder must have no negative coefficients:
+; the known part of the pattern must not exceed the dimension,
+; and a pattern variable is never bound to a dimension with a negative part.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 3)
+                            (dim-add (list (dim-const 4) (dim-var "i")))
+                            nil))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-var "k")
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-sub (list (dim-var "k") (dim-const 1)))
+                            (dim-add (list (dim-const 1) (dim-var "i")))
+                            nil))
+ (list nil nil))
+
+; A pattern variable with a coefficient,
+; from repeated occurrences or from a multiplication by a constant,
+; is bound to the quotient of the remainder by the coefficient,
+; which must divide every coefficient of the remainder.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-var "k") (dim-var "k")))
+                            (dim-add (list (dim-var "i") (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 6)
+                            (dim-mul (list (dim-const 2) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-const 3) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 7)
+                            (dim-mul (list (dim-const 2) (dim-var "i")))
+                            nil))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 6)
+                                           (dim-mul (list (dim-const 4)
+                                                          (dim-var "k")))))
+                            (dim-mul (list (dim-const 2) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i"
+                       (dim-add (list (dim-const 3)
+                                      (dim-mul (list (dim-const 2)
+                                                     (dim-var "k")))))
+                       nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 2) (dim-var "k")))
+                            (dim-mul (list (dim-const 2) (dim-var "i")))
+                            nil))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 7)
+                            (dim-add (list (dim-const 1)
+                                           (dim-mul (list (dim-const 2)
+                                                          (dim-var "i")))))
+                            nil))
+ (list t (omap::update "i" (dim-const 3) nil)))
+
+; Subtraction patterns: the known part may be negative,
+; and the coefficient of the pattern variable may be negative.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 5)
+                            (dim-sub (list (dim-var "i") (dim-const 1)))
+                            nil))
+ (list t (omap::update "i" (dim-const 6) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 1)
+                            (dim-sub (list (dim-const 3) (dim-var "i")))
+                            nil))
+ (list t (omap::update "i" (dim-const 2) nil)))
+
+; Multiplications in the pattern: with all their variables bound,
+; they are known; with one unbound variable and constant other factors,
+; they contribute a coefficient; otherwise, the match fails.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1)
+                                           (dim-mul (list (dim-const 2)
+                                                          (dim-var "k")))))
+                            (dim-add (list (dim-var "i")
+                                           (dim-mul (list (dim-const 2)
+                                                          (dim-var "j")))))
+                            (omap::update "j" (dim-var "k") nil)))
+ (list t (omap::update "i" (dim-const 1)
+                       (omap::update "j" (dim-var "k") nil))))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-const 1)
+                                           (dim-mul (list (dim-const 2)
+                                                          (dim-var "k")))))
+                            (dim-add (list (dim-const 1)
+                                           (dim-mul (list (dim-const 2)
+                                                          (dim-var "j")))))
+                            nil))
+ (list t (omap::update "j" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 6)
+                            (dim-mul (list (dim-var "i") (dim-var "k")))
+                            (omap::update "k" (dim-const 3) nil)))
+ (list t (omap::update "i" (dim-const 2)
+                       (omap::update "k" (dim-const 3) nil))))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-const 6)
+                            (dim-mul (list (dim-var "i") (dim-var "k")))
+                            (omap::update "k" (dim-var "l") nil)))
+ (list nil nil))
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-mul (list (dim-var "k") (dim-var "l")))
+                            (dim-mul (list (dim-var "i") (dim-var "j")))
+                            nil))
+ (list nil nil))
+
+; The binding may be any polynomial with nonnegative coefficients,
+; e.g. with a product of variables of the dimension.
+
+(assert-equal
+ (mv-list 2 (dim-poly-match (dim-add (list (dim-mul (list (dim-const 2)
+                                                          (dim-var "m")))
+                                           (dim-mul (list (dim-var "m")
+                                                          (dim-var "n")))))
+                            (dim-add (list (dim-var "m") (dim-var "i")))
+                            (omap::update "m" (dim-var "m") nil)))
+ (list t (omap::update "i"
+                       (dim-add (list (dim-var "m")
+                                      (dim-mul (list (dim-var "m")
+                                                     (dim-var "n")))))
+                       (omap::update "m" (dim-var "m") nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Tests of DIM-MATCH and DIM-LIST-MATCH.
 ; Each test compares the two results (success flag and substitution)
 ; with the expected ones.

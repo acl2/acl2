@@ -767,6 +767,122 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dim-poly-match ((dim dimp) (pat dimp) (subst string-dim-mapp))
+  :returns (mv (okp booleanp) (new-subst string-dim-mapp))
+  :short "Match a dimension to a pattern (another dimension),
+          modulo dimension equivalence, by solving a polynomial equation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in @(see dim-patterns-to-polys),
+     we turn the pattern into its known and unknown polynomials
+     @('K') and @('U') (see @(tsee dim-pattern-to-polys)),
+     failing if that fails,
+     we turn the dimension into its polynomial @('D')
+     (see @(tsee dim-to-poly)),
+     and we solve the equation @('U = D - K') for the unknowns,
+     which are the unbound pattern variables.
+     We call @('D - K') the remainder:
+     it is what the unknowns must account for.
+     Since the polynomials are canonical,
+     neither the dimension nor the pattern needs to be normalized.")
+   (xdoc::p
+    "If there are no unknowns, the pattern is fully known,
+     and the match succeeds, without changing the substitution,
+     exactly when the remainder is 0,
+     i.e. when the pattern is equivalent to the dimension:
+     for instance, the pattern @('(+ 1 $i)'), with @('$i') bound to @('$k'),
+     matches @('(+ $k 1)') but not @('5').")
+   (xdoc::p
+    "If there is exactly one unknown, the equation has the form @('c $d = R'),
+     where @('$d') is the unknown, @('c') is its (nonzero) coefficient,
+     and @('R') is the remainder;
+     if @('c') is negative, we negate both @('c') and @('R'),
+     so that @('c') is positive.
+     The solution is @('$d = R / c'), if the division is exact,
+     i.e. if every coefficient of @('R') is a multiple of @('c')
+     (see @(tsee dim-poly-div)):
+     we bind @('$d') to the dimension of the quotient
+     (see @(tsee poly-to-dim)), which is in canonical form,
+     e.g. @('4') rather than @('(+ 4)').
+     For instance, matching @('5') to the pattern @('(+ 1 $i)')
+     solves @('$i = 4'),
+     matching @('(+ 4 (* 2 $k))') to the pattern @('(* 2 $i)')
+     solves @('2 $i = 4 + 2 $k') and binds @('$i') to @('(+ 2 $k)'),
+     while matching @('7') to the pattern @('(* 2 $i)') fails,
+     because @('7') is not divisible by @('2').")
+   (xdoc::p
+    "We also require the remainder to have no negative coefficients,
+     before dividing it.
+     The reason is that the dimension bound to @('$d')
+     must denote a natural number for all values of its variables,
+     as dimensions are meant to,
+     and a polynomial with nonnegative coefficients does;
+     this is a sufficient condition, which we may refine in the future.
+     For instance, matching @('$n') to the pattern @('(+ 1 $i)')
+     would bind @('$i') to @('(- $n 1)') without this requirement,
+     but @('(- $n 1)') is negative when @('$n') is @('0'):
+     there is no dimension @('$i') such that
+     @('(+ 1 $i)') is equivalent to @('$n'),
+     and the match fails.
+     Note that a pattern variable by itself is matched by @(tsee dim-match)
+     without going through this function,
+     and is bound to the dimension as is, e.g. to @('(- $n 1)').")
+   (xdoc::p
+    "If there are two or more unknowns,
+     the match fails, rather than guessing,
+     because the solution is not unique in general:
+     e.g. matching @('(+ 3 $k $l)') to the pattern @('(+ $i $j)')
+     has several solutions,
+     corresponding to the ways of distributing the terms among the unknowns.
+     In the future, we may extend this to
+     collect equations from multiple matches
+     (e.g. of the different components of a type)
+     and solve them together,
+     since the equations from one match
+     may disambiguate the solutions of another match.")
+   (xdoc::p
+    "The unknown polynomial has, by construction,
+     monomials consisting of single pattern variables
+     and nonzero coefficients;
+     we check these conditions anyway, failing if they do not hold,
+     instead of assuming them.")
+   (xdoc::p
+    "The binding of the unknown is added to the substitution;
+     as explained in @(tsee dims-match),
+     it may mention variables of the dimension
+     with the same names as pattern variables,
+     and the substitution is meant to be applied simultaneously."))
+  (b* (((mv okp known unknown) (dim-pattern-to-polys pat subst))
+       ((unless okp) (mv nil nil))
+       (remainder (dim-poly-sub (dim-to-poly dim) known))
+       ((when (omap::emptyp unknown))
+        (if (omap::emptyp remainder)
+            (mv t (string-dim-map-fix subst))
+          (mv nil nil)))
+       ((unless (omap::emptyp (omap::tail unknown))) (mv nil nil))
+       ((mv mono coeff) (omap::head unknown))
+       ((unless (and (consp mono)
+                     (not (consp (cdr mono)))))
+        (mv nil nil)) ; never happens (see DIM-PATTERN-TO-POLYS)
+       (factor (car mono))
+       ((unless (dim-case factor :var))
+        (mv nil nil)) ; never happens (see DIM-PATTERN-TO-POLYS)
+       (name (dim-var->name factor))
+       (coeff (lifix coeff))
+       ((mv coeff remainder) (if (< coeff 0)
+                                 (mv (- coeff) (dim-poly-neg remainder))
+                               (mv coeff remainder)))
+       ((unless (posp coeff)) (mv nil nil)) ; never happens (coefficients are nonzero)
+       ((unless (dim-poly-nonnegp remainder)) (mv nil nil))
+       ((mv okp quotient) (dim-poly-div remainder coeff))
+       ((unless okp) (mv nil nil)))
+    (mv t (omap::update name
+                        (poly-to-dim quotient)
+                        (string-dim-map-fix subst)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines dims-match
   :short "Match dimensions to patterns (other dimensions)."
   :long
