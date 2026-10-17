@@ -74,9 +74,19 @@ include Makefile-deps
 include Makefile-pdeps
 
 
+# The proof files are written into ../Proofs/<libdir>/, but git does not track
+# empty directories, so these subdirectories may be missing in a fresh
+# checkout.  Create them on demand so that compact-write-file can save proofs.
+# The <libdir> names are exactly the second component of each
+# FILES_FOR_PCERTSCAN entry (e.g. bootstrap/utilities/top -> utilities).
+PROOFS_DIRS := $(addprefix ../Proofs/,$(notdir $(patsubst %/,%,$(dir $(FILES_FOR_PCERTSCAN)))))
+
+$(PROOFS_DIRS):
+	@mkdir -p $@
+
 # I renamed .pcert files to .mpcert after ACL2 added provisional certification
 # support.
-%.mpcert: %.lisp
+%.mpcert: %.lisp | $(PROOFS_DIRS)
 	@echo "Making $*.mpcert"
 	@$(STARTJOB) -c "./pcert.pl $*.lisp &> $*.out"
 	@$(WAIT) $*.mpcert
