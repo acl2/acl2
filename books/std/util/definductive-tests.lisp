@@ -14,6 +14,7 @@
 (include-book "definductive")
 
 (include-book "kestrel/built-ins/disable" :dir :system)
+(include-book "std/system/guard-verified-p" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed-star" :dir :system)
@@ -81,6 +82,16 @@
  ; The rule theorems are stored without hints.
 
  (assert-event (not (member-eq :hints (get-event 'r*-base (w state)))))
+
+ ; The predicates are guard-verified, but not the induction function.
+
+ (assert-event (guard-verified-p 'r*-base-validp (w state)))
+ (assert-event (guard-verified-p 'r*-refl-validp (w state)))
+ (assert-event (guard-verified-p 'r*-trans-validp (w state)))
+ (assert-event (guard-verified-p 'r*-proof-validp (w state)))
+ (assert-event (guard-verified-p 'r*-proof-minimalp (w state)))
+ (assert-event (guard-verified-p 'r* (w state)))
+ (assert-event (not (guard-verified-p 'r*-induct (w state))))
 
  ; The generated induction scheme supports rule induction.
 
@@ -206,6 +217,8 @@
                   (bn (1+ x))))
    :verify-guards nil)
 
+ (assert-event (not (guard-verified-p 'bn (w state))))
+
  (must-be-redundant
   (defthm bn-base
     (bn 0)))
@@ -230,6 +243,20 @@
   (defthm bn-alt-when-bn
     (implies (bn x)
              (bn-alt x)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Without :VERIFY-GUARDS NIL, the definition above fails,
+; because nothing in the rule says that x is a number.
+
+(must-fail
+ (definductive bounded-nats
+   :preds ((bn x))
+   :irules ((base ()
+                  (bn 0))
+            (step ((bn x)
+                   (<= x 5))
+                  (bn (1+ x))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,6 +294,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; A predicate premise whose argument is not a variable,
+; where the guard of the argument follows from another premise.
+; Guard verification needs the rule validity predicate to be enabled,
+; which the :GUARD-HINTS input can do.
+
+(must-fail
+ (definductive down-nats-guards
+   :preds ((dn x))
+   :irules ((zero ()
+                  (dn 0))
+            (down ((posp x)
+                   (dn (1- x)))
+                  (dn x)))))
+
+(must-succeed*
+
+ (definductive down-nats-guards
+   :preds ((dn x))
+   :irules ((zero ()
+                  (dn 0))
+            (down ((posp x)
+                   (dn (1- x)))
+                  (dn x)))
+   :guard-hints (("Goal" :in-theory (enable* down-nats-guards-validp-defs))))
+
+ (assert-event (guard-verified-p 'dn-proof-validp (w state)))
+ (assert-event (guard-verified-p 'dn (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (must-fail
  (definductive duplicate-formals
    :preds ((p x x))
@@ -293,6 +350,34 @@
                 (p 0))
             (ax ()
                 (p 1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive non-boolean-verify-guards
+   :preds ((p x))
+   :irules ((ax ()
+                (p 0)))
+   :verify-guards :maybe))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-hints-without-verify-guards
+   :preds ((p x))
+   :irules ((ax ()
+                (p 0)))
+   :verify-guards nil
+   :guard-hints nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive non-list-guard-hints
+   :preds ((p x))
+   :irules ((ax ()
+                (p 0)))
+   :guard-hints 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -590,6 +675,14 @@
  ; The rule theorems are stored without hints.
 
  (assert-event (not (member-eq :hints (get-event 'even-even-step (w state)))))
+
+ ; The predicates are guard-verified,
+ ; including both proof validity predicates of the clique.
+
+ (assert-event (guard-verified-p 'even-proof-validp (w state)))
+ (assert-event (guard-verified-p 'odd-proof-validp (w state)))
+ (assert-event (guard-verified-p 'even (w state)))
+ (assert-event (guard-verified-p 'odd (w state)))
 
  ; The predicates hold on some of the expected numbers.
 
