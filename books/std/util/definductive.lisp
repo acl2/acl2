@@ -207,49 +207,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod defind-pred-info
-  :short "Fixtype of information about a predicate being defined."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For each predicate, we have
-     its name @('p[i]') and its formals @('x[i,j]')."))
-  ((name symbol)
-   (formals symbol-list))
-  :pred defind-pred-infop)
-
-;;;;;;;;;;
-
-(defirrelevant irr-defind-pred-info
-  :short "Irrelevant information about a predicate being defined."
-  :type defind-pred-infop
-  :body (defind-pred-info nil nil))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption defind-pred-info-option
-  defind-pred-info
-  :short "Fixtype of optional information about a predicate being defined."
-  :pred defind-pred-info-optionp)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist defind-pred-info-list
-  :short "Fixtype of lists of information about a predicate being defined."
-  :elt-type defind-pred-info
-  :true-listp t
-  :elementp-of-nil nil
-  :pred defind-pred-info-listp)
-
-;;;;;;;;;;
-
-(std::defprojection defind-pred-info-list->name ((x defind-pred-info-listp))
-  :returns (names symbol-listp)
-  :short "Lift @(tsee defind-pred-info->name) to lists."
-  (defind-pred-info->name x))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::defprod defind-term-info
   :short "Fixtype of information about a term."
   :long
@@ -258,9 +215,10 @@
     "The terms that this information pertains to are
      (i) whole premises of inference rules
      that do not contain the @('p[i]') predicates,
-     or (ii) arguments @('arg[j]') of premises and conclusions
-     of the form @('(p[i] arg[1] ... arg[m[i]])').
-     That is, these are the components of rules
+     (ii) arguments @('arg[j]') of premises and conclusions
+     of the form @('(p[i] arg[1] ... arg[m[i]])'),
+     or (iii) guards of the @('p[i]') predicates.
+     That is, these are the components of the inputs
      whose internal structure is not of concern
      for the workings of the @(tsee definductive) macro
      (aside from satisfying certain conditions).")
@@ -302,6 +260,50 @@
   :returns (tterms pseudo-term-listp)
   :short "Lift @(tsee defind-term-info->tterm) to lists."
   (defind-term-info->tterm x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod defind-pred-info
+  :short "Fixtype of information about a predicate being defined."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each predicate, we have
+     its name @('p[i]'), its formals @('x[i,j]'), and its guard."))
+  ((name symbol)
+   (formals symbol-list)
+   (guard defind-term-info))
+  :pred defind-pred-infop)
+
+;;;;;;;;;;
+
+(defirrelevant irr-defind-pred-info
+  :short "Irrelevant information about a predicate being defined."
+  :type defind-pred-infop
+  :body (defind-pred-info nil nil (irr-defind-term-info)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption defind-pred-info-option
+  defind-pred-info
+  :short "Fixtype of optional information about a predicate being defined."
+  :pred defind-pred-info-optionp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist defind-pred-info-list
+  :short "Fixtype of lists of information about a predicate being defined."
+  :elt-type defind-pred-info
+  :true-listp t
+  :elementp-of-nil nil
+  :pred defind-pred-info-listp)
+
+;;;;;;;;;;
+
+(std::defprojection defind-pred-info-list->name ((x defind-pred-info-listp))
+  :returns (names symbol-listp)
+  :short "Lift @(tsee defind-pred-info->name) to lists."
+  (defind-pred-info->name x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2487,7 +2489,10 @@
                       but there are duplicates among ~&1."
                      (list (lposfix i)) pred-formals))))
     (retok (make-defind-pred-info :name pred-name
-                                  :formals pred-formals))))
+                                  :formals pred-formals
+                                  :guard (make-defind-term-info
+                                          :uterm t
+                                          :tterm ''t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4452,6 +4457,7 @@
            :verify-guards nil))
        (fn-event
         `(define-sk ,pred-info.name (,@pred-info.formals)
+           :guard ,(defind-term-info->uterm pred-info.guard)
            :returns (yes/no booleanp
                             :hints (("Goal"
                                      :in-theory
