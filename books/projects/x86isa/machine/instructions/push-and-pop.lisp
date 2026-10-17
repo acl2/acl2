@@ -644,7 +644,10 @@
         (b* (((when (equal flg t))
               (!!ms-fresh :get-segment-descriptor)))
           (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
-       (x86 (load-segment-reg seg-reg selector descriptor x86)))
+       (x86 (load-segment-reg seg-reg selector descriptor x86))
+
+       ;; Update instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
