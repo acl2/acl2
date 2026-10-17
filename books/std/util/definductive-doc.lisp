@@ -191,14 +191,17 @@
      (xdoc::p
       "It must be a list of the form")
      (xdoc::codeblock
-      "((p[1] x[1,1] ... x[1,m[1]])"
+      "((p[1] x[1,1] ... x[1,m[1]] :guard guard[1])"
       " ..."
-      " (p[n] x[n,1] ... x[n,m[n]]))")
+      " (p[n] x[n,1] ... x[n,m[n]] :guard guard[n]))")
      (xdoc::p
       "where each @('p[i]') is a symbol that names a predicate,
-       and each @('x[i,j]') is a symbol that names a formal of @('p[i]').
+       each @('x[i,j]') is a symbol that names a formal of @('p[i]'),
+       and each @('guard[i]') is a term that is the guard of @('p[i]').
        Each @('p[i]') has @('m[i]') formals,
-       where @('m[i]') must be positive.")
+       where @('m[i]') must be positive.
+       Each @(':guard guard[i]') may be omitted,
+       in which case @('guard[i]') is @('t').")
      (xdoc::p
       "There must be at least one predicate, i.e. @('n') must be positive.")
      (xdoc::p
@@ -207,8 +210,12 @@
       "For each @('i'),
        the symbols @('x[i,1]'), ..., @('x[i,m[i]]') must be all distinct.")
      (xdoc::p
-      "In the future we may add support for guards to the predicates,
-       and the ability for @('x[i,j]') to be "
+      "For each @('i'),
+       the free variables of @('guard[i]') must be among
+       @('x[i,1]'), ..., @('x[i,m[i]]'),
+       and none of @('p[1]'), ..., @('p[n]') may occur in @('guard[i]').")
+     (xdoc::p
+      "In the future we may add the ability for @('x[i,j]') to be "
       (xdoc::seetopic "std::extended-formals" "extended formals")
       " as in @(tsee define)."))
 
@@ -550,7 +557,8 @@
        there may be several valid proof trees for the same conclusion
        with the same count.)")
      (xdoc::p
-      "These predicates are guard-verified
+      "The guard of each @('p[i]') is @('guard[i]').
+       These predicates are guard-verified
        iff the @(':verify-guards') input is @('t').
        The @('p[i]') predicates do not have fixing theorems,
        because the formals are currently untyped.")
