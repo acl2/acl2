@@ -850,11 +850,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Pattern additions.
+; Pattern additions, multiplications, and subtractions.
 
-; A pattern addition is matched modulo additive equivalence
-; (see the tests of DIM-ADD-MATCH for more details):
-; the dimension need not be an addition,
+; These patterns are matched modulo dimension equivalence
+; (see the tests of DIM-POLY-MATCH for more details):
+; the dimension need not have the same form as the pattern,
 ; and the addends need not correspond in number or order.
 
 (assert-equal
@@ -891,8 +891,8 @@
                        (omap::update "i" (dim-const 4) nil)))
  (list nil nil))
 
-; Two unbound pattern variables, or one occurring twice,
-; make the solution non-unique, and the match fails.
+; Two unbound pattern variables make the solution non-unique,
+; and the match fails.
 
 (assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-const 3) (dim-var "k")))
@@ -900,9 +900,35 @@
                        nil))
  (list nil nil))
 
+; A pattern variable occurring twice, or multiplied by a constant,
+; is bound to the quotient of the dimension by its coefficient.
+
 (assert-equal
  (mv-list 2 (dim-match (dim-add (list (dim-var "k") (dim-var "k")))
                        (dim-add (list (dim-var "i") (dim-var "i")))
+                       nil))
+ (list t (omap::update "i" (dim-var "k") nil)))
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-const 6)
+                       (dim-mul (list (dim-const 2) (dim-var "i")))
+                       nil))
+ (list t (omap::update "i" (dim-const 3) nil)))
+
+; A subtraction pattern is solved like the other patterns.
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-const 5)
+                       (dim-sub (list (dim-var "i") (dim-const 1)))
+                       nil))
+ (list t (omap::update "i" (dim-const 6) nil)))
+
+; A product of two unbound pattern variables is not linear,
+; and the match fails, even if the dimension is a product.
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-mul (list (dim-var "k") (dim-var "l")))
+                       (dim-mul (list (dim-var "i") (dim-var "j")))
                        nil))
  (list nil nil))
 

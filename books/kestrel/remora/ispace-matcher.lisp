@@ -48,7 +48,7 @@
      So addition patterns must be matched modulo additive equivalence:
      this is the task of @(tsee dim-add-match), described here;
      the other kinds of patterns are matched structurally,
-     as described in @(tsee dims-match);
+     as described in @(tsee dim-match);
      indeed, although the @(see ispace-equivalence-checker) interprets
      multiplications and subtractions of dimensions,
      the matcher treats them as black boxes:
@@ -179,7 +179,7 @@
      because the solution is not unique or requires division,
      as discussed above.")
    (xdoc::p
-    "The substitution is threaded through matches (see @(tsee dims-match)):
+    "The substitution is threaded through matches (see @(tsee dim-match)):
      the bindings come from earlier matches of other components,
      and they constrain the current match.
      This is what makes matching @('(+ 3 $k)') to @('(+ $i $j)') succeed
@@ -556,7 +556,7 @@
      The product of an unknown polynomial by a non-constant known polynomial,
      e.g. for the pattern @('(* $k $i)') with @('$k') bound to @('$l'),
      would give the unknowns non-constant coefficients,
-     which the matching does not handle;
+     which the matching (see @(tsee dim-poly-match)) does not handle;
      we may extend this in the future."))
   (cond ((and (omap::emptyp (dim-poly-fix unknown1))
               (omap::emptyp (dim-poly-fix unknown2)))
@@ -604,7 +604,7 @@
    (xdoc::p
     "A pattern is a dimension whose variables are pattern variables,
      some of which may be already bound in a substitution
-     (see @(tsee dims-match)).
+     (see @(tsee dim-match)).
      Since dimension equivalence is equality of polynomials
      (see @(see dimension-polynomials)),
      matching a dimension to a pattern modulo equivalence
@@ -642,7 +642,7 @@
     "The two polynomials are kept separate, and must not be added together,
      because the bindings may mention variables of the dimension being matched
      that have the same names as pattern variables
-     (see @(tsee dims-match)):
+     (see @(tsee dim-match)):
      with @('$i') bound to @('$j'),
      the pattern @('(+ $i $j)') yields
      the known polynomial @('$j'),
@@ -659,7 +659,7 @@
      and a product of an unknown by a non-constant known polynomial,
      e.g. for the pattern @('(* $k $i)') with @('$k') bound to @('$l'),
      would give the unknowns non-constant coefficients:
-     the matching does not handle these cases,
+     the matching (see @(tsee dim-poly-match)) does not handle these cases,
      so these functions fail on such patterns
      (see @(tsee dim-pattern-polys-mul)),
      returning @('nil') as the flag,
@@ -849,7 +849,7 @@
      instead of assuming them.")
    (xdoc::p
     "The binding of the unknown is added to the substitution;
-     as explained in @(tsee dims-match),
+     as explained in @(tsee dim-match),
      it may mention variables of the dimension
      with the same names as pattern variables,
      and the substitution is meant to be applied simultaneously."))
@@ -883,29 +883,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines dims-match
-  :short "Match dimensions to patterns (other dimensions)."
+(define dim-match ((dim dimp) (pat dimp) (subst string-dim-mapp))
+  :returns (mv (okp booleanp) (new-subst string-dim-mapp))
+  :short "Match a dimension to a pattern (another dimension)."
   :long
   (xdoc::topstring
    (xdoc::p
     "The matching is modulo dimension equivalence:
      we look for a substitution that makes the pattern
-     equivalent (not necessarily equal) to the dimension.
-     It is structural for all kinds of patterns except additions,
-     which are matched modulo additive equivalence via @(tsee dim-add-match),
-     according to the approach described in @(see ispace-matcher).
-     As explained there,
-     the matching is intended for normalized dimensions and patterns
-     (see @(tsee normalize-dim)),
-     for which it is complete modulo additive equivalence,
-     under the uniqueness restriction described there;
-     it is sound on all dimensions and patterns.")
+     equivalent (not necessarily equal) to the dimension,
+     according to the approach described in @(see ispace-matcher).")
    (xdoc::p
-    "The variables in the patterns are the pattern variables.
+    "The variables in the pattern are the pattern variables.
      The matching builds a substitution for the pattern variables,
-     which is threaded through these functions as an additional argument,
+     which is passed as an additional argument,
      so that it can be extended by successive matches
-     (e.g. of the elements of a list);
+     (e.g. of the elements of a list; see @(tsee dim-list-match));
      it is initially empty.
      If the matching succeeds, the resulting substitution is returned;
      if the matching fails, @('nil') is returned as the substitution,
@@ -925,85 +918,70 @@
      binds @('$j') to @('(+ 2 $i)'):
      applying the substitution to the pattern yields @('(+ 1 (+ 2 $i))'),
      which is equivalent to @('(+ 3 $i)'),
-     but applying it once more would yield @('(+ 1 (+ 2 5))')."))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define dim-match ((dim dimp) (pat dimp) (subst string-dim-mapp))
-    :returns (mv (okp booleanp) (new-subst string-dim-mapp))
-    :parents (ispace-matcher dims-match)
-    :short "Match a dimension to a pattern (another dimension)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "A pattern variable that is bound in the substitution
-       matches only a dimension equivalent to the one bound to it.
-       A pattern variable that is not bound in the substitution
-       matches any dimension, which is bound to the variable.")
-     (xdoc::p
-      "A pattern constant matches only an equivalent dimension,
-       i.e. one that normalizes to the same constant.")
-     (xdoc::p
-      "A pattern addition is matched modulo additive equivalence,
-       via @(tsee dim-add-match).")
-     (xdoc::p
-      "A pattern multiplication matches only a multiplication
-       whose operands match the operands of the pattern,
-       in the same order;
-       similarly for subtractions."))
-    (dim-case
-     pat
-     :var (b* ((subst (string-dim-map-fix subst))
-               (var+dim (omap::assoc pat.name subst)))
-            (cond ((not var+dim)
-                   (mv t (omap::update pat.name (dim-fix dim) subst)))
-                  ((dim-equivp (cdr var+dim) dim)
-                   (mv t subst))
-                  (t (mv nil nil))))
-     :const (if (dim-equivp dim (dim-const pat.val))
-                (mv t (string-dim-map-fix subst))
-              (mv nil nil))
-     :add (dim-add-match dim pat.dims subst)
-     :mul (if (dim-case dim :mul)
-              (dim-list-match (dim-mul->dims dim) pat.dims subst)
-            (mv nil nil))
-     :sub (if (dim-case dim :sub)
-              (dim-list-match (dim-sub->dims dim) pat.dims subst)
-            (mv nil nil)))
-    :measure (dim-count pat))
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-  (define dim-list-match ((dims dim-listp)
-                          (pats dim-listp)
-                          (subst string-dim-mapp))
-    :returns (mv (okp booleanp) (new-subst string-dim-mapp))
-    :parents (ispace-matcher dims-match)
-    :short "Match a list of dimensions
-            to a list of patterns (other dimensions)."
-    :long
-    (xdoc::topstring
-     (xdoc::p
-      "The two lists must have the same length,
-       and each dimension must match the corresponding pattern,
-       with the substitution threaded through the successive matches."))
-    (b* (((when (endp pats))
-          (if (endp dims)
+     but applying it once more would yield @('(+ 1 (+ 2 5))').")
+   (xdoc::p
+    "A pattern variable that is bound in the substitution
+     matches only a dimension equivalent to the one bound to it.
+     A pattern variable that is not bound in the substitution
+     matches any dimension, which is bound to the variable.")
+   (xdoc::p
+    "A pattern constant matches only an equivalent dimension,
+     i.e. one that normalizes to the same constant.")
+   (xdoc::p
+    "A pattern addition, multiplication, or subtraction
+     is matched modulo dimension equivalence via @(tsee dim-poly-match),
+     which solves a polynomial equation for the unbound pattern variables,
+     under the restrictions and policies described there.")
+   (xdoc::p
+    "Both the equivalence checks (see @(tsee dim-equivp))
+     and the equation solving
+     work on the polynomials of the dimensions
+     (see @(see dimension-polynomials)),
+     which are canonical,
+     so neither the dimension nor the pattern needs to be normalized
+     (see @(tsee normalize-dim)) before matching.
+     The matching is sound on all dimensions and patterns,
+     and it is complete modulo dimension equivalence
+     under the restrictions and policies mentioned above."))
+  (dim-case
+   pat
+   :var (b* ((subst (string-dim-map-fix subst))
+             (var+dim (omap::assoc pat.name subst)))
+          (cond ((not var+dim)
+                 (mv t (omap::update pat.name (dim-fix dim) subst)))
+                ((dim-equivp (cdr var+dim) dim)
+                 (mv t subst))
+                (t (mv nil nil))))
+   :const (if (dim-equivp dim (dim-const pat.val))
               (mv t (string-dim-map-fix subst))
-            (mv nil nil)))
-         ((when (endp dims)) (mv nil nil))
-         ((mv okp subst) (dim-match (car dims) (car pats) subst))
-         ((unless okp) (mv nil nil)))
-      (dim-list-match (cdr dims) (cdr pats) subst))
-    :measure (dim-list-count pats))
+            (mv nil nil))
+   :add (dim-poly-match dim pat subst)
+   :mul (dim-poly-match dim pat subst)
+   :sub (dim-poly-match dim pat subst)))
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :verify-guards :after-returns
-
-  ///
-
-  (fty::deffixequiv-mutual dims-match))
+(define dim-list-match ((dims dim-listp)
+                        (pats dim-listp)
+                        (subst string-dim-mapp))
+  :returns (mv (okp booleanp) (new-subst string-dim-mapp))
+  :short "Match a list of dimensions
+          to a list of patterns (other dimensions)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two lists must have the same length,
+     and each dimension must match the corresponding pattern
+     (see @(tsee dim-match)),
+     with the substitution threaded through the successive matches."))
+  (b* (((when (endp pats))
+        (if (endp dims)
+            (mv t (string-dim-map-fix subst))
+          (mv nil nil)))
+       ((when (endp dims)) (mv nil nil))
+       ((mv okp subst) (dim-match (car dims) (car pats) subst))
+       ((unless okp) (mv nil nil)))
+    (dim-list-match (cdr dims) (cdr pats) subst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1175,7 +1153,7 @@
      the matching builds two substitutions,
      one for dimension variables and one for shape variables.
      Both are threaded through the matching of the elements,
-     analogously to the single substitution in @(tsee dims-match),
+     analogously to the single substitution in @(tsee dim-match),
      and both are meant to be applied simultaneously,
      as @(tsee shape-subst-ispace-vars)
      and @(tsee ispace-subst-ispace-vars) do.
