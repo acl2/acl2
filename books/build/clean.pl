@@ -107,6 +107,7 @@ my %delete_extensions = (
     ".wx32fsl" => 1, # Compiled Lisp file for CCL/Windows_x86_32
     ".wx64fsl" => 1, # Compiled Lisp file for CCL/Windows_x86_64
     ".da64fsl" => 1, # Compiled Lisp file for CCL/Darwin_arm64 (Apple Silicon)
+    ".la64fsl" => 1, # Compiled Lisp file for CCL/Linux_arm64
     ".sparcf"  => 1, # ???
     ".axpf"    => 1, # ???
     ".x86f"    => 1, # ???
