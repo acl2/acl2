@@ -153,12 +153,14 @@
 
     (xdoc::codeblock
      "(definductive name"
-     "              :preds   ...  ; required, no default"
-     "              :irules  ...  ; required, no default"
-     "              :parents ...  ; no default"
-     "              :short   ...  ; no default"
-     "              :long    ...  ; no default"
-     "              :print   ...  ; default :result"
+     "              :preds         ...  ; required, no default"
+     "              :irules        ...  ; required, no default"
+     "              :verify-guards ...  ; default t"
+     "              :guard-hints   ...  ; no default"
+     "              :parents       ...  ; no default"
+     "              :short         ...  ; no default"
+     "              :long          ...  ; no default"
+     "              :print         ...  ; default :result"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -284,6 +286,27 @@
        and differ from @('_proof'),
        which is the variable of the fixtypes of proofs
        of that representation."))
+
+    (xdoc::desc
+     "@(':verify-guards') &mdash; default @('t')"
+     (xdoc::p
+      "Determines whether the guards of the generated
+       @('p[l[k]]-rule[k]-validp'), @('p[i]-proof-validp'),
+       @('p[i]-proof-minimalp'), and @('p[i]') predicates are verified
+       (see the Section `Generated Events' below).")
+     (xdoc::p
+      "It must be @('t') or @('nil')."))
+
+    (xdoc::desc
+     "@(':guard-hints')"
+     (xdoc::p
+      "Hints for verifying the guards of the generated predicates.
+       If present, they are used in
+       every generated @(tsee verify-guards) event.")
+     (xdoc::p
+      "It must be a list of hints of the kind that may appear
+       just after @(':hints') in a @(tsee defthm).
+       It must be absent if @(':verify-guards') is @('nil')."))
 
     (xdoc::desc
      (list
@@ -421,8 +444,8 @@
        and whether the arguments of the conclusion
        are the ones that the rule derives.")
      (xdoc::p
-      "These predicates are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms.")
+      "These predicates are guard-verified
+       iff the @(':verify-guards') input is @('t').")
      (xdoc::p
       "These predicates are defined without normalization
        (see @(see acl2::normalize)),
@@ -457,8 +480,8 @@
        named after the first predicate of the clique,
        with the suffix @('-proof-validp-clique').")
      (xdoc::p
-      "These predicates are currently not guard-verified,
-       because they may involve arbitrary user-supplied terms.
+      "These predicates are guard-verified
+       iff the @(':verify-guards') input is @('t').
        The @('p[i]-proof-validp') predicates have fixing theorems.")
      (xdoc::p
       "These predicates are disabled;
@@ -493,9 +516,8 @@
      (xdoc::p
       "Each predicate is defined by a @(tsee std::define-sk).")
      (xdoc::p
-      "These predicates are currently not guard-verified,
-       because they call the non-guard-verified
-       @('p[i]-proof-validp') predicates.")
+      "These predicates are guard-verified
+       iff the @(':verify-guards') input is @('t').")
      (xdoc::p
       "These predicates are disabled,
        and so are their associated @('-necc') theorems."))
@@ -528,14 +550,29 @@
        there may be several valid proof trees for the same conclusion
        with the same count.)")
      (xdoc::p
-      "These predicates are currently not guard-verified,
-       because they call the non-guard-verified
-       @('p[i]-proof-validp') predicates.
+      "These predicates are guard-verified
+       iff the @(':verify-guards') input is @('t').
        The @('p[i]') predicates do not have fixing theorems,
        because the formals are currently untyped.")
      (xdoc::p
       "These predicates are disabled,
        and so are their associated @('-suff') theorems."))
+
+    (xdoc::p
+     "If the @(':verify-guards') input is @('t'),
+      the definitions of the @('p[i]') predicates are followed by
+      @(tsee verify-guards) events for
+      the @('p[l[k]]-rule[k]-validp'), @('p[i]-proof-validp'),
+      @('p[i]-proof-minimalp'), and @('p[i]') predicates, in this order.
+      For a clique of two or more predicates,
+      a single event, on the @('p[i]-proof-validp') predicate
+      of the first predicate of the clique,
+      verifies the guards of the @('p[i]-proof-validp') predicates
+      of the whole clique.
+      The events use the @(':guard-hints') input as hints, if present.
+      If XDOC is generated, these events are put
+      in a @(tsee defsection) whose name is obtained by
+      extending the @('name') input with the suffix @('-guard-verification').")
 
     (xdoc::desc
      (list
