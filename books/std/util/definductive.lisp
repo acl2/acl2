@@ -2441,8 +2441,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defind-process-pred (pred (i posp) (wrld plist-worldp))
-  :returns (mv erp (info defind-pred-infop))
+(define defind-process-term (term (desc msgp) state)
+  :returns (mv erp (info defind-term-infop) state)
+  :short "Process a term in a rule or in a guard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The input to this function is
+     either a whole premise that does not have the form @('(p[i] ...')),
+     or an argument of a premise or conclusion that has that form,
+     or the guard of a predicate.
+     The @(tsee definductive) macro accepts any terms there,
+     so long as they are well-formed,
+     which is checked by this function.
+     The term must be a valid untranslated term,
+     which we attempt to translate here.
+     If the translation is successful,
+     we return both the untranslated and translated term,
+     packaged in a @(tsee defind-term-info).")
+   (xdoc::p
+    "Note that, before we get here for a term in a rule,
+     we have checked, in @(tsee defind-process-pred),
+     that the predicates being defined are new.
+     Thus, the translation of the term fails
+     if the term mentions those predicates.
+     So this automatically checks their absence from the term.
+     For the guard of @('p[i]'),
+     we get here after checking that @('p[1]'), ..., @('p[i]') are new,
+     but before checking the others:
+     if the guard mentions one of the latter,
+     either the translation fails,
+     or that predicate is not new and its check fails later.")
+   (xdoc::p
+    "We ensure that the term is single-valued, not a stobj.")
+   (xdoc::p
+    "The @('desc') input of this function is
+     a description of the term, for error messages."))
+  (b* (((reterr) (irr-defind-term-info) state)
+       ((mv term/msg stobjs-out state) (check-user-term$ term state))
+       ((unless (pseudo-termp term/msg))
+        ;; No period at the end of the following string
+        ;; because TERM/MSG ends with period already.
+        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
+                     desc term/msg)))
+       ((unless (equal stobjs-out (list nil)))
+        (reterr (msg "~@0 must return a single non-stobj value, ~
+                      but it returns ~x1 instead."
+                     desc stobjs-out))))
+    (retok (make-defind-term-info :uterm term :tterm term/msg) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-process-pred (pred (i posp) state)
+  :returns (mv erp (info defind-pred-infop) state)
   :short "Process an element of the @(':preds') input."
   :long
   (xdoc::topstring
@@ -2451,24 +2502,42 @@
      the index of the predicate @('p[i]')
      that must be described by the @('pred') of this function.")
    (xdoc::p
-    "We ensure that the name is a valid fresh one for a function."))
-  (b* (((reterr) (irr-defind-pred-info))
-       ((unless (and (symbol-listp pred)
-                     (consp pred)
-                     (consp (cdr pred))))
+    "We ensure that the name is a valid fresh one for a function.")
+   (xdoc::p
+    "If the element contains @(':guard'),
+     this must be followed by exactly one term, at the end:
+     the guard of the predicate,
+     whose free variables must be among the formals.
+     Otherwise, the guard is @('t')."))
+  (b* (((reterr) (irr-defind-pred-info) state)
+       (guard-tail (and (true-listp pred)
+                        (member-eq :guard pred)))
+       ((unless (or (endp guard-tail)
+                    (and (consp (cdr guard-tail))
+                         (atom (cddr guard-tail)))))
+        (reterr (msg "The :GUARD in ~
+                      the ~n0 element of the :PREDS input ~
+                      must be followed by exactly one term, at the end, ~
+                      but the element is ~x1 instead."
+                     (list (lposfix i)) pred)))
+       (name+formals (if guard-tail (butlast pred 2) pred))
+       ((unless (and (symbol-listp name+formals)
+                     (consp name+formals)
+                     (consp (cdr name+formals))))
         (reterr (msg "The ~n0 element of the :PREDS input ~
                       must be a list of at least two symbols, ~
+                      optionally followed by :GUARD and a term, ~
                       but it is ~x1 instead."
                      (list (lposfix i)) pred)))
-       (pred-name (car pred))
-       (pred-formals (cdr pred))
+       (pred-name (car name+formals))
+       (pred-formals (cdr name+formals))
        ((when (keywordp pred-name))
         (reterr (msg "The name of the predicate in ~
                       the ~n0 element of the :PREDS input ~
                       must not be a keyword, ~
                       but it is ~x1 instead."
                      (list (lposfix i)) pred-name)))
-       (msg/nil (fresh-namep-msg-weak pred-name 'function wrld))
+       (msg/nil (fresh-namep-msg-weak pred-name 'function (w state)))
        ((when msg/nil)
         ;; No period at the end of the following string
         ;; because MSG/NIL ends with period already.
@@ -2487,21 +2556,35 @@
                       the ~n0 element of the :PREDS input ~
                       must be all distinct, ~
                       but there are duplicates among ~&1."
-                     (list (lposfix i)) pred-formals))))
+                     (list (lposfix i)) pred-formals)))
+       ((erp guard state)
+        (defind-process-term (if guard-tail (cadr guard-tail) t)
+                             (msg "The guard of the predicate in ~
+                                   the ~n0 element of the :PREDS input"
+                                  (list (lposfix i)))
+                             state))
+       (extra-vars (set-difference-eq (all-vars (defind-term-info->tterm guard))
+                                      pred-formals))
+       ((when extra-vars)
+        (reterr (msg "The guard of the predicate in ~
+                      the ~n0 element of the :PREDS input ~
+                      must have only the formals as free variables, ~
+                      but it also has ~&1."
+                     (list (lposfix i)) extra-vars))))
     (retok (make-defind-pred-info :name pred-name
                                   :formals pred-formals
-                                  :guard (make-defind-term-info
-                                          :uterm t
-                                          :tterm ''t)))))
+                                  :guard guard)
+           state))
+  :guard-hints (("Goal" :in-theory (enable character-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defind-process-preds (preds
                               (preds-suppliedp booleanp)
-                              (wrld plist-worldp))
-  :returns (mv erp (infos defind-pred-info-listp))
+                              state)
+  :returns (mv erp (infos defind-pred-info-listp) state)
   :short "Process the @(':preds') input."
-  (b* (((reterr) nil)
+  (b* (((reterr) nil state)
        ((unless preds-suppliedp)
         (reterr (msg "The :PREDS input must be supplied.")))
        ((unless (and (true-listp preds)
@@ -2509,75 +2592,31 @@
         (reterr (msg "The :PREDS input must be a non-empty list, ~
                       but it is ~x0 instead."
                      preds)))
-       ((erp infos) (defind-process-preds-loop preds 1 wrld))
+       ((erp infos state) (defind-process-preds-loop preds 1 state))
        ((unless (defind-pred-names-unambp infos))
         (reterr (msg "The names of the predicates in the :PREDS input ~
                       must be all distinct, ~
                       but there are duplicates among ~&0."
                      (defind-pred-info-list->name infos)))))
-    (retok infos))
+    (retok infos state))
 
   :prepwork
   ((define defind-process-preds-loop ((preds true-listp)
                                       (i posp)
-                                      (wrld plist-worldp))
-     :returns (mv erp (infos defind-pred-info-listp))
+                                      state)
+     :returns (mv erp (infos defind-pred-info-listp) state)
      :parents nil
-     (b* (((reterr) nil)
-          ((when (endp preds)) (retok nil))
-          ((erp info) (defind-process-pred (car preds) i wrld))
-          ((erp infos)
-           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) wrld)))
-       (retok (cons info infos)))))
+     (b* (((reterr) nil state)
+          ((when (endp preds)) (retok nil state))
+          ((erp info state) (defind-process-pred (car preds) i state))
+          ((erp infos state)
+           (defind-process-preds-loop (cdr preds) (1+ (lposfix i)) state)))
+       (retok (cons info infos) state))))
 
   ///
 
   (defret defind-pred-names-unambp-of-defind-process-preds
     (defind-pred-names-unambp infos)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defind-process-term (term (desc msgp) state)
-  :returns (mv erp (info defind-term-infop) state)
-  :short "Process a term in a rule."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The input to this function is
-     either a whole premise that does not have the form @('(p[i] ...'))
-     or an argument of a premise or conclusion that has that form.
-     The @(tsee definductive) macro accepts any terms there,
-     so long as they are well-formed,
-     which is checked by this function.
-     The term must be a valid untranslated term,
-     which we attempt to translate here.
-     If the translation is successful,
-     we return both the untranslated and translated term,
-     packaged in a @(tsee defind-term-info).")
-   (xdoc::p
-    "Note that, before we get here,
-     we have checked, in @(tsee defind-process-pred),
-     that the predicates being defined are new.
-     Thus, the translation of the term fails
-     if the term mentions those predicates.
-     So this automatically checks their absence from the term.")
-   (xdoc::p
-    "We ensure that the term is single-valued, not a stobj.")
-   (xdoc::p
-    "The @('desc') input of this function is
-     a description of the term, for error messages."))
-  (b* (((reterr) (irr-defind-term-info) state)
-       ((mv term/msg stobjs-out state) (check-user-term$ term state))
-       ((unless (pseudo-termp term/msg))
-        ;; No period at the end of the following string
-        ;; because TERM/MSG ends with period already.
-        (reterr (msg "~@0 must be a valid untranslated term, but: ~@1"
-                     desc term/msg)))
-       ((unless (equal stobjs-out (list nil)))
-        (reterr (msg "~@0 must return a single non-stobj value, ~
-                      but it returns ~x1 instead."
-                     desc stobjs-out))))
-    (retok (make-defind-term-info :uterm term :tterm term/msg) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3111,8 +3150,8 @@
   (b* (((reterr) nil nil nil nil nil nil nil nil nil nil :error state)
        (wrld (w state))
        ((erp name) (defind-process-name name wrld))
-       ((erp pred-infos)
-        (defind-process-preds preds preds-suppliedp wrld))
+       ((erp pred-infos state)
+        (defind-process-preds preds preds-suppliedp state))
        ((erp irule-infos leveled-cliques state)
         (defind-process-irules irules irules-suppliedp pred-infos state))
        ((erp) (defind-check-proof-names irule-infos pred-infos name))
