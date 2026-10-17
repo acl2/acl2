@@ -34,6 +34,10 @@ Smtlink 3: Rewrite-driven Compilation to SMT-LIB
 Alessandro Coglio and Grant Jurgensen
 Inductive Definitions via Inference Rules in ACL2
 
+[books]/std/util/definductive-doc.lisp
+[books]/std/util/definductive.lisp
+[books]/std/util/definductive-tests.lisp
+
 ------------------------------
 
 Ruben Gamboa
