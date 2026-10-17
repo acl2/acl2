@@ -48,20 +48,20 @@
   :hints (("Goal" :in-theory (enable remove1-equal))))
 
 (local
-  (defthmd maxelem-when-subbagp-helper
+  (defthmd maxelem-when-subsetp-equal-helper
     (implies (and (subsetp-equal lst1 lst2)
                   (consp lst1) ;handle..
                   )
              (not (< (maxelem lst2) (maxelem lst1))))
     :hints (("Goal" :in-theory (enable maxelem)))))
 
-(defthm maxelem-when-subbagp
+(defthm maxelem-when-subsetp-equal
   (implies (subsetp-equal lst1 lst2)
            (equal (< (maxelem lst2) (maxelem lst1))
                   (if (consp lst1)
                       nil
                     (< (maxelem lst2) (negative-infinity)))))
-  :hints (("Goal" :in-theory (enable maxelem-when-subbagp-helper))))
+  :hints (("Goal" :in-theory (enable maxelem-when-subsetp-equal-helper))))
 
 (defthm not-<-car-when->=maxelem-free
   (implies (and (<= (maxelem free) x)
@@ -69,8 +69,8 @@
                 (consp lst))
            (not (< x (car lst))))
   :hints (("Goal" :use (not-<-car-when->=maxelem
-                        (:instance maxelem-when-subbagp (lst1 lst) (lst2 free)))
-           :in-theory (disable not-<-car-when->=maxelem MAXELEM-WHEN-SUBBAGP))))
+                        (:instance maxelem-when-subsetp-equal (lst1 lst) (lst2 free)))
+           :in-theory (disable not-<-car-when->=maxelem MAXELEM-WHEN-SUBSETP-EQUAL))))
 
 (defthm not-less-than-maxelem-of-small-range-lemma
   (implies (and (<= (MAXELEM bigrange) k) ;bigrange is a free var
@@ -79,8 +79,8 @@
                   (if (consp smallrange)
                       nil
                     (< k (negative-infinity)))))
-  :hints (("Goal" :use (:instance maxelem-when-subbagp (lst1 smallrange) (lst2 bigrange))
-           :in-theory (disable maxelem-when-subbagp))))
+  :hints (("Goal" :use (:instance maxelem-when-subsetp-equal (lst1 smallrange) (lst2 bigrange))
+           :in-theory (disable maxelem-when-subsetp-equal))))
 
 (defthm maxelem-of-reverse-list
   (implies (rational-listp lst)
