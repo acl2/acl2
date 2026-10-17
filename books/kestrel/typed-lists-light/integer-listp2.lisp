@@ -1,7 +1,7 @@
 ; More theorems about integer-listp
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,9 +15,9 @@
 
 (include-book "integer-listp")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
-(include-book "kestrel/lists-light/subrange" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 (defthm integer-listp-of-firstn
   (implies (integer-listp lst)

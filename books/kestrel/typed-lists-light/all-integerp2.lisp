@@ -15,9 +15,9 @@
 
 (include-book "all-integerp")
 ;(include-book "kestrel/lists-light/repeat" :dir :system)
-(include-book "kestrel/lists-light/firstn" :dir :system)
-(include-book "kestrel/lists-light/subrange" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/firstn-def" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 
 (defthm all-integerp-of-firstn
   (implies (all-integerp lst)
