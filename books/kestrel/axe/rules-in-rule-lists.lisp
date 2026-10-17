@@ -75,6 +75,7 @@
 (include-book "kestrel/lists-light/take2" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)
 (include-book "kestrel/lists-light/repeat-tail" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/cons" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
