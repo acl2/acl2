@@ -34769,8 +34769,12 @@
 ; char-code as well as others (expt and coerce) so that their functions can no
 ; longer return values that satisfy bad-lisp-objectp (by excluding these
 ; symbols from *common-lisp-symbols-from-main-lisp-package* and defining their
-; raw-Lisp ACL2 functions in acl2-fns.lisp), we can probably revert to the
-; restricted check.  For simplicity, though, we'll leave this as is.
+; raw-Lisp ACL2 functions in acl2-fns.lisp), we could consider reverting to the
+; restricted check.  However, this check caught an attempt by
+; books/oslib/tests/lisptype.lisp to define a string constant that is not a
+; simple-string, by use of a trust tag (via books/oslib/lisptype-raw.lsp).
+; Technically it's not our responsibility to catch problems introduced by trust
+; tags, but that example illustrates that it's a reasonable thing for us to do.
 
                                  (bad-lisp-objectp actual-expansion)))
                             (when msg
