@@ -31,8 +31,9 @@
   (declare (xargs :stobjs st :guard t) (ignore hint))
   (mv nil
       (if (and (acl2-numberp (fld st))
-               (not (complex-rationalp (fld st)))
-               (not (rationalp (fld st))))
+               (not (real/rationalp (realpart (fld st))))
+               (not (real/rationalp (imagpart (fld st))))
+               (not (real/rationalp (fld st))))
           nil
         (list cl))
       st))
