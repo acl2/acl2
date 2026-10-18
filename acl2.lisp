@@ -1905,7 +1905,7 @@ ACL2 from scratch.")
 
 ; Note however that ACL2 supports #\Page in its read-eval-print loop.
 
-  (code-char 12))
+  (common-lisp::code-char 12))
 
 (defconstant *acl2-read-character-terminators*
   '(#\Tab #\Newline #.*acl2-page-char* #\Space #\" #\' #\( #\) #\; #\` #\,))
