@@ -37,7 +37,7 @@ comments in the source files themselves.
 
 [Axe-doc]: https://acl2.org/doc/?topic=ACL2____AXE
 
-# Setup: Installing the STP solver
+# Setup: Installing the STP solver.
 
 The STP SMT solver is needed for most uses of Axe.  See the [STP doc topic][STP-doc] for
 information about installing it.
