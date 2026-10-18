@@ -64,6 +64,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled values-of-update
+  (equal (values (update key val map))
+         (set::insert val (values (delete key map))))
+  :use update-of-delete
+  :disable update-of-delete)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled size-of-update
   (equal (size (update key val map))
          (if (assoc key map)

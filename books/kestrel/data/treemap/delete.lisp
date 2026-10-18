@@ -14,6 +14,7 @@
 
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/insert-defs" :dir :system)
 
 (include-book "internal/join-defs")
 (include-book "internal/delete-defs")
@@ -23,12 +24,14 @@
 (include-book "lookup-defs")
 (include-book "submap-defs")
 (include-book "update-defs")
+(include-book "values-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "std/omaps/core" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
+(local (include-book "std/omaps/update" :dir :system))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -36,6 +39,7 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -55,6 +59,7 @@
 (local (include-book "submap"))
 (local (include-book "extensionality"))
 (local (include-book "update"))
+(local (include-book "values"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -310,6 +315,15 @@
          (to-omap (delete key (from-omap omap)))))
 
 (add-to-ruleset from-omap-theory '(omap-delete-becomes-delete))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled values-of-update
+  (equal (values (update key val map))
+         (treeset::insert val (values (delete key map))))
+  :enable (to-omap-theory
+           omap::values-of-update)
+  :disable from-omap-theory)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
