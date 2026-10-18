@@ -7,6 +7,7 @@
 
 (in-package "ACL2")
 
+(include-book "build/ifdef" :dir :system)
 (include-book "include-doc")
 
 ;; Brings in many top and doc books:
@@ -14,7 +15,7 @@
 
 
 ; It is desirable that users of the ACL2 Community Books be able to include
-; projects and libraries to suite their purposes without issue.  In order to
+; projects and libraries to suit their purposes without issue.  In order to
 ; detect symbol conflicts at build time, we include as many projects as possible
 ; in this book.
 ;
@@ -27,7 +28,7 @@
 ; purposes, have non-standard build requirements, or have multiple symbol
 ; conflicts with other books.  These qualities do not prevent inclusion here.
 ; However, these skipped books require additional effort to include them.
-; Converting any such SKIP comment to an `INCLUDE-BOOKS' form is encouraged.
+; Converting any such SKIP comment to an `INCLUDE-BOOK' form is encouraged.
 (include-book "abnf/top")
 ; acl2-in-hol -- SKIP
 (include-book "aleo/top")
@@ -45,7 +46,9 @@
 (include-book "codewalker/codewalker")
 ; concurrent-programs -- SKIP
 (include-book "curve25519/top")
-; die-hard-bottle-game -- SKIP
+; die-hard-bottle-game -- SKIP:
+;; The proofs in die-hard-bottle-game are not robust to the reordering in the
+;; prover induced by changing packages.
 ; dpss -- SKIP
 ; equational -- SKIP
 (include-book "execloader/top")
@@ -101,7 +104,7 @@
 ; symbolic -- SKIP
 (include-book "taspi/taspi-xdoc")
 ; translators -- SKIP
-; (include-book "vescmul/top") ; TODO: resolve build issue
+; vescmul -- SKIP
 ; vwsim -- SKIP
 (include-book "wp-gen/wp-gen")
 (include-book "x86isa/top")

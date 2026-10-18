@@ -18,7 +18,7 @@
 
 (defthm len-of-resize-list
   ;; [2026-09-27] David Taylor renamed parameters to remove a conflict with the
-  ;; standard libarary.
+  ;; standard library.
   (equal (len (resize-list lst n default))
          (nfix n)))
 
