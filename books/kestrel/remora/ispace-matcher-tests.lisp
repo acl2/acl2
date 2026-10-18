@@ -790,6 +790,23 @@
                        nil))
  (list t (omap::update "i" (dim-add (list (dim-const 3) (dim-var "k"))) nil)))
 
+; An unbound pattern variable is bound to the dimension as is
+; even if the dimension has a negative coefficient (see DIM-MATCH for why),
+; whereas the same dimension does not match a pattern
+; in which the variable is added to something (see DIM-POLY-MATCH).
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-sub (list (dim-var "k") (dim-const 1)))
+                       (dim-var "i")
+                       nil))
+ (list t (omap::update "i" (dim-sub (list (dim-var "k") (dim-const 1))) nil)))
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-sub (list (dim-var "k") (dim-const 1)))
+                       (dim-add (list (dim-const 1) (dim-var "i")))
+                       nil))
+ (list nil nil))
+
 ; A bound pattern variable matches only
 ; a dimension equivalent to the one bound to it.
 
@@ -812,6 +829,17 @@
                                      (dim-add (list (dim-const 1) (dim-var "k")))
                                      nil)))
  (list t (omap::update "i" (dim-add (list (dim-const 1) (dim-var "k"))) nil)))
+
+; The dimension bound to the variable may have a negative coefficient:
+; the policy of DIM-POLY-MATCH concerns only the unbound pattern variables.
+
+(assert-equal
+ (mv-list 2 (dim-match (dim-sub (list (dim-var "k") (dim-const 1)))
+                       (dim-var "i")
+                       (omap::update "i"
+                                     (dim-sub (list (dim-var "k") (dim-const 1)))
+                                     nil)))
+ (list t (omap::update "i" (dim-sub (list (dim-var "k") (dim-const 1))) nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
