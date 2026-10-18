@@ -1,0 +1,48 @@
+# Emails each push to the address in the repository variable MAIL_TO (normally
+# acl2-books@googlegroups.com), replacing GitHub's push emails (retired
+# 2026-10-15).  Sends through Kestrel's SMTP server as the githubrelay
+# account, whose password is the repository secret SMTP_PASSWORD.
+name: Push email
+on:
+  push:
+    branches: ['**']
+jobs:
+  email:
+    if: github.repository == 'acl2/acl2' && github.event.commits[0] && vars.MAIL_TO
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send email
+        env:
+          SMTP_URL: smtps://smtp.kestrel.edu:465
+          SMTP_USER: githubrelay
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          FROM: githubrelay@kestrel.edu
+          TO: ${{ vars.MAIL_TO }}
+        run: |
+          jq -r --arg from "$FROM" --arg to "$TO" -f /dev/stdin "$GITHUB_EVENT_PATH" > mail.txt <<'EOF'
+          .head_commit as $h
+          | "From: \($h.author.name) <\($from)>",
+            "To: \($to)",
+            "Subject: [\(.repository.full_name)] \($h.id[0:6]): \($h.message | split("\n")[0])",
+            "Content-Type: text/plain; charset=UTF-8",
+            "",
+            "  Branch: \(.ref)",
+            "  Home:   \(.repository.html_url)",
+            (.commits[] |
+              "  Commit: \(.id)",
+              "      \(.url)",
+              "  Author: \(.author.name) <\(.author.email)>",
+              "  Date:   \(.timestamp)",
+              "",
+              "  Changed paths:",
+              (.added[] | "    A \(.)"), (.removed[] | "    D \(.)"), (.modified[] | "    M \(.)"),
+              "",
+              "  Log Message:",
+              "  -----------",
+              (.message | split("\n")[] | "  \(.)"),
+              ""),
+            "Compare: \(.compare)"
+          EOF
+          curl -sS --ssl-reqd --crlf --url "$SMTP_URL" --user "$SMTP_USER:$SMTP_PASSWORD" \
+            --mail-from "$FROM" --mail-rcpt "$TO" --upload-file mail.txt
