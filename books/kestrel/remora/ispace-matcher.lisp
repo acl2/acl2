@@ -825,9 +825,10 @@
      there is no dimension @('$i') such that
      @('(+ 1 $i)') is equivalent to @('$n'),
      and the match fails.
-     Note that a pattern variable by itself is matched by @(tsee dim-match)
-     without going through this function,
-     and is bound to the dimension as is, e.g. to @('(- $n 1)').")
+     Note that an unbound pattern variable by itself
+     is matched by @(tsee dim-match) without going through this function,
+     and is bound to the dimension as is, e.g. to @('(- $n 1)'),
+     for the reason explained there.")
    (xdoc::p
     "If there are two or more unknowns,
      the match fails, rather than guessing,
@@ -920,22 +921,41 @@
      which is equivalent to @('(+ 3 $i)'),
      but applying it once more would yield @('(+ 1 (+ 2 5))').")
    (xdoc::p
-    "A pattern variable that is bound in the substitution
-     matches only a dimension equivalent to the one bound to it.
-     A pattern variable that is not bound in the substitution
-     matches any dimension, which is bound to the variable.")
-   (xdoc::p
-    "A pattern constant matches only an equivalent dimension,
-     i.e. one that normalizes to the same constant.")
-   (xdoc::p
-    "A pattern addition, multiplication, or subtraction
-     is matched modulo dimension equivalence via @(tsee dim-poly-match),
+    "A pattern variable that is not bound in the substitution
+     matches any dimension, which is bound to the variable as is.
+     Every other pattern is matched via @(tsee dim-poly-match),
      which solves a polynomial equation for the unbound pattern variables,
-     under the restrictions and policies described there.")
+     under the restrictions and policies described there.
+     In particular, a pattern constant,
+     or a pattern variable that is bound in the substitution,
+     involves no unbound pattern variables,
+     and thus matches only a dimension equivalent to it,
+     i.e. to the constant or to the dimension bound to the variable.")
    (xdoc::p
-    "Both the equivalence checks (see @(tsee dim-equivp))
-     and the equation solving
-     work on the polynomials of the dimensions
+    "The reason for singling out an unbound pattern variable
+     is the policy of @(tsee dim-poly-match)
+     that the dimension bound to an unbound pattern variable
+     must have no negative coefficients.
+     That policy prevents the matching from constructing dimensions
+     that may not denote natural numbers,
+     such as @('(- $n 1)') when matching @('$n') to the pattern @('(+ 1 $i)').
+     But the dimension being matched is given, not constructed:
+     the matching takes it as is, without questioning its validity.
+     When the pattern is an unbound variable,
+     the only solution of the equation is the dimension itself,
+     and there is nothing to construct:
+     the variable is bound to the dimension as is
+     (not even normalized,
+     as everything works modulo dimension equivalence),
+     even if the dimension has negative coefficients.
+     For instance, matching @('(- $n 1)') to the pattern @('$d') succeeds,
+     binding @('$d') to @('(- $n 1)'),
+     which is what applying @('length')
+     to a vector of length @('(- $n 1)') requires;
+     in contrast, matching @('(- $n 1)') to the pattern @('(+ 1 $i)') fails,
+     because it would have to construct @('(- $n 2)') for @('$i').")
+   (xdoc::p
+    "The equation solving works on the polynomials of the dimensions
      (see @(see dimension-polynomials)),
      which are canonical,
      so neither the dimension nor the pattern needs to be normalized
@@ -943,21 +963,11 @@
      The matching is sound on all dimensions and patterns,
      and it is complete modulo dimension equivalence
      under the restrictions and policies mentioned above."))
-  (dim-case
-   pat
-   :var (b* ((subst (string-dim-map-fix subst))
-             (var+dim (omap::assoc pat.name subst)))
-          (cond ((not var+dim)
-                 (mv t (omap::update pat.name (dim-fix dim) subst)))
-                ((dim-equivp (cdr var+dim) dim)
-                 (mv t subst))
-                (t (mv nil nil))))
-   :const (if (dim-equivp dim (dim-const pat.val))
-              (mv t (string-dim-map-fix subst))
-            (mv nil nil))
-   :add (dim-poly-match dim pat subst)
-   :mul (dim-poly-match dim pat subst)
-   :sub (dim-poly-match dim pat subst)))
+  (b* ((subst (string-dim-map-fix subst))
+       ((when (and (dim-case pat :var)
+                   (not (omap::assoc (dim-var->name pat) subst))))
+        (mv t (omap::update (dim-var->name pat) (dim-fix dim) subst))))
+    (dim-poly-match dim pat subst)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
