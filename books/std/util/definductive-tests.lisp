@@ -381,6 +381,148 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; A predicate with a guard.
+
+(must-succeed*
+
+ (definductive guarded-nats
+   :preds ((gn x :guard (natp x)))
+   :irules ((zero ()
+                  (gn 0))
+            (succ ((natp x)
+                   (gn x))
+                  (gn (1+ x)))))
+
+ (assert-event (equal (guard 'gn nil (w state)) '(natp x)))
+ (assert-event (guard-verified-p 'gn (w state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Two mutually recursive predicates, only one with a guard;
+; the other one has guard T.
+
+(must-succeed*
+
+ (definductive guarded-evenodd
+   :preds ((even n :guard (natp n))
+           (odd n))
+   :irules ((even-0 ()
+                    (even 0))
+            (even-step ((natp n)
+                        (odd n))
+                       (even (1+ n)))
+            (odd-step ((natp n)
+                       (even n))
+                      (odd (1+ n)))))
+
+ (assert-event (equal (guard 'even nil (w state)) '(natp n)))
+ (assert-event (equal (guard 'odd nil (w state)) ''t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; A guard that mentions only some of the formals.
+
+(must-succeed*
+
+ (definductive guarded-member
+   :preds ((mem a x :guard (true-listp x)))
+   :irules ((here ()
+                  (mem a (cons a x)))
+            (there ((mem a x))
+                   (mem a (cons b x)))))
+
+ (assert-event (equal (guard 'mem nil (w state)) '(true-listp x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (definductive ill-guarded
+   :preds ((small x :guard (< x 5)))
+   :irules ((zero ()
+                  (small 0)))
+   :verify-guards nil)
+
+ (assert-event (equal (guard 'small nil (w state)) '(< x '5)))
+ (assert-event (not (guard-verified-p 'small (w state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Without :VERIFY-GUARDS NIL, the definition above fails,
+; because nothing in the guard says that x is a number.
+
+(must-fail
+ (definductive ill-guarded
+   :preds ((small x :guard (< x 5)))
+   :irules ((zero ()
+                  (small 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-without-term
+   :preds ((p x :guard))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive duplicate-guards
+   :preds ((p x :guard t :guard t))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-not-at-end
+   :preds ((p x :guard t y))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive non-guard-keyword
+   :preds ((p x :foo t))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-without-formals
+   :preds ((p :guard t))
+   :irules ((ax ()
+                (p)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-with-extra-var
+   :preds ((p x :guard (natp y)))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive guard-with-pred
+   :preds ((p x :guard (p x)))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-fail
+ (definductive multi-valued-guard
+   :preds ((p x :guard (mv x x)))
+   :irules ((ax ()
+                (p 0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Rules with different conclusion predicates may have the same name.
 
 (must-succeed*
