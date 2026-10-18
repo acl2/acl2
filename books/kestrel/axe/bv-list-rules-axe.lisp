@@ -126,7 +126,7 @@
                   (if (< x y)
                       nil
                     (firstn (bvplus (max xsize ysize) x (bvuminus (max xsize ysize) y)) z))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvuminus unsigned-byte-p-forced <-of-if-arg1
+  :hints (("Goal" :in-theory (e/d (bvplus bvuminus unsigned-byte-p-forced; <-of-if-arg1
                                           ;bvchop-identity-when-<=
                                           bvchop-identity-when-<=
                                           )

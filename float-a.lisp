@@ -527,10 +527,11 @@
 
 ; However, it would be utter craziness if x < y but float reverses the order.
 ; An additional argument is that evaluation of (float x 0.0d0) quite plausibly
-; gives the same result as (coerce x 'double-float).  The following HyperSpec
-; passage about coerce (see
+; gives the same result as (common-lisp::coerce x 'double-float).  The
+; following HyperSpec passage about coerce (see
 ; https://www.lispworks.com/documentation/HyperSpec/Body/f_coerce.htm#coerce)
-; seems to imply that (coerce x 'double-float) can't reverse order.
+; seems to imply that (common-lisp::coerce x 'double-float) can't reverse
+; order.
 
 ;   If the result-type is any of float, short-float, single-float,
 ;   double-float, long-float, and the object is a real, then the result

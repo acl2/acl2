@@ -34763,16 +34763,21 @@
 
 ; At one time we only did the following check when the known-package-alist has
 ; changed.  A comment appeared here through ACL2 Version 8.7 explaining why the
-; check is needed in that case.  But we now do the check unconditionally, and a
-; very simple example explains why; see community book
-; system/tests/make-event-bad-char.lisp.
+; check is needed in that case.  But we decided to do the check
+; unconditionally, and a very simple example explains why; see community book
+; system/tests/make-event-bad-char.lisp.  However, now that we have modified
+; char-code as well as others (expt and coerce) so that their functions can no
+; longer return values that satisfy bad-lisp-objectp (by excluding these
+; symbols from *common-lisp-symbols-from-main-lisp-package* and defining their
+; raw-Lisp ACL2 functions in acl2-fns.lisp), we can probably revert to the
+; restricted check.  For simplicity, though, we'll leave this as is.
 
                                  (bad-lisp-objectp actual-expansion)))
                             (when msg
                               (er hard ctx
                                   "Make-event expansion for the form ~x0 has ~
-                                    produced an illegal object for the ~
-                                    current ACL2 world.  ~@1"
+                                   produced an illegal object for the current ~
+                                   ACL2 world.  ~@1"
                                   form
                                   msg)))
                           (er-progn

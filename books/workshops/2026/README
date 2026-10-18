@@ -1,4 +1,4 @@
-Below is a list of all papers accepted for ACL2 Workshop 2025,
+Below is a list of all papers accepted for ACL2 Workshop 2026,
 alphabetized by first author.  Each is associated (or, to be
 associated) with the corresponding directory containing supporting
 materials.  Directories starting with "[books]" are the indicated
@@ -33,6 +33,10 @@ Smtlink 3: Rewrite-driven Compilation to SMT-LIB
 
 Alessandro Coglio and Grant Jurgensen
 Inductive Definitions via Inference Rules in ACL2
+
+[books]/std/util/definductive-doc.lisp
+[books]/std/util/definductive.lisp
+[books]/std/util/definductive-tests.lisp
 
 ------------------------------
 

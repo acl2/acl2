@@ -65,6 +65,9 @@
         (!!fault-fresh :mf :emms-with-pending-fpu-exception))
 
        ;; Write all 1s to FPU tag word, which is 16 bits.
-       (x86 (!fp-tag #xffff x86)))
+       (x86 (!fp-tag #xffff x86))
+
+       ;; Update instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
