@@ -1,8 +1,6 @@
-; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.  It illustrates a soundness bug in ACL2 Version 8.7
-; fixed before ACL2 Version 8.8.  We exclude GCL, however, since (code-char
-; 300) returns nil in a version of GCL circa 2025 or 2026.
-; cert_param: (non-gcl)
+; This book was produced by Claude and passed along by Eric Smith.  It
+; illustrates a soundness bug in ACL2 Version 8.7 fixed before ACL2 Version
+; 8.8.
 
 ; Finding 67: ev-synp evaluates a bind-free term without safe-mode, and
 ; bad-synp-alist1 accepts (QUOTE <anything>) as a "legal term", so a bind-free
@@ -79,8 +77,7 @@
    nil
    :hints (("Goal" :use n91-bar-is-t :in-theory (disable n91-bar)))
    :rule-classes nil)
-; Added by Matt Kaufmann, since now we get a hard error:
- :expected :hard)
+)
 
 ; CONTROL 1: a LEGAL character binding must not fire the rule, since
 ; (char-code #\a) = 97 < 256.  Pins the defect to the bad object rather than

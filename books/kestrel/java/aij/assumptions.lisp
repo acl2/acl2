@@ -67,8 +67,10 @@
 (assert-event (equal (symbol-package-name 'rationalp) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'consp) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'char-code) "COMMON-LISP"))
-(assert-event (equal (symbol-package-name 'code-char) "COMMON-LISP"))
-(assert-event (equal (symbol-package-name 'coerce) "COMMON-LISP"))
+; Temporarily commented out by Matt K. to accommodate package changes,
+; as requested by Alessandro Coglio:
+; (assert-event (equal (symbol-package-name 'code-char) "COMMON-LISP"))
+; (assert-event (equal (symbol-package-name 'coerce) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'symbol-name) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name '<) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'realpart) "COMMON-LISP"))

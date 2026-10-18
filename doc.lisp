@@ -849,9 +849,18 @@ Subtopics
   [30m[47macl2::[0m[0m prefix.
 
   The constant [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m lists the
-  [30m[47m978[0m[0m symbols of the [30m[47mCOMMON-LISP[0m[0m package found in {dpAns |
-  http://dx.doi.org/10.1145/147135.147249}.  You will typically also
-  want to import many symbols from ACL2; see [*ACL2-exports*].
+  [30m[47m975[0m[0m symbols of the [30m[47mCOMMON-LISP[0m[0m package found in {dpAns |
+  http://dx.doi.org/10.1145/147135.147249}, other than those symbols
+  with names [30m[47m\"CODE-CHAR\"[0m[0m, [30m[47m\"COERCE\"[0m[0m, and [30m[47m\"EXPT\"[0m[0m.  You will typically
+  also want to import many symbols from the [30m[47m\"ACL2\"[0m[0m package; see
+  [*ACL2-exports*].  The three exceptions above are made because the
+  [30m[47m\"ACL2\"[0m[0m package is created by importing all symbols from the value
+  of [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m, and the Lisp
+  function definitions for those symbols in the [30m[47m\"ACL2\"[0m[0m package are
+  careful to avoid creating illegal ACL2 objects, such as the values
+  of [30m[47m(code-char 300)[0m[0m or [30m[47m(expt 2 1/2)[0m[0m, since evaluation of such
+  expressions can bypass [guard]-checking when they appear in
+  [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode definitions.
 
     (&allow-other-keys *print-miser-width*
                        &aux *print-pprint-dispatch*
@@ -906,17 +915,16 @@ Subtopics
                        array-row-major-index boole-c1
                        call-next-method array-total-size
                        boole-c2 car array-total-size-limit
-                       boole-clr case arrayp
-                       boole-eqv catch ash boole-ior ccase
-                       asin boole-nand cdaaar asinh boole-nor
-                       cdaadr assert boole-orc1 cdaar assoc
-                       boole-orc2 cdadar assoc-if boole-set
-                       cdaddr assoc-if-not boole-xor cdadr
-                       atan boolean cdar atanh both-case-p
-                       cddaar cddadr clear-input copy-tree
-                       cddar clear-output cos cdddar close cosh
-                       cddddr clrhash count cdddr code-char
-                       count-if cddr coerce count-if-not
+                       boole-clr case arrayp boole-eqv catch
+                       ash boole-ior ccase asin boole-nand
+                       cdaaar asinh boole-nor cdaadr assert
+                       boole-orc1 cdaar assoc boole-orc2 cdadar
+                       assoc-if boole-set cdaddr assoc-if-not
+                       boole-xor cdadr atan boolean
+                       cdar atanh both-case-p cddaar cddadr
+                       clear-input copy-tree cddar clear-output
+                       cos cdddar close cosh cddddr clrhash
+                       count cdddr count-if cddr count-if-not
                        cdr compilation-speed ctypecase
                        ceiling compile debug cell-error
                        compile-file decf cell-error-name
@@ -957,8 +965,8 @@ Subtopics
                        error digit-char etypecase
                        digit-char-p eval directory eval-when
                        directory-namestring evenp disassemble
-                       every division-by-zero exp do export
-                       do* expt do-all-symbols extended-char
+                       every division-by-zero exp do
+                       export do* do-all-symbols extended-char
                        do-external-symbols fboundp do-symbols
                        fceiling documentation fdefinition
                        dolist ffloor dotimes fifth double-float
@@ -5733,10 +5741,10 @@ Subtopics
   system names.
 
   This package imports the symbols listed in
-  [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m, which contains
+  [30m[47m[*common-lisp-symbols-from-main-lisp-package*][0m[0m, which contains
   hundreds of CLTL function and macro names including those supported
   by ACL2 such as [30m[47m[cons][0m[0m, [30m[47m[car][0m[0m, and [30m[47m[cdr][0m[0m.  It also imports the
-  symbols in [30m[47m*acl2-exports*[0m[0m, which contains a few symbols that are
+  symbols in [30m[47m[*ACL2-exports*][0m[0m, which contains a few symbols that are
   frequently used while interacting with the ACL2 system, such as
   [30m[47m[implies][0m[0m, [30m[47m[defthm][0m[0m, and [30m[47m[rewrite][0m[0m.  It imports nothing else.
 
@@ -19534,7 +19542,17 @@ Subtopics
          (< x 256))
 
   ACL2 supports 8-bit [characters].  Inputs not between [30m[47m0[0m[0m and [30m[47m255[0m[0m are
-  treated as [30m[47m0[0m[0m.")
+  treated logically as [30m[47m0[0m[0m.  Attempts to evaluate [30m[47mcode-char[0m[0m on other
+  inputs will normally lead to a [guard] violation, but when made
+  from [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code, they can cause an error.
+
+  (Technical note: the symbol [30m[47macl2::code-char[0m[0m is distinct from the
+  symbol [30m[47mcommon-lisp::code-char[0m[0m.  The former is defined in Common
+  Lisp using the latter, except that the former ([30m[47macl2::code-char[0m[0m)
+  checks that its input is an integer between 0 and 255 inclusive.
+  In this way we avoid introducing non-ACL2 characters into an ACL2
+  session, such as the value obtained from Common Lisp evaluation of
+  [30m[47m(code-char 300)[0m[0m.)")
  (COERCE
   (STRINGS CHARACTERS ACL2-BUILT-INS)
   "Coerce a character list to a string and a string to a list
@@ -19573,7 +19591,17 @@ Subtopics
   '(#\\a #\\b #\\c) 'string)[0m[0m.  More precisely, [30m[47m\"abc\"[0m[0m is an abbreviation
   for [30m[47m(coerce '(#\\a #\\b #\\c) 'string)[0m[0m, where even more pedantically,
   [30m[47m'(#\\a #\\b #\\c)[0m[0m is an abbreviation for [30m[47m(cons '#\\a (cons '#\\b (cons
-  '#\\c 'nil)))[0m[0m.")
+  '#\\c 'nil)))[0m[0m.
+
+  Implementation Note
+
+  The symbol [30m[47macl2::coerce[0m[0m is distinct from the symbol
+  [30m[47mcommon-lisp::coerce[0m[0m.  The former is defined in Common Lisp using
+  the latter, except that the former ([30m[47macl2::coerce[0m[0m) checks its second
+  argument to ensure that it does cause a [guard] violation: the
+  value of the second parameter must be one of the symbols [30m[47mLIST[0m[0m or
+  [30m[47mSTRING[0m[0m.  In this way we avoid introducing non-ACL2 objects, such as
+  Lisp vectors, into an ACL2 session.")
  (COHERENCE (POINTERS)
             "See [wormhole-status].")
  (COLLECT$ (POINTERS) "See [loop$].")
@@ -39870,9 +39898,16 @@ Subtopics
   requirements of the [guard] aren't met, [30m[47m(expt r i)[0m[0m first coerces [30m[47mr[0m[0m
   to a number and [30m[47mi[0m[0m to an integer.
 
-  [30m[47mExpt[0m[0m is a Common Lisp function.  See any Common Lisp documentation
-  for more information.  Note that [30m[47mr[0m[0m can be a complex number; this is
-  consistent with Common lisp.
+  [30m[47mExpt[0m[0m is essentially a Common Lisp function.  See any Common Lisp
+  documentation for more information.  Note that [30m[47mr[0m[0m can be a complex
+  number; this is consistent with Common lisp.  However, the symbol
+  [30m[47macl2::expt[0m[0m is distinct from the symbol [30m[47mcommon-lisp::expt).  The
+  former is defined in Common Lisp using the latter, except that the
+  former (@('acl2::expt[0m[0m) checks its second argument to ensure that it
+  is an integer.  In this way we avoid introducing non-ACL2 numbers
+  into an ACL2 session, such as the floating-point approximation to
+  the square root of 2 obtained from Common Lisp evaluation of [30m[47m(expt
+  2 1/2)[0m[0m.
 
   [31;1mFunction: [0m<expt>
 
@@ -81555,7 +81590,7 @@ Subtopics
   CLTL2.)  That is, these may not be used as variables.  Unlike
   constants, variables may be in the main Lisp package as long as
   they are in the original list of imports from that package to ACL2,
-  the list [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m, and do not
+  the list [30m[47m[*common-lisp-symbols-from-main-lisp-package*][0m[0m, and do not
   belong to a list of symbols that are potentially ``global.'' This
   latter list is the value of [30m[47m*common-lisp-specials-and-constants*[0m[0m.
 
@@ -107003,6 +107038,15 @@ Changes to Existing Features
   [union-theories].  Thanks to Eric Smith for suggesting this
   enhancement.
 
+  The constant [30m[47m[*common-lisp-symbols-from-main-lisp-package*][0m[0m no longer
+  contains the symbols [30m[47mcommon-lisp::code-char[0m[0m, [30m[47mcommon-lisp::coerce[0m[0m,
+  or [30m[47mcommon-lisp::expt[0m[0m, which are thus no longer imported into the
+  [30m[47m\"ACL2\"[0m[0m package and hence are now distinct from the [30m[47m\"ACL2\"[0m[0m package's
+  symbols [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m, respectively.  See also
+  the item, in the first section on Bug Fixes below, that pertains to
+  soundness bugs fixed by changes to the raw Lisp definitions of
+  function symbols [30m[47mcode-char[0m[0m, [30m[47mcoerce[0m[0m, and [30m[47mexpt[0m[0m in the [30m[47m\"ACL2\"[0m[0m package.
+
 
 New Features
 
@@ -107047,6 +107091,34 @@ Bug Fixes From AI via Eric Smith
   out false positives.  (There are also some Claude-inspired fixes in
   other sections besides bug fixes.)[0m
 
+  As noted in the section above on Changes to Existing Features, ACL2
+  symbols [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m are no longer imported
+  from the [30m[47m\"COMMON-LISP\"[0m[0m package.  This change enabled fixes to
+  soundness bugs resulting from the unfortunate ability to generate
+  illegal ACL2 objects from [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code.  The fixes involved
+  defining ACL2 functions [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m so that
+  they cause an error on inputs that could result in non-ACL2
+  objects.  Here is a summary of the soundness bugs fixed by these
+  changes.
+
+    * When [30m[47m[make-event][0m[0m expansion takes place, the result could fail to be
+      a valid ACL2 object.  See [community-book]
+      [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.  (Technical note: ACL2
+      already checked for this situation, but only when the
+      [known-package-alist] changed.  Now the check is done
+      unconditionally, although that might well be unnecessary given
+      the changes to the three functions mentioned above.)
+
+    * A soundness bug was due to allowing [30m[47m[bind-free][0m[0m to introduce values
+      that are not legal ACL2 objects.  See for example
+      [community-book] [30m[47msystem/tests/ev-synp-bind-free.lisp[0m[0m.
+
+    * Other examples of unsoundness due to the introduction of objects that
+      are illegal for ACL2 may be found in the following
+      [community-books] directory [30m[47msystem/tests/[0m[0m: [30m[47mcode-char-300.lisp[0m[0m,
+      [30m[47mexpt-irrational.lisp[0m[0m, [30m[47mhint-table-bad-object.lisp[0m[0m, and
+      [30m[47minstructions-ckh-default-hints.lisp[0m[0m.
+
   An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
   [30m[47mhyp[0m[0m must be [30m[47mequiv[0m[0m-hittable preserving [30m[47miff[0m[0m.  See [elim].  This
@@ -107068,12 +107140,6 @@ Bug Fixes From AI via Eric Smith
   soundness bug caused by our failure to completely avoid variable
   capture when instantiating the constraints.  See the comment in
   [30m[47mremove-capture-in-constraint-lst[0m[0m.
-
-  When [30m[47m[make-event][0m[0m expansion takes place, the result might not be a
-  valid ACL2 object.  ACL2 checked for this situation, but only when
-  the [known-package-alist] changed.  Now the check is done
-  unconditionally, which fixes a soundness bug.  See [community-book]
-  [30m[47msystem/tests/make-event-bad-char.lisp[0m[0m.
 
   A soundness bug was caused by function [30m[47m[df-string][0m[0m due to the
   distinction in raw Lisp between 0.0 and -0.0.  See [community-book]
@@ -107167,8 +107233,8 @@ Bug Fixes From AI via Eric Smith
   [30m[47m[compress2][0m[0m that its arguments satisfy its [30m[47m[array1p][0m[0m or [30m[47m[array2p][0m[0m
   [guard], respectively.  To see why this is necessary, see
   [community-book] [30m[47msystem/tests/compress1-invariant-risk.lisp[0m[0m.
-  (Note: This did not observably slow down running of the complete
-  ACL2 regression suite.)
+  (Note: This fix did not observably slow down running of the
+  complete ACL2 regression suite.)
 
   Fixed a soundness bug in [30m[47m[compress1][0m[0m in the case of an array whose
   [30m[47m:order[0m[0m is either [30m[47m<[0m[0m (the default) or [30m[47m>[0m[0m and whose indices are already
@@ -107447,10 +107513,6 @@ Bug Fixes From AI via Eric Smith
   prefixes of strings supplied to [30m[47m[defpkg][0m[0m.  However, only the latter
   of these was prohibited.  That has been fixed; see community book
   file [30m[47msystem/tests/defpkg-acl2-global-prefix.lsp[0m[0m.
-
-  Fixed a soundness bug due to allowing [30m[47m[bind-free][0m[0m to introduce
-  objects values that are not legal ACL2 objects.  See for example
-  [community-book] [30m[47msystem/tests/ev-synp-bind-free.lisp[0m[0m.
 
 
 Other Bug Fixes
@@ -114908,7 +114970,7 @@ Implementation
   we mean the symbols imported into [30m[47mpkg[0m[0m by the [30m[47m[defpkg][0m[0m event that
   introduced [30m[47mpkg[0m[0m.  There are no imports for built-in packages except
   for the [30m[47m\"ACL2\"[0m[0m package, which imports the symbols in the list value
-  of the constant [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m.  In
+  of the constant [30m[47m[*common-lisp-symbols-from-main-lisp-package*][0m[0m.  In
   particular, this is the case for the [30m[47m\"COMMON-LISP\"[0m[0m package.  Users
   familiar with Common Lisp may find this surprising, since in actual
   Common Lisp implementations it is often the case that many symbols
@@ -114920,7 +114982,10 @@ Implementation
   package only if it belongs to that list: any attempt to read any
   other symbol imported into the [30m[47m\"COMMON-LISP\"[0m[0m package, or to produce
   such a symbol with [30m[47m[intern$][0m[0m or [30m[47m[intern-in-package-of-symbol][0m[0m, will
-  cause an error.
+  cause an error.  (But we note that for each of the following three
+  names, there are distinct symbols with those names in the [30m[47m\"ACL2\"[0m[0m
+  and [30m[47m\"COMMON-LISP\"[0m[0m packages: [30m[47m\"CODE-CHAR\"[0m[0m, [30m[47m\"COERCE\"[0m[0m, and [30m[47m\"EXPT\"[0m[0m.  See
+  [*common-lisp-symbols-from-main-lisp-package*].)
 
   The following axioms formalize properties of [30m[47mpkg-imports[0m[0m discussed
   above (use [30m[47m:[0m[0m[30m[47m[pe][0m[0m to view them).

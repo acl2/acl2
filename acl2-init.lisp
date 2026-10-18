@@ -467,7 +467,8 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
               (setq lst (cons (subseq result start n)
                               lst))))))
        (setq result (nreverse lst))
-       (setq result (coerce (cons (car result) result) 'vector)))))
+       (setq result (common-lisp::coerce (cons (car result) result)
+                                         'vector)))))
   #+cmu
   (let ((ans (ext:process-exit-code
               (common-lisp-user::run-program string arguments :output t))))
@@ -677,7 +678,14 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
                 exit-code
               1)
             (if (stringp output-string)
-                output-string
+                (let ((msg (and (fboundp 'bad-lisp-stringp) ; false early in boot-strap
+                                (qfuncall bad-lisp-stringp output-string))))
+                  (when msg
+                    (qfuncall
+                     interface-er
+                     "A system call has returned an illegal string for ACL2.~%~@0"
+                     msg))
+                  output-string)
               ""))))
 
 (defun our-probe-file (filename)
