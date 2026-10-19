@@ -63,6 +63,12 @@ Arrayset Revisited
 Grant Jurgensen
 Treesets: Efficient Finite Sets with Unique Representations
 
+[books]/kestrel/data/treeset/
+[books]/kestrel/data/treemap/
+[books]/kestrel/data/hash/
+[books]/kestrel/data/benchmark/
+jurgensen/
+
 ------------------------------
 
 Matt Kaufmann
