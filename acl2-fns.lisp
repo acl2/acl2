@@ -2074,12 +2074,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun abs (x)
 ; Warning: Keep this in sync with the #+acl2-loop-only defun of abs.
-  (when (complex-rationalp x) ; (er hard! 'abs "..." x)
+  (when (complexp x) ; (er hard! 'abs "..." x)
     (let ((*hard-error-returns-nilp* nil))
       (declare (special *hard-error-returns-nilp*))
       (qfuncall hard-error
                 'abs
-                "Illegal argument to acl2::abs (complex-rational), ~x0"
+                "Illegal (complex) argument to acl2::abs, ~x0"
                 (list (cons #\0 x)))))
   (if (minusp x) (- x) x))
 
@@ -2126,12 +2126,12 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun signum (x)
 ; Warning: Keep this in sync with the #+acl2-loop-only defun of signum.
-  (cond ((complex-rationalp x) ; (progn (er hard! 'signum "..." i) 1)
+  (cond ((complexp x) ; (progn (er hard! 'signum "..." i) 1)
          (let ((*hard-error-returns-nilp* nil))
            (declare (special *hard-error-returns-nilp*))
            (qfuncall hard-error
                      'abs
-                     "Illegal argument to acl2::signum (complex-rational), ~x0"
+                     "Illegal (complex) argument to acl2::signum, ~x0"
                      (list (cons #\0 x)))))
         (t
          (if (zerop x) 0
