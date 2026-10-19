@@ -297,16 +297,17 @@
  @(`(len *common-lisp-symbols-from-main-lisp-package*)`) symbols of the
  @('COMMON-LISP') package found in <a
  href='http://dx.doi.org/10.1145/147135.147249'>dpAns</a>, other than those
- symbols with names @('\"CODE-CHAR\"'), @('\"COERCE\"'), and @('\"EXPT\"').
- You will typically also want to import many symbols from the @('\"ACL2\"')
- package; see @(see *acl2-exports*).  The three exceptions above are made
- because the @('\"ACL2\"') package is created by importing all symbols from the
- value of @('*common-lisp-symbols-from-main-lisp-package*'), and the Lisp
- function definitions for those symbols in the @('\"ACL2\"') package are
- careful to avoid creating illegal ACL2 objects, such as the values of
- @('(code-char 300)') or @('(expt 2 1/2)'), since evaluation of such
- expressions can bypass @(see guard)-checking when they appear in @(':')@(tsee
- program)-mode definitions.</p>
+ symbols with names @('\"ABS\"'), @('\"CODE-CHAR\"'), @('\"COERCE\"'),
+ @('\"EXPT\"'), and @('\"SIGNUM\"').  You will typically also want to import
+ many symbols from the @('\"ACL2\"') package; see @(see *acl2-exports*).  The
+ three exceptions above are made because the @('\"ACL2\"') package is created
+ by importing all symbols from the value of
+ @('*common-lisp-symbols-from-main-lisp-package*'), and the Lisp function
+ definitions for those symbols in the @('\"ACL2\"') package are careful to
+ avoid creating illegal ACL2 objects, such as the values of @('(code-char
+ 300)') or @('(expt 2 1/2)'), since evaluation of such expressions can bypass
+ @(see guard)-checking when they appear in @(':')@(tsee program)-mode
+ definitions.</p>
 
  @(`(:code *common-lisp-symbols-from-main-lisp-package*)`)")
 
@@ -870,6 +871,15 @@
  @('x') as an argument to @('abs') in ACL2, because if we did we would have to
  return a number that might be a floating point number and hence not an ACL2
  object.</p>
+
+ <h4>Implementation Note</h4>
+
+ <p>The symbol @('acl2::abs') is distinct from the symbol
+ @('common-lisp::abs').  Their Common Lisp functions have the following
+ difference: unlike @('common-lisp::abs'), the application of @('acl2::abs') to
+ a complex number (i.e., a rational number with non-zero imaginary part) causes
+ an error.  That error avoids the introducion of floating point numbers, which
+ are not ACL2 objects, into an ACL2 session.</p>
 
  @(def abs)")
 
@@ -110071,6 +110081,7 @@ it."
 ; fix downcasing when the string contains (code-char 192) so that this
 ; character is replaced by (code-char 224).  But that patch (specifically,
 ; source function string-downcase-sbcl) had a bug, which has been fixed.
+; Thanks to Eric McCarthy for finding a bug in our initial fix.
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
@@ -110139,13 +110150,13 @@ it."
  union-theories).  Thanks to Eric Smith for suggesting this enhancement.</p>
 
  <p>The constant @(tsee *common-lisp-symbols-from-main-lisp-package*) no longer
- contains the symbols @('common-lisp::code-char'), @('common-lisp::coerce'), or
- @('common-lisp::expt'), which are thus no longer imported into the
- @('\"ACL2\"') package and hence are now distinct from the @('\"ACL2\"')
- package's symbols @(tsee code-char), @(tsee coerce), and @(tsee expt),
- respectively.  See also the item, in the first section on Bug Fixes below,
- that pertains to soundness bugs fixed by changes to the raw Lisp definitions
- of function symbols @('code-char'), @('coerce'), and @('expt') in the
+ contains the symbols @('common-lisp::abs'), @('common-lisp::code-char'),
+ @('common-lisp::coerce'), @('common-lisp::expt'), or @('common-lisp::signum'),
+ which are thus no longer imported into the @('\"ACL2\"') package and hence are
+ now distinct from the @('\"ACL2\"') package's symbols @(tsee code-char),
+ @(tsee coerce), and @(tsee expt), respectively.  See also the item, in the
+ first section on Bug Fixes below, that pertains to soundness bugs fixed by
+ changes to the raw Lisp definitions of the above-mentioned symbols in the
  @('\"ACL2\"') package.</p>
 
  <h3>New Features</h3>
@@ -110187,13 +110198,13 @@ it."
  fixes.)</i></p>
 
  <p>As noted in the section above on Changes to Existing Features, ACL2 symbols
- @(tsee code-char), @(tsee coerce), and @(tsee expt) are no longer imported
- from the @('\"COMMON-LISP\"') package.  This change enabled fixes to soundness
- bugs resulting from the unfortunate ability to generate illegal ACL2 objects
- from @(':')@(tsee program)-mode code.  The fixes involved defining ACL2
- functions @(tsee code-char), @(tsee coerce), and @(tsee expt) so that they
- cause an error on inputs that could result in non-ACL2 objects.  Here is a
- summary of the soundness bugs fixed by these changes.</p>
+ @(tsee abs), @(tsee code-char), @(tsee coerce), @(tsee expt), and @(tsee
+ signum) are no longer imported from the @('\"COMMON-LISP\"') package.  This
+ change enabled fixes to soundness bugs resulting from the unfortunate ability
+ to generate illegal ACL2 objects from @(':')@(tsee program)-mode code.  The
+ fixes involved defining the above ACL2 functions so that they cause an error
+ on inputs that could result in non-ACL2 objects.  Here is a summary of the
+ soundness bugs fixed by these changes.</p>
 
  <ul>
 
@@ -110211,8 +110222,10 @@ it."
  <li>Other examples of unsoundness due to the introduction of objects that are
  illegal for ACL2 may be found in the following @(see community-books)
  directory @('system/tests/'): @('code-char-300.lisp'),
- @('expt-irrational.lisp'), @('hint-table-bad-object.lisp'), and
- @('instructions-ckh-default-hints.lisp').</li>
+ @('expt-irrational.lisp'), @('hint-table-bad-object.lisp'),
+ @('instructions-ckh-default-hints.lisp'),
+ @('books/system/tests/abs-complex-float.lisp'), and
+ @('books/system/tests/signum-complex-float.lisp').</li>
 
  </ul>
 
@@ -116649,10 +116662,9 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  package only if it belongs to that list: any attempt to read any other symbol
  imported into the @('\"COMMON-LISP\"') package, or to produce such a symbol
  with @(tsee intern$) or @(tsee intern-in-package-of-symbol), will cause an
- error.  (But we note that for each of the following three names, there are
- distinct symbols with those names in the @('\"ACL2\"') and
- @('\"COMMON-LISP\"') packages: @('\"CODE-CHAR\"'), @('\"COERCE\"'), and
- @('\"EXPT\"').  See @(see *common-lisp-symbols-from-main-lisp-package*).)</p>
+ error.  (See @(see *common-lisp-symbols-from-main-lisp-package*) for
+ discussion of a few symbols not imported from the @('\"COMMON-LISP\"') package
+ into the @('\"ACL2\"') package.)</p>
 
  <p>The following axioms formalize properties of @('pkg-imports') discussed
  above (use @(':')@(tsee pe) to view them).</p>
@@ -142765,6 +142777,15 @@ work on <tt>(q x)</tt>.</p>
  the @(see guard) for @(tsee abs) requires its argument to be a rational (@(see
  real), in ACL2(r)) number; hence, we make the same restriction for
  @('signum').</p>
+
+ <h4>Implementation Note</h4>
+
+ <p>The symbol @('acl2::signum') is distinct from the symbol
+ @('common-lisp::signum').  Their Common Lisp functions have the following
+ difference: unlike @('common-lisp::signum'), the application of
+ @('acl2::signum') to a complex number (i.e., a rational number with non-zero
+ imaginary part) causes an error.  That error avoids the introducion of
+ floating point numbers, which are not ACL2 objects, into an ACL2 session.</p>
 
  @(def signum)")
 
