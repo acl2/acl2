@@ -1,7 +1,8 @@
-; This book, modified only as noted below, was produced by Claude and passed
-; along by Eric Smith.  It illustrates a soundness bug fixed before ACL2
-; Version 8.8.  Claude produced it, for abs, upon prompting from Eric after
-; similar fixes were already made to ACL2 for code-char, coerce and expt.
+; This book, modified only as noted below and to accommodate ACL2(r), was
+; produced by Claude and passed along by Eric Smith.  It illustrates a
+; soundness bug fixed before ACL2 Version 8.8.  Claude produced it, for abs,
+; upon prompting from Eric after similar fixes were already made to ACL2 for
+; code-char, coerce and expt.
 
 ; S-108: abs of a complex rational returns a float in raw Lisp.
 ; ACL2 Soundness Review, issue S-108.  Proves nil on ACL2 master 227bafe2d1
@@ -16,9 +17,9 @@
 
 (defun weird-nump (v)
   (declare (xargs :guard t))
-  (and (acl2-numberp v) (not (rationalp v)) (not (complex-rationalp v))))
+  (and (acl2-numberp v) (not (real/rationalp v)) (not (complex/complex-rationalp v))))
 
-(defthm not-weird ; every ACL2 number is rational or complex-rational
+(defthm not-weird ; every ACL2 number is real/rational or complex/complex-rational
   (not (weird-nump x))
   :rule-classes nil)
 
