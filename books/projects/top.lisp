@@ -99,7 +99,7 @@
 (ifdef "OS_HAS_SMTLINK"
        (include-book "smtlink/examples/ringosc")
        :endif)
-(include-book "srt/srt")
+; srt -- SKIP
 (include-book "stateman/stateman22")
 ; symbolic -- SKIP
 (include-book "taspi/taspi-xdoc")
