@@ -50,7 +50,7 @@
 ;; The proofs in die-hard-bottle-game are not robust to the reordering in the
 ;; prover induced by changing packages.
 ; dpss -- SKIP
-; equational -- SKIP
+(include-book "equational/prover")
 (include-book "execloader/top")
 (include-book "farray/farray")
 ; fields -- SKIP
