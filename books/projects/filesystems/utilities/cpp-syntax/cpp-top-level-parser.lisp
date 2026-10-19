@@ -28,6 +28,7 @@
   :returns (mv erp
                (segs c$::ident-listp)
                (new-parstate parstatep :hyp (parstatep parstate)))
+  :parents (cpp-parser)
   :short "Parse optional @('.ident') segments of a dotted C++ module name."
   :long
   (xdoc::topstring
@@ -88,6 +89,7 @@
 ;;   - Hence: list-body and namespace-body at rank 0, the other two at rank 1.
 
 (defines parse-cpp-top-level-mutual
+  :parents (cpp-parser)
   :short "Mutually recursive top-level declaration parsers."
   :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                      c$::parsize-of-unread-token
@@ -691,6 +693,7 @@
                (tu cpp-translation-unit-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
+  :parents (cpp-parser)
   :short "Parse a complete C++ translation unit."
   :long
   (xdoc::topstring
