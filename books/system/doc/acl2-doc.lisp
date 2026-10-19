@@ -110639,6 +110639,11 @@ it."
  the latter of these was prohibited.  That has been fixed; see community book
  file @('system/tests/defpkg-acl2-global-prefix.lsp').</p>
 
+ <p>Fixed a soundness bug due to an insufficient check done when using @(tsee
+ with-global-stobj).  See @(see community-books)
+ @('system/tests/global-stobjs-property-drops-reads.lisp') and 
+ @('system/tests/global-stobjs-nested-read-dropped.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

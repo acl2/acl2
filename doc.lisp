@@ -107535,6 +107535,11 @@ Bug Fixes From AI via Eric Smith
   of these was prohibited.  That has been fixed; see community book
   file [30m[47msystem/tests/defpkg-acl2-global-prefix.lsp[0m[0m.
 
+  Fixed a soundness bug due to an insufficient check done when using
+  [30m[47m[with-global-stobj][0m[0m.  See [community-books]
+  [30m[47msystem/tests/global-stobjs-property-drops-reads.lisp[0m[0m and
+  [30m[47msystem/tests/global-stobjs-nested-read-dropped.lisp[0m[0m.
+
 
 Other Bug Fixes
 
