@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+ * Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
  * License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
- * Author: Alessandro Coglio (coglio@kestrel.edu)
+ * Author: Alessandro Coglio (www.alessandrocoglio.info)
  */
 
 package edu.kestrel.acl2.aij;
@@ -833,8 +833,8 @@ public final class Acl2Symbol extends Acl2Value {
         ACL2_NUMBERP = new Acl2Symbol(Acl2PackageName.ACL2, stringAcl2Numberp);
         CONSP = new Acl2Symbol(Acl2PackageName.LISP, stringConsp);
         CHAR_CODE = new Acl2Symbol(Acl2PackageName.LISP, stringCharCode);
-        CODE_CHAR = new Acl2Symbol(Acl2PackageName.LISP, stringCodeChar);
-        COERCE = new Acl2Symbol(Acl2PackageName.LISP, stringCoerce);
+        CODE_CHAR = new Acl2Symbol(Acl2PackageName.ACL2, stringCodeChar);
+        COERCE = new Acl2Symbol(Acl2PackageName.ACL2, stringCoerce);
         INTERN_IN_PACKAGE_OF_SYMBOL =
                 new Acl2Symbol(Acl2PackageName.ACL2,
                         stringInternInPackageOfSymbol);
@@ -882,8 +882,6 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringRationalp, RATIONALP);
         initialLispMap.put(stringConsp, CONSP);
         initialLispMap.put(stringCharCode, CHAR_CODE);
-        initialLispMap.put(stringCodeChar, CODE_CHAR);
-        initialLispMap.put(stringCoerce, COERCE);
         initialLispMap.put(stringSymbolName, SYMBOL_NAME);
         initialLispMap.put(stringLessThan, LESS_THAN);
         initialLispMap.put(stringComplex, COMPLEX);
@@ -899,6 +897,8 @@ public final class Acl2Symbol extends Acl2Value {
         initialLispMap.put(stringChar, CHAR);
         // initial inner map for the "ACL2" package:
         Map<Acl2String, Acl2Symbol> initialAcl2Map = new HashMap<>();
+        initialAcl2Map.put(stringCodeChar, CODE_CHAR);
+        initialAcl2Map.put(stringCoerce, COERCE);
         initialAcl2Map.put(stringComplexRationalp, COMPLEX_RATIONALP);
         initialAcl2Map.put(stringAcl2Numberp, ACL2_NUMBERP);
         initialAcl2Map.put(stringInternInPackageOfSymbol,

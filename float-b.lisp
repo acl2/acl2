@@ -209,9 +209,9 @@
 ; defined as b^x = e^x log b" (here b is our x and x is our y), and ACL2 does
 ; not support complex floats.  Here are a couple of relevant examples in CCL.
 
-;   ? (expt -1 1/2)
+;   ? (common-lisp::expt -1 1/2)
 ;   #C(6.123234S-17 1.0S0)
-;   ? (expt -2.0 3.0)
+;   ? (common-lisp::expt -2.0 3.0)
 ;   #C(-7.999999999999998 2.9391523179536467E-15)
 ;   ?
 

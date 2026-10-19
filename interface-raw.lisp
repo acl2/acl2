@@ -986,6 +986,7 @@
   (complexp x))
 
 (defun-*1* coerce (x y)
+; Warning: Keep this in sync with the defun of coerce in acl2-fns.lisp.
   (cond
    ((equal y 'list)
     (if (stringp x)
@@ -9488,7 +9489,8 @@
            (tmp2 (ignore-errors
                    (df-signal? (eval '(/ 1.0 zero)) /))) ; division by 0
            (tmp3 (ignore-errors
-                   (df-signal? (eval '(expt 2.0 10000.0)) expt)))) ; overflow
+                   (df-signal? (eval '(common-lisp::expt 2.0 10000.0))
+                               expt)))) ; overflow
       (when tmp1 (err-fn '(df/ 0 0) tmp1))
       (when tmp2 (err-fn '(df/ 1 0) tmp2))
       (when tmp3 (err-fn '(df-expt 2 10000) tmp3))

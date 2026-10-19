@@ -36,7 +36,6 @@ if [ ! -d HTML ] ; then
 # Copy down the files we are allowed to change without rebuilding.
 
     cp ../new.html HTML/new.html
-    cp ../other-releases.html HTML/other-releases.html
     cp ../workshops.html HTML/workshops.html
     cp ../LICENSE HTML/LICENSE
 fi
