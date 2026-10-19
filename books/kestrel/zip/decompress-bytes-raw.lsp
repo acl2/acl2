@@ -23,7 +23,7 @@
    (if (not (member format '(:deflate :zlib :gzip)))
        (error "DECOMPRESS-BYTES second argument must be one of :deflate :zlib :gzip")
      (handler-case
-      (let ((input-vector (coerce byte-list '(simple-array (unsigned-byte 8) (*)))))
+      (let ((input-vector (common-lisp:coerce byte-list '(simple-array (unsigned-byte 8) (*)))))
         (let ((output-array (3bz:decompress-vector input-vector :format format)))
           (coerce output-array 'list)))
       (error (condition)
@@ -32,6 +32,6 @@
 
 ; simpler form without any error checking
 ;(defun decompress-bytes (byte-list format)
-;  (let ((input-vector (coerce byte-list '(simple-array (unsigned-byte 8) (*)))))
+;  (let ((input-vector (common-lisp:coerce byte-list '(simple-array (unsigned-byte 8) (*)))))
 ;    (let ((output-array (3bz:decompress-vector input-vector :format format)))
 ;      (coerce output-array 'list))))
