@@ -28038,10 +28038,20 @@ ld) and @(tsee include-book)"
  what happens when we @(see trace) @('f1'); discussion follows.  In the
  following example, @('f1') is applied to the df expression @('(to-df 3/2)');
  the expression @('(f1 3/2)') would be illegal for top-level evaluation
- because, as noted above, @('f1') expects a df expression, </p>
+ because, as noted above, @('f1') expects a df expression.  (The &ldquo;@('ACL2
+ Observation')&rdquo; printed below is just explaining that for the function
+ @('to-df'), only its ACL2 <i>executable-counterpart</i> function is being
+ traced.  See @(see evaluation) for explanation about executable-counterpart
+ functions, but for present purposes just think of @('ACL2_*1*_ACL2::TO-DF') as
+ the logical function for @('to-df'), just as @('ACL2_*1*_ACL2::F1') is the
+ logical function for @('f1').)</p>
 
  @({
  ACL2 !>(trace$ f1 to-df)
+
+ ACL2 Observation in TRACE$:  Skipping tracing of ACL2::TO-DF because
+ it is a macro in raw Lisp.  (But this does not stop tracing of its
+ executable-counterpart, ACL2_*1*_ACL2::TO-DF.)
  ((F1) (TO-DF))
  ACL2 !>(f1 (to-df 3/2))
  1> (ACL2_*1*_ACL2::TO-DF 3/2)
@@ -110709,6 +110719,12 @@ it."
 
  <p>Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
  instead of a guard violation, for @('(unary-df/ (df0))').</p>
+
+ <p>Fixed @(tsee trace$) so that when tracing @(tsee to-df), or any ACL2
+ function symbol that is a macro in raw Lisp, only its executable-counterpart
+ (see @(see evaluation)) is traced, in which case an @(csee Observation) is
+ printed.  This can prevent a raw Lisp error during evaluation.  Thanks to
+ Warren Hunt for reporting this bug.</p>
 
  <h3>Changes at the System Level</h3>
 

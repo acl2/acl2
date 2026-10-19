@@ -2130,7 +2130,7 @@ notation causes an error and (b) the use of ,. is not permitted."
          (let ((*hard-error-returns-nilp* nil))
            (declare (special *hard-error-returns-nilp*))
            (qfuncall hard-error
-                     'abs
+                     'signum
                      "Illegal (complex) argument to acl2::signum, ~x0"
                      (list (cons #\0 x)))))
         (t
