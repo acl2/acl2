@@ -517,7 +517,6 @@
              (and (equal dim2 dimc)
                   (equal shape2 shapec))))
   :enable (dim/shape-rename-remove-bound
-           delete*-of-delete*-fuse
            mergesort-of-cons))
 
 (defrule type-rename-ispace-vars-of-pi-curried-body
@@ -948,7 +947,6 @@
              (and (equal atom2 atomc)
                   (equal array2 arrayc))))
   :enable (atom/array-rename-remove-bound
-           delete*-of-delete*-fuse
            mergesort-of-cons))
 
 (defrule type-rename-type-vars-of-forall-curried-body

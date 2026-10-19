@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function logcount
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -52,7 +52,7 @@
            :in-theory (disable logcount-of-nonnegative-integer-quotient-of-2))))
 
 ;; todo: use this to give power-of-2p a fast body
-(defthm power-of-2p-redef
+(defthmd power-of-2p-redef
   (implies (natp x)
            (equal (power-of-2p x)
                   (equal 1 (logcount x))))

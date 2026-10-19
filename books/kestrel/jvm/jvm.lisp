@@ -24,7 +24,7 @@
 (include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 (include-book "kestrel/lists-light/update-subrange2" :dir :system)
-(include-book "kestrel/lists-light/subrange" :dir :system)
+(include-book "kestrel/lists-light/subrange-def" :dir :system)
 (include-book "kestrel/booleans/bool-fix-def" :dir :system)
 (include-book "float-to-bits")
 (local (include-book "kestrel/lists-light/nth" :dir :system))

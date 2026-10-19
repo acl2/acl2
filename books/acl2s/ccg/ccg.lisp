@@ -1893,7 +1893,7 @@
     (if (< now stop-time)
         (value (rationalize
                 (/ (- stop-time now)
-                   (coerce internal-time-units-per-second 'float))))
+                   (common-lisp::coerce internal-time-units-per-second 'float))))
       (time-er ctx))))
 
 (defun-raw time-check (stop-time ctx state)
@@ -2201,7 +2201,7 @@
   (mv-let
    (name-node-alist accg-node-lst)
    (ccg-build-accg0 names contexts)
-   (let ((accg (coerce accg-node-lst 'vector)))
+   (let ((accg (common-lisp::coerce accg-node-lst 'vector)))
      (progn
        (loop for i from 0 below (array-dimension accg 0)
            do (setf (accg-node-num (aref accg i)) i))
@@ -2603,7 +2603,7 @@ e2-e1+1.
     ;; finally, we coerce the ccms for each function from lists into vectors
     (loop for funct in functs
           do (setf (funct-ccms funct)
-                   (coerce (funct-ccms funct) 'vector)))))
+                   (common-lisp::coerce (funct-ccms funct) 'vector)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; accg annotation (ccmfs)        ;;;
@@ -4504,7 +4504,7 @@ e2-e1+1.
                                        1 0))
                          (cons #\4 (/ (- (get-internal-run-time) start-time)
                                       ;;internal-time-units-per-second
-                                      (coerce internal-time-units-per-second 'float))))
+                                      (common-lisp::coerce internal-time-units-per-second 'float))))
                    col
                    *standard-co*
                    state
@@ -4674,9 +4674,9 @@ e2-e1+1.
 (defun-raw context-array (contexts)
   ;; turns a list of lists of contexts into an array and fixes the
   ;; context-num field of each context to be its index in the array.
-  (let ((carray (coerce (loop for cs in contexts
-                              append cs)
-                        'vector)))
+  (let ((carray (common-lisp::coerce (loop for cs in contexts
+                                           append cs)
+                                     'vector)))
     (loop for i from 0 below (length carray)
           do (setf (context-num (aref carray i))
                    (list i)))
@@ -4864,9 +4864,9 @@ e2-e1+1.
   ;; the idea is that most functions require only a small subset of
   ;; the actuals to prove termination.
 
-  (let* ((na-arrays (coerce (mapcar (lambda (x y) (coerce (cons x y) 'vector))
-                                    names arglists)
-                            'vector))
+  (let* ((na-arrays (common-lisp::coerce (mapcar (lambda (x y) (common-lisp::coerce (cons x y) 'vector))
+                                                 names arglists)
+                                         'vector))
          (maxsize (loop for v across na-arrays maximize (array-dimension v 0))))
     (loop for i from 1 below maxsize
           append (loop for array across na-arrays

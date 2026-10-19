@@ -1,0 +1,69 @@
+# Emails each push to the address in the repository variable MAIL_TO (normally
+# acl2-books@googlegroups.com), replacing GitHub's push emails (retired
+# 2026-10-15).  Sends through Kestrel's SMTP server as the githubrelay
+# account, whose password is the repository secret SMTP_PASSWORD.
+name: Push email
+on:
+  push:
+    branches: ['**']
+jobs:
+  email:
+    if: github.repository == 'acl2/acl2' && github.event.commits[0] && vars.MAIL_TO
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send email
+        env:
+          SMTP_URL: smtps://smtp.kestrel.edu:465
+          SMTP_USER: githubrelay
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          FROM: githubrelay@kestrel.edu
+          TO: ${{ vars.MAIL_TO }}
+        run: |
+          # The push data lacks changed paths, so ask git.  Fetch the pushed commits
+          # and their parents (no file contents), then the rest of the commit
+          # history (commits only), which merges need for finding merge bases.
+          git init -q repo
+          git -C repo fetch -q --filter=blob:none --depth=$(( $(jq '.commits | length' "$GITHUB_EVENT_PATH") + 1 )) https://github.com/acl2/acl2 "$GITHUB_SHA"
+          git -C repo fetch -q --filter=tree:0 --unshallow https://github.com/acl2/acl2 "$GITHUB_SHA"
+          # Write each commit's "Changed paths" section to paths.txt, each line
+          # prefixed by the commit's SHA and a tab.
+          for c in $(jq -r '.commits[].id' "$GITHUB_EVENT_PATH"); do
+            if git -C repo rev-parse -q --verify "$c^2" > /dev/null; then
+              # A merge: show only where it differs from git's own automatic merge
+              # of its parents (conflict resolutions and anything else done by hand).
+              echo "  Merge commit; paths that differ from git's automatic merge:"
+              auto=$(git -C repo merge-tree --write-tree --no-messages "$c^1" "$c^2" | head -1)
+              hand=$(git -C repo diff-tree -r --name-status "$auto" "$c")
+              echo "${hand:-    none}"
+            else
+              echo "  Changed paths:"
+              git -C repo diff-tree -r --no-commit-id --name-status "$c"
+            fi | sed "s/^\([A-Z]\)\t/    \1 /; s/^/$c\t/"
+          done > paths.txt
+          jq -r --arg from "$FROM" --arg to "$TO" --rawfile paths paths.txt -f /dev/stdin "$GITHUB_EVENT_PATH" > mail.txt <<'EOF'
+          .head_commit as $h
+          | "From: \($h.author.name) <\($from)>",
+            "To: \($to)",
+            "Subject: [\(.repository.full_name)] \($h.id[0:6]): \($h.message | split("\n")[0])",
+            "Content-Type: text/plain; charset=UTF-8",
+            "",
+            "  Branch: \(.ref)",
+            "  Home:   \(.repository.html_url)",
+            (.commits[] |
+              .id as $c |
+              "  Commit: \(.id)",
+              "      \(.url)",
+              "  Author: \(.author.name) <\(.author.email)>",
+              "  Date:   \(.timestamp)",
+              "",
+              ($paths | split("\n")[] | select(startswith($c + "\t")) | ltrimstr($c + "\t")),
+              "",
+              "  Log Message:",
+              "  -----------",
+              (.message | split("\n")[] | "  \(.)"),
+              ""),
+            "Compare: \(.compare)"
+          EOF
+          curl -sS --ssl-reqd --crlf --url "$SMTP_URL" --user "$SMTP_USER:$SMTP_PASSWORD" \
+            --mail-from "$FROM" --mail-rcpt "$TO" --upload-file mail.txt

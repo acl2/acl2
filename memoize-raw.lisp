@@ -2072,8 +2072,8 @@
                              :num-clears 1
                              :max-pt-size pt-size
                              :max-mt-size mt-size
-                             :avg-pt-size (coerce pt-size 'float)
-                             :avg-mt-size (coerce mt-size 'float))
+                             :avg-pt-size (common-lisp::coerce pt-size 'float)
+                             :avg-mt-size (common-lisp::coerce mt-size 'float))
                        *memo-max-sizes*)
          (let* ((old.num-clears  (access memo-max-sizes-entry old :num-clears))
                 (old.max-pt-size (access memo-max-sizes-entry old :max-pt-size))

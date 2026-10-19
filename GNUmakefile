@@ -653,7 +653,7 @@ check-acl2-exports: check-books
 # of date with respect to books/system/doc/acl2-doc.lisp.  Consider
 # using the DOC target instead.
 doc/home-page.html: doc/home-page.lisp
-	cd doc ; rm -rf HTML ; ./create-doc 2>&1 create-doc.out
+	cd doc ; rm -rf HTML ; ./create-doc > create-doc.out 2>&1
 
 # The following will implicitly use ACL2=acl2 unless ACL2 is set.
 # Note that books/system/doc/acl2-manual.lisp ends in a call of
@@ -709,7 +709,7 @@ clean-lite:
 # except for *osaved_acl2* files.
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx* workyyy* *.lib \
 	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
-	  *.d64fsl *.dx64fsl *.lx64fsl \
+	  *.d64fsl *.dx64fsl *.lx64fsl *.da64fsl *.la64fsl \
 	  *.lx32fsl *.x86f *.sse2f *.o *.fn \
 	  TAGS TAGS-acl2-doc acl2-status.txt acl2r.lisp acl2-proclaims.lisp \
 	  .acl2rc *osaved_acl2* *.log devel-check.out TMP*
@@ -717,7 +717,7 @@ clean-lite:
 	rm -f doc/*.o doc/*#* doc/*.c doc/*.h doc/*.data doc/gazonk.* \
 	   doc/workxxx doc/workyyy doc/*.lib \
 	   doc/*.fasl doc/*.fas doc/*.sparcf doc/*.ufsl doc/*.64ufasl doc/*.ufasl doc/*.dfsl \
-	   doc/*.dxl doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl \
+	   doc/*.dxl doc/*.d64fsl doc/*.dx64fsl doc/*.lx64fsl doc/*.da64fsl doc/*.la64fsl \
 	   doc/*.lx32fsl doc/*.x86f doc/*.sse2f doc/*.o doc/*.fn \
 	   doc/*.cert doc/*.port doc/*.out \
 	   doc/*.log doc/TMP*
@@ -903,7 +903,7 @@ devel-check:
 		rm -f workxxx.devel-check devel-check.out ;\
 		echo 'SUCCESS for check-system-events' ;\
 	else \
-		echo '**FAILED** for check-new-system-events;' ;\
+		echo '**FAILED** for check-system-events;' ;\
 		echo '           output log follows:' ;\
 		cat devel-check.out ;\
 		rm -f workxxx.devel-check ;\

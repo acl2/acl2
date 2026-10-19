@@ -150,13 +150,13 @@
            (equal (bvmult size x (bvmult size k y))
                   (bvmult size k (bvmult size x y)))))
 
-(defthm bvmult-when-arg1-is-not-an-integer
+(defthm bvmult-when-arg2-is-not-an-integer
   (implies (not (integerp x))
            (equal (bvmult size x y)
                   0))
   :hints (("Goal" :in-theory (enable bvmult))))
 
-(defthm bvmult-when-arg2-is-not-an-integer
+(defthm bvmult-when-arg3-is-not-an-integer
   (implies (not (integerp y))
            (equal (bvmult size x y)
                   0))

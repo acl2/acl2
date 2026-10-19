@@ -227,3 +227,48 @@
                             (make-atom-base
                              :lit (make-base-lit-int
                                    :lit (make-int-lit :digits '(#\0)))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Type parameters.
+;;
+;; The parameter of TLambda, the variable of BindType, and the parameters
+;; of BindTFun are TypeParamExps before uniquification and TypeParams
+;; (AtomTypeParam only) afterwards.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The variable of (type *IntVec3 ...) as [impl] writes it before
+;; uniquification, from its tests/let2.remora.
+(defconst *type-binding-var-parsed*
+  #{"""{"name": "IntVec3", "tag": "TEArrayTypeParam"}"""})
+
+;; The parameter of (t-fn (&t) ...) as [impl] writes it after
+;; uniquification, from its tests/mono0.remora.
+(defconst *type-lambda-param-unique*
+  #{"""{"name": {"tag": "VName", "varName": "t",
+          "varTag": {"getTag": 146, "tag": "Tag"}},
+ "tag": "AtomTypeParam"}"""})
+
+;; The same two, each with a tag that [impl] writes only in the other mode.
+(defconst *type-binding-var-parsed-atom-type-param*
+  #{"""{"name": "IntVec3", "tag": "AtomTypeParam"}"""})
+
+(defconst *type-lambda-param-unique-te-atom-type-param*
+  #{"""{"name": {"tag": "VName", "varName": "t",
+          "varTag": {"getTag": 146, "tag": "Tag"}},
+ "tag": "TEAtomTypeParam"}"""})
+
+(test-fromJSON type-var-fromJSON *type-binding-var-parsed* (ast-mode-unchecked)
+               (make-type-var-array :name "IntVec3"))
+
+(test-fromJSON type-var-fromJSON *type-lambda-param-unique* (ast-mode-unique)
+               (make-type-var-atom :name "t_146"))
+
+(test-fromJSON-error type-var-fromJSON
+                     *type-binding-var-parsed-atom-type-param*
+                     (ast-mode-unchecked))
+
+(test-fromJSON-error type-var-fromJSON
+                     *type-lambda-param-unique-te-atom-type-param*
+                     (ast-mode-unique))

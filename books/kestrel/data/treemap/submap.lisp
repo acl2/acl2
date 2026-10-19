@@ -25,6 +25,8 @@
 (include-book "lookup-defs")
 (include-book "keys-defs")
 (include-book "size-defs")
+(include-book "values-defs")
+(include-book "rlookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -49,6 +51,8 @@
 (local (include-book "keys"))
 (local (include-book "lookup"))
 (local (include-book "size"))
+(local (include-book "values"))
+(local (include-book "rlookup"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,6 +438,19 @@
          (omap::submap (to-omap x) (to-omap y))))
 
 (add-to-ruleset to-omap-theory '(submap-becomes-omap-submap))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule subset-of-values
+  (implies (submap x y)
+           (treeset::subset (values x) (values y)))
+  :enable to-omap-theory
+  :disable from-omap-theory)
+
+(defrule subset-of-rlookup
+  (implies (submap x y)
+           (treeset::subset (rlookup val x) (rlookup val y)))
+  :enable treeset::pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -609,18 +609,13 @@
        ;; Retrieve stack pointer.
        (rsp (read-*sp proc-mode x86))
 
-       ;; Increment the stack pointer.
-       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
-       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
-       (x86 (write-*sp proc-mode new-rsp x86))
-
        ;; Read value from the stack.
        (check-alignment? (alignment-checking-enabled-p x86))
-       ((mv flg0 val x86)
+       ((mv flg val x86)
         (rme-size-opt proc-mode operand-size rsp #.*ss* :r check-alignment? x86
                       :mem-ptr? nil
                       :check-canonicity t))
-       ((when flg0) (!!ms-fresh :rme-size-opt flg))
+       ((when flg) (!!ms-fresh :rme-size-opt flg))
 
        ;; Only the low 16 bits of the popped value are kept,
        ;; because segment descriptors are only 16 bits.
@@ -629,7 +624,7 @@
        ;; but it seems the reasonable thing to do.
        (selector (n16 val))
 
-       ;; We can determine the segment register from the opcode.
+       ;; We determine the segment register from the opcode.
        (seg-reg (case opcode
                   (#x1f #.*ds*)
                   (#x07 #.*es*)
@@ -637,14 +632,40 @@
                   (#xa1 #.*fs*)
                   (#xa9 #.*gs*)))
 
-       ;; Load the selector into the segment register.
+       ;; Obtain the segment selector.
        ((mv flg descriptor x86)
         (get-segment-descriptor seg-reg selector x86))
        ((when flg)
         (b* (((when (equal flg t))
               (!!ms-fresh :get-segment-descriptor)))
           (!!fault-fresh (car flg) (cadr flg) (caddr flg))))
-       (x86 (load-segment-reg seg-reg selector descriptor x86)))
+
+       ;; Increment the stack pointer.
+       ((mv flg new-rsp) (add-to-*sp proc-mode rsp operand-size x86))
+       ((when flg) (!!fault-fresh :ss 0 :pop flg)) ;; #SS(0)
+
+       ;; It is critical that the updates to the machine state (below)
+       ;; happen after we have checked that no faults occur (above),
+       ;; because faults must restore the machine state as it was
+       ;; at the start of the instruction [Intel Volume 3 Section 7.5];
+       ;; when the checks fail above we do not need to restore anything
+       ;; because we have not changed anything in the machine state yet,
+       ;; except for the possible update of the TLB when reading memory
+       ;; (which is arguably allowed [Intel Volume 3 Section 5.10.2]),
+       ;; and except for the possible update of the 'accessed' page bits
+       ;; (which is arguably allowed because the memory has been accessed,
+       ;; and because [Intel Volume 3 Section 5.8] says that those bits,
+       ;; once set, are not cleared by the processor,
+       ;; and only software can clear them).
+
+       ;; Update the stack pointer.
+       (x86 (write-*sp proc-mode new-rsp x86))
+
+       ;; Load the selector into the segment register.
+       (x86 (load-segment-reg seg-reg selector descriptor x86))
+
+       ;; Update the instruction pointer.
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 

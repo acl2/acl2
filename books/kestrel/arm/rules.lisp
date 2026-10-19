@@ -553,10 +553,6 @@
                       (bvle 32 x (bvuminus 32 y)))))
   :hints (("Goal" :in-theory (enable ls-condition cmn-carry-elim cmn-zero-elim bvlt bvplus bvuminus acl2::bvchop-of-sum-cases))))
 
-;; AI: Signed conditions (N, V, Z).  The guard on y = 2^31 is needed because
-;; then -y does not exist: x + y >= 0 is false for every x, but
-;; (sbvle 32 (bvuminus 32 y) x) is true for every x.
-
 ;; N = V iff the true signed sum is non-negative.
 (local
  (defthmd equal-of-cmn-sign-and-cmn-overflow-helper
@@ -571,6 +567,9 @@
                                       bvplus acl2::bvchop-of-sum-cases)))))
 
 ;; Analogous to equal-of-cmp-sign-and-cmp-overflow-becomes-sbvle.
+;; AI: The check for y = 2^31 is needed because
+;; then -y does not exist: x + y >= 0 is false for every x, but
+;; (sbvle 32 (bvuminus 32 y) x) is true for every x.
 (defthm equal-of-cmn-sign-and-cmn-overflow-becomes-sbvle
   (implies (and (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y))

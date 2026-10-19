@@ -72,9 +72,36 @@
          (delete x (delete y map)))
   :enable extensionality)
 
+(defrule delete*-of-delete*
+  (equal (delete* keys1 (delete* keys2 map))
+         (delete* (set::union keys1 keys2) map))
+  :enable extensionality)
+
+(defrule delete*-of-delete
+  (equal (delete* keys (delete key map))
+         (delete key (delete* keys map)))
+  :enable extensionality)
+
+(defruled commutativity-of-delete*
+  (equal (delete* keys2 (delete* keys1 map))
+         (delete* keys1 (delete* keys2 map)))
+  :enable extensionality)
+
+(defruled delete-of-delete*
+  (equal (delete key (delete* keys map))
+         (delete* (set::insert key keys) map))
+  :enable extensionality)
+
 (defrule delete-of-update
   (equal (delete key (update key val map))
          (delete key map))
+  :enable extensionality)
+
+(defruled delete*-of-update
+  (equal (delete* keys (update key val map))
+         (if (set::in key keys)
+             (delete* keys map)
+           (update key val (delete* keys map))))
   :enable extensionality)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -14,9 +14,9 @@
 ;;; TODO: Should these be functions or macros?
 ;;; TODO: Change these to the JVM package?
 
-(include-book "kestrel/bv/slice" :dir :system)
-(include-book "kestrel/bv/getbit" :dir :system)
-(include-book "kestrel/bv/repeatbit" :dir :system)
+;(include-book "kestrel/bv/slice-def" :dir :system)
+(include-book "kestrel/bv/getbit-def" :dir :system)
+(include-book "kestrel/bv/repeatbit-def" :dir :system)
 (include-book "java-types")
 
 ;; A boolean must be stored in an int field as 0 or 1 (see 2.3.4).

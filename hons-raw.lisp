@@ -1858,7 +1858,7 @@
           ;; hl-hspace-addr-limit below -- as Gary Byers tells us (email, June
           ;; 2014) that a hash-table size is always a fixnum in 64-bit CCL.
           (hash-table-size addr-ht))
-         (cutoff  (floor (* 0.995 (coerce size 'float)))))
+         (cutoff  (floor (* 0.995 (common-lisp::coerce size 'float)))))
     (setf (hl-hspace-addr-limit hs) (- cutoff count))))
 
 #+static-hons
@@ -1887,7 +1887,7 @@
   (let* ((addr-ht  (hl-hspace-addr-ht hs))
          (size     (hash-table-size addr-ht))
          (count    (hash-table-count addr-ht)))
-    (/ (coerce count 'float) (coerce size 'float))))
+    (/ (common-lisp::coerce count 'float) (common-lisp::coerce size 'float))))
 
 (defparameter *hl-addr-limit-should-clear-memo-tables*
   ;; Not sure if this is a good idea or not.

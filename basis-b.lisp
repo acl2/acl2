@@ -2184,11 +2184,11 @@
 ;              table)
 ;     (format t "~a~%" (list ones twos more))
 ;     (format t "Unique mappings: ~5,2F%~%"
-;             (* 100 (/ (coerce ones 'float) n)))
+;             (* 100 (/ (common-lisp::coerce ones 'float) n)))
 ;     (format t "2-ary collisions: ~5,2F%~%"
-;             (* 100 (/ (coerce twos 'float) n)))
+;             (* 100 (/ (common-lisp::coerce twos 'float) n)))
 ;     (format t "3+-ary collisions: ~5,2F%~%"
-;             (* 100 (/ (coerce more 'float) n)))))
+;             (* 100 (/ (common-lisp::coerce more 'float) n)))))
 ;
 ;  (analyze-fchecksum-natural 1000)
 ;  (analyze-fchecksum-natural 10000)

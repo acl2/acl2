@@ -68,7 +68,7 @@ DO_CERT_DEPS := $(shell ../../../build/cert.pl $(FILES_FOR_CERTPL) \
            --cache Makefile-cache \
 	   --bin `pwd`/acl2-images)
 $(info Calculating pcert dependencies...)
-DO_PCERT_DEPS := $(shell ./pcert-scan.pl $(FILES_FOR_PCERTSCAN) &> Makefile-pdeps)
+DO_PCERT_DEPS := $(shell ./pcert-scan.pl $(FILES_FOR_PCERTSCAN) > Makefile-pdeps 2>&1)
 $(info Done with dependencies.)
 include Makefile-deps
 include Makefile-pdeps

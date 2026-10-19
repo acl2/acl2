@@ -223,7 +223,6 @@
 (defthm <=-of-ash-when-left-shift-linear
   (implies (and (<= 0 c) ; left shift (or no shift)
                 (<= 0 i)
-                (integerp c)
                 (integerp i))
            (<= i (ash i c)))
   :rule-classes :linear

@@ -86,7 +86,8 @@
        (x86 (!flgi-undefined :of x86))
        (x86 (!flgi-undefined :sf x86))
        (x86 (!flgi-undefined :zf x86))
-       (x86 (!flgi-undefined :pf x86)))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,7 +132,8 @@
        (x86 (!flgi-undefined :of x86))
        (x86 (!flgi-undefined :sf x86))
        (x86 (!flgi-undefined :zf x86))
-       (x86 (!flgi-undefined :pf x86)))
+       (x86 (!flgi-undefined :pf x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +303,8 @@
        (x86 (!flgi :sf (sf-spec8 al) x86))
        (x86 (!flgi :zf (zf-spec al) x86))
        (x86 (!flgi :pf (pf-spec8 al) x86))
-       (x86 (!flgi-undefined :of x86)))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -351,5 +354,6 @@
        (x86 (!flgi :sf (sf-spec8 al) x86))
        (x86 (!flgi :zf (zf-spec al) x86))
        (x86 (!flgi :pf (pf-spec8 al) x86))
-       (x86 (!flgi-undefined :of x86)))
+       (x86 (!flgi-undefined :of x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
     x86))

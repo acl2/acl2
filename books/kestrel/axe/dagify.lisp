@@ -73,7 +73,7 @@
                            ;; ;; mv-nth-of-if
                            ;; symbol-alistp ;don't induct
                            nth-when-equal-of-take-and-constant
-                           nth-when-equal-of-firstn-and-constant
+                           ;nth-when-equal-of-firstn-and-constant
                            consp-of-car-when-pseudo-dagp)))
 
 ;(local (in-theory (enable caadr-when-consecutivep-of-strip-cars)))
