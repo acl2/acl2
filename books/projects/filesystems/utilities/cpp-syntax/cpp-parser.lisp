@@ -508,7 +508,7 @@
 ;; so defret lemmas are available.
 
 (defines parse-cpp-type-spec-mutual
-  :parents (parser)
+  :parents (cpp-parser)
   ;; Hint for the auto-generated return-type flag lemma: expand the two
   ;; functions once at Goal (where the induction is set up), then disable
   ;; their definitions so they are not re-expanded in every subgoal.
@@ -1214,7 +1214,7 @@
 ;; Uses defines with two-nats-measure to handle this.
 
 (defines parse-cpp-template-param-mutual
-  :parents (parser)
+  :parents (cpp-parser)
 
   (define parse-cpp-template-param ((parstate parstatep))
     :returns (mv erp

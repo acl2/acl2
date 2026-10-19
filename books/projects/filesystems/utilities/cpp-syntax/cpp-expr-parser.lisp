@@ -447,7 +447,7 @@
 ;   parse-cpp-catch-clause-list   : rank 8
 
 (defines parse-cpp-full-mutual
-  :parents (parser)
+  :parents (cpp-parser)
 
   :hints (("Goal" :in-theory (e/d (c$::parsize-of-read-token-cond
                                    c$::parsize-of-unread-token
