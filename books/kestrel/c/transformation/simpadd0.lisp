@@ -177,16 +177,18 @@
                  :use (,gout.thm-name
                        (:instance simpadd0-expr+zero-to-expr
                                   (expr ',cexpr-new-simp)
+                                  (compst old-compst)
                                   (fenv old-fenv))
                        ,arg1-thm-name
                        (:instance expr-binary-pure-strict-errors
+                                  (compst old-compst)
                                   (op ',(c::binop-add))
                                   (arg1 ',cexpr-new-simp)
                                   (arg2 ',czero)
                                   (fenv old-fenv))
                        (:instance c::exec-expr-limit-monotone
                                   (e ',cexpr-new-simp)
-                                  (compst compst)
+                                  (compst old-compst)
                                   (fenv old-fenv)
                                   (limit (1- limit))
                                   (limit1 limit))))))
