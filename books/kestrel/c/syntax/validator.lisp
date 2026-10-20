@@ -4297,8 +4297,10 @@
        Thus, the validation of a specifier or qualifier
        returns the same results as
        the validation of a type specifier (see @(tsee valid-type-spec)).
-       For now we also skip over attributes completely;
-       see the ABNF grammar for @('specifier-qualifier-list')."))
+       We also skip over attributes here;
+       see the ABNF grammar for @('specifier-qualifier-list').
+       A @('vector_size') attribute is handled by
+       @(tsee valid-spec/qual-list)."))
     (b* (((reterr) (irr-spec/qual) nil nil nil (irr-vstate)))
       (spec/qual-case
        specqual
@@ -4380,7 +4382,15 @@
        we look at the collected type specifiers and determine the type,
        via a separate validation function.
        If there are no type specifiers, but no type has been determined,
-       it means that there were no type specifiers at all [C17:6.7.2/2]."))
+       it means that there were no type specifiers at all [C17:6.7.2/2].")
+     (xdoc::p
+      "If a specifier or qualifier is an attribute specifier
+       with a @('vector_size') attribute,
+       we apply the attribute to the type
+       obtained from the rest of the list
+       (see @(tsee type-apply-vector-size)).
+       Since the type is determined at the end of the list,
+       this works wherever the attribute appears in the list."))
     (b* (((reterr) nil (irr-type) nil (irr-vstate))
          ((when (endp specquals))
           (cond
@@ -4395,7 +4405,10 @@
          ((erp new-specqual type? tyspecs types vstate)
           (valid-spec/qual (car specquals) type? tyspecs vstate))
          ((erp new-specquals type more-types vstate)
-          (valid-spec/qual-list (cdr specquals) type? tyspecs vstate)))
+          (valid-spec/qual-list (cdr specquals) type? tyspecs vstate))
+         (type (if (spec/qual-has-vector-size-p (car specquals))
+                   (type-apply-vector-size type)
+                 type)))
       (retok (cons new-specqual new-specquals)
              type
              (set::union types more-types)
@@ -4486,7 +4499,9 @@
        in our currently approximate type system.
        We handle type specifiers similarly to @(tsee valid-spec/qual).
        In addition, we collect all the storage class specifiers
-       encountered as we go through the declaration specifiers."))
+       encountered as we go through the declaration specifiers.
+       A @('vector_size') attribute is handled by
+       @(tsee valid-decl-spec-list)."))
     (b* (((reterr) (irr-decl-spec) nil nil nil nil (irr-vstate)))
       (decl-spec-case
        declspec
@@ -4606,7 +4621,15 @@
        When we reach the end of the list,
        if a type has been determined, we return it.
        Otherwise, we use a separate function to attempt to determine it
-       from the collected type specifiers."))
+       from the collected type specifiers.")
+     (xdoc::p
+      "If a declaration specifier is an attribute specifier
+       with a @('vector_size') attribute,
+       we apply the attribute to the type
+       obtained from the rest of the list
+       (see @(tsee type-apply-vector-size)).
+       Since the type is determined at the end of the list,
+       this works wherever the attribute appears in the list."))
     (b* (((reterr) nil (irr-type) nil nil (irr-vstate))
          ((when (endp declspecs))
           (cond
@@ -4629,7 +4652,10 @@
           (valid-decl-spec (car declspecs) type? tyspecs storspecs vstate))
          ((erp new-declspecs type storspecs more-types vstate)
           (valid-decl-spec-list
-           (cdr declspecs) type? tyspecs storspecs vstate)))
+           (cdr declspecs) type? tyspecs storspecs vstate))
+         (type (if (decl-spec-has-vector-size-p (car declspecs))
+                   (type-apply-vector-size type)
+                 type)))
       (retok (cons new-declspec new-declspecs)
              type
              storspecs
@@ -5436,6 +5462,17 @@
        This resulting type is then passed to
        the function to validate the direct declarator that follows.")
      (xdoc::p
+      "The exception is a @('vector_size') attribute
+       after one of the @('*')s,
+       which we apply to the type passed as input
+       before deriving the pointer type
+       (see @(tsee type-apply-vector-size)).
+       If this declarator is nested in another one,
+       the type passed as input may already be derived
+       by the enclosing declarator,
+       but the attribute applies to the base of that type,
+       which is the same.")
+     (xdoc::p
       "We also pass the @('fundef-params-p') flag to @(tsee valid-dirdeclor).
        The reason is that, after peeling off the pointers,
        which refine the return result of the function,
@@ -5443,6 +5480,10 @@
        and we have not validated the parameters yet."))
     (b* (((reterr) (irr-declor) (irr-type) (irr-ident) nil (irr-vstate))
          ((declor declor) declor)
+         (type (if (typequal/attribspec-list-list-has-vector-size-p
+                    declor.pointers)
+                   (type-apply-vector-size type)
+                 type))
          (type (make-pointers-to declor.pointers type))
          ((erp new-dirdeclor type ident types vstate)
           (valid-dirdeclor declor.direct fundef-params-p type vstate)))
@@ -5880,6 +5921,10 @@
        not an abstract declarator."))
     (b* (((reterr) (irr-absdeclor) (irr-type) nil (irr-vstate))
          ((absdeclor absdeclor) absdeclor)
+         (type (if (typequal/attribspec-list-list-has-vector-size-p
+                    absdeclor.pointers)
+                   (type-apply-vector-size type)
+                 type))
          (type (make-pointers-to absdeclor.pointers type))
          ((erp new-direct? type types vstate)
           (valid-dirabsdeclor-option absdeclor.direct? type vstate)))
@@ -6168,6 +6213,11 @@
        We ensure that the list of storage class specifiers
        is either empty or the singleton @('register') [C17:6.7.6.3/2].")
      (xdoc::p
+      "If the attribute specifiers after the parameter declarator
+       include a @('vector_size') attribute,
+       we apply it to the type
+       (see @(tsee type-apply-vector-size)).")
+     (xdoc::p
       "We validate the parameter declarator,
        ensuring that it has an identifier if @('fundef-params-p') is @('t')
        [C17:6.9.1/5].
@@ -6191,6 +6241,9 @@
                     has storage class specifiers ~x1."
                    (param-declon-fix paramdecl)
                    (stor-spec-list-fix storspecs)))
+         (type (if (attrib-spec-list-has-vector-size-p paramdecl.attribs)
+                   (type-apply-vector-size type)
+                 type))
          ((erp new-decl type ident? more-types uid? vstate)
           (valid-param-declor paramdecl.declor type vstate))
          ((when (and fundef-params-p
@@ -6459,6 +6512,11 @@
        obtaining a type if the validation is successful.
        Then we use a separate validation function for the structure declarators,
        which also returns a possibly extended list of member names.
+       If the attribute specifiers at the end of the structure declaration
+       include a @('vector_size') attribute,
+       we apply it to the type for the last structure declarator only
+       (see @(tsee type-apply-vector-size)),
+       since GCC and Clang apply it only to that declarator.
        If there are no structure declarators,
        the structure declaration must be
        an anonymous structure or anonymous union [C17:6.7.2.1/13].")
@@ -6501,7 +6559,13 @@
                         type)))
             ((erp new-declors previous type-struni-members more-types vstate)
              (valid-struct-declor-list
-              structdeclon.declors previous type vstate)))
+              structdeclon.declors
+              previous
+              type
+              (if (attrib-spec-list-has-vector-size-p structdeclon.attribs)
+                  (type-apply-vector-size type)
+                type)
+              vstate)))
          (retok (make-struct-declon-member :extension structdeclon.extension
                                            :specquals new-specquals
                                            :declors new-declors
@@ -6662,6 +6726,7 @@
   (define valid-struct-declor-list ((structdeclors struct-declor-listp)
                                     (previous ident-listp)
                                     (type typep)
+                                    (last-type typep)
                                     (vstate vstatep))
     :guard (struct-declor-list-unambp structdeclors)
     :returns (mv (erp maybe-msgp)
@@ -6683,17 +6748,29 @@
        since that type applied to all them
        (possibly refined, possibly differently, by the structure declarators.")
      (xdoc::p
+      "The exception is the last structure declarator,
+       for which we pass @('last-type') instead.
+       This is normally the same as @('type'),
+       but it may differ due to attributes
+       (see @(tsee valid-struct-declon)).")
+     (xdoc::p
       "The @('type-struni-members') output consist
        of the names and types for the members declared by
        the structure declarator."))
     (b* (((reterr) nil nil nil nil (irr-vstate))
+         (structdeclors (struct-declor-list-fix structdeclors))
          ((when (endp structdeclors))
           (retok nil (ident-list-fix previous) nil nil (vstate-fix vstate)))
          ((erp new-structdeclor previous type-struni-member types vstate)
-          (valid-struct-declor (car structdeclors) previous type vstate))
+          (valid-struct-declor (car structdeclors)
+                               previous
+                               (if (consp (cdr structdeclors))
+                                   type
+                                 last-type)
+                               vstate))
          ((erp new-structdeclors previous type-struni-members more-types vstate)
           (valid-struct-declor-list
-           (cdr structdeclors) previous type vstate)))
+           (cdr structdeclors) previous type last-type vstate)))
       (retok (cons new-structdeclor new-structdeclors)
              previous
              (cons type-struni-member type-struni-members)
@@ -6970,10 +7047,17 @@
        the internal linkage from the previous one.")
      (xdoc::p
       "For now we ignore the optional assembler name specifier,
-       as well as any attribute specifiers."))
+       as well as any attribute specifiers,
+       except for a @('vector_size') attribute,
+       which we apply to the type passed as input
+       before validating the declarator
+       (see @(tsee type-apply-vector-size))."))
     (b* (((reterr) (irr-init-declor) nil (irr-vstate))
          (ienv (vstate->ienv vstate))
          ((init-declor initdeclor) initdeclor)
+         (type (if (attrib-spec-list-has-vector-size-p initdeclor.attribs)
+                   (type-apply-vector-size type)
+                 type))
          ((erp new-declor type ident types vstate)
           (valid-declor initdeclor.declor nil type vstate))
          ((erp typedefp linkage lifetime?)
