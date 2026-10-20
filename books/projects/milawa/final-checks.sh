@@ -4,11 +4,12 @@
 
 # This script attempts to perform the final checks on the proofs in your Proofs/
 # directory.  This is done by building a number of Lisp images, one for each
-# subdirectory of Proofs.  It must be run from the Sources directory.
+# subdirectory of Proofs.  It must be run from the milawa directory, the one
+# containing this script and milawa.lsp.
 
 # The script is sort of like a Makefile in that it will only build Lisp images
 # that do not already exist.  So, if you change the contents of the Proofs/
-# directory, you should erase all of the Lisp images in the Sources directory.
+# directory, you should erase all of the Lisp images in the milawa directory.
 
 set -e
 
@@ -26,11 +27,8 @@ EXT=$2
 
 print_generic_help ()
 {
-    echo "If the reason for this failure is not obvious, please see the instructions"
-    echo "either online at"
-    echo "  - http://www.cs.utexas.edu/users/jared/milawa/Web/checking.html"
-    echo "or, if you installed from Subversion, in the directory"
-    echo "  - Milawa/Web/checking.html"
+    echo "If the reason for this failure is not obvious, see"
+    echo "  - books/projects/milawa/README"
     echo ""
 }
 
@@ -41,7 +39,7 @@ then
     echo "Possible causes:"
     echo "  - This is not the right extension for the image you made?"
     echo "  - You have not yet run (load \"milawa.lsp\") in $LISPNAME?"
-    echo "  - You are not running final-checks.sh from the 'Sources' directory?"
+    echo "  - You are not running final-checks.sh from the 'milawa' directory?"
     echo ""
     print_generic_help
     exit 1
@@ -53,8 +51,8 @@ then
     echo ""
     echo "Possible causes:"
     echo "  - You did not download the milawa-$LISPNAME script yet?"
-    echo "  - You downloaded milawa-$LISPNAME, but it is not in the 'Sources' directory?"
-    echo "  - You are not running final-checks.sh from the 'Sources' directory?"
+    echo "  - You downloaded milawa-$LISPNAME, but it is not in the 'milawa' directory?"
+    echo "  - You are not running final-checks.sh from the 'milawa' directory?"
     echo ""
     print_generic_help
     exit 1
@@ -95,9 +93,9 @@ run_milawa ()
 	echo ""
 	echo "Possible causes:"
 	echo "  - You have not generated/downloaded the proofs for $NEXT yet?"
-	echo "  - The proofs for $NEXT are not in the Sources/Proofs/ directory?"
+	echo "  - The proofs for $NEXT are not in the Proofs/ directory?"
 	echo ""
-	pring_generic_help
+	print_generic_help
 	exit 1
     fi
 
