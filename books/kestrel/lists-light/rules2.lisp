@@ -1727,4 +1727,5 @@
                                   (equal-of-append
                                    natp
                                    ;; for speed:
-                                   <-of-+-combine-constants-2)))))
+                                   <-of-+-combine-constants-2
+                                   (:type-prescription true-listp-append))))))
