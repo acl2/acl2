@@ -2175,9 +2175,21 @@ channel state))
                      (find-d-e d-e-list filename)))))
           entry-limit)))))
      :hints
-     (("goal" :in-theory
-       (e/d (lofat-to-hifat-helper hifat-entry-count useful-d-e-list-p
-                                   lofat-to-hifat-helper-correctness-4)
+     (("goal"
+       ;; For speed, the definition of lofat-to-hifat-helper is not enabled
+       ;; here (only its induction rule is).  Instead, the :expand hint opens
+       ;; the calls that need to be opened.  With the definition enabled,
+       ;; ACL2 tried tens of thousands of times (almost always uselessly) to
+       ;; open the calls in the induction hypotheses.
+       :expand ((:free (entry-limit)
+                       (lofat-to-hifat-helper fat32$c d-e-list entry-limit))
+                (:free (d-e d-e-list2 entry-limit)
+                       (lofat-to-hifat-helper fat32$c (cons d-e d-e-list2)
+                                              entry-limit)))
+       :in-theory
+       (e/d ((:induction lofat-to-hifat-helper)
+             hifat-entry-count useful-d-e-list-p
+             lofat-to-hifat-helper-correctness-4)
             ((:rewrite m1-file-alist-p-of-cdr-when-m1-file-alist-p)
              (:rewrite nth-of-effective-fat)
              (:definition assoc-equal)
