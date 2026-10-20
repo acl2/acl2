@@ -1987,3 +1987,28 @@
   ///
 
   (verify-guards type-array-change-kind-at-depth))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-change-base ((type typep) (new-base typep))
+  :returns (new-type typep)
+  :short "Change the base of a type."
+  :long
+  (xdoc::topstring-p
+   "We follow the declarator-derived spine
+    (see @(tsee type-array-change-kind-at-depth)):
+    the element type of an array,
+    the target type of a pointer, or the return type of a function.
+    The first type along the spine that is none of these is the base,
+    which we replace with @('new-base'),
+    leaving the derived types around it unchanged.")
+  (type-case
+   type
+   :array (change-type-array type :of (type-change-base type.of new-base))
+   :pointer (change-type-pointer type :to (type-change-base type.to new-base))
+   :function (change-type-function
+              type
+              :ret (type-change-base type.ret new-base))
+   :otherwise (type-fix new-base))
+  :measure (type-count type)
+  :verify-guards :after-returns)
