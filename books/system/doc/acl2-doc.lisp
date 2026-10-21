@@ -110644,6 +110644,9 @@ it."
  @('system/tests/global-stobjs-property-drops-reads.lisp') and 
  @('system/tests/global-stobjs-nested-read-dropped.lisp').</p>
 
+ <p>Applied a fix from Claude for a bug in @(':bdd') @(see hints).  See for
+ example @(see community-book) @('system/tests/bdd-literal-hyp.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

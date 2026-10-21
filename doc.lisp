@@ -107540,6 +107540,9 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/global-stobjs-property-drops-reads.lisp[0m[0m and
   [30m[47msystem/tests/global-stobjs-nested-read-dropped.lisp[0m[0m.
 
+  Applied a fix from Claude for a bug in [30m[47m:bdd[0m[0m [hints].  See for example
+  [community-book] [30m[47msystem/tests/bdd-literal-hyp.lsp[0m[0m.
+
 
 Other Bug Fixes
 
