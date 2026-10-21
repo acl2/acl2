@@ -1629,7 +1629,7 @@
      i.e. not just starting from the computation states
      at the beginning of the loop.
      What we need is the fact that the executions of the tests and bodies
-     are equivalent for every possible starting computation state,
+     are equivalent for every possible starting computation states,
      not just the specific ones used in the theorem we want to prove.
      Indeed, in the bottom-up proof of theorems in our transformations,
      the equivalence theorems proved for tests and bodies
