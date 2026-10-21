@@ -1200,6 +1200,9 @@
      @('auto'), and
      @('register').")
    (xdoc::p
+    "The @('uscore') flag keeps track of the keyword:
+     @('t') for @('_Thread_local'); @('nil') for @('thread_local').")
+   (xdoc::p
     "We also include the @('__thread') storage class specifier
      as a GCC extension and variant of @('_Thread_local'). See "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html"
@@ -1209,7 +1212,7 @@
   (:typedef ())
   (:extern ())
   (:static ())
-  (:thread-local ())
+  (:thread-local ((uscore bool)))
   (:auto ())
   (:register ())
   (:thread ()) ; GCC/Clang

@@ -1209,7 +1209,7 @@
    "See @(tsee check-declon-standalone-tag).
     GCC does not treat a declaration as a standalone tag declaration
     if it has storage class specifiers
-    (other than @('_Thread_local') and @('__thread')),
+    (other than @('_Thread_local'), @('thread_local'), and @('__thread')),
     type qualifiers,
     or alignment specifiers.")
   (b* (((when (endp declspecs)) t)

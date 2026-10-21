@@ -1681,7 +1681,9 @@
    :typedef (print-astring "typedef" pstate)
    :extern (print-astring "extern" pstate)
    :static (print-astring "static" pstate)
-   :thread-local (print-astring "_Thread_local" pstate)
+   :thread-local (if stor-spec.uscore
+                     (print-astring "_Thread_local" pstate)
+                   (print-astring "thread_local" pstate))
    :auto (print-astring "auto" pstate)
    :register (print-astring "register" pstate)
    :thread (print-astring "__thread" pstate))

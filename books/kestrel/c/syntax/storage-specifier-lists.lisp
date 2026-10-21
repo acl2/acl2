@@ -54,9 +54,11 @@
 (define stor-spec-list-thread-p ((storspecs stor-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
-          has the form @('_Thread_local') or @('__thread')."
+          has the form @('_Thread_local'), @('thread_local'), or @('__thread')."
   (or (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread-local)))
+             (list (stor-spec-thread-local t)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread-local nil)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-thread)))))
 
@@ -84,12 +86,19 @@
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
           has the form @('extern _Thread_local') or @('_Thread_local extern'),
-          including the @('__thread') variant of @('_Thread_local')."
+          including the @('thread_local') and @('__thread') variants
+          of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
-                   (stor-spec-thread-local)))
+                   (stor-spec-thread-local t)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread-local)
+             (list (stor-spec-thread-local t)
+                   (stor-spec-extern)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-extern)
+                   (stor-spec-thread-local nil)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread-local nil)
                    (stor-spec-extern)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
@@ -104,12 +113,19 @@
   :returns (yes/no booleanp)
   :short "Check if a list of storage class specifiers
           has the form @('static _Thread_local') or @('_Thread_local static'),
-          including the @('__thread') variant of @('_Thread_local')."
+          including the @('thread_local') and @('__thread') variants
+          of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)
-                   (stor-spec-thread-local)))
+                   (stor-spec-thread-local t)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread-local)
+             (list (stor-spec-thread-local t)
+                   (stor-spec-static)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-static)
+                   (stor-spec-thread-local nil)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-thread-local nil)
                    (stor-spec-static)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)

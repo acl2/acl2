@@ -380,11 +380,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "All storage class specifiers consist of single keywords."))
+    "All storage class specifiers consist of single keywords.")
+   (xdoc::p
+    "Note that @('thread_local') is a keyword only in C23,
+     and @('__thread') is a keyword only if GCC/Clang extensions are supported:
+     @(tsee lex-identifier/keyword) checks the dialect of the parser state.
+     So the comparison here with those keywords
+     will always fail if the dialect does not support them,
+     because in that case they would be identifier tokens,
+     not keyword tokens."))
   (or (token-keywordp token? "typedef")
       (token-keywordp token? "extern")
       (token-keywordp token? "static")
       (token-keywordp token? "_Thread_local")
+      (token-keywordp token? "thread_local")
       (token-keywordp token? "__thread")
       (token-keywordp token? "auto")
       (token-keywordp token? "register"))
@@ -405,7 +414,8 @@
   (cond ((token-keywordp token "typedef") (stor-spec-typedef))
         ((token-keywordp token "extern") (stor-spec-extern))
         ((token-keywordp token "static") (stor-spec-static))
-        ((token-keywordp token "_Thread_local") (stor-spec-thread-local))
+        ((token-keywordp token "_Thread_local") (stor-spec-thread-local t))
+        ((token-keywordp token "thread_local") (stor-spec-thread-local nil))
         ((token-keywordp token "__thread") (stor-spec-thread))
         ((token-keywordp token "auto") (stor-spec-auto))
         ((token-keywordp token "register") (stor-spec-register))

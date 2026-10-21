@@ -719,6 +719,15 @@ int bar (void);
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
+ "thread_local int x;
+")
+
+(test-valid
+ "thread_local int x;
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-valid-fail
  "__thread int x;
 ")
 
