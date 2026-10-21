@@ -56,9 +56,9 @@
   :short "Check if a list of storage class specifiers
           has the form @('_Thread_local') or @('__thread')."
   (or (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread nil)))
+             (list (stor-spec-thread-local)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread t)))))
+             (list (stor-spec-thread)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,15 +87,15 @@
           including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
-                   (stor-spec-thread nil)))
+                   (stor-spec-thread-local)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread nil)
+             (list (stor-spec-thread-local)
                    (stor-spec-extern)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-extern)
-                   (stor-spec-thread t)))
+                   (stor-spec-thread)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread t)
+             (list (stor-spec-thread)
                    (stor-spec-extern)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,13 +107,13 @@
           including the @('__thread') variant of @('_Thread_local')."
   (or (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)
-                   (stor-spec-thread nil)))
+                   (stor-spec-thread-local)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread nil)
+             (list (stor-spec-thread-local)
                    (stor-spec-static)))
       (equal (stor-spec-list-fix storspecs)
              (list (stor-spec-static)
-                   (stor-spec-thread t)))
+                   (stor-spec-thread)))
       (equal (stor-spec-list-fix storspecs)
-             (list (stor-spec-thread t)
+             (list (stor-spec-thread)
                    (stor-spec-static)))))

@@ -1217,7 +1217,7 @@
        ((when (decl-spec-case declspec '(:typequal :align))) nil)
        ((when (and (decl-spec-case declspec :stoclass)
                    (not (stor-spec-case (decl-spec-stoclass->spec declspec)
-                                        :thread))))
+                                        '(:thread-local :thread)))))
         nil))
     (decl-spec-list-standalone-tag-gcc-okp (cdr declspecs))))
 

@@ -1204,13 +1204,15 @@
      as a GCC extension and variant of @('_Thread_local'). See "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Thread-Local.html"
                  "``Thread-Local Storage")
-    " in the GCC documentation."))
+    " in the GCC documentation.
+     Clang also supports this extension."))
   (:typedef ())
   (:extern ())
   (:static ())
-  (:thread ((local bool)))
+  (:thread-local ())
   (:auto ())
   (:register ())
+  (:thread ()) ; GCC/Clang
   :pred stor-specp
   :layout :fulltree)
 
