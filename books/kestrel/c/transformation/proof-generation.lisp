@@ -2654,12 +2654,12 @@
                                                                 old-fenv
                                                                 new-fenv
                                                                 ',gin.vartys)))
-                  (new-compst (mv-nth 0 (while-test-hyp-witness ',old-test
+                  (new-compst (mv-nth 1 (while-test-hyp-witness ',old-test
                                                                 ',new-test
                                                                 old-fenv
                                                                 new-fenv
                                                                 ',gin.vartys)))
-                  (limit (mv-nth 1 (while-test-hyp-witness ',old-test
+                  (limit (mv-nth 2 (while-test-hyp-witness ',old-test
                                                            ',new-test
                                                            old-fenv
                                                            new-fenv
@@ -2672,13 +2672,13 @@
                                                                 new-fenv
                                                                 ',types
                                                                 ',gin.vartys)))
-                  (new-compst (mv-nth 0 (while-body-hyp-witness ',old-body
+                  (new-compst (mv-nth 1 (while-body-hyp-witness ',old-body
                                                                 ',new-body
                                                                 old-fenv
                                                                 new-fenv
                                                                 ',types
                                                                 ',gin.vartys)))
-                  (limit (mv-nth 1 (while-body-hyp-witness ',old-body
+                  (limit (mv-nth 2 (while-body-hyp-witness ',old-body
                                                            ',new-body
                                                            old-fenv
                                                            new-fenv

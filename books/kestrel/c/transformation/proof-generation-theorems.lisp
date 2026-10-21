@@ -1642,11 +1642,14 @@
      whose names indicate that they are used as hypotheses,
      in the theorem we prove about loops.
      The predicate for the test asserts,
-     for all possible computation states,
+     for all possible computation states and limits,
      the equivalence of the tests;
      the predicate for the body asserts,
      for all possible computation states and limits,
      the equivalence of the bodies.
+     Like the theorems in @(see exec-congruence-theorems),
+     the predicates use two initial computation states
+     hypothesized to be equal.
      Since, in general, our generated theorems include hypotheses
      about certain variables in the computation state with certain types,
      we parameterize the predicates over a map from identifiers to types,
@@ -1682,9 +1685,6 @@
      applied to a @('while') loop,
      which also uses two initial computation states
      hypothesized to be equal.
-     (Only the quantified predicates
-     @('while-test-hyp') and @('while-body-hyp')
-     use a single computation state.)
      This does not include the conclusion about
      the variables in the computation state with certain types,
      because we can just use the rule @('stmt-compustate-vars') for that.
@@ -1701,11 +1701,12 @@
    (xdoc::p
     "The handling of @('do-while') loops is analogous to
      the handling of @('while') loops, explained above.
-     (Currently @('dowhile-induct') and
-     the theorem about @(tsee c::exec-stmt-dowhile)
+     (Currently @('dowhile-induct'),
+     the quantified predicates @('dowhile-body-hyp') and @('dowhile-test-hyp'),
+     and the theorem about @(tsee c::exec-stmt-dowhile)
      still use a single computation state,
      but we plan to generalize them to two computation states,
-     like @('while-induct') and the theorem about @(tsee c::exec-stmt-while).)
+     like their @('while') counterparts.)
      There are a few more complications which just come from the fact that
      we are more accurately modeling the execution of @('do-while') loop
      to reflect the fact that both the loops and their bodies are blocks;
@@ -1772,15 +1773,17 @@
                     (1- limit))))
 
   (defund-sk while-test-hyp (old-test new-test old-fenv new-fenv vartys)
-    (forall (compst limit)
+    (forall (old-compst new-compst limit)
             (b* (((mv old-test-eval old-test-compst)
-                  (c::exec-expr old-test compst old-fenv limit))
+                  (c::exec-expr old-test old-compst old-fenv limit))
                  ((mv new-test-eval new-test-compst)
-                  (c::exec-expr new-test compst new-fenv limit))
+                  (c::exec-expr new-test new-compst new-fenv limit))
                  (old-test-val (c::expr-value->value old-test-eval))
                  (new-test-val (c::expr-value->value new-test-eval)))
-              (implies (and (> (c::compustate-frames-number compst) 0)
-                            (c::compustate-has-vars-with-types-p vartys compst)
+              (implies (and (equal old-compst new-compst)
+                            (> (c::compustate-frames-number old-compst) 0)
+                            (c::compustate-has-vars-with-types-p
+                             vartys old-compst)
                             (not (c::errorp old-test-eval))
                             old-test-eval)
                        (and (not (c::errorp new-test-eval))
@@ -1791,13 +1794,15 @@
                              (c::type-of-value old-test-val)))))))
 
   (defund-sk while-body-hyp (old-body new-body old-fenv new-fenv types vartys)
-    (forall (compst limit)
+    (forall (old-compst new-compst limit)
             (b* (((mv old-body-sval old-body-compst)
-                  (c::exec-stmt old-body compst old-fenv limit))
+                  (c::exec-stmt old-body old-compst old-fenv limit))
                  ((mv new-body-sval new-body-compst)
-                  (c::exec-stmt new-body compst new-fenv limit)))
-              (implies (and (> (c::compustate-frames-number compst) 0)
-                            (c::compustate-has-vars-with-types-p vartys compst)
+                  (c::exec-stmt new-body new-compst new-fenv limit)))
+              (implies (and (equal old-compst new-compst)
+                            (> (c::compustate-frames-number old-compst) 0)
+                            (c::compustate-has-vars-with-types-p
+                             vartys old-compst)
                             (not (c::errorp old-body-sval)))
                        (and (not (c::errorp new-body-sval))
                             (equal old-body-sval new-body-sval)
@@ -1842,13 +1847,17 @@
              c::value-kind-not-array-when-value-integerp
              expr-compustate-vars-multi)
     :hints ('(:use ((:instance while-test-hyp-necc
-                               (compst old-compst)
                                (limit (1- limit)))
                     (:instance while-body-hyp-necc
-                               (compst
+                               (old-compst
                                 (mv-nth 1 (c::exec-expr old-test
                                                         old-compst
                                                         old-fenv
+                                                        (1- limit))))
+                               (new-compst
+                                (mv-nth 1 (c::exec-expr new-test
+                                                        new-compst
+                                                        new-fenv
                                                         (1- limit))))
                                (limit (1- limit)))))))
 
