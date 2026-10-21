@@ -2786,41 +2786,47 @@
                         stmt-compustate-vars)
            :use ((:instance
                   ,body-thm-name
-                  (old-compst (mv-nth 0 (dowhile-body-hyp-witness ',old-body
-                                                                  ',new-body
-                                                                  old-fenv
-                                                                  new-fenv
-                                                                  ',types
-                                                                  ',gin.vartys)))
-                  (new-compst (mv-nth 0 (dowhile-body-hyp-witness ',old-body
-                                                                  ',new-body
-                                                                  old-fenv
-                                                                  new-fenv
-                                                                  ',types
-                                                                  ',gin.vartys)))
-                  (limit (mv-nth 1 (dowhile-body-hyp-witness ',old-body
-                                                             ',new-body
-                                                             old-fenv
-                                                             new-fenv
-                                                             ',types
-                                                             ',gin.vartys))))
+                  (old-compst
+                   (mv-nth 0 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys)))
+                  (new-compst
+                   (mv-nth 1 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys)))
+                  (limit
+                   (mv-nth 2 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys))))
                  (:instance
                   ,test-thm-name
-                  (old-compst (mv-nth 0 (dowhile-test-hyp-witness ',old-test
-                                                                  ',new-test
-                                                                  old-fenv
-                                                                  new-fenv
-                                                                  ',gin.vartys)))
-                  (new-compst (mv-nth 0 (dowhile-test-hyp-witness ',old-test
-                                                                  ',new-test
-                                                                  old-fenv
-                                                                  new-fenv
-                                                                  ',gin.vartys)))
-                  (limit (mv-nth 1 (dowhile-test-hyp-witness ',old-test
-                                                             ',new-test
-                                                             old-fenv
-                                                             new-fenv
-                                                             ',gin.vartys))))
+                  (old-compst
+                   (mv-nth 0 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys)))
+                  (new-compst
+                   (mv-nth 1 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys)))
+                  (limit
+                   (mv-nth 2 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys))))
                  (:instance stmt-dowhile-theorem
                             (old-body ',old-body)
                             (new-body ',new-body)

@@ -1701,12 +1701,6 @@
    (xdoc::p
     "The handling of @('do-while') loops is analogous to
      the handling of @('while') loops, explained above.
-     (Currently @('dowhile-induct'),
-     the quantified predicates @('dowhile-body-hyp') and @('dowhile-test-hyp'),
-     and the theorem about @(tsee c::exec-stmt-dowhile)
-     still use a single computation state,
-     but we plan to generalize them to two computation states,
-     like their @('while') counterparts.)
      There are a few more complications which just come from the fact that
      we are more accurately modeling the execution of @('do-while') loop
      to reflect the fact that both the loops and their bodies are blocks;
@@ -1895,33 +1889,35 @@
                           new-test
                           old-fenv
                           new-fenv
-                          compst
+                          old-compst
+                          new-compst
                           limit)
     (declare (xargs :measure (nfix limit)
                     :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
     (b* (((when (zp limit)) nil)
-         (compst (c::enter-scope compst))
+         ((unless (equal old-compst new-compst)) nil)
+         (old-compst (c::enter-scope old-compst))
+         (new-compst (c::enter-scope new-compst))
          ((mv old-sval old-compst)
-          (c::exec-stmt old-body compst old-fenv (1- limit)))
+          (c::exec-stmt old-body old-compst old-fenv (1- limit)))
          ((when (c::errorp old-sval)) nil)
          ((mv new-sval new-compst)
-          (c::exec-stmt new-body compst new-fenv (1- limit)))
+          (c::exec-stmt new-body new-compst new-fenv (1- limit)))
          ((when (c::errorp new-sval)) nil)
          ((when (c::stmt-value-case old-sval :return)) nil)
          ((when (c::stmt-value-case new-sval :return)) nil)
          ((unless (equal old-compst new-compst)) nil)
-         (compst old-compst)
-         (compst (c::exit-scope compst))
+         (old-compst (c::exit-scope old-compst))
+         (new-compst (c::exit-scope new-compst))
          ((mv old-test-eval old-compst)
-          (c::exec-expr old-test compst old-fenv (1- limit)))
+          (c::exec-expr old-test old-compst old-fenv (1- limit)))
          ((when (c::errorp old-test-eval)) nil)
          ((unless old-test-eval) nil)
          ((mv new-test-eval new-compst)
-          (c::exec-expr new-test compst new-fenv (1- limit)))
+          (c::exec-expr new-test new-compst new-fenv (1- limit)))
          ((when (c::errorp new-test-eval)) nil)
          ((unless new-test-eval) nil)
          ((unless (equal old-compst new-compst)) nil)
-         (compst old-compst)
          (old-test-val (c::expr-value->value old-test-eval))
          ((unless (c::type-nonchar-integerp (c::type-of-value old-test-val)))
           nil)
@@ -1941,17 +1937,20 @@
                       new-test
                       old-fenv
                       new-fenv
-                      compst
+                      old-compst
+                      new-compst
                       (1- limit))))
 
   (defund-sk dowhile-body-hyp (old-body new-body old-fenv new-fenv types vartys)
-    (forall (compst limit)
+    (forall (old-compst new-compst limit)
             (b* (((mv old-body-sval old-body-compst)
-                  (c::exec-stmt old-body compst old-fenv limit))
+                  (c::exec-stmt old-body old-compst old-fenv limit))
                  ((mv new-body-sval new-body-compst)
-                  (c::exec-stmt new-body compst new-fenv limit)))
-              (implies (and (> (c::compustate-frames-number compst) 0)
-                            (c::compustate-has-vars-with-types-p vartys compst)
+                  (c::exec-stmt new-body new-compst new-fenv limit)))
+              (implies (and (equal old-compst new-compst)
+                            (> (c::compustate-frames-number old-compst) 0)
+                            (c::compustate-has-vars-with-types-p
+                             vartys old-compst)
                             (not (c::errorp old-body-sval)))
                        (and (not (c::errorp new-body-sval))
                             (equal old-body-sval new-body-sval)
@@ -1963,15 +1962,17 @@
                              vartys old-body-compst))))))
 
   (defund-sk dowhile-test-hyp (old-test new-test old-fenv new-fenv vartys)
-    (forall (compst limit)
+    (forall (old-compst new-compst limit)
             (b* (((mv old-test-eval old-test-compst)
-                  (c::exec-expr old-test compst old-fenv limit))
+                  (c::exec-expr old-test old-compst old-fenv limit))
                  ((mv new-test-eval new-test-compst)
-                  (c::exec-expr new-test compst new-fenv limit))
+                  (c::exec-expr new-test new-compst new-fenv limit))
                  (old-test-val (c::expr-value->value old-test-eval))
                  (new-test-val (c::expr-value->value new-test-eval)))
-              (implies (and (> (c::compustate-frames-number compst) 0)
-                            (c::compustate-has-vars-with-types-p vartys compst)
+              (implies (and (equal old-compst new-compst)
+                            (> (c::compustate-frames-number old-compst) 0)
+                            (c::compustate-has-vars-with-types-p
+                             vartys old-compst)
                             (not (c::errorp old-test-eval))
                             old-test-eval)
                        (and (not (c::errorp new-test-eval))
@@ -1982,12 +1983,13 @@
                              (c::type-of-value old-test-val)))))))
 
   (defruled stmt-dowhile-loop-theorem
-    (b* (((mv old-sval old-compst)
-          (c::exec-stmt-dowhile old-body old-test compst old-fenv limit))
-         ((mv new-sval new-compst)
-          (c::exec-stmt-dowhile new-body new-test compst new-fenv limit)))
-      (implies (and (> (c::compustate-frames-number compst) 0)
-                    (c::compustate-has-vars-with-types-p vartys compst)
+    (b* (((mv old-sval old-compst1)
+          (c::exec-stmt-dowhile old-body old-test old-compst old-fenv limit))
+         ((mv new-sval new-compst1)
+          (c::exec-stmt-dowhile new-body new-test new-compst new-fenv limit)))
+      (implies (and (equal old-compst new-compst)
+                    (> (c::compustate-frames-number old-compst) 0)
+                    (c::compustate-has-vars-with-types-p vartys old-compst)
                     (dowhile-body-hyp
                      old-body new-body old-fenv new-fenv types vartys)
                     (dowhile-test-hyp
@@ -1995,17 +1997,18 @@
                     (not (c::errorp old-sval)))
                (and (not (c::errorp new-sval))
                     (equal old-sval new-sval)
-                    (equal old-compst new-compst)
+                    (equal old-compst1 new-compst1)
                     (set::in (c::type-option-of-stmt-value old-sval)
                              (set::insert nil types))
-                    (c::compustate-has-vars-with-types-p vartys old-compst))))
+                    (c::compustate-has-vars-with-types-p vartys old-compst1))))
     :induct (dowhile-induct old-body
                             new-body
                             old-test
                             new-test
                             old-fenv
                             new-fenv
-                            compst
+                            old-compst
+                            new-compst
                             limit)
     :enable (dowhile-induct
              c::exec-stmt-dowhile
@@ -2015,15 +2018,24 @@
              c::compustate-has-vars-with-types-p-of-exit-exec-enter
              expr-compustate-vars-multi)
     :hints ('(:use ((:instance dowhile-body-hyp-necc
-                               (compst (c::enter-scope compst))
+                               (old-compst (c::enter-scope old-compst))
+                               (new-compst (c::enter-scope new-compst))
                                (limit (1- limit)))
                     (:instance dowhile-test-hyp-necc
-                               (compst
+                               (old-compst
                                 (c::exit-scope
-                                 (mv-nth 1 (c::exec-stmt old-body
-                                                         (c::enter-scope compst)
-                                                         old-fenv
-                                                         (1- limit)))))
+                                 (mv-nth 1 (c::exec-stmt
+                                            old-body
+                                            (c::enter-scope old-compst)
+                                            old-fenv
+                                            (1- limit)))))
+                               (new-compst
+                                (c::exit-scope
+                                 (mv-nth 1 (c::exec-stmt
+                                            new-body
+                                            (c::enter-scope new-compst)
+                                            new-fenv
+                                            (1- limit)))))
                                (limit (1- limit)))))))
 
   (defruled stmt-dowhile-theorem
@@ -2052,5 +2064,6 @@
              (c::exec-stmt
               (c::stmt-dowhile new-body new-test) new-compst new-fenv limit))
     :use (:instance stmt-dowhile-loop-theorem
-                    (compst (c::enter-scope old-compst))
+                    (old-compst (c::enter-scope old-compst))
+                    (new-compst (c::enter-scope new-compst))
                     (limit (1- limit)))))
