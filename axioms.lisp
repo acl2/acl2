@@ -53,25 +53,23 @@
 ; Then in steps (1) and (2) the body of this definition is <expression_1>, but
 ; in step (3) it is <expression_2>.
 
-; If a symbol described in CLTL is axiomatized here, then we give it
-; exactly the same semantics as it has in CLTL, under restrictions for
-; which we check.  (Actually, this is currently a lie about DEFUN,
-; DEFMACRO, and PROGN, but we will provide someday a check that
-; those are only used in files in ways such that their ACL2 and Common
-; Lisp meanings are perfectly consistent.)  Thus, when we talk about
-; +, we really mean the Common Lisp +.  However, our + does not handle
-; floating point numbers, so there is a guard on + that checks that
+; If a symbol described in CLTL is axiomatized here, then we give it exactly
+; the same semantics as it has in CLTL, under restrictions for which we check.
+; (Actually, this is currently a lie about DEFUN, DEFMACRO, and PROGN, but we
+; will provide someday a check that those are only used in files in ways such
+; that their ACL2 and Common Lisp meanings are perfectly consistent.)  Thus,
+; when we talk about +, we really mean the Common Lisp +.  However, our + does
+; not handle floating point numbers, so there is a guard on + that checks that
 ; its args are rationals.  The symbols in the list
-; acl2::*common-lisp-symbols-from-main-lisp-package* are the symbols
-; that we take as having a meaning in Common Lisp.  If a user wishes
-; access to these in a package, then he can use the permanent value of
-; the global *common-lisp-symbols-from-main-lisp-package* as an import
-; list for defpkg.
+; acl2::*common-lisp-symbols-from-main-lisp-package* are the symbols in the
+; "ACL2" package that we take as having a meaning in Common Lisp.  Users who
+; wish access to these in a package can use the permanent value of the global
+; *common-lisp-symbols-from-main-lisp-package* as an import list for defpkg
+; (but also see :DOC defpkg).
 
-; If we use a symbol that has a $ suffix, it is a symbol we have
-; defined with a meaning that it is similar to the Common Lisp symbol
-; without the $ suffix, but different in some way, e.g. princ$ takes a
-; state arg and returns a state.
+; If we use a symbol that has a $ suffix, it is a symbol we have defined with a
+; meaning that it is similar to the Common Lisp symbol without the $ suffix,
+; but different in some way, e.g. princ$ takes a state arg and returns a state.
 
 (in-package "ACL2")
 
@@ -92,9 +90,12 @@
 
 (acl2::defconst acl2::*common-lisp-symbols-from-main-lisp-package*
 
-; From the info page for dpANS, node "Symbols in the COMMON-LISP Package."
-; The comments are from that page as well, though we have inserted "; "
-; in front of each.
+; From the info page for dpANS, node "Symbols in the COMMON-LISP Package."  The
+; comments are from that page as well, though we have inserted "; " in front of
+; each.  EXCEPTIONS: We exclude abs, code-char, coerce, expt, and signum as
+; discussed in source file acl2-fns.lisp.  So a better name for this constant
+; might be
+; acl2::*common-lisp-symbols-from-main-lisp-package-imported-into-acl2-packge*.
 
  '(
 
@@ -134,7 +135,8 @@
   *print-base*                 >
   *print-case*                 >=
   *print-circle*               abort
-  *print-escape*               abs
+; EXCLUDED: abs (see acl2-fns.lisp)
+  *print-escape*
   *print-gensym*               acons
   *print-length*               acos
   *print-level*                acosh
@@ -189,8 +191,10 @@
   cddar              clear-output                 cos
   cdddar             close                        cosh
   cddddr             clrhash                      count
-  cdddr              code-char                    count-if
-  cddr               coerce                       count-if-not
+; EXCLUDED: code-char (see acl2-fns.lisp)
+  cdddr                                           count-if
+; EXCLUDED: coerce (see acl2-fns.lisp)
+  cddr                                            count-if-not
   cdr                compilation-speed            ctypecase
   ceiling            compile                      debug
   cell-error         compile-file                 decf
@@ -239,7 +243,8 @@
   disassemble                    every
   division-by-zero               exp
   do                             export
-  do*                            expt
+; EXCLUDED: expt (see acl2-fns.lisp)
+  do*
   do-all-symbols                 extended-char
   do-external-symbols            fboundp
   do-symbols                     fceiling
@@ -514,7 +519,8 @@
   short-site-name               speed
   signal                        sqrt
   signed-byte                   stable-sort
-  signum                        standard
+; EXCLUDED: signum (see acl2-fns.lisp)
+                                standard
   simple-array                  standard-char
   simple-base-string            standard-char-p
 
@@ -4015,13 +4021,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; (disassemble (defun f (x) (declare (type double-float x)) (df+ 5 x)))
 
-; We use (float x 0.0D0) here, rather than (coerce x 'double-float), since we
-; rely on the float-rational identity discussed in a comment in
-; constrained-to-df-idempotent.
+; We use (float x 0.0D0) here, rather than (common-lisp::coerce x
+; 'double-float), since we rely on the float-rational identity discussed in a
+; comment in constrained-to-df-idempotent.
 
-; It is however tempting to avoid (float x 0.0D0) in favor of (coerce x
-; 'double-float), since the latter seems to have a clearer specification than
-; the former.
+; It is however tempting to avoid (float x 0.0D0) in favor of
+; (common-lisp::coerce x 'double-float), since the latter seems to have a
+; clearer specification than the former.
 
 ; The CL HyperSpec says this about coerce at
 ; http://www.lispworks.com/documentation/HyperSpec/Body/f_coerce.htm#coerce
@@ -7182,6 +7188,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; in a non-ACL2 object.
 
 (defun abs (x)
+; Warning: Keep this in sync with the raw Lisp defun of abs in acl2-fns.lisp.
   (declare (xargs :guard (real/rationalp x)
 ; Logic mode is needed because abs is called in the event introducing
 ; constrained-binary-df+.
@@ -7189,6 +7196,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (if (minusp x) (- x) x))
 
 (defun signum (x)
+; Warning: Keep this in sync with the raw Lisp defun of signum in
+; acl2-fns.lisp.
   (declare (xargs :guard (real/rationalp x)))
 
 ; On CLTL p. 206 one sees the definition
@@ -30486,7 +30495,11 @@ Lisp definition."
            (file-position stream start)
 
 ; It's probably important for the following call that the character encoding is
-; :iso-8859-1, so that stream is copied into seq one byte at a time.
+; :iso-8859-1, so that stream is copied into seq one byte at a time.  That also
+; should guarantee that the resulting string consists of legal characters (see
+; the call of legal-acl2-character-p in bad-lisp-atomp).  If however an illegal
+; character could be in the string, we should check the result with
+; bad-lisp-stringp.
 
            (read-sequence (the string seq) stream))
          (when finish-p

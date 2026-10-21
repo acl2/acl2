@@ -1422,7 +1422,9 @@
        ;; when writing the lower 32 bits;
        ;; the upper 32 bits can be made undefined
        ;; upon switching from 32-bit mode to 64-bit mode.
-       (x86 (wr64 reg-index dst x86)))
+       (x86 (wr64 reg-index dst x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
 
@@ -1482,6 +1484,8 @@
        ;; when writing the lower 32 bits;
        ;; the upper 32 bits can be made undefined
        ;; upon switching from 32-bit mode to 64-bit mode.
-       (x86 (wr64 reg-index dst x86)))
+       (x86 (wr64 reg-index dst x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))

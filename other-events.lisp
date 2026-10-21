@@ -26378,16 +26378,31 @@
                                 (eq compile-option :same))
                             (compiled-function-p! fn))
                            (t compile-option))))
-    (setf (get fn 'acl2-trace-saved-fn)
-          (symbol-function fn))
-    (eval (trace$-def formals def trace-options predefined multiplicity ctx))
-    (let ((memo-entry (memoizedp-raw fn)))
-      (when memo-entry
-        (setf (gethash fn *memoize-info-ht*)
-              (change memoize-info-ht-entry memo-entry
-                      :memoized-fn (symbol-function fn)))))
-    (when do-compile
-      (compile fn))))
+    (cond
+     ((macro-function fn)
+      (let ((*1*fn (*1*-symbol fn)))
+        (observation-cw ctx
+                        "Skipping tracing of ~s0::~s1 because it is a macro ~
+                         in raw Lisp.~#2~[~/  (But this does not stop tracing ~
+                         of its executable-counterpart, ~s3::~s1.)~]"
+                        (symbol-package-name fn)
+                        (symbol-name fn)
+                        (if (and (fboundp *1*fn)
+                                 (not (macro-function *1*fn)))
+                            1
+                          0)
+                        (symbol-package-name *1*fn))))
+     (t
+      (setf (get fn 'acl2-trace-saved-fn)
+            (symbol-function fn))
+      (eval (trace$-def formals def trace-options predefined multiplicity ctx))
+      (let ((memo-entry (memoizedp-raw fn)))
+        (when memo-entry
+          (setf (gethash fn *memoize-info-ht*)
+                (change memoize-info-ht-entry memo-entry
+                        :memoized-fn (symbol-function fn)))))
+      (when do-compile
+        (compile fn))))))
 
 #-acl2-loop-only
 (defun oneified-def (fn wrld &optional trace-rec-for-none)
@@ -34763,16 +34778,25 @@
 
 ; At one time we only did the following check when the known-package-alist has
 ; changed.  A comment appeared here through ACL2 Version 8.7 explaining why the
-; check is needed in that case.  But we now do the check unconditionally, and a
-; very simple example explains why; see community book
-; system/tests/make-event-bad-char.lisp.
+; check is needed in that case.  But we decided to do the check
+; unconditionally, and a very simple example explains why; see community book
+; system/tests/make-event-bad-char.lisp.  However, now that we have modified
+; char-code as well as others (expt and coerce) so that their functions can no
+; longer return values that satisfy bad-lisp-objectp (by excluding these
+; symbols from *common-lisp-symbols-from-main-lisp-package* and defining their
+; raw-Lisp ACL2 functions in acl2-fns.lisp), we could consider reverting to the
+; restricted check.  However, this check caught an attempt by
+; books/oslib/tests/lisptype.lisp to define a string constant that is not a
+; simple-string, by use of a trust tag (via books/oslib/lisptype-raw.lsp).
+; Technically it's not our responsibility to catch problems introduced by trust
+; tags, but that example illustrates that it's a reasonable thing for us to do.
 
                                  (bad-lisp-objectp actual-expansion)))
                             (when msg
                               (er hard ctx
                                   "Make-event expansion for the form ~x0 has ~
-                                    produced an illegal object for the ~
-                                    current ACL2 world.  ~@1"
+                                   produced an illegal object for the current ~
+                                   ACL2 world.  ~@1"
                                   form
                                   msg)))
                           (er-progn

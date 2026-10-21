@@ -464,12 +464,10 @@
        ;; The first source operand, i.e. Operand 2 in the Intel manual,
        ;; is specified in the Mod and R/M bits of the ModR/M byte.
        ;; This operand is the value to be shifted.
-       ;; We ignore the increment-rip-by result, because it is always 0,
-       ;; since these instructions do not involve immediate operands.
-       ;; We also ignore the returned address of the operand,
+       ;; We ignore the returned address of the operand,
        ;; because the operand is only used as source in these instructions.
        (inst-ac? t)
-       ((mv flg val-to-shift & & x86)
+       ((mv flg val-to-shift increment-rip-by & x86)
         (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                *gpr-access*
                                                operand-size
@@ -485,6 +483,14 @@
                                                0 ; num-imm-bytes
                                                x86))
        ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; The second source operand, i.e. Operand 3 in the Intel manual,
        ;; is specified in the vvvv bits of the VEX prefix,

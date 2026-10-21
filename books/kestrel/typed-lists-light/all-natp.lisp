@@ -11,7 +11,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/sequences/defforall" :dir :system) ;todo: drop
+(local (include-book "kestrel/sequences/defforall" :dir :system)) ;todo: drop
 
 (defforall all-natp (lst) (natp lst) :declares ((type t lst)))
 

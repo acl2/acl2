@@ -191,15 +191,22 @@
            nil)))
 
 ;; Should avoid case splits
-(defthm member-equal-when-singleton-iff
+(defthm member-equal-of-singleton-iff
   (iff (member-equal x (list y))
        (equal x y)))
 
-; make a cheap version?
-(defthmd member-equal-of-singleton-iff
+(defthmd member-equal-when-singleton-iff
   (implies (equal 1 (len lst))
            (iff (member-equal x lst)
                 (equal x (first lst))))
+  :hints (("Goal" :expand ((member-equal x lst)
+                           (len (cdr lst))))))
+
+(defthmd member-equal-when-singleton-iff-cheap
+  (implies (equal 1 (len lst))
+           (iff (member-equal x lst)
+                (equal x (first lst))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :expand ((member-equal x lst)
                            (len (cdr lst))))))
 

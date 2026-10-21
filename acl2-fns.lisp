@@ -359,9 +359,9 @@
 
   (case (car typ)
     (integer (cdr typ))
-    (signed-byte (let ((n (expt 2 (1- (cadr typ)))))
+    (signed-byte (let ((n (common-lisp::expt 2 (1- (cadr typ)))))
                    (list (- n) (1- n))))
-    (unsigned-byte (list 0 (1- (expt 2 (cadr typ)))))
+    (unsigned-byte (list 0 (1- (common-lisp::expt 2 (cadr typ)))))
     (t (error
         "Unexpected type for convert-to-integer-type ~s"
         typ))))
@@ -1270,7 +1270,7 @@ notation causes an error and (b) the use of ,. is not permitted."
            (cond
             ((characterp acc)
              acc)
-            (t (let ((x (coerce (rev1@ acc nil) 'string)))
+            (t (let ((x (common-lisp::coerce (rev1@ acc nil) 'string)))
                  (cond
                   ((string-equal x "SPACE")
                    #\Space)
@@ -1473,7 +1473,7 @@ notation causes an error and (b) the use of ,. is not permitted."
               (cond ((null lst) 0)
                     (t (let ((*read-base* (if base-16-p 16 10)))
                          (read-from-string
-                          (coerce (nreverse lst) 'string)))))
+                          (common-lisp::coerce (nreverse lst) 'string)))))
               tmp))))
 
 (defun sharp-f-read (stream char n)
@@ -1507,7 +1507,7 @@ notation causes an error and (b) the use of ,. is not permitted."
              ((member next-char exp-chars)
               (let* ((exp (read-exp stream)))
                 (* (if negp (- before-dot) before-dot)
-                   (expt (if base-16-p 2 10) exp))))
+                   (common-lisp::expt (if base-16-p 2 10) exp))))
              ((eql next-char #\.)
               (multiple-value-bind
                (len negp-after-dot after-dot next-char)
@@ -1519,11 +1519,11 @@ notation causes an error and (b) the use of ,. is not permitted."
                       "Illegal sign after point in #f expression."))))
                (let ((significand
                       (+ before-dot (/ after-dot
-                                       (expt (if base-16-p 16 10) len)))))
+                                       (common-lisp::expt (if base-16-p 16 10) len)))))
                  (cond ((member next-char exp-chars)
                         (let* ((exp (read-exp stream)))
                           (* (if negp (- significand) significand)
-                             (expt (if base-16-p 2 10) exp))))
+                             (common-lisp::expt (if base-16-p 2 10) exp))))
                        (t (unread-char next-char stream)
                           (if negp (- significand) significand))))))
              (t (unread-char next-char stream)
@@ -1655,7 +1655,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; string.
 
   (let ((rchars (fancy-string-reader-macro-aux stream nil)))
-    (nreverse (coerce rchars 'string))))
+    (nreverse (common-lisp::coerce rchars 'string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR FAST #n= and #n#
@@ -1677,7 +1677,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; While this is initially 65536, it may increase, each time by a factor of
 ; *sharp-reader-array-size-multiplier*.  It never decreases.
 
-  (expt 2 16))
+  (common-lisp::expt 2 16))
 
 (defvar *sharp-reader-array*
   (make-array *sharp-reader-array-size*))
@@ -1699,7 +1699,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; bound seems sufficient, and it is nice for it to be the same for all Lisp
 ; implementations.
 
-  (1- (expt 2 29)))
+  (1- (common-lisp::expt 2 29)))
 
 (defvar *sharp-reader-max-index*
 
@@ -2058,6 +2058,86 @@ notation causes an error and (b) the use of ,. is not permitted."
   (ser-decode-from-stream nil :smart stream))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                     WRAPPERS FOR CL PRIMITIVES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section makes raw Lisp function definitions for symbols in the "ACL2"
+; package that were, before ACL2 Version_8.8, imported from the "COMMON-LISP"
+; package.  The point is to keep them from introducing values satisfying
+; bad-lisp-objectp.  See the discussion of functions below in :DOC
+; *common-lisp-symbols-from-main-lisp-package*, and also in :DOC note-8-8,
+; which points to tests that show why we made such changes.
+
+; It is tempting to declaim inline as follows, for efficiency.  But that would
+; defeat tracing, so for now, we comment out the following form.
+; (declaim (inline abs code-char coerce expt signum))
+
+(defun abs (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of abs.
+  (when (complexp x) ; (er hard! 'abs "..." x)
+    (let ((*hard-error-returns-nilp* nil))
+      (declare (special *hard-error-returns-nilp*))
+      (qfuncall hard-error
+                'abs
+                "Illegal (complex) argument to acl2::abs, ~x0"
+                (list (cons #\0 x)))))
+  (if (minusp x) (- x) x))
+
+(defun code-char (x)
+; Warning: Keep this in sync with (defun-*1* code-char ..).
+  (cond ((and (integerp x)
+              (>= x 0)
+              (< x 256))
+         (common-lisp::code-char x))
+        (t ; (progn (er hard! 'code-char "..." x) *null-char*)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'code-char
+                     "Illegal argument to acl2::code-char, ~x0"
+                     (list (cons #\0 x))))
+         (symbol-value '*null-char*))))
+
+(defun coerce (x y)
+; Warning: Keep this in sync with (defun-*1* coerce ..).
+  (cond ((or (eq y 'list) (eq y 'string))
+         (common-lisp::coerce x y))
+        (t ; (progn (er hard! 'coerce "..." y) ...)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'coerce
+                     "Illegal second argument to acl2::coerce, ~x0"
+                     (list (cons #\0 y))))
+         (coerce (qfuncall make-character-list x) 'string))))
+
+(defun expt (r i)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of expt.
+  (cond ((integerp i)
+         (common-lisp::expt r i))
+        (t ; (progn (er hard! 'expt "..." i) 1)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'expt
+                     "Illegal second argument to acl2::expt (not an integer), ~x0"
+                     (list (cons #\0 i))))
+         1)))
+
+(defun signum (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of signum.
+  (cond ((complexp x) ; (progn (er hard! 'signum "..." i) 1)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'signum
+                     "Illegal (complex) argument to acl2::signum, ~x0"
+                     (list (cons #\0 x)))))
+        (t
+         (if (zerop x) 0
+           (if (minusp x) -1 +1)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            MISCELLANY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2311,8 +2391,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 (defun-one-output acl2-gentemp (root)
   (let ((acl2-pkg (find-package "ACL2")))
     (loop
-     (let ((name (coerce (qfuncall packn1 (list root *acl2-gentemp-counter*))
-                         'string)))
+     (let ((name (common-lisp::coerce (qfuncall packn1 (list root *acl2-gentemp-counter*))
+                                      'string)))
        (if (not (find-symbol name acl2-pkg))
            (return (let ((ans (intern name acl2-pkg)))
 ; See comment in intern-in-package-of-symbol for an explanation of this trick.
@@ -2341,7 +2421,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; the fastest single instruction on a 100GHz (!) machine, then counting up
 ; most-positive-mfixnum of them would take over 4 months.]
 
-  (1- (expt 2 60)))
+  (1- (common-lisp::expt 2 60)))
 
 (deftype mfixnum ()
   `(integer ,(- -1 most-positive-mfixnum)
@@ -2487,8 +2567,8 @@ compiler::
   (declare (type string s))
   (if (or #+lispworks (position *char-223* s)
           (position *char-255* s))
-      (coerce (loop for i from 0 to (1- (length s))
-                    collect (char-upcase-new (char s i)))
-              'string)
+      (common-lisp::coerce (loop for i from 0 to (1- (length s))
+                                 collect (char-upcase-new (char s i)))
+                           'string)
     (funcall *string-upcase-old* s)))
 )

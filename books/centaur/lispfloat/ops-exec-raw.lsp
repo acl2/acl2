@@ -176,7 +176,7 @@
 (defun real-er-float- (a b) (binary-float-template (- afloat bfloat)))
 (defun real-er-float* (a b) (binary-float-template (* afloat bfloat)))
 (defun real-er-float/ (a b) (binary-float-template (/ afloat bfloat)))
-(defun real-er-float-expt (a b) (binary-float-template (expt afloat bfloat)))
+(defun real-er-float-expt (a b) (binary-float-template (common-lisp::expt afloat bfloat)))
 
 (defun real-er-float-sqrt (a) (unary-float-template (sqrt afloat)))
 (defun real-er-float-e^x (a) (unary-float-template (exp afloat)))
@@ -218,7 +218,7 @@
 (defun real-er-double- (a b) (binary-double-template (- adouble bdouble)))
 (defun real-er-double* (a b) (binary-double-template (* adouble bdouble)))
 (defun real-er-double/ (a b) (binary-double-template (/ adouble bdouble)))
-(defun real-er-double-expt (a b) (binary-double-template (expt adouble bdouble)))
+(defun real-er-double-expt (a b) (binary-double-template (common-lisp::expt adouble bdouble)))
 
 (defun real-er-double-sqrt (a) (unary-double-template (sqrt adouble)))
 (defun real-er-double-e^x (a) (unary-double-template (exp adouble)))

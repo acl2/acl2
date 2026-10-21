@@ -53,7 +53,17 @@
 
   (let ((description (common-lisp::lisp-implementation-version)))
     (cond ((stringp description)
-           (mv description state))
+
+; Matt K. mod: I have seen GCL 2.7.1 return a description that fails to satisfy
+; simple-string-p even though it is a string consisting only of standard
+; characters.  Our heavy-handed solution here is to turn description into a
+; simple-string by first coercing it to a list.
+
+           (mv (if (typep description 'simple-string)
+                   description
+                 (common-lisp::coerce (common-lisp::coerce description 'list)
+                                      'string))
+               state))
           ((not description)
            (mv "" state))
           (t

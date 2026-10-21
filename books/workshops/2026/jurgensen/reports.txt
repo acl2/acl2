@@ -1,0 +1,59 @@
+# Printed reports from the treeset benchmark suite.
+#
+# The harness writes only spec rows to bench-raw.csv; the derived reports
+# (treap depth, serialized class sizes) print to stdout and were not
+# captured during the final run.  Both are deterministic given the seed --
+# depth is pure tree-shape computation with no timing -- so they were
+# re-run at seed 1 against the same tree (git b674f3ee8c) and reproduce
+# what the final run printed.
+#
+# Only those two reports are here.  Loading benchmark.lsp also runs a small
+# smoke suite whose output (including its own hash-share block, computed
+# from the smoke run's much smaller sample) was stripped: it is not the
+# final data and contradicted it.
+#
+# The hash share is the jenkins/u60 median in hash-bench-raw.csv divided
+# by the treeset-insert/u60 median at size 10,000 in bench-raw.csv.
+#
+Treap depth (random-bst rows averaged over 10 trials):
+           n keys         avg        height    
+       1,000 random            11.21      22.00
+       1,000 sequential        11.77      22.00
+       1,000 random-bst        12.08      22.10
+      10,000 random            16.26      29.00
+      10,000 sequential        16.63      32.00
+      10,000 random-bst        16.69      31.90
+; building cardinality-100,000 containers
+     100,000 random            21.21      41.00
+     100,000 sequential        20.64      38.00
+     100,000 random-bst        20.85      40.10
+; building cardinality-1,000,000 containers
+   1,000,000 random            26.71      51.00
+   1,000,000 sequential        25.80      46.00
+   1,000,000 random-bst        25.67      49.80
+<nil>
+TREESET P>
+Serialized key size by class (bytes, over 1,000 sampled keys):
+  class        mean       min        max       
+; building u60 cardinality-10,000 containers
+  u60                10.0          9         10
+; building char cardinality-10,000 containers
+  char                2.0          2          2
+; building string8 cardinality-10,000 containers
+  string8            10.0         10         10
+; building string64 cardinality-10,000 containers
+  string64           66.0         66         66
+; building string512 cardinality-10,000 containers
+  string512         515.0        515        515
+; building symbol8 cardinality-10,000 containers
+  symbol8            24.0         24         24
+; building cons8 cardinality-10,000 containers
+  cons8              86.7         84         87
+; building cons64 cardinality-10,000 containers
+  cons64            701.0        695        703
+; building bignum512 cardinality-10,000 containers
+  bignum512          74.7         73         75
+; building mixed cardinality-10,000 containers
+  mixed              34.7          2        155
+<nil>
+TREESET P>

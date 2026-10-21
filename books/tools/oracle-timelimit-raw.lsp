@@ -266,7 +266,7 @@
          ;; Record whether we succeeded and how long it took, etc., so that we
          ;; can extract this information later.
          (push (list (eq ,main-thread-state :finished-on-time)
-                     (/ (coerce (- ,end-time ,start-time) 'rational)
+                     (/ (common-lisp::coerce (- ,end-time ,start-time) 'rational)
                         internal-time-units-per-second)
                      (- ,end-alloc ,start-alloc))
                *oracle-timelimit-stack*)

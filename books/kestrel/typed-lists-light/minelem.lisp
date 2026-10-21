@@ -17,13 +17,6 @@
 ;(local (include-book "kestrel/lists-light/member-equal" :dir :system))
 ;(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 
-(defthm member-equal-when-equal-of-len-and-1-cheap
-  (implies (equal (len lst) 1)
-           (iff (member-equal x lst)
-                (equal x (car lst))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable member-equal))))
-
 (defstub infinity () t)
 
 ;; Returns the smallest element of a non-empty list.

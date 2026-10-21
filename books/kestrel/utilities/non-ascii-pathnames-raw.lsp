@@ -13,7 +13,7 @@
 ; ccl::decode-string-from-octets, we could use:
 
 ;            (sb-ext::octets-to-string
-;             (coerce x '(vector (unsigned-byte 8)))
+;             (common-lisp::coerce x '(vector (unsigned-byte 8)))
 ;             :external-format :utf-8)
 
 ; But there may be other issues for SBCL.  For example, the following caused an
@@ -64,7 +64,7 @@
 
 ; We can form a Lisp string directly from those bytes as follows.
 
-;   (coerce (list (code-char #xE2) (code-char #x82) (code-char #xAC)) 'string)
+;   (common-lisp::coerce (list (common-lisp::code-char #xE2) (common-lisp::code-char #x82) (common-lisp::code-char #xAC)) 'string)
 
 ; Regardless of the appearance of this string (perhaps as a euro sign), it is
 ; suitable input to the present function, whose output will be a filename for
@@ -75,7 +75,7 @@
 
 ;   ? (file-write-date
 ;      (acl2-string-to-filename
-;       (coerce (list (code-char #xE2) (code-char #x82) (code-char #xAC)) 'string)))
+;       (common-lisp::coerce (list (common-lisp::code-char #xE2) (common-lisp::code-char #x82) (common-lisp::code-char #xAC)) 'string)))
 ;   3674228526
 ;   ?
 
@@ -92,7 +92,7 @@
                 collect (char-code (char x i))))
          (s0 (ignore-errors
                (ccl::decode-string-from-octets
-                (coerce octets '(vector (unsigned-byte 8)))
+                (common-lisp::coerce octets '(vector (unsigned-byte 8)))
                 :external-format (ccl::pathname-encoding-name))))
          (s (if (equal s0 "") nil s0)))
     (or s
@@ -119,11 +119,11 @@
 
   (loop for i from 0 to (1- (length s))
         when (let ((c (char s i)))
-               (not (eql c (code-char (char-code c)))))
+               (not (eql c (common-lisp::code-char (char-code c)))))
         do
         (if error-p
             (error "For ~s, encountered a character c with char-code ~s, ~
-                    namely c = ~s, such that (eql c (code-char (char-code ~
+                    namely c = ~s, such that (eql c (common-lisp::code-char (char-code ~
                     c))) is false."
                     `(filename-to-acl2-string ,s)
                     (char-code c)
@@ -135,9 +135,10 @@
                                  :external-format (ccl:pathname-encoding-name)))))
     (cond
      (octets
-      (let ((result (coerce (loop for i from 0 to (1- (length octets))
-                                  collect (code-char (aref octets i)))
-                            'string)))
+      (let ((result (common-lisp::coerce
+                     (loop for i from 0 to (1- (length octets))
+                           collect (common-lisp::code-char (aref octets i)))
+                     'string)))
         (cond
          ((equal (acl2-string-to-filename result nil) s)
           result)
@@ -153,11 +154,12 @@
 ; A nice little test:
 (assert
  (let* ((acl2-string
-         (coerce (list (code-char #xE2) (code-char #x82) (code-char #xAC) ; euro
-                       #\a #\b
-                       (code-char #xE2) (code-char #x82) (code-char #xAC) ; euro
-                       #\C)
-                 'string))
+         (common-lisp::coerce
+          (list (common-lisp::code-char #xE2) (common-lisp::code-char #x82) (common-lisp::code-char #xAC) ; euro
+                #\a #\b
+                (common-lisp::code-char #xE2) (common-lisp::code-char #x82) (common-lisp::code-char #xAC) ; euro
+                #\C)
+          'string))
         (filename-string (acl2-string-to-filename acl2-string)))
    (equal acl2-string (filename-to-acl2-string filename-string))))
 

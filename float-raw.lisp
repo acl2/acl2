@@ -88,7 +88,7 @@
 (defun-df-binary binary-df* *)
 (defun-df-binary binary-df/ /)
 (defun-df-binary binary-df-log log)
-(defun-df-binary df-expt-fn expt)
+(defun-df-binary df-expt-fn common-lisp::expt)
 
 (defun-df-unary unary-df- -)
 (defun-df-unary unary-df/ /)
