@@ -78,6 +78,18 @@
       (cons (pack-in-package "ARM" mnemonic '-argsp)
             (make-good-inst-names (rest alist))))))
 
+;; Helps make the guard conjecture trivial
+(local
+ (defthm acl2::alistp-of-acons-type
+   (implies (alistp acl2::alist)
+            (alistp (acons acl2::key acl2::datum acl2::alist)))
+   :rule-classes :type-prescription))
+
+;; For speed
+(local
+ (defthm unsigned-byte-p-1-of-getbit
+   (unsigned-byte-p 1 (getbit n x))))
+
 (defun make-decoder (name alist)
   (declare (xargs :guard (and (symbolp name)
                               (good-encoding-pattern-alistp alist))))
@@ -104,11 +116,32 @@
         ,@(make-decoding-cases alist)
         (t (mv :unsupported nil nil))))
 
+     ;; Speed helper for the return-type proof:
+     (local
+      (defund good-decoder-resultp (res)
+        (or (mv-nth 0 res)
+            (good-instp (mv-nth 1 res) (mv-nth 2 res)))))
+
+     ;; Speed helper for the return-type proof:
+     (local
+      (defthm good-decoder-resultp-of-if
+        (equal (good-decoder-resultp (if test res1 res2))
+               (if test (good-decoder-resultp res1) (good-decoder-resultp res2)))))
+
+     ;; Speed helper for the return-type proof:
+     (local
+      (defthm good-decoder-resultp-of-decoder
+        (good-decoder-resultp (,name inst))
+        :hints (("Goal" :in-theory (enable ,name good-instp good-decoder-resultp ,@(make-good-inst-names alist))))))
+
      (defthm ,(pack-in-package "ARM" name '-return-type)
        (implies (not (mv-nth 0 (,name inst)))
                 (good-instp (mv-nth 1 (,name inst))
                             (mv-nth 2 (,name inst))))
-       :hints (("Goal" :in-theory (enable ,name good-instp ,@(make-good-inst-names alist)))))))
+       ;; :hints (("Goal" :in-theory (enable ,name good-instp ,@(make-good-inst-names alist))))
+       :hints (("Goal" :use good-decoder-resultp-of-decoder
+                       :in-theory (e/d (good-decoder-resultp)
+                                       (good-decoder-resultp-of-decoder)))))))
 
 ;; This makes a decoder called arm32-decode that decodes a USB32 into an
 ;; instruction (any of the instructions in the *patterns*):
@@ -116,4 +149,4 @@
 
 (defthm alistp-of-mv-nth-2-of-arm32-decode
   (alistp (mv-nth 2 (arm32-decode instr)))
-  :hints (("Goal" :in-theory (enable arm32-decode))))
+  :hints (("Goal" :in-theory '(arm32-decode acl2::alistp-of-acons (:e alistp)))))
