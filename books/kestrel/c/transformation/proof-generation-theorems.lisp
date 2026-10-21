@@ -1572,7 +1572,7 @@
      because those facts participate in the induction.
      This is why we use the generic term @('exec-loop-theorems') here.")
    (xdoc::p
-    "For now we only support @('while') loops,
+    "For now we only support @('while') and @('do-while') loops,
      but other kinds of loops should be analogous.
      We start by explaining @('while') loops.")
    (xdoc::p
