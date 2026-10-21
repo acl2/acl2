@@ -874,6 +874,12 @@ projects/apply-model/phony: projects/apply-model-deps.cert
 projects/apply-model-2/phony: projects/apply-model-2-deps.cert
 	@cd $(@D) ; $(STARTJOB) -c "$(MAKE)"
 
+# Books outside projects/apply-model-2/ include its portcullis, so we certify
+# it here, where those books can be ordered after it.
+projects/apply-model-2/portcullis.cert: projects/apply-model-2-deps.cert \
+  projects/apply-model-2/portcullis.acl2
+projects/apply-model-2/phony: projects/apply-model-2/portcullis.cert
+
 endif # ifeq ($(ACL2_HAS_REALS), )
 
 # We avoid += because we want the custom targets to start first, in

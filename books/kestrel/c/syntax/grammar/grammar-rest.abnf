@@ -172,7 +172,7 @@ init-declarator =
 storage-class-specifier = %s"typedef"
                         / %s"extern"
                         / %s"static"
-                        / %s"_Thread_local"
+                        / thread-local-keyword
                         / %s"auto"
                         / %s"register"
 
