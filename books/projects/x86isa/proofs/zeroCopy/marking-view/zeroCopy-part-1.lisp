@@ -290,6 +290,20 @@
                   (:rewrite rime-size-when-64-bit-modep-fs/gs)
                   (:rewrite rime-size-unaligned-when-64-bit-modep-and-not-fs/gs)))))
 
+;; For speed:
+(local (in-theory (set-difference-theories
+                   (current-theory :here)
+                   (acl2::rules-of-class :rewrite-quoted-constant :here))))
+;; For speed:
+(local (in-theory (disable program-at-alt-xw-rgf
+                           program-at-alt-xw-rip
+                           program-at-alt-xw-undef
+                           program-at-alt-xw-rflags
+                           program-at-alt-xw-tlb-atom
+                           xr-rflags-las-to-pas
+                           same-page-offset-implies-same-logheads
+                           loghead-zero-smaller)))
+
 (defthmd rewire_dst_to_src-effects-1-to-45-instructions
   (implies
    (and

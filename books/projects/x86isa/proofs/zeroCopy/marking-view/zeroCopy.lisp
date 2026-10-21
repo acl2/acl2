@@ -106,6 +106,15 @@
 (local (include-book "tools/trivial-ancestors-check" :dir :system))
 (local (acl2::use-trivial-ancestors-check))
 
+;; For speed:
+(local (in-theory (set-difference-theories
+                   (current-theory :here)
+                   (acl2::rules-of-class :rewrite-quoted-constant :here))))
+
+;; For speed:
+(local (in-theory (disable xr-rflags-las-to-pas
+                           (:linear size-of-rb))))
+
 (defthmd rewrite-to-pml4-table-entry-addr
   (implies
    (and (x86-state-okp x86)

@@ -216,7 +216,9 @@
        which we approximate as the underlying (argument) type.
        We also do not capture @('typedef') names,
        which are instead expanded to their normal form.
-       Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
+       Furthermore, we do not capture qualified types [C17:6.2.5/26].
+       We also do not capture the vector types of GCC and Clang,
+       which we approximate as the unknown built-in type."))
     (:void ())
     (:char ())
     (:schar ())
@@ -1987,3 +1989,51 @@
   ///
 
   (verify-guards type-array-change-kind-at-depth))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-change-base ((type typep) (new-base typep))
+  :returns (new-type typep)
+  :short "Change the base of a type."
+  :long
+  (xdoc::topstring-p
+   "We follow the declarator-derived spine
+    (see @(tsee type-array-change-kind-at-depth)):
+    the element type of an array,
+    the target type of a pointer, or the return type of a function.
+    The first type along the spine that is none of these is the base,
+    which we replace with @('new-base'),
+    leaving the derived types around it unchanged.")
+  (type-case
+   type
+   :array (change-type-array type :of (type-change-base type.of new-base))
+   :pointer (change-type-pointer type :to (type-change-base type.to new-base))
+   :function (change-type-function
+              type
+              :ret (type-change-base type.ret new-base))
+   :otherwise (type-fix new-base))
+  :measure (type-count type)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-apply-vector-size ((type typep))
+  :returns (new-type typep)
+  :short "Apply a @('vector_size') attribute to a type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A @('vector_size') attribute (see @(tsee attrib-vector-size-p))
+     turns the base of a type (see @(tsee type-change-base))
+     into a vector type.
+     GCC applies the attribute to the base
+     wherever the attribute appears in a declaration or type name:
+     among the declaration specifiers or the specifiers and qualifiers,
+     after a declarator,
+     or after a @('*') in a declarator or abstract declarator.
+     Clang accepts only some of these positions,
+     with the same meaning.")
+   (xdoc::p
+    "Since we do not model vector types,
+     we use the unknown built-in type in their place."))
+  (type-change-base type (type-unknown-builtin)))

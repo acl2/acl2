@@ -1311,6 +1311,114 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define attrib-vector-size-p ((attr attribp))
+  :returns (yes/no booleanp)
+  :short "Check if an attribute is a @('vector_size') attribute."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('vector_size') attribute, supported by GCC "
+    (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Common-Attributes.html"
+                 "[GCCM:6.4.1]")
+    " and Clang "
+    (xdoc::ahref
+     "https://clang.llvm.org/docs/LanguageExtensions.html#vectors-and-extended-vectors"
+     "[CLE#vectors-and-extended-vectors]")
+    ", turns the type it applies to into a vector type.
+     The attribute name may be written
+     with or without surrounding double underscores.
+     The attribute has one parameter, the size of the vector in bytes,
+     which we do not check."))
+  (attrib-case
+   attr
+   :name-only nil
+   :name-params (attrib-name-case
+                 attr.name
+                 :ident (b* ((name (ident->unwrap attr.name.ident)))
+                          (or (equal name "vector_size")
+                              (equal name "__vector_size__")))
+                 :keyword nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define attrib-list-has-vector-size-p ((attrs attrib-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of attributes has a @('vector_size') attribute."
+  (and (consp attrs)
+       (or (attrib-vector-size-p (car attrs))
+           (attrib-list-has-vector-size-p (cdr attrs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define attrib-spec-list-has-vector-size-p ((attrspecs attrib-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of attribute specifiers
+          has a @('vector_size') attribute."
+  (and (consp attrspecs)
+       (or (attrib-list-has-vector-size-p
+            (attrib-spec->attribs (car attrspecs)))
+           (attrib-spec-list-has-vector-size-p (cdr attrspecs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl-spec-has-vector-size-p ((declspec decl-specp))
+  :returns (yes/no booleanp)
+  :short "Check if a declaration specifier is an attribute specifier
+          with a @('vector_size') attribute."
+  (decl-spec-case
+   declspec
+   :attrib (attrib-list-has-vector-size-p (attrib-spec->attribs declspec.spec))
+   :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define spec/qual-has-vector-size-p ((specqual spec/qual-p))
+  :returns (yes/no booleanp)
+  :short "Check if a type specifier or qualifier is an attribute specifier
+          with a @('vector_size') attribute."
+  (spec/qual-case
+   specqual
+   :attrib (attrib-list-has-vector-size-p (attrib-spec->attribs specqual.spec))
+   :otherwise nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define typequal/attribspec-has-vector-size-p
+  ((tyqualattrib typequal/attribspec-p))
+  :returns (yes/no booleanp)
+  :short "Check if a type qualifier or attribute specifier
+          is an attribute specifier with a @('vector_size') attribute."
+  (typequal/attribspec-case
+   tyqualattrib
+   :type nil
+   :attrib (attrib-list-has-vector-size-p
+            (attrib-spec->attribs tyqualattrib.spec))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define typequal/attribspec-list-has-vector-size-p
+  ((tyqualattribs typequal/attribspec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type qualifiers and attribute specifiers
+          has a @('vector_size') attribute."
+  (and (consp tyqualattribs)
+       (or (typequal/attribspec-has-vector-size-p (car tyqualattribs))
+           (typequal/attribspec-list-has-vector-size-p (cdr tyqualattribs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define typequal/attribspec-list-list-has-vector-size-p
+  ((tyqualattribss typequal/attribspec-list-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of lists of type qualifiers and attribute specifiers
+          has a @('vector_size') attribute."
+  (and (consp tyqualattribss)
+       (or (typequal/attribspec-list-has-vector-size-p (car tyqualattribss))
+           (typequal/attribspec-list-list-has-vector-size-p
+            (cdr tyqualattribss)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define apply-pre-inc/dec-ops ((ops inc/dec-op-listp) (expr exprp))
   :returns (new-expr exprp)
   :short "Apply a sequence of pre-increment and pre-decrement operators
