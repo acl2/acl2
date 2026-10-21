@@ -44055,7 +44055,6 @@ current fast alists."
   char>=
   characterp
   consp
-  digit-char-p
   endp
   eq
   eql
@@ -44073,10 +44072,6 @@ current fast alists."
   rationalp
   standard-char-p
   string-equal
-  string<
-  string<=
-  string>
-  string>=
   stringp
   subsetp
   symbolp
