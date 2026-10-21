@@ -2630,3 +2630,178 @@ extern struct s x;
  "struct s { int (*p)[20]; };
 extern struct s x;
 ")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Vector types.
+
+;; A vector_size attribute turns the base type into a vector type,
+;; which we approximate as the unknown built-in type.
+;; Unlike an int, a vector accepts a list of several initializers,
+;; and it can be subscripted.
+
+;; After a declarator.
+(test-valid
+ "typedef int v4si __attribute__((vector_size(16)));
+v4si v = {1, 2, 3, 4};
+int f(void) { return v[2]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typedef int v4si __attribute__((vector_size(16)));
+v4si v = {1, 2, 3, 4};
+int f(void) { return v[2]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;; After a declarator, the attribute applies only to that declarator.
+(test-valid
+ "int a = 0, v __attribute__((vector_size(16))) = {1, 2, 3, 4};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int a = {1, 2}, v __attribute__((vector_size(16)));
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; In the declaration specifiers, before or after the type specifier,
+;; possibly with other attributes.
+;; The attribute applies to all the declarators.
+(test-valid
+ "__attribute__((vector_size(16))) int v = {1, 2, 3, 4}, w = {5, 6, 7, 8};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int __attribute__((aligned(16), __vector_size__(16))) v = {1, 2, 3, 4};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; Other attributes do not change the type.
+(test-valid-fail
+ "int __attribute__((aligned(16))) v = {1, 2};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; After a parameter declarator.
+(test-valid
+ "int f(int v __attribute__((vector_size(16)))) { return v[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; After the structure declarators,
+;; the attribute applies only to the last one.
+(test-valid
+ "struct s { int a, v __attribute__((vector_size(16))); };
+int f(struct s x) { return x.v[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "struct s { int a, v __attribute__((vector_size(16))); };
+int f(struct s x) { return x.a[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; In the specifiers and qualifiers of a structure declaration.
+(test-valid
+ "struct s { __attribute__((vector_size(16))) int v; };
+int f(struct s x) { return x.v[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; In a type name.
+(test-valid
+ "int f(void) {
+  return ((int __attribute__((vector_size(16)))){1, 2, 3, 4})[2];
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(void) {
+  return ((int __attribute__((vector_size(16)))){1, 2, 3, 4})[2];
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;; GCC applies the attribute to the base type,
+;; keeping the pointer, array, and function types derived from it.
+;; We check that a pointer is still a scalar,
+;; that an array is still an array,
+;; and that a function still has its parameters.
+(test-valid
+ "int *p __attribute__((vector_size(16)));
+int f(void) { return (*p)[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int *p __attribute__((vector_size(16))) = {0, 0};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3] __attribute__((vector_size(16)))
+  = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int a[3] __attribute__((vector_size(16)));
+void f(void) { a++; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int (*fp)(void) __attribute__((vector_size(16)));
+int f(void) { return fp()[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int (*fp)(void) __attribute__((vector_size(16)));
+int f(void) { return fp(1)[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; The same holds when the derived types come from a typedef name.
+(test-valid
+ "typedef int *ip;
+ip __attribute__((vector_size(16))) p;
+int f(void) { return (*p)[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typedef int *ip;
+ip __attribute__((vector_size(16))) p = {0, 0};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; After a * in a declarator,
+;; including a declarator nested in another one.
+(test-valid
+ "int *__attribute__((vector_size(16))) p;
+int f(void) { return (*p)[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int *__attribute__((vector_size(16))) p = {0, 0};
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int (*__attribute__((vector_size(16))) p)[3];
+int f(void) { return (*p)[2][0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; After a * in an abstract declarator.
+(test-valid
+ "int f(void *q) { return (*(int *__attribute__((vector_size(16))))q)[0]; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
