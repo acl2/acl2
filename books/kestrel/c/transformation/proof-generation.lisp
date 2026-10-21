@@ -1083,7 +1083,6 @@
                               (:e c::type-fix)
                               expr-compustate-vars)
                  :use (:instance expr-ident-congruence
-                                 (compst old-compst)
                                  (var ',cvar)
                                  (type ',ctype)))))
        ((mv thm-event thm-name thm-index)
@@ -1192,7 +1191,6 @@
                         (:e c::typep)
                         expr-compustate-vars)
            :use (:instance expr-const-congruence
-                           (compst old-compst)
                            (const ',cconst)))))
        ((mv thm-event thm-name thm-index)
         (gen-expr-thm expr
@@ -1279,7 +1277,6 @@
                  :use ((:instance ,arg-thm-name
                                   (limit (1- limit)))
                        (:instance expr-unary-congruence
-                                  (compst old-compst)
                                   (op ',(unop-case
                                          op
                                          :plus (c::unop-plus)
@@ -1399,7 +1396,6 @@
                  :use ((:instance ,arg-thm-name
                                   (limit (1- limit)))
                        (:instance expr-cast-congruence
-                                  (compst old-compst)
                                   (tyname ',ctyname)
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
@@ -1547,7 +1543,6 @@
                                                              (1- limit))))
                                       (limit (1- limit)))
                            (:instance expr-binary-pure-strict-congruence
-                                      (compst old-compst)
                                       (op ',cop)
                                       (old-arg1 ',old-arg1)
                                       (old-arg2 ',old-arg2)
@@ -1603,7 +1598,6 @@
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-first-congruence)
                     (:logor 'expr-binary-logor-first-congruence))
-                 (compst old-compst)
                  (old-arg1 ',old-arg1)
                  (old-arg2 ',old-arg2)
                  (new-arg1 ',new-arg1)
@@ -1612,7 +1606,6 @@
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-second-congruence)
                     (:logor 'expr-binary-logor-second-congruence))
-                 (compst old-compst)
                  (old-arg1 ',old-arg1)
                  (old-arg2 ',old-arg2)
                  (new-arg1 ',new-arg1)
@@ -1675,7 +1668,6 @@
                                 (limit (1- limit)))
                      (:instance
                       expr-binary-asg-congruence
-                      (compst old-compst)
                       (var ',cvar)
                       (old-arg ',old-arg2)
                       (new-arg ',new-arg2))
@@ -1843,7 +1835,6 @@
                                                          (1- limit))))
                                   (limit (1- limit)))
                        (:instance expr-cond-true-congruence
-                                  (compst old-compst)
                                   (old-test ',old-test)
                                   (old-then ',old-then)
                                   (old-else ',old-else)
@@ -1851,7 +1842,6 @@
                                   (new-then ',new-then)
                                   (new-else ',new-else))
                        (:instance expr-cond-false-congruence
-                                  (compst old-compst)
                                   (old-test ',old-test)
                                   (old-then ',old-then)
                                   (old-else ',old-else)
@@ -1969,7 +1959,6 @@
            :use ((:instance ,expr-thm-name
                             (limit (1- limit)))
                  (:instance initer-single-congruence
-                            (compst old-compst)
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
                  (:instance initer-single-errors
@@ -2068,7 +2057,6 @@
                :use ((:instance ,expr?-thm-name
                                 (limit (1- limit)))
                      (:instance stmt-expr-congruence
-                                (compst old-compst)
                                 (old-expr ',old-expr?)
                                 (new-expr ',new-expr?))
                      (:instance stmt-expr-errors
@@ -2082,8 +2070,7 @@
                           (:e set::in)
                           (:e set::insert)
                           stmt-compustate-vars)
-             :use (:instance stmt-null-congruence
-                             (compst old-compst))))))
+             :use (stmt-null-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2181,7 +2168,6 @@
                      :use ((:instance ,expr?-thm-name
                                       (limit (1- limit)))
                            (:instance stmt-return-value-congruence
-                                      (compst old-compst)
                                       (old-expr ',old-expr?)
                                       (new-expr ',new-expr?))
                            (:instance stmt-return-errors
@@ -2193,8 +2179,7 @@
                                 (:e c::type-void)
                                 (:e set::insert)
                                 stmt-compustate-vars)
-                   :use (:instance stmt-return-novalue-congruence
-                                   (compst old-compst))))))
+                   :use (stmt-return-novalue-congruence)))))
        ((mv thm-event thm-name thm-index)
         (gen-stmt-thm stmt
                       stmt-new
@@ -2298,14 +2283,12 @@
                                                                 (1- limit))))
                             (limit (1- limit)))
                  (:instance stmt-if-true-congruence
-                            (compst old-compst)
                             (old-test ',old-test)
                             (old-then ',old-then)
                             (new-test ',new-test)
                             (new-then ',new-then)
                             (types ',then-ctypes))
                  (:instance stmt-if-false-congruence
-                            (compst old-compst)
                             (old-test ',old-test)
                             (old-then ',old-then)
                             (new-test ',new-test)
@@ -2451,7 +2434,6 @@
                                                                 (1- limit))))
                             (limit (1- limit)))
                  (:instance stmt-ifelse-true-congruence
-                            (compst old-compst)
                             (old-test ',old-test)
                             (old-then ',old-then)
                             (old-else ',old-else)
@@ -2460,7 +2442,6 @@
                             (new-else ',new-else)
                             (types ',then-ctypes))
                  (:instance stmt-ifelse-false-congruence
-                            (compst old-compst)
                             (old-test ',old-test)
                             (old-then ',old-then)
                             (old-else ',old-else)
@@ -2575,7 +2556,6 @@
                             (new-compst (c::enter-scope new-compst))
                             (limit (1- limit)))
                  (:instance stmt-compound-congruence
-                            (compst old-compst)
                             (old-items ',old-items)
                             (new-items ',new-items)
                             (types ',ctypes))
@@ -2705,7 +2685,6 @@
                                                            ',types
                                                            ',gin.vartys))))
                  (:instance stmt-while-theorem
-                            (compst old-compst)
                             (old-test ',old-test)
                             (new-test ',new-test)
                             (old-body ',old-body)
@@ -2843,7 +2822,6 @@
                                                              new-fenv
                                                              ',gin.vartys))))
                  (:instance stmt-dowhile-theorem
-                            (compst old-compst)
                             (old-body ',old-body)
                             (new-body ',new-body)
                             (old-test ',old-test)
@@ -3006,7 +2984,6 @@
                  :use ((:instance ,ideclors-thm-name (limit (1- limit)))
                        (:instance
                         declon-declon-congruence
-                        (compst old-compst)
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (old-initer ',old-initer)
@@ -3116,7 +3093,6 @@
                  :use ((:instance ,stmt-thm-name (limit (1- limit)))
                        (:instance
                         block-item-stmt-congruence
-                        (compst old-compst)
                         (old-stmt ',old-stmt)
                         (new-stmt ',new-stmt)
                         (types ',ctypes))
@@ -3204,7 +3180,6 @@
                  :use ((:instance ,declon-thm-name (limit (1- limit)))
                        (:instance
                         block-item-declon-congruence
-                        (compst old-compst)
                         (old-declon ',old-declon)
                         (new-declon ',new-declon))
                        (:instance
@@ -3273,8 +3248,7 @@
        (hints `(("Goal"
                  :in-theory '((:e set::insert)
                               block-item-list-empty-compustate-vars)
-                 :use (:instance block-item-list-empty-congruence
-                                 (compst old-compst)))))
+                 :use (block-item-list-empty-congruence))))
        ((mv thm-event thm-name thm-index)
         (gen-block-item-list-thm items
                                  items
@@ -3358,7 +3332,6 @@
                   (limit (1- limit)))
                  (:instance
                   block-item-list-cons-first-congruence
-                  (compst old-compst)
                   (old-item ',old-item)
                   (old-items ',old-items)
                   (new-item ',new-item)
@@ -3367,7 +3340,6 @@
                   (rest-types ',rest-ctypes))
                  (:instance
                   block-item-list-cons-rest-congruence
-                  (compst old-compst)
                   (old-item ',old-item)
                   (old-items ',old-items)
                   (new-item ',new-item)
