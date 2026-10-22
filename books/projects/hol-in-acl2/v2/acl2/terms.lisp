@@ -47,6 +47,10 @@
       (:arrow*
        (and arrow*-okp
             (hol-type-listp+ (cdr type) hta-arities t)))
+      (:implicit
+       (and arrow*-okp
+            (= (length type) 2)
+            (hol-typep+ (cadr type) hta-arities nil)))
       (typ (and (= (length type) 2)
                 (hol-typep+ (nth 1 type) hta-arities t)))
       (otherwise

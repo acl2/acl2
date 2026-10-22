@@ -11,6 +11,168 @@ Constructors:
                   (nnode (:arrow* :ntree :num :ntree :ntree))))
 
 #|
+Definition:
+
+   ⊢ (∀a0 f f0. ntree_CASE (nLeaf a0) f f0 = f a0) ∧
+     ∀a0 a1 a2 f f0. ntree_CASE (nNode a0 a1 a2) f f0 = f0 a0 a1 a2
+|#
+
+(defhol
+   :fns ((ntree_case
+      (:arrow* :ntree (:arrow* :num b) (:arrow* :ntree :num :ntree b) b)))
+   :defs ((:forall
+      ((a0 :num) (f (:arrow* :num b)) (f0 (:arrow* :ntree :num :ntree b)))
+      (equal
+       (hap*
+        (ntree_case
+         (typ
+          (:arrow* :ntree (:arrow* :num b) (:arrow* :ntree :num :ntree b) b)))
+        (hap* (nleaf (typ (:arrow* :num :ntree))) a0) f f0) (hap* f a0)))
+     (:forall
+      ((a0 :ntree) (a1 :num) (a2 :ntree) (f (:arrow* :num b))
+       (f0 (:arrow* :ntree :num :ntree b)))
+      (equal
+       (hap*
+        (ntree_case
+         (typ
+          (:arrow* :ntree (:arrow* :num b) (:arrow* :ntree :num :ntree b) b)))
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a0 a1 a2) f
+        f0) (hap* f0 a0 a1 a2)))))
+
+#|
+Definition:
+
+   ⊢ (∀a0. ntree_size (nLeaf a0) = 1 + a0) ∧
+     ∀a0 a1 a2.
+       ntree_size (nNode a0 a1 a2) =
+       1 + (ntree_size a0 + (a1 + ntree_size a2))
+|#
+
+(defhol
+   :fns ((ntree_size (:arrow* :ntree :num)))
+   :defs ((:forall ((a0 :num))
+      (equal
+       (hap* (ntree_size (typ (:arrow* :ntree :num)))
+        (hap* (nleaf (typ (:arrow* :num :ntree))) a0)) (hp+ (hp-num 1) a0)))
+     (:forall ((a0 :ntree) (a1 :num) (a2 :ntree))
+      (equal
+       (hap* (ntree_size (typ (:arrow* :ntree :num)))
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a0 a1 a2))
+       (hp+ (hp-num 1)
+        (hp+ (hap* (ntree_size (typ (:arrow* :ntree :num))) a0)
+         (hp+ a1 (hap* (ntree_size (typ (:arrow* :ntree :num))) a2))))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. ntree_nLeaf_proj (nLeaf a0) = a0
+|#
+
+(defhol
+   :fns ((ntree_nleaf_proj (:arrow* :ntree :num)))
+   :defs ((:forall ((a0 :num))
+      (equal
+       (hap* (ntree_nleaf_proj (typ (:arrow* :ntree :num)))
+        (hap* (nleaf (typ (:arrow* :num :ntree))) a0)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. ntree_nNode_proj_1 (nNode a0 a1 a2) = a0
+|#
+
+(defhol
+   :fns ((ntree_nnode_proj_1 (:arrow* :ntree :ntree)))
+   :defs ((:forall ((a0 :ntree) (a1 :num) (a2 :ntree))
+      (equal
+       (hap* (ntree_nnode_proj_1 (typ (:arrow* :ntree :ntree)))
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a0 a1 a2)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. ntree_nNode_proj_2 (nNode a0 a1 a2) = a1
+|#
+
+(defhol
+   :fns ((ntree_nnode_proj_2 (:arrow* :ntree :num)))
+   :defs ((:forall ((a0 :ntree) (a1 :num) (a2 :ntree))
+      (equal
+       (hap* (ntree_nnode_proj_2 (typ (:arrow* :ntree :num)))
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a0 a1 a2)) a1))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. ntree_nNode_proj_3 (nNode a0 a1 a2) = a2
+|#
+
+(defhol
+   :fns ((ntree_nnode_proj_3 (:arrow* :ntree :ntree)))
+   :defs ((:forall ((a0 :ntree) (a1 :num) (a2 :ntree))
+      (equal
+       (hap* (ntree_nnode_proj_3 (typ (:arrow* :ntree :ntree)))
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a0 a1 a2)) a2))))
+
+#|
+Theorem: ntree_one_one
+
+   ⊢ ∀a0 a0' a0'' a1 a2 a0'³' a1' a2'.
+       (nLeaf a0 = nLeaf a0' ⇔ a0 = a0') ∧
+       (nNode a0'' a1 a2 = nNode a0'³' a1' a2' ⇔
+        a0'' = a0'³' ∧ a1 = a1' ∧ a2 = a2')
+|#
+
+(defhol
+   :name ntree_one_one
+   :thm (:forall
+     ((a0 :num) (a01 :num) (a02 :ntree) (a1 :num) (a2 :ntree) (a03 :ntree)
+      (a11 :num) (a21 :ntree))
+     (hp-and
+      (hp=
+       (hp= (hap* (nleaf (typ (:arrow* :num :ntree))) a0)
+        (hap* (nleaf (typ (:arrow* :num :ntree))) a01)) (hp= a0 a01))
+      (hp=
+       (hp= (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a02 a1 a2)
+        (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a03 a11 a21))
+       (hp-and (hp= a02 a03) (hp-and (hp= a1 a11) (hp= a2 a21)))))))
+
+#|
+Theorem: ntree_distinct
+
+   ⊢ ∀a2 a1 a0' a0. nLeaf a0 ≠ nNode a0' a1 a2
+|#
+
+(defhol
+   :name ntree_distinct
+   :thm (:forall ((a2 :ntree) (a1 :num) (a01 :ntree) (a0 :num))
+     (hp-not
+      (hp= (hap* (nleaf (typ (:arrow* :num :ntree))) a0)
+       (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) a01 a1 a2)))))
+
+#|
+Theorem: ntree_cases
+
+   ⊢ ∀x. x = nLeaf (ntree_nLeaf_proj x) ∨
+         x =
+         nNode (ntree_nNode_proj_1 x) (ntree_nNode_proj_2 x)
+           (ntree_nNode_proj_3 x)
+|#
+
+(defhol
+   :name ntree_cases
+   :thm (:forall ((x :ntree))
+     (hp-or
+      (hp= x
+       (hap* (nleaf (typ (:arrow* :num :ntree)))
+        (hap* (ntree_nleaf_proj (typ (:arrow* :ntree :num))) x)))
+      (hp= x
+       (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree)))
+        (hap* (ntree_nnode_proj_1 (typ (:arrow* :ntree :ntree))) x)
+        (hap* (ntree_nnode_proj_2 (typ (:arrow* :ntree :num))) x)
+        (hap* (ntree_nnode_proj_3 (typ (:arrow* :ntree :ntree))) x))))))
+
+#|
 Datatype α btree
 Constructors:
    bLeaf : α -> α btree
@@ -21,6 +183,182 @@ Constructors:
    :datatype (:btree a)
    :constructors ((bleaf (:arrow* a (:btree a)))
                   (bnode (:arrow* (:btree a) a (:btree a) (:btree a)))))
+
+#|
+Definition:
+
+   ⊢ (∀a0 f f0. btree_CASE (bLeaf a0) f f0 = f a0) ∧
+     ∀a0 a1 a2 f f0. btree_CASE (bNode a0 a1 a2) f f0 = f0 a0 a1 a2
+|#
+
+(defhol
+   :fns ((btree_case
+      (:arrow* (:btree a) (:arrow* a b) (:arrow* (:btree a) a (:btree a) b) b)))
+   :defs ((:forall
+      ((a0 a) (f (:arrow* a b)) (f0 (:arrow* (:btree a) a (:btree a) b)))
+      (equal
+       (hap*
+        (btree_case
+         (typ
+          (:arrow* (:btree a) (:arrow* a b)
+           (:arrow* (:btree a) a (:btree a) b) b)))
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) a0) f f0) (hap* f a0)))
+     (:forall
+      ((a0 (:btree a)) (a1 a) (a2 (:btree a)) (f (:arrow* a b))
+       (f0 (:arrow* (:btree a) a (:btree a) b)))
+      (equal
+       (hap*
+        (btree_case
+         (typ
+          (:arrow* (:btree a) (:arrow* a b)
+           (:arrow* (:btree a) a (:btree a) b) b)))
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a0 a1
+         a2) f f0) (hap* f0 a0 a1 a2)))))
+
+#|
+Definition:
+
+   ⊢ (∀f0 a0. btree_size f0 (bLeaf a0) = 1 + f0 a0) ∧
+     ∀f0 a0 a1 a2.
+       btree_size f0 (bNode a0 a1 a2) =
+       1 + (btree_size f0 a0 + (f0 a1 + btree_size f0 a2))
+|#
+
+(defhol
+   :fns ((btree_size (:arrow* (:arrow* a :num) (:btree a) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)) (a0 a))
+      (equal
+       (hap* (btree_size (typ (:arrow* (:arrow* a :num) (:btree a) :num))) f0
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) a0))
+       (hp+ (hp-num 1) (hap* f0 a0))))
+     (:forall ((f0 (:arrow* a :num)) (a0 (:btree a)) (a1 a) (a2 (:btree a)))
+      (equal
+       (hap* (btree_size (typ (:arrow* (:arrow* a :num) (:btree a) :num))) f0
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a0 a1
+         a2))
+       (hp+ (hp-num 1)
+        (hp+
+         (hap* (btree_size (typ (:arrow* (:arrow* a :num) (:btree a) :num)))
+          f0 a0)
+         (hp+ (hap* f0 a1)
+          (hap* (btree_size (typ (:arrow* (:arrow* a :num) (:btree a) :num)))
+           f0 a2))))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. btree_bLeaf_proj (bLeaf a0) = a0
+|#
+
+(defhol
+   :fns ((btree_bleaf_proj (:arrow* (:btree a) a)))
+   :defs ((:forall ((a0 a))
+      (equal
+       (hap* (btree_bleaf_proj (typ (:arrow* (:btree a) a)))
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) a0)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. btree_bNode_proj_1 (bNode a0 a1 a2) = a0
+|#
+
+(defhol
+   :fns ((btree_bnode_proj_1 (:arrow* (:btree a) (:btree a))))
+   :defs ((:forall ((a0 (:btree a)) (a1 a) (a2 (:btree a)))
+      (equal
+       (hap* (btree_bnode_proj_1 (typ (:arrow* (:btree a) (:btree a))))
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a0 a1
+         a2)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. btree_bNode_proj_2 (bNode a0 a1 a2) = a1
+|#
+
+(defhol
+   :fns ((btree_bnode_proj_2 (:arrow* (:btree a) a)))
+   :defs ((:forall ((a0 (:btree a)) (a1 a) (a2 (:btree a)))
+      (equal
+       (hap* (btree_bnode_proj_2 (typ (:arrow* (:btree a) a)))
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a0 a1
+         a2)) a1))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1 a2. btree_bNode_proj_3 (bNode a0 a1 a2) = a2
+|#
+
+(defhol
+   :fns ((btree_bnode_proj_3 (:arrow* (:btree a) (:btree a))))
+   :defs ((:forall ((a0 (:btree a)) (a1 a) (a2 (:btree a)))
+      (equal
+       (hap* (btree_bnode_proj_3 (typ (:arrow* (:btree a) (:btree a))))
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a0 a1
+         a2)) a2))))
+
+#|
+Theorem: btree_one_one
+
+   ⊢ ∀a0 a0' a0'' a1 a2 a0'³' a1' a2'.
+       (bLeaf a0 = bLeaf a0' ⇔ a0 = a0') ∧
+       (bNode a0'' a1 a2 = bNode a0'³' a1' a2' ⇔
+        a0'' = a0'³' ∧ a1 = a1' ∧ a2 = a2')
+|#
+
+(defhol
+   :name btree_one_one
+   :thm (:forall
+     ((a0 a) (a01 a) (a02 (:btree a)) (a1 a) (a2 (:btree a)) (a03 (:btree a))
+      (a11 a) (a21 (:btree a)))
+     (hp-and
+      (hp=
+       (hp= (hap* (bleaf (typ (:arrow* a (:btree a)))) a0)
+        (hap* (bleaf (typ (:arrow* a (:btree a)))) a01)) (hp= a0 a01))
+      (hp=
+       (hp=
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a02
+         a1 a2)
+        (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a03
+         a11 a21)) (hp-and (hp= a02 a03) (hp-and (hp= a1 a11) (hp= a2 a21)))))))
+
+#|
+Theorem: btree_distinct
+
+   ⊢ ∀a2 a1 a0' a0. bLeaf a0 ≠ bNode a0' a1 a2
+|#
+
+(defhol
+   :name btree_distinct
+   :thm (:forall ((a2 (:btree a)) (a1 a) (a01 (:btree a)) (a0 a))
+     (hp-not
+      (hp= (hap* (bleaf (typ (:arrow* a (:btree a)))) a0)
+       (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a)))) a01 a1
+        a2)))))
+
+#|
+Theorem: btree_cases
+
+   ⊢ ∀x. x = bLeaf (btree_bLeaf_proj x) ∨
+         x =
+         bNode (btree_bNode_proj_1 x) (btree_bNode_proj_2 x)
+           (btree_bNode_proj_3 x)
+|#
+
+(defhol
+   :name btree_cases
+   :thm (:forall ((x (:btree a)))
+     (hp-or
+      (hp= x
+       (hap* (bleaf (typ (:arrow* a (:btree a))))
+        (hap* (btree_bleaf_proj (typ (:arrow* (:btree a) a))) x)))
+      (hp= x
+       (hap* (bnode (typ (:arrow* (:btree a) a (:btree a) (:btree a))))
+        (hap* (btree_bnode_proj_1 (typ (:arrow* (:btree a) (:btree a)))) x)
+        (hap* (btree_bnode_proj_2 (typ (:arrow* (:btree a) a))) x)
+        (hap* (btree_bnode_proj_3 (typ (:arrow* (:btree a) (:btree a)))) x))))))
 
 #|
 Datatype α tree
@@ -35,6 +373,117 @@ Constructors:
                   (node (:arrow* a (:forest a) (:tree a)))))
 
 #|
+Definition:
+
+   ⊢ (∀v f. tree_CASE Leaf v f = v) ∧
+     ∀a0 a1 v f. tree_CASE (Node a0 a1) v f = f a0 a1
+|#
+
+(defhol
+   :fns ((tree_case (:arrow* (:tree a) r1 (:arrow* a (:forest a) r1) r1)))
+   :defs ((:forall ((v r1) (f (:arrow* a (:forest a) r1)))
+      (equal
+       (hap*
+        (tree_case (typ (:arrow* (:tree a) r1 (:arrow* a (:forest a) r1) r1)))
+        (leaf (typ (:arrow* (:implicit a) (:tree a)))) v f) v))
+     (:forall ((a0 a) (a1 (:forest a)) (v r1) (f (:arrow* a (:forest a) r1)))
+      (equal
+       (hap*
+        (tree_case (typ (:arrow* (:tree a) r1 (:arrow* a (:forest a) r1) r1)))
+        (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1) v f)
+       (hap* f a0 a1)))))
+
+#|
+Definition:
+
+   ⊢ (∀f0. tree_size f0 Leaf = 0) ∧
+     ∀f0 a0 a1. tree_size f0 (Node a0 a1) = 1 + (f0 a0 + forest_size f0 a1)
+|#
+
+(defhol
+   :fns ((tree_size (:arrow* (:arrow* a :num) (:tree a) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)))
+      (equal
+       (hap* (tree_size (typ (:arrow* (:arrow* a :num) (:tree a) :num))) f0
+        (leaf (typ (:arrow* (:implicit a) (:tree a))))) (hp-num 0)))
+     (:forall ((f0 (:arrow* a :num)) (a0 a) (a1 (:forest a)))
+      (equal
+       (hap* (tree_size (typ (:arrow* (:arrow* a :num) (:tree a) :num))) f0
+        (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1))
+       (hp+ (hp-num 1)
+        (hp+ (hap* f0 a0)
+         (hap* (forest_size (typ (:arrow* (:arrow* a :num) (:forest a) :num)))
+          f0 a1)))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. tree_Node_proj_1 (Node a0 a1) = a0
+|#
+
+(defhol
+   :fns ((tree_node_proj_1 (:arrow* (:tree a) a)))
+   :defs ((:forall ((a0 a) (a1 (:forest a)))
+      (equal
+       (hap* (tree_node_proj_1 (typ (:arrow* (:tree a) a)))
+        (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. tree_Node_proj_2 (Node a0 a1) = a1
+|#
+
+(defhol
+   :fns ((tree_node_proj_2 (:arrow* (:tree a) (:forest a))))
+   :defs ((:forall ((a0 a) (a1 (:forest a)))
+      (equal
+       (hap* (tree_node_proj_2 (typ (:arrow* (:tree a) (:forest a))))
+        (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1)) a1))))
+
+#|
+Theorem: tree_one_one
+
+   ⊢ ∀a0 a1 a0' a1'. Node a0 a1 = Node a0' a1' ⇔ a0 = a0' ∧ a1 = a1'
+|#
+
+(defhol
+   :name tree_one_one
+   :thm (:forall ((a0 a) (a1 (:forest a)) (a01 a) (a11 (:forest a)))
+     (hp=
+      (hp= (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1)
+       (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a01 a11))
+      (hp-and (hp= a0 a01) (hp= a1 a11)))))
+
+#|
+Theorem: tree_distinct
+
+   ⊢ ∀a1 a0. Leaf ≠ Node a0 a1
+|#
+
+(defhol
+   :name tree_distinct
+   :thm (:forall ((a1 (:forest a)) (a0 a))
+     (hp-not
+      (hp= (leaf (typ (:arrow* (:implicit a) (:tree a))))
+       (hap* (node (typ (:arrow* a (:forest a) (:tree a)))) a0 a1)))))
+
+#|
+Theorem: tree_cases
+
+   ⊢ ∀x. x = Leaf ∨ x = Node (tree_Node_proj_1 x) (tree_Node_proj_2 x)
+|#
+
+(defhol
+   :name tree_cases
+   :thm (:forall ((x (:tree a)))
+     (hp-or (hp= x (leaf (typ (:arrow* (:implicit a) (:tree a)))))
+      (hp= x
+       (hap* (node (typ (:arrow* a (:forest a) (:tree a))))
+        (hap* (tree_node_proj_1 (typ (:arrow* (:tree a) a))) x)
+        (hap* (tree_node_proj_2 (typ (:arrow* (:tree a) (:forest a)))) x))))))
+
+#|
 Datatype α forest
 Constructors:
    Empty : α forest
@@ -47,6 +496,130 @@ Constructors:
                   (cons (:arrow* (:tree a) (:forest a) (:forest a)))))
 
 #|
+Definition:
+
+   ⊢ (∀v f. forest_CASE Empty v f = v) ∧
+     ∀a0 a1 v f. forest_CASE (Cons a0 a1) v f = f a0 a1
+|#
+
+(defhol
+   :fns ((forest_case
+      (:arrow* (:forest a) r2 (:arrow* (:tree a) (:forest a) r2) r2)))
+   :defs ((:forall ((v r2) (f (:arrow* (:tree a) (:forest a) r2)))
+      (equal
+       (hap*
+        (forest_case
+         (typ (:arrow* (:forest a) r2 (:arrow* (:tree a) (:forest a) r2) r2)))
+        (empty (typ (:arrow* (:implicit a) (:forest a)))) v f) v))
+     (:forall
+      ((a0 (:tree a)) (a1 (:forest a)) (v r2)
+       (f (:arrow* (:tree a) (:forest a) r2)))
+      (equal
+       (hap*
+        (forest_case
+         (typ (:arrow* (:forest a) r2 (:arrow* (:tree a) (:forest a) r2) r2)))
+        (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1)
+        v f) (hap* f a0 a1)))))
+
+#|
+Definition:
+
+   ⊢ (∀f0. forest_size f0 Empty = 0) ∧
+     ∀f0 a0 a1.
+       forest_size f0 (Cons a0 a1) = 1 + (tree_size f0 a0 + forest_size f0 a1)
+|#
+
+(defhol
+   :fns ((forest_size (:arrow* (:arrow* a :num) (:forest a) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)))
+      (equal
+       (hap* (forest_size (typ (:arrow* (:arrow* a :num) (:forest a) :num)))
+        f0 (empty (typ (:arrow* (:implicit a) (:forest a))))) (hp-num 0)))
+     (:forall ((f0 (:arrow* a :num)) (a0 (:tree a)) (a1 (:forest a)))
+      (equal
+       (hap* (forest_size (typ (:arrow* (:arrow* a :num) (:forest a) :num)))
+        f0
+        (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1))
+       (hp+ (hp-num 1)
+        (hp+
+         (hap* (tree_size (typ (:arrow* (:arrow* a :num) (:tree a) :num))) f0
+          a0)
+         (hap* (forest_size (typ (:arrow* (:arrow* a :num) (:forest a) :num)))
+          f0 a1)))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. forest_Cons_proj_1 (Cons a0 a1) = a0
+|#
+
+(defhol
+   :fns ((forest_cons_proj_1 (:arrow* (:forest a) (:tree a))))
+   :defs ((:forall ((a0 (:tree a)) (a1 (:forest a)))
+      (equal
+       (hap* (forest_cons_proj_1 (typ (:arrow* (:forest a) (:tree a))))
+        (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1))
+       a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. forest_Cons_proj_2 (Cons a0 a1) = a1
+|#
+
+(defhol
+   :fns ((forest_cons_proj_2 (:arrow* (:forest a) (:forest a))))
+   :defs ((:forall ((a0 (:tree a)) (a1 (:forest a)))
+      (equal
+       (hap* (forest_cons_proj_2 (typ (:arrow* (:forest a) (:forest a))))
+        (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1))
+       a1))))
+
+#|
+Theorem: forest_one_one
+
+   ⊢ ∀a0 a1 a0' a1'. Cons a0 a1 = Cons a0' a1' ⇔ a0 = a0' ∧ a1 = a1'
+|#
+
+(defhol
+   :name forest_one_one
+   :thm (:forall
+     ((a0 (:tree a)) (a1 (:forest a)) (a01 (:tree a)) (a11 (:forest a)))
+     (hp=
+      (hp=
+       (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1)
+       (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a01 a11))
+      (hp-and (hp= a0 a01) (hp= a1 a11)))))
+
+#|
+Theorem: forest_distinct
+
+   ⊢ ∀a1 a0. Empty ≠ Cons a0 a1
+|#
+
+(defhol
+   :name forest_distinct
+   :thm (:forall ((a1 (:forest a)) (a0 (:tree a)))
+     (hp-not
+      (hp= (empty (typ (:arrow* (:implicit a) (:forest a))))
+       (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a)))) a0 a1)))))
+
+#|
+Theorem: forest_cases
+
+   ⊢ ∀x. x = Empty ∨ x = Cons (forest_Cons_proj_1 x) (forest_Cons_proj_2 x)
+|#
+
+(defhol
+   :name forest_cases
+   :thm (:forall ((x (:forest a)))
+     (hp-or (hp= x (empty (typ (:arrow* (:implicit a) (:forest a)))))
+      (hp= x
+       (hap* (cons (typ (:arrow* (:tree a) (:forest a) (:forest a))))
+        (hap* (forest_cons_proj_1 (typ (:arrow* (:forest a) (:tree a)))) x)
+        (hap* (forest_cons_proj_2 (typ (:arrow* (:forest a) (:forest a)))) x))))))
+
+#|
 Datatype (α, β) alt
 Constructors:
    Left : α -> (α, β) alt
@@ -57,6 +630,130 @@ Constructors:
    :datatype (:alt a b)
    :constructors ((left (:arrow* (:implicit b) a (:alt a b)))
                   (right (:arrow* (:implicit a) b (:alt a b)))))
+
+#|
+Definition:
+
+   ⊢ (∀a0 f f0. alt_CASE (Left a0) f f0 = f a0) ∧
+     ∀a0 f f0. alt_CASE (Right a0) f f0 = f0 a0
+|#
+
+(defhol
+   :fns ((alt_case (:arrow* (:alt a b) (:arrow* a c) (:arrow* b c) c)))
+   :defs ((:forall ((a0 a) (f (:arrow* a c)) (f0 (:arrow* b c)))
+      (equal
+       (hap*
+        (alt_case (typ (:arrow* (:alt a b) (:arrow* a c) (:arrow* b c) c)))
+        (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a0) f f0)
+       (hap* f a0)))
+     (:forall ((a0 b) (f (:arrow* a c)) (f0 (:arrow* b c)))
+      (equal
+       (hap*
+        (alt_case (typ (:arrow* (:alt a b) (:arrow* a c) (:arrow* b c) c)))
+        (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a0) f f0)
+       (hap* f0 a0)))))
+
+#|
+Definition:
+
+   ⊢ (∀f0 f1 a0. alt_size f0 f1 (Left a0) = 1 + f0 a0) ∧
+     ∀f0 f1 a0. alt_size f0 f1 (Right a0) = 1 + f1 a0
+|#
+
+(defhol
+   :fns ((alt_size
+      (:arrow* (:arrow* a :num) (:arrow* b :num) (:alt a b) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 a))
+      (equal
+       (hap*
+        (alt_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:alt a b) :num))) f0
+        f1 (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a0))
+       (hp+ (hp-num 1) (hap* f0 a0))))
+     (:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 b))
+      (equal
+       (hap*
+        (alt_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:alt a b) :num))) f0
+        f1 (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a0))
+       (hp+ (hp-num 1) (hap* f1 a0))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. alt_Left_proj (Left a0) = a0
+|#
+
+(defhol
+   :fns ((alt_left_proj (:arrow* (:alt a b) a)))
+   :defs ((:forall ((a0 a))
+      (equal
+       (hap* (alt_left_proj (typ (:arrow* (:alt a b) a)))
+        (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a0)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. alt_Right_proj (Right a0) = a0
+|#
+
+(defhol
+   :fns ((alt_right_proj (:arrow* (:alt a b) b)))
+   :defs ((:forall ((a0 b))
+      (equal
+       (hap* (alt_right_proj (typ (:arrow* (:alt a b) b)))
+        (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a0)) a0))))
+
+#|
+Theorem: alt_one_one
+
+   ⊢ ∀a0 a0' a0'' a0'³'.
+       (Left a0 = Left a0' ⇔ a0 = a0') ∧
+       (Right a0'' = Right a0'³' ⇔ a0'' = a0'³')
+|#
+
+(defhol
+   :name alt_one_one
+   :thm (:forall ((a0 a) (a01 a) (a02 b) (a03 b))
+     (hp-and
+      (hp=
+       (hp= (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a0)
+        (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a01))
+       (hp= a0 a01))
+      (hp=
+       (hp= (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a02)
+        (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a03))
+       (hp= a02 a03)))))
+
+#|
+Theorem: alt_distinct
+
+   ⊢ ∀a0' a0. Left a0 ≠ Right a0'
+|#
+
+(defhol
+   :name alt_distinct
+   :thm (:forall ((a01 b) (a0 a))
+     (hp-not
+      (hp= (hap* (left (typ (:arrow* (:implicit b) a (:alt a b)))) a0)
+       (hap* (right (typ (:arrow* (:implicit a) b (:alt a b)))) a01)))))
+
+#|
+Theorem: alt_cases
+
+   ⊢ ∀x. x = Left (alt_Left_proj x) ∨ x = Right (alt_Right_proj x)
+|#
+
+(defhol
+   :name alt_cases
+   :thm (:forall ((x (:alt a b)))
+     (hp-or
+      (hp= x
+       (hap* (left (typ (:arrow* (:implicit b) a (:alt a b))))
+        (hap* (alt_left_proj (typ (:arrow* (:alt a b) a))) x)))
+      (hp= x
+       (hap* (right (typ (:arrow* (:implicit a) b (:alt a b))))
+        (hap* (alt_right_proj (typ (:arrow* (:alt a b) b))) x))))))
 
 #|
 Datatype (α, β) trio
@@ -73,6 +770,157 @@ Constructors:
                   (t3 (:arrow* (:implicit a) (:implicit b) (:trio a b)))))
 
 #|
+Definition:
+
+   ⊢ (∀a0 f f0 v. trio_CASE (T1 a0) f f0 v = f a0) ∧
+     (∀a0 f f0 v. trio_CASE (T2 a0) f f0 v = f0 a0) ∧
+     ∀f f0 v. trio_CASE T3 f f0 v = v
+|#
+
+(defhol
+   :fns ((trio_case (:arrow* (:trio a b) (:arrow* a c) (:arrow* b c) c c)))
+   :defs ((:forall ((a0 a) (f (:arrow* a c)) (f0 (:arrow* b c)) (v c))
+      (equal
+       (hap*
+        (trio_case
+         (typ (:arrow* (:trio a b) (:arrow* a c) (:arrow* b c) c c)))
+        (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a0) f f0 v)
+       (hap* f a0)))
+     (:forall ((a0 b) (f (:arrow* a c)) (f0 (:arrow* b c)) (v c))
+      (equal
+       (hap*
+        (trio_case
+         (typ (:arrow* (:trio a b) (:arrow* a c) (:arrow* b c) c c)))
+        (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a0) f f0 v)
+       (hap* f0 a0)))
+     (:forall ((f (:arrow* a c)) (f0 (:arrow* b c)) (v c))
+      (equal
+       (hap*
+        (trio_case
+         (typ (:arrow* (:trio a b) (:arrow* a c) (:arrow* b c) c c)))
+        (t3 (typ (:arrow* (:implicit a) (:implicit b) (:trio a b)))) f f0 v)
+       v))))
+
+#|
+Definition:
+
+   ⊢ (∀f0 f1 a0. trio_size f0 f1 (T1 a0) = 1 + f0 a0) ∧
+     (∀f0 f1 a0. trio_size f0 f1 (T2 a0) = 1 + f1 a0) ∧
+     ∀f0 f1. trio_size f0 f1 T3 = 0
+|#
+
+(defhol
+   :fns ((trio_size
+      (:arrow* (:arrow* a :num) (:arrow* b :num) (:trio a b) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 a))
+      (equal
+       (hap*
+        (trio_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:trio a b) :num)))
+        f0 f1 (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a0))
+       (hp+ (hp-num 1) (hap* f0 a0))))
+     (:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 b))
+      (equal
+       (hap*
+        (trio_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:trio a b) :num)))
+        f0 f1 (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a0))
+       (hp+ (hp-num 1) (hap* f1 a0))))
+     (:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)))
+      (equal
+       (hap*
+        (trio_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:trio a b) :num)))
+        f0 f1 (t3 (typ (:arrow* (:implicit a) (:implicit b) (:trio a b)))))
+       (hp-num 0)))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. trio_T1_proj (T1 a0) = a0
+|#
+
+(defhol
+   :fns ((trio_t1_proj (:arrow* (:trio a b) a)))
+   :defs ((:forall ((a0 a))
+      (equal
+       (hap* (trio_t1_proj (typ (:arrow* (:trio a b) a)))
+        (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a0)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. trio_T2_proj (T2 a0) = a0
+|#
+
+(defhol
+   :fns ((trio_t2_proj (:arrow* (:trio a b) b)))
+   :defs ((:forall ((a0 b))
+      (equal
+       (hap* (trio_t2_proj (typ (:arrow* (:trio a b) b)))
+        (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a0)) a0))))
+
+#|
+Theorem: trio_one_one
+
+   ⊢ ∀a0 a0' a0'' a0'³'.
+       (T1 a0 = T1 a0' ⇔ a0 = a0') ∧ (T2 a0'' = T2 a0'³' ⇔ a0'' = a0'³')
+|#
+
+(defhol
+   :name trio_one_one
+   :thm (:forall ((a0 a) (a01 a) (a02 b) (a03 b))
+     (hp-and
+      (hp=
+       (hp= (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a0)
+        (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a01))
+       (hp= a0 a01))
+      (hp=
+       (hp= (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a02)
+        (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a03))
+       (hp= a02 a03)))))
+
+#|
+Theorem: trio_distinct
+
+   ⊢ ∀a0' a0 a0'' a0'³'. T1 a0 ≠ T2 a0' ∧ T1 a0'' ≠ T3 ∧ T2 a0'³' ≠ T3
+|#
+
+(defhol
+   :name trio_distinct
+   :thm (:forall ((a01 b) (a0 a) (a02 a) (a03 b))
+     (hp-and
+      (hp-not
+       (hp= (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a0)
+        (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a01)))
+      (hp-and
+       (hp-not
+        (hp= (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b)))) a02)
+         (t3 (typ (:arrow* (:implicit a) (:implicit b) (:trio a b))))))
+       (hp-not
+        (hp= (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b)))) a03)
+         (t3 (typ (:arrow* (:implicit a) (:implicit b) (:trio a b))))))))))
+
+#|
+Theorem: trio_cases
+
+   ⊢ ∀x. x = T1 (trio_T1_proj x) ∨ x = T2 (trio_T2_proj x) ∨ x = T3
+|#
+
+(defhol
+   :name trio_cases
+   :thm (:forall ((x (:trio a b)))
+     (hp-or
+      (hp= x
+       (hap* (t1 (typ (:arrow* (:implicit b) a (:trio a b))))
+        (hap* (trio_t1_proj (typ (:arrow* (:trio a b) a))) x)))
+      (hp-or
+       (hp= x
+        (hap* (t2 (typ (:arrow* (:implicit a) b (:trio a b))))
+         (hap* (trio_t2_proj (typ (:arrow* (:trio a b) b))) x)))
+       (hp= x (t3 (typ (:arrow* (:implicit a) (:implicit b) (:trio a b)))))))))
+
+#|
 Datatype (α, β) flist
 Constructors:
    fNil : β -> (α, β) flist
@@ -87,6 +935,161 @@ Constructors:
 #|
 Definition:
 
+   ⊢ (∀a0 f f0. flist_CASE (fNil a0) f f0 = f a0) ∧
+     ∀a0 a1 f f0. flist_CASE (fCons a0 a1) f f0 = f0 a0 a1
+|#
+
+(defhol
+   :fns ((flist_case
+      (:arrow* (:flist a b) (:arrow* b c) (:arrow* (:flist a b) a c) c)))
+   :defs ((:forall ((a0 b) (f (:arrow* b c)) (f0 (:arrow* (:flist a b) a c)))
+      (equal
+       (hap*
+        (flist_case
+         (typ
+          (:arrow* (:flist a b) (:arrow* b c) (:arrow* (:flist a b) a c) c)))
+        (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a0) f f0)
+       (hap* f a0)))
+     (:forall
+      ((a0 (:flist a b)) (a1 a) (f (:arrow* b c))
+       (f0 (:arrow* (:flist a b) a c)))
+      (equal
+       (hap*
+        (flist_case
+         (typ
+          (:arrow* (:flist a b) (:arrow* b c) (:arrow* (:flist a b) a c) c)))
+        (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a0 a1) f f0)
+       (hap* f0 a0 a1)))))
+
+#|
+Definition:
+
+   ⊢ (∀f0 f1 a0. flist_size f0 f1 (fNil a0) = 1 + f1 a0) ∧
+     ∀f0 f1 a0 a1.
+       flist_size f0 f1 (fCons a0 a1) = 1 + (flist_size f0 f1 a0 + f0 a1)
+|#
+
+(defhol
+   :fns ((flist_size
+      (:arrow* (:arrow* a :num) (:arrow* b :num) (:flist a b) :num)))
+   :defs ((:forall ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 b))
+      (equal
+       (hap*
+        (flist_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:flist a b) :num)))
+        f0 f1 (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a0))
+       (hp+ (hp-num 1) (hap* f1 a0))))
+     (:forall
+      ((f0 (:arrow* a :num)) (f1 (:arrow* b :num)) (a0 (:flist a b)) (a1 a))
+      (equal
+       (hap*
+        (flist_size
+         (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:flist a b) :num)))
+        f0 f1
+        (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a0 a1))
+       (hp+ (hp-num 1)
+        (hp+
+         (hap*
+          (flist_size
+           (typ (:arrow* (:arrow* a :num) (:arrow* b :num) (:flist a b) :num)))
+          f0 f1 a0) (hap* f0 a1)))))))
+
+#|
+Definition:
+
+   ⊢ ∀a0. flist_fNil_proj (fNil a0) = a0
+|#
+
+(defhol
+   :fns ((flist_fnil_proj (:arrow* (:flist a b) b)))
+   :defs ((:forall ((a0 b))
+      (equal
+       (hap* (flist_fnil_proj (typ (:arrow* (:flist a b) b)))
+        (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a0)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. flist_fCons_proj_1 (fCons a0 a1) = a0
+|#
+
+(defhol
+   :fns ((flist_fcons_proj_1 (:arrow* (:flist a b) (:flist a b))))
+   :defs ((:forall ((a0 (:flist a b)) (a1 a))
+      (equal
+       (hap* (flist_fcons_proj_1 (typ (:arrow* (:flist a b) (:flist a b))))
+        (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a0 a1)) a0))))
+
+#|
+Definition:
+
+   ⊢ ∀a0 a1. flist_fCons_proj_2 (fCons a0 a1) = a1
+|#
+
+(defhol
+   :fns ((flist_fcons_proj_2 (:arrow* (:flist a b) a)))
+   :defs ((:forall ((a0 (:flist a b)) (a1 a))
+      (equal
+       (hap* (flist_fcons_proj_2 (typ (:arrow* (:flist a b) a)))
+        (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a0 a1)) a1))))
+
+#|
+Theorem: flist_one_one
+
+   ⊢ ∀a0 a0' a0'' a1 a0'³' a1'.
+       (fNil a0 = fNil a0' ⇔ a0 = a0') ∧
+       (fCons a0'' a1 = fCons a0'³' a1' ⇔ a0'' = a0'³' ∧ a1 = a1')
+|#
+
+(defhol
+   :name flist_one_one
+   :thm (:forall
+     ((a0 b) (a01 b) (a02 (:flist a b)) (a1 a) (a03 (:flist a b)) (a11 a))
+     (hp-and
+      (hp=
+       (hp= (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a0)
+        (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a01))
+       (hp= a0 a01))
+      (hp=
+       (hp= (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a02 a1)
+        (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a03 a11))
+       (hp-and (hp= a02 a03) (hp= a1 a11))))))
+
+#|
+Theorem: flist_distinct
+
+   ⊢ ∀a1 a0' a0. fNil a0 ≠ fCons a0' a1
+|#
+
+(defhol
+   :name flist_distinct
+   :thm (:forall ((a1 a) (a01 (:flist a b)) (a0 b))
+     (hp-not
+      (hp= (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b)))) a0)
+       (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b)))) a01 a1)))))
+
+#|
+Theorem: flist_cases
+
+   ⊢ ∀x. x = fNil (flist_fNil_proj x) ∨
+         x = fCons (flist_fCons_proj_1 x) (flist_fCons_proj_2 x)
+|#
+
+(defhol
+   :name flist_cases
+   :thm (:forall ((x (:flist a b)))
+     (hp-or
+      (hp= x
+       (hap* (fnil (typ (:arrow* (:implicit a) b (:flist a b))))
+        (hap* (flist_fnil_proj (typ (:arrow* (:flist a b) b))) x)))
+      (hp= x
+       (hap* (fcons (typ (:arrow* (:flist a b) a (:flist a b))))
+        (hap* (flist_fcons_proj_1 (typ (:arrow* (:flist a b) (:flist a b))))
+         x) (hap* (flist_fcons_proj_2 (typ (:arrow* (:flist a b) a))) x))))))
+
+#|
+Definition:
+
    ⊢ (∀x y. (if T then x else y) = x) ∧ ∀x y. (if F then x else y) = y
 |#
 
@@ -96,6 +1099,27 @@ Definition:
       (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-true) x y) x))
      (:forall ((x a) (y a))
       (equal (hap* (cond (typ (:arrow* :bool a a a))) (hp-false) x y) y))))
+
+#|
+Definition:
+
+   ⊢ ∀x. I x = x
+|#
+
+(defhol
+   :fns ((i (:arrow* a a)))
+   :defs ((:forall ((x a)) (equal (hap* (i (typ (:arrow* a a))) x) x))))
+
+#|
+Definition:
+
+   ⊢ ∀x y. K x y = x
+|#
+
+(defhol
+   :fns ((k (:arrow* a b a)))
+   :defs ((:forall ((x a) (y b))
+      (equal (hap* (k (typ (:arrow* a b a))) x y) x))))
 
 #|
 Definition:
@@ -139,27 +1163,6 @@ Definition:
           nt2)
          (hap* (nnode (typ (:arrow* :ntree :num :ntree :ntree))) nt1 n
           (hap* (insert_ntree (typ (:arrow* :num :ntree :ntree))) m nt2))))))))
-
-#|
-Definition:
-
-   ⊢ ∀x. I x = x
-|#
-
-(defhol
-   :fns ((i (:arrow* a a)))
-   :defs ((:forall ((x a)) (equal (hap* (i (typ (:arrow* a a))) x) x))))
-
-#|
-Definition:
-
-   ⊢ ∀x y. K x y = x
-|#
-
-(defhol
-   :fns ((k (:arrow* a b a)))
-   :defs ((:forall ((x a) (y b))
-      (equal (hap* (k (typ (:arrow* a b a))) x y) x))))
 
 #|
 Definition:

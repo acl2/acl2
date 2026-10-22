@@ -29,23 +29,56 @@
 (ENCAPSULATE (((HOL::DATATYPES$PROP) => *)
               ((HOL::NNODE *) => *)
               ((HOL::NLEAF *) => *)
+              ((HOL::NTREE_CASE *) => *)
+              ((HOL::NTREE_SIZE *) => *)
+              ((HOL::NTREE_NLEAF_PROJ *) => *)
+              ((HOL::NTREE_NNODE_PROJ_1 *) => *)
+              ((HOL::NTREE_NNODE_PROJ_2 *) => *)
+              ((HOL::NTREE_NNODE_PROJ_3 *) => *)
               ((HOL::BNODE *) => *)
               ((HOL::BLEAF *) => *)
+              ((HOL::BTREE_CASE *) => *)
+              ((HOL::BTREE_SIZE *) => *)
+              ((HOL::BTREE_BLEAF_PROJ *) => *)
+              ((HOL::BTREE_BNODE_PROJ_1 *) => *)
+              ((HOL::BTREE_BNODE_PROJ_2 *) => *)
+              ((HOL::BTREE_BNODE_PROJ_3 *) => *)
               ((HOL::NODE *) => *)
               ((HOL::LEAF *) => *)
+              ((HOL::TREE_CASE *) => *)
+              ((HOL::TREE_SIZE *) => *)
+              ((HOL::TREE_NODE_PROJ_1 *) => *)
+              ((HOL::TREE_NODE_PROJ_2 *) => *)
               ((HOL::CONS *) => *)
               ((HOL::EMPTY *) => *)
+              ((HOL::FOREST_CASE *) => *)
+              ((HOL::FOREST_SIZE *) => *)
+              ((HOL::FOREST_CONS_PROJ_1 *) => *)
+              ((HOL::FOREST_CONS_PROJ_2 *) => *)
               ((HOL::RIGHT *) => *)
               ((HOL::LEFT *) => *)
+              ((HOL::ALT_CASE *) => *)
+              ((HOL::ALT_SIZE *) => *)
+              ((HOL::ALT_LEFT_PROJ *) => *)
+              ((HOL::ALT_RIGHT_PROJ *) => *)
               ((HOL::T3 *) => *)
               ((HOL::T2 *) => *)
               ((HOL::T1 *) => *)
+              ((HOL::TRIO_CASE *) => *)
+              ((HOL::TRIO_SIZE *) => *)
+              ((HOL::TRIO_T1_PROJ *) => *)
+              ((HOL::TRIO_T2_PROJ *) => *)
               ((HOL::FCONS *) => *)
               ((HOL::FNIL *) => *)
+              ((HOL::FLIST_CASE *) => *)
+              ((HOL::FLIST_SIZE *) => *)
+              ((HOL::FLIST_FNIL_PROJ *) => *)
+              ((HOL::FLIST_FCONS_PROJ_1 *) => *)
+              ((HOL::FLIST_FCONS_PROJ_2 *) => *)
               ((HOL::COND *) => *)
-              ((HOL::INSERT_NTREE *) => *)
               ((HOL::I *) => *)
               ((HOL::K *) => *)
+              ((HOL::INSERT_NTREE *) => *)
               ((HOL::INSERT_BTREE *) => *)
               ((HOL::FLIST$VALUE) => *)
               ((HOL::TRIO$VALUE) => *)
@@ -64,23 +97,56 @@
   (LOCAL (DEFUN HOL::NTREE$VALUE NIL (OMEGA)))
   (LOCAL (DEFUN HOL::NNODE (X) X))
   (LOCAL (DEFUN HOL::NLEAF (X) X))
+  (LOCAL (DEFUN HOL::NTREE_CASE (X) X))
+  (LOCAL (DEFUN HOL::NTREE_SIZE (X) X))
+  (LOCAL (DEFUN HOL::NTREE_NLEAF_PROJ (X) X))
+  (LOCAL (DEFUN HOL::NTREE_NNODE_PROJ_1 (X) X))
+  (LOCAL (DEFUN HOL::NTREE_NNODE_PROJ_2 (X) X))
+  (LOCAL (DEFUN HOL::NTREE_NNODE_PROJ_3 (X) X))
   (LOCAL (DEFUN HOL::BNODE (X) X))
   (LOCAL (DEFUN HOL::BLEAF (X) X))
+  (LOCAL (DEFUN HOL::BTREE_CASE (X) X))
+  (LOCAL (DEFUN HOL::BTREE_SIZE (X) X))
+  (LOCAL (DEFUN HOL::BTREE_BLEAF_PROJ (X) X))
+  (LOCAL (DEFUN HOL::BTREE_BNODE_PROJ_1 (X) X))
+  (LOCAL (DEFUN HOL::BTREE_BNODE_PROJ_2 (X) X))
+  (LOCAL (DEFUN HOL::BTREE_BNODE_PROJ_3 (X) X))
   (LOCAL (DEFUN HOL::NODE (X) X))
   (LOCAL (DEFUN HOL::LEAF (X) X))
+  (LOCAL (DEFUN HOL::TREE_CASE (X) X))
+  (LOCAL (DEFUN HOL::TREE_SIZE (X) X))
+  (LOCAL (DEFUN HOL::TREE_NODE_PROJ_1 (X) X))
+  (LOCAL (DEFUN HOL::TREE_NODE_PROJ_2 (X) X))
   (LOCAL (DEFUN HOL::CONS (X) X))
   (LOCAL (DEFUN HOL::EMPTY (X) X))
+  (LOCAL (DEFUN HOL::FOREST_CASE (X) X))
+  (LOCAL (DEFUN HOL::FOREST_SIZE (X) X))
+  (LOCAL (DEFUN HOL::FOREST_CONS_PROJ_1 (X) X))
+  (LOCAL (DEFUN HOL::FOREST_CONS_PROJ_2 (X) X))
   (LOCAL (DEFUN HOL::RIGHT (X) X))
   (LOCAL (DEFUN HOL::LEFT (X) X))
+  (LOCAL (DEFUN HOL::ALT_CASE (X) X))
+  (LOCAL (DEFUN HOL::ALT_SIZE (X) X))
+  (LOCAL (DEFUN HOL::ALT_LEFT_PROJ (X) X))
+  (LOCAL (DEFUN HOL::ALT_RIGHT_PROJ (X) X))
   (LOCAL (DEFUN HOL::T3 (X) X))
   (LOCAL (DEFUN HOL::T2 (X) X))
   (LOCAL (DEFUN HOL::T1 (X) X))
+  (LOCAL (DEFUN HOL::TRIO_CASE (X) X))
+  (LOCAL (DEFUN HOL::TRIO_SIZE (X) X))
+  (LOCAL (DEFUN HOL::TRIO_T1_PROJ (X) X))
+  (LOCAL (DEFUN HOL::TRIO_T2_PROJ (X) X))
   (LOCAL (DEFUN HOL::FCONS (X) X))
   (LOCAL (DEFUN HOL::FNIL (X) X))
+  (LOCAL (DEFUN HOL::FLIST_CASE (X) X))
+  (LOCAL (DEFUN HOL::FLIST_SIZE (X) X))
+  (LOCAL (DEFUN HOL::FLIST_FNIL_PROJ (X) X))
+  (LOCAL (DEFUN HOL::FLIST_FCONS_PROJ_1 (X) X))
+  (LOCAL (DEFUN HOL::FLIST_FCONS_PROJ_2 (X) X))
   (LOCAL (DEFUN HOL::COND (X) X))
-  (LOCAL (DEFUN HOL::INSERT_NTREE (X) X))
   (LOCAL (DEFUN HOL::I (X) X))
   (LOCAL (DEFUN HOL::K (X) X))
+  (LOCAL (DEFUN HOL::INSERT_NTREE (X) X))
   (LOCAL (DEFUN HOL::INSERT_BTREE (X) X))
   (DEFUN HOL::DATATYPES$HTA NIL
     (APPEND (LIST (LIST* :FLIST (HOL::FLIST$VALUE) 2)
@@ -151,6 +217,76 @@
            (HOL::DATATYPES$HTA))
       (EQUAL (HP-TYPE (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE))))
              (TYP (:ARROW* :NUM :NTREE))))))
+  (DEFTHM HOL::NTREE_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::NTREE_CASE
+        (TYP (:ARROW* :NTREE (:ARROW* :NUM HOL::B)
+                      (:ARROW* :NTREE :NUM :NTREE HOL::B)
+                      HOL::B)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::NTREE_CASE
+         (TYP (:ARROW* :NTREE (:ARROW* :NUM HOL::B)
+                       (:ARROW* :NTREE :NUM :NTREE HOL::B)
+                       HOL::B))))
+       (TYP (:ARROW* :NTREE (:ARROW* :NUM HOL::B)
+                     (:ARROW* :NTREE :NUM :NTREE HOL::B)
+                     HOL::B))))))
+  (DEFTHM HOL::NTREE_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM))))
+       (TYP (:ARROW* :NTREE :NUM))))))
+  (DEFTHM HOL::NTREE_NLEAF_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::NTREE_NLEAF_PROJ (TYP (:ARROW* :NTREE :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::NTREE_NLEAF_PROJ (TYP (:ARROW* :NTREE :NUM))))
+       (TYP (:ARROW* :NTREE :NUM))))))
+  (DEFTHM HOL::NTREE_NNODE_PROJ_1$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::NTREE_NNODE_PROJ_1 (TYP (:ARROW* :NTREE :NTREE)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::NTREE_NNODE_PROJ_1 (TYP (:ARROW* :NTREE :NTREE))))
+       (TYP (:ARROW* :NTREE :NTREE))))))
+  (DEFTHM HOL::NTREE_NNODE_PROJ_2$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::NTREE_NNODE_PROJ_2 (TYP (:ARROW* :NTREE :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::NTREE_NNODE_PROJ_2 (TYP (:ARROW* :NTREE :NUM))))
+       (TYP (:ARROW* :NTREE :NUM))))))
+  (DEFTHM HOL::NTREE_NNODE_PROJ_3$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::NTREE_NNODE_PROJ_3 (TYP (:ARROW* :NTREE :NTREE)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::NTREE_NNODE_PROJ_3 (TYP (:ARROW* :NTREE :NTREE))))
+       (TYP (:ARROW* :NTREE :NTREE))))))
   (DEFTHM HOL::BNODE$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -176,6 +312,97 @@
        (HP-TYPE
         (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A)))))
        (TYP (:ARROW* HOL::A (:BTREE HOL::A)))))))
+  (DEFTHM HOL::BTREE_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::BTREE_CASE
+            (TYP (:ARROW* (:BTREE HOL::A)
+                          (:ARROW* HOL::A HOL::B)
+                          (:ARROW* (:BTREE HOL::A)
+                                   HOL::A (:BTREE HOL::A)
+                                   HOL::B)
+                          HOL::B)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::BTREE_CASE
+         (TYP (:ARROW* (:BTREE HOL::A)
+                       (:ARROW* HOL::A HOL::B)
+                       (:ARROW* (:BTREE HOL::A)
+                                HOL::A (:BTREE HOL::A)
+                                HOL::B)
+                       HOL::B))))
+       (TYP (:ARROW* (:BTREE HOL::A)
+                     (:ARROW* HOL::A HOL::B)
+                     (:ARROW* (:BTREE HOL::A)
+                              HOL::A (:BTREE HOL::A)
+                              HOL::B)
+                     HOL::B))))))
+  (DEFTHM HOL::BTREE_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                          (:BTREE HOL::A)
+                                          :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                       (:BTREE HOL::A)
+                                       :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:BTREE HOL::A)
+                     :NUM))))))
+  (DEFTHM HOL::BTREE_BLEAF_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::BTREE_BLEAF_PROJ
+            (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::BTREE_BLEAF_PROJ
+                 (TYP (:ARROW* (:BTREE HOL::A) HOL::A))))
+       (TYP (:ARROW* (:BTREE HOL::A) HOL::A))))))
+  (DEFTHM HOL::BTREE_BNODE_PROJ_1$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::BTREE_BNODE_PROJ_1 (TYP (:ARROW* (:BTREE HOL::A)
+                                              (:BTREE HOL::A))))
+       (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::BTREE_BNODE_PROJ_1
+                       (TYP (:ARROW* (:BTREE HOL::A)
+                                     (:BTREE HOL::A)))))
+             (TYP (:ARROW* (:BTREE HOL::A)
+                           (:BTREE HOL::A)))))))
+  (DEFTHM HOL::BTREE_BNODE_PROJ_2$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::BTREE_BNODE_PROJ_2
+            (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::BTREE_BNODE_PROJ_2
+                 (TYP (:ARROW* (:BTREE HOL::A) HOL::A))))
+       (TYP (:ARROW* (:BTREE HOL::A) HOL::A))))))
+  (DEFTHM HOL::BTREE_BNODE_PROJ_3$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::BTREE_BNODE_PROJ_3 (TYP (:ARROW* (:BTREE HOL::A)
+                                              (:BTREE HOL::A))))
+       (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::BTREE_BNODE_PROJ_3
+                       (TYP (:ARROW* (:BTREE HOL::A)
+                                     (:BTREE HOL::A)))))
+             (TYP (:ARROW* (:BTREE HOL::A)
+                           (:BTREE HOL::A)))))))
   (DEFTHM HOL::NODE$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -200,6 +427,70 @@
                                          (:TREE HOL::A)))))
        (TYP (:ARROW* (:IMPLICIT HOL::A)
                      (:TREE HOL::A)))))))
+  (DEFTHM HOL::TREE_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TREE_CASE
+            (TYP (:ARROW* (:TREE HOL::A)
+                          HOL::R1
+                          (:ARROW* HOL::A (:FOREST HOL::A)
+                                   HOL::R1)
+                          HOL::R1)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TREE_CASE
+         (TYP (:ARROW* (:TREE HOL::A)
+                       HOL::R1
+                       (:ARROW* HOL::A (:FOREST HOL::A)
+                                HOL::R1)
+                       HOL::R1))))
+       (TYP (:ARROW* (:TREE HOL::A)
+                     HOL::R1
+                     (:ARROW* HOL::A (:FOREST HOL::A)
+                              HOL::R1)
+                     HOL::R1))))))
+  (DEFTHM HOL::TREE_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                         (:TREE HOL::A)
+                                         :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:TREE HOL::A)
+                                      :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:TREE HOL::A)
+                     :NUM))))))
+  (DEFTHM HOL::TREE_NODE_PROJ_1$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TREE_NODE_PROJ_1
+            (TYP (:ARROW* (:TREE HOL::A) HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::TREE_NODE_PROJ_1
+                 (TYP (:ARROW* (:TREE HOL::A) HOL::A))))
+       (TYP (:ARROW* (:TREE HOL::A) HOL::A))))))
+  (DEFTHM HOL::TREE_NODE_PROJ_2$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::TREE_NODE_PROJ_2 (TYP (:ARROW* (:TREE HOL::A)
+                                            (:FOREST HOL::A))))
+       (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::TREE_NODE_PROJ_2
+                       (TYP (:ARROW* (:TREE HOL::A)
+                                     (:FOREST HOL::A)))))
+             (TYP (:ARROW* (:TREE HOL::A)
+                           (:FOREST HOL::A)))))))
   (DEFTHM HOL::CONS$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -227,6 +518,74 @@
                                           (:FOREST HOL::A)))))
        (TYP (:ARROW* (:IMPLICIT HOL::A)
                      (:FOREST HOL::A)))))))
+  (DEFTHM HOL::FOREST_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::FOREST_CASE (TYP (:ARROW* (:FOREST HOL::A)
+                                       HOL::R2
+                                       (:ARROW* (:TREE HOL::A)
+                                                (:FOREST HOL::A)
+                                                HOL::R2)
+                                       HOL::R2)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::FOREST_CASE
+                 (TYP (:ARROW* (:FOREST HOL::A)
+                               HOL::R2
+                               (:ARROW* (:TREE HOL::A)
+                                        (:FOREST HOL::A)
+                                        HOL::R2)
+                               HOL::R2))))
+       (TYP (:ARROW* (:FOREST HOL::A)
+                     HOL::R2
+                     (:ARROW* (:TREE HOL::A)
+                              (:FOREST HOL::A)
+                              HOL::R2)
+                     HOL::R2))))))
+  (DEFTHM HOL::FOREST_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                           (:FOREST HOL::A)
+                                           :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                        (:FOREST HOL::A)
+                                        :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:FOREST HOL::A)
+                     :NUM))))))
+  (DEFTHM HOL::FOREST_CONS_PROJ_1$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::FOREST_CONS_PROJ_1 (TYP (:ARROW* (:FOREST HOL::A)
+                                              (:TREE HOL::A))))
+       (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::FOREST_CONS_PROJ_1
+                       (TYP (:ARROW* (:FOREST HOL::A)
+                                     (:TREE HOL::A)))))
+             (TYP (:ARROW* (:FOREST HOL::A)
+                           (:TREE HOL::A)))))))
+  (DEFTHM HOL::FOREST_CONS_PROJ_2$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FOREST_CONS_PROJ_2
+            (TYP (:ARROW* (:FOREST HOL::A)
+                          (:FOREST HOL::A))))
+           (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::FOREST_CONS_PROJ_2
+                       (TYP (:ARROW* (:FOREST HOL::A)
+                                     (:FOREST HOL::A)))))
+             (TYP (:ARROW* (:FOREST HOL::A)
+                           (:FOREST HOL::A)))))))
   (DEFTHM HOL::RIGHT$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -256,6 +615,70 @@
                                  HOL::A (:ALT HOL::A HOL::B)))))
        (TYP (:ARROW* (:IMPLICIT HOL::B)
                      HOL::A (:ALT HOL::A HOL::B)))))))
+  (DEFTHM HOL::ALT_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::ALT_CASE (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                                        (:ARROW* HOL::A HOL::C)
+                                        (:ARROW* HOL::B HOL::C)
+                                        HOL::C)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::ALT_CASE (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                                     (:ARROW* HOL::A HOL::C)
+                                     (:ARROW* HOL::B HOL::C)
+                                     HOL::C))))
+       (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                     (:ARROW* HOL::A HOL::C)
+                     (:ARROW* HOL::B HOL::C)
+                     HOL::C))))))
+  (DEFTHM HOL::ALT_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::ALT_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                        (:ARROW* HOL::B :NUM)
+                                        (:ALT HOL::A HOL::B)
+                                        :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::ALT_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                     (:ARROW* HOL::B :NUM)
+                                     (:ALT HOL::A HOL::B)
+                                     :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:ARROW* HOL::B :NUM)
+                     (:ALT HOL::A HOL::B)
+                     :NUM))))))
+  (DEFTHM HOL::ALT_LEFT_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::ALT_LEFT_PROJ
+            (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::ALT_LEFT_PROJ
+         (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::A))))
+       (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                     HOL::A))))))
+  (DEFTHM HOL::ALT_RIGHT_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::ALT_RIGHT_PROJ
+            (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::B)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::ALT_RIGHT_PROJ
+         (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::B))))
+       (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                     HOL::B))))))
   (DEFTHM HOL::T3$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -299,6 +722,70 @@
                                HOL::A (:TRIO HOL::A HOL::B)))))
        (TYP (:ARROW* (:IMPLICIT HOL::B)
                      HOL::A (:TRIO HOL::A HOL::B)))))))
+  (DEFTHM HOL::TRIO_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TRIO_CASE (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                         (:ARROW* HOL::A HOL::C)
+                                         (:ARROW* HOL::B HOL::C)
+                                         HOL::C HOL::C)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TRIO_CASE (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                      (:ARROW* HOL::A HOL::C)
+                                      (:ARROW* HOL::B HOL::C)
+                                      HOL::C HOL::C))))
+       (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                     (:ARROW* HOL::A HOL::C)
+                     (:ARROW* HOL::B HOL::C)
+                     HOL::C HOL::C))))))
+  (DEFTHM HOL::TRIO_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TRIO_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                         (:ARROW* HOL::B :NUM)
+                                         (:TRIO HOL::A HOL::B)
+                                         :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TRIO_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:ARROW* HOL::B :NUM)
+                                      (:TRIO HOL::A HOL::B)
+                                      :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:ARROW* HOL::B :NUM)
+                     (:TRIO HOL::A HOL::B)
+                     :NUM))))))
+  (DEFTHM HOL::TRIO_T1_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TRIO_T1_PROJ
+            (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TRIO_T1_PROJ (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                         HOL::A))))
+       (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                     HOL::A))))))
+  (DEFTHM HOL::TRIO_T2_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::TRIO_T2_PROJ
+            (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::B)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::TRIO_T2_PROJ (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                         HOL::B))))
+       (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                     HOL::B))))))
   (DEFTHM HOL::FCONS$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -329,6 +816,89 @@
                        HOL::B (:FLIST HOL::A HOL::B)))))
        (TYP (:ARROW* (:IMPLICIT HOL::A)
                      HOL::B (:FLIST HOL::A HOL::B)))))))
+  (DEFTHM HOL::FLIST_CASE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FLIST_CASE
+            (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                          (:ARROW* HOL::B HOL::C)
+                          (:ARROW* (:FLIST HOL::A HOL::B)
+                                   HOL::A HOL::C)
+                          HOL::C)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::FLIST_CASE
+         (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                       (:ARROW* HOL::B HOL::C)
+                       (:ARROW* (:FLIST HOL::A HOL::B)
+                                HOL::A HOL::C)
+                       HOL::C))))
+       (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                     (:ARROW* HOL::B HOL::C)
+                     (:ARROW* (:FLIST HOL::A HOL::B)
+                              HOL::A HOL::C)
+                     HOL::C))))))
+  (DEFTHM HOL::FLIST_SIZE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FLIST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                          (:ARROW* HOL::B :NUM)
+                                          (:FLIST HOL::A HOL::B)
+                                          :NUM)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::FLIST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                       (:ARROW* HOL::B :NUM)
+                                       (:FLIST HOL::A HOL::B)
+                                       :NUM))))
+       (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                     (:ARROW* HOL::B :NUM)
+                     (:FLIST HOL::A HOL::B)
+                     :NUM))))))
+  (DEFTHM HOL::FLIST_FNIL_PROJ$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FLIST_FNIL_PROJ
+            (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                          HOL::B)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::FLIST_FNIL_PROJ
+                       (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                                     HOL::B))))
+             (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                           HOL::B))))))
+  (DEFTHM HOL::FLIST_FCONS_PROJ_1$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FLIST_FCONS_PROJ_1
+            (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                          (:FLIST HOL::A HOL::B))))
+           (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE (HOL::FLIST_FCONS_PROJ_1
+                 (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                               (:FLIST HOL::A HOL::B)))))
+       (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                     (:FLIST HOL::A HOL::B)))))))
+  (DEFTHM HOL::FLIST_FCONS_PROJ_2$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP (HOL::FLIST_FCONS_PROJ_2
+            (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                          HOL::A)))
+           (HOL::DATATYPES$HTA))
+      (EQUAL (HP-TYPE (HOL::FLIST_FCONS_PROJ_2
+                       (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                                     HOL::A))))
+             (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                           HOL::A))))))
   (DEFTHM HOL::COND$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -340,17 +910,6 @@
        (HP-TYPE
         (HOL::COND (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))
        (TYP (:ARROW* :BOOL HOL::A HOL::A HOL::A))))))
-  (DEFTHM HOL::INSERT_NTREE$TYPE
-    (IMPLIES
-     (FORCE (HOL::DATATYPES$PROP))
-     (AND
-      (HPP
-       (HOL::INSERT_NTREE (TYP (:ARROW* :NUM :NTREE :NTREE)))
-       (HOL::DATATYPES$HTA))
-      (EQUAL
-       (HP-TYPE
-        (HOL::INSERT_NTREE (TYP (:ARROW* :NUM :NTREE :NTREE))))
-       (TYP (:ARROW* :NUM :NTREE :NTREE))))))
   (DEFTHM HOL::I$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -368,6 +927,17 @@
       (EQUAL
        (HP-TYPE (HOL::K (TYP (:ARROW* HOL::A HOL::B HOL::A))))
        (TYP (:ARROW* HOL::A HOL::B HOL::A))))))
+  (DEFTHM HOL::INSERT_NTREE$TYPE
+    (IMPLIES
+     (FORCE (HOL::DATATYPES$PROP))
+     (AND
+      (HPP
+       (HOL::INSERT_NTREE (TYP (:ARROW* :NUM :NTREE :NTREE)))
+       (HOL::DATATYPES$HTA))
+      (EQUAL
+       (HP-TYPE
+        (HOL::INSERT_NTREE (TYP (:ARROW* :NUM :NTREE :NTREE))))
+       (TYP (:ARROW* :NUM :NTREE :NTREE))))))
   (DEFTHM HOL::INSERT_BTREE$TYPE
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))
@@ -385,6 +955,1095 @@
        (TYP (:ARROW* (:ARROW* HOL::A HOL::A :BOOL)
                      HOL::A (:BTREE HOL::A)
                      (:BTREE HOL::A)))))))
+  (DEFTHM HOL::HOL{NTREE_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NUM))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* :NUM HOL::B)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* :NTREE :NUM :NTREE HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_CASE
+        (TYP (:ARROW* :NTREE (:ARROW* :NUM HOL::B)
+                      (:ARROW* :NTREE :NUM :NTREE HOL::B)
+                      HOL::B)))
+       (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+             HOL::A0)
+       HOL::F HOL::F0)
+      (HAP* HOL::F HOL::A0))))
+  (DEFTHM HOL::HOL{NTREE_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* :NUM HOL::B)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* :NTREE :NUM :NTREE HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_CASE
+        (TYP (:ARROW* :NTREE (:ARROW* :NUM HOL::B)
+                      (:ARROW* :NTREE :NUM :NTREE HOL::B)
+                      HOL::B)))
+       (HAP*
+        (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+        HOL::A0 HOL::A1 HOL::A2)
+       HOL::F HOL::F0)
+      (HAP* HOL::F0 HOL::A0 HOL::A1 HOL::A2))))
+  (DEFTHM HOL::HOL{NTREE_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NUM))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL (HAP* (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM)))
+                  (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+                        HOL::A0))
+            (HP+ (HP-NUM 1) HOL::A0))))
+  (DEFTHM HOL::HOL{NTREE_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM)))
+       (HAP*
+        (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+        HOL::A0 HOL::A1 HOL::A2))
+      (HP+
+       (HP-NUM 1)
+       (HP+
+        (HAP* (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM)))
+              HOL::A0)
+        (HP+ HOL::A1
+             (HAP* (HOL::NTREE_SIZE (TYP (:ARROW* :NTREE :NUM)))
+                   HOL::A2)))))))
+  (DEFTHM HOL::HOL{NTREE_NLEAF_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NUM))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP* (HOL::NTREE_NLEAF_PROJ (TYP (:ARROW* :NTREE :NUM)))
+            (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+                  HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{NTREE_NNODE_PROJ_1}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_NNODE_PROJ_1 (TYP (:ARROW* :NTREE :NTREE)))
+       (HAP*
+        (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+        HOL::A0 HOL::A1 HOL::A2))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{NTREE_NNODE_PROJ_2}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_NNODE_PROJ_2 (TYP (:ARROW* :NTREE :NUM)))
+       (HAP*
+        (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+        HOL::A0 HOL::A1 HOL::A2))
+      HOL::A1)))
+  (DEFTHM HOL::HOL{NTREE_NNODE_PROJ_3}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::NTREE_NNODE_PROJ_3 (TYP (:ARROW* :NTREE :NTREE)))
+       (HAP*
+        (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+        HOL::A0 HOL::A1 HOL::A2))
+      HOL::A2)))
+  (DEFTHM HOL::HOL{BTREE_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::B)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* (:BTREE HOL::A)
+                               HOL::A (:BTREE HOL::A)
+                               HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_CASE
+        (TYP (:ARROW* (:BTREE HOL::A)
+                      (:ARROW* HOL::A HOL::B)
+                      (:ARROW* (:BTREE HOL::A)
+                               HOL::A (:BTREE HOL::A)
+                               HOL::B)
+                      HOL::B)))
+       (HAP* (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+             HOL::A0)
+       HOL::F HOL::F0)
+      (HAP* HOL::F HOL::A0))))
+  (DEFTHM HOL::HOL{BTREE_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::B)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* (:BTREE HOL::A)
+                               HOL::A (:BTREE HOL::A)
+                               HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_CASE
+        (TYP (:ARROW* (:BTREE HOL::A)
+                      (:ARROW* HOL::A HOL::B)
+                      (:ARROW* (:BTREE HOL::A)
+                               HOL::A (:BTREE HOL::A)
+                               HOL::B)
+                      HOL::B)))
+       (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                       HOL::A (:BTREE HOL::A)
+                                       (:BTREE HOL::A))))
+             HOL::A0 HOL::A1 HOL::A2)
+       HOL::F HOL::F0)
+      (HAP* HOL::F0 HOL::A0 HOL::A1 HOL::A2))))
+  (DEFTHM HOL::HOL{BTREE_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:BTREE HOL::A)
+                                      :NUM)))
+       HOL::F0
+       (HAP* (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+             HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F0 HOL::A0)))))
+  (DEFTHM HOL::HOL{BTREE_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:BTREE HOL::A)
+                                      :NUM)))
+       HOL::F0
+       (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                       HOL::A (:BTREE HOL::A)
+                                       (:BTREE HOL::A))))
+             HOL::A0 HOL::A1 HOL::A2))
+      (HP+
+       (HP-NUM 1)
+       (HP+
+        (HAP*
+         (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                        (:BTREE HOL::A)
+                                        :NUM)))
+         HOL::F0 HOL::A0)
+        (HP+
+         (HAP* HOL::F0 HOL::A1)
+         (HAP*
+          (HOL::BTREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                         (:BTREE HOL::A)
+                                         :NUM)))
+          HOL::F0 HOL::A2)))))))
+  (DEFTHM HOL::HOL{BTREE_BLEAF_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_BLEAF_PROJ
+        (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+       (HAP* (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+             HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{BTREE_BNODE_PROJ_1}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_BNODE_PROJ_1 (TYP (:ARROW* (:BTREE HOL::A)
+                                              (:BTREE HOL::A))))
+       (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                       HOL::A (:BTREE HOL::A)
+                                       (:BTREE HOL::A))))
+             HOL::A0 HOL::A1 HOL::A2))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{BTREE_BNODE_PROJ_2}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_BNODE_PROJ_2
+        (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+       (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                       HOL::A (:BTREE HOL::A)
+                                       (:BTREE HOL::A))))
+             HOL::A0 HOL::A1 HOL::A2))
+      HOL::A1)))
+  (DEFTHM HOL::HOL{BTREE_BNODE_PROJ_3}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::BTREE_BNODE_PROJ_3 (TYP (:ARROW* (:BTREE HOL::A)
+                                              (:BTREE HOL::A))))
+       (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                       HOL::A (:BTREE HOL::A)
+                                       (:BTREE HOL::A))))
+             HOL::A0 HOL::A1 HOL::A2))
+      HOL::A2)))
+  (DEFTHM HOL::HOL{TREE_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::R1))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                               HOL::R1)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP* (HOL::TREE_CASE
+             (TYP (:ARROW* (:TREE HOL::A)
+                           HOL::R1
+                           (:ARROW* HOL::A (:FOREST HOL::A)
+                                    HOL::R1)
+                           HOL::R1)))
+            (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                     (:TREE HOL::A))))
+            HOL::V HOL::F)
+      HOL::V)))
+  (DEFTHM HOL::HOL{TREE_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::R1))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                               HOL::R1)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TREE_CASE
+        (TYP (:ARROW* (:TREE HOL::A)
+                      HOL::R1
+                      (:ARROW* HOL::A (:FOREST HOL::A)
+                               HOL::R1)
+                      HOL::R1)))
+       (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                      (:TREE HOL::A))))
+             HOL::A0 HOL::A1)
+       HOL::V HOL::F)
+      (HAP* HOL::F HOL::A0 HOL::A1))))
+  (DEFTHM HOL::HOL{TREE_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP* (HOL::TREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                          (:TREE HOL::A)
+                                          :NUM)))
+            HOL::F0
+            (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                     (:TREE HOL::A)))))
+      (HP-NUM 0))))
+  (DEFTHM HOL::HOL{TREE_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                     (:TREE HOL::A)
+                                     :NUM)))
+       HOL::F0
+       (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                      (:TREE HOL::A))))
+             HOL::A0 HOL::A1))
+      (HP+
+       (HP-NUM 1)
+       (HP+
+        (HAP* HOL::F0 HOL::A0)
+        (HAP*
+         (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                         (:FOREST HOL::A)
+                                         :NUM)))
+         HOL::F0 HOL::A1))))))
+  (DEFTHM HOL::HOL{TREE_NODE_PROJ_1}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TREE_NODE_PROJ_1
+        (TYP (:ARROW* (:TREE HOL::A) HOL::A)))
+       (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                      (:TREE HOL::A))))
+             HOL::A0 HOL::A1))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{TREE_NODE_PROJ_2}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TREE_NODE_PROJ_2 (TYP (:ARROW* (:TREE HOL::A)
+                                            (:FOREST HOL::A))))
+       (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                      (:TREE HOL::A))))
+             HOL::A0 HOL::A1))
+      HOL::A1)))
+  (DEFTHM HOL::HOL{FOREST_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::R2))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* (:TREE HOL::A)
+                               (:FOREST HOL::A)
+                               HOL::R2)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FOREST_CASE (TYP (:ARROW* (:FOREST HOL::A)
+                                       HOL::R2
+                                       (:ARROW* (:TREE HOL::A)
+                                                (:FOREST HOL::A)
+                                                HOL::R2)
+                                       HOL::R2)))
+       (HOL::EMPTY (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 (:FOREST HOL::A))))
+       HOL::V HOL::F)
+      HOL::V)))
+  (DEFTHM HOL::HOL{FOREST_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::R2))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* (:TREE HOL::A)
+                               (:FOREST HOL::A)
+                               HOL::R2)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FOREST_CASE (TYP (:ARROW* (:FOREST HOL::A)
+                                       HOL::R2
+                                       (:ARROW* (:TREE HOL::A)
+                                                (:FOREST HOL::A)
+                                                HOL::R2)
+                                       HOL::R2)))
+       (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                      (:FOREST HOL::A)
+                                      (:FOREST HOL::A))))
+             HOL::A0 HOL::A1)
+       HOL::V HOL::F)
+      (HAP* HOL::F HOL::A0 HOL::A1))))
+  (DEFTHM HOL::HOL{FOREST_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                       (:FOREST HOL::A)
+                                       :NUM)))
+       HOL::F0
+       (HOL::EMPTY (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 (:FOREST HOL::A)))))
+      (HP-NUM 0))))
+  (DEFTHM HOL::HOL{FOREST_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                       (:FOREST HOL::A)
+                                       :NUM)))
+       HOL::F0
+       (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                      (:FOREST HOL::A)
+                                      (:FOREST HOL::A))))
+             HOL::A0 HOL::A1))
+      (HP+
+       (HP-NUM 1)
+       (HP+
+        (HAP*
+         (HOL::TREE_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                       (:TREE HOL::A)
+                                       :NUM)))
+         HOL::F0 HOL::A0)
+        (HAP*
+         (HOL::FOREST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                         (:FOREST HOL::A)
+                                         :NUM)))
+         HOL::F0 HOL::A1))))))
+  (DEFTHM HOL::HOL{FOREST_CONS_PROJ_1}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FOREST_CONS_PROJ_1 (TYP (:ARROW* (:FOREST HOL::A)
+                                              (:TREE HOL::A))))
+       (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                      (:FOREST HOL::A)
+                                      (:FOREST HOL::A))))
+             HOL::A0 HOL::A1))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{FOREST_CONS_PROJ_2}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP* (HOL::FOREST_CONS_PROJ_2
+             (TYP (:ARROW* (:FOREST HOL::A)
+                           (:FOREST HOL::A))))
+            (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                           (:FOREST HOL::A)
+                                           (:FOREST HOL::A))))
+                  HOL::A0 HOL::A1))
+      HOL::A1)))
+  (DEFTHM HOL::HOL{ALT_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_CASE (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                                    (:ARROW* HOL::A HOL::C)
+                                    (:ARROW* HOL::B HOL::C)
+                                    HOL::C)))
+       (HAP*
+        (HOL::LEFT (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:ALT HOL::A HOL::B))))
+        HOL::A0)
+       HOL::F HOL::F0)
+      (HAP* HOL::F HOL::A0))))
+  (DEFTHM HOL::HOL{ALT_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_CASE (TYP (:ARROW* (:ALT HOL::A HOL::B)
+                                    (:ARROW* HOL::A HOL::C)
+                                    (:ARROW* HOL::B HOL::C)
+                                    HOL::C)))
+       (HAP*
+        (HOL::RIGHT (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                  HOL::B (:ALT HOL::A HOL::B))))
+        HOL::A0)
+       HOL::F HOL::F0)
+      (HAP* HOL::F0 HOL::A0))))
+  (DEFTHM HOL::HOL{ALT_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                    (:ARROW* HOL::B :NUM)
+                                    (:ALT HOL::A HOL::B)
+                                    :NUM)))
+       HOL::F0 HOL::F1
+       (HAP*
+        (HOL::LEFT (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:ALT HOL::A HOL::B))))
+        HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F0 HOL::A0)))))
+  (DEFTHM HOL::HOL{ALT_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                    (:ARROW* HOL::B :NUM)
+                                    (:ALT HOL::A HOL::B)
+                                    :NUM)))
+       HOL::F0 HOL::F1
+       (HAP*
+        (HOL::RIGHT (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                  HOL::B (:ALT HOL::A HOL::B))))
+        HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F1 HOL::A0)))))
+  (DEFTHM HOL::HOL{ALT_LEFT_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_LEFT_PROJ
+        (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::A)))
+       (HAP*
+        (HOL::LEFT (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:ALT HOL::A HOL::B))))
+        HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{ALT_RIGHT_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::ALT_RIGHT_PROJ
+        (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::B)))
+       (HAP*
+        (HOL::RIGHT (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                  HOL::B (:ALT HOL::A HOL::B))))
+        HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{TRIO_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::C))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_CASE (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                     (:ARROW* HOL::A HOL::C)
+                                     (:ARROW* HOL::B HOL::C)
+                                     HOL::C HOL::C)))
+       (HAP*
+        (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                               HOL::A (:TRIO HOL::A HOL::B))))
+        HOL::A0)
+       HOL::F HOL::F0 HOL::V)
+      (HAP* HOL::F HOL::A0))))
+  (DEFTHM HOL::HOL{TRIO_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::C))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_CASE (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                     (:ARROW* HOL::A HOL::C)
+                                     (:ARROW* HOL::B HOL::C)
+                                     HOL::C HOL::C)))
+       (HAP*
+        (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                               HOL::B (:TRIO HOL::A HOL::B))))
+        HOL::A0)
+       HOL::F HOL::F0 HOL::V)
+      (HAP* HOL::F0 HOL::A0))))
+  (DEFTHM HOL::HOL{TRIO_CASE}2
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::A HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (HPP HOL::V HTA)
+          (EQUAL (HP-TYPE HOL::V) (TYP HOL::C))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_CASE (TYP (:ARROW* (:TRIO HOL::A HOL::B)
+                                     (:ARROW* HOL::A HOL::C)
+                                     (:ARROW* HOL::B HOL::C)
+                                     HOL::C HOL::C)))
+       (HOL::T3 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                              (:IMPLICIT HOL::B)
+                              (:TRIO HOL::A HOL::B))))
+       HOL::F HOL::F0 HOL::V)
+      HOL::V)))
+  (DEFTHM HOL::HOL{TRIO_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                     (:ARROW* HOL::B :NUM)
+                                     (:TRIO HOL::A HOL::B)
+                                     :NUM)))
+       HOL::F0 HOL::F1
+       (HAP*
+        (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                               HOL::A (:TRIO HOL::A HOL::B))))
+        HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F0 HOL::A0)))))
+  (DEFTHM HOL::HOL{TRIO_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                     (:ARROW* HOL::B :NUM)
+                                     (:TRIO HOL::A HOL::B)
+                                     :NUM)))
+       HOL::F0 HOL::F1
+       (HAP*
+        (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                               HOL::B (:TRIO HOL::A HOL::B))))
+        HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F1 HOL::A0)))))
+  (DEFTHM HOL::HOL{TRIO_SIZE}2
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP* (HOL::TRIO_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                          (:ARROW* HOL::B :NUM)
+                                          (:TRIO HOL::A HOL::B)
+                                          :NUM)))
+            HOL::F0 HOL::F1
+            (HOL::T3 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                   (:IMPLICIT HOL::B)
+                                   (:TRIO HOL::A HOL::B)))))
+      (HP-NUM 0))))
+  (DEFTHM HOL::HOL{TRIO_T1_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_T1_PROJ
+        (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::A)))
+       (HAP*
+        (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                               HOL::A (:TRIO HOL::A HOL::B))))
+        HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{TRIO_T2_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::TRIO_T2_PROJ
+        (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::B)))
+       (HAP*
+        (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                               HOL::B (:TRIO HOL::A HOL::B))))
+        HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{FLIST_CASE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                               HOL::A HOL::C)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_CASE
+        (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                      (:ARROW* HOL::B HOL::C)
+                      (:ARROW* (:FLIST HOL::A HOL::B)
+                               HOL::A HOL::C)
+                      HOL::C)))
+       (HAP* (HOL::FNIL
+              (TYP (:ARROW* (:IMPLICIT HOL::A)
+                            HOL::B (:FLIST HOL::A HOL::B))))
+             HOL::A0)
+       HOL::F HOL::F0)
+      (HAP* HOL::F HOL::A0))))
+  (DEFTHM HOL::HOL{FLIST_CASE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::F HTA)
+          (EQUAL (HP-TYPE HOL::F)
+                 (TYP (:ARROW* HOL::B HOL::C)))
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                               HOL::A HOL::C)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_CASE
+        (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                      (:ARROW* HOL::B HOL::C)
+                      (:ARROW* (:FLIST HOL::A HOL::B)
+                               HOL::A HOL::C)
+                      HOL::C)))
+       (HAP* (HOL::FCONS
+              (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                            HOL::A (:FLIST HOL::A HOL::B))))
+             HOL::A0 HOL::A1)
+       HOL::F HOL::F0)
+      (HAP* HOL::F0 HOL::A0 HOL::A1))))
+  (DEFTHM HOL::HOL{FLIST_SIZE}0
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:ARROW* HOL::B :NUM)
+                                      (:FLIST HOL::A HOL::B)
+                                      :NUM)))
+       HOL::F0 HOL::F1
+       (HAP* (HOL::FNIL
+              (TYP (:ARROW* (:IMPLICIT HOL::A)
+                            HOL::B (:FLIST HOL::A HOL::B))))
+             HOL::A0))
+      (HP+ (HP-NUM 1)
+           (HAP* HOL::F1 HOL::A0)))))
+  (DEFTHM HOL::HOL{FLIST_SIZE}1
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::F0 HTA)
+          (EQUAL (HP-TYPE HOL::F0)
+                 (TYP (:ARROW* HOL::A :NUM)))
+          (HPP HOL::F1 HTA)
+          (EQUAL (HP-TYPE HOL::F1)
+                 (TYP (:ARROW* HOL::B :NUM)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                      (:ARROW* HOL::B :NUM)
+                                      (:FLIST HOL::A HOL::B)
+                                      :NUM)))
+       HOL::F0 HOL::F1
+       (HAP* (HOL::FCONS
+              (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                            HOL::A (:FLIST HOL::A HOL::B))))
+             HOL::A0 HOL::A1))
+      (HP+
+       (HP-NUM 1)
+       (HP+
+        (HAP*
+         (HOL::FLIST_SIZE (TYP (:ARROW* (:ARROW* HOL::A :NUM)
+                                        (:ARROW* HOL::B :NUM)
+                                        (:FLIST HOL::A HOL::B)
+                                        :NUM)))
+         HOL::F0 HOL::F1 HOL::A0)
+        (HAP* HOL::F0 HOL::A1))))))
+  (DEFTHM HOL::HOL{FLIST_FNIL_PROJ}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_FNIL_PROJ
+        (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                      HOL::B)))
+       (HAP* (HOL::FNIL
+              (TYP (:ARROW* (:IMPLICIT HOL::A)
+                            HOL::B (:FLIST HOL::A HOL::B))))
+             HOL::A0))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{FLIST_FCONS_PROJ_1}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_FCONS_PROJ_1
+        (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                      (:FLIST HOL::A HOL::B))))
+       (HAP* (HOL::FCONS
+              (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                            HOL::A (:FLIST HOL::A HOL::B))))
+             HOL::A0 HOL::A1))
+      HOL::A0)))
+  (DEFTHM HOL::HOL{FLIST_FCONS_PROJ_2}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HAP*
+       (HOL::FLIST_FCONS_PROJ_2
+        (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                      HOL::A)))
+       (HAP* (HOL::FCONS
+              (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                            HOL::A (:FLIST HOL::A HOL::B))))
+             HOL::A0 HOL::A1))
+      HOL::A1)))
   (DEFTHM HOL::HOL{COND}0
     (IMPLIES
      (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
@@ -413,6 +2072,25 @@
        (HP-FALSE)
        HOL::X HOL::Y)
       HOL::Y)))
+  (DEFTHM HOL::HOL{I}
+    (IMPLIES (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+                  (HPP HOL::X HTA)
+                  (EQUAL (HP-TYPE HOL::X) (TYP HOL::A))
+                  (FORCE (HOL::DATATYPES$PROP)))
+             (EQUAL (HAP* (HOL::I (TYP (:ARROW* HOL::A HOL::A)))
+                          HOL::X)
+                    HOL::X)))
+  (DEFTHM HOL::HOL{K}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X) (TYP HOL::A))
+          (HPP HOL::Y HTA)
+          (EQUAL (HP-TYPE HOL::Y) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL (HAP* (HOL::K (TYP (:ARROW* HOL::A HOL::B HOL::A)))
+                  HOL::X HOL::Y)
+            HOL::X)))
   (DEFTHM HOL::HOL{INSERT_NTREE}0
     (IMPLIES
      (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
@@ -489,25 +2167,6 @@
          (HAP*
           (HOL::INSERT_NTREE (TYP (:ARROW* :NUM :NTREE :NTREE)))
           HOL::M HOL::NT2)))))))
-  (DEFTHM HOL::HOL{I}
-    (IMPLIES (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
-                  (HPP HOL::X HTA)
-                  (EQUAL (HP-TYPE HOL::X) (TYP HOL::A))
-                  (FORCE (HOL::DATATYPES$PROP)))
-             (EQUAL (HAP* (HOL::I (TYP (:ARROW* HOL::A HOL::A)))
-                          HOL::X)
-                    HOL::X)))
-  (DEFTHM HOL::HOL{K}
-    (IMPLIES
-     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
-          (HPP HOL::X HTA)
-          (EQUAL (HP-TYPE HOL::X) (TYP HOL::A))
-          (HPP HOL::Y HTA)
-          (EQUAL (HP-TYPE HOL::Y) (TYP HOL::B))
-          (FORCE (HOL::DATATYPES$PROP)))
-     (EQUAL (HAP* (HOL::K (TYP (:ARROW* HOL::A HOL::B HOL::A)))
-                  HOL::X HOL::Y)
-            HOL::X)))
   (DEFTHM HOL::HOL{INSERT_BTREE}0
     (IMPLIES
      (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
@@ -624,6 +2283,650 @@
                               HOL::A (:BTREE HOL::A)
                               (:BTREE HOL::A))))
                HOL::LEQ HOL::X HOL::NT2)))))))
+  (DEFTHM HOL::HOL{NTREE_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NUM))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP :NUM))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03) (TYP :NTREE))
+          (HPP HOL::A11 HTA)
+          (EQUAL (HP-TYPE HOL::A11) (TYP :NUM))
+          (HPP HOL::A21 HTA)
+          (EQUAL (HP-TYPE HOL::A21) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP= (HP= (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+                       HOL::A0)
+                 (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+                       HOL::A01))
+            (HP= HOL::A0 HOL::A01))
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+          HOL::A02 HOL::A1 HOL::A2)
+         (HAP*
+          (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+          HOL::A03 HOL::A11 HOL::A21))
+        (HP-AND (HP= HOL::A02 HOL::A03)
+                (HP-AND (HP= HOL::A1 HOL::A11)
+                        (HP= HOL::A2 HOL::A21)))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{NTREE_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2) (TYP :NTREE))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP :NUM))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP :NTREE))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP :NUM))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP=
+        (HAP* (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+              HOL::A0)
+        (HAP*
+         (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+         HOL::A01 HOL::A1 HOL::A2)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{NTREE_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X) (TYP :NTREE))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::NLEAF (TYP (:ARROW* :NUM :NTREE)))
+         (HAP*
+          (HOL::NTREE_NLEAF_PROJ (TYP (:ARROW* :NTREE :NUM)))
+          HOL::X)))
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::NNODE (TYP (:ARROW* :NTREE :NUM :NTREE :NTREE)))
+         (HAP* (HOL::NTREE_NNODE_PROJ_1
+                (TYP (:ARROW* :NTREE :NTREE)))
+               HOL::X)
+         (HAP*
+          (HOL::NTREE_NNODE_PROJ_2 (TYP (:ARROW* :NTREE :NUM)))
+          HOL::X)
+         (HAP* (HOL::NTREE_NNODE_PROJ_3
+                (TYP (:ARROW* :NTREE :NTREE)))
+               HOL::X))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{BTREE_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::A))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A11 HTA)
+          (EQUAL (HP-TYPE HOL::A11) (TYP HOL::A))
+          (HPP HOL::A21 HTA)
+          (EQUAL (HP-TYPE HOL::A21)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+          HOL::A0)
+         (HAP*
+          (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+          HOL::A01))
+        (HP= HOL::A0 HOL::A01))
+       (HP=
+        (HP=
+         (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                         HOL::A (:BTREE HOL::A)
+                                         (:BTREE HOL::A))))
+               HOL::A02 HOL::A1 HOL::A2)
+         (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                         HOL::A (:BTREE HOL::A)
+                                         (:BTREE HOL::A))))
+               HOL::A03 HOL::A11 HOL::A21))
+        (HP-AND (HP= HOL::A02 HOL::A03)
+                (HP-AND (HP= HOL::A1 HOL::A11)
+                        (HP= HOL::A2 HOL::A21)))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{BTREE_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A2 HTA)
+          (EQUAL (HP-TYPE HOL::A2)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01)
+                 (TYP (:BTREE HOL::A)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP=
+        (HAP*
+         (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+         HOL::A0)
+        (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                        HOL::A (:BTREE HOL::A)
+                                        (:BTREE HOL::A))))
+              HOL::A01 HOL::A1 HOL::A2)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{BTREE_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:BTREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::BLEAF (TYP (:ARROW* HOL::A (:BTREE HOL::A))))
+         (HAP* (HOL::BTREE_BLEAF_PROJ
+                (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+               HOL::X)))
+       (HP=
+        HOL::X
+        (HAP* (HOL::BNODE (TYP (:ARROW* (:BTREE HOL::A)
+                                        HOL::A (:BTREE HOL::A)
+                                        (:BTREE HOL::A))))
+              (HAP* (HOL::BTREE_BNODE_PROJ_1
+                     (TYP (:ARROW* (:BTREE HOL::A)
+                                   (:BTREE HOL::A))))
+                    HOL::X)
+              (HAP* (HOL::BTREE_BNODE_PROJ_2
+                     (TYP (:ARROW* (:BTREE HOL::A) HOL::A)))
+                    HOL::X)
+              (HAP* (HOL::BTREE_BNODE_PROJ_3
+                     (TYP (:ARROW* (:BTREE HOL::A)
+                                   (:BTREE HOL::A))))
+                    HOL::X))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TREE_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::A))
+          (HPP HOL::A11 HTA)
+          (EQUAL (HP-TYPE HOL::A11)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP=
+       (HP=
+        (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                       (:TREE HOL::A))))
+              HOL::A0 HOL::A1)
+        (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                       (:TREE HOL::A))))
+              HOL::A01 HOL::A11))
+       (HP-AND (HP= HOL::A0 HOL::A01)
+               (HP= HOL::A1 HOL::A11)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TREE_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP=
+        (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 (:TREE HOL::A))))
+        (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                       (:TREE HOL::A))))
+              HOL::A0 HOL::A1)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TREE_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:TREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP= HOL::X
+            (HOL::LEAF (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                     (:TREE HOL::A)))))
+       (HP=
+        HOL::X
+        (HAP* (HOL::NODE (TYP (:ARROW* HOL::A (:FOREST HOL::A)
+                                       (:TREE HOL::A))))
+              (HAP* (HOL::TREE_NODE_PROJ_1
+                     (TYP (:ARROW* (:TREE HOL::A) HOL::A)))
+                    HOL::X)
+              (HAP* (HOL::TREE_NODE_PROJ_2
+                     (TYP (:ARROW* (:TREE HOL::A)
+                                   (:FOREST HOL::A))))
+                    HOL::X))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FOREST_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01)
+                 (TYP (:TREE HOL::A)))
+          (HPP HOL::A11 HTA)
+          (EQUAL (HP-TYPE HOL::A11)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP=
+       (HP= (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                           (:FOREST HOL::A)
+                                           (:FOREST HOL::A))))
+                  HOL::A0 HOL::A1)
+            (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                           (:FOREST HOL::A)
+                                           (:FOREST HOL::A))))
+                  HOL::A01 HOL::A11))
+       (HP-AND (HP= HOL::A0 HOL::A01)
+               (HP= HOL::A1 HOL::A11)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FOREST_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1)
+                 (TYP (:FOREST HOL::A)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0)
+                 (TYP (:TREE HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP= (HOL::EMPTY (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                      (:FOREST HOL::A))))
+            (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                           (:FOREST HOL::A)
+                                           (:FOREST HOL::A))))
+                  HOL::A0 HOL::A1)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FOREST_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:FOREST HOL::A)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP= HOL::X
+            (HOL::EMPTY (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                      (:FOREST HOL::A)))))
+       (HP= HOL::X
+            (HAP* (HOL::CONS (TYP (:ARROW* (:TREE HOL::A)
+                                           (:FOREST HOL::A)
+                                           (:FOREST HOL::A))))
+                  (HAP* (HOL::FOREST_CONS_PROJ_1
+                         (TYP (:ARROW* (:FOREST HOL::A)
+                                       (:TREE HOL::A))))
+                        HOL::X)
+                  (HAP* (HOL::FOREST_CONS_PROJ_2
+                         (TYP (:ARROW* (:FOREST HOL::A)
+                                       (:FOREST HOL::A))))
+                        HOL::X))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{ALT_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::A))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02) (TYP HOL::B))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP=
+        (HP=
+         (HAP* (HOL::LEFT
+                (TYP (:ARROW* (:IMPLICIT HOL::B)
+                              HOL::A (:ALT HOL::A HOL::B))))
+               HOL::A0)
+         (HAP* (HOL::LEFT
+                (TYP (:ARROW* (:IMPLICIT HOL::B)
+                              HOL::A (:ALT HOL::A HOL::B))))
+               HOL::A01))
+        (HP= HOL::A0 HOL::A01))
+       (HP=
+        (HP=
+         (HAP* (HOL::RIGHT
+                (TYP (:ARROW* (:IMPLICIT HOL::A)
+                              HOL::B (:ALT HOL::A HOL::B))))
+               HOL::A02)
+         (HAP* (HOL::RIGHT
+                (TYP (:ARROW* (:IMPLICIT HOL::A)
+                              HOL::B (:ALT HOL::A HOL::B))))
+               HOL::A03))
+        (HP= HOL::A02 HOL::A03)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{ALT_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::B))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP=
+        (HAP*
+         (HOL::LEFT (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                  HOL::A (:ALT HOL::A HOL::B))))
+         HOL::A0)
+        (HAP* (HOL::RIGHT
+               (TYP (:ARROW* (:IMPLICIT HOL::A)
+                             HOL::B (:ALT HOL::A HOL::B))))
+              HOL::A01)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{ALT_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:ALT HOL::A HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::LEFT (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                  HOL::A (:ALT HOL::A HOL::B))))
+         (HAP* (HOL::ALT_LEFT_PROJ
+                (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::A)))
+               HOL::X)))
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::RIGHT
+          (TYP (:ARROW* (:IMPLICIT HOL::A)
+                        HOL::B (:ALT HOL::A HOL::B))))
+         (HAP* (HOL::ALT_RIGHT_PROJ
+                (TYP (:ARROW* (:ALT HOL::A HOL::B) HOL::B)))
+               HOL::X))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TRIO_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::A))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02) (TYP HOL::B))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:TRIO HOL::A HOL::B))))
+          HOL::A0)
+         (HAP*
+          (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:TRIO HOL::A HOL::B))))
+          HOL::A01))
+        (HP= HOL::A0 HOL::A01))
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 HOL::B (:TRIO HOL::A HOL::B))))
+          HOL::A02)
+         (HAP*
+          (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 HOL::B (:TRIO HOL::A HOL::B))))
+          HOL::A03))
+        (HP= HOL::A02 HOL::A03)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TRIO_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::B))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::A))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02) (TYP HOL::A))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP-NOT
+        (HP=
+         (HAP*
+          (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                 HOL::A (:TRIO HOL::A HOL::B))))
+          HOL::A0)
+         (HAP*
+          (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 HOL::B (:TRIO HOL::A HOL::B))))
+          HOL::A01)))
+       (HP-AND
+        (HP-NOT
+         (HP=
+          (HAP*
+           (HOL::T1
+            (TYP (:ARROW* (:IMPLICIT HOL::B)
+                          HOL::A (:TRIO HOL::A HOL::B))))
+           HOL::A02)
+          (HOL::T3 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 (:IMPLICIT HOL::B)
+                                 (:TRIO HOL::A HOL::B))))))
+        (HP-NOT
+         (HP=
+          (HAP*
+           (HOL::T2
+            (TYP (:ARROW* (:IMPLICIT HOL::A)
+                          HOL::B (:TRIO HOL::A HOL::B))))
+           HOL::A03)
+          (HOL::T3 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 (:IMPLICIT HOL::B)
+                                 (:TRIO HOL::A HOL::B))))))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{TRIO_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:TRIO HOL::A HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::T1 (TYP (:ARROW* (:IMPLICIT HOL::B)
+                                HOL::A (:TRIO HOL::A HOL::B))))
+         (HAP*
+          (HOL::TRIO_T1_PROJ
+           (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::A)))
+          HOL::X)))
+       (HP-OR
+        (HP=
+         HOL::X
+         (HAP*
+          (HOL::T2 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                 HOL::B (:TRIO HOL::A HOL::B))))
+          (HAP*
+           (HOL::TRIO_T2_PROJ
+            (TYP (:ARROW* (:TRIO HOL::A HOL::B) HOL::B)))
+           HOL::X)))
+        (HP= HOL::X
+             (HOL::T3 (TYP (:ARROW* (:IMPLICIT HOL::A)
+                                    (:IMPLICIT HOL::B)
+                                    (:TRIO HOL::A HOL::B)))))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FLIST_ONE_ONE}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01) (TYP HOL::B))
+          (HPP HOL::A02 HTA)
+          (EQUAL (HP-TYPE HOL::A02)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A03 HTA)
+          (EQUAL (HP-TYPE HOL::A03)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A11 HTA)
+          (EQUAL (HP-TYPE HOL::A11) (TYP HOL::A))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-AND
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::FNIL
+           (TYP (:ARROW* (:IMPLICIT HOL::A)
+                         HOL::B (:FLIST HOL::A HOL::B))))
+          HOL::A0)
+         (HAP*
+          (HOL::FNIL
+           (TYP (:ARROW* (:IMPLICIT HOL::A)
+                         HOL::B (:FLIST HOL::A HOL::B))))
+          HOL::A01))
+        (HP= HOL::A0 HOL::A01))
+       (HP=
+        (HP=
+         (HAP*
+          (HOL::FCONS
+           (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                         HOL::A (:FLIST HOL::A HOL::B))))
+          HOL::A02 HOL::A1)
+         (HAP*
+          (HOL::FCONS
+           (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                         HOL::A (:FLIST HOL::A HOL::B))))
+          HOL::A03 HOL::A11))
+        (HP-AND (HP= HOL::A02 HOL::A03)
+                (HP= HOL::A1 HOL::A11))))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FLIST_DISTINCT}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::A1 HTA)
+          (EQUAL (HP-TYPE HOL::A1) (TYP HOL::A))
+          (HPP HOL::A01 HTA)
+          (EQUAL (HP-TYPE HOL::A01)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (HPP HOL::A0 HTA)
+          (EQUAL (HP-TYPE HOL::A0) (TYP HOL::B))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-NOT
+       (HP=
+        (HAP*
+         (HOL::FNIL
+          (TYP (:ARROW* (:IMPLICIT HOL::A)
+                        HOL::B (:FLIST HOL::A HOL::B))))
+         HOL::A0)
+        (HAP*
+         (HOL::FCONS
+          (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                        HOL::A (:FLIST HOL::A HOL::B))))
+         HOL::A01 HOL::A1)))
+      (HP-TRUE))))
+  (DEFTHM HOL::HOL{FLIST_CASES}
+    (IMPLIES
+     (AND (ALIST-SUBSETP (HOL::DATATYPES$HTA) HTA)
+          (HPP HOL::X HTA)
+          (EQUAL (HP-TYPE HOL::X)
+                 (TYP (:FLIST HOL::A HOL::B)))
+          (FORCE (HOL::DATATYPES$PROP)))
+     (EQUAL
+      (HP-OR
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::FNIL
+          (TYP (:ARROW* (:IMPLICIT HOL::A)
+                        HOL::B (:FLIST HOL::A HOL::B))))
+         (HAP* (HOL::FLIST_FNIL_PROJ
+                (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                              HOL::B)))
+               HOL::X)))
+       (HP=
+        HOL::X
+        (HAP*
+         (HOL::FCONS
+          (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                        HOL::A (:FLIST HOL::A HOL::B))))
+         (HAP* (HOL::FLIST_FCONS_PROJ_1
+                (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                              (:FLIST HOL::A HOL::B))))
+               HOL::X)
+         (HAP* (HOL::FLIST_FCONS_PROJ_2
+                (TYP (:ARROW* (:FLIST HOL::A HOL::B)
+                              HOL::A)))
+               HOL::X))))
+      (HP-TRUE))))
   (DEFTHM HOL::HOL{NTREE_REFL}
     (IMPLIES
      (FORCE (HOL::DATATYPES$PROP))

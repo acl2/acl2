@@ -19889,18 +19889,18 @@
          (mv-let (reads writes fns-seen)
            (let ((fn (ffn-symb term)))
              (cond
-              ((member-eq fn fns-seen)
-               (mv reads writes fns-seen))
               ((and (eq fn 'read-user-stobj-alist)
                     (quotep (fargn term 1)))
                (mv (add-to-set-eq (unquote (fargn term 1)) reads)
                    writes
-                   (cons 'read-user-stobj-alist fns-seen)))
+                   fns-seen))
               ((and (eq fn 'write-user-stobj-alist)
                     (quotep (fargn term 1)))
                (mv reads ; don't need to collect
                    (add-to-set-eq (unquote (fargn term 1)) writes)
-                   (cons 'read-user-stobj-alist fns-seen)))
+                   fns-seen))
+              ((member-eq fn fns-seen)
+               (mv reads writes fns-seen))
               (t
                (let ((prop (getpropc fn 'global-stobjs nil wrld)))
                  (mv (union-eq (car prop) reads)

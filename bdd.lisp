@@ -2884,7 +2884,9 @@
              (mv 'miss nil bddnote)))
           ((cst-tp cst)
            (mv 'hit
-               nil
+               (if (integerp position)
+                   (list (subst-for-nth-arg *nil* position cl))
+                 nil)
                (add-to-tag-tree
                 'bddnote
                 bddnote

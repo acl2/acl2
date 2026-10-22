@@ -2,4 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-"ACL2" package has changed due to removal of Common Lisp symbols code-char, coerce, and expt.
+"ACL2" package has changed again due to removal of Common Lisp symbols abs and signum.

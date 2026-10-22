@@ -1209,7 +1209,7 @@
    "See @(tsee check-declon-standalone-tag).
     GCC does not treat a declaration as a standalone tag declaration
     if it has storage class specifiers
-    (other than @('_Thread_local') and @('__thread')),
+    (other than @('_Thread_local'), @('thread_local'), and @('__thread')),
     type qualifiers,
     or alignment specifiers.")
   (b* (((when (endp declspecs)) t)
@@ -1217,7 +1217,7 @@
        ((when (decl-spec-case declspec '(:typequal :align))) nil)
        ((when (and (decl-spec-case declspec :stoclass)
                    (not (stor-spec-case (decl-spec-stoclass->spec declspec)
-                                        :thread))))
+                                        '(:thread-local :thread)))))
         nil))
     (decl-spec-list-standalone-tag-gcc-okp (cdr declspecs))))
 

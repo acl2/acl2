@@ -66,31 +66,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define factor-consts-in-add-dims ((dims dim-listp))
-  :returns (mv (sum natp :rule-classes (:rewrite :type-prescription))
-               (new-dims dim-listp))
-  :short "Collect and add all the constants in a list of dimensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used on the addends of a normalized addition
-     (see @(tsee normalize-dim)) by @(tsee dim-addends).")
-   (xdoc::p
-    "We go through the dimensions,
-     removing the constant ones and adding them to the running sum,
-     and keeping the non-constant ones as they are.
-     We return the final sum and the non-constant dimensions;
-     the latter are in the same order as in the original list."))
-  (b* (((when (endp dims)) (mv 0 nil))
-       (dim (car dims))
-       ((mv sum new-dims) (factor-consts-in-add-dims (cdr dims))))
-    (if (dim-case dim :const)
-        (mv (+ (dim-const->val dim) sum) new-dims)
-      (mv sum (cons (dim-fix dim) new-dims))))
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define normalize-dim ((dim dimp))
   :returns (new-dim dimp)
   :short "Normalize a dimension."
@@ -111,49 +86,6 @@
   (cond ((endp dims) nil)
         (t (cons (normalize-dim (car dims))
                  (normalize-dim-list (cdr dims))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dim-addends ((dim dimp))
-  :returns (mv (const natp :rule-classes (:rewrite :type-prescription))
-               (addends dim-listp))
-  :short "Split a dimension into a constant addend and non-constant addends."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We view the dimension as an addition,
-     and we return the sum of its constant addends
-     and the list of its other addends,
-     via @(tsee factor-consts-in-add-dims).
-     A dimension that is not an addition is viewed as
-     an addition with itself as the only addend:
-     a constant yields itself and no other addends;
-     a variable, multiplication, or subtraction yields
-     0 and itself as the only addend.")
-   (xdoc::p
-    "This is intended for use on normalized dimensions
-     (see @(tsee normalize-dim)),
-     e.g. to compare or match dimensions modulo equivalence.
-     A nested addition among the addends
-     is treated as an opaque non-constant addend;
-     this is why the dimension should be normalized,
-     so that its additions are flattened.")
-   (xdoc::p
-    "Since a normalized addition has at most one constant addend,
-     which is the first one,
-     the call of @(tsee factor-consts-in-add-dims)
-     could be avoided in favor of a direct inspection of the addends.
-     But we keep the call,
-     because it depends only on the meaning of this function
-     and not on the layout of normalized additions,
-     and because it costs the same, i.e. one pass over the addends."))
-  (dim-case
-   dim
-   :var (mv 0 (list (dim-var dim.name)))
-   :const (mv dim.val nil)
-   :add (factor-consts-in-add-dims dim.dims)
-   :mul (mv 0 (list (dim-mul dim.dims)))
-   :sub (mv 0 (list (dim-sub dim.dims)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

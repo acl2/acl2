@@ -26378,16 +26378,31 @@
                                 (eq compile-option :same))
                             (compiled-function-p! fn))
                            (t compile-option))))
-    (setf (get fn 'acl2-trace-saved-fn)
-          (symbol-function fn))
-    (eval (trace$-def formals def trace-options predefined multiplicity ctx))
-    (let ((memo-entry (memoizedp-raw fn)))
-      (when memo-entry
-        (setf (gethash fn *memoize-info-ht*)
-              (change memoize-info-ht-entry memo-entry
-                      :memoized-fn (symbol-function fn)))))
-    (when do-compile
-      (compile fn))))
+    (cond
+     ((macro-function fn)
+      (let ((*1*fn (*1*-symbol fn)))
+        (observation-cw ctx
+                        "Skipping tracing of ~s0::~s1 because it is a macro ~
+                         in raw Lisp.~#2~[~/  (But this does not stop tracing ~
+                         of its executable-counterpart, ~s3::~s1.)~]"
+                        (symbol-package-name fn)
+                        (symbol-name fn)
+                        (if (and (fboundp *1*fn)
+                                 (not (macro-function *1*fn)))
+                            1
+                          0)
+                        (symbol-package-name *1*fn))))
+     (t
+      (setf (get fn 'acl2-trace-saved-fn)
+            (symbol-function fn))
+      (eval (trace$-def formals def trace-options predefined multiplicity ctx))
+      (let ((memo-entry (memoizedp-raw fn)))
+        (when memo-entry
+          (setf (gethash fn *memoize-info-ht*)
+                (change memoize-info-ht-entry memo-entry
+                        :memoized-fn (symbol-function fn)))))
+      (when do-compile
+        (compile fn))))))
 
 #-acl2-loop-only
 (defun oneified-def (fn wrld &optional trace-rec-for-none)

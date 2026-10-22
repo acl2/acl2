@@ -188,6 +188,9 @@
    ((in * *) => *)     ; (in a x) <=> a \in x
    ((pair * *) => *)   ; (pair x y) = {x,y}
    ((min-in *) => *)   ; (min-in x) \in x and (min-in x) does not intersect x
+                       ;    [So min-in witness the ZF Axiom of Regularity, but
+                       ;     does so uniformly, which gives us Global Choice.
+                       ;     See min-in-1 (for non-empty sets), and min-in-2.]
    ((union *) => *)    ; (union x) = union of {a: a \in x}
    ((omega) => *)      ; the set of natural numbers
    ((powerset *) => *) ; (powerset x) is the set of all subsets of x

@@ -2064,12 +2064,24 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; This section makes raw Lisp function definitions for symbols in the "ACL2"
 ; package that were, before ACL2 Version_8.8, imported from the "COMMON-LISP"
 ; package.  The point is to keep them from introducing values satisfying
-; bad-lisp-objectp.  See the discussion of code-char, coerce, and expt in :DOC
-; note-8-8, which points to tests that show why we made such changes.
+; bad-lisp-objectp.  See the discussion of functions below in :DOC
+; *common-lisp-symbols-from-main-lisp-package*, and also in :DOC note-8-8,
+; which points to tests that show why we made such changes.
 
 ; It is tempting to declaim inline as follows, for efficiency.  But that would
 ; defeat tracing, so for now, we comment out the following form.
-; (declaim (inline code-char coerce expt))
+; (declaim (inline abs code-char coerce expt signum))
+
+(defun abs (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of abs.
+  (when (complexp x) ; (er hard! 'abs "..." x)
+    (let ((*hard-error-returns-nilp* nil))
+      (declare (special *hard-error-returns-nilp*))
+      (qfuncall hard-error
+                'abs
+                "Illegal (complex) argument to acl2::abs, ~x0"
+                (list (cons #\0 x)))))
+  (if (minusp x) (- x) x))
 
 (defun code-char (x)
 ; Warning: Keep this in sync with (defun-*1* code-char ..).
@@ -2111,6 +2123,19 @@ notation causes an error and (b) the use of ,. is not permitted."
                      "Illegal second argument to acl2::expt (not an integer), ~x0"
                      (list (cons #\0 i))))
          1)))
+
+(defun signum (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of signum.
+  (cond ((complexp x) ; (progn (er hard! 'signum "..." i) 1)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'signum
+                     "Illegal (complex) argument to acl2::signum, ~x0"
+                     (list (cons #\0 x)))))
+        (t
+         (if (zerop x) 0
+           (if (minusp x) -1 +1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            MISCELLANY
