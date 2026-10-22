@@ -194,7 +194,10 @@
                           ;; Reference type:
                           (if (jvm::class-or-interface-namep type)
                               `((equal ,local-term ,parameter-name)
-                                (address-or-nullp ,parameter-name))
+                                (address-or-nullp ,parameter-name) ; todo: option to assume non-null
+                                ;; For now, we assume the runtime class is exactly the declared class, not a subclass:
+                                ;; TODO: Error if abstract class or interface.
+                                (equal (get-field ,local-term ',(class-pair) ,heap-term) ',type))
                             (if (jvm::is-one-dim-array-typep type)
                                 ;; One-dimensional array (TODO: Consider if we get NULL -- should it be an option to assume non-null?):
                                 (let ((component-type (jvm::get-array-component-type type))

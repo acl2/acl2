@@ -1,6 +1,6 @@
 ; Top file for Axe JVM Formal Unit Tester examples
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,4 +19,5 @@
 (include-book "Prefix")
 (include-book "BinarySearch")
 (include-book "BinarySearchBuggy")
+(include-book "ClassTest")
 |#
