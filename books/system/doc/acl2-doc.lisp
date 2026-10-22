@@ -10118,7 +10118,7 @@ and @(tsee include-book)"
  @({
  (encapsulate (((g *) => *))
    (local (defun g (x) (acl2-count x)))
-   (defun f (x) 
+   (defun f (x)
      (declare (xargs :measure (g x)))
      (if (consp x) (f (cdr x)) x)))
  })
@@ -10197,7 +10197,7 @@ and @(tsee include-book)"
  (encapsulate (((g *) => *))
    (local (defun g (x) (acl2-count x)))
    (defun g2 (x) (g x))
-   (defun f (x) 
+   (defun f (x)
      (declare (xargs :measure (g2 x)))
      (if (consp x) (f (cdr x)) x)))
  })")
@@ -110639,7 +110639,7 @@ it."
 
  <p>Fixed a soundness bug due to an insufficient check done when using @(tsee
  with-global-stobj).  See @(see community-books)
- @('system/tests/global-stobjs-property-drops-reads.lisp') and 
+ @('system/tests/global-stobjs-property-drops-reads.lisp') and
  @('system/tests/global-stobjs-nested-read-dropped.lisp').</p>
 
  <p>Applied a fix from Claude for a bug in @(':bdd') @(see hints).  See for
@@ -130217,7 +130217,7 @@ work on <tt>(q x)</tt>.</p>
  @({
  HARD ACL2 ERROR in ADD-REFINEMENT-RULE:  E1 is already known to be
  a refinement of E2.  This was not the case when the :REFINEMENT rule
- named E1-REFINES-E2 was admitted during certification of the book 
+ named E1-REFINES-E2 was admitted during certification of the book
  \"/Users/smith/work/bk.lisp\" but it is the case now, during an
  attempt to include that book.  See :DOC refinement.
  })
@@ -142369,21 +142369,30 @@ work on <tt>(q x)</tt>.</p>
  })
 
  <p>As illustrated above, we support two forms of this reader: @('#f'),
- indicating base 10 digits, and @('#fx'), indicating base 16 digits.  Let {i}
- be notation representing a sequence of digits and (optionally) underscore
- (@('_')) characters, optionally preceded by a sign (@('-') or @('+')), that
- the ACL2 reader reads as the integer i after discarding underscore characters;
- similarly for {j} and {n}, except that an initial sign is illegal for {j}, and
- for {n} the digits are always base 10 (even in the case of @('#fx')).  Note
- that each such string is terminated at the first character from the input
- channel that is not a digit.  For the @('#f') case we have the following
- semantics.</p>
+ indicating base 10 digits, and @('#fx'), indicating base 16 digits.
+ Both forms are case-insensitive.
+ Let {i} be notation representing a sequence of zero or more digits and
+ underscore (@('_')) characters, optionally preceded by a sign (@('-') or
+ @('+')).  If there are no digits, i is @('0'); otherwise the underscore
+ characters are discarded and the ACL2 reader reads the optional sign and the
+ digits as the integer i.  {j} and {n} are similar, except that an initial sign
+ is illegal for {j}, and {n}, if present, must have at least one digit and is
+ always decimal, even for @('#fx').  The exponent, @('e{n}') for @('#f') and
+ @('p{n}') for @('#fx'), is optional.  Note that each such sequence is
+ terminated at the first character from the input channel that does not follow
+ the pattern described.  This can be confusing: for example, @(''(#f1.2p2)')
+ evaluates to @('(6/5 P2)').  We recommend not relying on this behavior, for
+ example by adding whitespace where appropriate.</p>
+
+ <p>For the @('#f') case we have the following semantics.</p>
 
  @({
  #f{i}          => i
  #f{i}e{n}      => i * 10^n
- #f{i}.{j}      => i + (/ j 10^k) where k is the length of {j}
- #f{i}.{j}e{n}  => (i + (/ j 10^k)) * 10^n where k is the length of {j}
+ #f{i}.{j}      => i + sign(i)*(/ j 10^k)  where k is the number of digits
+                                           in {j}
+ #f{i}.{j}e{n}  => (i + sign(i)*(/ j 10^k)) * 10^n  where k is the number of
+                                                    digits in {j}
  })
 
  <p>We have the following similar semantics for the @('#fx') case, except that
@@ -142393,9 +142402,14 @@ work on <tt>(q x)</tt>.</p>
  @({
  #fx{i}         => i
  #fx{i}p{n}     => i * 2^n
- #fx{i}.{j}     => i + (/ j 16^k) where k is the length of {j}
- #fx{i}.{j}p{n} => (i + (/ j 16^k)) * 2^n where k is the length of {j}
+ #fx{i}.{j}     => i + sign(i)*(/ j 16^k)  where k is the number of digits
+                                           in {j}
+ #fx{i}.{j}p{n} => (i + sign(i)*(/ j 16^k)) * 2^n  where k is the number of
+                                                   digits in {j}
  })
+
+ <p>In both tables above, @('sign(i)') is @('-1') if {i} begins with @('-'),
+ and @('1') otherwise.</p>
 
  <p>We thank Dmitry Nadezhin for pointing us to the following page, which
  explains an analogous ``floating point literal'' syntax for C++:</p>
