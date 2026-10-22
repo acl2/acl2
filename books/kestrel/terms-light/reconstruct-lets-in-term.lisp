@@ -83,7 +83,7 @@
 ;;     ...extra-body-vars...))
 ;;   <translated-term>
 ;;   ...extra-body-vars...)
-(defun translated-mv-letp (term)
+(defund translated-mv-letp (term)
   (declare (xargs :guard (pseudo-termp term)))
   (and (consp term)
        (flambda-applicationp term)
@@ -112,7 +112,8 @@
 ;; Extracts the vars from a translated mv-let.
 (defun vars-of-translated-mv-let (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (translated-mv-letp term))))
+                              (translated-mv-letp term))
+                  :guard-hints (("Goal" :in-theory (enable translated-mv-letp)))))
   (let* ((outer-lambda (ffn-symb term))
          (outer-lambda-body (lambda-body outer-lambda))
          (outer-lambda-formals (lambda-formals outer-lambda))
@@ -125,7 +126,8 @@
 ;; Extracts the extra body vars (bound to themselves) in a translated mv-let.
 (defun extra-body-vars-of-translated-mv-let (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (translated-mv-letp term))))
+                              (translated-mv-letp term))
+                  :guard-hints (("Goal" :in-theory (enable translated-mv-letp)))))
   (let* ((outer-lambda (ffn-symb term))
          (outer-lambda-formals (lambda-formals outer-lambda))
          (extra-body-vars (rest outer-lambda-formals)))
@@ -134,13 +136,15 @@
 ;; Extracts the multi-valued term from a translated mv-let.
 (defun term-of-translated-mv-let (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (translated-mv-letp term))))
+                              (translated-mv-letp term))
+                  :guard-hints (("Goal" :in-theory (enable translated-mv-letp)))))
   (first (fargs term)))
 
 ;; Extracts the body from a translated mv-let.
 (defun body-of-translated-mv-let (term)
   (declare (xargs :guard (and (pseudo-termp term)
-                              (translated-mv-letp term))))
+                              (translated-mv-letp term))
+                  :guard-hints (("Goal" :in-theory (enable translated-mv-letp)))))
   (let ((outer-lambda (ffn-symb term)))
     (let ((outer-lambda-body (lambda-body outer-lambda)))
       (let ((inner-lambda (ffn-symb outer-lambda-body)))
@@ -253,7 +257,7 @@
 
 (verify-guards reconstruct-lets-in-term-aux
   :hints (("Goal" :expand ((pseudo-termp term))
-           :in-theory (enable true-listp-when-symbol-listp pseudo-termp))))
+           :in-theory (enable true-listp-when-symbol-listp pseudo-termp translated-mv-letp))))
 
 ;; Reconstructs LETs and MV-LETs in term. Returns a term equivalent to TERM.
 ;; The result is usually not a pseudo-term, because it contains LETs and/or
