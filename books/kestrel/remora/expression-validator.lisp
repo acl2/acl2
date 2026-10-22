@@ -1082,9 +1082,8 @@
      expr
      :var
      (b* ((name+type (omap::assoc expr.name (expr-senv->exprs eenv)))
-          ((unless name+type) (reserr nil))
-          ((ok type) (type-senv-expand-type (cdr name+type) ienv tenv)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+          ((unless name+type) (reserr nil)))
+       (make-type+expr :type (cdr name+type) :expr (expr-fix expr)))
      :atom
      (b* (((ok (type+atom ta)) (check-atom expr.atom ienv tenv eenv)))
        (make-type+expr
