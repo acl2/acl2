@@ -20,6 +20,10 @@
 ;; evidence shows contribute nothing to these proofs.
 (local (in-theory (disable acl2::default-car acl2::default-cdr)))
 
+(defxdoc+ cpp-top-level-parser
+  :parents (cpp-parser)
+  :default-parent t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Dotted Module Name Helper
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -28,7 +32,6 @@
   :returns (mv erp
                (segs c$::ident-listp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :parents (cpp-parser)
   :short "Parse optional @('.ident') segments of a dotted C++ module name."
   :long
   (xdoc::topstring
@@ -89,7 +92,6 @@
 ;;   - Hence: list-body and namespace-body at rank 0, the other two at rank 1.
 
 (defines parse-cpp-top-level-mutual
-  :parents (cpp-parser)
   :short "Mutually recursive top-level declaration parsers."
   :hints (("Goal" :in-theory (enable c$::parsize-of-read-token-cond
                                      c$::parsize-of-unread-token
@@ -107,11 +109,11 @@
     (xdoc::topstring
      (xdoc::p
       "Dispatches on the first token:
-       @('namespace') → full namespace definition (recursive),
-       @('class') / @('struct') → class specifier,
-       @('using') → using declaration,
-       @('enum') → enum declaration,
-       @(';') → empty declaration."))
+       @('namespace') -&gt; full namespace definition (recursive),
+       @('class') / @('struct') -&gt; class specifier,
+       @('using') -&gt; using declaration,
+       @('enum') -&gt; enum declaration,
+       @(';') -&gt; empty declaration."))
     :measure (two-nats-measure (parsize parstate) 1)
     :verify-guards nil
     (b* (((reterr) (irr-cpp-top-level-decl) (irr-span) parstate)
@@ -559,7 +561,7 @@
      (xdoc::p
       "Reads one token to peek.
        If it is EOF or @('}'), puts it back and returns an empty list.
-       Otherwise puts it back and calls @(tsee parse-cpp-top-level-decl)
+       Otherwise puts it back and calls <tt>parse-cpp-top-level-decl</tt>
        for one declaration, then recurs."))
     :measure (two-nats-measure (parsize parstate) 2)
     :verify-guards nil
@@ -693,7 +695,6 @@
                (tu cpp-translation-unit-p)
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
-  :parents (cpp-parser)
   :short "Parse a complete C++ translation unit."
   :long
   (xdoc::topstring

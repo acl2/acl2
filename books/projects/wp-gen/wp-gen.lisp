@@ -535,7 +535,7 @@
                 ,mutrec))))))
 
 (defxdoc run-wp
-  :parents (wp-gen)
+  :parents (acl2::wp-gen)
   :short "Generate WP functions"
   :long "<p>See :DOC WEAKEST-PRECONDITIONS-GENERATOR.</p>
 
@@ -684,7 +684,7 @@
 )
 
 (defxdoc weakest-preconditions-generator
-  :parents (wp-gen)
+  :parents (acl2::wp-gen)
   :short "Generate WP functions"
   :long "<p>*OVERVIEW*</p>
 
