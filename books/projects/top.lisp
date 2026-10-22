@@ -84,7 +84,9 @@
 ; pltpa -- SKIP
 (include-book "poseidon/top")
 (ifndef "ACL2_HAS_REALS"
-        (include-book "python/embedding/top")
+        (ifndef "ACL2_HAS_PARALLEL"
+                (include-book "python/embedding/top")
+                :endif)
         :endif)
 ; rac -- SKIP
 (ifndef "ACL2_HAS_REALS"
