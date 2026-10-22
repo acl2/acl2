@@ -29,9 +29,13 @@
 ; conflicts with other books.  These qualities do not prevent inclusion here.
 ; However, these skipped books require additional effort to include them.
 ; Converting any such SKIP comment to an `INCLUDE-BOOK' form is encouraged.
-(include-book "abnf/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "abnf/top")
+        :endif)
 ; acl2-in-hol -- SKIP
-(include-book "aleo/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "aleo/top")
+        :endif)
 (include-book "apply/top")
 ; apply-model -- SKIP
 ; apply-model-2 -- SKIP
@@ -56,13 +60,14 @@
 ; fields -- SKIP
 (include-book "fifo/fifo-list-based")
 ; filesystems -- SKIP
+(include-book "filesystems/utilities/cpp-syntax/top")
 ; fm9001 -- SKIP
 ; fm9801 -- SKIP
 ; gaussian-elim-solvers -- SKIP
 ; groups -- SKIP
 ; hexnet -- SKIP
 ; hol-in-acl2 -- SKIP
-; hybrid-systems -- SKIP
+; hybrid-systems -- SKIP, uses-acl2r
 (include-book "irv/top")
 (include-book "leftist-trees/top")
 ; legacy-defrstobj -- SKIP
@@ -78,19 +83,29 @@
 (include-book "pfcs/top")
 ; pltpa -- SKIP
 (include-book "poseidon/top")
-(include-book "python/embedding/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "python/embedding/top")
+        :endif)
 ; rac -- SKIP
-(include-book "regex/regex-ui")
-(include-book "rp-rewriter/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "regex/regex-ui")
+        :endif)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "rp-rewriter/top")
+        :endif)
 (include-book "sat/proof-checker-itp13/top")
 (include-book "sat/proof-checker-array/top")
 (include-book "sat/dimacs-reader/reader")
 ; sb-machine -- SKIP
 (include-book "schroeder-bernstein/schroeder-bernstein")
-; security -- SKIP
-(include-book "set-theory/top")
+; security -- SKIP, non-acl2r
+(ifndef "ACL2_HAS_REALS"
+        (include-book "set-theory/top")
+        :endif)
 (include-book "shnf/top")
-(include-book "sidekick/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "sidekick/top")
+        :endif)
 (include-book "simple-url-parser/parse-url")
 (include-book "smtlink/top" :ttags :all)
 (ifdef "OS_HAS_SMTLINK"
@@ -102,9 +117,11 @@
 ; srt -- SKIP
 (include-book "stateman/stateman22")
 ; symbolic -- SKIP
-(include-book "taspi/taspi-xdoc")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "taspi/taspi-xdoc")
+        :endif)
 ; translators -- SKIP
 ; vescmul -- SKIP
-; vwsim -- SKIP
+; vwsim -- SKIP, non-acl2r
 (include-book "wp-gen/wp-gen")
 (include-book "x86isa/top")

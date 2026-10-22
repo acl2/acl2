@@ -10,8 +10,12 @@
      (include-book "build/ifdef" :dir :system)
      (include-book "xdoc/top" :dir :system)
 
-     (include-book "abnf/top")
-     (include-book "aleo/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "abnf/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "aleo/top")
+             :endif)
      (include-book "bls12-377-curves/top")
      (include-book "execloader/top")
      (include-book "farray/farray")
@@ -21,18 +25,24 @@
      (include-book "leftist-trees/top")
      (include-book "milawa/doc")
      (include-book "numbers/euler")
-     (ifdef "ACL2_HAS_REALS"
-            (include-book "omp/top-doc")
-            :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "omp/top-doc")
+             :endif)
      (include-book "pfcs/top")
      (include-book "poseidon/top")
-     (include-book "regex/regex-ui")
-     (include-book "rp-rewriter/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "regex/regex-ui")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "rp-rewriter/top")
+             :endif)
      (include-book "sat/dimacs-reader/reader")
      (include-book "sat/proof-checker-array/top")
      (include-book "sat/proof-checker-itp13/top")
      (include-book "set-theory/doc")
-     (include-book "sidekick/server")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "sidekick/server")
+             :endif)
      (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/examples")
