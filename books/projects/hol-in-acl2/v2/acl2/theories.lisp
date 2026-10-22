@@ -165,13 +165,13 @@
                  (hol-termp term hta-arities fn-lst (strip-cars pairs) wrld))
             (value nil))
            (t (er soft ctx
-                  "The following definition for ~&0 has illegal syntax:~|~x1"
-                  fn-lst def))))
+                  "The following definition has illegal syntax:~|~x0"
+                  def))))
     (& (cond ((hol-termp def hta-arities fn-lst nil wrld)
               (value nil))
              (t (er soft ctx
-                    "The following definition for ~&0 has illegal syntax:~|~x1"
-                    fn-lst def))))))
+                    "The following definition has illegal syntax:~|~x0"
+                    def))))))
 
 (defun check-hol-terms (fn-lst defs hta-arities ctx wrld state)
   (declare (xargs :stobjs state :mode :program))
@@ -183,16 +183,20 @@
             (check-hol-term fn-lst (car defs) hta-arities ctx wrld state)
             (check-hol-terms fn-lst (cdr defs) hta-arities ctx wrld state)))))
 
-(defmacro check-hol-terms-event (fn-lst ctx defs)
+(defmacro check-hol-terms-event ()
   `(make-event
     (er-progn
-     (check-hol-terms ',fn-lst
-                      ',defs
+     (check-hol-terms (cdr (assoc-eq :typed-fns
+                                     (table-alist :hol-theory
+                                                  (w state))))
+                      (cdr (assoc-eq :defs
+                                     (table-alist :hol-theory
+                                                  (w state))))
                       (append (cdr (assoc-eq :hta-arities
                                              (table-alist :hol-theory
                                                           (w state))))
                               (hta-arities0))
-                      ',ctx
+                      'check-hol-terms-event
                       (w state)
                       state)
      (value '(value-triple nil)))
@@ -222,15 +226,17 @@
                (caar fns)
                (cadar fns)))))
 
-(defmacro check-hol-fns-types-event (fns ctx)
+(defmacro check-hol-fns-types-event ()
   `(make-event
     (er-progn
-     (check-hol-fns-types ',fns
+     (check-hol-fns-types (cdr (assoc-eq :typed-fns
+                                         (table-alist :hol-theory
+                                                      (w state))))
                           (append (cdr (assoc-eq :hta-arities
                                                  (table-alist :hol-theory
                                                               (w state))))
                                   (hta-arities0))
-                          ',ctx
+                          'check-hol-fns-types-event
                           state)
      (value '(value-triple nil)))
     :on-behalf-of :quiet
@@ -279,6 +285,11 @@
                   (acons ',hol-name ',goal (cdr (assoc-eq ,key tbl)))))))
      (datatype
       `(progn (table :hol-theory
+                     :defs
+                     (append ',defs
+                             (cdr (assoc-eq :defs
+                                            (table-alist :hol-theory world)))))
+              (table :hol-theory
                      :hta-arities
                      (let ((tbl (table-alist :hol-theory world))
                            (datatype-name ,(if (atom datatype)
@@ -296,8 +307,11 @@
                              (cdr (assoc-eq :typed-fns
                                             (table-alist :hol-theory world)))))))
      (t ; fns
-      `(progn (check-hol-fns-types-event ,fns defhol)
-              (check-hol-terms-event ,(strip-cars fns) defhol ,defs)
+      `(progn (table :hol-theory
+                     :defs
+                     (append ',defs
+                             (cdr (assoc-eq :defs
+                                            (table-alist :hol-theory world)))))
               (table :hol-theory
                      :typed-fns
                      (append ',fns
@@ -577,6 +591,8 @@
     `(progn (open-theory ,name :prop ,prop)
             (local (include-book "tools/eval-events-from-file" :dir :system))
             (acl2::eval-events-from-file ,filename)
+            (check-hol-fns-types-event)
+            (check-hol-terms-event)
             (close-theory :verbose ,verbose)
             (verify-guards ,(hta-name name)))))
 
