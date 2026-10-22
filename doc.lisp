@@ -47508,7 +47508,6 @@ Debugging Tools
     char>=
     characterp
     consp
-    digit-char-p
     endp
     eq
     eql
@@ -47526,10 +47525,6 @@ Debugging Tools
     rationalp
     standard-char-p
     string-equal
-    string<
-    string<=
-    string>
-    string>=
     stringp
     subsetp
     symbolp
@@ -107028,7 +107023,7 @@ Changes to Existing Features
   new function, [30m[47mweak-runep[0m[0m, which checks that the keyword specifies
   one of the known [rule-classes].  This can catch typos such as
   [30m[47m(:definiitioon foo)[0m[0m.  Thanks to Eric Smith for the idea, which was
-  brought to his attention by Claude Code.
+  brought to his attention by AI.
 
   Improved an error message printed after a hard error that is
   encountered during macroexpansion.  Now, that message suggests to
@@ -107038,9 +107033,9 @@ Changes to Existing Features
 
   Improved error messages for ill-formed first and second arguments of
   [30m[47m[defund][0m[0m, [30m[47m[defun-nx][0m[0m, and [30m[47m[defund-nx][0m[0m.  The case of [30m[47mdefund-nx[0m[0m was
-  reported by Claude Code as showing no error message at all, for
-  example when evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
-  Eric Smith for bringing these to our attention.
+  reported by AI as showing no error message at all, for example when
+  evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to Eric Smith
+  for bringing these to our attention.
 
   Improved the [guard], as well as the guard violation message, for
   [30m[47m[defevaluator][0m[0m.
@@ -107106,10 +107101,10 @@ Heuristic and Efficiency Improvements
 Bug Fixes From AI via Eric Smith
 
   [3mThe bugs described in this section were all reported by Eric Smith,
-  who used Anthropic's Claude to find the bugs.  We thank Eric for
-  his persistence and skilled queries of Claude, and for filtering
-  out false positives.  (There are also some Claude-inspired fixes in
-  other sections besides bug fixes.)[0m
+  who used AI to find the bugs.  We thank Eric for his persistence
+  and skilled queries of AI, and for filtering out false positives.
+  (There are also some AI-inspired fixes in other sections besides
+  bug fixes.)[0m
 
   As noted in the section above on Changes to Existing Features, ACL2
   symbols [30m[47m[abs][0m[0m, [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, [30m[47m[expt][0m[0m, and [30m[47m[signum][0m[0m are no
@@ -107215,7 +107210,7 @@ Bug Fixes From AI via Eric Smith
   from just the numeric case.
 
   Checks were improved to avoid raw Lisp errors in the following
-  situations.  (Aside: Claude reported, for the first two: ``Four
+  situations.  (Aside: AI reported, for the first two: ``Four
   subagents tested ~270 malformed inputs across nearly every ACL2
   event type.... Out of ~270 tests, only 2 bugs were found''.)
 
@@ -107229,8 +107224,8 @@ Bug Fixes From AI via Eric Smith
 
   Fixed many dozens of typos in comments and error messages.
 
-  Applied fixes from Claude for bugs in the raw Lisp definitions
-  supporting [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
+  Applied fixes from AI for bugs in the raw Lisp definitions supporting
+  [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
 
   Fixed a bug that could mangle messages from [30m[47m[theory-invariant][0m[0m
   [events].  Closes PR #2042.
@@ -107274,8 +107269,8 @@ Bug Fixes From AI via Eric Smith
   Fixed a soundness bug due to careless generation of a fresh variable,
   in particular when supporting the processing of a
   [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m rule.  Thanks to Eric McCarthy and Jim
-  McDonald for an idea leading to Eric Smith's prompt to Claude.  For
-  an example of the issue, see [community-book]
+  McDonald for an idea leading to Eric Smith's prompt to AI.  For an
+  example of the issue, see [community-book]
   [30m[47msystem/tests/cr-empty.lisp[0m[0m.
 
   Fixed a soundness bug that could occur when a type declaration has
@@ -107330,7 +107325,7 @@ Bug Fixes From AI via Eric Smith
   [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
 
   Fixed a [tau-system] bug that could produce a raw Lisp error.  Thanks
-  to Stephen Westfold for passing along Claude's fix along with the
+  to Stephen Westfold for passing along AI's fix along with the
   following example, which exhibited the bug.
 
     (in-theory (disable natp (:e natp)))
@@ -107373,9 +107368,9 @@ Bug Fixes From AI via Eric Smith
   certain runtime hard error.  But several other utilities in our
   source code treated the sixth argument as meaningful and this
   opened up the possibility that a user could supply bogus
-  information in that argument.  At least one such exploit allowed
-  Claude to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth
-  argument have been eliminated.
+  information in that argument.  At least one such exploit allowed AI
+  to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth argument
+  have been eliminated.
 
   Fixed a bug in the compilation of [30m[47mdo$[0m[0m loops that allowed the
   compilation of an [30m[47mmv-setq[0m[0m to reassign a [30m[47mlet[0m[0m-bound variable due to
@@ -107383,9 +107378,9 @@ Bug Fixes From AI via Eric Smith
   temporarily hold the vector of results computed by the body of the
   [30m[47mmv-setq[0m[0m expression.  See the comment in [30m[47mcmp-do-body[0m[0m for an example.
   The guard-verified logical definition returns a different result
-  than the compiled raw lisp code due to this variable capture..
-  Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
-  See [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+  than the compiled raw lisp code due to this variable capture..  AI
+  then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.  See
+  [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
 
   Fixed a bug in the generation of termination conditions for functions
   defined with [loop$-recursion].  The bug, which was caused by the
@@ -107540,8 +107535,15 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/global-stobjs-property-drops-reads.lisp[0m[0m and
   [30m[47msystem/tests/global-stobjs-nested-read-dropped.lisp[0m[0m.
 
-  Applied a fix from Claude for a bug in [30m[47m:bdd[0m[0m [hints].  See for example
-  [community-book] [30m[47msystem/tests/bdd-literal-hyp.lsp[0m[0m.
+  Applied a fix from AI for a bug in [30m[47m:bdd[0m[0m [hints].  See for example
+  [community-book] [30m[47msystem/tests/bdd-literal-hyp.lisp[0m[0m.
+
+  Fixed a soundness bug (modifying a suggested fix from AI) in
+  [30m[47m[defabsstobj][0m[0m, due to avoiding necessary checks during pass 2 of an
+  [30m[47m[encapsulate][0m[0m event with a non-empty list of [signature]s.  See
+  [community-books]
+  [30m[47msystem/tests/defabsstobj-pass2-constrained-exec.lisp[0m[0m and
+  [30m[47msystem/tests/defabsstobj-pass2-constrained-updater.lisp[0m[0m.
 
 
 Other Bug Fixes
@@ -107575,8 +107577,8 @@ Other Bug Fixes
   for calls of built-in functions having types with bounded integer
   return values.  These bugs are now avoided by proclaiming those
   functions [30m[47mnotinline[0m[0m.  Thanks to Grant Jurgensen for reporting the
-  use of Anthropic's Claude to find these bugs; see [community-books]
-  files [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
+  use of AI to find these bugs; see [community-books] files
+  [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
   [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
   Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
   solution was more complicated (by modifying function types), and to
@@ -107637,8 +107639,8 @@ Changes at the System Level
 
   The built-in [events] [30m[47mInteger-1[0m[0m and [30m[47mcons-equal[0m[0m are now [30m[47m[defthm][0m[0m
   events instead of [30m[47m[defaxiom][0m[0m events.  Thanks to Eric Smith for
-  showing us a report from Claude Code, which explained how those two
-  formulas are provable from the other axioms.
+  showing us a report from AI, which explained how those two formulas
+  are provable from the other axioms.
 
   Added a capability for collecting times for definitions made during
   the [30m[47minclude-book[0m[0m pass of [30m[47m[certify-book][0m[0m.  See the comment in the

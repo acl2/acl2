@@ -109545,9 +109545,9 @@ it."
 ; When a DECLARE form is for a symbol that matches a key of
 ; *acceptable-dcls-alist* except for being in the wrong package, the error
 ; message adds a note to that effect.  Thanks to Eric McCarthy for supplying a
-; fix, which he produced with the assistance of Claude Code.  Also thanks to
-; Grant Jurgensen for supplying an example that led to this improvement, and to
-; the participants in a Zulip chat on the topic (those two and Eric Smith,
+; fix, which he produced with the assistance of AI.  Also thanks to Grant
+; Jurgensen for supplying an example that led to this improvement, and to the
+; participants in a Zulip chat on the topic (those two and Eric Smith,
 ; Alessandro Coglio, and Sol Swords).
 
 ; Fixed a low-level bug in equational-polyp-ok that prevented building ACL2
@@ -109990,7 +109990,7 @@ it."
 ; Fixed a minor efficiency issue (incorrect hint in cons-with-hint) in
 ; fix-export-updaters1.
 
-; Fixed some bugs found by Claude AI and passed along by Eric Smith.
+; Fixed some bugs found by AI and passed along by Eric Smith.
 ; - bugs in fmt strings/args
 ; - a bug involving defchoose in tools/with-supporters.lisp
 ; - minor bugs in a couple of error messages in source functions
@@ -110012,39 +110012,37 @@ it."
 
 ; When translating an expression (mv ... (<x> ...) ...), if <x> was not a
 ; symbol, then a raw Lisp error occurred.  This has been fixed.  Thanks to Eric
-; Smith for passing along this issue from Anthropic's Claude.
+; Smith for passing along this issue from AI.
 
 ; Function filter-disabled-expand-terms was missing a recursive call, albeit in
 ; a case that might well be impossible.  We now cause a hard error in that
 ; case, where a comment explains the situation.  Thanks to Eric Smith for
-; passing along a comment from Anthropic's Claude leading to this change.
+; passing along a comment from AI leading to this change.
 
 ; Fixed function pc-command-table-guard to guard its call of function-symbolp
 ; properly.  The missing symbolp test showed up in a raw Lisp error when
 ; evaluating (table pc-command-table 3 3).  Thanks to Eric Smith for passing
-; along a comment from Anthropic's Claude leading to this change.
+; along a comment from AI leading to this change.
 
 ; Added a table guard to untrans-table.  Thanks to Eric Smith for passing along
-; the following example from Anthropic's Claude.
+; the following example from AI.
 ;   (table untrans-table 'binary-append 3)      ; accepted, no complaint
 ;   (thm (equal (append x y) (append y x)))     ; -> Memory fault
 
 ; Fixed a bug in low-level system function all-vars1!, which is probably not
 ; observable in normal ACL2 usage.  See the discussion in
 ; https://github.com/acl2/acl2/pull/2047.  Thanks to Eric Smith for getting
-; this bug reported from Anthropic's Claude and then fixing it.
+; this bug reported from AI and then fixing it.
 
 ; The bug fix for compress1 in which "recompression was required" caught an
 ; ill-formed call of compress1 in ACL2 source function accessor-array, which
 ; has been fixed.
 
 ; Avoided a generic make-event error message when verify-termination gives an
-; error.  Thanks to Eric Smith for reporting this bug found by Anthropic's
-; Claude.
+; error.  Thanks to Eric Smith for reporting this bug found by AI.
 
 ; Improved error reporting from unexpected calls of system function
-; recover-defs-lst.  Thanks to Eric Smith for reporting this bug found by Anthropic's
-; Claude.
+; recover-defs-lst.  Thanks to Eric Smith for reporting this bug found by AI.
 
 ; Clarified an error message produced by source function
 ; translate11-lambda-object in the case of a LAMBDA object, when some TYPE
@@ -110059,12 +110057,12 @@ it."
 ; Made several proof-builder variables and functions untouchable, which can
 ; avoid soundness bugs.  For examples see community book
 ; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
-; passing along this issue from Anthropic's Claude.
+; passing along this issue from AI.
 
 ; Tweaked the definition of built-in function ev-fncall-rec-logical by adding
 ; ec-call wrappers.  See that definition, in ACL2 source file
 ; @('translate.lisp'), for a Lisp comment providing further explanation.
-; Thanks to Eric Smith for passing along this issue from Anthropic's Claude.
+; Thanks to Eric Smith for passing along this issue from AI.
 
 ; Improved error messages from attempts to add :type-set-inverter rules, in
 ; particular when the user has swapped the orientation of the equality.
@@ -110076,14 +110074,14 @@ it."
 ; visible effects of these bugs using ACL2 Version_8.7, so they may not have
 ; been bugs at that point; but we induced their visible effects (as illustrated
 ; in the above book) as recently as 10/5/2026.  Thanks to Eric Smith for
-; passing along this issue from Anthropic's Claude.
+; passing along this issue from AI.
 
 ; Improved the code for bogus-exported-compliants, mostly to make the code
 ; cleaner though this could also improve its efficiency.
 
-; Claude has reported that aref1 is guilty of causing an invariant-risk
-; violation.  A new comment in *boot-strap-invariant-risk-alist* explains why
-; this is not the case.
+; AI has reported that aref1 is guilty of causing an invariant-risk violation.
+; A new comment in *boot-strap-invariant-risk-alist* explains why this is not
+; the case.
 
 ; String-downcase had a patch for some SBCL versions prior to SBCL 2.4.6, to
 ; fix downcasing when the string contains (code-char 192) so that this
@@ -110129,7 +110127,7 @@ it."
  new function, @('weak-runep'), which checks that the keyword specifies one of
  the known @(see rule-classes).  This can catch typos such as @('(:definiitioon
  foo)').  Thanks to Eric Smith for the idea, which was brought to his attention
- by Claude Code.</p>
+ by AI.</p>
 
  <p>Improved an error message printed after a hard error that is encountered
  during macroexpansion.  Now, that message suggests to look <i>above</i> for an
@@ -110139,8 +110137,8 @@ it."
 
  <p>Improved error messages for ill-formed first and second arguments of @(tsee
  defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
- was reported by Claude Code as showing no error message at all, for example
- when evaluating the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ was reported by AI as showing no error message at all, for example when
+ evaluating the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
  bringing these to our attention.</p>
 
  <p>Improved the @(see guard), as well as the guard violation message, for
@@ -110200,10 +110198,9 @@ it."
  <h3>Bug Fixes From AI via Eric Smith</h3>
 
  <p><i>The bugs described in this section were all reported by Eric Smith, who
- used Anthropic's Claude to find the bugs.  We thank Eric for his persistence
- and skilled queries of Claude, and for filtering out false positives.  (There
- are also some Claude-inspired fixes in other sections besides bug
- fixes.)</i></p>
+ used AI to find the bugs.  We thank Eric for his persistence and skilled
+ queries of AI, and for filtering out false positives.  (There are also some
+ AI-inspired fixes in other sections besides bug fixes.)</i></p>
 
  <p>As noted in the section above on Changes to Existing Features, ACL2 symbols
  @(tsee abs), @(tsee code-char), @(tsee coerce), @(tsee expt), and @(tsee
@@ -110314,7 +110311,7 @@ it."
  numeric case.</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations.
- (Aside: Claude reported, for the first two: &ldquo;Four subagents tested ~270
+ (Aside: AI reported, for the first two: &ldquo;Four subagents tested ~270
  malformed inputs across nearly every ACL2 event type.... Out of ~270 tests,
  only 2 bugs were found&rdquo;.)</p>
 
@@ -110332,7 +110329,7 @@ it."
 
  <p>Fixed many dozens of typos in comments and error messages.</p>
 
- <p>Applied fixes from Claude for bugs in the raw Lisp definitions supporting
+ <p>Applied fixes from AI for bugs in the raw Lisp definitions supporting
  @(tsee mfc-rw+) and @(tsee mfc-relieve-hyp).</p>
 
  <p>Fixed a bug that could mangle messages from @(tsee theory-invariant) @(see
@@ -110378,8 +110375,8 @@ it."
  <p>Fixed a soundness bug due to careless generation of a fresh variable, in
  particular when supporting the processing of a @(':')@(tsee
  compound-recognizer) rule.  Thanks to Eric McCarthy and Jim McDonald for an
- idea leading to Eric Smith's prompt to Claude.  For an example of the issue,
- see @(see community-book) @('system/tests/cr-empty.lisp').</p>
+ idea leading to Eric Smith's prompt to AI.  For an example of the issue, see
+ @(see community-book) @('system/tests/cr-empty.lisp').</p>
 
  <p>Fixed a soundness bug that could occur when a type declaration has the form
  @('(type (or t <type>) <var>)').  For an example, see @(see community-book)
@@ -110432,7 +110429,7 @@ it."
  @('system/tests/meta-extract-relieve-hyp.lisp').</p>
 
  <p>Fixed a @(see tau-system) bug that could produce a raw Lisp error.  Thanks
- to Stephen Westfold for passing along Claude's fix along with the following
+ to Stephen Westfold for passing along AI's fix along with the following
  example, which exhibited the bug.</p>
 
  @({
@@ -110471,14 +110468,14 @@ it."
  be specified for an exported function.  For an example, see @(see
  community-book) @('system/tests/protect-congruent-stobj.lisp').</p>
 
- <p>Fixed several bugs with @('do$') that manifested themselves differently
- but were all caused by the same flaw.  The sixth argument of @('do$') is
+ <p>Fixed several bugs with @('do$') that manifested themselves differently but
+ were all caused by the same flaw.  The sixth argument of @('do$') is
  irrelevant to its value and was supposed to be used only to print a certain
  runtime hard error.  But several other utilities in our source code treated
  the sixth argument as meaningful and this opened up the possibility that a
  user could supply bogus information in that argument.  At least one such
- exploit allowed Claude to construct a proof of @('nil').  The (mis-)uses of
- the sixth argument have been eliminated.</p>
+ exploit allowed AI to construct a proof of @('nil').  The (mis-)uses of the
+ sixth argument have been eliminated.</p>
 
  <p>Fixed a bug in the compilation of @('do$') loops that allowed the
  compilation of an @('mv-setq') to reassign a @('let')-bound variable due to
@@ -110486,8 +110483,8 @@ it."
  the vector of results computed by the body of the @('mv-setq') expression.
  See the comment in @('cmp-do-body') for an example.  The guard-verified
  logical definition returns a different result than the compiled raw lisp code
- due to this variable capture..  Claude then exploited this bug to prove
- @('nil') using a metafunction.  See @(see community-book)
+ due to this variable capture..  AI then exploited this bug to prove @('nil')
+ using a metafunction.  See @(see community-book)
  @('system/tests/do-mv-capture.lisp').</p>
 
  <p>Fixed a bug in the generation of termination conditions for functions
@@ -110642,8 +110639,14 @@ it."
  @('system/tests/global-stobjs-property-drops-reads.lisp') and 
  @('system/tests/global-stobjs-nested-read-dropped.lisp').</p>
 
- <p>Applied a fix from Claude for a bug in @(':bdd') @(see hints).  See for
- example @(see community-book) @('system/tests/bdd-literal-hyp.lisp').</p>
+ <p>Applied a fix from AI for a bug in @(':bdd') @(see hints).  See for example
+ @(see community-book) @('system/tests/bdd-literal-hyp.lisp').</p>
+
+ <p>Fixed a soundness bug (modifying a suggested fix from AI) in @(tsee
+ defabsstobj), due to avoiding necessary checks during pass 2 of an @(tsee
+ encapsulate) event with a non-empty list of @(see signature)s.  See @(see
+ community-books) @('system/tests/defabsstobj-pass2-constrained-exec.lisp') and
+ @('system/tests/defabsstobj-pass2-constrained-updater.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -110674,8 +110677,8 @@ it."
  <p>(SBCL only) Soundness bugs were caused by SBCL compiler optimizations for
  calls of built-in functions having types with bounded integer return values.
  These bugs are now avoided by proclaiming those functions @('notinline').
- Thanks to Grant Jurgensen for reporting the use of Anthropic's Claude to find
- these bugs; see @(see community-books) files
+ Thanks to Grant Jurgensen for reporting the use of AI to find these bugs; see
+ @(see community-books) files
  @('system/tests/integer-length-bad-optimization.lisp') and
  @('system/tests/length-bad-optimization.lsp').  Thanks also to Stas Boukarev
  for suggesting the use of @('notinline'), as our original solution was more
@@ -110736,8 +110739,8 @@ it."
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
  @(tsee defthm) events instead of @(tsee defaxiom) events.  Thanks to Eric
- Smith for showing us a report from Claude Code, which explained how those two
- formulas are provable from the other axioms.</p>
+ Smith for showing us a report from AI, which explained how those two formulas
+ are provable from the other axioms.</p>
 
  <p>Added a capability for collecting times for definitions made during the
  @('include-book') pass of @(tsee certify-book).  See the comment in the
