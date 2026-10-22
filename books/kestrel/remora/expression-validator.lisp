@@ -912,12 +912,13 @@
      the lambda and box atoms,
      the type and ispace application arguments,
      the combined function binding type,
-     and the binding type annotations),
-     and by expanding the type associated to a variable when it is looked up;
+     and the binding type annotations);
      every other case builds its result from
      already-checked, and thus already-expanded, sub-results
      (possibly combined with the expanded syntactic pieces just mentioned),
-     which preserves the invariant.
+     or from the types recorded in the expression static environment,
+     which are expanded when recorded;
+     this preserves the invariant.
      Thanks to this invariant,
      the operations that match the structure of a type
      (@(tsee type-match-array) and similar)
