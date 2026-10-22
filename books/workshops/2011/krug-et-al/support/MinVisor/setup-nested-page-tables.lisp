@@ -5392,6 +5392,7 @@ or
                                         SEC_NOT_PRESENT-LOADED-THM-32
                                         |(mod (+ x y) z) where (<= 0 z)|
                                         CANCEL-MOD-+
+                                        (:type-prescription |(n32p (r32 addr (g :mem st)))|)
                                         )
              :do-not '(generalize eliminate-destructors fertilize)))
     :otf-flg t))
@@ -5466,7 +5467,8 @@ or
           :HINTS (("Goal" :in-theory (disable INIT_PDTS-LOADED-THM-32
                                               INIT_PDPT-LOADED-THM-32
                                               CREATE_NESTED_PT-LOADED-THM-32
-                                              SEC_NOT_PRESENT-LOADED-THM-32)
+                                              SEC_NOT_PRESENT-LOADED-THM-32
+                                              (:type-prescription |(n32p (r32 addr (g :mem st)))|))
                    :do-not '(generalize eliminate-destructors fertilize)))
           :otf-flg t))
 
@@ -8048,7 +8050,8 @@ or
                                    (R32 (+ 8 (G :ESP S)) S))
                                 S))))
    :hints (("Goal" :in-theory (disable |(logior 1 x)|
-                                       ash-to-floor)
+                                       ash-to-floor
+                                       |(r32 addr (sec_not_present-modify s))|)
             :cases ((equal i 0)
                     (equal i 1)
                     (equal i 2)
@@ -8905,7 +8908,8 @@ or
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :in-theory (disable |(logior 1 x)|
-                                       ash-to-floor)
+                                       ash-to-floor
+                                       |(r32 addr (sec_not_present-modify s))|)
             :do-not '(generalize eliminate-destructors fertilize)
             :use ((:instance |(r32 addr (sec_not_present-modify s))|
                              (addr (+ (* 8 J-PRIME)
@@ -9131,7 +9135,8 @@ or
                                      (equal i-prime 3)))
            ("Subgoal 1.4.4" :in-theory (e/d  (extra-disjointp-thm)
                                              (|(logior 1 x)|
-                                              ash-to-floor)))
+                                              ash-to-floor
+                                              |(r32 addr (sec_not_present-modify s))|)))
            ("Subgoal 1.3" :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                                            (i 1)
                                            (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -9161,7 +9166,8 @@ or
                                      (equal i-prime 3)))
            ("Subgoal 1.3.3" :in-theory (e/d  (extra-disjointp-thm)
                                              (|(logior 1 x)|
-                                              ash-to-floor)))
+                                              ash-to-floor
+                                              |(r32 addr (sec_not_present-modify s))|)))
            ("Subgoal 1.2" :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                                            (i 2)
                                            (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -9191,7 +9197,8 @@ or
                                      (equal i-prime 3)))
            ("Subgoal 1.2.2" :in-theory (e/d  (extra-disjointp-thm)
                                              (|(logior 1 x)|
-                                              ash-to-floor)))
+                                              ash-to-floor
+                                              |(r32 addr (sec_not_present-modify s))|)))
            ("Subgoal 1.1" :use ((:instance |(r32 addr (init_pdpt-modify s)) --- written to 1|
                                            (i 3)
                                            (s (UPDATE-REGS :EAX (R32 (+ 4 (G :ESP S)) S)
@@ -9221,7 +9228,8 @@ or
                                      (equal i-prime 3)))
            ("Subgoal 1.1.1" :in-theory (e/d  (extra-disjointp-thm)
                                              (|(logior 1 x)|
-                                              ash-to-floor)))
+                                              ash-to-floor
+                                              |(r32 addr (sec_not_present-modify s))|)))
            )
    :otf-flg t)
 
@@ -9258,7 +9266,8 @@ or
                            (+ (* 512 I-PRIME 2097152)
                               (* 2097152 J-PRIME)))))
    :hints (("Goal" :in-theory (disable |(logior 1 x)|
-                                       ash-to-floor)
+                                       ash-to-floor
+                                       |(r32 addr (sec_not_present-modify s))|)
             :do-not '(generalize eliminate-destructors fertilize)
             :use ((:instance |(r32 addr (sec_not_present-modify s))|
                              (addr (+ (* 8 J-PRIME)

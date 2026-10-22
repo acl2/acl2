@@ -1,7 +1,7 @@
 ; A little-endian version of unpackbv
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,7 @@
 (local (include-book "unsigned-byte-listp"))
 (local (include-book "all-unsigned-byte-p2"))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (local
  (defthm byte-listp-of-reverse-list

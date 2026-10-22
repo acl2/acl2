@@ -1,6 +1,6 @@
 ; Java Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -24,9 +24,7 @@
     "The implementation of AIJ is based on a number of assumptions about ACL2.
      Here we state assertions for some of these assumptions,
      thus checking these assumptions when this file is processed:
-     a failure when processing this file may point to a need to revise AIJ.
-     These assumptions may be unlikely to change,
-     but there is no harm in checking them.")
+     a failure when processing this file may point to a need to revise AIJ.")
    (xdoc::p
     "In the future, (some of) these assertions
      might be extracted automatically from the AIJ Java code.")
@@ -67,8 +65,6 @@
 (assert-event (equal (symbol-package-name 'rationalp) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'consp) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'char-code) "COMMON-LISP"))
-(assert-event (equal (symbol-package-name 'code-char) "COMMON-LISP"))
-(assert-event (equal (symbol-package-name 'coerce) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'symbol-name) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name '<) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'realpart) "COMMON-LISP"))
@@ -83,6 +79,8 @@
 (assert-event (equal (symbol-package-name 'or) "COMMON-LISP"))
 (assert-event (equal (symbol-package-name 'char) "COMMON-LISP"))
 
+(assert-event (equal (symbol-package-name 'code-char) "ACL2"))
+(assert-event (equal (symbol-package-name 'coerce) "ACL2"))
 (assert-event (equal (symbol-package-name 'complex-rationalp) "ACL2"))
 (assert-event (equal (symbol-package-name 'acl2-numberp) "ACL2"))
 (assert-event (equal (symbol-package-name 'intern-in-package-of-symbol) "ACL2"))

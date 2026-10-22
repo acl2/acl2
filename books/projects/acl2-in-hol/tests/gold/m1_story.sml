@@ -1810,21 +1810,20 @@ mkpair (mkpair (mksym "M1" "PROGRAM") (mkpair (mksym "M1" "S") (mksym
 (mkpair (mksym "COMMON-LISP" "DEFUN") (mkpair (mksym "M1" "CONCAT-SYMBOLS") (
 mkpair (mkpair (mksym "M1" "PART1") (mkpair (mksym "M1" "PART2") (mksym 
 "COMMON-LISP" "NIL"))) (mkpair (mkpair (mksym "ACL2" 
-"INTERN-IN-PACKAGE-OF-SYMBOL") (mkpair (mkpair (mksym "COMMON-LISP" "COERCE") (
-mkpair (mkpair (mksym "M1" "APP") (mkpair (mkpair (mksym "COMMON-LISP" 
-"COERCE") (mkpair (mkpair (mksym "COMMON-LISP" "SYMBOL-NAME") (mkpair (mksym 
-"M1" "PART1") (mksym "COMMON-LISP" "NIL"))) (mkpair (mkpair (mksym 
-"COMMON-LISP" "QUOTE") (mkpair (mksym "COMMON-LISP" "LIST") (mksym 
+"INTERN-IN-PACKAGE-OF-SYMBOL") (mkpair (mkpair (mksym "ACL2" "COERCE") (
+mkpair (mkpair (mksym "M1" "APP") (mkpair (mkpair (mksym "ACL2" "COERCE") (
+mkpair (mkpair (mksym "COMMON-LISP" "SYMBOL-NAME") (mkpair (mksym "M1" 
+"PART1") (mksym "COMMON-LISP" "NIL"))) (mkpair (mkpair (mksym "COMMON-LISP" 
+"QUOTE") (mkpair (mksym "COMMON-LISP" "LIST") (mksym "COMMON-LISP" "NIL"))) (
+mksym "COMMON-LISP" "NIL")))) (mkpair (mkpair (mksym "ACL2" "COERCE") (mkpair (
+mkpair (mksym "COMMON-LISP" "SYMBOL-NAME") (mkpair (mksym "M1" "PART2") (
+mksym "COMMON-LISP" "NIL"))) (mkpair (mkpair (mksym "COMMON-LISP" "QUOTE") (
+mkpair (mksym "COMMON-LISP" "LIST") (mksym "COMMON-LISP" "NIL"))) (mksym 
+"COMMON-LISP" "NIL")))) (mksym "COMMON-LISP" "NIL")))) (mkpair (mkpair (mksym 
+"COMMON-LISP" "QUOTE") (mkpair (mksym "COMMON-LISP" "STRING") (mksym 
 "COMMON-LISP" "NIL"))) (mksym "COMMON-LISP" "NIL")))) (mkpair (mkpair (mksym 
-"COMMON-LISP" "COERCE") (mkpair (mkpair (mksym "COMMON-LISP" "SYMBOL-NAME") (
-mkpair (mksym "M1" "PART2") (mksym "COMMON-LISP" "NIL"))) (mkpair (mkpair (
-mksym "COMMON-LISP" "QUOTE") (mkpair (mksym "COMMON-LISP" "LIST") (mksym 
-"COMMON-LISP" "NIL"))) (mksym "COMMON-LISP" "NIL")))) (mksym "COMMON-LISP" 
-"NIL")))) (mkpair (mkpair (mksym "COMMON-LISP" "QUOTE") (mkpair (mksym 
-"COMMON-LISP" "STRING") (mksym "COMMON-LISP" "NIL"))) (mksym "COMMON-LISP" 
-"NIL")))) (mkpair (mkpair (mksym "COMMON-LISP" "QUOTE") (mkpair (mksym "M1" 
-"RUN") (mksym "COMMON-LISP" "NIL"))) (mksym "COMMON-LISP" "NIL")))) (mksym 
-"COMMON-LISP" "NIL")))))
+"COMMON-LISP" "QUOTE") (mkpair (mksym "M1" "RUN") (mksym "COMMON-LISP" "NIL"))) (
+mksym "COMMON-LISP" "NIL")))) (mksym "COMMON-LISP" "NIL")))))
 ,
 
 (mkpair (mksym "COMMON-LISP" "DEFUN") (mkpair (mksym "M1" "MAKE-DEFUN") (

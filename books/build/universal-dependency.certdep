@@ -2,4 +2,4 @@
 ; books.  Suggestion: leave a short note saying why recertification was
 ; required.
 
-Version 8.7 release
+"ACL2" package has changed again due to removal of Common Lisp symbols abs and signum.

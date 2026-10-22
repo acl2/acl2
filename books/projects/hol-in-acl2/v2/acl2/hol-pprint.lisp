@@ -49,8 +49,6 @@
          (hol-pprint-lst (cdr x)))
         ((eq (car x) 'hp-none)
          'hol::none)
-        ((eq (car x) 'hp-none)
-         'hol::nil)
         ((member-equal x '((hp-true)
                            (hp-false)))
          (car x))

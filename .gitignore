@@ -31,6 +31,7 @@ devel-check.out
 *.fasl
 *.fx64fsl
 *.fx86cl64
+*.la64fsl
 *.lbin
 *.lib
 *.lx32fsl

@@ -1,0 +1,148 @@
+% GENERAL FORMAT OF EACH SLIDE
+% ----------------------------
+
+%\begin{frame}
+
+%\newlibtitle or \implibtitle % for new vs. improved libraries
+
+%\bookpath{path/to/the/library}: % directory or file, use macro for font
+% Short description of what this library is, 1-2 lines.
+%\begin{itemize}
+%\item
+% A highlight about this new or improved library.
+%\item
+% Another highlight.
+%\item
+% Say if it's described in a paper at this workshop,
+% in which case, there may be little to say here.
+%\end{itemize}
+
+%\separation % to separate the next entry, if any
+
+%\bookpath{another/path}: % as above
+
+%\end{frame}
+
+% ORDER OF THE SLIDES AND ENTRIES
+% -------------------------------
+
+% First all the new libraries, in alphabetical order.
+
+% Then all the improved libraries, in alphabetical order.
+
+% Then one or more slides with additional contributions.
+
+% Don't worry about adding your contributions in order:
+% Alessandro will quickly put them in order if needed,
+% and also fix any formatting issues.
+
+% TITLE SLIDE
+% -----------
+
+% Add your name as co-author, in alphabetical order of last name.
+
+% Add your organization, in alphabetical order.
+% Renumber the \inst{n} instances as needed
+% (both inside \author{...} and inside \institute{...}).
+
+% Or ask Alessandro to do this.
+
+% OTHER REMARKS
+% -------------
+
+% Use the \code{...} macro for code (i.e.\ fixed-width) font within the text.
+
+% If you want to show code block snippets,
+% use the verbatim environment,
+% and add [fragile] just after \begin{frame}.
+
+% For guidelines on content and level of detail,
+% please see existing entries.
+% The goal is to provide enough information to get possible users interested.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass{beamer}
+\usetheme{Singapore}
+\usecolortheme{seahorse}
+\usepackage{inconsolata}
+
+\beamertemplatenavigationsymbolsempty
+
+\setbeamertemplate{footline}[frame number]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newenvironment{codeblock}{\begin{alltt}}{\end{alltt}}
+
+\newcommand{\bookpath}[1]{\textbf{\code{#1}}}
+
+\newcommand{\newlibtitle}{\frametitle{New Libraries}}
+\newcommand{\implibtitle}{\frametitle{Improved Libraries}}
+
+\newcommand{\separation}{\vspace*{1.5ex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{What's New in the Community Books}
+
+\subtitle{Since the ACL2-2025 Workshop}
+
+\author{Alessandro Coglio\inst{1,2} (presenter),
+        \ldots}
+
+\institute{\inst{1}Kestrel Institute,
+           \inst{2}Kestrel Technology LLC,
+           \ldots}
+
+\date{ACL2-2026 Workshop}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\frame[noframenumbering,plain]{\titlepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\frametitle{Overview}
+
+\begin{itemize}
+\item About 10,000 non-merge commits since the last Workshop.
+\item From several contributors from several organizations.
+\item These slides provide succinct summaries of major items,
+      ordered by book path within each of the new and improved library parts.
+      See the book release notes for more details.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\newlibtitle
+
+\bookpath{kestrel/remora}:
+A formalization of, and tools for, Remora,
+a rank-polymorphic higher-order programming language:
+\begin{itemize}
+\item ABNF grammar, lexer/parser, pretty-printer.
+\item Abstract syntax trees and operations on them.
+\item Inductive inference rules for static semantics.
+\item Type checking and (preliminary) type inference.
+\item Interpreter.
+\item Remora-to-Remora transformations with proofs.
+\item Reasoning tools for Remora code.
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

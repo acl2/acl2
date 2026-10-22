@@ -24,7 +24,7 @@
   #-raw
   x
   #+raw
-  (the double-float (coerce x 'double-float)))
+  (the double-float (common-lisp::coerce x 'double-float)))
 
 (defun r2f-tree (x)
   (declare (xargs :guard t))
@@ -137,8 +137,8 @@
   #+raw
   (if (= (the double-float x)
          (the double-float y))
-      1.0d0 ;; (coerce 1 'double-float)
-    0.0d0 ;; (coerce 0 'double-float)
+      1.0d0 ;; (common-lisp::coerce 1 'double-float)
+    0.0d0 ;; (common-lisp::coerce 0 'double-float)
     ))
 
 (defthm rationalp-f=
@@ -157,8 +157,8 @@
   #+raw
   (if (< (the double-float x)
          (the double-float y))
-      1.0d0 ;;(coerce 1 'double-float)
-    0.0d0 ;;(coerce 0 'double-float)
+      1.0d0 ;;(common-lisp::coerce 1 'double-float)
+    0.0d0 ;;(common-lisp::coerce 0 'double-float)
     ))
 
 (defthm rationalp-f<
@@ -172,10 +172,10 @@
   (declare (xargs :guard (and (rationalp x))))
   #+raw (declare (type double-float x))
   #-raw (if (= x 0) 1 0)
-  #+raw (if (= (the double-float x) ;;(coerce 0 'double-float)
+  #+raw (if (= (the double-float x) ;;(common-lisp::coerce 0 'double-float)
                0.0d0)
-            1.0d0 ;;(coerce 1 'double-float)
-          0.0d0 ;;(coerce 0 'double-float)
+            1.0d0 ;;(common-lisp::coerce 1 'double-float)
+          0.0d0 ;;(common-lisp::coerce 0 'double-float)
           ))
 
 (defthm rationalp-f-not

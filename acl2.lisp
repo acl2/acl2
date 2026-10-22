@@ -797,14 +797,15 @@
     (if p
         (if end
             (concatenate 'string
-                         (funcall *old-string-downcase* (subseq x 0 p))
+                         (subseq x 0 start)
+                         (funcall *old-string-downcase* (subseq x start p))
                          (coerce (loop for i from p to (1- end)
                                        collect (char-downcase (char x i)))
                                  'string)
-                         (funcall *old-string-downcase*
-                                  (subseq x end (length x))))
+                         (subseq x end (length x)))
           (concatenate 'string
-                       (funcall *old-string-downcase* (subseq x 0 p))
+                       (subseq x 0 start)
+                       (funcall *old-string-downcase* (subseq x start p))
                        (coerce (loop for i from p to (1- (length x))
                                      collect (char-downcase (char x i)))
                                'string)))
@@ -1905,7 +1906,7 @@ ACL2 from scratch.")
 
 ; Note however that ACL2 supports #\Page in its read-eval-print loop.
 
-  (code-char 12))
+  (common-lisp::code-char 12))
 
 (defconstant *acl2-read-character-terminators*
   '(#\Tab #\Newline #.*acl2-page-char* #\Space #\" #\' #\( #\) #\; #\` #\,))

@@ -1100,6 +1100,37 @@
             (b* ((statassert (declon-statassert->statassert ast)))
               (equal (statassert->uscore statassert) t))))
 
+(test-parse
+ parse-declaration
+ "_Thread_local int x;"
+ :cond (and (declon-case ast :declon)
+            (equal (car (declon-declon->specs ast))
+                   (decl-spec-stoclass (stor-spec-thread-local t)))))
+
+(test-parse
+ parse-declaration
+ "thread_local int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (equal (car (declon-declon->specs ast))
+                   (decl-spec-stoclass (stor-spec-thread-local nil)))))
+
+(test-parse
+ parse-declaration
+ "_Thread_local int x;"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (declon-case ast :declon)
+            (equal (car (declon-declon->specs ast))
+                   (decl-spec-stoclass (stor-spec-thread-local t)))))
+
+(test-parse
+ parse-declaration
+ "__thread int x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (declon-case ast :declon)
+            (equal (car (declon-declon->specs ast))
+                   (decl-spec-stoclass (stor-spec-thread)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-statement

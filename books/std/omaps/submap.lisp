@@ -91,6 +91,26 @@
   :enable (submap
            assoc-when-submap-and-assoc))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule subset-of-keys-when-submap
+  (implies (submap sub sup)
+           (set::subset (keys sub) (keys sup)))
+  :enable (set::expensive-rules
+           in-of-keys-to-assoc))
+
+(defrule subset-of-values-when-submap
+  (implies (submap sub sup)
+           (set::subset (values sub) (values sup)))
+  :induct (submap sub sup)
+  :enable (submap values in-values-when-assoc))
+
+(defrule subset-of-rlookup-when-submap
+  (implies (submap sub sup)
+           (set::subset (rlookup val sub) (rlookup val sup)))
+  :enable (set::expensive-rules
+           assoc-when-submap-and-assoc))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk submap-sk ((sub mapp) (sup mapp))

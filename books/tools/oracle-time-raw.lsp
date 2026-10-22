@@ -49,7 +49,7 @@
            (,end-time    (get-internal-real-time))
            (,end-alloc   (fudge-heap-bytes-allocated)))
        ;; Record these times so we can extract them later.
-       (push (cons (/ (coerce (- ,end-time ,start-time) 'rational)
+       (push (cons (/ (common-lisp::coerce (- ,end-time ,start-time) 'rational)
                       internal-time-units-per-second)
                    (- ,end-alloc ,start-alloc))
              *oracle-time-stack*)

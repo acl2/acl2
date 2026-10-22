@@ -15,3 +15,7 @@ fixing failed proofs.  Moreover, certification of
 MinVisor/setup-nested-page-tables.lisp took over an hour and 38
 minutes on an "Intel(R) Xeon(R) CPU E31280 @ 3.50GHz", a very fast
 machine as of November, 2011.
+
+In October, 2026 Eric Smith sped up the proofs of
+MinVisor/setup-nested-page-tables.lisp somewhat, by adding some
+disables.

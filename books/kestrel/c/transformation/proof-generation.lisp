@@ -321,21 +321,22 @@
        ((mv & old-expr) (ldm-expr old)) ; ERP is NIL because FORMALP
        ((mv & new-expr) (ldm-expr new)) ; ERP is NIL because FORMALP
        ((mv & ctype) (ldm-type type)) ; ERP is NIL because FORMALP
-       (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
        (formula
         `(b* ((old-expr ',old-expr)
               (new-expr ',new-expr)
-              ((mv old-eval old-compst)
-               (c::exec-expr old-expr compst old-fenv limit))
-              ((mv new-eval new-compst)
-               (c::exec-expr new-expr compst new-fenv limit))
+              ((mv old-eval old-compst1)
+               (c::exec-expr old-expr old-compst old-fenv limit))
+              ((mv new-eval new-compst1)
+               (c::exec-expr new-expr new-compst new-fenv limit))
               (old-val (c::expr-value->value old-eval))
               (new-val (c::expr-value->value new-eval)))
-           (implies (and ,@vars-pre
+           (implies (and (equal old-compst new-compst)
+                         ,@vars-pre
                          (not (c::errorp old-eval)))
                     (and (not (c::errorp new-eval))
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          ,@(if (c::type-case ctype :void)
                                '((not old-eval)
                                  (not new-eval))
@@ -388,8 +389,8 @@
                 the type ~x2 of the old initializer ~x3."
                (initer-type new) new type old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
        ((unless (type-formalp type))
         (raise "Internal error: initializer ~x0 has type ~x1." old type)
         (mv '(_) nil 1))
@@ -399,16 +400,17 @@
        (formula
         `(b* ((old-initer ',old-initer)
               (new-initer ',new-initer)
-              ((mv old-ival old-compst)
-               (c::exec-initer old-initer compst old-fenv limit))
-              ((mv new-ival new-compst)
-               (c::exec-initer new-initer compst new-fenv limit)))
-           (implies (and (> (c::compustate-frames-number compst) 0)
+              ((mv old-ival old-compst1)
+               (c::exec-initer old-initer old-compst old-fenv limit))
+              ((mv new-ival new-compst1)
+               (c::exec-initer new-initer new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-ival)))
                     (and (not (c::errorp new-ival))
                          (equal old-ival new-ival)
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          (equal (c::init-type-of-init-value old-ival)
                                 (c::init-type-single ',ctype))
                          ,@vars-post))))
@@ -455,24 +457,25 @@
                 the types ~x2 of the old statement ~x3."
                (stmt-types new) new types old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
-       (vars-post (gen-var-assertions vartys 'old-compst))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
+       (vars-post (gen-var-assertions vartys 'old-compst1))
        ((mv & old-stmt) (ldm-stmt old)) ; ERP is NIL because FORMALP
        ((mv & new-stmt) (ldm-stmt new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP must be NIL
        (formula
         `(b* ((old-stmt ',old-stmt)
               (new-stmt ',new-stmt)
-              ((mv old-sval old-compst)
-               (c::exec-stmt old-stmt compst old-fenv limit))
-              ((mv new-sval new-compst)
-               (c::exec-stmt new-stmt compst new-fenv limit)))
-           (implies (and (> (c::compustate-frames-number compst) 0)
+              ((mv old-sval old-compst1)
+               (c::exec-stmt old-stmt old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-stmt new-stmt new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
@@ -516,22 +519,23 @@
        ((unless (declon-obj-block-formalp new))
         (raise "Internal error: ~x0 is not in the formalized subset." new)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys-pre 'compst))
-       (vars-post (gen-var-assertions vartys-post 'old-compst))
+       (vars-pre (gen-var-assertions vartys-pre 'old-compst))
+       (vars-post (gen-var-assertions vartys-post 'old-compst1))
        ((mv & old-declon) (ldm-declon-obj old)) ; ERP is NIL because FORMALP
        ((mv & new-declon) (ldm-declon-obj new)) ; ERP is NIL because FORMALP
        (formula
         `(b* ((old-declon ',old-declon)
               (new-declon ',new-declon)
-              (old-compst
-               (c::exec-obj-declon old-declon compst old-fenv limit))
-              (new-compst
-               (c::exec-obj-declon new-declon compst new-fenv limit)))
-           (implies (and (> (c::compustate-frames-number compst) 0)
+              (old-compst1
+               (c::exec-obj-declon old-declon old-compst old-fenv limit))
+              (new-compst1
+               (c::exec-obj-declon new-declon new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
-                         (not (c::errorp old-compst)))
-                    (and (not (c::errorp new-compst))
-                         (equal old-compst new-compst)
+                         (not (c::errorp old-compst1)))
+                    (and (not (c::errorp new-compst1))
+                         (equal old-compst1 new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -577,24 +581,25 @@
                 the types ~x2 of the old block item ~x3."
                (block-item-types new) new types old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys-pre 'compst))
-       (vars-post (gen-var-assertions vartys-post 'old-compst))
+       (vars-pre (gen-var-assertions vartys-pre 'old-compst))
+       (vars-post (gen-var-assertions vartys-post 'old-compst1))
        ((mv & old-item) (ldm-block-item old)) ; ERP is NIL because FORMALP
        ((mv & new-item) (ldm-block-item new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
        (formula
         `(b* ((old-item ',old-item)
               (new-item ',new-item)
-              ((mv old-sval old-compst)
-               (c::exec-block-item old-item compst old-fenv limit))
-              ((mv new-sval new-compst)
-               (c::exec-block-item new-item compst new-fenv limit)))
-           (implies (and (> (c::compustate-frames-number compst) 0)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item old-item old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item new-item new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          ,@vars-post))))
@@ -650,23 +655,24 @@
                 the types ~x2 of the old block item list ~x3."
                (block-item-list-types new) new types old)
         (mv '(_) nil 1))
-       (vars-pre (gen-var-assertions vartys 'compst))
+       (vars-pre (gen-var-assertions vartys 'old-compst))
        ((mv & old-items) (ldm-block-item-list old)) ; ERP is NIL because FORMALP
        ((mv & new-items) (ldm-block-item-list new)) ; ERP is NIL because FORMALP
        ((mv & ctypes) (ldm-type-option-set types)) ; ERP is NIL because FORMALP
        (formula
         `(b* ((old-items ',old-items)
               (new-items ',new-items)
-              ((mv old-sval old-compst)
-               (c::exec-block-item-list old-items compst old-fenv limit))
-              ((mv new-sval new-compst)
-               (c::exec-block-item-list new-items compst new-fenv limit)))
-           (implies (and (> (c::compustate-frames-number compst) 0)
+              ((mv old-sval old-compst1)
+               (c::exec-block-item-list old-items old-compst old-fenv limit))
+              ((mv new-sval new-compst1)
+               (c::exec-block-item-list new-items new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         (> (c::compustate-frames-number old-compst) 0)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
                          (equal old-sval new-sval)
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -1281,6 +1287,7 @@
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
                        (:instance expr-unary-errors
+                                  (compst old-compst)
                                   (op ',(unop-case
                                          op
                                          :plus (c::unop-plus)
@@ -1393,6 +1400,7 @@
                                   (old-arg ',old-arg)
                                   (new-arg ',new-arg))
                        (:instance expr-cast-errors
+                                  (compst old-compst)
                                   (tyname ',ctyname)
                                   (arg ',old-arg)
                                   (fenv old-fenv))))))
@@ -1523,11 +1531,16 @@
                      :use ((:instance ,arg1-thm-name
                                       (limit (1- limit)))
                            (:instance ,arg2-thm-name
-                                      (compst (mv-nth 1 (c::exec-expr
-                                                         ',old-arg1
-                                                         compst
-                                                         old-fenv
-                                                         (1- limit))))
+                                      (old-compst (mv-nth 1 (c::exec-expr
+                                                             ',old-arg1
+                                                             old-compst
+                                                             old-fenv
+                                                             (1- limit))))
+                                      (new-compst (mv-nth 1 (c::exec-expr
+                                                             ',new-arg1
+                                                             new-compst
+                                                             new-fenv
+                                                             (1- limit))))
                                       (limit (1- limit)))
                            (:instance expr-binary-pure-strict-congruence
                                       (op ',cop)
@@ -1536,6 +1549,7 @@
                                       (new-arg1 ',new-arg1)
                                       (new-arg2 ',new-arg2))
                            (:instance expr-binary-pure-strict-errors
+                                      (compst old-compst)
                                       (op ',cop)
                                       (arg1 ',old-arg1)
                                       (arg2 ',old-arg2)
@@ -1571,10 +1585,14 @@
                ((:instance ,arg1-thm-name
                            (limit (1- limit)))
                 (:instance ,arg2-thm-name
-                           (compst (mv-nth 1 (c::exec-expr ',old-arg1
-                                                           compst
-                                                           old-fenv
-                                                           (1- limit))))
+                           (old-compst (mv-nth 1 (c::exec-expr ',old-arg1
+                                                               old-compst
+                                                               old-fenv
+                                                               (1- limit))))
+                           (new-compst (mv-nth 1 (c::exec-expr ',new-arg1
+                                                               new-compst
+                                                               new-fenv
+                                                               (1- limit))))
                            (limit (1- limit)))
                 (:instance
                  ,(case (binop-kind op)
@@ -1596,6 +1614,7 @@
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-first-errors)
                     (:logor 'expr-binary-logor-first-errors))
+                 (compst old-compst)
                  (arg1 ',old-arg1)
                  (arg2 ',old-arg2)
                  (fenv old-fenv))
@@ -1603,6 +1622,7 @@
                  ,(case (binop-kind op)
                     (:logand 'expr-binary-logand-second-errors)
                     (:logor 'expr-binary-logor-second-errors))
+                 (compst old-compst)
                  (arg1 ',old-arg1)
                  (arg2 ',old-arg2)
                  (fenv old-fenv))))))
@@ -1653,6 +1673,7 @@
                       (new-arg ',new-arg2))
                      (:instance
                       expr-binary-asg-errors
+                      (compst old-compst)
                       (var ',cvar)
                       (expr ',old-arg2)
                       (fenv old-fenv))))))
@@ -1790,18 +1811,28 @@
                  :use ((:instance ,test-thm-name
                                   (limit (1- limit)))
                        (:instance ,then-thm-name
-                                  (compst (mv-nth 1 (c::exec-expr
-                                                     ',old-test
-                                                     compst
-                                                     old-fenv
-                                                     (1- limit))))
+                                  (old-compst (mv-nth 1 (c::exec-expr
+                                                         ',old-test
+                                                         old-compst
+                                                         old-fenv
+                                                         (1- limit))))
+                                  (new-compst (mv-nth 1 (c::exec-expr
+                                                         ',new-test
+                                                         new-compst
+                                                         new-fenv
+                                                         (1- limit))))
                                   (limit (1- limit)))
                        (:instance ,else-thm-name
-                                  (compst (mv-nth 1 (c::exec-expr
-                                                     ',old-test
-                                                     compst
-                                                     old-fenv
-                                                     (1- limit))))
+                                  (old-compst (mv-nth 1 (c::exec-expr
+                                                         ',old-test
+                                                         old-compst
+                                                         old-fenv
+                                                         (1- limit))))
+                                  (new-compst (mv-nth 1 (c::exec-expr
+                                                         ',new-test
+                                                         new-compst
+                                                         new-fenv
+                                                         (1- limit))))
                                   (limit (1- limit)))
                        (:instance expr-cond-true-congruence
                                   (old-test ',old-test)
@@ -1818,16 +1849,19 @@
                                   (new-then ',new-then)
                                   (new-else ',new-else))
                        (:instance expr-cond-test-errors
+                                  (compst old-compst)
                                   (test ',old-test)
                                   (then ',old-then)
                                   (else ',old-else)
                                   (fenv old-fenv))
                        (:instance expr-cond-then-errors
+                                  (compst old-compst)
                                   (test ',old-test)
                                   (then ',old-then)
                                   (else ',old-else)
                                   (fenv old-fenv))
                        (:instance expr-cond-else-errors
+                                  (compst old-compst)
                                   (test ',old-test)
                                   (then ',old-then)
                                   (else ',old-else)
@@ -1928,6 +1962,7 @@
                             (old-expr ',old-expr)
                             (new-expr ',new-expr))
                  (:instance initer-single-errors
+                            (compst old-compst)
                             (expr ',old-expr)
                             (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2025,6 +2060,7 @@
                                 (old-expr ',old-expr?)
                                 (new-expr ',new-expr?))
                      (:instance stmt-expr-errors
+                                (compst old-compst)
                                 (expr ',old-expr?)
                                 (fenv old-fenv)))))
           `(("Goal"
@@ -2135,6 +2171,7 @@
                                       (old-expr ',old-expr?)
                                       (new-expr ',new-expr?))
                            (:instance stmt-return-errors
+                                      (compst old-compst)
                                       (expr ',old-expr?)
                                       (fenv old-fenv)))))
                 `(("Goal"
@@ -2236,10 +2273,14 @@
            :use ((:instance ,test-thm-name
                             (limit (1- limit)))
                  (:instance ,then-thm-name
-                            (compst (mv-nth 1 (c::exec-expr ',old-test
-                                                            compst
-                                                            old-fenv
-                                                            (1- limit))))
+                            (old-compst (mv-nth 1 (c::exec-expr ',old-test
+                                                                old-compst
+                                                                old-fenv
+                                                                (1- limit))))
+                            (new-compst (mv-nth 1 (c::exec-expr ',new-test
+                                                                new-compst
+                                                                new-fenv
+                                                                (1- limit))))
                             (limit (1- limit)))
                  (:instance stmt-if-true-congruence
                             (old-test ',old-test)
@@ -2253,10 +2294,12 @@
                             (new-test ',new-test)
                             (new-then ',new-then))
                  (:instance stmt-if-test-errors
+                            (compst old-compst)
                             (test ',old-test)
                             (then ',old-then)
                             (fenv old-fenv))
                  (:instance stmt-if-then-errors
+                            (compst old-compst)
                             (test ',old-test)
                             (then ',old-then)
                             (fenv old-fenv))))))
@@ -2371,16 +2414,24 @@
            :use ((:instance ,test-thm-name
                             (limit (1- limit)))
                  (:instance ,then-thm-name
-                            (compst (mv-nth 1 (c::exec-expr ',old-test
-                                                            compst
-                                                            old-fenv
-                                                            (1- limit))))
+                            (old-compst (mv-nth 1 (c::exec-expr ',old-test
+                                                                old-compst
+                                                                old-fenv
+                                                                (1- limit))))
+                            (new-compst (mv-nth 1 (c::exec-expr ',new-test
+                                                                new-compst
+                                                                new-fenv
+                                                                (1- limit))))
                             (limit (1- limit)))
                  (:instance ,else-thm-name
-                            (compst (mv-nth 1 (c::exec-expr ',old-test
-                                                            compst
-                                                            old-fenv
-                                                            (1- limit))))
+                            (old-compst (mv-nth 1 (c::exec-expr ',old-test
+                                                                old-compst
+                                                                old-fenv
+                                                                (1- limit))))
+                            (new-compst (mv-nth 1 (c::exec-expr ',new-test
+                                                                new-compst
+                                                                new-fenv
+                                                                (1- limit))))
                             (limit (1- limit)))
                  (:instance stmt-ifelse-true-congruence
                             (old-test ',old-test)
@@ -2399,16 +2450,19 @@
                             (new-else ',new-else)
                             (types ',else-ctypes))
                  (:instance stmt-ifelse-test-errors
+                            (compst old-compst)
                             (test ',old-test)
                             (then ',old-then)
                             (else ',old-else)
                             (fenv old-fenv))
                  (:instance stmt-ifelse-then-errors
+                            (compst old-compst)
                             (test ',old-test)
                             (then ',old-then)
                             (else ',old-else)
                             (fenv old-fenv))
                  (:instance stmt-ifelse-else-errors
+                            (compst old-compst)
                             (test ',old-test)
                             (then ',old-then)
                             (else ',old-else)
@@ -2498,13 +2552,15 @@
                         c::compustate-has-var-with-type-p-of-enter-scope
                         stmt-compustate-vars)
            :use ((:instance ,cstmt-thm-name
-                            (compst (c::enter-scope compst))
+                            (old-compst (c::enter-scope old-compst))
+                            (new-compst (c::enter-scope new-compst))
                             (limit (1- limit)))
                  (:instance stmt-compound-congruence
                             (old-items ',old-items)
                             (new-items ',new-items)
                             (types ',ctypes))
                  (:instance stmt-compound-errors
+                            (compst old-compst)
                             (items ',old-items)
                             (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -2593,25 +2649,36 @@
                         stmt-compustate-vars)
            :use ((:instance
                   ,test-thm-name
-                  (compst (mv-nth 0 (while-test-hyp-witness ',old-test
-                                                            ',new-test
-                                                            old-fenv
-                                                            new-fenv
-                                                            ',gin.vartys)))
-                  (limit (mv-nth 1 (while-test-hyp-witness ',old-test
+                  (old-compst (mv-nth 0 (while-test-hyp-witness ',old-test
+                                                                ',new-test
+                                                                old-fenv
+                                                                new-fenv
+                                                                ',gin.vartys)))
+                  (new-compst (mv-nth 1 (while-test-hyp-witness ',old-test
+                                                                ',new-test
+                                                                old-fenv
+                                                                new-fenv
+                                                                ',gin.vartys)))
+                  (limit (mv-nth 2 (while-test-hyp-witness ',old-test
                                                            ',new-test
                                                            old-fenv
                                                            new-fenv
                                                            ',gin.vartys))))
                  (:instance
                   ,body-thm-name
-                  (compst (mv-nth 0 (while-body-hyp-witness ',old-body
-                                                            ',new-body
-                                                            old-fenv
-                                                            new-fenv
-                                                            ',types
-                                                            ',gin.vartys)))
-                  (limit (mv-nth 1 (while-body-hyp-witness ',old-body
+                  (old-compst (mv-nth 0 (while-body-hyp-witness ',old-body
+                                                                ',new-body
+                                                                old-fenv
+                                                                new-fenv
+                                                                ',types
+                                                                ',gin.vartys)))
+                  (new-compst (mv-nth 1 (while-body-hyp-witness ',old-body
+                                                                ',new-body
+                                                                old-fenv
+                                                                new-fenv
+                                                                ',types
+                                                                ',gin.vartys)))
+                  (limit (mv-nth 2 (while-body-hyp-witness ',old-body
                                                            ',new-body
                                                            old-fenv
                                                            new-fenv
@@ -2719,30 +2786,47 @@
                         stmt-compustate-vars)
            :use ((:instance
                   ,body-thm-name
-                  (compst (mv-nth 0 (dowhile-body-hyp-witness ',old-body
-                                                              ',new-body
-                                                              old-fenv
-                                                              new-fenv
-                                                              ',types
-                                                              ',gin.vartys)))
-                  (limit (mv-nth 1 (dowhile-body-hyp-witness ',old-body
-                                                             ',new-body
-                                                             old-fenv
-                                                             new-fenv
-                                                             ',types
-                                                             ',gin.vartys))))
+                  (old-compst
+                   (mv-nth 0 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys)))
+                  (new-compst
+                   (mv-nth 1 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys)))
+                  (limit
+                   (mv-nth 2 (dowhile-body-hyp-witness ',old-body
+                                                       ',new-body
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',types
+                                                       ',gin.vartys))))
                  (:instance
                   ,test-thm-name
-                  (compst (mv-nth 0 (dowhile-test-hyp-witness ',old-test
-                                                              ',new-test
-                                                              old-fenv
-                                                              new-fenv
-                                                              ',gin.vartys)))
-                  (limit (mv-nth 1 (dowhile-test-hyp-witness ',old-test
-                                                             ',new-test
-                                                             old-fenv
-                                                             new-fenv
-                                                             ',gin.vartys))))
+                  (old-compst
+                   (mv-nth 0 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys)))
+                  (new-compst
+                   (mv-nth 1 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys)))
+                  (limit
+                   (mv-nth 2 (dowhile-test-hyp-witness ',old-test
+                                                       ',new-test
+                                                       old-fenv
+                                                       new-fenv
+                                                       ',gin.vartys))))
                  (:instance stmt-dowhile-theorem
                             (old-body ',old-body)
                             (new-body ',new-body)
@@ -2912,6 +2996,7 @@
                         (new-initer ',new-initer))
                        (:instance
                         declon-declon-errors
+                        (compst old-compst)
                         (var ',cvar)
                         (tyspecs ',ctyspecs)
                         (initer ',old-initer)
@@ -3019,6 +3104,7 @@
                         (types ',ctypes))
                        (:instance
                         block-item-stmt-errors
+                        (compst old-compst)
                         (stmt ',old-stmt)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -3104,6 +3190,7 @@
                         (new-declon ',new-declon))
                        (:instance
                         block-item-declon-errors
+                        (compst old-compst)
                         (declon ',old-declon)
                         (fenv old-fenv))))))
        ((mv thm-event thm-name thm-index)
@@ -3242,9 +3329,12 @@
                   (limit (1- limit)))
                  (:instance
                   ,items-thm-name
-                  (compst
+                  (old-compst
                    (mv-nth 1 (c::exec-block-item
-                              ',old-item compst old-fenv (1- limit))))
+                              ',old-item old-compst old-fenv (1- limit))))
+                  (new-compst
+                   (mv-nth 1 (c::exec-block-item
+                              ',new-item new-compst new-fenv (1- limit))))
                   (limit (1- limit)))
                  (:instance
                   block-item-list-cons-first-congruence
@@ -3264,11 +3354,13 @@
                   (rest-types ',rest-ctypes))
                  (:instance
                   block-item-list-cons-first-errors
+                  (compst old-compst)
                   (item ',old-item)
                   (items ',old-items)
                   (fenv old-fenv))
                  (:instance
                   block-item-list-cons-rest-errors
+                  (compst old-compst)
                   (item ',old-item)
                   (items ',old-items)
                   (fenv old-fenv))))))
@@ -3480,7 +3572,7 @@
        ((when erp) (mv new-fundef gout-no-thm))
        (types (fundef-types fundef))
        ((mv okp args parargs arg-types arg-types-compst param-vartys)
-        (gen-from-params ldm-params 'compst gin))
+        (gen-from-params ldm-params 'old-compst gin))
        ((unless okp) (mv new-fundef gout-no-thm))
        ((mv init-scope-thm-event init-scope-thm-name thm-index)
         (gen-init-scope-thm ldm-params
@@ -3498,7 +3590,7 @@
                         init-scope-thm-name
                         gin.const-new
                         thm-index
-                        'compst))
+                        'old-compst))
        (events (append (rev param-thm-events) events))
        ((mv thm-name thm-index) (gen-thm-name gin.const-new thm-index))
        (global-vartys (omap::delete* (omap::keys param-vartys) gin.vartys))
@@ -3509,16 +3601,17 @@
                                         (list
                                          (c::init-scope ',ldm-params
                                                         (list ,@args))))
-                              compst)))
+                              old-compst)))
        (formula
         `(b* ((old ',(fundef-fix fundef))
               (new ',new-fundef)
               (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-              ((mv old-val old-compst)
-               (c::exec-fun fun (list ,@args) compst old-fenv limit))
-              ((mv new-val new-compst)
-               (c::exec-fun fun (list ,@args) compst new-fenv limit)))
-           (implies (and ,@global-vars-pre
+              ((mv old-val old-compst1)
+               (c::exec-fun fun (list ,@args) old-compst old-fenv limit))
+              ((mv new-val new-compst1)
+               (c::exec-fun fun (list ,@args) new-compst new-fenv limit)))
+           (implies (and (equal old-compst new-compst)
+                         ,@global-vars-pre
                          ,@arg-types
                          (equal (c::fun-env-lookup fun old-fenv)
                                 (c::fun-info-from-fundef
@@ -3529,19 +3622,19 @@
                          (not (c::errorp old-val)))
                     (and (not (c::errorp new-val))
                          (equal old-val new-val)
-                         (equal old-compst new-compst)
+                         (equal old-compst1 new-compst1)
                          (set::in (c::type-of-value-option old-val)
                                   (mv-nth 1 (ldm-type-set ',types)))))))
        (hints
         `(("Goal"
            :expand ((c::exec-fun
-                     ',(c::ident fun) (list ,@args) compst old-fenv limit)
+                     ',(c::ident fun) (list ,@args) old-compst old-fenv limit)
                     (c::exec-fun
-                     ',(c::ident fun) (list ,@args) compst new-fenv limit))
+                     ',(c::ident fun) (list ,@args) new-compst new-fenv limit))
            :use (,init-scope-thm-name
                  ,@(xeq-fundef-loop param-thm-names fun)
                  (:instance ,body-thm-name
-                            (compst
+                            (old-compst
                              (c::push-frame
                               (c::frame (mv-nth 1 (ldm-ident
                                                    (ident ,fun)))
@@ -3549,7 +3642,16 @@
                                          (c::init-scope
                                           ',ldm-params
                                           (list ,@args))))
-                              compst))
+                              old-compst))
+                            (new-compst
+                             (c::push-frame
+                              (c::frame (mv-nth 1 (ldm-ident
+                                                   (ident ,fun)))
+                                        (list
+                                         (c::init-scope
+                                          ',ldm-params
+                                          (list ,@args))))
+                              new-compst))
                             (limit (1- limit))))
            :in-theory '((:e c::fun-info->body$inline)
                         (:e c::fun-info->params$inline)
@@ -3587,7 +3689,7 @@
           (lemma-instance
            `(:instance ,thm
                        (fun (mv-nth 1 (ldm-ident (ident ,fun))))
-                       (compst0 compst)))
+                       (old-compst0 old-compst)))
           (more-lemma-instances
            (xeq-fundef-loop (cdr thms) fun)))
        (cons lemma-instance more-lemma-instances))))
