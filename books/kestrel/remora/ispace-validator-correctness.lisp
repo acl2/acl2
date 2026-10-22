@@ -243,7 +243,7 @@
      while the validator does.
      Each case of the induction knows the AST only by its kind,
      so it is closed by the defining rules combined by kind
-     (e.g. @(tsee dim-ok-by-kind)),
+     (e.g. @(see dim-validity-rules-by-kind)),
      whose hypotheses mirror the validator's checks.
      The theorems over contexts are instances of the ones over environments,
      with the environment that corresponds to the context."))
