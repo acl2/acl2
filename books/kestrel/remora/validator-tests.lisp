@@ -422,23 +422,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The tests below are commented out because they currently fail:
-; the validator accepts these expressions, but it should reject them.
-; The parameter x has the abstract type &t (or the abstract length $d),
-; bound by the enclosing abstraction;
-; the body then defines &t (or $d),
-; and the lookup of x expands its recorded type with that definition
-; (see the var case of check-expr),
-; so x appears to be an Int (or to have length 3).
-; If the expansion at lookup is removed
-; (every type recorded in the environment is already expanded),
-; these should become passing tests.
-; (test-check-top-expr-fail
-;  "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
-; (test-check-top-expr-fail
-;  "(i-fn ($d)
-;   (fn ((x [Int $d]))
-;     (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
+; The recorded type of a parameter is also unaffected by
+; a later definition of a variable that is abstract in that type:
+; x has the abstract type &t (or the abstract length $d),
+; bound by the enclosing abstraction,
+; and the inner definition of &t (or $d)
+; does not make x an Int (or give it length 3).
+(test-check-top-expr-fail
+ "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
+(test-check-top-expr-fail
+ "(i-fn ($d)
+  (fn ((x [Int $d]))
+    (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
