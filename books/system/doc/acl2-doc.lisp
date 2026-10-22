@@ -44006,6 +44006,9 @@ current fast alists."
  prove theorems, which includes some discussion of generalization.</p>")
 
 (defxdoc generalized-booleans
+
+; Warning: Keep this in sync with books/system/tests/generalized-booleans.lisp.
+
   :parents (common-lisp)
   :short "Potential soundness issues related to ACL2 predicates"
   :long "<p>The discussion below outlines a potential source of unsoundness in
@@ -44075,7 +44078,6 @@ current fast alists."
   char>=
   characterp
   consp
-  digit-char-p
   endp
   eq
   eql
@@ -44093,10 +44095,6 @@ current fast alists."
   rationalp
   standard-char-p
   string-equal
-  string<
-  string<=
-  string>
-  string>=
   stringp
   subsetp
   symbolp
