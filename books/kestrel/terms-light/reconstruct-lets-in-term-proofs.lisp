@@ -40,4 +40,5 @@
                            (free-vars-in-terms (cdr term)))
            :in-theory (enable reconstruct-lets-in-term-aux
                               reconstruct-lets-in-terms-aux
-                              no-duplicate-lambda-formals-in-termp))))
+                              no-duplicate-lambda-formals-in-termp
+                              translated-mv-letp))))

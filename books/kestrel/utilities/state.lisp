@@ -16,6 +16,8 @@
 
 ;; See also books/system/update-state.lisp.
 
+(local (in-theory (disable member-equal))) ; for speed
+
 ;move?
 (defthm written-files-p-of-cons
    (equal (written-files-p (cons file files))

@@ -937,7 +937,8 @@
                 )
            (equal (mv-nth 2 (AddWithCarry n x y carry_in))
                   (addwithcarry-overflow n x y carry_in)))
-  :hints (("Goal" :in-theory (e/d (AddWithCarry
+  :hints (("Goal" :cases ((equal 0 carry_in)) ; for speed
+                  :in-theory (e/d (AddWithCarry
                                    addwithcarry-overflow
                                    bvplus
                                    acl2::bvchop-of-sum-cases sbvlt bvlt
