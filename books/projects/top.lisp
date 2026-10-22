@@ -103,8 +103,10 @@
         (include-book "set-theory/top")
         :endif)
 (include-book "shnf/top")
+; Do not include sidekick/top here.  That book is a wrapper for sidekick/server
+; that also starts the server.
 (ifndef "ACL2_HAS_REALS"
-        (include-book "sidekick/top")
+        (include-book "sidekick/server")
         :endif)
 (include-book "simple-url-parser/parse-url")
 (include-book "smtlink/top" :ttags :all)
