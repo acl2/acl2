@@ -1245,7 +1245,8 @@
             jvm::skip-invokestatic-instruction
             not-equal-nil-when-equal-of-len-arg1
             not-equal-nil-when-equal-of-len-arg2
-            )))
+
+            get-field-of-class-pair-when-has-class-or-nullp)))
 
 ;; all rules needed to simplify JVM expressions (but not to actually do symbolic execution)
 (defun jvm-simplification-rules ()
