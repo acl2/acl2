@@ -1193,7 +1193,7 @@
                             ,@obj-hyps1
                             old-eval
                             (equal (c::type-of-value old-val) type))))
-            :use (:instance expr-const-congruence (compst old-compst))
+            :use (:instance expr-const-congruence (new-compst old-compst))
             :in-theory
             '(c::exec-expr
               c::return-type-of-expr-const
@@ -1274,7 +1274,7 @@
                                           (c::promote-type type1))
                                          (t (c::type-sint)))))))
             :use (:instance expr-binary-pure-strict-congruence
-                            (compst old-compst)
+                            (new-compst old-compst)
                             (new-arg1 old-arg1)
                             (new-arg2 old-arg2)
                             (new-fenv old-fenv))

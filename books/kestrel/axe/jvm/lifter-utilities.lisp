@@ -619,9 +619,10 @@
            (pseudo-termp (stack-item-term type parameter-types-above stack-term))))
 
 ;; TODO: Compare to parameter-assumptions-aux
-(defun assumptions-about-parameters-on-stack (parameter-types
-                                              slot
-                                              param-slot-to-name-alist array-length-alist th state-var)
+(defund assumptions-about-parameters-on-stack (parameter-types
+                                               slot
+                                               param-slot-to-name-alist array-length-alist th state-var)
+  ;;  (declare (xargs :guard (true-listp parameter-types))) ; todo: uncomment and extend
   (if (endp parameter-types)
       nil
     (let* ((type (first parameter-types))

@@ -408,7 +408,7 @@
         ((and lamp
               (trivial-lambda-p lambda-formals args lambda-body))
          (mv t lambda-body))
-        ((or changedp1 changedp2)
+        ((or changedp0 changedp1 changedp2)
          (mv t
              (mcons-term
               (if changedp1
@@ -466,7 +466,7 @@
             (t (mv-let
                  (changedp1 arg1)
                  (remove-guard-holders1 nil arg lamp)
-                 (mv changedp1
+                 (mv (or changedp0 changedp1)
                      (fcons-term* 'TO-DF arg1)))))))
    ((eq (ffn-symb x) 'FROM-DF)
     (mv-let (changedp1 arg1)

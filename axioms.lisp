@@ -92,8 +92,9 @@
 
 ; From the info page for dpANS, node "Symbols in the COMMON-LISP Package."  The
 ; comments are from that page as well, though we have inserted "; " in front of
-; each.  EXCEPTIONS: We exclude code-char, coerce, and expt, as discussed in
-; source file acl2-fns.lisp.  So a better name for this constant might be
+; each.  EXCEPTIONS: We exclude abs, code-char, coerce, expt, and signum as
+; discussed in source file acl2-fns.lisp.  So a better name for this constant
+; might be
 ; acl2::*common-lisp-symbols-from-main-lisp-package-imported-into-acl2-packge*.
 
  '(
@@ -134,7 +135,8 @@
   *print-base*                 >
   *print-case*                 >=
   *print-circle*               abort
-  *print-escape*               abs
+; EXCLUDED: abs (see acl2-fns.lisp)
+  *print-escape*
   *print-gensym*               acons
   *print-length*               acos
   *print-level*                acosh
@@ -517,7 +519,8 @@
   short-site-name               speed
   signal                        sqrt
   signed-byte                   stable-sort
-  signum                        standard
+; EXCLUDED: signum (see acl2-fns.lisp)
+                                standard
   simple-array                  standard-char
   simple-base-string            standard-char-p
 
@@ -7185,6 +7188,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; in a non-ACL2 object.
 
 (defun abs (x)
+; Warning: Keep this in sync with the raw Lisp defun of abs in acl2-fns.lisp.
   (declare (xargs :guard (real/rationalp x)
 ; Logic mode is needed because abs is called in the event introducing
 ; constrained-binary-df+.
@@ -7192,6 +7196,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (if (minusp x) (- x) x))
 
 (defun signum (x)
+; Warning: Keep this in sync with the raw Lisp defun of signum in
+; acl2-fns.lisp.
   (declare (xargs :guard (real/rationalp x)))
 
 ; On CLTL p. 206 one sees the definition

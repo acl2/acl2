@@ -1,0 +1,23 @@
+Supporting materials for the ACL2 Workshop 2026 paper
+
+  Pablo Oscar Cayuela
+  Mechanized Formal Verification of q-Pulse Rectifier Voltage Equations
+  Using ACL2
+
+Mechanical verification, in ACL2(r), of exact values and cross-checks of
+the closed-form average and RMS output voltage equations of q-pulse
+rectifiers (uncontrolled, fully controlled and semi-controlled), based on
+the sampling function Sa(x) = sin(x)/x. Thirteen theorems in three books.
+The development version is at
+https://github.com/pcayuela/ACL2-rectifiers-check
+
+Books:
+
+  00-sampling-function.lisp          Sa and its exact values
+  01-topology-instantiation.lisp     instantiation of the master equations
+                                     per topology; the two findings
+  02-semiconverter-cross-checks.lisp the three semi-converter cross-checks
+  top.lisp                           includes the three books
+
+All books require the ACL2(r) executable and are marked
+"cert_param: (uses-acl2r)".

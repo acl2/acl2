@@ -1452,13 +1452,20 @@ notation causes an error and (b) the use of ,. is not permitted."
                                      n)))))))))))
 
 (defun read-digits (stream base-16-p)
+
+; Returns (values len negp n next-char), where len is the number of digits read
+; (discarding underscores), negp is t if a minus sign preceded the digits and
+; otherwise nil, n is the natural number value of the digits read (0 if there
+; are none), and next-char is :eof for end-of-file and otherwise is the last
+; character read (and hence does not contribute to len, negp, or n).
+
   (declare (special *hex-array* *base-10-array*))
   (let ((base-array (if base-16-p *hex-array* *base-10-array*))
         (sign (read-char stream nil :eof t))
         tmp lst)
     (cond ((eq sign :eof)
            (return-from read-digits
-                        (values 0 nil :eof)))
+                        (values 0 nil 0 :eof)))
           ((not (member sign '(#\+ #\-)))
            (unread-char sign stream)))
     (loop (setq tmp (read-char stream nil :eof t))
@@ -1486,16 +1493,14 @@ notation causes an error and (b) the use of ,. is not permitted."
                       (cond (*read-suppress* (return-from sharp-f-read nil))
                             (t (acl2-reader-error
                                 "Empty exponent in #f expression."))))
-                    (unread-char next-char stream)
+                    (unless (eq next-char :eof)
+                      (unread-char next-char stream))
                     (if negp (- exp) exp))))
     (let* ((tmp (read-char stream nil :eof t))
            (base-16-p (cond
                        ((member tmp '(#\x #\X)) t)
-                       ((eq tmp :eof)
-                        (cond (*read-suppress* (return-from sharp-f-read nil))
-                              (t (acl2-reader-error
-                                  "End of file encountered after #f."))))
-                       (t (unread-char tmp stream)
+                       (t (unless (eq tmp :eof)
+                            (unread-char tmp stream))
                           nil)))
            (exp-chars (if base-16-p '(#\p #\P) '(#\e #\E))))
       (multiple-value-bind
@@ -1524,7 +1529,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                         (let* ((exp (read-exp stream)))
                           (* (if negp (- significand) significand)
                              (common-lisp::expt (if base-16-p 2 10) exp))))
-                       (t (unread-char next-char stream)
+                       (t (unless (eq next-char :eof)
+                            (unread-char next-char stream))
                           (if negp (- significand) significand))))))
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
@@ -2064,12 +2070,24 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; This section makes raw Lisp function definitions for symbols in the "ACL2"
 ; package that were, before ACL2 Version_8.8, imported from the "COMMON-LISP"
 ; package.  The point is to keep them from introducing values satisfying
-; bad-lisp-objectp.  See the discussion of code-char, coerce, and expt in :DOC
-; note-8-8, which points to tests that show why we made such changes.
+; bad-lisp-objectp.  See the discussion of functions below in :DOC
+; *common-lisp-symbols-from-main-lisp-package*, and also in :DOC note-8-8,
+; which points to tests that show why we made such changes.
 
 ; It is tempting to declaim inline as follows, for efficiency.  But that would
 ; defeat tracing, so for now, we comment out the following form.
-; (declaim (inline code-char coerce expt))
+; (declaim (inline abs code-char coerce expt signum))
+
+(defun abs (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of abs.
+  (when (complexp x) ; (er hard! 'abs "..." x)
+    (let ((*hard-error-returns-nilp* nil))
+      (declare (special *hard-error-returns-nilp*))
+      (qfuncall hard-error
+                'abs
+                "Illegal (complex) argument to acl2::abs, ~x0"
+                (list (cons #\0 x)))))
+  (if (minusp x) (- x) x))
 
 (defun code-char (x)
 ; Warning: Keep this in sync with (defun-*1* code-char ..).
@@ -2111,6 +2129,19 @@ notation causes an error and (b) the use of ,. is not permitted."
                      "Illegal second argument to acl2::expt (not an integer), ~x0"
                      (list (cons #\0 i))))
          1)))
+
+(defun signum (x)
+; Warning: Keep this in sync with the #+acl2-loop-only defun of signum.
+  (cond ((complexp x) ; (progn (er hard! 'signum "..." i) 1)
+         (let ((*hard-error-returns-nilp* nil))
+           (declare (special *hard-error-returns-nilp*))
+           (qfuncall hard-error
+                     'signum
+                     "Illegal (complex) argument to acl2::signum, ~x0"
+                     (list (cons #\0 x)))))
+        (t
+         (if (zerop x) 0
+           (if (minusp x) -1 +1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            MISCELLANY

@@ -23771,10 +23771,11 @@
 (defun chk-defabsstobj-method (method st st$c st$ap corr-fn congruent-to
                                       missing ctx wrld state)
 
-; The input, missing, is a list of tuples (name expected-event . old-event),
-; where old-event may be nil; see chk-acceptable-defabsstobj.  We return a pair
-; (missing1 . wrld1), where missing1 extends missing as above and wrld1 extends
-; wrld as necessary for redefinition.
+; The input, missing, is generally a list of tuples (name expected-event
+; . old-event), where old-event may be nil; see chk-acceptable-defabsstobj.  We
+; return a pair (missing1 . wrld1), where missing1 extends missing as above --
+; except that missing can be :skip-missing-chk in which case missing1 is also
+; :skip-missing-chk -- and wrld1 extends wrld as necessary for redefinition.
 
   (let ((name (access absstobj-method method :name)))
     (er-let* ((wrld (er-progn
@@ -23783,8 +23784,7 @@
                                         state))))
       (cond
        ((or congruent-to
-            (member-eq (ld-skip-proofsp state)
-                       '(include-book include-book-with-locals)))
+            (eq missing :skip-missing-chk))
 
 ; We allow the :correspondence, :preserved, and :guard-thm theorems to be
 ; local.
@@ -23825,9 +23825,16 @@
 ; comments about chk-acceptable-defabsstobj1 in defabsstobj-fn1 and
 ; chk-acceptable-defabsstobj.
 
+; Missing is an accumulator, except that if its value is :skip-missing-chk then
+; nothing is accumulated: missing keeps that value on recursive calls.
+
   (cond
    ((endp fields)
-    (value (list* (reverse missing) (reverse methods) wrld)))
+    (value (list* (if (eq missing :skip-missing-chk)
+                      :skip-missing-chk
+                    (reverse missing))
+                  (reverse methods)
+                  wrld)))
    (t
     (mv-let
      (erp method)
@@ -24072,7 +24079,42 @@
                (wrld2 (chk-just-new-name (the-live-var name)
                                          nil 'stobj-live-var nil ctx wrld1
                                          state)))
-       (chk-acceptable-defabsstobj1 name st$c st$ap corr-fn
+       (let ((missing ; initial accumulator
+              (if (and (member-eq (ld-skip-proofsp state)
+                                  '(include-book include-book-with-locals))
+
+; We skip the checks for missing events when including a book and during pass 2
+; of a trivial encapsulate.  But we do not skip those checks in pass 2 of a
+; non-trivial encapsulate (unless we are including a book), since local
+; theorems proved in pass 1 about signature functions need not hold in the
+; world after pass 2.
+
+; This criterion is actually stricter than necessary.  Consider:
+
+;   (encapsulate
+;     ()
+;     (local <thm>)
+;     (encapsulate
+;       ((f ...))
+;       ...
+;       (defabsstobj ...)))
+
+; In this case, <thm> is a theorem outside both encapsulates, by
+; conservativity; so we could consider it not to be missing in the second pass
+; of the inner encapsulate.  But when we make pass 2 of the inner encapsulate
+; during pass 2 of the outer encapsulate, it would take some aggressive
+; recording to see that <thm> was formerly present before the inner
+; encapsulate.  This situation is probably rare, so we choose the simpler
+; restriction: we must check for missing events inside a non-trivial
+; encapsulate, even in pass 2.
+
+                       (or (global-val 'include-book-path wrld)
+                           (not (in-encapsulatep
+                                 (global-val 'embedded-event-lst wrld)
+                                 t))))
+                  :skip-missing-chk
+                nil)))
+         (chk-acceptable-defabsstobj1 name st$c st$ap corr-fn
 
 ; Keep the recognizer and creator first and second in our call to
 ; chk-acceptable-defabsstobj1.  See the comment about
@@ -24081,10 +24123,10 @@
 ; which is called in defabsstobj-fn1, where it consumes the methods we return
 ; here.
 
-                                    (list* recognizer creator exports)
-                                    (list* :RECOGNIZER :CREATOR nil)
-                                    protect-default congruent-to see-doc ctx
-                                    wrld2 state nil nil))))))
+                                      (list* recognizer creator exports)
+                                      (list* :RECOGNIZER :CREATOR nil)
+                                      protect-default congruent-to see-doc ctx
+                                      wrld2 state nil missing)))))))
 
 (defun defabsstobj-axiomatic-defs (methods)
   (cond
@@ -24857,15 +24899,24 @@
                (cond
                 (msg ; should be impossible in recursive case
                  (er soft ctx "~@0  ~@1" msg see-doc))
-                (missing-only (value missing))
+                (missing-only
+                 (value (if (eq missing :skip-missing-chk) nil missing)))
                 (t
                  (er-progn
                   (cond
                    ((or (null missing) ; including recursive case
-                        (member-eq (ld-skip-proofsp state)
-                                   '(include-book include-book-with-locals)))
+                        (eq missing :skip-missing-chk))
                     (value nil))
-                   ((ld-skip-proofsp state)
+                   ((let ((tmp (ld-skip-proofsp state)))
+                      (and tmp
+                           (not (member-eq tmp
+                                           '(include-book
+                                             include-book-with-locals)))))
+
+; The preceding case, specifically when (eq missing :skip-missing-chk), covered
+; the case that (ld-skip-proofsp state) is 'include-book or
+; 'include-book-with-locals.
+
                     (pprogn (warning$ ctx "defabsstobj"
                                       "The following events would have to be ~
                                        admitted, if not for proofs currently ~
@@ -26378,16 +26429,31 @@
                                 (eq compile-option :same))
                             (compiled-function-p! fn))
                            (t compile-option))))
-    (setf (get fn 'acl2-trace-saved-fn)
-          (symbol-function fn))
-    (eval (trace$-def formals def trace-options predefined multiplicity ctx))
-    (let ((memo-entry (memoizedp-raw fn)))
-      (when memo-entry
-        (setf (gethash fn *memoize-info-ht*)
-              (change memoize-info-ht-entry memo-entry
-                      :memoized-fn (symbol-function fn)))))
-    (when do-compile
-      (compile fn))))
+    (cond
+     ((macro-function fn)
+      (let ((*1*fn (*1*-symbol fn)))
+        (observation-cw ctx
+                        "Skipping tracing of ~s0::~s1 because it is a macro ~
+                         in raw Lisp.~#2~[~/  (But this does not stop tracing ~
+                         of its executable-counterpart, ~s3::~s1.)~]"
+                        (symbol-package-name fn)
+                        (symbol-name fn)
+                        (if (and (fboundp *1*fn)
+                                 (not (macro-function *1*fn)))
+                            1
+                          0)
+                        (symbol-package-name *1*fn))))
+     (t
+      (setf (get fn 'acl2-trace-saved-fn)
+            (symbol-function fn))
+      (eval (trace$-def formals def trace-options predefined multiplicity ctx))
+      (let ((memo-entry (memoizedp-raw fn)))
+        (when memo-entry
+          (setf (gethash fn *memoize-info-ht*)
+                (change memoize-info-ht-entry memo-entry
+                        :memoized-fn (symbol-function fn)))))
+      (when do-compile
+        (compile fn))))))
 
 #-acl2-loop-only
 (defun oneified-def (fn wrld &optional trace-rec-for-none)

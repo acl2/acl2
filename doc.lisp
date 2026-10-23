@@ -849,16 +849,16 @@ Subtopics
   [30m[47macl2::[0m[0m prefix.
 
   The constant [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m lists the
-  [30m[47m975[0m[0m symbols of the [30m[47mCOMMON-LISP[0m[0m package found in {dpAns |
+  [30m[47m973[0m[0m symbols of the [30m[47mCOMMON-LISP[0m[0m package found in {dpAns |
   http://dx.doi.org/10.1145/147135.147249}, other than those symbols
-  with names [30m[47m\"CODE-CHAR\"[0m[0m, [30m[47m\"COERCE\"[0m[0m, and [30m[47m\"EXPT\"[0m[0m.  You will typically
-  also want to import many symbols from the [30m[47m\"ACL2\"[0m[0m package; see
-  [*ACL2-exports*].  The three exceptions above are made because the
-  [30m[47m\"ACL2\"[0m[0m package is created by importing all symbols from the value
-  of [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m, and the Lisp
-  function definitions for those symbols in the [30m[47m\"ACL2\"[0m[0m package are
-  careful to avoid creating illegal ACL2 objects, such as the values
-  of [30m[47m(code-char 300)[0m[0m or [30m[47m(expt 2 1/2)[0m[0m, since evaluation of such
+  with names [30m[47m\"ABS\"[0m[0m, [30m[47m\"CODE-CHAR\"[0m[0m, [30m[47m\"COERCE\"[0m[0m, [30m[47m\"EXPT\"[0m[0m, and [30m[47m\"SIGNUM\"[0m[0m.  You
+  will typically also want to import many symbols from the [30m[47m\"ACL2\"[0m[0m
+  package; see [*ACL2-exports*].  The three exceptions above are made
+  because the [30m[47m\"ACL2\"[0m[0m package is created by importing all symbols from
+  the value of [30m[47m*common-lisp-symbols-from-main-lisp-package*[0m[0m, and the
+  Lisp function definitions for those symbols in the [30m[47m\"ACL2\"[0m[0m package
+  are careful to avoid creating illegal ACL2 objects, such as the
+  values of [30m[47m(code-char 300)[0m[0m or [30m[47m(expt 2 1/2)[0m[0m, since evaluation of such
   expressions can bypass [guard]-checking when they appear in
   [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode definitions.
 
@@ -885,7 +885,7 @@ Subtopics
                        1- *modules* < *package*
                        <= *print-array* = *print-base*
                        > *print-case* >= *print-circle*
-                       abort *print-escape* abs *print-gensym*
+                       abort *print-escape* *print-gensym*
                        acons *print-length* acos *print-level*
                        acosh *print-lines* add-method adjoin
                        atom boundp adjust-array base-char
@@ -1168,7 +1168,7 @@ Subtopics
                        special short-float-negative-epsilon
                        special-operator-p short-site-name
                        speed signal sqrt signed-byte
-                       stable-sort signum standard simple-array
+                       stable-sort standard simple-array
                        standard-char simple-base-string
                        standard-char-p standard-class
                        sublis standard-generic-function subseq
@@ -1930,6 +1930,15 @@ Subtopics
   [30m[47mx[0m[0m as an argument to [30m[47mabs[0m[0m in ACL2, because if we did we would have to
   return a number that might be a floating point number and hence not
   an ACL2 object.
+
+  Implementation Note
+
+  The symbol [30m[47macl2::abs[0m[0m is distinct from the symbol [30m[47mcommon-lisp::abs[0m[0m.
+  Their Common Lisp functions have the following difference: unlike
+  [30m[47mcommon-lisp::abs[0m[0m, the application of [30m[47macl2::abs[0m[0m to a complex number
+  (i.e., a rational number with non-zero imaginary part) causes an
+  error.  That error avoids the introducion of floating point
+  numbers, which are not ACL2 objects, into an ACL2 session.
 
   [31;1mFunction: [0m<abs>
 
@@ -31412,9 +31421,19 @@ Section 1: Introduction
   discussion follows.  In the following example, [30m[47mf1[0m[0m is applied to the
   df expression [30m[47m(to-df 3/2)[0m[0m; the expression [30m[47m(f1 3/2)[0m[0m would be illegal
   for top-level evaluation because, as noted above, [30m[47mf1[0m[0m expects a df
-  expression,
+  expression.  (The ``[30m[47mACL2 Observation[0m[0m'' printed below is just
+  explaining that for the function [30m[47mto-df[0m[0m, only its ACL2
+  [3mexecutable-counterpart[0m function is being traced.  See [evaluation]
+  for explanation about executable-counterpart functions, but for
+  present purposes just think of [30m[47mACL2_*1*_ACL2::TO-DF[0m[0m as the logical
+  function for [30m[47mto-df[0m[0m, just as [30m[47mACL2_*1*_ACL2::F1[0m[0m is the logical
+  function for [30m[47mf1[0m[0m.)
 
     ACL2 !>(trace$ f1 to-df)
+
+    ACL2 Observation in TRACE$:  Skipping tracing of ACL2::TO-DF because
+    it is a macro in raw Lisp.  (But this does not stop tracing of its
+    executable-counterpart, ACL2_*1*_ACL2::TO-DF.)
     ((F1) (TO-DF))
     ACL2 !>(f1 (to-df 3/2))
     1> (ACL2_*1*_ACL2::TO-DF 3/2)
@@ -47489,7 +47508,6 @@ Debugging Tools
     char>=
     characterp
     consp
-    digit-char-p
     endp
     eq
     eql
@@ -47507,10 +47525,6 @@ Debugging Tools
     rationalp
     standard-char-p
     string-equal
-    string<
-    string<=
-    string>
-    string>=
     stringp
     subsetp
     symbolp
@@ -107009,7 +107023,7 @@ Changes to Existing Features
   new function, [30m[47mweak-runep[0m[0m, which checks that the keyword specifies
   one of the known [rule-classes].  This can catch typos such as
   [30m[47m(:definiitioon foo)[0m[0m.  Thanks to Eric Smith for the idea, which was
-  brought to his attention by Claude Code.
+  brought to his attention by AI.
 
   Improved an error message printed after a hard error that is
   encountered during macroexpansion.  Now, that message suggests to
@@ -107019,9 +107033,9 @@ Changes to Existing Features
 
   Improved error messages for ill-formed first and second arguments of
   [30m[47m[defund][0m[0m, [30m[47m[defun-nx][0m[0m, and [30m[47m[defund-nx][0m[0m.  The case of [30m[47mdefund-nx[0m[0m was
-  reported by Claude Code as showing no error message at all, for
-  example when evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
-  Eric Smith for bringing these to our attention.
+  reported by AI as showing no error message at all, for example when
+  evaluating the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to Eric Smith
+  for bringing these to our attention.
 
   Improved the [guard], as well as the guard violation message, for
   [30m[47m[defevaluator][0m[0m.
@@ -107039,13 +107053,14 @@ Changes to Existing Features
   enhancement.
 
   The constant [30m[47m[*common-lisp-symbols-from-main-lisp-package*][0m[0m no longer
-  contains the symbols [30m[47mcommon-lisp::code-char[0m[0m, [30m[47mcommon-lisp::coerce[0m[0m,
-  or [30m[47mcommon-lisp::expt[0m[0m, which are thus no longer imported into the
-  [30m[47m\"ACL2\"[0m[0m package and hence are now distinct from the [30m[47m\"ACL2\"[0m[0m package's
-  symbols [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m, respectively.  See also
-  the item, in the first section on Bug Fixes below, that pertains to
-  soundness bugs fixed by changes to the raw Lisp definitions of
-  function symbols [30m[47mcode-char[0m[0m, [30m[47mcoerce[0m[0m, and [30m[47mexpt[0m[0m in the [30m[47m\"ACL2\"[0m[0m package.
+  contains the symbols [30m[47mcommon-lisp::abs[0m[0m, [30m[47mcommon-lisp::code-char[0m[0m,
+  [30m[47mcommon-lisp::coerce[0m[0m, [30m[47mcommon-lisp::expt[0m[0m, or [30m[47mcommon-lisp::signum[0m[0m,
+  which are thus no longer imported into the [30m[47m\"ACL2\"[0m[0m package and hence
+  are now distinct from the [30m[47m\"ACL2\"[0m[0m package's symbols [30m[47m[code-char][0m[0m,
+  [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m, respectively.  See also the item, in the
+  first section on Bug Fixes below, that pertains to soundness bugs
+  fixed by changes to the raw Lisp definitions of the above-mentioned
+  symbols in the [30m[47m\"ACL2\"[0m[0m package.
 
 
 New Features
@@ -107086,20 +107101,19 @@ Heuristic and Efficiency Improvements
 Bug Fixes From AI via Eric Smith
 
   [3mThe bugs described in this section were all reported by Eric Smith,
-  who used Anthropic's Claude to find the bugs.  We thank Eric for
-  his persistence and skilled queries of Claude, and for filtering
-  out false positives.  (There are also some Claude-inspired fixes in
-  other sections besides bug fixes.)[0m
+  who used AI to find the bugs.  We thank Eric for his persistence
+  and skilled queries of AI, and for filtering out false positives.
+  (There are also some AI-inspired fixes in other sections besides
+  bug fixes.)[0m
 
   As noted in the section above on Changes to Existing Features, ACL2
-  symbols [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m are no longer imported
-  from the [30m[47m\"COMMON-LISP\"[0m[0m package.  This change enabled fixes to
-  soundness bugs resulting from the unfortunate ability to generate
-  illegal ACL2 objects from [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code.  The fixes involved
-  defining ACL2 functions [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, and [30m[47m[expt][0m[0m so that
-  they cause an error on inputs that could result in non-ACL2
-  objects.  Here is a summary of the soundness bugs fixed by these
-  changes.
+  symbols [30m[47m[abs][0m[0m, [30m[47m[code-char][0m[0m, [30m[47m[coerce][0m[0m, [30m[47m[expt][0m[0m, and [30m[47m[signum][0m[0m are no
+  longer imported from the [30m[47m\"COMMON-LISP\"[0m[0m package.  This change
+  enabled fixes to soundness bugs resulting from the unfortunate
+  ability to generate illegal ACL2 objects from [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code.
+  The fixes involved defining the above ACL2 functions so that they
+  cause an error on inputs that could result in non-ACL2 objects.
+  Here is a summary of the soundness bugs fixed by these changes.
 
     * When [30m[47m[make-event][0m[0m expansion takes place, the result could fail to be
       a valid ACL2 object.  See [community-book]
@@ -107116,8 +107130,10 @@ Bug Fixes From AI via Eric Smith
     * Other examples of unsoundness due to the introduction of objects that
       are illegal for ACL2 may be found in the following
       [community-books] directory [30m[47msystem/tests/[0m[0m: [30m[47mcode-char-300.lisp[0m[0m,
-      [30m[47mexpt-irrational.lisp[0m[0m, [30m[47mhint-table-bad-object.lisp[0m[0m, and
-      [30m[47minstructions-ckh-default-hints.lisp[0m[0m.
+      [30m[47mexpt-irrational.lisp[0m[0m, [30m[47mhint-table-bad-object.lisp[0m[0m,
+      [30m[47minstructions-ckh-default-hints.lisp[0m[0m,
+      [30m[47mbooks/system/tests/abs-complex-float.lisp[0m[0m, and
+      [30m[47mbooks/system/tests/signum-complex-float.lisp[0m[0m.
 
   An additional restriction was added to [30m[47m:[0m[0m[30m[47m[elim][0m[0m rules, namely, for the
   general form [30m[47m(implies hyp (equiv lhs x))[0m[0m, all occurrences of [30m[47mx[0m[0m in
@@ -107194,7 +107210,7 @@ Bug Fixes From AI via Eric Smith
   from just the numeric case.
 
   Checks were improved to avoid raw Lisp errors in the following
-  situations.  (Aside: Claude reported, for the first two: ``Four
+  situations.  (Aside: AI reported, for the first two: ``Four
   subagents tested ~270 malformed inputs across nearly every ACL2
   event type.... Out of ~270 tests, only 2 bugs were found''.)
 
@@ -107208,8 +107224,8 @@ Bug Fixes From AI via Eric Smith
 
   Fixed many dozens of typos in comments and error messages.
 
-  Applied fixes from Claude for bugs in the raw Lisp definitions
-  supporting [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
+  Applied fixes from AI for bugs in the raw Lisp definitions supporting
+  [30m[47m[mfc-rw+][0m[0m and [30m[47m[mfc-relieve-hyp][0m[0m.
 
   Fixed a bug that could mangle messages from [30m[47m[theory-invariant][0m[0m
   [events].  Closes PR #2042.
@@ -107253,8 +107269,8 @@ Bug Fixes From AI via Eric Smith
   Fixed a soundness bug due to careless generation of a fresh variable,
   in particular when supporting the processing of a
   [30m[47m:[0m[0m[30m[47m[compound-recognizer][0m[0m rule.  Thanks to Eric McCarthy and Jim
-  McDonald for an idea leading to Eric Smith's prompt to Claude.  For
-  an example of the issue, see [community-book]
+  McDonald for an idea leading to Eric Smith's prompt to AI.  For an
+  example of the issue, see [community-book]
   [30m[47msystem/tests/cr-empty.lisp[0m[0m.
 
   Fixed a soundness bug that could occur when a type declaration has
@@ -107309,7 +107325,7 @@ Bug Fixes From AI via Eric Smith
   [community-book] [30m[47msystem/tests/meta-extract-relieve-hyp.lisp[0m[0m.
 
   Fixed a [tau-system] bug that could produce a raw Lisp error.  Thanks
-  to Stephen Westfold for passing along Claude's fix along with the
+  to Stephen Westfold for passing along AI's fix along with the
   following example, which exhibited the bug.
 
     (in-theory (disable natp (:e natp)))
@@ -107352,9 +107368,9 @@ Bug Fixes From AI via Eric Smith
   certain runtime hard error.  But several other utilities in our
   source code treated the sixth argument as meaningful and this
   opened up the possibility that a user could supply bogus
-  information in that argument.  At least one such exploit allowed
-  Claude to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth
-  argument have been eliminated.
+  information in that argument.  At least one such exploit allowed AI
+  to construct a proof of [30m[47mnil[0m[0m.  The (mis-)uses of the sixth argument
+  have been eliminated.
 
   Fixed a bug in the compilation of [30m[47mdo$[0m[0m loops that allowed the
   compilation of an [30m[47mmv-setq[0m[0m to reassign a [30m[47mlet[0m[0m-bound variable due to
@@ -107362,9 +107378,9 @@ Bug Fixes From AI via Eric Smith
   temporarily hold the vector of results computed by the body of the
   [30m[47mmv-setq[0m[0m expression.  See the comment in [30m[47mcmp-do-body[0m[0m for an example.
   The guard-verified logical definition returns a different result
-  than the compiled raw lisp code due to this variable capture..
-  Claude then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.
-  See [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
+  than the compiled raw lisp code due to this variable capture..  AI
+  then exploited this bug to prove [30m[47mnil[0m[0m using a metafunction.  See
+  [community-book] [30m[47msystem/tests/do-mv-capture.lisp[0m[0m.
 
   Fixed a bug in the generation of termination conditions for functions
   defined with [loop$-recursion].  The bug, which was caused by the
@@ -107514,6 +107530,41 @@ Bug Fixes From AI via Eric Smith
   of these was prohibited.  That has been fixed; see community book
   file [30m[47msystem/tests/defpkg-acl2-global-prefix.lsp[0m[0m.
 
+  Fixed a soundness bug due to an insufficient check done when using
+  [30m[47m[with-global-stobj][0m[0m.  See [community-books]
+  [30m[47msystem/tests/global-stobjs-property-drops-reads.lisp[0m[0m and
+  [30m[47msystem/tests/global-stobjs-nested-read-dropped.lisp[0m[0m.
+
+  Applied a fix from AI for a bug in [30m[47m:bdd[0m[0m [hints].  See for example
+  [community-book] [30m[47msystem/tests/bdd-literal-hyp.lisp[0m[0m.
+
+  Fixed a soundness bug (modifying a suggested fix from AI) in
+  [30m[47m[defabsstobj][0m[0m, due to avoiding necessary checks during pass 2 of an
+  [30m[47m[encapsulate][0m[0m event with a non-empty list of [signature]s.  See
+  [community-books]
+  [30m[47msystem/tests/defabsstobj-pass2-constrained-exec.lisp[0m[0m and
+  [30m[47msystem/tests/defabsstobj-pass2-constrained-updater.lisp[0m[0m.
+
+  Fixed a soundness bug that made unsound uses of the [proof-builder]
+  by installing modifications to [untranslate].  See for example
+  [community-books]
+  [30m[47msystem/tests/corollary-instructions-untranslate-hook.lisp[0m[0m and
+  [30m[47msystem/tests/defattach-instructions-untranslate-hook.lisp[0m[0m.
+
+  Fixed a bug in [30m[47m[remove-guard-holders][0m[0m (actually, source function
+  [30m[47mremove-guard-holders1[0m[0m.  Example: the application of
+  [30m[47mremove-guard-holders[0m[0m to [30m[47m(f (return-last 'progn '7 (to-df x)))[0m[0m
+  produced [30m[47m(F (RETURN-LAST 'PROGN '7 (TO-DF X)))[0m[0m but now produces the
+  correct result, [30m[47m(F (TO-DF X))[0m[0m.
+
+  Applied fixes from AI for bugs found by AI, numbered in the ACL2
+  sources as indicated.
+
+    * (#1) Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields
+      of [stobj]s, by strengthening a check in each binding that the
+      bound variable agrees with the key, so that the two are not
+      merely congruent stobjs.
+
 
 Other Bug Fixes
 
@@ -107546,8 +107597,8 @@ Other Bug Fixes
   for calls of built-in functions having types with bounded integer
   return values.  These bugs are now avoided by proclaiming those
   functions [30m[47mnotinline[0m[0m.  Thanks to Grant Jurgensen for reporting the
-  use of Anthropic's Claude to find these bugs; see [community-books]
-  files [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
+  use of AI to find these bugs; see [community-books] files
+  [30m[47msystem/tests/integer-length-bad-optimization.lisp[0m[0m and
   [30m[47msystem/tests/length-bad-optimization.lsp[0m[0m.  Thanks also to Stas
   Boukarev for suggesting the use of [30m[47mnotinline[0m[0m, as our original
   solution was more complicated (by modifying function types), and to
@@ -107597,13 +107648,19 @@ Other Bug Fixes
   Fixed a bug reported by Eric Smith that resulted in a raw Lisp error,
   instead of a guard violation, for [30m[47m(unary-df/ (df0))[0m[0m.
 
+  Fixed [30m[47m[trace$][0m[0m so that when tracing [30m[47m[to-df][0m[0m, or any ACL2 function
+  symbol that is a macro in raw Lisp, only its executable-counterpart
+  (see [evaluation]) is traced, in which case an [Observation] is
+  printed.  This can prevent a raw Lisp error during evaluation.
+  Thanks to Warren Hunt for reporting this bug.
+
 
 Changes at the System Level
 
   The built-in [events] [30m[47mInteger-1[0m[0m and [30m[47mcons-equal[0m[0m are now [30m[47m[defthm][0m[0m
   events instead of [30m[47m[defaxiom][0m[0m events.  Thanks to Eric Smith for
-  showing us a report from Claude Code, which explained how those two
-  formulas are provable from the other axioms.
+  showing us a report from AI, which explained how those two formulas
+  are provable from the other axioms.
 
   Added a capability for collecting times for definitions made during
   the [30m[47minclude-book[0m[0m pass of [30m[47m[certify-book][0m[0m.  See the comment in the
@@ -114982,10 +115039,10 @@ Implementation
   package only if it belongs to that list: any attempt to read any
   other symbol imported into the [30m[47m\"COMMON-LISP\"[0m[0m package, or to produce
   such a symbol with [30m[47m[intern$][0m[0m or [30m[47m[intern-in-package-of-symbol][0m[0m, will
-  cause an error.  (But we note that for each of the following three
-  names, there are distinct symbols with those names in the [30m[47m\"ACL2\"[0m[0m
-  and [30m[47m\"COMMON-LISP\"[0m[0m packages: [30m[47m\"CODE-CHAR\"[0m[0m, [30m[47m\"COERCE\"[0m[0m, and [30m[47m\"EXPT\"[0m[0m.  See
-  [*common-lisp-symbols-from-main-lisp-package*].)
+  cause an error.  (See
+  [*common-lisp-symbols-from-main-lisp-package*] for discussion of a
+  few symbols not imported from the [30m[47m\"COMMON-LISP\"[0m[0m package into the
+  [30m[47m\"ACL2\"[0m[0m package.)
 
   The following axioms formalize properties of [30m[47mpkg-imports[0m[0m discussed
   above (use [30m[47m:[0m[0m[30m[47m[pe][0m[0m to view them).
@@ -141772,20 +141829,31 @@ Extended Example
     ACL2 !>
 
   As illustrated above, we support two forms of this reader: [30m[47m#f[0m[0m,
-  indicating base 10 digits, and [30m[47m#fx[0m[0m, indicating base 16 digits.  Let
-  {i} be notation representing a sequence of digits and (optionally)
-  underscore ([30m[47m_[0m[0m) characters, optionally preceded by a sign ([30m[47m-[0m[0m or [30m[47m+[0m[0m),
-  that the ACL2 reader reads as the integer i after discarding
-  underscore characters; similarly for {j} and {n}, except that an
-  initial sign is illegal for {j}, and for {n} the digits are always
-  base 10 (even in the case of [30m[47m#fx[0m[0m).  Note that each such string is
-  terminated at the first character from the input channel that is
-  not a digit.  For the [30m[47m#f[0m[0m case we have the following semantics.
+  indicating base 10 digits, and [30m[47m#fx[0m[0m, indicating base 16 digits.
+  Both forms are case-insensitive.  Below, let {i} be notation
+  representing a sequence of zero or more digits and underscore ([30m[47m_[0m[0m)
+  characters, optionally preceded by a sign ([30m[47m-[0m[0m or [30m[47m+[0m[0m).  We interpret
+  {i} as a number i as follows.  If there are no digits, i is [30m[47m0[0m[0m;
+  otherwise the underscore characters are discarded and the ACL2
+  reader reads the optional sign and the digits as the integer i.
+  Also below, {j} and {n} similarly denote integers j and n, except
+  that an initial sign is illegal for {j}, and {n}, if present, must
+  have at least one digit and is always decimal, even for [30m[47m#fx[0m[0m.  The
+  exponent, [30m[47me{n}[0m[0m for [30m[47m#f[0m[0m and [30m[47mp{n}[0m[0m for [30m[47m#fx[0m[0m, is optional.  Note that
+  each such sequence is terminated at the first character from the
+  input channel that does not follow the pattern described.  This can
+  be confusing: for example, [30m[47m'(#f1.2p2)[0m[0m evaluates to [30m[47m(6/5 P2)[0m[0m.  We
+  recommend not relying on this behavior, for example by adding
+  whitespace where appropriate.
+
+  For the [30m[47m#f[0m[0m case we have the following semantics.
 
     #f{i}          => i
     #f{i}e{n}      => i * 10^n
-    #f{i}.{j}      => i + (/ j 10^k) where k is the length of {j}
-    #f{i}.{j}e{n}  => (i + (/ j 10^k)) * 10^n where k is the length of {j}
+    #f{i}.{j}      => i + sign(i)*(/ j 10^k)  where k is the number of digits
+                                              in {j}
+    #f{i}.{j}e{n}  => (i + sign(i)*(/ j 10^k)) * 10^n  where k is the number of
+                                                       digits in {j}
 
   We have the following similar semantics for the [30m[47m#fx[0m[0m case, except that
   {i} and {j} are now read in base 16.  Note that {n} is still read
@@ -141793,8 +141861,13 @@ Extended Example
 
     #fx{i}         => i
     #fx{i}p{n}     => i * 2^n
-    #fx{i}.{j}     => i + (/ j 16^k) where k is the length of {j}
-    #fx{i}.{j}p{n} => (i + (/ j 16^k)) * 2^n where k is the length of {j}
+    #fx{i}.{j}     => i + sign(i)*(/ j 16^k)  where k is the number of digits
+                                              in {j}
+    #fx{i}.{j}p{n} => (i + sign(i)*(/ j 16^k)) * 2^n  where k is the number of
+                                                      digits in {j}
+
+  In both tables above, [30m[47msign(i)[0m[0m is [30m[47m-1[0m[0m if {i} begins with [30m[47m-[0m[0m, and [30m[47m1[0m[0m
+  otherwise.
 
   We thank Dmitry Nadezhin for pointing us to the following page, which
   explains an analogous ``floating point literal'' syntax for C++:
@@ -142174,6 +142247,16 @@ Extended Example
   [30m[47msignum[0m[0m in terms of [30m[47m[abs][0m[0m.  As explained elsewhere (see [abs]), the
   [guard] for [30m[47m[abs][0m[0m requires its argument to be a rational ([real],
   in ACL2(r)) number; hence, we make the same restriction for [30m[47msignum[0m[0m.
+
+  Implementation Note
+
+  The symbol [30m[47macl2::signum[0m[0m is distinct from the symbol
+  [30m[47mcommon-lisp::signum[0m[0m.  Their Common Lisp functions have the
+  following difference: unlike [30m[47mcommon-lisp::signum[0m[0m, the application
+  of [30m[47macl2::signum[0m[0m to a complex number (i.e., a rational number with
+  non-zero imaginary part) causes an error.  That error avoids the
+  introducion of floating point numbers, which are not ACL2 objects,
+  into an ACL2 session.
 
   [31;1mFunction: [0m<signum>
 

@@ -422,23 +422,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The tests below are commented out because they currently fail:
-; the validator accepts these expressions, but it should reject them.
-; The parameter x has the abstract type &t (or the abstract length $d),
-; bound by the enclosing abstraction;
-; the body then defines &t (or $d),
-; and the lookup of x expands its recorded type with that definition
-; (see the var case of check-expr),
-; so x appears to be an Int (or to have length 3).
-; If the expansion at lookup is removed
-; (every type recorded in the environment is already expanded),
-; these should become passing tests.
-; (test-check-top-expr-fail
-;  "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
-; (test-check-top-expr-fail
-;  "(i-fn ($d)
-;   (fn ((x [Int $d]))
-;     (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
+; The recorded type of a parameter is also unaffected by
+; a later definition of a variable that is abstract in that type:
+; x has the abstract type &t (or the abstract length $d),
+; bound by the enclosing abstraction,
+; and the inner definition of &t (or $d)
+; does not make x an Int (or give it length 3).
+(test-check-top-expr-fail
+ "(t-fn (&t) (fn ((x &t)) (let ((type &t Int)) (+ x 1))))")
+(test-check-top-expr-fail
+ "(i-fn ($d)
+  (fn ((x [Int $d]))
+    (let ((ispace $d 3)) (@length (Int) (3 []) x))))")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -534,6 +529,30 @@
 ; modulo shape equivalence.
 (test-check-top-expr
  "(let ((fun (@f (&t) ($d) (x (A &t (dims $d))) : (A &t (dims $d))) x))
+  (f [1 2 3]))")
+
+; The dimension is inferred modulo dimension equivalence (see ispace-matcher),
+; by solving a polynomial equation:
+; from the length 4 of the argument, $d is inferred as 2,
+; both for the parameter length (* 2 $d) and for the equivalent (+ $d $d);
+; the length 3 is not a multiple of 2, so the inference fails.
+(test-check-top-expr
+ "(let ((fun (@f () ($d) (x [Int (* 2 $d)]) : Int) 0))
+  (f [1 2 3 4]))")
+(test-check-top-expr-fail
+ "(let ((fun (@f () ($d) (x [Int (* 2 $d)]) : Int) 0))
+  (f [1 2 3]))")
+(test-check-top-expr
+ "(let ((fun (@f () ($d) (x [Int (+ $d $d)]) : Int) 0))
+  (f [1 2 3 4]))")
+(test-check-top-expr-fail
+ "(let ((fun (@f () ($d) (x [Int (+ $d $d)]) : Int) 0))
+  (f [1 2 3]))")
+
+; From the length 3 of the argument and the parameter length (- $d 1),
+; $d is inferred as 4.
+(test-check-top-expr
+ "(let ((fun (@f () ($d) (x [Int (- $d 1)]) : Int) 0))
   (f [1 2 3]))")
 
 ; The types of the primitive operations use bracket types,
@@ -641,6 +660,11 @@
 (test-check-top-expr
  "(i-fn ($n) (fn ((x [Int $n])) (length x)))")
 
+; The dimension variable of length is a pattern by itself,
+; so it is bound to the length as is, even when it has a negative part.
+(test-check-top-expr
+ "(i-fn ($n) (fn ((x [Int (- $n 1)])) (length x)))")
+
 ; A shape variable may stand for the empty shape,
 ; so an array of unknown shape may be a scalar,
 ; and length is not applicable to it.
@@ -677,7 +701,7 @@
 
 ; head : (Forall (&t) (Pi ($d @s) (-> [&t (+ 1 $d) @s] [&t @s])))
 
-; The dimension is inferred modulo additive equivalence (see ispace-matcher):
+; The dimension is inferred modulo dimension equivalence (see ispace-matcher):
 ; from the length 3 of a vector, it is inferred as 2;
 ; from the first dimension 2 of a matrix, it is inferred as 1,
 ; and the shape variable is inferred as the shape [3] of the rows.
@@ -727,7 +751,7 @@
 (test-check-top-expr
  "(@head (Int) (2 []) [[1 2 3] [4 5 6]])")
 
-; Inference under an ispace binder, modulo additive equivalence:
+; Inference under an ispace binder, modulo dimension equivalence:
 ; the dimension is inferred as the bound variable $n
 ; from the lengths (+ 1 $n) and (+ $n 1),
 ; as (+ 1 $n) from the length (+ 2 $n),
@@ -749,6 +773,11 @@
 ; there is no dimension $d with (+ 1 $d) equivalent to $n.
 (test-check-top-expr-fail
  "(i-fn ($n) (fn ((x [Int $n])) (head x)))")
+
+; Similarly, a vector of length (- $n 1) has no head:
+; (- $n 2) is not a dimension, since it may be negative.
+(test-check-top-expr-fail
+ "(i-fn ($n) (fn ((x [Int (- $n 1)])) (head x)))")
 
 ; The shape variable is inferred as the bound shape variable.
 (test-check-top-expr
@@ -855,7 +884,7 @@
 
 ; The fully explicit instantiation is accepted;
 ; the length (+ 2 3) of the result is used by further inference
-; modulo additive equivalence:
+; modulo dimension equivalence:
 ; the length is inferred as 5,
 ; and the head is inferred with the explicit dimension 4,
 ; since (+ 1 4) and (+ 2 3) are both normalized to 5.

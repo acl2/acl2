@@ -121,10 +121,21 @@ QED
 (* Export                                                                    *)
 (*---------------------------------------------------------------------------*)
 
+val dty_bundles =
+    map full_dtype_bundle
+        [“:ntree”,
+         “:'a btree”,
+         “:'a tree”,
+         “:'a forest”,
+         “:('a,'b) alt”,
+         “:('a,'b) trio”,
+         “:('a,'b) flist”]
+
 val defs =
     map def_bundle
         [hd basis_defs,  (* for COND *)
-         insert_ntree_def, I_THM, K_THM, insert_btree_def]
+         I_THM, K_THM,
+         insert_ntree_def, insert_btree_def]
 
 val thms =
     [thm_bundle "ntree_refl" ntree_refl,
@@ -135,13 +146,5 @@ val thms =
      thm_bundle "flist_refl" flist_refl]
 
 val _ = print_bundles_to_file
-         "datatypes.defhol"
-         (map dtype_bundle
-              [“:ntree”,
-               “:'a btree”,
-               “:'a tree”,
-               “:'a forest”,
-               “:('a,'b) alt”,
-               “:('a,'b) trio”,
-               “:('a,'b) flist”]
-         @ defs @ thms)
+          "datatypes.defhol"
+          (List.concat dty_bundles @ defs @ thms)

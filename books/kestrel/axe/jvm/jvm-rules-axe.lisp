@@ -104,7 +104,24 @@
   (equal (th)
          0))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move?
+(defund has-class-or-nullp (ref class heap)
+  (declare (xargs :guard (and (address-or-nullp ref)
+                              (jvm::class-namep class)
+                              (jvm::heapp heap))))
+  (or (null-refp ref)
+      (equal (get-field ref (class-pair) heap) class)))
+
+(defthm get-field-of-class-pair-when-has-class-or-nullp
+  (implies (and (has-class-or-nullp ref class heap) ; class is a free variable
+                (not (null-refp ref)))
+           (equal (get-field ref (class-pair) heap)
+                  class))
+  :hints (("Goal" :in-theory (enable has-class-or-nullp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: could restrict to BV terms
 ;used by Axe

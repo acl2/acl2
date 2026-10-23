@@ -912,12 +912,13 @@
      the lambda and box atoms,
      the type and ispace application arguments,
      the combined function binding type,
-     and the binding type annotations),
-     and by expanding the type associated to a variable when it is looked up;
+     and the binding type annotations);
      every other case builds its result from
      already-checked, and thus already-expanded, sub-results
      (possibly combined with the expanded syntactic pieces just mentioned),
-     which preserves the invariant.
+     or from the types recorded in the expression static environment,
+     which are expanded when recorded;
+     this preserves the invariant.
      Thanks to this invariant,
      the operations that match the structure of a type
      (@(tsee type-match-array) and similar)
@@ -1082,9 +1083,8 @@
      expr
      :var
      (b* ((name+type (omap::assoc expr.name (expr-senv->exprs eenv)))
-          ((unless name+type) (reserr nil))
-          ((ok type) (type-senv-expand-type (cdr name+type) ienv tenv)))
-       (make-type+expr :type type :expr (expr-fix expr)))
+          ((unless name+type) (reserr nil)))
+       (make-type+expr :type (cdr name+type) :expr (expr-fix expr)))
      :atom
      (b* (((ok (type+atom ta)) (check-atom expr.atom ienv tenv eenv)))
        (make-type+expr

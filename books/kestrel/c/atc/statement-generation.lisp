@@ -996,7 +996,9 @@
                                                      state))
              (guard-lemma-hints
               `(("Goal"
-                 :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
+                 :in-theory '(,gin.fn-guard-unnorm
+                              ,called-fn-guard
+                              if* test* declar assign)
                  :use (:guard-theorem ,gin.fn))))
              ((mv guard-lemma-event &)
               (evmac-generate-defthm guard-lemma-name
@@ -5398,7 +5400,9 @@
                                                state))
        (guard-lemma-hints
         `(("Goal"
-           :in-theory '(,gin.fn-guard-unnorm ,called-fn-guard if* test*)
+           :in-theory '(,gin.fn-guard-unnorm
+                        ,called-fn-guard
+                        if* test* declar assign)
            :use (:guard-theorem ,gin.fn))))
        ((mv guard-lemma-event &)
         (evmac-generate-defthm guard-lemma-name
