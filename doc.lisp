@@ -107545,6 +107545,12 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/defabsstobj-pass2-constrained-exec.lisp[0m[0m and
   [30m[47msystem/tests/defabsstobj-pass2-constrained-updater.lisp[0m[0m.
 
+  Fixed a soundness bug that made unsound uses of the [proof-builder]
+  by installing modifications to [untranslate].  See for example
+  [community-books]
+  [30m[47msystem/tests/corollary-instructions-untranslate-hook.lisp[0m[0m and
+  [30m[47msystem/tests/defattach-instructions-untranslate-hook.lisp[0m[0m.
+
 
 Other Bug Fixes
 

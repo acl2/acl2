@@ -110,7 +110,7 @@
              (instructions
               (catch-hard-error
                catch-hard-error
-               (proof-builder nil tterm term nil instructions
+               (proof-builder nil term tterm nil instructions
                               (w state) state)))
              (t (let ((ens (ens state)))
                   (catch-hard-error

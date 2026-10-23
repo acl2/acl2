@@ -110648,6 +110648,12 @@ it."
  community-books) @('system/tests/defabsstobj-pass2-constrained-exec.lisp') and
  @('system/tests/defabsstobj-pass2-constrained-updater.lisp').</p>
 
+ <p>Fixed a soundness bug that made unsound uses of the @(see proof-builder) by
+ installing modifications to @(see untranslate).  See for example @(see
+ community-books)
+ @('system/tests/corollary-instructions-untranslate-hook.lisp') and
+ @('system/tests/defattach-instructions-untranslate-hook.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
