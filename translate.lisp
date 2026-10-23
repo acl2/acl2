@@ -5639,7 +5639,7 @@
             (t (mv-let
                  (changedp1 arg1)
                  (remove-guard-holders1 nil arg lamp)
-                 (mv changedp1
+                 (mv (or changedp0 changedp1)
                      (fcons-term* 'TO-DF arg1)))))))
    ((eq (ffn-symb term) 'FROM-DF)
     (mv-let (changedp1 arg1)
@@ -5691,7 +5691,7 @@
                    ((and lamp
                          (trivial-lambda-p lambda-formals args lambda-body))
                     (mv t lambda-body))
-                   ((or changedp1 changedp2)
+                   ((or changedp0 changedp1 changedp2)
                     (mv t
                         (mcons-term
                          (if changedp1
@@ -17435,6 +17435,23 @@
                          s2-creator
                          postlude)
                     nil nil nil))
+; <<Start AI-aided fix 1 (completed)>>
+               ((not (eq var s2))
+
+; The updater built by parse-stobj-let1 for a stobj-table binding is
+; (tbl-put 'var var parent), keyed by the bound variable.  If var were merely
+; congruent to s2, the logical update would land under 'var while raw Lisp
+; also updates the child read from 's2 destructively; so we insist that the
+; bound variable be the key.
+
+                (mv (msg "~@0However, the bound variable, ~x1, is not the ~
+                          stobj name ~x2 used as the key of that access; the ~
+                          stobj-let bound variable for a stobj-table access ~
+                          must be the key itself.~@3"
+                         (msg prelude var actual)
+                         var s2 postlude)
+                    nil nil nil))
+; <<End AI-aided fix 1>>
                (t (mv nil parent st-get s2)))))
            (t
             (let ((stobj-out (car (stobjs-out (car actual) wrld))))

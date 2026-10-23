@@ -110654,6 +110654,24 @@ it."
  @('system/tests/corollary-instructions-untranslate-hook.lisp') and
  @('system/tests/defattach-instructions-untranslate-hook.lisp').</p>
 
+ <p>Fixed a bug in @(tsee remove-guard-holders) (actually, source function
+ @('remove-guard-holders1').  Example: the application of
+ @('remove-guard-holders') to @('(f (return-last 'progn '7 (to-df x)))')
+ produced @('(F (RETURN-LAST 'PROGN '7 (TO-DF X)))') but now produces the
+ correct result, @('(F (TO-DF X))').</p>
+
+ <p>Applied fixes from AI for bugs found by AI, numbered in the ACL2 sources as
+ indicated.</p>
+
+ <ul>
+
+ <li>(#1) Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
+ fields of @(see stobj)s, by strengthening a check in each binding that the
+ bound variable agrees with the key, so that the two are not merely congruent
+ stobjs.</li>
+
+ </ul>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

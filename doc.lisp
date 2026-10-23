@@ -107551,6 +107551,20 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/corollary-instructions-untranslate-hook.lisp[0m[0m and
   [30m[47msystem/tests/defattach-instructions-untranslate-hook.lisp[0m[0m.
 
+  Fixed a bug in [30m[47m[remove-guard-holders][0m[0m (actually, source function
+  [30m[47mremove-guard-holders1[0m[0m.  Example: the application of
+  [30m[47mremove-guard-holders[0m[0m to [30m[47m(f (return-last 'progn '7 (to-df x)))[0m[0m
+  produced [30m[47m(F (RETURN-LAST 'PROGN '7 (TO-DF X)))[0m[0m but now produces the
+  correct result, [30m[47m(F (TO-DF X))[0m[0m.
+
+  Applied fixes from AI for bugs found by AI, numbered in the ACL2
+  sources as indicated.
+
+    * (#1) Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields
+      of [stobj]s, by strengthening a check in each binding that the
+      bound variable agrees with the key, so that the two are not
+      merely congruent stobjs.
+
 
 Other Bug Fixes
 
@@ -141815,20 +141829,31 @@ Extended Example
     ACL2 !>
 
   As illustrated above, we support two forms of this reader: [30m[47m#f[0m[0m,
-  indicating base 10 digits, and [30m[47m#fx[0m[0m, indicating base 16 digits.  Let
-  {i} be notation representing a sequence of digits and (optionally)
-  underscore ([30m[47m_[0m[0m) characters, optionally preceded by a sign ([30m[47m-[0m[0m or [30m[47m+[0m[0m),
-  that the ACL2 reader reads as the integer i after discarding
-  underscore characters; similarly for {j} and {n}, except that an
-  initial sign is illegal for {j}, and for {n} the digits are always
-  base 10 (even in the case of [30m[47m#fx[0m[0m).  Note that each such string is
-  terminated at the first character from the input channel that is
-  not a digit.  For the [30m[47m#f[0m[0m case we have the following semantics.
+  indicating base 10 digits, and [30m[47m#fx[0m[0m, indicating base 16 digits.
+  Both forms are case-insensitive.  Below, let {i} be notation
+  representing a sequence of zero or more digits and underscore ([30m[47m_[0m[0m)
+  characters, optionally preceded by a sign ([30m[47m-[0m[0m or [30m[47m+[0m[0m).  We interpret
+  {i} as a number i as follows.  If there are no digits, i is [30m[47m0[0m[0m;
+  otherwise the underscore characters are discarded and the ACL2
+  reader reads the optional sign and the digits as the integer i.
+  Also below, {j} and {n} similarly denote integers j and n, except
+  that an initial sign is illegal for {j}, and {n}, if present, must
+  have at least one digit and is always decimal, even for [30m[47m#fx[0m[0m.  The
+  exponent, [30m[47me{n}[0m[0m for [30m[47m#f[0m[0m and [30m[47mp{n}[0m[0m for [30m[47m#fx[0m[0m, is optional.  Note that
+  each such sequence is terminated at the first character from the
+  input channel that does not follow the pattern described.  This can
+  be confusing: for example, [30m[47m'(#f1.2p2)[0m[0m evaluates to [30m[47m(6/5 P2)[0m[0m.  We
+  recommend not relying on this behavior, for example by adding
+  whitespace where appropriate.
+
+  For the [30m[47m#f[0m[0m case we have the following semantics.
 
     #f{i}          => i
     #f{i}e{n}      => i * 10^n
-    #f{i}.{j}      => i + (/ j 10^k) where k is the length of {j}
-    #f{i}.{j}e{n}  => (i + (/ j 10^k)) * 10^n where k is the length of {j}
+    #f{i}.{j}      => i + sign(i)*(/ j 10^k)  where k is the number of digits
+                                              in {j}
+    #f{i}.{j}e{n}  => (i + sign(i)*(/ j 10^k)) * 10^n  where k is the number of
+                                                       digits in {j}
 
   We have the following similar semantics for the [30m[47m#fx[0m[0m case, except that
   {i} and {j} are now read in base 16.  Note that {n} is still read
@@ -141836,8 +141861,13 @@ Extended Example
 
     #fx{i}         => i
     #fx{i}p{n}     => i * 2^n
-    #fx{i}.{j}     => i + (/ j 16^k) where k is the length of {j}
-    #fx{i}.{j}p{n} => (i + (/ j 16^k)) * 2^n where k is the length of {j}
+    #fx{i}.{j}     => i + sign(i)*(/ j 16^k)  where k is the number of digits
+                                              in {j}
+    #fx{i}.{j}p{n} => (i + sign(i)*(/ j 16^k)) * 2^n  where k is the number of
+                                                      digits in {j}
+
+  In both tables above, [30m[47msign(i)[0m[0m is [30m[47m-1[0m[0m if {i} begins with [30m[47m-[0m[0m, and [30m[47m1[0m[0m
+  otherwise.
 
   We thank Dmitry Nadezhin for pointing us to the following page, which
   explains an analogous ``floating point literal'' syntax for C++:
