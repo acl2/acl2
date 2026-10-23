@@ -149,3 +149,17 @@
            (equal (alists-equiv-on keys alist1 (append alist2 alist3))
                   (alists-equiv-on keys alist1 alist2)))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-cons-arg1
+  (equal (alists-equiv-on (cons key keys) alist1 alist2)
+         (and (equal (cdr (assoc-equal key alist1))
+                     (cdr (assoc-equal key alist2)))
+              (alists-equiv-on keys alist1 alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+;; Agreement on some keys implies agreement on fewer keys.
+(defthm alists-equiv-on-when-subsetp-equal
+  (implies (and (alists-equiv-on keys2 alist1 alist2) ; keys2 is a free var
+                (subsetp-equal keys keys2))
+           (alists-equiv-on keys alist1 alist2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on subsetp-equal))))
