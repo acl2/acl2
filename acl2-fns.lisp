@@ -1458,7 +1458,7 @@ notation causes an error and (b) the use of ,. is not permitted."
         tmp lst)
     (cond ((eq sign :eof)
            (return-from read-digits
-                        (values 0 nil :eof)))
+                        (values 0 nil 0 :eof)))
           ((not (member sign '(#\+ #\-)))
            (unread-char sign stream)))
     (loop (setq tmp (read-char stream nil :eof t))
@@ -1486,16 +1486,14 @@ notation causes an error and (b) the use of ,. is not permitted."
                       (cond (*read-suppress* (return-from sharp-f-read nil))
                             (t (acl2-reader-error
                                 "Empty exponent in #f expression."))))
-                    (unread-char next-char stream)
+                    (unless (eq next-char :eof)
+                      (unread-char next-char stream))
                     (if negp (- exp) exp))))
     (let* ((tmp (read-char stream nil :eof t))
            (base-16-p (cond
                        ((member tmp '(#\x #\X)) t)
-                       ((eq tmp :eof)
-                        (cond (*read-suppress* (return-from sharp-f-read nil))
-                              (t (acl2-reader-error
-                                  "End of file encountered after #f."))))
-                       (t (unread-char tmp stream)
+                       (t (unless (eq tmp :eof)
+                            (unread-char tmp stream))
                           nil)))
            (exp-chars (if base-16-p '(#\p #\P) '(#\e #\E))))
       (multiple-value-bind
@@ -1524,7 +1522,8 @@ notation causes an error and (b) the use of ,. is not permitted."
                         (let* ((exp (read-exp stream)))
                           (* (if negp (- significand) significand)
                              (common-lisp::expt (if base-16-p 2 10) exp))))
-                       (t (unread-char next-char stream)
+                       (t (unless (eq next-char :eof)
+                            (unread-char next-char stream))
                           (if negp (- significand) significand))))))
              (t (unread-char next-char stream)
                 (if negp (- before-dot) before-dot)))))))
