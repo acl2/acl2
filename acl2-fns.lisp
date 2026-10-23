@@ -1452,6 +1452,13 @@ notation causes an error and (b) the use of ,. is not permitted."
                                      n)))))))))))
 
 (defun read-digits (stream base-16-p)
+
+; Returns (values len negp n next-char), where len is the number of digits read
+; (discarding underscores), negp is t if a minus sign preceded the digits and
+; otherwise nil, n is the natural number value of the digits read (0 if there
+; are none), and next-char is :eof for end-of-file and otherwise is the last
+; character read (and hence does not contribute to len, negp, or n).
+
   (declare (special *hex-array* *base-10-array*))
   (let ((base-array (if base-16-p *hex-array* *base-10-array*))
         (sign (read-char stream nil :eof t))
