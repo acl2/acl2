@@ -601,12 +601,13 @@
                                                              monitored-rules call-stp no-warn-ground-functions print state))))
       :flag prune-terms-aux)
     :hints (("Goal"
-             ;; this :expand hint is much faster than an enable:
+             ;; this :expand hint is faster than an enable:
              :expand ((prune-term-aux term assumptions equality-assumptions
-                                             rule-alist interpreted-function-alist
-                                             monitored-rules call-stp
-                                             no-warn-ground-functions print state))
-             :in-theory (e/d (prune-terms-aux symbolp-when-member-equal-and-symbol-listp)
+                                      rule-alist interpreted-function-alist
+                                      monitored-rules call-stp
+                                      no-warn-ground-functions print state))
+             :in-theory (e/d (prune-terms-aux
+                              symbolp-when-member-equal-and-symbol-listp)
                              (pseudo-term-listp quotep))))))
 
 (verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
@@ -621,7 +622,13 @@
       (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp no-warn-ground-functions print state)))
              (w state))
       :flag prune-terms-aux)
-    :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp)))))
+    :hints (("Goal"
+             ;; this :expand hint is faster than an enable:
+             :expand ((prune-term-aux term assumptions equality-assumptions
+                                      rule-alist interpreted-function-alist
+                                      monitored-rules call-stp
+                                      no-warn-ground-functions print state))
+             :in-theory (enable prune-terms-aux symbolp-when-member-equal-and-symbol-listp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
