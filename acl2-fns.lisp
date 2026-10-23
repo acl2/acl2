@@ -1447,7 +1447,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                      (cond ((numberp n) n)
                            (*read-suppress* nil)
                            (t (acl2-reader-error
-                               "Failure to read #u expression: result ~s is ~
+                               "Failure to read #u expression: result ~x0 is ~
                                 not a numeral."
                                      n)))))))))))
 
