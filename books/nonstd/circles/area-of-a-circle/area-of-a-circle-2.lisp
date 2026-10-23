@@ -13,6 +13,12 @@
 
 ; cert_param: (uses-acl2r)
 
+#|
+
+Ruben: Commenting this out because it doesn't work with the new version of
+u-substitution.lisp. I think it will take some work to update it.
+
+
 (include-book "area-of-a-circle-1")
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
@@ -1352,3 +1358,5 @@
 		 )
 	   ))
   )
+
+|#

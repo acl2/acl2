@@ -5,13 +5,12 @@
 (local (include-book "nonstd/nsa/derivative-raise" :dir :system))
 (local (include-book "nonstd/nsa/continuity-product" :dir :system))
 (local (include-book "nonstd/integrals/continuous-function" :dir :system))
+(local (include-book "nonstd/basel/basel-bound" :dir :system))
+(local (include-book "nonstd/nsa/standard-close-utils" :dir :system))
 
 (include-book "ln-integral")
 (local (include-book "ln-factorial"))
-(local (include-book "standard-close-utils"))
-(local (include-book "basel-bound"))
 
-(local (in-theory (disable binomial-theorem)))
 (local (in-theory (disable binomial-theorem)))
 
 (local

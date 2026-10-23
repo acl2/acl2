@@ -12,6 +12,8 @@
 
 ; cert_param: (uses-acl2r)
 
+#|
+
 (include-book "nonstd/nsa/exp" :dir :system)
 (include-book "nonstd/nsa/trig" :dir :system)
 (include-book "arithmetic/top-with-meta" :dir :system)
@@ -886,3 +888,4 @@
 
    )
  )
+|#

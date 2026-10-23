@@ -124,9 +124,8 @@
            )))
 
 (defthmd realpart-uminus
-    (IMPLIES (ACL2-NUMBERP X)
-             (EQUAL (REALPART (- X))
-                    (- (REALPART X))))
+    (EQUAL (REALPART (- X))
+           (- (REALPART X)))
   :hints (("Goal"
            :use ((:instance COMPLEX-UMINUS
                             (x (REALPART X))
@@ -134,9 +133,8 @@
            )))
 
 (defthmd IMAGPART-uminus
-    (IMPLIES (ACL2-NUMBERP X)
-             (EQUAL (IMAGPART (- X))
-                    (- (IMAGPART X))))
+    (EQUAL (IMAGPART (- X))
+           (- (IMAGPART X)))
   :hints (("Goal"
            :use ((:instance COMPLEX-UMINUS
                             (x (REALPART X))

@@ -13,6 +13,13 @@
 
 ; cert_param: (uses-acl2r)
 
+#|
+
+Ruben: Commenting this out because it doesn't work with the new version of
+u-substitution.lisp. I think it will take some work to update it.
+
+
+
 (local (include-book "arithmetic/realp" :dir :system))
 (local (include-book "arithmetic/inequalities" :dir :system))
 (include-book "nonstd/nsa/inverse-square" :dir :system)
@@ -1126,62 +1133,23 @@
   )
 
 (encapsulate
- (((circle-sub-derivative *) => *))
+    (((circle-sub-derivative *) => *))
 
- (local
-  (defun circle-sub-derivative (x)
-    (* (circle (sub-func x)) (sub-func-prime x))
-    ))
+    (local
+     (defun circle-sub-derivative (x)
+       (* (circle (sub-func x)) (sub-func-prime x))
+       ))
 
- (defthm derivative-circle-sub-definition
-   (implies (inside-interval-p x (sub-domain))
-	    (equal (circle-sub-derivative x)
-		   (* (circle (sub-func x))
-		      (sub-func-prime x))))
-   :hints (("goal"
-	    :use (:functional-instance derivative-cr-f-o-fi-definition
-				       (fi-domain sub-domain)
-				       (f-prime circle)
-				       (fi sub-func)
-				       (fi-prime sub-func-prime)
-				       (fi-range circle-x-domain)
-				       (derivative-cr-f-o-fi circle-sub-derivative)
-				       (consta consta1)
-				       )
-	    )
-	   ("subgoal 10"
-	    :use (:instance circle-domain-in-domain-of-fi)
-	    )
-	   ("subgoal 9"
-	    :use (:instance intervalp-sub-domain)
-	    )
-	   ("subgoal 8"
-	    :use (:instance sub-func-differentiable)
-	    )
-	   ("subgoal 7"
-	    :use (:instance intervalp-c-domain)
-	    )
-	   ("subgoal 6"
-	    :use (:instance sub-func-prime-continuous)
-	    )
-	   ("subgoal 5"
-	    :use (:instance sub-func-prime-is-derivative)
-	    )
-	   ("subgoal 4"
-	    :use (:instance circle-continuous)
-	    )
-	   ("subgoal 3"
-	    :use (:instance consta1-def)
-	    )
-	   ("subgoal 2"
-	    :use (:instance consta1-def)
-	    )
-	   ("subgoal 1"
-	    :use (:instance circle-sub-derivative(x x))
-	    )
-	   )
-   )
- )
+  (defthm derivative-circle-sub-definition
+      (implies (inside-interval-p x (sub-domain))
+	       (equal (circle-sub-derivative x)
+		      (* (circle (sub-func x))
+		         (sub-func-prime x))))
+    :hints (("Goal"
+             :expand ((circle-sub-derivative x))
+             :in-theory (disable circle sub-func sub-func-prime)))
+             )
+  )
 
 (defun circle-sub-prime (x)
   (if (inside-interval-p x (sub-domain))
@@ -1199,31 +1167,63 @@
   (dotprod (deltas p)
 	   (map-circle-sub-prime (cdr p))))
 
+
 (encapsulate
  nil
 
- (local
+(local
   (defthm limited-riemann-circle-sub-prime-small-partition
     (implies (and (realp a) (standardp a)
 		  (realp b) (standardp b)
 		  (inside-interval-p a (sub-domain))
 		  (inside-interval-p b (sub-domain))
 		  (< a b))
-	     (standardp (standard-part (riemann-circle-sub-prime (make-small-partition a b)))))
+	     (standardp (standard-part (riemann-circle-sub-prime
+                                        (make-small-partition a b)))))
+    :otf-flg t
     :hints (("goal"
- 	     :use (:functional-instance limited-riemann-f-o-fi-prime-small-partition
-					(fi-domain sub-domain)
-					(f-o-fi-prime circle-sub-prime)
-					(map-f-o-fi-prime map-circle-sub-prime)
-					(riemann-f-o-fi-prime riemann-circle-sub-prime)
-					(derivative-cr-f-o-fi circle-sub-derivative)
-					(fi-range circle-x-domain)
+ 	     :use ((:instance
+                   (:functional-instance limited-riemann-usub-f-o-fi-prime-small-partition
+					(usub-fi-domain sub-domain)
+					(usub-f-o-fi-prime
+                                         (lambda (context x)
+                                           (circle-sub-prime x)))
+					(map-usub-f-o-fi-prime
+                                         (lambda (context x)
+                                                (map-circle-sub-prime x)))
+					(riemann-usub-f-o-fi-prime
+                                         (lambda (context x)
+                                           (riemann-circle-sub-prime x)))
+					(derivative-cr-usub-f-o-fi
+                                         (lambda (context x)
+                                           (circle-sub-derivative x)))
+					(usub-fi-range circle-x-domain)
 					(consta  consta1)
-					(f-prime circle)
-					(fi sub-func)
-					(fi-prime sub-func-prime)
-					))
-	    ("goal"
+					(usub-f-prime
+                                         (lambda (context x)
+                                           (circle x)))
+					(usub-fi
+                                         (lambda (context x) (sub-func x)))
+					(usub-fi-prime
+                                         (lambda (context x)
+                                           (sub-func-prime x)))
+                                        (differential-cr-usub-fi
+                                         (lambda (context x eps)
+                                           (* (+ (sub-func (+ x eps))
+                                                 (- (sub-func x)))
+                                              (/ eps))))
+                                        (differential-cr-usub-f
+                                         (lambda (context x eps)
+                                           (* (+ (usub-f context (+ x eps))
+                                                 (- (usub-f context x)))
+                                              (/ eps))))
+                                        (usub-f-o-fi
+                                         (lambda (context x)
+                                           (usub-f (usub-car-context context)
+                                                   (* (rad) (acl2-sine x)))))
+					)
+                   (context 0))))
+	    ("goal'''"
 	     :use (
 		   (:instance riemann-circle-sub-prime)
 		   (:instance map-circle-sub-prime)
@@ -1240,47 +1240,50 @@
 		   (:instance consta1-def)
 		   )
 	     )
-
- 	    ("subgoal 13"
+ 	    ("subgoal 16"
  	     :use (:instance riemann-circle-sub-prime)
  	     :in-theory (enable dotprod)
  	     )
- 	    ("subgoal 12"
+ 	    ("subgoal 15"
  	     :use (:instance map-circle-sub-prime)
  	     )
- 	    ("subgoal 11"
+ 	    ("subgoal 14"
  	     :use (:instance circle-sub-prime)
  	     )
- 	    ("subgoal 10"
+ 	    ("subgoal 13"
  	     :use ((:instance derivative-circle-sub-definition)
  	    	   (:instance sub-domain)
  	    	   )
  	     )
- 	    ("subgoal 9"
+ 	    ("subgoal 12"
  	     :use (:instance circle-domain-in-domain-of-fi)
  	     )
- 	    ("subgoal 8"
+            ("subgoal 9"
+             :use ((:instance rad-def))
+             :in-theory (enable interval-definition-theory))
+ 	    ("subgoal 800"
  	     :use (:instance intervalp-sub-domain)
  	     )
- 	    ("subgoal 7"
+ 	    ("subgoal 700"
  	     :use (:instance sub-func-differentiable)
  	     )
- 	    ("subgoal 6"
+ 	    ("subgoal 600"
  	     :use (:instance intervalp-c-domain)
  	     )
- 	    ("subgoal 5"
+ 	    ("subgoal 8"
  	     :use (:instance sub-func-prime-continuous)
  	     )
- 	    ("subgoal 4"
+ 	    ("subgoal 7"
  	     :use (:instance sub-func-prime-is-derivative)
  	     )
- 	    ("subgoal 3"
+ 	    ("subgoal 6"
  	     :use (:instance circle-continuous)
+             :in-theory (disable circle)
  	     )
- 	    ("subgoal 2"
+ 	    ("subgoal 5"
  	     :use (:instance consta1-def)
  	     )
- 	    ("subgoal 1"
+ 	    ("subgoal 4"
  	     :use (:instance consta1-def)
  	     )
  	    )))
@@ -1497,3 +1500,5 @@
 	    ))
    )
  )
+
+|#

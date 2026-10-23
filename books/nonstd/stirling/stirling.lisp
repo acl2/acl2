@@ -5,10 +5,10 @@
 (local (include-book "nonstd/nsa/exp-sum" :dir :system))
 (local (include-book "nonstd/nsa/ln-product" :dir :system))
 (local (include-book "nonstd/nsa/raise" :dir :system))
+(local (include-book "nonstd/basel/basel-bound" :dir :system))
+(local (include-book "nonstd/nsa/standard-close-utils" :dir :system))
 
 (include-book "ln-trapezoidal")
-(local (include-book "standard-close-utils"))
-(local (include-book "basel-bound"))
 (local (include-book "wallis-product"))
 
 (local

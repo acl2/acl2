@@ -3,9 +3,9 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "nonstd/nsa/derivative-raise" :dir :system))
 (local (include-book "nonstd/integrals/ftc-2" :dir :system))
+(local (include-book "nonstd/nsa/standard-close-utils" :dir :system))
 (include-book "nonstd/nsa/intervals" :dir :system)
 
-(local (include-book "standard-close-utils"))
 
 (defun basel-series (i n)
   (declare (xargs :measure (nfix (- n i))))
