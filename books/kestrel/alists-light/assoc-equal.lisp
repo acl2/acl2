@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function assoc-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,6 +71,13 @@
 
 (defthm assoc-equal-of-append-1
   (implies (assoc-equal x alist1)
+           (equal (assoc-equal x (append alist1 alist2))
+                  (assoc-equal x alist1)))
+  :hints (("Goal" :in-theory (enable assoc-equal))))
+
+;; Like assoc-equal-of-append-1 but phrases the hyp differently.
+(defthm assoc-equal-of-append-when-member-equal-of-strip-cars
+  (implies (member-equal x (strip-cars alist1))
            (equal (assoc-equal x (append alist1 alist2))
                   (assoc-equal x alist1)))
   :hints (("Goal" :in-theory (enable assoc-equal))))
