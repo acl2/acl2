@@ -16,4 +16,9 @@
 
 (include-book "kestrel/axe/jvm/tester" :dir :system)
 
-(test-file "ClassTest.java")
+;; In this one, we assume x is non-null, so the null test in the code doesn't do much:
+(test-file "ClassTest.java" :assume-object-params-non-null t)
+
+;; In this one, we don't assume x is non-null, relying on the null test in the code:
+;; TODO: Avoid printing "WARNING: Unexpected state term:" in this example:
+(test-file "ClassTest.java" :assume-object-params-non-null nil)

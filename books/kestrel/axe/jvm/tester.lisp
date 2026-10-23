@@ -481,7 +481,7 @@
     ))
 
 ;; Returns (mv erp failedp state)
-(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+(defun run-formal-test-on-method (method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist assumptions classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor assume-object-params-non-null state)
   (declare (xargs :guard (and (jvm::method-idp method-id)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -499,7 +499,8 @@
                               (symbol-listp remove-rules)
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
-                              (symbol-listp monitor))
+                              (symbol-listp monitor)
+                              (booleanp assume-object-params-non-null))
                   :stobjs state
                   :mode :program ;; for submit-event-quiet, simp-dag-fn, and apply-tactic-prover
                   ))
@@ -576,6 +577,7 @@
                                :auto ; param-names
                                t ; chunkedp
                                error-on-incomplete-runsp
+                               assume-object-params-non-null
                                class-alist
                                state))
        ((when erp) (mv erp t state))
@@ -693,7 +695,7 @@
                   state)))))
 
 ;; Returns (mv erp results state).
-(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor results-acc state)
+(defun run-formal-tests-on-methods (method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor assume-object-params-non-null results-acc state)
   (declare (xargs :guard (and (jvm::method-id-listp method-ids)
                               (jvm::class-namep class-name)
                               (or (eq :any methods-expected-to-fail)
@@ -708,19 +710,20 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (prune-precise-optionp prune-precise)
-                              (prune-approx-optionp prune-approx))
+                              (prune-approx-optionp prune-approx)
+                              (booleanp assume-object-params-non-null))
                            :stobjs state
                            :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
       (mv-let (erp failedp state)
-        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor state)
+        (run-formal-test-on-method method-id class-name methods-expected-to-fail error-on-unexpectedp method-info-alist nil classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor assume-object-params-non-null state)
         (if erp
             (mv erp nil state)
           (run-formal-tests-on-methods (rest method-ids)
                                        class-name
-                                       methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+                                       methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor assume-object-params-non-null
                                        (cons (cons method-id (if failedp "FAILED" "PASSED")) results-acc)
                                        state))))))
 
@@ -770,6 +773,7 @@
                      prune-precise
                      prune-approx
                      monitor
+                     assume-object-params-non-null
                      state)
   (declare (xargs :mode :program
                   :stobjs state
@@ -784,7 +788,8 @@
                               (booleanp error-on-unexpectedp)
                               (count-hits-argp count-hits)
                               (prune-precise-optionp prune-precise)
-                              (prune-approx-optionp prune-approx))))
+                              (prune-approx-optionp prune-approx)
+                              (booleanp assume-object-params-non-null))))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
@@ -848,7 +853,7 @@
        ;; (- (cw ")~%"))
        ;; Run the tests:
        ((mv erp results state)
-        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor
+        (run-formal-tests-on-methods test-method-ids class-name methods-expected-to-fail error-on-unexpectedp method-info-alist classes-to-assume-initialized class-alist count-hits print extra-rules remove-rules prune-precise prune-approx monitor assume-object-params-non-null
                       nil ;empty accumulator
                       state))
        ((when erp) (mv erp nil state))
@@ -877,7 +882,8 @@
                                        (prune-precise '10000) ; todo: can explode
                                        (prune-approx 't)
                                        (monitor 'nil)
-                                       (print 'nil))
+                                       (print 'nil)
+                                       (assume-object-params-non-null 't))
   `(make-event-quiet (test-file-fn ,path-to-java-file
                                    ;;',assumptions
                                    ,methods
@@ -891,8 +897,8 @@
                                    ,prune-precise
                                    ,prune-approx
                                    ,monitor
-                                   state
-                                  )))
+                                   ,assume-object-params-non-null
+                                   state)))
 
 ;; Test all methods in the given file whose names start with "test" or
 ;; "fail_test".  This variant of the tool should be called from the shell or
@@ -912,7 +918,7 @@
                                                 (prune-approx 't) ; was called prune-branches-approximately
                                                 (monitor 'nil)
                                                 (print ':brief) ;(print 'nil)
-                                                )
+                                                (assume-object-params-non-null 't))
   `(mv-let (erp event state)
      (test-file-fn ,path-to-java-file
                    ;;',assumptions
@@ -927,8 +933,8 @@
                    ,prune-precise
                    ,prune-approx
                    ,monitor
-                   state
-                  )
+                   ,assume-object-params-non-null
+                   state)
      (declare (ignore erp event))
      (prog2$ (exit 0) ;; Prevent printing of stuff (NIL, a prompt, and "Bye.") before exiting
              state)))

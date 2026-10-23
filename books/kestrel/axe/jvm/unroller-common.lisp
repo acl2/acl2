@@ -164,7 +164,7 @@
 ;; TODO: Should we assume that params that are references are non-null?  We do for arrays...
 ;; TODO: Add an option to avoid generating non-null assumptions for arrays (implied by array-refp) and references.
 ;; TODO: Add option for stricter assumptions about subtypes of int
-(defund parameter-assumptions-aux (current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)
+(defund parameter-assumptions-aux (current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string assume-object-params-non-null)
   (declare (xargs :guard (and (natp current-slot)
                               (true-listp parameter-types)
                               (jvm::all-typep parameter-types)
@@ -173,7 +173,8 @@
                               (pseudo-termp locals-term)
                               (pseudo-termp heap-term)
                               (member-eq vars-for-array-elements '(t nil :bits))
-                              (method-designator-stringp method-designator-string))
+                              (method-designator-stringp method-designator-string)
+                              (booleanp assume-object-params-non-null))
                   :guard-hints (("Goal" :in-theory (e/d (symbolp-of-lookup-equal-when-param-slot-to-name-alistp
                                                          param-slot-to-name-alistp)
                                                         (natp))))))
@@ -193,11 +194,15 @@
                               ,@(type-assumptions-for-param type parameter-name))
                           ;; Reference type:
                           (if (jvm::class-or-interface-namep type)
-                              `((equal ,local-term ,parameter-name)
-                                (address-or-nullp ,parameter-name) ; todo: option to assume non-null
-                                ;; For now, we assume the runtime class is exactly the declared class, not a subclass:
-                                ;; TODO: Error if abstract class or interface.
-                                (equal (get-field ,local-term ',(class-pair) ,heap-term) ',type))
+                              (cons `(equal ,local-term ,parameter-name) ; introduce the variable for the param
+                                    ;; For now, we assume the runtime class (in the non-null case) is exactly the declared class, not a subclass:
+                                    ;; TODO: Error if abstract class or interface.
+                                    (if assume-object-params-non-null
+                                        `((addressp ,parameter-name)
+                                          (equal (get-field ,parameter-name ',(class-pair) ,heap-term) ',type))
+                                      `((address-or-nullp ,parameter-name)
+                                        (has-class-or-nullp ,parameter-name ',type ,heap-term)
+                                        )))
                             (if (jvm::is-one-dim-array-typep type)
                                 ;; One-dimensional array (TODO: Consider if we get NULL -- should it be an option to assume non-null?):
                                 (let ((component-type (jvm::get-array-component-type type))
@@ -292,7 +297,8 @@
                                          locals-term
                                          heap-term
                                          vars-for-array-elements
-                                         method-designator-string)))))
+                                         method-designator-string
+                                         assume-object-params-non-null)))))
 
 (defthm pseudo-term-listp-of-parameter-assumptions-aux
   (implies (and (natp current-slot)
@@ -304,7 +310,7 @@
                 (pseudo-termp heap-term)
                 (member-eq vars-for-array-elements '(t nil :bits))
                 (method-designator-stringp method-designator-string))
-           (pseudo-term-listp (parameter-assumptions-aux current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string)))
+           (pseudo-term-listp (parameter-assumptions-aux current-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string assume-object-params-non-null)))
   :hints (("Goal" :in-theory (enable parameter-assumptions-aux
                                      symbolp-of-lookup-equal-when-param-slot-to-name-alistp))))
 
@@ -314,14 +320,15 @@
 ;; corresponding arrays.
 ;; TODO: Should we use strings for parameter names?
 ;; TODO: What if two params of the method have names that differ only in case?
-(defun parameter-assumptions (method-info array-length-alist locals-term heap-term vars-for-array-elements param-slot-to-name-alist method-designator-string)
+(defund parameter-assumptions (method-info array-length-alist locals-term heap-term vars-for-array-elements param-slot-to-name-alist method-designator-string assume-object-params-non-null)
   (declare (xargs :guard (and (jvm::method-infop method-info)
                               (array-length-alistp array-length-alist)
                               (pseudo-termp locals-term)
                               (pseudo-termp heap-term)
                               (member-eq vars-for-array-elements '(t nil :bits))
                               (param-slot-to-name-alistp param-slot-to-name-alist)
-                              (method-designator-stringp method-designator-string))))
+                              (method-designator-stringp method-designator-string)
+                              (booleanp assume-object-params-non-null))))
   (let* ((parameter-types (lookup-eq :parameter-types method-info)) ;does not include "this"
          (staticp (jvm::method-staticp method-info))
          (first-param-slot (if staticp 0 1)) ;skip a slot for "this" if it's an instance method
@@ -330,7 +337,8 @@
                                                    ;; This actually follows from the above, but the rule to show that can cause loops:
                                                    (not (null-refp (jvm::nth-local '0 ,locals-term)))))))
     (append assumptions-about-this
-            (parameter-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string))))
+            (parameter-assumptions-aux first-param-slot parameter-types param-slot-to-name-alist array-length-alist locals-term heap-term vars-for-array-elements method-designator-string
+                                       assume-object-params-non-null))))
 
 (defthm pseudo-term-listp-of-parameter-assumptions
   (implies (and (jvm::method-infop method-info)
@@ -340,7 +348,7 @@
                 (member-eq vars-for-array-elements '(t nil :bits))
                 (param-slot-to-name-alistp param-slot-to-name-alist)
                 (method-designator-stringp method-designator-string))
-           (pseudo-term-listp (parameter-assumptions method-info array-length-alist locals-term heap-term vars-for-array-elements param-slot-to-name-alist method-designator-string)))
+           (pseudo-term-listp (parameter-assumptions method-info array-length-alist locals-term heap-term vars-for-array-elements param-slot-to-name-alist method-designator-string assume-object-params-non-null)))
   :hints (("Goal" :in-theory (enable parameter-assumptions))))
 
 
