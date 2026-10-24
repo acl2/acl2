@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -48,7 +48,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We support all the bases:
+    "We support all the bases except RV128I (which is not ratified yet):
      RV32I [ISA:2], RV64I [ISA:4], RV32E [ISA:3], and RV64E [ISA:3]."))
   (:rv32i ())
   (:rv64i ())
