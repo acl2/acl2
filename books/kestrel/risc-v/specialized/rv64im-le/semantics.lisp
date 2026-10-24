@@ -1635,7 +1635,7 @@
                     (imm ubyte12p)
                     (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('LW') instruction [ISA:4.3]."
+  :short "Semantics of the @('LWU') instruction [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1659,7 +1659,7 @@
                    (imm ubyte12p)
                    (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('LW') instruction [ISA:4.3]."
+  :short "Semantics of the @('LD') instruction [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
