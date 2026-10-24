@@ -639,7 +639,7 @@
    (xdoc::p
     "As in @(tsee read-mem8),
      we let the address be any integer.
-     We use @(tsee read-mem8) four times.
+     We use @(tsee read-mem8) eight times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((b0 (read-mem8 addr stat feat))
@@ -766,7 +766,7 @@
    (xdoc::p
     "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-mem8) twice.
+     We use @(tsee write-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte32-fix val))
@@ -811,7 +811,7 @@
    (xdoc::p
     "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-mem8) four times.
+     We use @(tsee write-mem8) eight times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte64-fix val))
