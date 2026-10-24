@@ -79,4 +79,5 @@
            :in-theory (enable sortedp-<=
                               remove-duplicates-from-sorted-list
                               not-<-of-car-when-<=-all
-                              <=-of-car-and-cadr-when-sortedp-<=))))
+                              <=-of-car-and-cadr-when-sortedp-<=
+                              sortedp-<=-of-append))))
