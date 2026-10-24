@@ -73,7 +73,7 @@
        (equal (w (update-open-input-channels x state))
               (w state))
        :hints(("Goal" :in-theory (enable w update-open-input-channels))))))
-   
+  
   (defthm w-of-read-object
     (equal (w (mv-nth 2 (read-object channel statE)))
            (w state))
@@ -186,9 +186,9 @@ from this REPL, including variables bound in the rule being applied.</p>
 
 
 (define fgl-trace-entry-fancy-translate (keyvals
-                                              restore-rules
-                                              (interp-st interp-st-bfrs-ok)
-                                              state)
+                                         restore-rules
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
   :returns (mv err (entry true-listp :rule-classes :type-prescription)
                new-interp-st new-state)
   (b* (((mv err trans-keyvals interp-st state)
@@ -203,8 +203,8 @@ from this REPL, including variables bound in the rule being applied.</p>
                             restore-rules
                             (interp-st interp-st-bfrs-ok)
                             state)
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv "Rune must satisfy fgl-generic-rune-p" nil interp-st state))
+  (b* (((unless (fgl-rune-p rune))
+        (mv "Rune must satisfy fgl-rune-p" nil interp-st state))
        ((mv err entry interp-st state)
         (fgl-trace-entry-fancy-translate
          keyvals
@@ -254,8 +254,8 @@ syntax-interp), @(see syntax-bind), syntaxp, and bind-free forms.</p>")
 
 
 (define fgl-untrace*-fn (rune &key (interp-st 'interp-st))
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv "Rune must satisfy fgl-generic-rune-p" nil interp-st))
+  (b* (((unless (fgl-rune-p rune))
+        (mv "Rune must satisfy fgl-rune-p" nil interp-st))
        (old-alist (interp-st->trace-alist interp-st))
        (interp-st (update-interp-st->trace-alist
                    (remove-assoc-equal rune old-alist) interp-st)))

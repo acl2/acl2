@@ -112,8 +112,8 @@
 
 (define reference-ctrex-init (reference-ctrex)
   :guard-hints (("goal" :in-theory (e/d* (reference-ctrex-defs
-                                           equal-of-len
-                                           (init-bvar-db$c))
+                                          equal-of-len
+                                          (init-bvar-db$c))
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -140,7 +140,7 @@
                             (mv bitarr bvar-db env$))
                           reference-ctrex))))
 
-(fty::defmap trace-alist :key-type fgl-generic-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
+(fty::defmap trace-alist :key-type fgl-rune :val-type true-listp :true-listp t :keyp-of-nil nil)
 (fty::deflist trace-alistlist :elt-type trace-alist :true-listp t :elementp-of-nil t)
 
 (with-output
@@ -162,7 +162,7 @@
       (reclimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
       (stacklimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
       (steplimit :type (integer 0 *) :initially 0 :fix lnfix :pred natp)
-    
+      
       (config :type (satisfies fgl-config-p) :initially ,(make-fgl-config) :fix fgl-config-fix :pred fgl-config-p)
       (flags :type (and (unsigned-byte 60)
                         (satisfies interp-flags-p))
@@ -170,7 +170,6 @@
              :fix interp-flags-fix :pred interp-flags-p)
 
       (rewrite-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
-      (binder-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (branch-merge-rules :type (satisfies alistp) :initially nil :fix acl2::alist-fix)
       (congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
       (id-congruence-rules :type (satisfies true-listp) :initially nil :fix acl2::true-list-fix)
@@ -211,8 +210,8 @@
 
 (define interp-st-init (interp-st)
   :guard-hints (("goal" :in-theory (e/d* (interp-st-defs
-                                           equal-of-len
-                                           (init-bvar-db$c))
+                                          equal-of-len
+                                          (init-bvar-db$c))
                                          (default-car default-cdr cons-equal
                                            (:t update-nth) (:t true-listp)
                                            (:t true-listp-update-nth)
@@ -229,7 +228,7 @@
                                         (cons (car x)
                                               (update-nth (1- n) v (cdr x))))))
                       :hints(("Goal" :in-theory (enable update-nth))))))
-                               
+  
   (mbe :logic
        (non-exec (b* ((logicman (interp-st->logicman interp-st))
                       (interp-st (create-interp-st)))
@@ -263,7 +262,6 @@
                              (interp-st (update-interp-st->config (make-fgl-config) interp-st))
                              (interp-st (update-interp-st->flags (make-interp-flags) interp-st))
                              (interp-st (update-interp-st->rewrite-rules nil interp-st))
-                             (interp-st (update-interp-st->binder-rules nil interp-st))
                              (interp-st (update-interp-st->branch-merge-rules nil interp-st))
                              (interp-st (update-interp-st->congruence-rules nil interp-st))
                              (interp-st (update-interp-st->id-congruence-rules nil interp-st))
@@ -647,7 +645,7 @@
                (stack-set-minor-bindings bindings stack))
              interp-st))
 
-(define interp-st-set-rule ((rule maybe-fgl-generic-rule-p) interp-st)
+(define interp-st-set-rule ((rule maybe-fgl-rule-p) interp-st)
   :enabled t :hooks nil
   :inline t
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -1123,7 +1121,7 @@
 
 ;; Trace this!
 (define fgl-interp-error-message ((str stringp)
-                                   (arglist))
+                                  (arglist))
   :returns (error-message (or (consp error-message)
                               (stringp error-message))
                           :rule-classes :type-prescription)

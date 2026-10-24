@@ -101,9 +101,9 @@
   :measure (nfix n)
   :guard (< n (stack-frames stack))
   :prepwork ((in-theory (enable stack$a-frames
-                                      stack$a-pop-frame
-                                      stack$a-scratch-len
-                                      stack$a-minor-frames)))
+                                stack$a-pop-frame
+                                stack$a-scratch-len
+                                stack$a-minor-frames)))
   (if (zp n)
       (mbe :logic (non-exec (major-stack-fix stack)) :exec stack)
     (b* ((stack (stack-pop-minor-frames stack))
@@ -138,38 +138,24 @@
            (major-stack-fix (nthcdr n stack)))))
 
 
-(define fgl-generic-rule-bound-vars ((x fgl-generic-rule-p))
+(define fgl-rule-bound-vars ((x fgl-rule-p))
   :returns (bound-vars (implies (not (equal bound-vars t))
                                 (pseudo-var-list-p bound-vars)))
-  :guard-hints(("Goal" :in-theory (enable tag-when-fgl-generic-rule-p)))
-  (case (tag x)
-    (:brewrite (termlist-vars (fgl-binder-rule-brewrite->lhs-args x)))
-    (:rewrite (term-vars (cmr::rewrite->lhs (fgl-rule-rewrite->rule x))))
-    (otherwise t)))
+  (fgl-rule-case x
+    :rewrite (term-vars x.lhs)
+    :otherwise t))
 
-(define fgl-generic-rule-hyps ((x fgl-generic-rule-p))
+(define fgl-rule-hyps ((x fgl-rule-p))
   :returns (hyps pseudo-term-listp)
-  :guard-hints(("Goal" :in-theory (enable tag-when-fgl-generic-rule-p)))
-  (case (tag x)
-    (:brewrite (fgl-binder-rule-brewrite->hyps x))
-    (:rewrite (cmr::rewrite->hyps (fgl-rule-rewrite->rule x)))
-    (otherwise nil)))
+  (fgl-rule-case x
+    :rewrite x.hyps
+    :otherwise nil))
 
-(define fgl-generic-rule-hyps ((x fgl-generic-rule-p))
-  :returns (hyps pseudo-term-listp)
-  :guard-hints(("Goal" :in-theory (enable tag-when-fgl-generic-rule-p)))
-  (case (tag x)
-    (:brewrite (fgl-binder-rule-brewrite->hyps x))
-    (:rewrite (cmr::rewrite->hyps (fgl-rule-rewrite->rule x)))
-    (otherwise nil)))
-
-(define fgl-generic-rule-rhs ((x fgl-generic-rule-p))
+(define fgl-rule-rhs ((x fgl-rule-p))
   :returns (rhs pseudo-termp)
-  :guard-hints(("Goal" :in-theory (enable tag-when-fgl-generic-rule-p)))
-  (case (tag x)
-    (:brewrite (fgl-binder-rule-brewrite->rhs x))
-    (:rewrite (cmr::rewrite->rhs (fgl-rule-rewrite->rule x)))
-    (otherwise nil)))
+  (fgl-rule-case x
+    :rewrite x.rhs
+    :otherwise nil))
 
 (define fgl-object-bindings-keep-keys ((keys pseudo-var-list-p)
                                        (x fgl-object-bindings-p))
@@ -190,14 +176,14 @@
     :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist)))))
 
 (local (in-theory (disable (tau-system))))
-        
+
 
 (define stack-reset-top-frame (stack)
   (b* ((stack (stack-pop-minor-frames stack))
        (stack (stack-set-minor-bindings nil stack))
        (stack (stack-set-term-index 0 stack))
        (rule (stack-rule stack))
-       (bound-vars (or (not rule) (fgl-generic-rule-bound-vars rule))))
+       (bound-vars (or (not rule) (fgl-rule-bound-vars rule))))
     (if (eq bound-vars t)
         stack
       (stack-set-bindings (fgl-object-bindings-keep-keys bound-vars (stack-bindings stack))
@@ -237,7 +223,7 @@
               (cons
                (change-major-frame jframe
                                    :minor-stack (list (change-minor-frame nframe :scratch nil :bindings nil :term-index 0))
-                                   :bindings (b* ((bound-vars (fgl-generic-rule-bound-vars jframe.rule)))
+                                   :bindings (b* ((bound-vars (fgl-rule-bound-vars jframe.rule)))
                                                (if (or (not jframe.rule)
                                                        (eq bound-vars t))
                                                    jframe.bindings
@@ -250,7 +236,7 @@
                                       stack$a-frames
                                       stack$a-rule
                                       stack$a-bindings)))))
-                 
+
 (define interp-st-reset-top-stack-frame (interp-st)
   (stobj-let ((stack (interp-st->stack interp-st)))
              (stack)
@@ -270,13 +256,35 @@
              (stack-pop-n-frames! n stack)
              interp-st))
 
+(local
+ (defthm bfr-listp-of-major-stack-bfrlist-cdr
+   (implies (bfr-listp (major-stack-bfrlist x) bfrstate)
+            (bfr-listp (major-stack-bfrlist (cdr x)) bfrstate))
+   :hints (("Goal" :in-theory (enable major-stack-bfrlist)))))
+
+(local
+ (defthm bfr-listp-of-stack$a-top-scratch
+   (implies (bfr-listp (major-stack-bfrlist x) bfrstate)
+            (bfr-listp (scratchobj->bfrlist (stack$a-top-scratch x)) bfrstate))
+   :hints (("Goal" :in-theory (enable stack$a-top-scratch
+                                      major-stack-bfrlist major-frame-bfrlist
+                                      minor-stack-bfrlist minor-frame-bfrlist
+                                      scratchlist-bfrlist)))))
+
+(local
+ (defthm bfr-listp-of-fgl-object-bindings-keep-keys
+   (implies (bfr-listp (fgl-object-bindings-bfrlist x) bfrstate)
+            (bfr-listp (fgl-object-bindings-bfrlist
+                        (fgl-object-bindings-keep-keys keys x)) bfrstate))
+   :hints (("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+
 (define fgl-replay-top-rewrite-rule-core (&key
                                           ((equiv-contexts equiv-contextsp) 'nil)
                                           ((interp-st interp-st-bfrs-ok) 'interp-st)
                                           (state 'state))
   :guard (and (< 1 (interp-st-stack-frames interp-st))
               (interp-st-stack-rule interp-st)
-              (member (tag (interp-st-stack-rule interp-st)) '(:rewrite :brewrite)))
+              (fgl-rule-case (interp-st-stack-rule interp-st) :rewrite))
   :guard-hints (("goal" :in-theory (enable interp-st-stack-frames
                                            interp-st-stack-rule
                                            stack-reset-top-frame-redef
@@ -289,15 +297,31 @@
   (stobj-let ((stack (interp-st->stack interp-st)))
              (rule bindings hyps rhs stack)
              (b* ((rule (stack-rule stack))
-                  (hyps (fgl-generic-rule-hyps rule))
-                  (rhs (fgl-generic-rule-rhs rule))
+                  (hyps (fgl-rule-hyps rule))
+                  (rhs (fgl-rule-rhs rule))
                   (stack (stack-reset-top-frame stack))
                   (bindings (hons-copy (stack-bindings stack)))
                   (stack (stack-pop-frame stack)))
                (mv rule bindings hyps rhs stack))
-             (b* ((interp-st (update-interp-st->errmsg nil interp-st)))
+             (b* ((interp-st (update-interp-st->errmsg nil interp-st))
+                  (lhs (fgl-rule-rewrite->lhs rule))
+                  (fn (if (pseudo-term-case lhs :fncall)
+                          (pseudo-term-fncall->fn lhs)
+                        'anonymous))
+                  (pat-args (if (pseudo-term-case lhs :fncall)
+                                (pseudo-term-call->args lhs)
+                              nil))
+                  (args (if (and (< 0 (interp-st-scratch-len interp-st))
+                                 (scratchobj-case (interp-st-top-scratch interp-st) :fgl-arglist))
+                            (interp-st-top-scratch-fgl-arglist interp-st)
+                          nil))
+                  ;; The caller's saved arguments retain the unbound variables
+                  ;; needed to reconstruct the original reverse substitution.
+                  ((mv ?unify-ok ?initial-bindings rev-subst)
+                   (fgl-unify-term/gobj-fn/args-masked
+                    fn pat-args fn args nil nil (interp-st-bfrstate))))
                (fgl-rewrite-apply-rule
-                rule 'anonymous bindings hyps rhs equiv-contexts interp-st state))))
+                rule fn bindings rev-subst hyps rhs equiv-contexts interp-st state))))
 
 
 
@@ -386,7 +410,7 @@ acl2::trace$)).</p>
 place to start. After examining the stack with @(see save-fgl-stack), you may
 wish to start execution at a prior stack frame. (This is also necessary in the
 unlikely event that the top frame of the stack is an application of a
-non-@(':rewrite') @(':brewrite') rule.) This can be done by popping the
+non-@(':rewrite') rule.) This can be done by popping the
 required number of frames off the stack as follows, and then running
 @('fgl-replay-top-rewrite-rule'):</p>
 
@@ -405,6 +429,6 @@ required number of frames off the stack as follows, and then running
                                                  (state 'state))
               :guard (and (< 1 (interp-st-stack-frames interp-st))
                           (interp-st-stack-rule interp-st)
-                          (member (tag (interp-st-stack-rule interp-st)) '(:rewrite :brewrite)))
+                          (fgl-rule-case (interp-st-stack-rule interp-st) :rewrite))
               (fgl-replay-top-rewrite-rule-core :equiv-contexts equiv-contexts)))))
 

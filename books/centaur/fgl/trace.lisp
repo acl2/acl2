@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "interp-st")
-(include-book "binder-rules")
+(include-book "rules")
 (include-book "fancy-ev")
 (local (include-book "tools/trivial-ancestors-check" :dir :System))
 
@@ -43,29 +43,29 @@
          (implies (trace-alist-p x)
                   (true-listp (assoc key x)))))
 
-(define fgl-rule-tracespec ((rule fgl-generic-rule-p)
-                                           interp-st state)
+(define fgl-rule-tracespec ((rule fgl-rule-p)
+                            interp-st state)
   (declare (ignorable state))
   :returns (tracespec true-listp :rule-classes :type-prescription)
-  (assoc-equal (fgl-generic-rule->rune rule)
+  (assoc-equal (fgl-rule->rune rule)
                (interp-st->trace-alist interp-st)))
 
 ;; (encapsulate
 ;;   (((fgl-rewrite-trace-cond * * * * * interp-st state) => (mv * interp-st state)
 ;;     :formals (rule tracespec fn args bindings interp-st state)
-;;     :guard (and (fgl-generic-rule-p rule)
+;;     :guard (and (fgl-rule-p rule)
 ;;                 (true-listp tracespec)
 ;;                 (pseudo-fnsym-p fn)
 ;;                 (fgl-objectlist-p args)
 ;;                 (fgl-object-bindings-p bindings)
 ;;                 (interp-st-bfrs-ok interp-st))))
 
-  
-  
+
+
 ;;   (set-ignore-ok t)
 ;;   (set-irrelevant-formals-ok t)
 
-;;   (define fgl-rewrite-trace-cond ((rule fgl-generic-rule-p)
+;;   (define fgl-rewrite-trace-cond ((rule fgl-rule-p)
 ;;                                   (tracespec true-listp)
 ;;                                   (fn pseudo-fnsym-p)
 ;;                                   (args fgl-objectlist-p)
@@ -128,7 +128,7 @@
          :rule-classes :type-prescription))
 
 (defconst *traceeval-common-inputs*
-  '((rule fgl-generic-rule-p)
+  '((rule fgl-rule-p)
     (fn pseudo-fnsym-p)
     (bindings fgl-object-bindings-p)
     (tracep)
@@ -137,7 +137,7 @@
 
 (defconst *traceeval-common-bindings*
   '`((depth . ,(lnfix depth))
-     (rune . ,(fgl-generic-rune-fix rune))
+     (rune . ,(fgl-rune-fix rune))
      (fn . ,(pseudo-fnsym-fix fn))
      (args . ,(fgl-objectlist-fix args))
      (bindings . ,(fgl-object-bindings-fix bindings))
@@ -180,7 +180,7 @@
 ;;                                       val trace-alist interp-st)))
 ;;                        (mv val interp-st state)))
 ;;                    (t body))))
-                    
+
 ;;     `(define ,name (,@formals
 ;;                     . ,*traceeval-common-inputs*)
 ;;        :returns (mv val new-interp-st new-state)
@@ -222,7 +222,7 @@
          ((unless tracespec) (mv nil interp-st state))
          (trace-alist (interp-st->trace-alist interp-st))
          (depth (+ 1 (interp-st->trace-depth interp-st)))
-         (rune (fgl-generic-rule->rune rule))
+         (rune (fgl-rule->rune rule))
          (args (interp-st-rewrite-args interp-st))
          (interp-st (update-interp-st->tracespecs
                      (cons tracespec (interp-st->tracespecs interp-st))
@@ -265,7 +265,7 @@
           ((mv interp-st state)
            (b* (((unless tracespec)
                  (mv interp-st state))
-                (rune (fgl-generic-rule->rune rule))
+                (rune (fgl-rule->rune rule))
                 ((unless (equal (car tracespec) rune))
                  (raise "Unexpected tracespec ~x0 for rule ~x1~%" tracespec rune)
                  (mv interp-st state))
@@ -322,7 +322,7 @@
       (mv tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
-      
+
 
 
 
@@ -419,7 +419,7 @@
       (fgl-trace-meta-failure-output rhs rule fn bindings tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
- 
+
 
 (defxdoc fgl-rewrite-tracing
   :parents (fgl)
@@ -474,8 +474,8 @@ state globals:</p>
                       restore-rules
                       state)
   :mode :program
-  (b* (((unless (fgl-generic-rune-p rune))
-        (er soft 'fgl-trace "Rune must satisfy ~x0" 'fgl-generic-rune-p))
+  (b* (((unless (fgl-rune-p rune))
+        (er soft 'fgl-trace "Rune must satisfy ~x0" 'fgl-rune-p))
        ((er trans-keyvals) (fgl-trace-translate-keyvals rune keyvals state))
        (entry (cons rune
                     (append trans-keyvals
@@ -484,7 +484,7 @@ state globals:</p>
        (state (f-put-global ':fgl-trace-rule-alist
                             (cons entry old-alist) state)))
     (value entry)))
-       
+
 
 
 (defmacro fgl-trace (rune
@@ -507,7 +507,7 @@ state globals:</p>
                                   (and on-failure-p `(:on-failure ',on-failure))))
                  ,restore-rules
                  state))
-        
+
 
 
 (defxdoc fgl-trace
@@ -543,7 +543,7 @@ following ways:</p>
 
 <h3>Arguments</h3>
 
-<p>The first argument is a rune satisfying @('fgl-generic-rune-p'). The rest of
+<p>The first argument is a rune satisfying @('fgl-rune-p'). The rest of
 the arguments are optional keyword/value pairs among the following:</p>
 
 <ul>
@@ -681,8 +681,8 @@ upon beginning application of the rule) after the rule is finished.</p>
 
 
 (define fgl-untrace-fn (rune state)
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv (msg "Rune must satisfy ~x0" 'fgl-generic-rune-p) nil state))
+  (b* (((unless (fgl-rune-p rune))
+        (mv (msg "Rune must satisfy ~x0" 'fgl-rune-p) nil state))
        (old-alist (my-get-global :fgl-trace-rule-alist state))
        (state (f-put-global ':fgl-trace-rule-alist
                             (acl2::hons-remove-assoc rune old-alist)
@@ -712,5 +712,5 @@ upon beginning application of the rule) after the rule is finished.</p>
   :parents (fgl-rewrite-tracing)
   :short "Remove all trace settings for FGL rules"
   :long "<p>See @(see fgl-trace) for details about tracing rules.</p>")
-  
+
 

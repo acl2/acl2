@@ -151,7 +151,7 @@ passed into a function or bound to a different variable in a lambda.</p>
   :short "A list of scratch objects (type @(see scratchobj)) representing arguments
           to future function calls, etc.")
 
-(fty::defoption maybe-fgl-generic-rule fgl-generic-rule-p)
+(fty::defoption maybe-fgl-rule fgl-rule-p)
 
 
 (fty::defprod minor-frame
@@ -183,7 +183,7 @@ passed into a function or bound to a different variable in a lambda.</p>
     :short "A major stack frame representing an entirely new namespace such as
             a function definition or rewrite rule."
     ((bindings fgl-object-bindings-p "Top-level variable bindings of the scope.")
-     (rule maybe-fgl-generic-rule-p "Rule applied to make this stack frame.")
+     (rule maybe-fgl-rule-p "Rule applied to make this stack frame.")
      (phase acl2::maybe-natp :rule-classes :type-prescription
             "Hyp number or RHS when greater")
      (minor-stack minor-stack-p :default ',(list (make-minor-frame))
@@ -273,7 +273,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                                                                      frame.bindings))
                            (cdr x)))))
 
-(define stack$a-set-rule ((rule maybe-fgl-generic-rule-p)
+(define stack$a-set-rule ((rule maybe-fgl-rule-p)
                           (x major-stack-p))
   :returns (stack major-stack-p)
   (major-stack-fix (cons (change-major-frame (car x) :rule rule)
@@ -352,7 +352,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                                 (x major-stack-p))
   :guard (< n (stack$a-frames x))
   :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
-  :returns (rule maybe-fgl-generic-rule-p)
+  :returns (rule maybe-fgl-rule-p)
   (major-frame->rule (nth (mbe :logic (min (1- (stack$a-frames x)) (nfix n))
                                :exec n)
                           (major-stack-fix x))))
@@ -389,7 +389,7 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 (define stack$a-rule ((x major-stack-p))
-  :returns (rule maybe-fgl-generic-rule-p)
+  :returns (rule maybe-fgl-rule-p)
   (major-frame->rule (car x)))
 
 (define stack$a-phase ((x major-stack-p))

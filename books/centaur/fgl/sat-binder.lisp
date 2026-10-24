@@ -45,11 +45,11 @@
 
 #!aignet
 (define invals-to-conjunction ((n natp)
-                                  (in-lit litp)
-                                  (bitarr)
-                                  (gatesimp gatesimp-p)
-                                  (strash)
-                                  (aignet))
+                               (in-lit litp)
+                               (bitarr)
+                               (gatesimp gatesimp-p)
+                               (strash)
+                               (aignet))
   :returns (mv (res-lit litp :rule-classes :type-prescription)
                (new-strash)
                (new-aignet))
@@ -235,9 +235,9 @@
      (implies (<= (len invals) (nfix n))
               (equal (len (aignet-vals->invals-iter n invals vals aignet))
                      (nfix n))))
-     ;; :hints(("Goal" :use ((:instance aignet-vals->invals-iter-norm-lemma))
-     ;;         :in-theory (disable aignet-vals->invals-iter-norm-lemma
-     ;;                             aignet-vals->invals-iter-norm-cond-necc))))
+   ;; :hints(("Goal" :use ((:instance aignet-vals->invals-iter-norm-lemma))
+   ;;         :in-theory (disable aignet-vals->invals-iter-norm-lemma
+   ;;                             aignet-vals->invals-iter-norm-cond-necc))))
 
    (defthmd aignet-vals->invals-iter-norm
      (implies (syntaxp (not (equal invals ''nil)))
@@ -446,7 +446,7 @@
             :in-theory (disable interp-st-sat-check-unsat-implies)))))
 
 (def-fgl-binder-meta sat-check-raw-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'sat-check-raw)
+  (if (and (eq (pseudo-fnsym-fix origfn) 'sat-check-raw)
            (eql (len args) 2))
       (b* (((list config x) args)
            ((unless (fgl-object-case config :g-concrete))
@@ -507,7 +507,7 @@
                                (interp-st->logicman interp-st))))
 
 (def-fgl-binder-meta sat-check-with-witness-raw-binder
-  (if (and (eq (pseudo-fnsym-fix fn) 'sat-check-with-witness-raw)
+  (if (and (eq (pseudo-fnsym-fix origfn) 'sat-check-with-witness-raw)
            (eql (len args) 2))
       (b* (((unless (bfr-mode-is :aignet (interp-st-bfr-mode)))
             (fgl-interp-error
