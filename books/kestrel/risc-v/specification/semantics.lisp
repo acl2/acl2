@@ -1764,6 +1764,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
@@ -1803,6 +1805,8 @@
   :short "Semantics of the @('SRLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
@@ -1844,6 +1848,8 @@
   :short "Semantics of the @('SRAW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read a signed 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
@@ -1887,6 +1893,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We multiply the two unsigned 32-bit integers.
      We write the result to @('rd') as a signed 32-bit integer.
@@ -1924,6 +1932,8 @@
   :short "Semantics of the @('DIVW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -1967,6 +1977,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{32}-1$)
@@ -2008,6 +2020,8 @@
   :short "Semantics of the @('REMW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -2051,6 +2065,8 @@
   :short "Semantics of the @('REMUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
