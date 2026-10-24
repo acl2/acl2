@@ -2231,7 +2231,11 @@
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc'),
      which is the address of this instruction, passed as input to this function.
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((base (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (offset (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm))))
        (mask (cond ((feat-32p feat) #xfffffffe)
