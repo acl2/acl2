@@ -170891,7 +170891,7 @@ move backward one argument in the enclosing term"
 
  <p>This is the same as @('up') followed by @('(dive n-1)'), where @('n') is
  the position of the current subterm in its parent term in the conclusion.
- Thus in particular, the @('nx') command fails if one is already at the top of
+ Thus in particular, the @('bk') command fails if one is already at the top of
  the conclusion.</p>
 
  <p>Also see @(see acl2-pc::up), @(see acl2-pc::dive), @(see acl2-pc::top), and
