@@ -164810,7 +164810,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
  <h4>Acceptable Values</h4>
 
  <p>Now we describe the values you may provide with the
- @(':well-founded-guarantee') keyword of the @(':meta') and the
+ @(':well-formedness-guarantee') keyword of the @(':meta') and the
  @(':clause-processor') rule-classes.
 
  @({
