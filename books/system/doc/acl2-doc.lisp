@@ -172645,7 +172645,7 @@ substitute for a ``free variable''"
  abort and ``fail'', and the state-stack will revert to its value before the
  @('put') instruction was executed.</p>
 
- <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviation var)')
+ <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviations var)')
  will be executed at the end.</p>
 
  <p><b>Remark</b>: The @('restore') command will revert the state-stack to its
