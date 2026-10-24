@@ -159943,7 +159943,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
   :parents (numbers acl2-built-ins)
   :short "Recognizer for natural numbers that fit in a specified bit width"
   :long "<p>@('(Unsigned-byte-p bits x)') is @('T') when @('bits') is a
- positive integer and @('x') is a nonnegative integer that fits into a
+ non-negative integer and @('x') is a nonnegative integer that fits into a
  bit-width of @('bits'), i.e., @('0 <= x < 2^bits').</p>
 
  <p>Note that a @(see type-spec) of @('(unsigned-byte i)') for a variable
