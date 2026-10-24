@@ -230,7 +230,8 @@
                                        (aset1 'worklist-array worklist-array nodenum :examined))))))))))))
 
 (verify-guards rebuild-nodes-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-<
-                                                                  all-<=-when-all-<)
+                                                                  all-<=-when-all-<
+                                                                  sortedp-<=-of-append)
                                                                  (dargp
                                                                   dargp-less-than)))))
 
