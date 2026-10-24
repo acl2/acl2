@@ -973,12 +973,13 @@
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We subtract the second from the first, and write the result to @('rd').
+     We subtract the second from the first.
+     We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
        (rs2-operand (read64-xreg-unsigned32 rs2 stat))
        (result (- rs1-operand rs2-operand))
-       (stat (write64-xreg rd result stat))
+       (stat (write64-xreg-32 rd result stat))
        (stat (inc64-pc stat)))
     stat))
 

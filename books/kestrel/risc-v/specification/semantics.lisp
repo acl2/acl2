@@ -1726,12 +1726,13 @@
   (xdoc::topstring
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We subtract the second from the first, and write the result to @('rd').
+     We subtract the second from the first.
+     We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat))
        (result (- rs1-operand rs2-operand))
-       (stat (write-xreg (ubyte5-fix rd) result stat feat))
+       (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
