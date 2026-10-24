@@ -99,7 +99,7 @@
                             a))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
-(defthm alists-equiv-on-of-append-arg1
+(defthm alists-equiv-on-of-append-arg2
   (implies (alistp x)
            (equal (alists-equiv-on keys (append x y) z)
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))
@@ -114,7 +114,7 @@
                                      intersection-equal
                                      member-equal-of-strip-cars-iff-assoc-equal))))
 
-(defthm alists-equiv-on-of-append-arg2
+(defthm alists-equiv-on-of-append-arg3
   (implies (alistp x)
            (equal (alists-equiv-on keys z (append x y))
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))

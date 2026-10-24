@@ -132,7 +132,7 @@
                 )
            (equal (empty-eval replacement (append (pairlis$ formals (empty-eval-list args a)) a))
                   (empty-eval replacement a)))
-  :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg1))))
+  :hints (("Goal" :in-theory (disable alists-equiv-on-of-append-arg2))))
 
 (defthm empty-eval-of-append-irrel-arg1
   (implies (and (not (intersection-equal (free-vars-in-term term) (strip-cars a1)))
