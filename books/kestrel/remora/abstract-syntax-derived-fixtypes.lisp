@@ -393,7 +393,15 @@
   :short "Fixtype of maps from ispace variables to optional ispaces."
   :key-type ispace-var
   :val-type ispace-option
-  :pred ispace-var-ispace-option-mapp)
+  :pred ispace-var-ispace-option-mapp
+
+  ///
+
+  (defruled ispace-var-setp-of-keys-when-ispace-var-ispace-option-mapp
+    (implies (ispace-var-ispace-option-mapp map)
+             (ispace-var-setp (omap::keys map)))
+    :induct t
+    :enable (omap::keys ispace-var-ispace-option-mapp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

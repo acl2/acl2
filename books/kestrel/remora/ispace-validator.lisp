@@ -82,6 +82,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual check-dims))
@@ -174,6 +176,8 @@
     :measure (ispace-list-count ispaces))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :flag-local nil
 
   ///
 

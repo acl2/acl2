@@ -1,0 +1,34 @@
+Supporting materials for the ACL2 Workshop 2026 paper
+
+  Pablo Oscar Cayuela
+  Mechanized Verification of Complex-to-Vector Derivations in a
+  Three-Phase AC Machine Model
+
+Mechanical verification, in ACL2 and ACL2(r), of the algebraic
+derivations of a vectorial model of the symmetric three-phase AC
+machine, including a sign correction in the torque equation.
+
+Books (one per section of the paper; see also the repository
+https://github.com/pcayuela/ACL2-ACmotormodel-check):
+
+  00-complex-vectors.lisp        complex numbers as pairs; dot/cross products
+  01-euler-identities.lisp       Euler identities (encapsulated cosine/sine)
+  02-roots-of-unity.lisp         cube roots of unity
+  03-zeta-deduction.lisp         space-vector angle
+  04-collapse-lemma.lisp         three-phase collapse lemma
+  05-torque-sign-correction.lisp torque exponent sign
+  06-generic-omega-collapse.lisp          generic collapse lemma (conditional)
+  06-generic-omega-collapse-acl2r.lisp    ... made unconditional (ACL2(r))
+  07-inductance-note.lisp        note on the air-gap integral
+  08-inductance-integral.lisp    progress on the integral (ACL2(r))
+  09-nonvacuity-acl2r.lisp       the s3^2=3 hypothesis is satisfiable in
+                                 ACL2(r); trig constraints hold for
+                                 acl2-cosine/acl2-sine (ACL2(r))
+
+Top books:
+  top.lisp                    00-07 (ACL2; also certifies under ACL2(r))
+  top-acl2r.lisp              06-...-acl2r and 08 (requires ACL2(r))
+  top-acl2r-nonvacuity.lisp   09, and hence 00-05 (requires ACL2(r))
+
+Books marked "cert_param: (uses-acl2r)" are certified only with the
+ACL2(r) executable.
