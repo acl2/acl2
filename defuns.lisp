@@ -6053,6 +6053,11 @@
 ; In the case of mutual-recursion, only the first name in the nest should be a
 ; key of this alist; see put-invariant-risk.
 
+; Every key of this alist must be a built-in function symbol, as is checked by
+; the function check-invariant-risk.  Otherwise put-invariant-risk would treat
+; a user-defined function of the same name as built-in.  (A key check-sum-inc,
+; left here when that function was removed, caused such a soundness bug.)
+
 ; At one point we thought we should mark with invariant-risk all functions that
 ; have raw code and have state as a formal.  But we see almost no way to
 ; violate an invariant by misguided updates of the (fictional) live state.  For
@@ -6077,7 +6082,6 @@
   '((aset1 . t) ; could write past the end of the real array
     (aset2 . t) ; could write past the end of the real array
     (aset1-lst . t)
-    (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 
 ; Aset1-trusted is an untouchable version of aset1 that we use in our source

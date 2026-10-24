@@ -8850,6 +8850,20 @@
                 check-invariant-risk."
                bad)))
 
+; Next we check that every key of *boot-strap-invariant-risk-alist* is a
+; function symbol; see the comment about this in that constant.
+
+  (let ((bad (loop for pair in *boot-strap-invariant-risk-alist*
+                   when (not (function-symbolp (car pair)
+                                               (w *the-live-state*)))
+                   collect (car pair))))
+    (or (null bad)
+        (error "Each symbol in the following non-empty list is a key of ~%~
+                ~s but is not a function symbol:~%~s.~%~
+                Remove each such key from that alist."
+               '*boot-strap-invariant-risk-alist*
+               bad)))
+
 ; See the comment about the following check in
 ; *boot-strap-invariant-risk-alist*.
 
