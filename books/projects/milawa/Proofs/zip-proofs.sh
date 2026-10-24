@@ -5,46 +5,46 @@
 
 set -e
 
+# Bundle the generated proofs.  Safe to run from anywhere: the script first
+# moves to its own directory, which is where the proof subdirectories live.
+#
+#   ./zip-proofs.sh [basename]     (default basename: milawa-proofs)
+
+cd "$(dirname "$0")"
+
+out=${1:-milawa-proofs}
+
 FILES=""
-FILES="Sources/Proofs/user      Sources/Proofs/user.events   $FILES"
-FILES="Sources/Proofs/level11   Sources/Proofs/level11.events   $FILES"
-FILES="Sources/Proofs/level10   Sources/Proofs/level10.events   $FILES"
-FILES="Sources/Proofs/level9    Sources/Proofs/level9.events    $FILES"
-FILES="Sources/Proofs/level8    Sources/Proofs/level8.events    $FILES"
-FILES="Sources/Proofs/level7    Sources/Proofs/level7.events    $FILES"
-FILES="Sources/Proofs/level6    Sources/Proofs/level6.events    $FILES"
-FILES="Sources/Proofs/level5    Sources/Proofs/level5.events    $FILES"
-FILES="Sources/Proofs/level4    Sources/Proofs/level4.events    $FILES"
-FILES="Sources/Proofs/level3    Sources/Proofs/level3.events    $FILES"
-FILES="Sources/Proofs/level2    Sources/Proofs/level2.events    $FILES"
-FILES="Sources/Proofs/logic     Sources/Proofs/logic.events     $FILES"
-FILES="Sources/Proofs/utilities Sources/Proofs/utilities.events $FILES"
+for level in utilities logic level2 level3 level4 level5 level6 level7 \
+             level8 level9 level10 level11 user
+do
+    FILES="$FILES $level $level.events"
+done
 
-cd /u/jared/Milawa
+echo "Making $out.tar.gz"
+time tar cf - $FILES | gzip --best -c - > "$out.tar.gz"
+ls -lah "$out.tar.gz"
 
-echo "Making milawa-proofs.tar.gz"
-time tar cf - $FILES | gzip --best -c - > Sources/Proofs/milawa-proofs.tar.gz
-ls -lah Sources/Proofs/milawa-proofs.tar.gz
+# The other formats are optional; make only the ones whose tool is installed.
+if command -v bzip2 > /dev/null 2>&1; then
+    echo "Making $out.tar.bz2"
+    time tar cf - $FILES | bzip2 --best > "$out.tar.bz2"
+    ls -lah "$out.tar.bz2"
+fi
 
-echo "Making milawa-proofs.tar.bz2"
-time tar cf - $FILES | bzip2 --best > Sources/Proofs/milawa-proofs.tar.bz2
-ls -lah Sources/Proofs/milawa-proofs.tar.bz2
+if command -v zip > /dev/null 2>&1; then
+    echo "Making $out.zip"
+    time zip -9 -q -r "$out.zip" $FILES
+    ls -lah "$out.zip"
+fi
 
-echo "Making milawa-proofs.zip"
-time zip -9 -q -r Sources/Proofs/milawa-proofs.zip $FILES
-ls -lah Sources/Proofs/milawa-proofs.zip
-
-echo "Making milawa-proofs.tar.7z"
-time 7za a -mx9 Sources/Proofs/milawa-proofs.7z $FILES
-ls -lah Sources/Proofs/milawa-proofs.7z
-
+if command -v 7za > /dev/null 2>&1; then
+    echo "Making $out.7z"
+    time 7za a -mx9 "$out.7z" $FILES > /dev/null
+    ls -lah "$out.7z"
+fi
 
 echo "All done."
-echo "Summary of archives:"
-
-du -hcs Sources/Proofs/milawa-proofs.tar.gz \
-        Sources/Proofs/milawa-proofs.tar.bz2 \
-        Sources/Proofs/milawa-proofs.7z \
-        Sources/Proofs/milawa-proofs.zip
+ls -lah "$out".*
 
 

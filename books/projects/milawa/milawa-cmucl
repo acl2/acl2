@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-CMUCL="lisp"
+# Sizing comes from the environment, so one script works on any host:
+#
+#   MILAWA_CMUCL                CMUCL executable              (default: lisp)
+#   MILAWA_CMUCL_DYNAMIC_SPACE  heap size, in MB             (default: 2048)
+
+CMUCL="${MILAWA_CMUCL:-lisp}"
 
 if [ "$#" -ne "1" ]
 then
@@ -28,49 +33,5 @@ then
 	echo ""
 fi
 
-if [ -n "`hostname | grep nemesis`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 1520 -core $1
-elif [ -n "`hostname | grep lhug`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
-elif [ -n "`hostname | grep jordan`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
-elif [ -n "`hostname | grep moros`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 1632 -core $1
-elif [ -n "`hostname | grep shadowfax`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 2800 -core $1
-elif [ -n "`hostname | grep warren`" ]
-then
-    exec $CMUCL -batch -dynamic-space-size 1150 -core $1
-else
-    echo "Error: host not yet configured."
-    echo ""
-    echo "What is this about?"
-    echo "  CMUCL allows the amount of available heap space available to be "
-    echo "  configured via the command-line parameter -dynamic-space-size.  We"
-    echo "  need to know how much space to try to allocate."
-    echo ""
-    echo "How to fix it?"
-    echo "  Before using milawa-cmucl, please determine the appropriate values "
-    echo "  for these parameters on this host, `hostname`.  Then, edit the "
-    echo "  milawa-cmucl script and add a section for your host, which invokes "
-    echo "  cmucl with the proper settings."
-    echo ""
-    echo "How to determine these settings?"
-    echo ""
-    echo "  Just run:"
-    echo "    $CMUCL -dynamic-space-size [N]"
-    echo ""
-    echo "  For your choice of N.  I don't know what the minimums are, "
-    echo "  but probably you want a control-stack of at least 1500.  More "
-    echo "  is better."
-    echo ""
-    echo "  At any rate, if cmucl segfaults right away, then you'll need "
-    echo "  to use a lower setting."
-    echo ""
-fi
+exec "$CMUCL" -batch -dynamic-space-size "${MILAWA_CMUCL_DYNAMIC_SPACE:-2048}" -core "$1"
 
