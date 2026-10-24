@@ -110665,6 +110665,17 @@ it."
  bound variable agrees with the key, so that the two are not merely congruent
  stobjs.  Thanks to Eric Smith for supplying a fix from AI.</p>
 
+ <p>Fixed two bugs in source function @('chk-make-array$'), which checks the
+ dimensions of a new array against the host Lisp's limits,
+ @('array-dimension-limit') and @('array-total-size-limit').  For
+ two-dimensional arrays (see @(see arrays)), it checked only the first
+ dimension against @('array-dimension-limit'), and it computed the product of
+ the dimensions as the square of the first dimension.  As a result, @(tsee
+ compress2) could cause a raw Lisp error (heap exhaustion in SBCL) rather than
+ an ACL2 error, and it could reject legal dimensions, such as @('(4194304 1)')
+ in recent versions of SBCL on x86-64.  See @(see community-book)
+ @('system/tests/chk-make-array-bugs.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
