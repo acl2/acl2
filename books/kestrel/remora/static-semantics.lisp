@@ -12,7 +12,9 @@
 
 (include-book "static-environments")
 (include-book "validator")
+(include-book "ispace-validator-correctness")
 (include-book "ispace-validity")
+(include-book "ispace-validity-derived-rules")
 (include-book "type-validity")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
@@ -39,7 +41,9 @@
      we plan to prove this equivalence."))
   :order-subtopics (static-environments
                     validator
+                    ispace-validator-correctness
                     ispace-validity
+                    ispace-validity-derived-rules
                     type-validity
                     ispace-equivalence
                     ispace-equivalence-derived-rules

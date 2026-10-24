@@ -1512,13 +1512,14 @@
                    (cons #\1 (length goals))))))
 
 (defun state-stack-from-instructions
-  (raw-term event-name rule-classes instructions replay-flg quit-conditions state)
+  (term raw-term event-name rule-classes instructions replay-flg
+        quit-conditions state)
   (if replay-flg
       (pprogn (io? proof-builder nil state
                    nil
                    (fms0 "~|~%Entering the proof-builder....~%~%"))
-              (er-progn (pc-top raw-term event-name rule-classes
-                                instructions quit-conditions nil state)
+              (er-progn (pc-main term raw-term event-name rule-classes
+                                 instructions quit-conditions t nil state)
                         (value (state-stack))))
     (value (state-stack))))
 
@@ -1583,26 +1584,18 @@
 
 (defun proof-builder
   (event-name raw-term term rule-classes instructions wrld state)
-  ;; I'm only including wrld in the arglist because J has it there.
-  ;; **** Be sure that in-verify-flg is untouchable, for soundness here (or
-  ;; is that really an issue?).
-
-  (declare (ignore term wrld))
+  (declare (ignore wrld))
   (cond
    ((and (not (f-get-global 'in-verify-flg state))
          (ld-skip-proofsp state))
-
-; Thus, we are not in an interactive loop, and we are to skip proofs.
-
     (value nil))
    (t
     (mv-let (erp state-stack state)
             (state-stack-from-instructions
-             raw-term event-name rule-classes instructions
+             term raw-term event-name rule-classes instructions
              (not (f-get-global 'in-verify-flg state))
              '(signal value)
              state)
-            ;; could perhaps (declare (ignore erp)), but for now I'll abort upon error
             (if erp
                 (pprogn
                  (io? proof-builder nil state
@@ -1616,7 +1609,6 @@
                 (if (null goals)
                     (value (access pc-state (car state-stack) :tag-tree))
                   (pprogn
-                   ;; could print the goals here instead of just the number of goals.
                    (print-unproved-goals-message goals state)
                    (if (f-get-global 'in-verify-flg state)
                        (mv *pc-complete-signal* nil state)
