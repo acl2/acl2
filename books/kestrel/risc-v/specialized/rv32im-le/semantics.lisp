@@ -51,7 +51,8 @@
    (xdoc::p
     "For now we only support little endian access to memory,
      in load and store instructions.
-     Also, for now we do no alignment checks."))
+     Also, for now we do no alignment checks for data in memory,
+     but we check the alignment of jump and branch targets."))
   :order-subtopics t
   :default-parent t)
 
@@ -834,10 +835,15 @@
      We write the address of the instruction just after this to @('rd');
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc').
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((offset (loghead 32 (logext 21 (ash (ubyte20-fix imm) 1))))
        (pc (ubyte32-fix pc))
        (target-pc (+ pc offset))
+       ((unless (= (mod target-pc 4) 0)) (error32 stat))
        (next-pc (+ pc 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
@@ -865,11 +871,16 @@
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc'),
      which is the address of this instruction, passed as input to this function.
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((base (read32-xreg-unsigned rs1 stat))
        (offset (loghead 32 (logext 12 (ubyte12-fix imm))))
        (target-pc (logand #xfffffffe
                           (+ base offset)))
+       ((unless (= (mod target-pc 4) 0)) (error32 stat))
        (next-pc (+ (ubyte32-fix pc) 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
@@ -899,13 +910,19 @@
      We compare the two integers from the registers:
      if they are equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
        (rs2-operand (read32-xreg-unsigned rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (= rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -933,13 +950,19 @@
      We compare the two integers from the registers:
      if they are not equal,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
        (rs2-operand (read32-xreg-unsigned rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (/= rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -967,13 +990,19 @@
      We compare the two signed integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-signed rs1 stat))
        (rs2-operand (read32-xreg-signed rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1001,13 +1030,19 @@
      We compare the two unsigned integers from the registers:
      if the first one is less than the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
        (rs2-operand (read32-xreg-unsigned rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (< rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1035,13 +1070,19 @@
      We compare the two signed integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-signed rs1 stat))
        (rs2-operand (read32-xreg-signed rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1069,13 +1110,19 @@
      We compare the two unsigned integers from the registers:
      if the first one is greater than or equal to the second one,
      we write the branch target to the program counter;
-     otherwise, we increment the program counter."))
+     otherwise, we increment the program counter.")
+   (xdoc::p
+    "If the branch target is taken and is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the branch instruction,
+     not when trying to read the target instruction."))
   (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
        (rs2-operand (read32-xreg-unsigned rs2 stat))
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 (write32-pc target-pc stat)
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
