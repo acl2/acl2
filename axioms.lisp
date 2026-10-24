@@ -12268,7 +12268,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (and (true-listp dimensions)
              (do ((tl dimensions (cdr tl)))
                  ((null tl) t)
-                 (let ((dim (car dimensions)))
+                 (let ((dim (car tl)))
                    (or (and (integerp dim)
                             (<= 0 dim)
                             (< dim array-dimension-limit))
@@ -12276,7 +12276,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (< (let ((prod 1))
                   (do ((tl dimensions (cdr tl)))
                       ((null tl))
-                      (setq prod (* prod (car dimensions))))
+                      (setq prod (* prod (car tl))))
                   prod)
                 *our-array-total-size-limit*)))
       t
