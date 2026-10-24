@@ -268,7 +268,7 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :parents (one-byte-opcodes)
+  :parents (two-byte-opcodes)
 
   :short "Double-precision shift left or right."
 
