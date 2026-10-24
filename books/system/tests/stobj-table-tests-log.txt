@@ -311,13 +311,13 @@ ACL2 !>>(DEFUN UPDATE-1A-BAD (TOP)
                      (MV VAL3 VAL3A TOP)))
 
 
-ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The stobj-let
-binding expressions 
-((TBL-GET 'ST3 TOP (CREATE-ST3)) (TBL-GET 'ST3 TOP (CREATE-ST3))) both
-read stobj TOP with accessor TBL-GET using identical stobj keys.  Since
-variables ST3 and ST3A are to be updated (i.e., they are among the
-stobj-let form's producer variables), this aliasing is illegal.  The
-form 
+ACL2 Error [Translate] in ( DEFUN UPDATE-1A-BAD ...):  The variable
+ST3A is bound in a stobj-let form to the expression 
+(TBL-GET 'ST3 TOP (CREATE-ST3)), which has the form of a stobj-table
+access.
+However, the bound variable, ST3A, is not the stobj name ST3 used as
+the key of that access; the stobj-let bound variable for a stobj-table
+access must be the key itself.  See :DOC stobj-table.  The form 
 (STOBJ-LET ((ST3 (TBL-GET 'ST3 TOP (CREATE-ST3)))
             (ST3A (TBL-GET 'ST3 TOP (CREATE-ST3))))
            (ST3 ST3A VAL3 VAL3A)

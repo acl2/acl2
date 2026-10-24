@@ -25,6 +25,7 @@
 (include-book "deserialize-from-file")
 (include-book "unique-names-properties")
 (include-book "unique-names-validation")
+(include-book "elaborator")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
