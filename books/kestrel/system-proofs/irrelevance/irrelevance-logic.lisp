@@ -16,9 +16,10 @@
 ;; induction-candidate merging code that M&M-APPLY dispatches to, since
 ;; eliminate-irrelevance-clause partitions the literals of a clause using M&M.
 
-;; Several measures below have the form (if x (+ 1 (len x)) 0), the number of
-;; steps to reach NIL by taking CDRs, which handles recursions that stop when x
-;; is NIL (rather than when x is an atom).
+;; Several measures below have the form (if x (+ 1 (len x)) 0), which
+;; decreases each time x is replaced by (cdr x), until x is nil, even when the
+;; final cdr of x is a non-nil atom.  So it handles recursions that stop when x
+;; is nil (rather than when x is an atom).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Tag-trees

@@ -24,7 +24,8 @@ literals are chosen.  Most of the work is putting the code into `:logic` mode.
 
 As a sanity check, `irrelevance-clause-processor.lisp` uses the main theorem
 to verify a clause processor that calls `eliminate-irrelevance-clause`, and
-uses that clause processor in a proof by induction.
+`irrelevance-clause-processor-tests.lisp` uses that clause processor in a
+proof by induction.
 
 ## The books
 
@@ -37,6 +38,8 @@ uses that clause processor in a proof by induction.
   `m&m`.  The interesting measures are those of the `pigeon-holep` clique
   and of `m&m1`.
 - `irrelevance-proofs.lisp`: The evaluator and the main theorem.
-- `irrelevance-clause-processor.lisp`: The clause processor and examples.
+- `irrelevance-clause-processor.lisp`: The clause processor.
+- `irrelevance-clause-processor-tests.lisp`: Examples (not included by
+  `top.lisp`).
 
 These books need no changes to the ACL2 sources.

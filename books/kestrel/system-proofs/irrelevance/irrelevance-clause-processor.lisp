@@ -49,34 +49,4 @@
                            (irrelevance-ev-when-eliminate-irrelevance-clause
                             eliminate-irrelevance-clause)))))
 
-;; Examples:
-
-(defstub p (y) t)
-(defstub q (x) t)
-
-;; The hypothesis (p y) shares no variables with the rest of the clause and
-;; looks unlikely to be valid on its own (since it is a call of a function on
-;; distinct variables), so it is dropped.
-(assert-event
- (mv-let (signal clauses ttree pspv)
-   (eliminate-irrelevance-clause '((not (p y)) (q (car x)))
-                                 nil
-                                 *irrelevance-clause-processor-pspv*
-                                 nil
-                                 state)
-   (declare (ignore ttree pspv))
-   (and (eq signal 'hit)
-        (equal clauses '(((q (car x))))))))
-
-(defun my-rev (x)
-  (if (consp x)
-      (append (my-rev (cdr x)) (list (car x)))
-    nil))
-
-;; The hint applies to the induction step, from which the irrelevant
-;; hypothesis (p y) is dropped.
-(defthm irrelevance-clause-processor-test
-  (implies (p y)
-           (equal (len (my-rev x)) (len x)))
-  :hints (("Subgoal *1/1" :clause-processor (irrelevance-clause-processor clause nil state)))
-  :rule-classes nil)
+;; For examples, see irrelevance-clause-processor-tests.lisp.
