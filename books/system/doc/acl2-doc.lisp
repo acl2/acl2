@@ -147155,7 +147155,7 @@ work on <tt>(q x)</tt>.</p>
 
 (defxdoc string>=
   :parents (strings acl2-built-ins)
-  :short "Less-than-or-equal test for strings"
+  :short "Greater-than-or-equal test for strings"
   :long "<p>@('(String>= str1 str2)') is non-@('nil') if and only if the string
  @('str2') precedes the string @('str1') lexicographically or the strings are
  equal.  When non-@('nil'), @('(string>= str1 str2)') is the first
