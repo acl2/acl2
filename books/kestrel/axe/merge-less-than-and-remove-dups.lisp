@@ -101,7 +101,8 @@
              :induct (merge-<-and-remove-dups-aux l1 l2 acc)
              :in-theory (enable merge-<-and-remove-dups-aux
                                 revappend-becomes-append-of-reverse-list
-                                all-<=-all)))))
+                                all-<=-all
+                                sortedp-<=-of-append)))))
 
 (local
   (defthm no-duplicatesp-equal-of-merge-<-and-remove-dups-aux
@@ -119,7 +120,8 @@
     :hints (("Goal" :in-theory (enable merge-<-and-remove-dups-aux
                                        revappend-becomes-append-of-reverse-list
                                        not-intersection-equal-when-all-<-of-car-and-sortedp-<=
-                                       <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal)))))
+                                       <-of-car-and-cadr-when-sortedp-<=-and-no-duplicatesp-equal
+                                       sortedp-<=-of-append)))))
 
 (local
  (defthm all-<-of-merge-<-and-remove-dups-aux
