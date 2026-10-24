@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -55,7 +55,7 @@
      but with a call of @(tsee decodex) instead of @(tsee decode).
      The generated theorem that
      unconditionally rewrites @(tsee step) to @(tsee stepx)
-     is @('step-to-stepx').")
+     is @('step-is-stepx').")
    (xdoc::p
     "We manually propagate the fixing and state validity preservation theorems
      that accompany @(tsee step) to @('stepx')."))
@@ -90,7 +90,7 @@
      but with a call of @(tsee stepx) instead of @(tsee step).
      The generated theorem that
      unconditionally rewrites @(tsee stepn) to @(tsee stepnx)
-     is @('stepn-to-stepnx').")
+     is @('stepn-is-stepnx').")
    (xdoc::p
     "We manually propagate the fixing and state validity preservation theorems
      that accompany @(tsee stepn) to @('stepnx')."))
