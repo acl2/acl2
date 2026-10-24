@@ -523,10 +523,6 @@
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
-       ((when badlength?)
-        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
-
        ;; Update the x86 state:
 
        ;; Intel manual, Mar'17, Vol. 2 says, in the specification of POP,
@@ -552,6 +548,10 @@
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ((mv flg3 x86)
         (x86-operand-to-reg/mem proc-mode operand-size
