@@ -54,7 +54,8 @@
     "For now we only support little endian access to memory,
      in load and store instructions.
      Also, for now we do no alignment checks for data in memory,
-     but we check the alignment of jump and branch targets."))
+     but we check the alignment of jump and branch targets;
+     see also @(tsee read64-instr)."))
   :order-subtopics t
   :default-parent t)
 

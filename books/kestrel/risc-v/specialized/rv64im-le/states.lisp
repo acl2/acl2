@@ -574,6 +574,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read64-instr ((addr integerp) (stat state64p))
+  :returns (val ubyte32-optionp)
+  :short "Read the 32-bit encoding of an instruction from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the specialized counterpart of @(tsee read-instr).")
+   (xdoc::p
+    "Instructions are always stored in little endian [ISA:1.5],
+     so the memory address is the one of the first byte.
+     As in @(tsee read64-mem-ubyte8),
+     we let the address be any integer, but we keep the low 64 bits,
+     and we perform an alignment check [ISA:1.5];
+     currently instructions must be always 4-byte-aligned.
+     If the alignment check passes,
+     we read the encoding via @(tsee read64-mem-ubyte32-lendian),
+     which is adequate because instructions are little endian;
+     otherwise, we return @('nil')."))
+  (b* ((addr (loghead 64 addr))
+       ((unless (= (mod addr 4) 0)) nil))
+    (read64-mem-ubyte32-lendian addr stat)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define error64p ((stat state64p))
   :returns (yes/no booleanp)
   :short "Check if the error flag in the state is set."

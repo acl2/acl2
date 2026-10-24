@@ -45,11 +45,14 @@
      (which is always little endian [ISA:1.5]),
      we decode it, and, if we obtain an instruction,
      we run the semantic function of the instruction;
-     if decoding fails, we set the error flag instead."))
+     if the alignment check fails,
+     or if decoding fails,
+     we set the error flag instead."))
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
-       (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decodex enc (feat-rv64im-le)))
+       (enc? (read64-instr pc stat))
+       ((unless enc?) (error64 stat))
+       (instr? (decodex enc? (feat-rv64im-le)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat)))
 
