@@ -110660,17 +110660,10 @@ it."
  produced @('(F (RETURN-LAST 'PROGN '7 (TO-DF X)))') but now produces the
  correct result, @('(F (TO-DF X))').</p>
 
- <p>Applied fixes from AI for bugs found by AI, numbered in the ACL2 sources as
- indicated.</p>
-
- <ul>
-
- <li>(#1) Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
+ <p>Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
  fields of @(see stobj)s, by strengthening a check in each binding that the
  bound variable agrees with the key, so that the two are not merely congruent
- stobjs.</li>
-
- </ul>
+ stobjs.  Thanks to Eric Smith for supplying a fix from AI.</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -110758,6 +110751,8 @@ it."
  (see @(see evaluation)) is traced, in which case an @(csee Observation) is
  printed.  This can prevent a raw Lisp error during evaluation.  Thanks to
  Warren Hunt for reporting this bug.</p>
+
+ <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader).</p>
 
  <h3>Changes at the System Level</h3>
 

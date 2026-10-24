@@ -107557,13 +107557,11 @@ Bug Fixes From AI via Eric Smith
   produced [30m[47m(F (RETURN-LAST 'PROGN '7 (TO-DF X)))[0m[0m but now produces the
   correct result, [30m[47m(F (TO-DF X))[0m[0m.
 
-  Applied fixes from AI for bugs found by AI, numbered in the ACL2
-  sources as indicated.
-
-    * (#1) Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields
-      of [stobj]s, by strengthening a check in each binding that the
-      bound variable agrees with the key, so that the two are not
-      merely congruent stobjs.
+  Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields of
+  [stobj]s, by strengthening a check in each binding that the bound
+  variable agrees with the key, so that the two are not merely
+  congruent stobjs.  Thanks to Eric Smith for supplying a fix from
+  AI.
 
 
 Other Bug Fixes
@@ -107653,6 +107651,8 @@ Other Bug Fixes
   (see [evaluation]) is traced, in which case an [Observation] is
   printed.  This can prevent a raw Lisp error during evaluation.
   Thanks to Warren Hunt for reporting this bug.
+
+  Applied fixes from Eric McCarthy for the [sharp-f-reader].
 
 
 Changes at the System Level

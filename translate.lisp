@@ -17435,9 +17435,9 @@
                          s2-creator
                          postlude)
                     nil nil nil))
-; <<Start AI-aided fix 1 (completed)>>
                ((not (eq var s2))
 
+; <<Comment from AI:>>
 ; The updater built by parse-stobj-let1 for a stobj-table binding is
 ; (tbl-put 'var var parent), keyed by the bound variable.  If var were merely
 ; congruent to s2, the logical update would land under 'var while raw Lisp
@@ -17451,7 +17451,6 @@
                          (msg prelude var actual)
                          var s2 postlude)
                     nil nil nil))
-; <<End AI-aided fix 1>>
                (t (mv nil parent st-get s2)))))
            (t
             (let ((stobj-out (car (stobjs-out (car actual) wrld))))
