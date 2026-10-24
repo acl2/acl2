@@ -144506,7 +144506,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>ACL2 supports several facilities of a truly von Neumannesque state machine
  character, including file @(see io) and global variables.  Logically speaking,
- the state is a true list of the 14 components described below.  There is a
+ the state is a true list of the 11 components described below.  There is a
  ``current'' state object at the top-level of the ACL2 @(see command) loop.
  This object is understood to be the value of what would otherwise be the free
  variable @('state') appearing in top-level input.  When any @(see command)
@@ -144543,7 +144543,7 @@ work on <tt>(q x)</tt>.</p>
  form @('((:header type file-name open-time) . elements)'), where @('type') is
  one of @(':character'), @(':byte'), or @(':object') and @('elements') is a
  list of things of the corresponding @('type'), i.e. characters, integers of
- type @('(mod 255)'), or lisp objects in our theory.  @('File-name') is a
+ type @('(mod 256)'), or lisp objects in our theory.  @('File-name') is a
  string.  @('Open-time') is an integer.  See @(see io).</p>
 
  <p>@('Open-output-channels'), an alist with keys that are symbols in package
