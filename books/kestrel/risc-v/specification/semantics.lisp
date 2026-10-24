@@ -2723,7 +2723,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('LW') instruction [ISA:2.6]."
+  :short "Semantics of the @('LW') instruction [ISA:2.6] [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
