@@ -107563,6 +107563,18 @@ Bug Fixes From AI via Eric Smith
   congruent stobjs.  Thanks to Eric Smith for supplying a fix from
   AI.
 
+  Fixed two bugs in source function [30m[47mchk-make-array$[0m[0m, which checks the
+  dimensions of a new array against the host Lisp's limits,
+  [30m[47marray-dimension-limit[0m[0m and [30m[47marray-total-size-limit[0m[0m.  For
+  two-dimensional arrays (see [arrays]), it checked only the first
+  dimension against [30m[47marray-dimension-limit[0m[0m, and it computed the
+  product of the dimensions as the square of the first dimension.  As
+  a result, [30m[47m[compress2][0m[0m could cause a raw Lisp error (heap exhaustion
+  in SBCL) rather than an ACL2 error, and it could reject legal
+  dimensions, such as [30m[47m(4194304 1)[0m[0m in recent versions of SBCL on
+  x86-64.  See [community-book]
+  [30m[47msystem/tests/chk-make-array-bugs.lisp[0m[0m.
+
 
 Other Bug Fixes
 
