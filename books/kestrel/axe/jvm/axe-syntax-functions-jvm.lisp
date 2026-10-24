@@ -484,10 +484,11 @@
                                       (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array whole-nest)
                                               (er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~x0, after stripping step calls (see DAG just above).~%" stripped-expr)
                                               (mv :error nil nil)))))))))
-                      (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest)
+                      (progn$ (print-dag-array-node-and-supporters 'dag-array dag-array nest) ; todo: elide functions like jvm::set-classes
                               ;;(er hard? 'get-stack-height-and-pc-to-step-from-myif-nest-helper "Unexpected state term: ~X01.~%" expr nil)
                               ;; When this was an error, symbolic execution failures were harder to debug.
-                              (cw "WARNING: Unexpected state term: ~X01.~%" expr nil)
+                              ;; TODO: Consider suppressing this, as we can get a call of jvm::execute-invokevirtual-helper where we can't resolve the class until the next rewriting pass.
+                              (cw "WARNING: Unexpected state term (in DAG above): ~X01.~%" expr nil)
                               (mv :error nil nil))))))))))))))
 
 (defthm rationalp-of-mv-nth-1-of-get-stack-height-and-pc-to-step-from-myif-nest-helper

@@ -99,7 +99,7 @@
                             a))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
-(defthm alists-equiv-on-of-append-arg1
+(defthm alists-equiv-on-of-append-arg2
   (implies (alistp x)
            (equal (alists-equiv-on keys (append x y) z)
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))
@@ -114,7 +114,7 @@
                                      intersection-equal
                                      member-equal-of-strip-cars-iff-assoc-equal))))
 
-(defthm alists-equiv-on-of-append-arg2
+(defthm alists-equiv-on-of-append-arg3
   (implies (alistp x)
            (equal (alists-equiv-on keys z (append x y))
                   (and (alists-equiv-on (intersection-equal keys (strip-cars x))
@@ -137,3 +137,29 @@
   (implies (alists-equiv-on keys2 alist1 alist2)
            (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
   :hints (("Goal" :in-theory (enable alists-equiv-on intersection-equal))))
+
+(defthm alists-equiv-on-of-append-when-subsetp-equal-of-strip-cars-1
+  (implies (subsetp-equal keys (strip-cars alist1))
+           (equal (alists-equiv-on keys (append alist1 alist3) alist2)
+                  (alists-equiv-on keys alist1 alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-append-when-subsetp-equal-of-strip-cars-2
+  (implies (subsetp-equal keys (strip-cars alist2))
+           (equal (alists-equiv-on keys alist1 (append alist2 alist3))
+                  (alists-equiv-on keys alist1 alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+(defthm alists-equiv-on-of-cons-arg1
+  (equal (alists-equiv-on (cons key keys) alist1 alist2)
+         (and (equal (cdr (assoc-equal key alist1))
+                     (cdr (assoc-equal key alist2)))
+              (alists-equiv-on keys alist1 alist2)))
+  :hints (("Goal" :in-theory (enable alists-equiv-on))))
+
+;; Agreement on some keys implies agreement on fewer keys.
+(defthm alists-equiv-on-when-subsetp-equal
+  (implies (and (alists-equiv-on keys2 alist1 alist2) ; keys2 is a free var
+                (subsetp-equal keys keys2))
+           (alists-equiv-on keys alist1 alist2))
+  :hints (("Goal" :in-theory (enable alists-equiv-on subsetp-equal))))

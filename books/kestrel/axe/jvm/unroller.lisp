@@ -289,6 +289,7 @@
                                                    ;; fns-to-elide:
                                                    '(program-at
                                                      ;; jvm::make-frame ; todo uncomment but just elide the method-info part?
+                                                     ;; jvm::set-classes ; would this help?
                                                      )))
          ((when erp) (mv erp dag hits state))
          (hits (combine-hits hits hits-this-time))
@@ -454,7 +455,6 @@
                       make-param-slot-to-name-alist
                       make-param-slot-to-name-alist-aux
                       jvm::all-keys-bound-to-method-infosp
-                      parameter-assumptions
                       build-run-term-for-method2
                       build-make-state-for-method
                       jvm::method-staticp
@@ -595,6 +595,7 @@
                                 param-names ; may be :auto
                                 chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                 error-on-incomplete-runsp ;whether to throw a hard error (may be nil if further pruning can be done in the caller)
+                                assume-object-params-non-null
                                 class-alist
                                 state)
   (declare (xargs :guard (and (method-designator-stringp method-designator-string)
@@ -624,6 +625,7 @@
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
+                              (booleanp assume-object-params-non-null)
                               (class-table-alistp class-alist) ; rename
                               )
                   :stobjs state
@@ -680,7 +682,8 @@
        (parameter-assumptions (parameter-assumptions method-info array-length-alist locals-term initial-heap-term
                                                      vars-for-array-elements
                                                      param-slot-to-name-alist
-                                                     method-designator-string))
+                                                     method-designator-string
+                                                     assume-object-params-non-null))
        (all-assumptions (append `((jvm::heapp ,initial-heap-term) ;assume the heap is well-formed
                                   (jvm::intern-tablep ,initial-intern-table-term) ;assume the intern-table is well-formed
                                   )
@@ -874,6 +877,7 @@
                              param-names
                              produce-function
                              chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
+                             assume-object-params-non-null
                              whole-form
                              state)
   (declare (xargs :guard (and (nice-output-indicatorp nice-output-indicator)
@@ -898,6 +902,7 @@
                               (or (eq :auto param-names)
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
+                              (booleanp assume-object-params-non-null)
                               (booleanp normalize-xors))
                   :stobjs state
                   :mode :program ; todo: because of chk-fresh-namep and fresh-namep-msg
@@ -950,6 +955,7 @@
                                param-names
                                chunkedp ;whether to divide the execution into chunks of steps (can help use early tests as assumptions when lifting later code?)
                                t ;error on incomplete runs
+                               assume-object-params-non-null
                                class-alist
                                state))
        ((when erp) (mv erp nil state))
@@ -1073,7 +1079,8 @@
                                       ;; Options to produce extra events:
                                       (produce-theorem 'nil)
                                       (produce-function 'nil)
-                                      (local 't))
+                                      (local 't)
+                                      (assume-object-params-non-null 't))
   (let* ((form `(unroll-java-code-fn ',defconst-name
                                      ',method-indicator
                                      ',output
@@ -1102,6 +1109,7 @@
                                      ',param-names
                                      ',produce-function
                                      ',chunkedp
+                                     ',assume-object-params-non-null
                                      ;; end of normal args
                                      ',whole-form
                                      state))
@@ -1148,7 +1156,9 @@
          (print-interval "How often to print (number of nodes)")
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
-         (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books."))
+         (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books.")
+         (assume-object-params-non-null "Whether to assume that object parameters of the method being lifted are non-null.")
+         )
   :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
                 "This event creates a @(tsee defconst) whose name is given by the @('defconst-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

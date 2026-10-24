@@ -110,8 +110,8 @@
                                        a))))
   :hints (("Goal" :in-theory (e/d (make-lambda-term-simple) ((:i len)
                                                              ;; why these?:
-                                                             alists-equiv-on-of-append-arg1
-                                                             alists-equiv-on-of-append-arg2)))))
+                                                             alists-equiv-on-of-append-arg2
+                                                             alists-equiv-on-of-append-arg3)))))
 
 
 ;todo: split out
