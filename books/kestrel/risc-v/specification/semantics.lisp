@@ -1725,6 +1725,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We subtract the second from the first.
      We write the result to @('rd') as a signed 32-bit integer.
