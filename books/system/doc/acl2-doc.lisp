@@ -144517,7 +144517,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>ACL2 supports several facilities of a truly von Neumannesque state machine
  character, including file @(see io) and global variables.  Logically speaking,
- the state is a true list of the 14 components described below.  There is a
+ the state is a true list of the 11 components described below.  There is a
  ``current'' state object at the top-level of the ACL2 @(see command) loop.
  This object is understood to be the value of what would otherwise be the free
  variable @('state') appearing in top-level input.  When any @(see command)
@@ -144554,7 +144554,7 @@ work on <tt>(q x)</tt>.</p>
  form @('((:header type file-name open-time) . elements)'), where @('type') is
  one of @(':character'), @(':byte'), or @(':object') and @('elements') is a
  list of things of the corresponding @('type'), i.e. characters, integers of
- type @('(mod 255)'), or lisp objects in our theory.  @('File-name') is a
+ type @('(mod 256)'), or lisp objects in our theory.  @('File-name') is a
  string.  @('Open-time') is an integer.  See @(see io).</p>
 
  <p>@('Open-output-channels'), an alist with keys that are symbols in package
@@ -147166,7 +147166,7 @@ work on <tt>(q x)</tt>.</p>
 
 (defxdoc string>=
   :parents (strings acl2-built-ins)
-  :short "Less-than-or-equal test for strings"
+  :short "Greater-than-or-equal test for strings"
   :long "<p>@('(String>= str1 str2)') is non-@('nil') if and only if the string
  @('str2') precedes the string @('str1') lexicographically or the strings are
  equal.  When non-@('nil'), @('(string>= str1 str2)') is the first
@@ -150731,7 +150731,7 @@ work on <tt>(q x)</tt>.</p>
  the two flags.  For example:</p>
 
  @({
-  ACL2 !>(tau-system)
+  ACL2 !>(tau-status)
    ((:SYSTEM NIL) (:AUTO-MODE T))
  })
 
@@ -152328,7 +152328,7 @@ work on <tt>(q x)</tt>.</p>
  @({
  (defun merge-bytes (b1 b2)
    ;; Combine two 8-bit bytes into a 16-bit result.
-   (declare (type (unsigned-byte-p 8) b1 b2))
+   (declare (type (unsigned-byte 8) b1 b2))
    (the (unsigned-byte 16)
         (logior (the (unsigned-byte 16) (ash b1 8))
                 b2)))
@@ -159954,7 +159954,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
   :parents (numbers acl2-built-ins)
   :short "Recognizer for natural numbers that fit in a specified bit width"
   :long "<p>@('(Unsigned-byte-p bits x)') is @('T') when @('bits') is a
- positive integer and @('x') is a nonnegative integer that fits into a
+ non-negative integer and @('x') is a nonnegative integer that fits into a
  bit-width of @('bits'), i.e., @('0 <= x < 2^bits').</p>
 
  <p>Note that a @(see type-spec) of @('(unsigned-byte i)') for a variable
@@ -164821,7 +164821,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
  <h4>Acceptable Values</h4>
 
  <p>Now we describe the values you may provide with the
- @(':well-founded-guarantee') keyword of the @(':meta') and the
+ @(':well-formedness-guarantee') keyword of the @(':meta') and the
  @(':clause-processor') rule-classes.
 
  @({
@@ -170902,7 +170902,7 @@ move backward one argument in the enclosing term"
 
  <p>This is the same as @('up') followed by @('(dive n-1)'), where @('n') is
  the position of the current subterm in its parent term in the conclusion.
- Thus in particular, the @('nx') command fails if one is already at the top of
+ Thus in particular, the @('bk') command fails if one is already at the top of
  the conclusion.</p>
 
  <p>Also see @(see acl2-pc::up), @(see acl2-pc::dive), @(see acl2-pc::top), and
@@ -172656,7 +172656,7 @@ substitute for a ``free variable''"
  abort and ``fail'', and the state-stack will revert to its value before the
  @('put') instruction was executed.</p>
 
- <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviation var)')
+ <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviations var)')
  will be executed at the end.</p>
 
  <p><b>Remark</b>: The @('restore') command will revert the state-stack to its

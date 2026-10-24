@@ -229,7 +229,8 @@
 
 (verify-guards rebuild-nodes-with-var-subst-aux :hints (("Goal" :in-theory (e/d (<-of-car-when-all-<
                                                                                  ;dargp-of-car-when-all-natp
-                                                                                 all-<=-when-all-<)
+                                                                                 all-<=-when-all-<
+                                                                                 sortedp-<=-of-append)
                                                                  (dargp
                                                                   dargp-less-than
                                                                   SORTEDP-<=)))))
