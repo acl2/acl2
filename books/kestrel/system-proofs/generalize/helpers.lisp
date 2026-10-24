@@ -15,15 +15,5 @@
 (include-book "kestrel/lists-light/union-equal" :dir :system)
 (include-book "kestrel/lists-light/intersectp-equal" :dir :system)
 (include-book "kestrel/lists-light/subsetp-equal" :dir :system)
+(include-book "kestrel/lists-light/rules" :dir :system)
 (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system)
-
-(defthm intersectp-equal-of-union-equal-arg2
-  (equal (intersectp-equal x (union-equal y z))
-         (or (intersectp-equal x y)
-             (intersectp-equal x z)))
-  :hints (("Goal" :in-theory (enable intersectp-equal))))
-
-(defthm intersectp-equal-of-true-list-fix-arg2
-  (equal (intersectp-equal x (true-list-fix y))
-         (intersectp-equal x y))
-  :hints (("Goal" :in-theory (enable intersectp-equal true-list-fix))))

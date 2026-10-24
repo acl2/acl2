@@ -10459,7 +10459,12 @@
                            (;bvminus-becomes-bvplus-of-bvuminus
                                    )))))
 
-;todo: slow proof
+(local
+ (defthmd sha1-hack-four-million-six-helper
+   (implies (bvlt 31 63 d)
+            (not (equal 0 (slice 30 6 d))))
+   :hints (("Goal" :in-theory (enable bvlt)))))
+
 (defthm sha1-hack-four-million-six
   (implies (and (not (sbvlt 32
                             (bvplus 32
@@ -10478,15 +10483,24 @@
                                         (BVCAT 25 (SLICE 30 6 Y) 6 0)
                                         (BVUMINUS 31
                                                   (BVCAT 25 (SLICE 30 6 X) 6 0)))))))
-  :hints (("Goal"
-           :use (:instance slice-monotone (x (+ 64 x)) (high 30) (low 6))
-           :expand ((UNSIGNED-BYTE-P 31 (+ 64 X)))
-           :in-theory (e/d (bvlt sbvlt bvplus bvchop-of-sum-cases bvuminus bvminus slice-of-sum-cases
-                                 bvcat
-                                 equal-of-slice-and-max-30-6)
-                           (;bvminus-becomes-bvplus-of-bvuminus
-                            bvchop-identity ; for speed
-                            )))))
+  ;; This used to take ~18 seconds.  Now we get it from sha1-hack-four-million-four (with k=63):
+  :hints (("Goal" :use ((:instance sha1-hack-four-million-four (k 63))
+                        (:instance sha1-hack-four-million-six-helper
+                                   (d (bvplus 31
+                                              (bvcat 25 (slice 30 6 y) 6 0)
+                                              (bvuminus 31 (bvcat 25 (slice 30 6 x) 6 0))))))
+           :in-theory (union-theories '((:e natp) (:e unsigned-byte-p) (:e <))
+                                      (theory 'minimal-theory))))
+  ;; :hints (("Goal"
+  ;;          :use (:instance slice-monotone (x (+ 64 x)) (high 30) (low 6))
+  ;;          :expand ((UNSIGNED-BYTE-P 31 (+ 64 X)))
+  ;;          :in-theory (e/d (bvlt sbvlt bvplus bvchop-of-sum-cases bvuminus bvminus slice-of-sum-cases
+  ;;                                bvcat
+  ;;                                equal-of-slice-and-max-30-6)
+  ;;                          (;bvminus-becomes-bvplus-of-bvuminus
+  ;;                           bvchop-identity ; for speed
+  ;;                           ))))
+  )
 
 (defthmd usb-hack-100
   (implies (AND (<= Y X)
