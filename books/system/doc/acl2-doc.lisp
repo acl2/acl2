@@ -150720,7 +150720,7 @@ work on <tt>(q x)</tt>.</p>
  the two flags.  For example:</p>
 
  @({
-  ACL2 !>(tau-system)
+  ACL2 !>(tau-status)
    ((:SYSTEM NIL) (:AUTO-MODE T))
  })
 
