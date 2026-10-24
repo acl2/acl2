@@ -1320,6 +1320,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them, and write the result to @('rd').
      We increment the program counter."))
@@ -1355,6 +1357,8 @@
   :short "Semantics of the @('MULH') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them,
@@ -1395,6 +1399,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them,
      we shift the product right by @('XLEN') bits,
@@ -1433,6 +1439,8 @@
   :short "Semantics of the @('MULHSU') instruction [ISA:12.1]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read a signed @('XLEN')-bit integer from @('rs1')
      and an unsigned @('XLEN')-bit integer from @('rs2').
@@ -1473,6 +1481,8 @@
   :short "Semantics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -1515,6 +1525,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{\\mathtt{XLEN}}-1$)
@@ -1555,6 +1567,8 @@
   :short "Semantics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -1597,6 +1611,8 @@
   :short "Semantics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -1893,7 +1909,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only valid in 64-bit mode.")
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We multiply the two unsigned 32-bit integers.
@@ -1933,7 +1950,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only valid in 64-bit mode.")
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -1977,7 +1995,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only valid in 64-bit mode.")
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -2021,7 +2040,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only valid in 64-bit mode.")
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -2066,7 +2086,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is only valid in 64-bit mode.")
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
