@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2024, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -324,6 +324,7 @@
        ;; read destination operand:
 
        (inst-ac? t)
+       (num-imm-bytes (if (member opcode '(#xa4 #xac)) 1 0))
        ((mv flg dst-value increment-rip-by dst-addr x86)
         (x86-operand-from-modr/m-and-sib-bytes proc-mode
                                                #.*gpr-access*
@@ -336,7 +337,7 @@
                                                rex-byte
                                                r/m
                                                mod sib
-                                               1 ; imm8
+                                               num-imm-bytes
                                                x86))
        ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
 
