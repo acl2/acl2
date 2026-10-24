@@ -253,7 +253,11 @@
                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                               interpreted-function-alist))))
     :flag merge-terms-into-dag-array-basic)
-  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic) (natp)))))
+  :hints (("Goal"
+           ;; For speed, we expand just these calls, instead of enabling the functions:
+           :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
+                    (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
+           :in-theory (e/d () (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic natp)))))
 
 ;; (defthm-flag-merge-term-into-dag-array-basic
 ;;   (defthm integerp-of-mv-nth-3-of-merge-term-into-dag-array-basic
@@ -292,7 +296,11 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array-basic)
-  :hints (("Goal" :in-theory (enable merge-term-into-dag-array-basic merge-terms-into-dag-array-basic))))
+  :hints (("Goal"
+           ;; For speed, we expand just these calls, instead of enabling the functions:
+           :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
+                    (:free (terms) (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))
+           :in-theory (disable merge-term-into-dag-array-basic merge-terms-into-dag-array-basic))))
 
 (defthm-flag-merge-term-into-dag-array-basic
   (defthm merge-term-into-dag-array-basic-return-type
@@ -420,9 +428,13 @@
                   ;;     *max-1d-array-length*)
                   ))
     :flag merge-terms-into-dag-array-basic)
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (merge-term-into-dag-array-basic merge-terms-into-dag-array-basic car-becomes-nth-of-0)
-                           (natp dargp pseudo-term-listp pseudo-termp)))))
+  :hints (("Goal" ;; For speed, we expand just these calls, instead of enabling the functions:
+           :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
+                    (merge-terms-into-dag-array-basic terms var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist))
+           :in-theory (e/d (car-becomes-nth-of-0)
+                           (merge-term-into-dag-array-basic
+                            merge-terms-into-dag-array-basic
+                            natp dargp pseudo-term-listp pseudo-termp)))))
 
 (defthm merge-term-into-dag-array-basic-return-type-corollary
   (implies (and (<= bound dag-len)
