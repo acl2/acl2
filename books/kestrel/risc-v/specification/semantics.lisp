@@ -2728,11 +2728,13 @@
   (xdoc::topstring
    (xdoc::p
     "We calculate the effective address.
-     We read an unsigned 32-bit integer from the effective address.
+     We read an unsigned 32-bit integer from the effective address,
+     and sign-extend it to @('XLEN') bits.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-mem32 addr stat feat))
+       (result (loghead (feat->xlen feat)
+                        (logext 32 (read-mem32 addr stat feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
