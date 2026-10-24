@@ -2113,6 +2113,10 @@
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP-32') opcode
           [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only valid in 64-bit mode."))
   (op-32-funct-case funct
                     :addw (exec-addw rd rs1 rs2 stat feat)
                     :subw (exec-subw rd rs1 rs2 stat feat)
