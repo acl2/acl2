@@ -152317,7 +152317,7 @@ work on <tt>(q x)</tt>.</p>
  @({
  (defun merge-bytes (b1 b2)
    ;; Combine two 8-bit bytes into a 16-bit result.
-   (declare (type (unsigned-byte-p 8) b1 b2))
+   (declare (type (unsigned-byte 8) b1 b2))
    (the (unsigned-byte 16)
         (logior (the (unsigned-byte 16) (ash b1 8))
                 b2)))
