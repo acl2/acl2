@@ -158,7 +158,7 @@
 
 (define feat-big-endianp ((feat featp))
   :returns (yes/no booleanp)
-  :short "Check if the features indicate bit endian."
+  :short "Check if the features indicate big endian."
   (feat-endian-case (feat->endian feat) :big))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

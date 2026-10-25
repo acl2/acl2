@@ -48,7 +48,7 @@
    (xdoc::ul
     (xdoc::li
      (xdoc::ahref "https://riscv.org/technical/specifications/"
-                  "The RISC-V Insruction Set Manual Volume 1,
+                  "The RISC-V Instruction Set Manual Volume 1,
                    Unprivileged Architecture Version 20250508")
      ", referenced as `[ISA]' in the documentation of this library.
       Chapters and sections are referenced
@@ -56,7 +56,7 @@
       e.g. `[ISA:2.2]' references Section 2.2 of [ISA].")
     (xdoc::li
      (xdoc::ahref "https://riscv.org/technical/specifications/"
-                  "The RISC-V Insruction Set Manual Volume 2,
+                  "The RISC-V Instruction Set Manual Volume 2,
                    Privileged Architecture Version 20250508")
      ", referenced as `[ISAP]' in the documentation of this library.
       Chapters and sections are referenced
@@ -64,7 +64,7 @@
       e.g. `[ISAP:3.3]' references Section 3.3 of [ISAP]."))
    (xdoc::p
     "These square-bracketed references may be used
-     as nouns or parenthentically."))
+     as nouns or parenthetically."))
   :order-subtopics (specification
                     executable
                     optimized

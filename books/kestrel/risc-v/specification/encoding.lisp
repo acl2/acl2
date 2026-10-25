@@ -214,7 +214,7 @@
   :returns (funct3 ubyte3p)
   :short "Encode the name of
           an instruction with the @('LOAD') opcode
-          into the @('func3') field
+          into the @('funct3') field
           [ISA:2.6] [ISA:4.3] [ISA:35]."
   (load-funct-case
    funct

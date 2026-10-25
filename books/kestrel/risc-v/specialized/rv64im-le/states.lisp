@@ -203,7 +203,7 @@
    (xdoc::p
     "The register index consists of 5 bits.
      We read an unsigned 64-bit integer from the register,
-     and we keep the low 32 bits, stil unsigned."))
+     and we keep the low 32 bits, still unsigned."))
   (loghead 32 (read64-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,8 +216,8 @@
   (xdoc::topstring
    (xdoc::p
     "The register index consists of 5 bits.
-     We read a signed 64-bit integer fromt he register,
-     and we keep the low 32 bits, stil signed."))
+     We read a signed 64-bit integer from the register,
+     and we keep the low 32 bits, still signed."))
   (logext 32 (read64-xreg-signed reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -80,7 +80,7 @@
    (xdoc::p
     "From @(tsee decodex-of-encode) we also know that
      if we start with a valid instruction in the darker blue oval,
-     and we encode obtaining a valid encoding in the darker gree oval,
+     and we encode obtaining a valid encoding in the darker green oval,
      then if we apply @(tsee decode) or @(tsee decodex) (they are equal)
      we go back to the initial valid instruction.
      So @(tsee encode) is in fact injective,

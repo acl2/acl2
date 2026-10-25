@@ -1179,7 +1179,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SLL') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SLL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1224,7 +1224,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SRL') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SRL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1269,7 +1269,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SRA') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SRA') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p

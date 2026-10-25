@@ -1795,7 +1795,7 @@
                    (imm ubyte12p)
                    (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the @('SW') instruction [ISA:4.3]."
+  :short "Semantics of the @('SW') instruction [ISA:2.6]."
   :long
   (xdoc::topstring
    (xdoc::p
