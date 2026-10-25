@@ -491,7 +491,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
+    "We read two (signed or unsigned) 64-bit integers
+     from @('rs1') and @('rs2').
      We add them, and write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read64-xreg-signed rs1 stat))
