@@ -7506,7 +7506,7 @@
                   ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getpropc fn "non-executablep" nil wrld)
+     ((getpropc fn 'non-executablep nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case
