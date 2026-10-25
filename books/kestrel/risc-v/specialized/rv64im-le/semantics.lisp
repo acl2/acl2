@@ -1326,7 +1326,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
@@ -1368,7 +1368,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
@@ -1410,7 +1410,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
@@ -1452,7 +1452,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
@@ -1494,7 +1494,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
@@ -1536,7 +1536,7 @@
                  ;; (if (= (mod target-pc 4) 0)
                  ;;     (write64-pc target-pc stat)
                  ;;   (error64 stat))
-                 (write64-pc target-pc stat)
+                 (write64-pc target-pc stat) ; TODO: replace with the above
                (inc64-pc stat))))
     stat))
 
