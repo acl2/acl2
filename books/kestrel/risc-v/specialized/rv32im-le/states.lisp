@@ -683,7 +683,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the specialized counterpart of @(tsee read-instr).")
+    "This is the specialized counterpart of @(tsee riscv::read-instr).")
    (xdoc::p
     "Instructions are always stored in little endian [ISA:1.5],
      so the memory address is the one of the first byte.
