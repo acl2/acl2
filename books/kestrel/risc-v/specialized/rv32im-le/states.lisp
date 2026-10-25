@@ -96,7 +96,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist-of-len memory
-  :short "Fixtype of memories fo RV32IM little endian."
+  :short "Fixtype of memories for RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
