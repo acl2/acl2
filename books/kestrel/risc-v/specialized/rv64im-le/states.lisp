@@ -593,9 +593,7 @@
      which is adequate because instructions are little endian;
      otherwise, we return @('nil')."))
   (b* ((addr (loghead 64 addr))
-       ;; TODO: uncomment after downstream proofs are adapted:
-       ;; ((unless (= (mod addr 4) 0)) nil)
-       )
+       ((unless (= (mod addr 4) 0)) nil))
     (read64-mem-ubyte32-lendian addr stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
