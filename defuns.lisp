@@ -1412,31 +1412,35 @@
 
   (clean-up-conjunction1 (clean-up-nots-lst lst nil) nil))
 
-(defun clean-up-loop$-recursion-induction-machine (tc-list)
-
-; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
-; as of this writing this function is only applied to those induction machines
-; generated from loop$ recursion induction function bodies, i.e., inductible
-; loop$ recursive functions.  This function is spiritually similar to
-; simplify-tests-and-calls but just drops cases having contradictory tests and
-; eliminates duplicates and double negations among the remaining tests.  We
-; implement this process as a separate function rather than strengthen
-; simplify-tests-and-calls because we wish not to change any existing induction
-; machines as we add the ability to induct for loop$ recursive functions.
-
-  (cond
-   ((endp tc-list) nil)
-   (t (let ((tests
-             (clean-up-conjunction
-              (access tests-and-calls (car tc-list) :tests))))
-        (cond
-         ((eq tests :contradiction)
-          (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
-         (t (cons
-             (make tests-and-calls
-                   :tests tests
-                   :calls (access tests-and-calls (car tc-list) :calls))
-             (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
+; (defun clean-up-loop$-recursion-induction-machine (tc-list)
+;
+; ; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
+; ; as of this writing this function is only applied to those induction machines
+; ; generated from loop$ recursion induction function bodies, i.e., inductible
+; ; loop$ recursive functions.  This function is spiritually similar to
+; ; simplify-tests-and-calls but just drops cases having contradictory tests and
+; ; eliminates duplicates and double negations among the remaining tests.  We
+; ; implement this process as a separate function rather than strengthen
+; ; simplify-tests-and-calls because we wish not to change any existing induction
+; ; machines as we add the ability to induct for loop$ recursive functions.
+;
+; ; This function hasn't been deployed yet because the current code suffices for
+; ; the loop$ recursions we've tested, but we don't have any experience with
+; ; loop$ recursions arising in practical applications yet.
+;
+;   (cond
+;    ((endp tc-list) nil)
+;    (t (let ((tests
+;              (clean-up-conjunction
+;               (access tests-and-calls (car tc-list) :tests))))
+;         (cond
+;          ((eq tests :contradiction)
+;           (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
+;          (t (cons
+;              (make tests-and-calls
+;                    :tests tests
+;                    :calls (access tests-and-calls (car tc-list) :calls))
+;              (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
 
 (defun induction-machines
   (loop$-recursion names arglists measure-alist bodies
@@ -6053,6 +6057,11 @@
 ; In the case of mutual-recursion, only the first name in the nest should be a
 ; key of this alist; see put-invariant-risk.
 
+; Every key of this alist must be a built-in function symbol, as is checked by
+; the function check-invariant-risk.  Otherwise put-invariant-risk would treat
+; a user-defined function of the same name as built-in.  (A key check-sum-inc,
+; left here when that function was removed, caused such a soundness bug.)
+
 ; At one point we thought we should mark with invariant-risk all functions that
 ; have raw code and have state as a formal.  But we see almost no way to
 ; violate an invariant by misguided updates of the (fictional) live state.  For
@@ -6077,7 +6086,6 @@
   '((aset1 . t) ; could write past the end of the real array
     (aset2 . t) ; could write past the end of the real array
     (aset1-lst . t)
-    (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 
 ; Aset1-trusted is an untouchable version of aset1 that we use in our source
@@ -7498,7 +7506,7 @@
                   ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getpropc fn "non-executablep" nil wrld)
+     ((getpropc fn 'non-executablep nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case

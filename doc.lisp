@@ -4298,7 +4298,7 @@ Subtopics
       Greater-than test for strings
 
   [String>=]
-      Less-than-or-equal test for strings
+      Greater-than-or-equal test for strings
 
   [Stringp]
       Recognizer for strings
@@ -107575,6 +107575,12 @@ Bug Fixes From AI via Eric Smith
   x86-64.  See [community-book]
   [30m[47msystem/tests/chk-make-array-bugs.lisp[0m[0m.
 
+  Fixed a soundness bug caused by a stale entry, for a function that is
+  no longer built into ACL2, in the list of built-in functions given
+  special treatment for [invariant-risk].  See [community-book]
+  [30m[47msystem/tests/check-sum-inc-invariant-risk.lisp[0m[0m.  Thanks to Eric
+  Smith for supplying a fix from AI.
+
 
 Other Bug Fixes
 
@@ -143884,7 +143890,7 @@ Subtopics
 
   ACL2 supports several facilities of a truly von Neumannesque state
   machine character, including file [io] and global variables.
-  Logically speaking, the state is a true list of the 14 components
+  Logically speaking, the state is a true list of the 11 components
   described below.  There is a ``current'' state object at the
   top-level of the ACL2 [command] loop.  This object is understood to
   be the value of what would otherwise be the free variable [30m[47mstate[0m[0m
@@ -143923,7 +143929,7 @@ Subtopics
       form [30m[47m((:header type file-name open-time) . elements)[0m[0m, where
       [30m[47mtype[0m[0m is one of [30m[47m:character[0m[0m, [30m[47m:byte[0m[0m, or [30m[47m:object[0m[0m and [30m[47melements[0m[0m is a
       list of things of the corresponding [30m[47mtype[0m[0m, i.e. characters,
-      integers of type [30m[47m(mod 255)[0m[0m, or lisp objects in our theory.
+      integers of type [30m[47m(mod 256)[0m[0m, or lisp objects in our theory.
       [30m[47mFile-name[0m[0m is a string.  [30m[47mOpen-time[0m[0m is an integer.  See [io].
 
       [30m[47mOpen-output-channels[0m[0m, an alist with keys that are symbols in package
@@ -146568,7 +146574,7 @@ Subtopics
       (string< str2 str1))")
  (STRING>=
   (STRINGS ACL2-BUILT-INS)
-  "Less-than-or-equal test for strings
+  "Greater-than-or-equal test for strings
 
   [30m[47m(String>= str1 str2)[0m[0m is non-[30m[47mnil[0m[0m if and only if the string [30m[47mstr2[0m[0m
   precedes the string [30m[47mstr1[0m[0m lexicographically or the strings are
@@ -146659,7 +146665,7 @@ Subtopics
       Greater-than test for strings
 
   [String>=]
-      Less-than-or-equal test for strings
+      Greater-than-or-equal test for strings
 
   [Stringp]
       Recognizer for strings
@@ -150294,7 +150300,7 @@ Logical Definitions
   returns (as an [error-triple], [30m[47m(mv nil ans state)[0m[0m) the current
   settings of the two flags.  For example:
 
-    ACL2 !>(tau-system)
+    ACL2 !>(tau-status)
      ((:SYSTEM NIL) (:AUTO-MODE T))
 
   intended to be self-explanatory.")
@@ -151941,7 +151947,7 @@ Subtopics
 
     (defun merge-bytes (b1 b2)
       ;; Combine two 8-bit bytes into a 16-bit result.
-      (declare (type (unsigned-byte-p 8) b1 b2))
+      (declare (type (unsigned-byte 8) b1 b2))
       (the (unsigned-byte 16)
            (logior (the (unsigned-byte 16) (ash b1 8))
                    b2)))
@@ -159554,9 +159560,9 @@ Subtopics
   (NUMBERS ACL2-BUILT-INS)
   "Recognizer for natural numbers that fit in a specified bit width
 
-  [30m[47m(Unsigned-byte-p bits x)[0m[0m is [30m[47mT[0m[0m when [30m[47mbits[0m[0m is a positive integer and [30m[47mx[0m[0m
-  is a nonnegative integer that fits into a bit-width of [30m[47mbits[0m[0m, i.e.,
-  [30m[47m0 <= x < 2^bits[0m[0m.
+  [30m[47m(Unsigned-byte-p bits x)[0m[0m is [30m[47mT[0m[0m when [30m[47mbits[0m[0m is a non-negative integer and
+  [30m[47mx[0m[0m is a nonnegative integer that fits into a bit-width of [30m[47mbits[0m[0m,
+  i.e., [30m[47m0 <= x < 2^bits[0m[0m.
 
   Note that a [type-spec] of [30m[47m(unsigned-byte i)[0m[0m for a variable [30m[47mx[0m[0m in a
   function's [30m[47m[declare][0m[0m form translates to a [guard] condition of
@@ -164218,7 +164224,7 @@ The Differences Between Well-Formed and Merely Tame Lambda Objects
   Acceptable Values
 
   Now we describe the values you may provide with the
-  [30m[47m:well-founded-guarantee[0m[0m keyword of the [30m[47m:meta[0m[0m and the
+  [30m[47m:well-formedness-guarantee[0m[0m keyword of the [30m[47m:meta[0m[0m and the
   [30m[47m:clause-processor[0m[0m rule-classes.
 
       General Forms:
@@ -170087,7 +170093,7 @@ Remarks on defaults
 
   This is the same as [30m[47mup[0m[0m followed by [30m[47m(dive n-1)[0m[0m, where [30m[47mn[0m[0m is the
   position of the current subterm in its parent term in the
-  conclusion.  Thus in particular, the [30m[47mnx[0m[0m command fails if one is
+  conclusion.  Thus in particular, the [30m[47mbk[0m[0m command fails if one is
   already at the top of the conclusion.
 
   Also see [ACL2-pc::up], [ACL2-pc::dive], [ACL2-pc::top], and
@@ -171645,7 +171651,7 @@ Subtopics
   replay will abort and ``fail'', and the state-stack will revert to
   its value before the [30m[47mput[0m[0m instruction was executed.
 
-  If [30m[47m(put var expr)[0m[0m ``succeeds'', then [30m[47m(remove-abbreviation var)[0m[0m will
+  If [30m[47m(put var expr)[0m[0m ``succeeds'', then [30m[47m(remove-abbreviations var)[0m[0m will
   be executed at the end.
 
   [31;1mRemark[0m: The [30m[47mrestore[0m[0m command will revert the state-stack to its value

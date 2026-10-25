@@ -110676,6 +110676,12 @@ it."
  in recent versions of SBCL on x86-64.  See @(see community-book)
  @('system/tests/chk-make-array-bugs.lisp').</p>
 
+ <p>Fixed a soundness bug caused by a stale entry, for a function that is no
+ longer built into ACL2, in the list of built-in functions given special
+ treatment for @(see invariant-risk).  See @(see community-book)
+ @('system/tests/check-sum-inc-invariant-risk.lisp').  Thanks to Eric Smith
+ for supplying a fix from AI.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
