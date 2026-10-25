@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,7 +30,7 @@
      RISC-V is modular, with base instruction sets and optional extensions.")
    (xdoc::p
     "This ACL2 library includes
-     a formalization of part of the the RISC-V ISA:
+     a formalization of part of the RISC-V ISA:
      unprivileged RV32IM, RV64IM, RV32EM, and RV64EM,
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
@@ -48,25 +48,23 @@
    (xdoc::ul
     (xdoc::li
      (xdoc::ahref "https://riscv.org/technical/specifications/"
-                  "The RISC-V Insruction Set Manual Volume 1,
+                  "The RISC-V Instruction Set Manual Volume 1,
                    Unprivileged Architecture Version 20250508")
      ", referenced as `[ISA]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
-      e.g.
-      `[ISA:2.2]' references Section 2.2 of [ISA].")
+      e.g. `[ISA:2.2]' references Section 2.2 of [ISA].")
     (xdoc::li
      (xdoc::ahref "https://riscv.org/technical/specifications/"
-                  "The RISC-V Insruction Set Manual Volume 2,
+                  "The RISC-V Instruction Set Manual Volume 2,
                    Privileged Architecture Version 20250508")
      ", referenced as `[ISAP]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
-      e.g.
-      `[ISAP:3.3]' references Section 3.3 of [ISAP]."))
+      e.g. `[ISAP:3.3]' references Section 3.3 of [ISAP]."))
    (xdoc::p
     "These square-bracketed references may be used
-     as nouns or parenthentically."))
+     as nouns or parenthetically."))
   :order-subtopics (specification
                     executable
                     optimized

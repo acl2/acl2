@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -96,7 +96,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deflist-of-len memory
-  :short "Fixtype of memories fo RV32IM little endian."
+  :short "Fixtype of memories for RV32IM little endian."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -300,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32-xreg-signed{0}
-  :short "Partially evaluate @(tsee riscv::read-xreg-unsigned)
+  :short "Partially evaluate @(tsee riscv::read-xreg-signed)
           for RV32IM little endian."
 
   (apt::parteval riscv::read-xreg-signed
@@ -674,6 +674,30 @@
   (fty::deffixequiv write32-mem-ubyte32-lendian
     :args ((addr integerp) (stat stat32p))
     :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read32-instr ((addr integerp) (stat stat32p))
+  :returns (val ubyte32-optionp)
+  :short "Read the 32-bit encoding of an instruction from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the specialized counterpart of @(tsee riscv::read-instr).")
+   (xdoc::p
+    "Instructions are always stored in little endian [ISA:1.5],
+     so the memory address is the one of the first byte.
+     As in @(tsee read32-mem-ubyte8),
+     we let the address be any integer, but we keep the low 32 bits,
+     and we perform an alignment check [ISA:1.5];
+     currently instructions must be always 4-byte-aligned.
+     If the alignment check passes,
+     we read the encoding via @(tsee read32-mem-ubyte32-lendian),
+     which is adequate because instructions are little endian;
+     otherwise, we return @('nil')."))
+  (b* ((addr (loghead 32 addr))
+       ((unless (= (mod addr 4) 0)) nil))
+    (read32-mem-ubyte32-lendian addr stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

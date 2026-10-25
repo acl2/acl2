@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -66,7 +66,7 @@
      The size in bits is @('XLEN') [ISA:1.3],
      which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E.
      The number of registers is 32 or 16,
-     based on whether the base is RV32I/RV64I or RV32R/RV64E.
+     based on whether the base is RV32I/RV64I or RV32E/RV64E.
      In @(tsee stat-validp),
      we constrain this state component to be
      a list of appropriate type and appropriate length;
@@ -394,7 +394,7 @@
               (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Write an integer to the low 32 bit of a 64-bit @('x') register,
+  :short "Write an integer to the low 32 bits of a 64-bit @('x') register,
           sign-extending to the high 32 bits of the register."
   :long
   (xdoc::topstring
@@ -597,7 +597,7 @@
      we let the address be any integer.
      We use @(tsee read-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around to addres 0."))
+     then the subsequent addresses may wrap around to address 0."))
   (b* ((b0 (read-mem8 addr stat feat))
        (b1 (read-mem8 (+ (lifix addr) 1) stat feat))
        (b2 (read-mem8 (+ (lifix addr) 2) stat feat))
@@ -639,7 +639,7 @@
    (xdoc::p
     "As in @(tsee read-mem8),
      we let the address be any integer.
-     We use @(tsee read-mem8) four times.
+     We use @(tsee read-mem8) eight times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((b0 (read-mem8 addr stat feat))
@@ -766,7 +766,7 @@
    (xdoc::p
     "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-mem8) twice.
+     We use @(tsee write-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte32-fix val))
@@ -811,7 +811,7 @@
    (xdoc::p
     "As in @(tsee write-mem8),
      we let the address be any integer.
-     We use @(tsee write-mem8) four times.
+     We use @(tsee write-mem8) eight times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
      then the subsequent addresses may wrap around to address 0."))
   (b* ((val (ubyte64-fix val))
@@ -878,7 +878,7 @@
     "If the alignment check passes,
      we use @(tsee read-mem8) four times.
      Note that if @('addr') is close to @('2^XLEN - 1'),
-     then the subsequent addresses may wrap around to addres 0.")
+     then the subsequent addresses may wrap around to address 0.")
    (xdoc::p
     "We return @('nil') if the first address is not 4-byte-aligned."))
   (b* ((addr (loghead (feat->xlen feat) addr))

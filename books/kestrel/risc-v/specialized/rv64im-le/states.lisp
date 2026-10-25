@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -203,7 +203,7 @@
    (xdoc::p
     "The register index consists of 5 bits.
      We read an unsigned 64-bit integer from the register,
-     and we keep the low 32 bits, stil unsigned."))
+     and we keep the low 32 bits, still unsigned."))
   (loghead 32 (read64-xreg-unsigned reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -216,8 +216,8 @@
   (xdoc::topstring
    (xdoc::p
     "The register index consists of 5 bits.
-     We read a signed 64-bit integer fromt he register,
-     and we keep the low 32 bits, stil signed."))
+     We read a signed 64-bit integer from the register,
+     and we keep the low 32 bits, still signed."))
   (logext 32 (read64-xreg-signed reg stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -571,6 +571,30 @@
   (fty::deffixequiv write64-mem-ubyte64-lendian
     :args ((addr integerp) (stat state64p))
     :hints (("Goal" :in-theory (disable acl2::loghead-loghead)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read64-instr ((addr integerp) (stat state64p))
+  :returns (val ubyte32-optionp)
+  :short "Read the 32-bit encoding of an instruction from memory."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the specialized counterpart of @(tsee riscv::read-instr).")
+   (xdoc::p
+    "Instructions are always stored in little endian [ISA:1.5],
+     so the memory address is the one of the first byte.
+     As in @(tsee read64-mem-ubyte8),
+     we let the address be any integer, but we keep the low 64 bits,
+     and we perform an alignment check [ISA:1.5];
+     currently instructions must be always 4-byte-aligned.
+     If the alignment check passes,
+     we read the encoding via @(tsee read64-mem-ubyte32-lendian),
+     which is adequate because instructions are little endian;
+     otherwise, we return @('nil')."))
+  (b* ((addr (loghead 64 addr))
+       ((unless (= (mod addr 4) 0)) nil))
+    (read64-mem-ubyte32-lendian addr stat)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,8 +38,8 @@
    (xdoc::p
     "We start with the unprivileged instructions
      in RV32I [ISA:2] and RV64I [ISA:4],
-     which are the same for RV32E and RV64E [ISA:3],
-     except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
+     which are the same for RV32E and RV64E [ISA:3];
+     we exclude @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
      We also cover the instructions for the M extension [ISA:12].
      We plan to add privileged instructions,
      as well as instructions for more extensions.")

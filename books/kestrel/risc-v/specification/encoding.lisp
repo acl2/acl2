@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -127,7 +127,7 @@
   :returns (mv (funct3 ubyte3p)
                (hi6imm ubyte6p))
   :short "Encode the name of
-          a shift instruction with the @('OP-IMM') opcode
+          a shift instruction with the @('OP-IMM-32') opcode
           into the @('funct3') field and the high 6 immediate bits
           [ISA:4.2.1] [ISA:35]."
   (op-imms-32-funct-case
@@ -214,7 +214,7 @@
   :returns (funct3 ubyte3p)
   :short "Encode the name of
           an instruction with the @('LOAD') opcode
-          into the @('func3') field
+          into the @('funct3') field
           [ISA:2.6] [ISA:4.3] [ISA:35]."
   (load-funct-case
    funct
