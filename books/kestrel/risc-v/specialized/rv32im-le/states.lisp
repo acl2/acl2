@@ -300,7 +300,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection read32-xreg-signed{0}
-  :short "Partially evaluate @(tsee riscv::read-xreg-unsigned)
+  :short "Partially evaluate @(tsee riscv::read-xreg-signed)
           for RV32IM little endian."
 
   (apt::parteval riscv::read-xreg-signed
