@@ -71,7 +71,7 @@
      @(tsee decode) coincides with @('encoding-valid-witness');
      when applied to invalid encodings in the lighter green oval
      that are not also in the darker green oval,
-     @(tsee decode)) returns @('nil'), i.e. no instruction.")
+     @(tsee decode) returns @('nil'), i.e. no instruction.")
    (xdoc::p
     "The upper and lower `decode' arrows also represent
      the executable decoding function @(tsee decodex),
