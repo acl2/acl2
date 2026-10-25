@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 (include-book "count-occs")
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "union-equal"))
 
 ;rewrite (EQUAL (LEN L) 1) ?
 
@@ -77,3 +78,15 @@
 ;;   :hints (("Goal" :in-theory (enable nthcdr))))
 
 ;; (in-theory (disable nthcdr-when-equal-of-len))
+
+(defthm intersectp-equal-of-union-equal-arg1
+  (equal (intersectp-equal (union-equal x y) z)
+         (or (intersectp-equal x z)
+             (intersectp-equal y z)))
+  :hints (("Goal" :in-theory (enable intersectp-equal union-equal))))
+
+(defthm intersectp-equal-of-union-equal-arg2
+  (equal (intersectp-equal x (union-equal y z))
+         (or (intersectp-equal x y)
+             (intersectp-equal x z)))
+  :hints (("Goal" :in-theory (enable intersectp-equal union-equal))))
