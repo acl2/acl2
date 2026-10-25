@@ -110682,7 +110682,6 @@ it."
  @('system/tests/check-sum-inc-invariant-risk.lisp').  Thanks to Eric Smith
  for supplying a fix from AI.</p>
 
-
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

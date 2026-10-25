@@ -1412,31 +1412,35 @@
 
   (clean-up-conjunction1 (clean-up-nots-lst lst nil) nil))
 
-(defun clean-up-loop$-recursion-induction-machine (tc-list)
-
-; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
-; as of this writing this function is only applied to those induction machines
-; generated from loop$ recursion induction function bodies, i.e., inductible
-; loop$ recursive functions.  This function is spiritually similar to
-; simplify-tests-and-calls but just drops cases having contradictory tests and
-; eliminates duplicates and double negations among the remaining tests.  We
-; implement this process as a separate function rather than strengthen
-; simplify-tests-and-calls because we wish not to change any existing induction
-; machines as we add the ability to induct for loop$ recursive functions.
-
-  (cond
-   ((endp tc-list) nil)
-   (t (let ((tests
-             (clean-up-conjunction
-              (access tests-and-calls (car tc-list) :tests))))
-        (cond
-         ((eq tests :contradiction)
-          (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
-         (t (cons
-             (make tests-and-calls
-                   :tests tests
-                   :calls (access tests-and-calls (car tc-list) :calls))
-             (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
+; (defun clean-up-loop$-recursion-induction-machine (tc-list)
+;
+; ; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
+; ; as of this writing this function is only applied to those induction machines
+; ; generated from loop$ recursion induction function bodies, i.e., inductible
+; ; loop$ recursive functions.  This function is spiritually similar to
+; ; simplify-tests-and-calls but just drops cases having contradictory tests and
+; ; eliminates duplicates and double negations among the remaining tests.  We
+; ; implement this process as a separate function rather than strengthen
+; ; simplify-tests-and-calls because we wish not to change any existing induction
+; ; machines as we add the ability to induct for loop$ recursive functions.
+;
+; ; This function hasn't been deployed yet because the current code suffices for
+; ; the loop$ recursions we've tested, but we don't have any experience with
+; ; loop$ recursions arising in practical applications yet.
+;
+;   (cond
+;    ((endp tc-list) nil)
+;    (t (let ((tests
+;              (clean-up-conjunction
+;               (access tests-and-calls (car tc-list) :tests))))
+;         (cond
+;          ((eq tests :contradiction)
+;           (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
+;          (t (cons
+;              (make tests-and-calls
+;                    :tests tests
+;                    :calls (access tests-and-calls (car tc-list) :calls))
+;              (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
 
 (defun induction-machines
   (loop$-recursion names arglists measure-alist bodies
