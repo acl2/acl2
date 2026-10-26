@@ -312,8 +312,8 @@
                (rules fgl-rulelist-p))
   (b* (((fgl-ruledata data)))
     (fgl-rune-case data.rune
-      :rewrite (fgl-rules-from-rewrite `(:rewrite ,data.rune.name) data fn-lemma-map)
-      :definition (fgl-rules-from-rewrite `(:definition ,data.rune.name) data fn-lemma-map)
+      :rewrite (fgl-rules-from-rewrite data.rune data fn-lemma-map)
+      :definition (fgl-rules-from-rewrite data.rune data fn-lemma-map)
       :formula (b* ((form (acl2::meta-extract-formula-w data.rune.name world))
                     ((unless (pseudo-termp form))
                      (mv (msg "Formula for ~x0 was not pseudo-termp: ~x1~%" data.rune.name form) nil)))

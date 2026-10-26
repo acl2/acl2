@@ -326,27 +326,6 @@
         ///
         ;; <thms>
 
-        ;; (defret eval-of-<metafn>
-        ;;   (implies (and successp
-        ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
-        ;;                 (fgl-ev-meta-extract-global-facts :state st)
-        ;;                 <formula-check>
-        ;;                 (equal (w st) (w state))
-        ;;                 (interp-st-bfrs-ok interp-st)
-        ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-        ;;                                         (interp-st->constraint interp-st)
-        ;;                                         (interp-st->logicman interp-st))
-        ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-        ;;                                         (interp-st->pathcond interp-st)
-        ;;                                         (interp-st->logicman interp-st))
-        ;;                 (pseudo-fnsym-p origfn))
-        ;;            (fgl-ev-context-equiv-forall-extensions
-        ;;             contexts
-        ;;             (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
-        ;;             rhs
-        ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
-        
         (defret fgl-meta-constraint-of-<fn>-lemma
           (fgl-meta-constraint successp rhs hyps rev-subst bindings new-interp-st new-state
                                origfn args interp-st state
@@ -610,13 +589,17 @@
                    ,return-returns)))
              (if successp
                  (mv successp
-                     ;; new rhs
-                     (pseudo-term-var binder-var)
+                     ;; Use a rule-local variable distinct from the caller's
+                     ;; binder variable and unlikely to occur in BODY's terms.
+                     (pseudo-term-var 'fgl-binder-meta-result-variable)
                      ;; hyp with binding hyp
                      (append hyps
-                             (list (pseudo-term-fncall 'equal (list (pseudo-term-var binder-var) rhs))))
+                             (list (pseudo-term-fncall
+                                    'equal
+                                    (list (pseudo-term-var 'fgl-binder-meta-result-variable)
+                                          rhs))))
                      ;; rev-subst
-                     (list (cons binder-var (pseudo-term-var binder-var)))
+                     (list (cons binder-var (pseudo-term-var 'fgl-binder-meta-result-variable)))
                      bindings interp-st state)
                (mv nil nil nil nil nil interp-st state)))
          (mv nil nil nil nil nil interp-st state))
@@ -780,27 +763,6 @@
             . <meta-entries>) ;;,(fgl-primitive-fncall-entries (table-alist 'fgl-primitives wrld)))
           ///
           ;; <meta-thms>
-          ;; (defret eval-of-<fn>
-          ;;   (implies (and successp
-          ;;                 (equal contexts (interp-st->equiv-contexts interp-st))
-          ;;                 (fgl-ev-meta-extract-global-facts :state st)
-          ;;                 ;; (,name-formula-checks st)
-          ;;                 (<prefix>-formula-checks st)
-          ;;                 (equal (w st) (w state))
-          ;;                 (interp-st-bfrs-ok interp-st)
-          ;;                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))
-          ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-          ;;                                         (interp-st->constraint interp-st)
-          ;;                                         (interp-st->logicman interp-st))
-          ;;                 (logicman-pathcond-eval (fgl-env->bfr-vals env)
-          ;;                                         (interp-st->pathcond interp-st)
-          ;;                                         (interp-st->logicman interp-st))
-          ;;                 (pseudo-fnsym-p origfn))
-          ;;            (fgl-ev-context-equiv-forall-extensions
-          ;;             contexts
-          ;;             (fgl-ev (cons origfn (kwote-lst (fgl-objectlist-eval args env (interp-st->logicman interp-st)))) nil)
-          ;;             rhs
-          ;;             (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))))
           (defret fgl-meta-constraint-of-<fn>
             (fgl-meta-constraint successp rhs hyps rev-subst bindings new-interp-st new-state
                                  origfn args interp-st state

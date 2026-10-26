@@ -45,13 +45,38 @@
 (fty::deflist fgl-rule-arg-mode-list :elt-type fgl-rule-arg-mode-p
   :true-listp t)
 
-(fty::deftagsum fgl-rune
-  (:rewrite (name))
-  (:definition (name))
-  (:formula ((name pseudo-fnsym-p)))
-  (:primitive ((name pseudo-fnsym-p)))
-  (:meta    ((name pseudo-fnsym-p)))
-  :layout :list)
+(fty::defflexsum fgl-rune
+  :short "A rule identifier, including an optional ACL2 rune index."
+  :long "<p>Rewrite and definition runes use ACL2's representation
+@('(:rewrite name . index)') or @('(:definition name . index)'), where the
+index is NIL or a positive integer. Other kinds have the form @('(kind name)').</p>"
+  (:rewrite
+   :cond (and (consp x) (eq (car x) :rewrite))
+   :shape (and (consp x) (consp (cdr x)))
+   :fields ((name :acc-body (cadr x))
+            (index :type acl2::maybe-posp :acc-body (cddr x)))
+   :ctor-body (list* :rewrite name index))
+  (:definition
+   :cond (and (consp x) (eq (car x) :definition))
+   :shape (and (consp x) (consp (cdr x)))
+   :fields ((name :acc-body (cadr x))
+            (index :type acl2::maybe-posp :acc-body (cddr x)))
+   :ctor-body (list* :definition name index))
+  (:formula
+   :cond (and (consp x) (eq (car x) :formula))
+   :shape (and (consp x) (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :formula name))
+  (:primitive
+   :cond (and (consp x) (eq (car x) :primitive))
+   :shape (and (consp x) (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :primitive name))
+  (:meta
+   :shape (and (consp x) (eq (car x) :meta)
+               (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :meta name)))
 
 (fty::defprod fgl-ruledata
   ((rune fgl-rune-p)

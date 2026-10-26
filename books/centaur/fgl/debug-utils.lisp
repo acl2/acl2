@@ -272,11 +272,12 @@
                                       scratchlist-bfrlist)))))
 
 (local
- (defthm bfr-listp-of-fgl-object-bindings-keep-keys
-   (implies (bfr-listp (fgl-object-bindings-bfrlist x) bfrstate)
-            (bfr-listp (fgl-object-bindings-bfrlist
-                        (fgl-object-bindings-keep-keys keys x)) bfrstate))
-   :hints (("Goal" :in-theory (enable bfr-listp-when-not-member-witness)))))
+ (defret fgl-unify-term/gobj-fn/args-masked-bfrs-ok
+   (implies (and (bfr-listp (fgl-arglist-bfrlist x-args) bfrstate)
+                 (bfr-listp (fgl-object-bindings-bfrlist alist) bfrstate))
+            (bfr-listp (fgl-object-bindings-bfrlist new-alist) bfrstate))
+   :hints (("Goal" :in-theory (enable fgl-unify-term/gobj-fn/args-masked)))
+   :fn fgl-unify-term/gobj-fn/args-masked))
 
 (define fgl-replay-top-rewrite-rule-core (&key
                                           ((equiv-contexts equiv-contextsp) 'nil)
@@ -287,7 +288,7 @@
               (fgl-rule-case (interp-st-stack-rule interp-st) :rewrite))
   :guard-hints (("goal" :in-theory (enable interp-st-stack-frames
                                            interp-st-stack-rule
-                                           stack-reset-top-frame-redef
+                                           stack-pop-minor-frames-redef
                                            stack$a-frames
                                            stack$a-minor-frames
                                            stack$a-scratch-len
@@ -295,14 +296,13 @@
                                            stack$a-bindings
                                            bfr-listp-when-not-member-witness)))
   (stobj-let ((stack (interp-st->stack interp-st)))
-             (rule bindings hyps rhs stack)
+             (rule hyps rhs stack)
              (b* ((rule (stack-rule stack))
                   (hyps (fgl-rule-hyps rule))
                   (rhs (fgl-rule-rhs rule))
-                  (stack (stack-reset-top-frame stack))
-                  (bindings (hons-copy (stack-bindings stack)))
+                  (stack (stack-pop-minor-frames stack))
                   (stack (stack-pop-frame stack)))
-               (mv rule bindings hyps rhs stack))
+               (mv rule hyps rhs stack))
              (b* ((interp-st (update-interp-st->errmsg nil interp-st))
                   (lhs (fgl-rule-rewrite->lhs rule))
                   (fn (if (pseudo-term-case lhs :fncall)
@@ -317,9 +317,13 @@
                           nil))
                   ;; The caller's saved arguments retain the unbound variables
                   ;; needed to reconstruct the original reverse substitution.
-                  ((mv ?unify-ok ?initial-bindings rev-subst)
+                  ((mv unify-ok bindings rev-subst)
                    (fgl-unify-term/gobj-fn/args-masked
-                    fn pat-args fn args nil nil (interp-st-bfrstate))))
+                    fn pat-args fn args nil nil (interp-st-bfrstate)))
+                  ((unless unify-ok)
+                   (raise "Unable to reconstruct the original substitution for ~x0"
+                          (fgl-rule->rune rule))
+                   (mv nil nil nil interp-st state)))
                (fgl-rewrite-apply-rule
                 rule fn bindings rev-subst hyps rhs equiv-contexts interp-st state))))
 
@@ -415,7 +419,7 @@ required number of frames off the stack as follows, and then running
 @('fgl-replay-top-rewrite-rule'):</p>
 
 @({
- (fgl::interp-st-pop-n-frames 10 fgl::interp-st)
+ (fgl::interp-st-pop-n-frames! 10 fgl::interp-st)
  })
 
 ")

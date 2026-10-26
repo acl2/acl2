@@ -73,21 +73,6 @@
 ;;                                ((consp x) (equal (len (cdr x)) (1- n)))
 ;;                                (t nil))))))
 
-(local (defthm fgl-ev-context-equv-forall-extensions-trivial
-         (implies (acl2::rewriting-negative-literal
-                   `(fgl-ev-context-equiv-forall-extensions ,contexts ,obj ,term ,eval-alist))
-                  (iff (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
-                       (and 
-                        (equal (fgl-ev-context-fix contexts (fgl-ev term eval-alist))
-                               (fgl-ev-context-fix contexts obj))
-                        (hide (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))))
-         :hints (("goal" :expand ((:free (x) (hide x)))
-                  :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
-                         (ext eval-alist)))
-                  :in-theory (disable fgl-ev-context-equiv-forall-extensions-necc)))))
-
-(local (in-theory (disable fgl-ev-context-equiv-forall-extensions)))
-
 ;; (local (defthm fgl-object-bindings-eval-nil
 ;;          (equal (fgl-object-bindings-eval-
 
@@ -106,36 +91,7 @@
 (local (in-theory (disable member-equal
                            equal-of-booleans-rewrite)))
 
-(local (defthm fgl-arglist-unbounds-when-consp
-         (implies (consp x)
-                  (equal (fgl-arglist-unbounds x)
-                         (if (fgl-arg-case (car x) :unbound)
-                             (cons (fgl-arg-unbound->var (car x))
-                                   (fgl-arglist-unbounds (cdr x)))
-                           (fgl-arglist-unbounds (cdr x)))))
-         :hints(("Goal" :in-theory (enable fgl-arglist-unbounds)))))
-
-(local (defthm fgl-arglist-eval-with-rev-subst-when-first-unbound
-         (implies (and (consp x)
-                       (fgl-arg-case (car x) :unbound)
-                       (not (fgl-arglist-unbounds (cdr x))))
-                  (equal (fgl-arglist-eval-with-rev-subst
-                          x rev-alist env)
-                         (cons (cdr (hons-assoc-equal (fgl-arg-unbound->var (car x))
-                                                      rev-alist))
-                               (fgl-objectlist-eval (fgl-arglist->objects (cdr x)) env))))
-         :hints(("Goal" :in-theory (enable fgl-arglist-unbounds
-                                           fgl-arglist-eval-with-rev-subst)))))
-
 (add-fgl-congruence iff-implies-equal-check-true-2)
-
-;; (local (in-theory (disable iff-forall-extensions)))
-
-;; (local (defthm iff-forall-extensions-t
-;;          (iff (iff-forall-extensions t term alist)
-;;               (and (fgl-ev term alist)
-;;                    (hide (iff-forall-extensions t term alist))))
-;;          :hints(("Goal" :expand ((:free (x) (hide x)))))))
 
 (def-fgl-binder-meta check-true-binder
   (b* ((ans

@@ -210,8 +210,8 @@
                       (raise "State global ~x0 must contain an FGL trace alist, satisfying ~x1"
                              '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
        (interp-st (update-interp-st->trace-alist trace-alist interp-st))
-       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix (table-alist 'fgl-rewrite-rules (w state))) interp-st))
-       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix (table-alist 'fgl-branch-merge-rules (w state))) interp-st))
+       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix config.rewrite-rule-table) interp-st))
+       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix config.branch-merge-rules) interp-st))
        (interp-st (update-interp-st->congruence-rules (redundant-list-fix (fgl-congruence-runes (w state))) interp-st))
        (interp-st (update-interp-st->id-congruence-rules (redundant-list-fix (fgl-id-congruence-runes (w state))) interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))

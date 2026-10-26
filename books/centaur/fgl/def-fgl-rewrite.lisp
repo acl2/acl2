@@ -133,7 +133,7 @@
              (let ((fnname (acl2::deref-macro-name name (macro-aliases world))))
                `(:formula ,fnname))
            `(:formula ,name)))
-        ((and (consp name)
+        ((and (fgl-rune-p name)
               (member-eq (car name) '(:rewrite :definition :formula)))
          name)
         (t (er hard? 'fgl-name-to-rewrite-rune
@@ -196,11 +196,8 @@
   :returns (tail fgl-ruledata-list-p)
   (if (atom ruledata-list)
       nil
-    (if (and (eq (tag (fgl-rune-fix x))
-                 (tag (fgl-ruledata->rune (car ruledata-list))))
-             (equal (fgl-rune->name x)
-                    (fgl-rune->name
-                     (fgl-ruledata->rune (car ruledata-list)))))
+    (if (equal (fgl-rune-fix x)
+               (fgl-ruledata->rune (car ruledata-list)))
         (fgl-ruledata-list-fix ruledata-list)
       (member-rune-in-ruledata-list x (cdr ruledata-list))))
   ///
@@ -213,11 +210,8 @@
   :returns (rest fgl-ruledata-list-p)
   (if (atom ruledata-list)
       nil
-    (if (and (eq (tag (fgl-rune-fix x))
-                 (tag (fgl-ruledata->rune (car ruledata-list))))
-             (equal (fgl-rune->name x)
-                    (fgl-rune->name
-                     (fgl-ruledata->rune (car ruledata-list)))))
+    (if (equal (fgl-rune-fix x)
+               (fgl-ruledata->rune (car ruledata-list)))
         (fgl-ruledata-list-fix (cdr ruledata-list))
       (cons-with-hint (fgl-ruledata-fix (car ruledata-list))
                       (remove-rune-from-ruledata-list x (cdr ruledata-list))
@@ -448,7 +442,9 @@ that each such rule will be attempted when terms with its LHS's leading
 function symbol is encountered.  The exact form of the rule that is used
 depends on the invocation: if a name given is simply a symbol, then the formula
 of that theorem or function name is used.  If a name is instead a @(':rewrite')
-or @(':definition') rune, then the corresponding lemma is used.  A
+or @(':definition') rune, then the corresponding lemma is used, including its index when present
+(e.g., @('(:rewrite my-theorem . 1)')). Indexed runes are separate entries
+with independent priority, argument modes, and enabled status. A
 @(':formula') rune (which is not a valid ACL2 rune but is a valid FGL rune) is
 treated the same as a bare symbol.</p>
 
@@ -481,7 +477,7 @@ requires every argument to be bound.</p>
 
 <p>Each function's table entry is a list of @(see fgl-ruledata) tuples,
 containing the rune, integer priority, argument modes, and Boolean enabled
-status. The rune itself contains only the rule's kind and name.</p>
+status. The rune contains the rule's kind, name, and optional ACL2 index.</p>
 
 <p>@(':priority') directly specifies an integer priority as an alternative to
 @(':order'). @(':enabledp') specifies whether to enable the rule and defaults
@@ -919,9 +915,10 @@ rewrite rule that is only used inside FGL:</p>
     :hints ...)
 })
 
-<p>This defines a disabled ACL2 rewrite rule called my-rewrite-rule, and adds
-my-rewrite-rule to the table of rules FGL is allowed to use. (FGL will still use
-it even though it is disabled, as long as it is in that table.)</p>
+<p>This defines an ACL2 theorem called @('my-rewrite-rule') with its ACL2
+rewrite rule disabled, and registers it as enabled in FGL's rewrite database.
+(Note that a rule's enabled status for the ACL2 prover and for FGL are
+independent.)</p>
 
 <p>The optional @(':arg-modes') list specifies whether each direct LHS
 argument must be bound (@(':bound')), may be either form (@(':either')), or
@@ -931,7 +928,10 @@ must be an unbound variable (@(':unbound')).  Omitted positions are
 <p>Def-fgl-rewrite supports syntaxp hypotheses, but the term representation used
 is different from ACL2's.  Instead of being bound to TERMPs, the variables are
 bound to symbolic objects.  See @(see fgl::fgl-object) for
-reference.</p>"
+reference.</p>
+
+<p>See also related utilities @(see add-fgl-rewrite) and @(see
+remove-fgl-rewrite).</p>"
 
   (defmacro def-fgl-rewrite (name &rest args)
     (b* (((mv & modes theorem-args) (extract-fgl-rule-arg-modes args)))

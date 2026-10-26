@@ -1271,11 +1271,12 @@
 
 (ifndef "DEFS_ONLY"
 
-        ;; Eventual property of masked unification:
-        ;; - For any extension of the unifying substitution, the evaluation of the pattern \ substitution equals
-        ;; the application of the function to the arguments formed by interleaving (according to the holes mask)
-        ;; the evaluations of the non-hole arguments with the lookups of the hole variables
-        ;; in the reverse substitution evaluated under the evaluation of the extended unifying substitution.
+        ;; Correctness of argument-list unification (proved below):
+        ;; For any extension of the resulting rule substitution, the pattern
+        ;; evaluates to the target call. Bound fgl-arg entries contribute their
+        ;; object evaluations; unbound entries contribute the evaluations of
+        ;; their reverse-substitution terms under that extended substitution.
+        ;; Repeated unbound variables must correspond to identical pattern terms.
 
         (defret <fn>-keys-of-rev-subst
           (implies flag

@@ -40,24 +40,19 @@
   :parents (fgl)
   :short "Limitations on what the FGL interpreter will do to resolve a call of a given function."
   ((split-ifs booleanp
-    "If true, when the function is applied to arguments represented as @('g-ite')
+              "If true, when the function is applied to arguments represented as @('g-ite')
      objects, the FGL interpreter will first split into cases for all combinations
      of @('g-ite') branches.  Generally this should be set for functions that resolve
      via rewrite rules and false for functions that resolve via definition
      expansion.")
    (dont-concrete-exec booleanp
-    "If true, skip attempting to concretely execute the function in the case when
+                       "If true, skip attempting to concretely execute the function in the case when
      all the arguments are explicit.")
-   (dont-expand-def booleanp
-    "If true, skip expanding the function's definition after attempting ~
-     rewrites and primitive execution.")
    (dont-rewrite booleanp
-    "If true, skip applying rewrite rules to calls of the function.")
+                 "If true, skip applying rewrite rules to calls of the function.")
    (dont-rewrite-under-if-test booleanp
-    "If true, skip applying rewrite rules to calls of the function when trying
+                               "If true, skip applying rewrite rules to calls of the function when trying
      to resolve an IF test to a Boolean formula.")
-   (dont-primitive-exec booleanp
-    "If true, skip applying primitives to calls of the function.")
    (dont-if-merge-args
     booleanp
     "If we encounter an IF term where both branches rewrite to a call of this
@@ -68,12 +63,12 @@
   :guard-hints(("Goal" :in-theory (enable fgl-function-mode-fix)))
   :enabled t
   (mbe :logic (fgl-function-mode-fix x)
-       :exec (loghead 7 (ifix x))))
+       :exec (loghead 5 (ifix x))))
 
 (fty::defmap fgl-function-mode-alist :key-type symbolp :val-type fgl-function-mode :true-listp t)
 
 (define fgl-function-mode-lookup ((fn symbolp)
-                                 (alist fgl-function-mode-alist-p))
+                                  (alist fgl-function-mode-alist-p))
   :returns (mode fgl-function-mode-p)
   (or (cdr (hons-get fn (make-fast-alist (fgl-function-mode-alist-fix alist)))) 0))
 
@@ -104,12 +99,12 @@ perhaps not in a useful direction.")
     (rewrite-rule-table :default (table-alist 'fgl-rewrite-rules (w state))
                         "The rewrite rule table. Probably shouldn't be changed
 by the user; instead use the utilities described in @(see fgl-rewrite-rules).")
-    (branch-merge-rules :default (cdr (hons-assoc-equal 'fgl::fgl-branch-merge-rules (table-alist 'fgl-branch-merge-rules (w state))))
+    (branch-merge-rules :default (table-alist 'fgl-branch-merge-rules (w state))
                         "The branch-merge rewrite rule table. Probably
 shouldn't be changed by the user; instead use the utilities described in @(see
 fgl-rewrite-rules).")
     (function-modes fgl-function-mode-alist :default (table-alist 'fgl-fn-modes (w state))
-                        "The function mode table (see @(see fgl-function-mode)). Probably
+                    "The function mode table (see @(see fgl-function-mode)). Probably
 shouldn't be changed by the user; instead use the utilities described in @(see
 fgl-rewrite-rules).")
     (counterexample-analysis-enabledp
@@ -200,16 +195,16 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
 </ul>"
 
     ,(fgl-config-process-fields
-*fgl-config-fields*)
+      *fgl-config-fields*)
     :layout :tree))
 
 
 (define fgl-config-setting ((table-key symbolp)
-                             (state-key symbolp)
-                             default
-                             table
-                             (args keyword-value-listp)
-                             state)
+                            (state-key symbolp)
+                            default
+                            table
+                            (args keyword-value-listp)
+                            state)
   (b* ((look (assoc-keyword table-key args))
        ((when look) (cadr look))
        ((when (boundp-global state-key state))
@@ -236,7 +231,7 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
         (setting-term-fix (if fix `(ec-call (,fix ,setting-term)) setting-term)))
      (cons key
            (cons setting-term-fix
-                (default-fgl-config-settings (cdr fields) state))))))
+                 (default-fgl-config-settings (cdr fields) state))))))
 
 (make-event
  `(define default-fgl-config-fn ((args keyword-value-listp) state)
@@ -252,7 +247,7 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
         (list* (car args) (cadr args)
                (default-fgl-config-filter-args (cddr args)))
       (default-fgl-config-filter-args (cddr args)))))
-  
+
 
 (defmacro default-fgl-config (&rest args)
   `(default-fgl-config-fn (list . ,(default-fgl-config-filter-args args)) state))

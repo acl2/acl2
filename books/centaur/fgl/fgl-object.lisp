@@ -529,16 +529,15 @@ case you misspell @(':g-concrete').</p>
 (fty::defflexsum fgl-arg
   :parents (fgl)
   :short "Type of FGL rewritten arguments"
-  :long "<p>This is a special type used during rewriting which is either a ragular FGL
-object, or else an unbound variable awaiting an assignment.</p>
-"
+  :long "<p>This is a special type used during rewriting which is either a regular FGL
+object, or else an unbound variable awaiting an assignment.</p>"
   (:unbound
    :short "FGL argument constructor for unbound variable objects."
    :cond (and (consp x) (eq (car x) :unbound))
    :fields ((var :acc-body (cdr x) :type pseudo-var-p))
    :ctor-body (cons :unbound var))
   (:obj
-   :short "FGL object constructor for symbolic Boolean objects."
+   :short "FGL argument constructor for rewritten FGL object arguments."
    :cond t
    :fields ((obj :acc-body x :type fgl-object))
    :ctor-body obj)
