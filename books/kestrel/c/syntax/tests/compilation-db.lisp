@@ -18,11 +18,26 @@
 
 (defconst *expected-db*
   (list
-    (cons "bar.c"
+    (cons "foo.o"
+          (make-comp-db-entry
+            :exec "/usr/local/bin/gcc"
+            :directory "/working-dir/c-project/"
+            :file "foo.c"
+            :arguments (list (make-comp-db-arg :name "-std"
+                                               :separator "="
+                                               :value "c17")
+                             (make-comp-db-arg :name "-I"
+                                               :separator ""
+                                               :value "/usr/include/libfoo")
+                             (make-comp-db-arg :name "-c"
+                                               :separator "")
+                             (make-comp-db-arg :name "foo.c"
+                                               :separator ""))))
+    (cons "/working-dir/c-project/bar/bar.o"
           (make-comp-db-entry
             :exec "/usr/local/bin/gcc"
             :directory "/working-dir/c-project/bar"
-            :output "/working-dir/c-project/bar/bar.o"
+            :file "bar.c"
             :arguments (list (make-comp-db-arg :name "-ggdb"
                                                :separator "")
                              (make-comp-db-arg :name "-O"
@@ -37,25 +52,11 @@
                                                :separator "")
                              (make-comp-db-arg :name "-o"
                                                :separator " "
-                                               :value "bar.o"))))
-    (cons "foo.c"
-          (make-comp-db-entry
-            :exec "/usr/local/bin/gcc"
-            :directory "/working-dir/c-project/"
-            :arguments (list (make-comp-db-arg :name "-std"
-                                               :separator "="
-                                               :value "c17")
-                             (make-comp-db-arg :name "-I"
-                                               :separator ""
-                                               :value "/usr/include/libfoo")
-                             (make-comp-db-arg :name "-c"
-                                               :separator "")
-                             (make-comp-db-arg :name "foo.c"
-                                               :separator ""))))))
+                                               :value "bar.o"))))))
 
 (acl2::must-eval-to-t
-  (b* (((mv erp db - state)
-        (parse-comp-db "compile_commands.json" nil nil state))
+  (b* (((mv erp db state)
+        (parse-comp-db "compile_commands.json" state))
        ((when erp)
         (acl2::value (cw "Error: ~@0~%" erp))))
     (acl2::value (equal db *expected-db*)))
