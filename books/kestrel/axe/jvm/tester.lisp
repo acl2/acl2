@@ -713,7 +713,8 @@
                               (prune-approx-optionp prune-approx)
                               (booleanp assume-object-params-non-null))
                            :stobjs state
-                           :mode :program))
+                           :mode :program ; because of run-formal-test-on-method
+                           ))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)
     (let ((method-id (first method-ids)))
@@ -775,9 +776,7 @@
                      monitor
                      assume-object-params-non-null
                      state)
-  (declare (xargs :mode :program
-                  :stobjs state
-                  :guard (and (or (eq :auto methods-to-test)
+  (declare (xargs :guard (and (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
                               (classes-to-assume-initialized-optionp classes-to-assume-initialized)
@@ -789,7 +788,9 @@
                               (count-hits-argp count-hits)
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
-                              (booleanp assume-object-params-non-null))))
+                              (booleanp assume-object-params-non-null))
+                  :mode :program ; because of run-formal-tests-on-methods
+                  :stobjs state))
   (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
         (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
