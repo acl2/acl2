@@ -49559,8 +49559,6 @@ request modifications or adopt your changes.")
 
     * Eric Smith ([30m[47meric.smith@kestrel.edu[0m[0m)
 
-    * David Rager ([30m[47mragerdl@gmail.com[0m[0m)
-
     * Sol Swords ([30m[47msswords@gmail.com[0m[0m)
 
   After you have joined the project, you can proceed as follows when
@@ -56088,7 +56086,7 @@ Required: Make Changes Only Within the [30m[47mbooks/[0m[0m Directory
   While the community is invited to submit contributions to the
   Community Books (see [COMMUNITY-BOOKS]), source files outside of
   the [30m[47mbooks/[0m[0m directory should not be modified, except by system
-  maintainers.
+  maintainers and those who have been granted permission explicitly.
 
   Suggestions for system changes can be emailed to {Matt Kaufmann |
   mailto:kaufmann@cs.utexas.edu}. (Prospective system developers
@@ -56182,8 +56180,6 @@ Frequent Contributors
   individuals:
 
     * Eric Smith ([30m[47meric.smith@kestrel.edu[0m[0m)
-
-    * David Rager ([30m[47mragerdl@gmail.com[0m[0m)
 
     * Sol Swords ([30m[47msswords@gmail.com[0m[0m)
 

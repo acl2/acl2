@@ -46123,8 +46123,6 @@ current fast alists."
 
  <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
 
- <li>David Rager (@('ragerdl@gmail.com'))</li>
-
  <li>Sol Swords (@('sswords@gmail.com'))</li>
 
  </ul>
@@ -52564,7 +52562,7 @@ tables in the current Hons Space."
  <p>While the community is invited to submit contributions to the <see
  topic='@(url community-books)'>Community Books</see>, source files outside of
  the @('books/') directory should not be modified, except by system
- maintainers.</p>
+ maintainers and those who have been granted permission explicitly.</p>
 
  <p>Suggestions for system changes can be emailed to <a
  href='mailto:kaufmann@cs.utexas.edu'>Matt Kaufmann</a>. (Prospective system
@@ -52656,7 +52654,6 @@ tables in the current Hons Space."
  individuals:</p>
  <ul>
    <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
-   <li>David Rager (@('ragerdl@gmail.com'))</li>
    <li>Sol Swords (@('sswords@gmail.com'))</li>
  </ul>
 
