@@ -1404,7 +1404,10 @@
     (xdoc::topstring
      (xdoc::p
       "If an expression is an identifier, we look it up in the table
-       to see whether it should be re-classified as an enumeration constant.")
+       to see whether it should be re-classified as an enumeration constant.
+       If it is not in the table
+       but it satisfies @(tsee prefixed-built-in-identp),
+       it is a built-in, which we leave unchanged.")
      (xdoc::p
       "A constant or string literal is left unchanged;
        there is nothing to disambiguate.
@@ -1456,6 +1459,11 @@
        expr
        :ident
        (b* ((kind (dimb-lookup-ident expr.ident dstate))
+            ((when (and (not kind)
+                        (prefixed-built-in-identp
+                         expr.ident
+                         (ienv->dialect (dstate->ienv dstate)))))
+             (retok (expr-fix expr) (dstate-fix dstate)))
             ((unless kind)
              (retmsg$ "The identifier ~x0 is used as an expression ~
                        but is not in scope."

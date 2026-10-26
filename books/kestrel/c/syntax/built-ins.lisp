@@ -16,6 +16,7 @@
 (include-book "../language/implementation-environments/dialects")
 
 (include-book "std/util/defval" :dir :system)
+(include-book "std/strings/strprefixp" :dir :system)
 
 (local (include-book "std/typed-lists/string-listp" :dir :system))
 
@@ -923,3 +924,26 @@
    (built-ins no-duplicatesp-equal
               :hints (("Goal" :in-theory (enable built-in-vars-for
                                                  built-in-functions-for))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prefixed-built-in-identp ((ident identp) (dialect c::dialectp))
+  :returns (yes/no booleanp)
+  :short "Check if an identifier is treated as a built-in
+          because of its @('__builtin_') prefix."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "GCC and Clang have a very large number of built-ins
+     whose names start with @('__builtin_').
+     Rather than listing all of them,
+     in the GCC and Clang dialects
+     we treat any such identifier that is not in scope
+     as a built-in of unknown type.")
+   (xdoc::p
+    "Such identifiers are reserved [C17:7.1.3/1]."))
+  (b* ((name (ident->unwrap ident)))
+    (and (c::dialect-gcc/clangp dialect)
+         (stringp name)
+         (str::strprefixp "__builtin_" name)))
+  :hooks (:fix))
