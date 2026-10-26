@@ -35,6 +35,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -702,6 +703,140 @@
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define comp-db-absolute-path-list
+  ((directory stringp)
+   (paths string-listp))
+  :returns (paths$ string-listp)
+  :short "Lift @(tsee comp-db-absolute-path) to lists."
+  (if (endp paths)
+      nil
+    (cons (comp-db-absolute-path directory (first paths))
+          (comp-db-absolute-path-list directory (rest paths)))))
+
+(define comp-db-entries-with-output
+  ((output stringp)
+   (db comp-dbp))
+  :returns (db$ comp-dbp)
+  :short "The entries of a @(see compilation-database) with a given output."
+  (b* ((output (mbe :logic (acl2::str-fix output) :exec output))
+       (db (comp-db-fix db))
+       ((when (endp db))
+        nil)
+       (rest-db (comp-db-entries-with-output output (rest db))))
+    (if (equal (car (first db)) output)
+        (cons (first db) rest-db)
+      rest-db))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-entries-agree-p
+  ((entry comp-db-entryp)
+   (db comp-dbp))
+  :returns (yes/no booleanp)
+  :short "Check whether all entries of a @(see compilation-database) have the
+          same source file and arguments as a given entry."
+  (b* ((db (comp-db-fix db))
+       ((when (endp db))
+        t)
+       ((comp-db-entry entry) entry)
+       ((comp-db-entry other) (cdr (first db))))
+    (and (equal other.file entry.file)
+         (equal other.arguments entry.arguments)
+         (comp-db-entries-agree-p entry (rest db))))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-select-outputs
+  ((outputs string-listp)
+   (db comp-dbp))
+  :returns (mv (db$ comp-dbp)
+               (missing string-listp)
+               (ambiguous string-listp)
+               (non-c string-listp))
+  :short "Select the @(see compilation-database) entries
+          which produce the given outputs."
+  :long
+  (xdoc::topstring-p
+    "Besides the selected entries, we return the outputs which no entry
+     produces, the outputs which several entries with different source files
+     or arguments produce, and the outputs which are produced from source
+     files other than @('.c') files. None of these outputs are selected.")
+  (b* (((when (endp outputs))
+        (mv nil nil nil nil))
+       (output (acl2::str-fix (first outputs)))
+       ((mv db$ missing ambiguous non-c)
+        (comp-db-select-outputs (rest outputs) db))
+       (entries (comp-db-entries-with-output output db))
+       ((when (endp entries))
+        (mv db$ (cons output missing) ambiguous non-c))
+       (entry (cdr (first entries)))
+       ((unless (comp-db-entries-agree-p entry (rest entries)))
+        (mv db$ missing (cons output ambiguous) non-c))
+       ((unless (str::strsuffixp ".c" (comp-db-entry->file entry)))
+        (mv db$ missing ambiguous (cons output non-c))))
+    (mv (acons output entry db$) missing ambiguous non-c))
+  :verify-guards :after-returns
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite
+                              acl2::consp-of-car-when-alistp-alt))))
+
+(define comp-db-select
+  ((db comp-dbp)
+   (objects string-listp)
+   (path stringp))
+  :returns (mv (er? maybe-msgp)
+               (db$ comp-dbp)
+               (warnings acl2::msg-listp))
+  :short "Select the @(see compilation-database) entries
+          which produce the given object files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The objects are typically the inputs of a link step, which compilation
+      databases do not record. Relative object paths are taken relative to
+      @('path'). Like the outputs of the compilation database (see @(tsee
+      comp-db-absolute-paths)), they are made absolute syntactically.")
+   (xdoc::p
+     "It is an error if an object is produced by no entry, or by several
+      entries which differ in their source files or arguments. In the latter
+      case, we cannot know which of the entries produced the object being
+      linked. Several entries may produce the same object if, for instance,
+      the object was rebuilt while the compilation database was recorded, or
+      if the build reuses an object file name. Entries which agree are
+      collapsed into one.")
+   (xdoc::p
+     "Objects which are compiled from source files other than @('.c') files
+      (e.g. assembly files) are not selected, with a warning."))
+  (b* (((reterr) nil nil)
+       (outputs (remove-duplicates-equal
+                  (comp-db-absolute-path-list path objects)))
+       ((mv db$ missing ambiguous non-c)
+        (comp-db-select-outputs outputs db))
+       (missing-msg
+         (msg$ "No compilation database entry produces the object~#0~[~/s~] ~
+                ~&0. The compilation database may be incomplete: for ~
+                instance, it may have been recorded from a build which did ~
+                not recompile every object, in which case a clean build may ~
+                help."
+               missing))
+       (ambiguous-msg
+         (msg$ "Several compilation database entries with different source ~
+                files or arguments produce the object~#0~[~/s~] ~&0, so it ~
+                cannot be determined how ~#0~[it was~/they were~] built."
+               ambiguous))
+       ((when (and missing ambiguous))
+        (retmsg$ "~@0~%~%~@1" missing-msg ambiguous-msg))
+       ((when missing)
+        (reterr missing-msg))
+       ((when ambiguous)
+        (reterr ambiguous-msg))
+       (warnings (and non-c
+                      (list (msg$ "The object~#0~[~/s~] ~&0 ~#0~[is~/are~] not ~
+                                   compiled from C source files, so ~
+                                   ~#0~[it is~/they are~] not selected."
+                                  non-c)))))
+    (retok db$ warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
