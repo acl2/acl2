@@ -13,6 +13,7 @@
 
 (include-book "std/portcullis" :dir :system)
 (include-book "centaur/fty/portcullis" :dir :system)
+(include-book "kestrel/filepath/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

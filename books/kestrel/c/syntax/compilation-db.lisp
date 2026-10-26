@@ -25,12 +25,12 @@
 (include-book "kestrel/json/top" :dir :system)
 
 (include-book "std/strings/strpos" :dir :system)
-(include-book "std/strings/strrpos" :dir :system)
 (include-book "std/strings/strsubst" :dir :system)
 (include-book "std/strings/suffixp" :dir :system)
 
+(include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "system/extend-pathname" :dir :system)
+(include-book "kestrel/filepath/paths" :dir :system)
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -133,6 +133,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: consider storing directories, source files, and outputs as structured
+;; paths from the filepath::paths library once there is a fixtype for them.
+;; For now, they are strings, which we parse and print back on demand (see
+;; comp-db-absolute-path).
 (fty::defprod comp-db-entry
   :short "A fixtype for entries parsed from a @(see compilation-database)."
   :long
@@ -446,12 +450,10 @@
      directory of the compilation, not in the directory of the source
      file.")
   (b* ((file (mbe :logic (acl2::str-fix file) :exec file))
-       (slash (str::strrpos "/" file))
-       (base (if slash (subseq file (1+ slash) nil) file))
-       (dot (str::strrpos "." base))
-       (stem (if dot (subseq base 0 dot) base)))
-    (concatenate 'string stem suffix))
-  :guard-hints (("Goal" :in-theory (enable length))))
+       ((mv slashp - base) (acl2::split-string-last file #\/))
+       (base (if slashp base file))
+       ((mv - stem -) (acl2::split-string-last base #\.)))
+    (concatenate 'string stem suffix)))
 
 (define comp-db-implicit-output
   ((file stringp)
@@ -587,31 +589,6 @@
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
-(define comp-db-drop-shared
-  ((db comp-dbp))
-  :returns (db$ comp-dbp)
-  :short "Drop @(see compilation-database) entries which produce shared or
-          position-independent code."
-  (b* ((db (comp-db-fix db))
-       ((when (endp db))
-        nil)
-       (entry (cdr (first db)))
-       (drop (or (member-equal (make-comp-db-arg :name "-fPIC"
-                                                 :separator ""
-                                                 :value nil)
-                               (comp-db-entry->arguments entry))
-                 (member-equal (make-comp-db-arg :name "-fpic"
-                                                 :separator ""
-                                                 :value nil)
-                               (comp-db-entry->arguments entry)))))
-    (if drop
-        (comp-db-drop-shared (rest db))
-      (cons (first db)
-            (comp-db-drop-shared (rest db)))))
-  :measure (acl2-count (comp-db-fix db))
-  :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: why is the fix hook of this function taking a little long?
@@ -660,10 +637,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define comp-db-absolute-path
+  ((directory stringp)
+   (path stringp))
+  :returns (path$ stringp)
+  :short "Make a path absolute, relative to a directory."
+  :long
+  (xdoc::topstring-p
+    "This is purely syntactic: using the @(see filepath::paths) library, we
+     resolve @('path') against @('directory') and remove @('.') and @('..')
+     segments. Symbolic links are not followed, since the compiler names a
+     file (for instance in quoted @('#include') directives and in
+     @('__FILE__')) by the path it was given.")
+  (b* ((directory (mbe :logic (acl2::str-fix directory) :exec directory))
+       (path (mbe :logic (acl2::str-fix path) :exec path)))
+    (filepath::path-to-string
+      (filepath::normalize-path
+        (filepath::resolve (filepath::parse-path directory)
+                           (filepath::parse-path path))))))
+
 (define comp-db-arguments-absolute-dirs
   ((directory stringp)
-   (arguments comp-db-arg-listp)
-   state)
+   (arguments comp-db-arg-listp))
   :returns (arguments$ comp-db-arg-listp)
   (b* ((directory (acl2::str-fix directory))
        (arguments (comp-db-arg-list-fix arguments))
@@ -673,42 +668,37 @@
        ((comp-db-arg argument) argument)
        ((unless (member-equal argument.name *cc-options-dir*))
         (cons (comp-db-arg-fix argument)
-              (comp-db-arguments-absolute-dirs directory (rest arguments) state)))
-       (value (if argument.value
-                  (ec-call (extend-pathname directory argument.value state))
-                argument.value))
-       (value (if (stringp value) value argument.value)))
+              (comp-db-arguments-absolute-dirs directory (rest arguments))))
+       (value (and argument.value
+                   (comp-db-absolute-path directory argument.value))))
     (cons (change-comp-db-arg argument :value value)
-          (comp-db-arguments-absolute-dirs directory (rest arguments) state)))
+          (comp-db-arguments-absolute-dirs directory (rest arguments))))
   :measure (acl2-count (comp-db-arg-list-fix arguments))
-  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix)))
-  :hooks ((:fix
-           :hints (("Goal" :induct t
-                           :expand ((comp-db-arguments-absolute-dirs
-                                      directory
-                                      (comp-db-arg-list-fix arguments)
-                                      state))
-                           :in-theory (disable acl2::member-of-cons
-                                               acl2::member-when-atom))))))
+  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix))))
 
-(define comp-db-absolute-dirs
-  ((db comp-dbp)
-   state)
+(define comp-db-absolute-paths
+  ((db comp-dbp))
   :returns (db$ comp-dbp)
-  :short "Make relative directories absolute in directory-valued arguments of a
-          @(see compilation-database)."
+  :short "Make relative paths absolute in a @(see compilation-database)."
+  :long
+  (xdoc::topstring-p
+    "The outputs, source files, and directory-valued arguments of each entry
+     are made absolute "
+    (xdoc::seetopic "comp-db-absolute-path" "relative to")
+    " the entry's directory.")
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
        (output (car (first db)))
        ((comp-db-entry entry) (cdr (first db)))
+       (output (and output (comp-db-absolute-path entry.directory output)))
+       (file (comp-db-absolute-path entry.directory entry.file))
        (arguments (comp-db-arguments-absolute-dirs entry.directory
-                                                   entry.arguments
-                                                   state))
-       (entry (change-comp-db-entry entry :arguments arguments)))
+                                                   entry.arguments))
+       (entry (change-comp-db-entry entry :file file :arguments arguments)))
     (acons output
            entry
-           (comp-db-absolute-dirs (rest db) state)))
+           (comp-db-absolute-paths (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
@@ -717,21 +707,6 @@
 
 ;; TODO: support paths which are not contained within base
 ;; (i.e., allow ".." to backtrack higher up the base path as necessary).
-(define relativize-path
-  ((path stringp)
-   (base stringp))
-  :returns (mv (erp booleanp)
-               (relative-path stringp))
-  (b* (((reterr) "")
-       (path (mbe :logic (acl2::str-fix path) :exec path))
-       (base (mbe :logic (acl2::str-fix base) :exec base))
-       ((unless (str::strprefixp base path))
-        (reterr t)))
-    (retok (subseq (the string path)
-                   (length (the string base))
-                   nil)))
-  :guard-hints (("Goal" :in-theory (enable length))))
-
 (define comp-db-relativize-files
   ((db comp-dbp)
    (path stringp))
@@ -744,14 +719,16 @@
         (retok nil))
        (output (car (first db)))
        ((comp-db-entry entry) (cdr (first db)))
-       ((erp file$)
-        (relativize-path entry.file path)
-        :iferr (msg$ "Cannot make file path ~x0 relative to base path ~x1."
-                     entry.file
-                     path))
+       (base (filepath::parse-path path))
+       (file (filepath::parse-path entry.file))
+       ((unless (filepath::path-prefixp base file))
+        (retmsg$ "Cannot make file path ~x0 relative to base path ~x1."
+                 entry.file
+                 path))
+       (file (filepath::path-to-string (filepath::relativize-path base file)))
        ((erp rest-db)
         (comp-db-relativize-files (rest db) path)))
-    (retok (cons (cons output (change-comp-db-entry entry :file file$))
+    (retok (cons (cons output (change-comp-db-entry entry :file file))
                  rest-db)))
   :measure (acl2-count (comp-db-fix db)))
 
@@ -826,7 +803,6 @@
 (define to-preprocess-db
   ((db comp-dbp)
    (path stringp)
-   (drop-shared booleanp)
    state)
   :returns (mv (er? maybe-msgp)
                (db$ comp-dbp))
@@ -834,15 +810,14 @@
           preprocessing."
   (b* (((reterr) (comp-db-fix db))
        (path (mbe :logic (acl2::str-fix path) :exec path))
-       (path$ (canonical-pathname path t state))
-       ((unless path$)
+       ((unless (canonical-pathname path t state))
         (retmsg$ "The specified path does not exist or is not a directory: ~x0"
                  path))
+       (path (comp-db-absolute-path (acl2::str-fix (cbd)) path))
        (db (comp-db-drop-non-c db))
-       (db (if drop-shared (comp-db-drop-shared db) db))
        (db (comp-db-keep-only-preprocessor-args db))
-       (db (comp-db-absolute-dirs db state))
-       ((erp db) (comp-db-relativize-files db path$))
+       (db (comp-db-absolute-paths db))
+       ((erp db) (comp-db-relativize-files db path))
        (db (comp-db-escape-for-shell db)))
     (retok db)))
 
@@ -863,19 +838,17 @@
 (define to-preprocess-map
   ((db comp-dbp)
    (path stringp)
-   (drop-shared booleanp)
    state)
   :returns (mv (er? maybe-msgp)
                (map acl2::string-stringlist-mapp))
   (b* (((reterr) nil)
        ((erp db$)
-        (to-preprocess-db db path drop-shared state)))
+        (to-preprocess-db db path state)))
     (retok (preprocess-db-to-map db$))))
 
 (define preprocess-map-from-comp-file
   ((filename stringp)
    (path stringp)
-   (drop-shared booleanp)
    (warnings acl2::msg-listp)
    state)
   :returns (mv erp
@@ -888,7 +861,7 @@
        ((erp db state)
         (parse-comp-db filename state))
        ((erp map)
-        (to-preprocess-map db path drop-shared state)))
+        (to-preprocess-map db path state)))
     (retok map warnings state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -904,7 +877,6 @@
   ((const-name symbolp)
    (filename stringp)
    (path stringp)
-   (drop-shared booleanp)
    (show-warnings booleanp)
    state)
   :returns (mv erp event state)
@@ -912,7 +884,6 @@
        ((mv erp map warnings state)
         (preprocess-map-from-comp-file filename
                                        path
-                                       drop-shared
                                        nil
                                        state))
        (- (if show-warnings
@@ -929,8 +900,7 @@
    &key
    file
    (path '".")
-   (drop-shared 'nil)
    (show-warnings 't))
   `(make-event
      (defpreprocess-map-fn
-       ',name ',file ',path ',drop-shared ',show-warnings state)))
+       ',name ',file ',path ',show-warnings state)))
