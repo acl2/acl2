@@ -1447,7 +1447,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                      (cond ((numberp n) n)
                            (*read-suppress* nil)
                            (t (acl2-reader-error
-                               "Failure to read #u expression: result ~s is ~
+                               "Failure to read #u expression: result ~x0 is ~
                                 not a numeral."
                                      n)))))))))))
 
@@ -1547,6 +1547,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 (defun sharp-d-read (stream char n)
   (declare (ignore char n))
   (let ((num (read stream t nil t)))
+    (when *read-suppress*
+      (return-from sharp-d-read nil))
     (when (not (typep num 'double-float))
       (acl2-reader-error
        "The value, ~s0, was read from a token following #d that did not have ~
