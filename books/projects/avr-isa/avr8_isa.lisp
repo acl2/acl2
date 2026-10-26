@@ -40,7 +40,7 @@
 ;; flags improve performance.
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
-(in-package "ACL2")
+(in-package "AVR-ISA")
 
 (include-book "ihs/ihs-definitions" :dir :system)
 
