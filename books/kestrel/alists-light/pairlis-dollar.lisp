@@ -32,20 +32,31 @@
          (true-list-fix x))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
-;see also a version in books/std/alists/strip-cdrs.lisp
-(defthm strip-cdrs-of-pairlis$2
-  (implies (and (true-listp y)
-                (equal (len x) (len y)))
-           (equal (strip-cdrs (pairlis$ x y))
-                  y))
-  :hints (("Goal" :in-theory (enable pairlis$))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Also in strip-cdrs.lisp.
+;compatible with std
 ;; this introduces take, which may not always be desirable
 (defthm strip-cdrs-of-pairlis$
   (equal (strip-cdrs (pairlis$ x y))
          (take (len x) y))
   :hints (("Goal" :in-theory (enable pairlis$ take))))
+
+;; Special case with nicer result than strip-cdrs-of-pairlis$.  Listed second
+;; so it is tried earlier
+(defthm strip-cdrs-of-pairlis$-when-equal-lengths
+  (implies (equal (len x) (len y))
+           (equal (strip-cdrs (pairlis$ x y))
+                  (true-list-fix y)))
+  :hints (("Goal" :in-theory (enable strip-cdrs))))
+
+;; Nicest result.  Listed last so it is tried first.
+;; See also a version in books/std/alists/strip-cdrs.lisp
+(defthm strip-cdrs-of-pairlis$2
+  (implies (and (equal (len x) (len y))
+                (true-listp y))
+           (equal (strip-cdrs (pairlis$ x y))
+                  y))
+  :hints (("Goal" :in-theory (enable pairlis$))))
 
 (defthmd pairlis$-opener
   (implies (consp keys)
