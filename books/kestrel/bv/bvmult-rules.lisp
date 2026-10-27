@@ -12,6 +12,7 @@
 
 (include-book "bvmult")
 (include-book "bvlt")
+(local (include-book "bvchop"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))

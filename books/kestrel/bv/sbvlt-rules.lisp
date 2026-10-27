@@ -18,6 +18,7 @@
 (local (include-book "logext"))
 (local (include-book "logapp"))
 (local (include-book "getbit"))
+(local (include-book "bvchop"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/booleans/bool-fix" :dir :system))
 

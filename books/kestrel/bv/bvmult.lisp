@@ -1,7 +1,7 @@
 ; A function to multiply two bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,9 +11,11 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "getbit-def")
 (include-book "bvmult-def")
+(include-book "kestrel/arithmetic-light/power-of-2p-def" :dir :system)
+(include-book "kestrel/arithmetic-light/lg" :dir :system)
 (local (include-book "slice"))
 (local (include-book "getbit"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))

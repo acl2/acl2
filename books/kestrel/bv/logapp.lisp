@@ -11,9 +11,10 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "logapp-def")
 (include-book "logtail-def")
+(local (include-book "bvchop"))
 (local (include-book "../library-wrappers/ihs-logops-lemmas"))
 (local (include-book "../library-wrappers/ihs-quotient-remainder-lemmas")) ;drop
 (local (include-book "../utilities/equal-of-booleans"))
