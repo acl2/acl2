@@ -171,6 +171,9 @@
    one of the inference rules specified in the @(':irules') input,
    i.e. a @('rule[k]') in the user documentation."
 
+  "@('side') is 1 or 2, and designates
+   one of the two proofs of a @('p[i]-proof-induct2') function."
+
   (xdoc::evmac-topic-implementation-item-input "verify-guards")
 
   (xdoc::evmac-topic-implementation-item-input "guard-hints")
@@ -1497,6 +1500,71 @@
 
 ;;;;;;;;;;
 
+(define defind-proof-side-var-name ((side posp) (name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of one of the two proof variables of
+          a @('p[i]-proof-induct2') function."
+  (packn-pos (list (defind-proof-var-name name) (lposfix side))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-side-prem-var-name ((side posp) (num posp) (name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the variable bound to a premise of
+          one of the two proofs of a @('p[i]-proof-induct2') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the analogue of @(tsee defind-proof-prem-var-name)
+     for the proof variables of @(tsee defind-proof-side-var-name)."))
+  (packn-pos (list (defind-proof-side-var-name side name)
+                   #\.
+                   (defind-prem-field-name num name))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-side-var-field-var-name ((var symbolp)
+                                              (side posp)
+                                              (name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the variable bound to a variable field of
+          one of the two proofs of a @('p[i]-proof-induct2') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the analogue of @(tsee defind-proof-var-field-var-name)
+     for the proof variables of @(tsee defind-proof-side-var-name).
+     The @('p[i]-proof-induct2') functions substitute these variables
+     for the variables of the rule in the arguments of the premises;
+     see @(tsee defind-gen-proof-ind2-prem-args)."))
+  (packn-pos (list (defind-proof-side-var-name side name)
+                   #\.
+                   (symbol-lfix var))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-side-var-field-var-names ((vars symbol-listp)
+                                               (side posp)
+                                               (name symbolp))
+  :returns (var-names symbol-listp)
+  :short "Names of the variables bound to all the variable fields of
+          one of the two proofs of a @('p[i]-proof-induct2') function."
+  (cond ((endp vars) nil)
+        (t (cons (defind-proof-side-var-field-var-name (car vars) side name)
+                 (defind-proof-side-var-field-var-names
+                   (cdr vars) side name))))
+
+  ///
+
+  (defret len-of-defind-proof-side-var-field-var-names
+    (equal (len var-names) (len vars))
+    :hints (("Goal" :induct t :in-theory (enable len)))))
+
+;;;;;;;;;;
+
 (define defind-concl-formal-var-name ((formal symbolp) (name symbolp))
   :returns (var-name symbolp)
   :short "Name of the conclusion argument variable
@@ -1512,6 +1580,32 @@
   (cond ((endp formals) nil)
         (t (cons (defind-concl-formal-var-name (car formals) name)
                  (defind-concl-formal-var-names (cdr formals) name)))))
+
+;;;;;;;;;;
+
+(define defind-concl-formal-side-var-name ((formal symbolp)
+                                           (side posp)
+                                           (name symbolp))
+  :returns (var-name symbolp)
+  :short "Name of the conclusion argument variable
+          corresponding to a formal of a predicate,
+          for one of the two proofs of a @('p[i]-proof-induct2') function."
+  (packn-pos (list (defind-concl-formal-var-name formal name) (lposfix side))
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-concl-formal-side-var-names ((formals symbol-listp)
+                                            (side posp)
+                                            (name symbolp))
+  :returns (var-names symbol-listp)
+  :short "Names of the conclusion argument variables
+          corresponding to the formals of a predicate,
+          for one of the two proofs of a @('p[i]-proof-induct2') function."
+  (cond ((endp formals) nil)
+        (t (cons (defind-concl-formal-side-var-name (car formals) side name)
+                 (defind-concl-formal-side-var-names
+                   (cdr formals) side name)))))
 
 ;;;;;;;;;;
 
@@ -1843,6 +1937,40 @@
      derived from the name of the @(tsee defines)."))
   (packn-pos (list 'defthm- (defind-induction-thm-name pred-name name))
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-ind2-fn-name ((pred-name symbolp) (name symbolp))
+  :returns (fn-name symbolp)
+  :short "Name of a @('p[i]-proof-induct2') function."
+  (packn-pos (list (defind-proof-type-name pred-name name) '-induct2)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-ind2-fn-clique-name ((pred-name symbolp) (name symbolp))
+  :returns (defines-name symbolp)
+  :short "Name of a @(tsee defines) of @('p[i]-proof-induct2') functions."
+  (packn-pos (list (defind-proof-type-clique-name pred-name name) '-induct2)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-ind2-fn-formals ((pred-formals symbol-listp)
+                                      (side posp)
+                                      (name symbolp))
+  :returns (formals symbol-listp)
+  :short "Formals of a @('p[i]-proof-induct2') function
+          for one of the two proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the proof variable
+     followed by the variables for the arguments of the conclusion.
+     The formals of the function are
+     the ones for the first proof followed by the ones for the second proof."))
+  (cons (defind-proof-side-var-name side name)
+        (defind-concl-formal-side-var-names pred-formals side name)))
 
 ;;;;;;;;;;
 
@@ -4369,6 +4497,470 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-gen-proof-ind2-prem-args ((args defind-term-info-listp)
+                                         (vars symbol-listp)
+                                         (side posp)
+                                         (num posp)
+                                         (name symbolp))
+  :returns (prem-args true-listp)
+  :short "Generate the arguments of a recursive call of
+          a @('p[i]-proof-induct2') function
+          for a premise of the rule used by one of the two proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the proof of the premise
+     followed by the arguments of the premise,
+     which are its translated arguments
+     with the variables of the rule replaced by
+     the variables bound to the corresponding fields of the proof.
+     Unlike the @('p[i]-proof-validp') and @('p[i]-induct') functions,
+     the @('p[i]-proof-induct2') functions
+     do not bind the variables of the rules
+     (see @(tsee defind-gen-proof-valid-fn-case-bindings)),
+     because the rules used by the two proofs may share variables;
+     hence the substitution, which must be in the translated arguments."))
+  (b* ((vars (symbol-list-fix vars)))
+    (cons (defind-proof-side-prem-var-name side num name)
+          (subcor-var-lst vars
+                          (defind-proof-side-var-field-var-names vars side name)
+                          (defind-term-info-list->tterm args))))
+  :guard-hints (("Goal" :in-theory (enable length))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-calls-one ((infos defind-premise-info-listp)
+                                         (vars symbol-listp)
+                                         (pred-name symbolp)
+                                         (before symbol-listp)
+                                         (after symbol-listp)
+                                         (side posp)
+                                         (num posp)
+                                         (name symbolp))
+  :returns (calls true-listp)
+  :short "Generate the recursive calls of a @('p[i]-proof-induct2') function
+          that descend into only one of the two proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one call for each premise of the rule used by the proof
+     that calls @('p[i]') itself.
+     The arguments for that proof are the ones for the premise
+     (see @(tsee defind-gen-proof-ind2-prem-args)),
+     while the arguments for the other proof are its formals,
+     which precede or follow the former
+     according to which proof is descended into:
+     the caller passes them as @('before') or @('after'),
+     leaving the other one empty."))
+  (b* (((when (endp infos)) nil)
+       (info (car infos)))
+    (defind-premise-info-case
+      info
+      :pred (b* ((calls (defind-gen-proof-ind2-calls-one
+                          (cdr infos) vars pred-name before after
+                          side (1+ (lposfix num)) name))
+                 ((unless (equal info.name (symbol-lfix pred-name))) calls)
+                 (fn-name (defind-proof-ind2-fn-name pred-name name))
+                 (prem-args (defind-gen-proof-ind2-prem-args
+                              info.args vars side num name)))
+              (cons `(,fn-name ,@(symbol-list-fix before)
+                               ,@prem-args
+                               ,@(symbol-list-fix after))
+                    calls))
+      :other (defind-gen-proof-ind2-calls-one
+               (cdr infos) vars pred-name before after side num name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-calls-both ((infos1 defind-premise-info-listp)
+                                          (vars1 symbol-listp)
+                                          (num1 posp)
+                                          (infos2 defind-premise-info-listp)
+                                          (vars2 symbol-listp)
+                                          (clique-preds symbol-setp)
+                                          (name symbolp))
+  :returns (calls true-listp)
+  :short "Generate the recursive calls of a @('p[i]-proof-induct2') function
+          that descend into both proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one call for each pair of premises,
+     one of the rule used by the first proof
+     and one of the rule used by the second proof,
+     that call the same predicate @('p[j]') of the clique:
+     the call is of @('p[j]-proof-induct2'),
+     on the arguments for the two premises
+     (see @(tsee defind-gen-proof-ind2-prem-args)).
+     Pairs of premises that call different predicates are skipped,
+     as are the premises that call predicates of preceding cliques,
+     as in @(tsee defind-gen-ind-fn-case-calls)."))
+  (b* (((when (endp infos1)) nil)
+       (info1 (car infos1)))
+    (defind-premise-info-case
+      info1
+      :pred (b* ((calls (defind-gen-proof-ind2-calls-both
+                          (cdr infos1) vars1 (1+ (lposfix num1))
+                          infos2 vars2 clique-preds name))
+                 ((unless (set::in info1.name (symbol-sfix clique-preds)))
+                  calls)
+                 (prem-args1 (defind-gen-proof-ind2-prem-args
+                               info1.args vars1 1 num1 name)))
+              (append (defind-gen-proof-ind2-calls-both-loop
+                        info1.name prem-args1 infos2 vars2 1 name)
+                      calls))
+      :other (defind-gen-proof-ind2-calls-both
+               (cdr infos1) vars1 num1 infos2 vars2 clique-preds name)))
+
+  :prepwork
+
+  ((define defind-gen-proof-ind2-calls-both-loop
+     ((pred-name symbolp)
+      (prem-args1 true-listp)
+      (infos2 defind-premise-info-listp)
+      (vars2 symbol-listp)
+      (num2 posp)
+      (name symbolp))
+     :returns (calls true-listp)
+     :parents nil
+     (b* (((when (endp infos2)) nil)
+          (info2 (car infos2)))
+       (defind-premise-info-case
+         info2
+         :pred (b* ((calls (defind-gen-proof-ind2-calls-both-loop
+                             pred-name prem-args1 (cdr infos2) vars2
+                             (1+ (lposfix num2)) name))
+                    ((unless (equal info2.name (symbol-lfix pred-name))) calls)
+                    (fn-name (defind-proof-ind2-fn-name pred-name name))
+                    (prem-args2 (defind-gen-proof-ind2-prem-args
+                                  info2.args vars2 2 num2 name)))
+                 (cons `(,fn-name ,@(true-list-fix prem-args1) ,@prem-args2)
+                       calls))
+         :other (defind-gen-proof-ind2-calls-both-loop
+                  pred-name prem-args1 (cdr infos2) vars2 num2 name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-leaf ((info1 defind-irule-infop)
+                                    (info2 defind-irule-infop)
+                                    (pred-info defind-pred-infop)
+                                    (clique-preds symbol-setp)
+                                    (name symbolp))
+  :returns (term "An untranslated term.")
+  :short "Generate the term of a @('p[i]-proof-induct2') function
+          for a pair of rules, used by the first and second proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The term consists of
+     the recursive calls that descend into the first proof,
+     followed by the ones that descend into the second proof,
+     followed by the ones that descend into both proofs.
+     As in @(tsee defind-gen-ind-fn-case),
+     the term is @('nil') if there are no calls,
+     the call if there is one,
+     and a list of the calls otherwise:
+     only the recursive structure of the function matters."))
+  (b* (((defind-irule-info info1))
+       ((defind-irule-info info2))
+       ((defind-pred-info pred-info))
+       (vars1 (defind-irule-info-free-vars info1))
+       (vars2 (defind-irule-info-free-vars info2))
+       (formals1 (defind-proof-ind2-fn-formals pred-info.formals 1 name))
+       (formals2 (defind-proof-ind2-fn-formals pred-info.formals 2 name))
+       (calls (append (defind-gen-proof-ind2-calls-one
+                        info1.premises vars1 pred-info.name nil formals2
+                        1 1 name)
+                      (defind-gen-proof-ind2-calls-one
+                        info2.premises vars2 pred-info.name formals1 nil
+                        2 1 name)
+                      (defind-gen-proof-ind2-calls-both
+                        info1.premises vars1 1 info2.premises vars2
+                        clique-preds name))))
+    (cond ((endp calls) nil)
+          ((endp (cdr calls)) (car calls))
+          (t `(list ,@calls))))
+  :guard-hints (("Goal" :in-theory (enable symbol-listp-when-symbol-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-inner-cases ((info1 defind-irule-infop)
+                                           (infos defind-irule-info-listp)
+                                           (pred-info defind-pred-infop)
+                                           (clique-preds symbol-setp)
+                                           (name symbolp))
+  :returns (keywords+terms true-listp)
+  :short "Generate the cases on the second proof
+          of a @('p[i]-proof-induct2') function,
+          for a given rule used by the first proof."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one case for each rule whose conclusion is @('p[i]')."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info2) (car infos))
+       (cases (defind-gen-proof-ind2-inner-cases
+                info1 (cdr infos) pred-info clique-preds name))
+       ((unless (equal (defind-conclusion-info->name info2.conclusion)
+                       (defind-pred-info->name pred-info)))
+        cases)
+       (tag (defind-irule-tag info2.name))
+       (term (defind-gen-proof-ind2-leaf
+               info1 (car infos) pred-info clique-preds name)))
+    (cons (list tag term) cases)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-cases ((infos defind-irule-info-listp)
+                                     (irule-infos defind-irule-info-listp)
+                                     (pred-info defind-pred-infop)
+                                     (clique-preds symbol-setp)
+                                     (name symbolp))
+  :returns (keywords+terms true-listp)
+  :short "Generate the cases on the first proof
+          of a @('p[i]-proof-induct2') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There is one case for each rule whose conclusion is @('p[i]')
+     among the rules @('infos') being processed,
+     and the term of each case is the case macro on the second proof,
+     with the cases for all the rules @('irule-infos')
+     (see @(tsee defind-gen-proof-ind2-inner-cases)).
+     The nesting of the two case macros puts
+     the tests on the kinds of both proofs
+     on the path to each recursive call,
+     as both the measure proof and the induction scheme need."))
+  (b* (((when (endp infos)) nil)
+       ((defind-irule-info info1) (car infos))
+       (cases (defind-gen-proof-ind2-cases
+                (cdr infos) irule-infos pred-info clique-preds name))
+       ((unless (equal (defind-conclusion-info->name info1.conclusion)
+                       (defind-pred-info->name pred-info)))
+        cases)
+       (tag (defind-irule-tag info1.name))
+       (proof-case (defind-proof-case-name
+                     (defind-pred-info->name pred-info) name))
+       (inner-cases (defind-gen-proof-ind2-inner-cases
+                      (car infos) irule-infos pred-info clique-preds name))
+       (term `(,proof-case ,(defind-proof-side-var-name 2 name)
+                           ,@inner-cases)))
+    (cons (list tag term) cases)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-fn ((pred-info defind-pred-infop)
+                                  (irule-infos defind-irule-info-listp)
+                                  (clique-preds symbol-setp)
+                                  (standalonep booleanp)
+                                  (name symbolp)
+                                  (xdocp booleanp))
+  :guard (defind-irule-names-unambp irule-infos)
+  :returns (event pseudo-event-formp)
+  :short "Generate a @('p[i]-proof-induct2') function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('standalonep') input has the same meaning as in
+     @(tsee defind-gen-proof-valid-fn):
+     the termination hints and the guard non-verification
+     are part of a standalone function,
+     while they are in the enclosing @(tsee defines) otherwise.
+     The hints of a standalone function are like the ones of
+     the standalone @('p[i]-proof-validp') function,
+     with the same count theorems,
+     because the recursive calls descend into
+     the proofs of the premises that call @('p[i]'),
+     with @('natp') because the measure is a sum,
+     and without the tau system,
+     which is not needed and slows down these larger proofs.")
+   (xdoc::p
+    "The formals for the arguments of the conclusions
+     only flow into the recursive calls, so they are irrelevant;
+     they are unused when no rule has a premise that calls @('p[i]'),
+     i.e. when no recursive call descends into only one proof.
+     The function is not guard-verified,
+     like the @('p[i]-induct') functions:
+     only its recursive structure matters."))
+  (b* (((defind-pred-info pred-info))
+       (fn-name (defind-proof-ind2-fn-name pred-info.name name))
+       (formals1 (defind-proof-ind2-fn-formals pred-info.formals 1 name))
+       (formals2 (defind-proof-ind2-fn-formals pred-info.formals 2 name))
+       (proof1 (defind-proof-side-var-name 1 name))
+       (proof2 (defind-proof-side-var-name 2 name))
+       (proof-case (defind-proof-case-name pred-info.name name))
+       (cases (defind-gen-proof-ind2-cases
+                irule-infos irule-infos pred-info clique-preds name))
+       (count-fn (defind-proof-count-fn-name pred-info.name name))
+       (hints+verify-guards?
+        (and standalonep
+             (b* ((poss-thm (defind-proof-kind-poss-thm-name
+                              pred-info.name name))
+                  ((mv & & count-thms & &)
+                   (defind-gen-proof-valid-fn-cases
+                     pred-info.name
+                     (defind-proof-concl-var-names pred-info.formals name)
+                     irule-infos
+                     name)))
+               `(:hints (("Goal" :in-theory '(o-p
+                                              o-finp
+                                              o<
+                                              natp
+                                              (:t ,count-fn)
+                                              ,poss-thm
+                                              ,@count-thms)))
+                 :verify-guards nil)))))
+    `(define ,fn-name (,@formals1 ,@formals2)
+       ,@(and xdocp
+              `(:parents (,(symbol-lfix name))
+                :short ,(str::cat
+                         "Induction scheme on two proofs for predicate @('"
+                         (str::downcase-string (symbol-name pred-info.name))
+                         "').")))
+       (,proof-case ,proof1 ,@cases)
+       :measure (+ (,count-fn ,proof1) (,count-fn ,proof2))
+       ,@hints+verify-guards?
+       :ignore-ok t
+       :irrelevant-formals-ok t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-fns-for-clique
+  ((pred-infos defind-pred-info-listp)
+   (irule-infos defind-irule-info-listp)
+   (clique-preds symbol-setp)
+   (name symbolp)
+   (xdocp booleanp)
+   (print evmac-input-print-p))
+  :guard (defind-irule-names-unambp irule-infos)
+  :returns (events pseudo-event-form-listp)
+  :short "Generate the @('p[i]-proof-induct2') functions of a clique."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As for the @('p[i]-induct') functions
+     (see @(tsee defind-gen-ind-fns-for-clique)),
+     nothing is generated for a non-recursive predicate,
+     the function of a clique of a single predicate is a @(tsee define),
+     and the functions of a clique of two or more predicates
+     are in a @(tsee defines) with a non-local flag function,
+     whose flag macro is the interface for
+     induction on two proofs over the clique.
+     The termination hints of the @(tsee defines) are like the ones of
+     the @(tsee defines) of the @('p[i]-proof-validp') functions
+     (see @(tsee defind-gen-proof-valid-fn-clique)),
+     expanding the count functions on both proofs,
+     with @('natp') because the measures are sums,
+     without the rule validity predicates,
+     which the bodies do not call,
+     and without the tau system,
+     which is not needed and slows down these larger proofs."))
+  (b* (((when (endp pred-infos)) nil)
+       ((defind-pred-info pred-info1) (car pred-infos))
+       ((unless (defind-pred-recursivep pred-info1.name irule-infos)) nil)
+       (print-events
+        (and (evmac-input-print->= print :result)
+             (defind-gen-proof-ind2-fns-print-events pred-infos name)))
+       ((when (endp (cdr pred-infos)))
+        (cons (defind-gen-proof-ind2-fn
+                (car pred-infos) irule-infos clique-preds t name xdocp)
+              print-events))
+       ((mv fn-events expands thms)
+        (defind-gen-proof-ind2-fns-for-clique-loop
+          pred-infos irule-infos clique-preds name xdocp))
+       (defines-name (defind-proof-ind2-fn-clique-name pred-info1.name name)))
+    (cons `(defines ,defines-name
+             ,@fn-events
+             :hints (("Goal"
+                      :expand ,expands
+                      :in-theory '(eql
+                                   not
+                                   o-p
+                                   o-finp
+                                   o<
+                                   natp
+                                   (:e equal)
+                                   ,@thms)))
+             :verify-guards nil
+             :flag-local nil)
+          print-events))
+
+  :prepwork
+
+  ((define defind-gen-proof-ind2-fns-for-clique-loop
+     ((pred-infos defind-pred-info-listp)
+      (irule-infos defind-irule-info-listp)
+      (clique-preds symbol-setp)
+      (name symbolp)
+      (xdocp booleanp))
+     :guard (defind-irule-names-unambp irule-infos)
+     :returns (mv (fn-events pseudo-event-form-listp)
+                  (expands true-listp)
+                  (thms true-listp))
+     :parents nil
+     (b* (((when (endp pred-infos)) (mv nil nil nil))
+          ((defind-pred-info pred-info) (car pred-infos))
+          (fn-event (defind-gen-proof-ind2-fn
+                      (car pred-infos) irule-infos clique-preds nil name xdocp))
+          (count-fn (defind-proof-count-fn-name pred-info.name name))
+          (expands1 (list `(,count-fn ,(defind-proof-side-var-name 1 name))
+                          `(,count-fn ,(defind-proof-side-var-name 2 name))))
+          (thms1 (list (defind-proof-kind-poss-thm-name pred-info.name name)
+                       (defind-proof-count-return-thm-name pred-info.name name)))
+          ((mv fn-events expands thms)
+           (defind-gen-proof-ind2-fns-for-clique-loop
+             (cdr pred-infos) irule-infos clique-preds name xdocp)))
+       (mv (cons fn-event fn-events)
+           (append expands1 expands)
+           (append thms1 thms))))
+
+   (define defind-gen-proof-ind2-fns-print-events
+     ((pred-infos defind-pred-info-listp) (name symbolp))
+     :returns (events pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp pred-infos)) nil)
+          ((defind-pred-info pred-info) (car pred-infos))
+          (fn-name (defind-proof-ind2-fn-name pred-info.name name)))
+       (cons `(cw-event "Function ~x0.~%" ',fn-name)
+             (defind-gen-proof-ind2-fns-print-events
+               (cdr pred-infos) name))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defind-gen-proof-ind2-fns ((pred-infos defind-pred-info-listp)
+                                   (irule-infos defind-irule-info-listp)
+                                   (leveled-cliques symbol-set-list-listp)
+                                   (name symbolp)
+                                   (xdocp booleanp)
+                                   (print evmac-input-print-p))
+  :guard (and (defind-pred-names-unambp pred-infos)
+              (defind-irule-names-unambp irule-infos))
+  :returns (events pseudo-event-form-listp)
+  :short "Generate all the @('p[i]-proof-induct2') functions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We generate one event per clique, in dependency order,
+     as in @(tsee defind-gen-proof-valid-fns)."))
+  (b* (((when (endp leveled-cliques)) nil)
+       (levels (symbol-set-list-fix (car leveled-cliques)))
+       (clique-preds (set::set-list-union levels))
+       (clique-pred-infos (defind-lookup-pred-set clique-preds pred-infos))
+       (events (defind-gen-proof-ind2-fns-for-clique
+                 clique-pred-infos irule-infos clique-preds name xdocp print))
+       (more-events (defind-gen-proof-ind2-fns
+                      pred-infos irule-infos (cdr leveled-cliques)
+                      name xdocp print)))
+    (append events more-events))
+  :no-function nil
+  :type-prescription (true-listp (defind-gen-proof-ind2-fns
+                                   pred-infos irule-infos leveled-cliques
+                                   name xdocp print))
+  :guard-hints
+  (("Goal" :in-theory (enable set-listp-when-symbol-set-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-gen-pred ((pred-info defind-pred-infop)
                          (irule-infos defind-irule-info-listp)
                          (standalonep booleanp)
@@ -6159,6 +6751,9 @@
           pred-infos irule-infos leveled-cliques name xdocp print))
        (validp-ruleset-events
         (defind-gen-validp-ruleset pred-infos irule-infos name print))
+       (proof-ind2-events
+        (defind-gen-proof-ind2-fns
+          pred-infos irule-infos leveled-cliques name xdocp print))
        ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
@@ -6196,6 +6791,7 @@
                            irule-valid-events
                            proof-valid-events
                            validp-ruleset-events
+                           proof-ind2-events
                            pred-events
                            guard-verification-events
                            pred-thms-events
