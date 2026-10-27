@@ -2931,8 +2931,15 @@
                              ttree)
 ; Force-assumption always returns an unchanged force-flg which we just ignore.
                             (declare (ignore new-force-flg))
+
+; There was a bug, discovered by AI, in V87 here: we passed unify-subst to
+; advance-fc-activation2 below where we should have passed the updated
+; fully-bound-unify-subst.  The mistake could result in free variable capture
+; and produce unsoundness.  This exploit was reported in
+; new-67-fc-unbound-free-capture.lisp by Eric Smith.
+
                             (advance-fc-activation2
-                             act0 (cdr hyps) unify-subst ttree
+                             act0 (cdr hyps) fully-bound-unify-subst ttree
                              fc-round type-alist ens force-flg wrld state
                              oncep-override
                              suspensions

@@ -1,0 +1,4 @@
+(F)
+(F-TP)
+(BAD)
+(NIL-PROVED)

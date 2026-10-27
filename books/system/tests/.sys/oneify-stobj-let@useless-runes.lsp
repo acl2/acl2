@@ -1,0 +1,5 @@
+(TWO)
+(RD)
+(IS-10)
+(IS-NOT-10)
+(CONTRADICTION)

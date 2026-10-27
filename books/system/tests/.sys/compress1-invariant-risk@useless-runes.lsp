@@ -1,0 +1,3 @@
+(LEMMA)
+(POKE)
+(NIL-PROVED)

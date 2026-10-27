@@ -107583,6 +107583,28 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/non-exec-in-logic-mode-load-time-value.lisp[0m[0m and
   [30m[47msystem/tests/non-exec-return-last-load-time-value.lisp[0m[0m.
 
+  Fixed a soundness bug in converting a goal term to a set of
+  [clause]s.  When the goal term involved a [lambda] application
+  (typically from the use of [30m[47m[let][0m[0m or [30m[47m[let*][0m[0m) in which the [30m[47mHIDE[0m[0m
+  function was used in the body, the variables inside the [30m[47mHIDE[0m[0m term
+  were not instantiated when the lambda was applied.  For more
+  details see [community-book]
+  [30m[47msystem/tests/tautologyp-hide-in-lambda.lisp[0m[0m.
+
+  Fixed a soundness bug by eliminating tautologies and cleaning up
+  double negations and duplicate literals.  For more details see
+  [community-book] [30m[47msystem/tests/clean-clause-set-by-hint.lisp[0m[0m; also
+  see [30m[47msystem/tests/clean-clause-set-clausify-direct.lisp[0m[0m.
+
+  Fixed a soundness bug in [forward-chaining] that failed to account
+  properly for free variables.  For more details see [community-book]
+  [30m[47msystem/tests/fc-unbound-free-capture.lisp[0m[0m; also see
+  [30m[47msystem/tests/fc-forced-free-var.lisp[0m[0m.
+
+  Fixed a soundness bug in determining when one set of first order
+  clauses subsumes another.  For more details see [community-book]
+  [30m[47msystem/tests/clause-set-subsumes-1-test.lisp[0m[0m.
+
 
 Other Bug Fixes
 

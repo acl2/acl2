@@ -110690,6 +110690,27 @@ it."
  community-books) @('system/tests/non-exec-in-logic-mode-load-time-value.lisp')
  and @('system/tests/non-exec-return-last-load-time-value.lisp').</p>
 
+ <p>Fixed a soundness bug in converting a goal term to a set of @(see clause)s.
+ When the goal term involved a @(see lambda) application (typically from the
+ use of @(tsee let) or @(tsee let*)) in which the @('HIDE') function was used
+ in the body, the variables inside the @('HIDE') term were not instantiated
+ when the lambda was applied.  For more details see @(see community-book)
+ @('system/tests/tautologyp-hide-in-lambda.lisp').</p>
+
+ <p>Fixed a soundness bug by eliminating tautologies and cleaning up double
+ negations and duplicate literals.  For more details see @(see community-book)
+ @('system/tests/clean-clause-set-by-hint.lisp'); also see
+ @('system/tests/clean-clause-set-clausify-direct.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see forward-chaining) that failed to account
+ properly for free variables.  For more details see @(see community-book)
+ @('system/tests/fc-unbound-free-capture.lisp'); also see
+ @('system/tests/fc-forced-free-var.lisp').</p>
+
+ <p>Fixed a soundness bug in determining when one set of first order clauses
+ subsumes another.  For more details see @(see community-book)
+ @('system/tests/clause-set-subsumes-1-test.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

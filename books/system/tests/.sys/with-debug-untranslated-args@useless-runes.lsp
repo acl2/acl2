@@ -1,0 +1,6 @@
+(G
+ (1 1 (:TYPE-PRESCRIPTION G))
+ )
+(G-1-IS-0)
+(G-1-IS-1)
+(BAD)

@@ -1,0 +1,4 @@
+(RD)
+(TEST)
+(TRUE-PROP)
+(FALSE-PROP)
