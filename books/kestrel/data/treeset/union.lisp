@@ -14,7 +14,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 

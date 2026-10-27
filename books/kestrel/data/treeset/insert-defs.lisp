@@ -8,7 +8,7 @@
 
 (in-package "TREESET")
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "internal/from-oset-defs")
 (include-book "internal/insert-defs")
