@@ -110086,6 +110086,12 @@ it."
 ; source function string-downcase-sbcl) had a bug, which has been fixed.
 ; Thanks to Eric McCarthy for finding a bug in our initial fix.
 
+; Fixed a soundness bug involving unadvertised system utility with-debug, by
+; preventing it from exploiting the use of load-time-value to do unsound raw
+; Lisp evaluation at compile time.  See
+; books/system/tests/with-debug-untranslated-args.lisp.  Thanks to Eric Smith
+; for passing along this bug from AI.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110678,6 +110684,11 @@ it."
  treatment for @(see invariant-risk).  See @(see community-book)
  @('system/tests/check-sum-inc-invariant-risk.lisp').  Thanks to Eric Smith
  for supplying a fix from AI.</p>
+
+ <p>Fixed soundness bugs from insufficient restrictions on the use of @(tsee
+ non-exec) with @(tsee in-logic-mode) or @(tsee return-last).  See @(see
+ community-books) @('system/tests/non-exec-in-logic-mode-load-time-value.lisp')
+ and @('system/tests/non-exec-return-last-load-time-value.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

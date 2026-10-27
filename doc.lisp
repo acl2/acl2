@@ -107577,6 +107577,12 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/check-sum-inc-invariant-risk.lisp[0m[0m.  Thanks to Eric
   Smith for supplying a fix from AI.
 
+  Fixed soundness bugs from insufficient restrictions on the use of
+  [30m[47m[non-exec][0m[0m with [30m[47m[in-logic-mode][0m[0m or [30m[47m[return-last][0m[0m.  See
+  [community-books]
+  [30m[47msystem/tests/non-exec-in-logic-mode-load-time-value.lisp[0m[0m and
+  [30m[47msystem/tests/non-exec-return-last-load-time-value.lisp[0m[0m.
+
 
 Other Bug Fixes
 
