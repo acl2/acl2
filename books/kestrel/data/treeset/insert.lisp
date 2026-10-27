@@ -16,7 +16,7 @@
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/lists/defs" :dir :system)
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 

@@ -8,7 +8,6 @@
 
 (in-package "DATA")
 
-(include-book "oset-defs")
 (include-book "std/omaps/defs" :dir :system)
 
 (local (include-book "std/util/defredundant" :dir :system))

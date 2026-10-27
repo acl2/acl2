@@ -15,7 +15,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 
 (include-book "internal/subset-defs")
