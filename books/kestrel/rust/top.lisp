@@ -46,10 +46,10 @@
     " (pinned at version 1.87.0), "
     (xdoc::ahref "https://github.com/minirust/minirust"
                  "MiniRust")
-    " for the MIR semantics, and "
+    " as the model for the MIR semantics, and "
     (xdoc::ahref "https://github.com/rust-lang/miri"
                  "Miri")
-    " as a testing oracle.")
+    " as a planned testing oracle.")
    (xdoc::p
     "The library is organized in two tracks,
      following the "
@@ -66,4 +66,11 @@
      (see @(see editions)), with 2024 the default.")
    (xdoc::p
     "This is work in progress, at an early stage.
-     At this time of writing, lexing is done.")))
+     At this time of writing,
+     the syntax track lexes and tokenizes
+     a first slice of Rust's lexical structure
+     (see @(see rust$::syntax-for-tools)),
+     and the formalization track formalizes a subset of MIR,
+     with an interpreter that runs
+     the MIR of an AES-128 implementation extracted from rustc
+     (see @(see mir)).")))
