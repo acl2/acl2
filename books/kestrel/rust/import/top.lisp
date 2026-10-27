@@ -60,4 +60,9 @@
      exactly the committed fixture @('*aes-fixslice-program*') that the
      interpreter tests (see @(see mir-tests)) run on.  This ties the
      two together: the importer is validated against the very program
-     the interpreter is tested on.")))
+     the interpreter is tested on.")
+   (xdoc::p
+    "The sample was extracted with Charon 0.1.232,
+     whose pinned rustc toolchain is @('nightly-2026-06-01'):
+     a later rustc than the 1.87.0 sources that the MIR fixtypes follow.
+     @('samples/README.md') records how to regenerate it.")))

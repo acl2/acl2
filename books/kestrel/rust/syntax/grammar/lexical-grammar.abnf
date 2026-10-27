@@ -50,8 +50,9 @@
 ;       and rejects bare CR more widely); not yet formalized.
 ; [SC4] Identifiers: the ASCII-only identifier rules below are
 ;       placeholders for Unicode XID_Start / XID_Continue
-;       (Unicode 16.0.0) with NFC normalization; to be replaced
-;       when the XID table books land.
+;       (Unicode 16.0.0) with NFC normalization.  The XID tables
+;       now exist (unicode-xid.lisp); these rules will be replaced
+;       once the grammar and lexer use them.
 ; [SC5] Raw identifiers: the identifier-or-keyword part of a
 ;       raw-identifier must not be "crate", "self", "super",
 ;       or "Self".

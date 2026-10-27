@@ -11,6 +11,7 @@
 (in-package "RUST")
 
 (include-book "../mir/abstract-syntax")
+(include-book "../mir/limits")
 (include-book "charon-hashcons-expand")
 (include-book "std/strings/decimal" :dir :system)
 
@@ -1782,6 +1783,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define json-targets-pointer-size-ok ((targets json::value-listp))
+  :returns (yes/no booleanp)
+  :hooks nil
+  :short "Check that every entry of a serialized target table
+          has the model's pointer size."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each entry pairs a target triple with
+     that target's information, including its pointer size in bytes.
+     MIR does not record the width of @('usize') and @('isize'):
+     rustc fixes it implicitly by compiling for one target,
+     while the model fixes it as @(tsee *pointer-bits*).
+     Without this check, a crate compiled for a target
+     with a different pointer size would be misinterpreted."))
+  (b* (((when (endp targets)) t)
+       (info (jget (json::value-fix (car targets)) "value"))
+       (bytes (jnat (jget info "target_pointer_size"))))
+    (and (equal bytes (/ *pointer-bits* 8))
+         (json-targets-pointer-size-ok (cdr targets)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define ullbc-to-mir ((envelope json::valuep))
   :returns (mv erp (program mir-programp))
   :hooks nil
@@ -1794,12 +1818,22 @@
      and the translated crate.
      The hashcons sharing is expanded here
      (see @(see hashcons-expansion)),
-     so the envelope can be passed directly as parsed."))
+     so the envelope can be passed directly as parsed.")
+   (xdoc::p
+    "The translated crate must record its compilation target,
+     and the target's pointer size must match the model's
+     (see @(tsee json-targets-pointer-size-ok))."))
   (b* (((when (jtruep (jget envelope "has_errors")))
         (mv (list :input-has-errors) (irr-mir-program)))
        ((mv erp expanded) (hc-expand envelope))
        ((when erp) (mv erp (irr-mir-program)))
        (translated (jget expanded "translated"))
        ((unless translated)
-        (mv (list :missing-translated) (irr-mir-program))))
+        (mv (list :missing-translated) (irr-mir-program)))
+       (targets (jelems (jget translated "target_information")))
+       ((unless (and (consp targets)
+                     (json-targets-pointer-size-ok targets)))
+        (mv (list :unsupported-target-pointer-size
+                  (jget translated "target_information"))
+            (irr-mir-program))))
     (ullbc-translated-to-mir translated)))

@@ -123,6 +123,16 @@
     (xdoc::li
      "fuel exhaustion of the step-counting driver."))
    (xdoc::p
+    "The defensive checking is not yet complete:
+     drop terminators do nothing
+     (the importer rejects drops, so imported programs contain none);
+     a discriminant read returns the variant index,
+     which is the discriminant only for enums
+     without explicit discriminant values;
+     moves read without deinitializing their source
+     (which borrow-checked programs cannot observe);
+     and the declared types of locals are not consulted.")
+   (xdoc::p
     "Within the evaluation functions,
      errors are @(tsee fty::reserr) values whose information starts with
      @(':ub'), @(':panic'), or @(':stuck')
