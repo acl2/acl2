@@ -1205,7 +1205,6 @@
               c::exec-const-of-const-fix-c
               c::iconstp-of-const-int->get
               c::iconst-fix-when-iconstp
-              c::iconst-length-kind-possibilities
               c::expr-value->value-of-expr-value
               c::value-fix-when-valuep
               c::errorp-of-error
@@ -1215,32 +1214,10 @@
               c::return-type-of-value-uint
               c::return-type-of-value-ulong
               c::return-type-of-value-ullong
-              c::integerp-when-sint-integerp
-              c::integerp-when-slong-integerp
-              c::integerp-when-sllong-integerp
-              c::natp-when-uint-integerp
-              c::natp-when-ulong-integerp
-              c::natp-when-ullong-integerp
               compustate-equivp-of-compustate-fix-old-compst
               compustate-equivp-of-compustate-fix-new-compst
               c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
-              (:t c::expr-value)
-              (:t c::iconst->unsignedp$inline)
-              (:e c::error)
-              (:e c::errorp)
-              (:e c::expr-value->value$inline)
-              (:e c::typep)
-              (:e c::type-sint)
-              (:e c::type-slong)
-              (:e c::type-sllong)
-              (:e c::type-uint)
-              (:e c::type-ulong)
-              (:e c::type-ullong)
-              (:e not)
-              acl2::zp-compound-recognizer
-              mv-nth
-              iff
-              (:e equal)))
+              (:t c::expr-value)))
           (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
             (b* ((old (c::expr-binary op old-arg1 old-arg2))
                  (new (c::expr-binary op new-arg1 new-arg2))
@@ -1316,132 +1293,44 @@
                      (c::exec-expr
                       (c::expr-binary op new-arg1 new-arg2)
                       new-compst new-fenv limit))
-            :in-theory
-            '(c::return-type-of-expr-binary
-              c::expr-binary->op-of-expr-binary
-              c::expr-binary->arg1-of-expr-binary
-              c::expr-binary->arg2-of-expr-binary
-              c::exec-expr-of-expr-fix-e
-              c::expr-fix-when-exprp
-              c::expr-kind$inline-of-expr-fix-x
-              c::expr-purep-of-expr-fix-expr
-              c::binop-purep
-              c::binop-strictp
-              c::binop-purep-of-binop-fix-op
-              c::binop-strictp-of-binop-fix-op
-              c::binop-kind$inline-of-binop-fix-x
-              c::binop-fix-when-add
-              c::binop-fix-when-sub
-              c::binop-fix-when-mul
-              c::binop-fix-when-div
-              c::binop-fix-when-rem
-              c::binop-fix-when-shl
-              c::binop-fix-when-shr
-              c::binop-fix-when-lt
-              c::binop-fix-when-gt
-              c::binop-fix-when-le
-              c::binop-fix-when-ge
-              c::binop-fix-when-eq
-              c::binop-fix-when-ne
-              c::binop-fix-when-bitand
-              c::binop-fix-when-bitxor
-              c::binop-fix-when-bitior
-              c::binop-fix-when-logand
-              c::binop-fix-when-logor
-              c::binop-fix-when-asg
-              c::binop-fix-when-asg-mul
-              c::binop-fix-when-asg-div
-              c::binop-fix-when-asg-rem
-              c::binop-fix-when-asg-add
-              c::binop-fix-when-asg-sub
-              c::binop-fix-when-asg-shl
-              c::binop-fix-when-asg-shr
-              c::binop-fix-when-asg-and
-              c::binop-fix-when-asg-xor
-              c::binop-fix-when-asg-ior
-              c::exec-binary-strict-pure
-              c::exec-binary-strict-pure-of-binop-fix-op
-              c::eval-binary-strict-pure
-              c::errorp-of-error
-              c::apconvert-expr-value-when-not-array
-              c::type-nonchar-integerp-of-type-of-value
-              c::value-kind-not-array-when-value-integerp
-              c::not-errorp-when-expr-valuep
-              c::expr-valuep-of-expr-value-fix
-              c::expr-value->value-of-expr-value
-              c::expr-value-fix-under-expr-value-equiv
-              c::expr-value->value$inline-expr-value-equiv-congruence-on-x
-              c::valuep-of-expr-value->value
-              c::value-fix-when-valuep
-              c::type-of-value-of-value-fix-val
-              c::type-of-value-of-add-values
-              c::type-of-value-of-sub-values
-              c::type-of-value-of-mul-values
-              c::type-of-value-of-div-values
-              c::type-of-value-of-rem-values
-              c::type-of-value-of-shl-values
-              c::type-of-value-of-shr-values
-              c::type-of-value-of-lt-values
-              c::type-of-value-of-gt-values
-              c::type-of-value-of-le-values
-              c::type-of-value-of-ge-values
-              c::type-of-value-of-eq-values
-              c::type-of-value-of-ne-values
-              c::type-of-value-of-bitand-values
-              c::type-of-value-of-bitxor-values
-              c::type-of-value-of-bitior-values
-              c::consp-when-errorp
-              acl2::zp-compound-recognizer
-              acl2::member-of-cons
-              acl2::member-when-atom
-              (:t c::expr-purep)
-              (:t c::expr-value)
-              (:t c::value-integerp)
-              (:e c::binop-kind$inline)
-              (:e c::binop-purep)
-              (:e c::binop-strictp)
-              (:e c::binop-add)
-              (:e c::binop-sub)
-              (:e c::binop-mul)
-              (:e c::binop-div)
-              (:e c::binop-rem)
-              (:e c::binop-shl)
-              (:e c::binop-shr)
-              (:e c::binop-lt)
-              (:e c::binop-gt)
-              (:e c::binop-le)
-              (:e c::binop-ge)
-              (:e c::binop-eq)
-              (:e c::binop-ne)
-              (:e c::binop-bitand)
-              (:e c::binop-bitxor)
-              (:e c::binop-bitior)
-              (:e c::binop-logand)
-              (:e c::binop-logor)
-              (:e c::binop-asg)
-              (:e c::binop-asg-mul)
-              (:e c::binop-asg-div)
-              (:e c::binop-asg-rem)
-              (:e c::binop-asg-add)
-              (:e c::binop-asg-sub)
-              (:e c::binop-asg-shl)
-              (:e c::binop-asg-shr)
-              (:e c::binop-asg-and)
-              (:e c::binop-asg-xor)
-              (:e c::binop-asg-ior)
-              (:e c::expr-value)
-              (:e c::expr-value->value$inline)
-              (:e c::type-of-value)
-              (:e c::value-sint)
-              (:e c::error)
-              (:e c::errorp)
-              (:e cons)
-              (:e member-equal)
-              (:e not)
-              (:e tau-system)
-              mv-nth
-              iff
-              (:e equal)))
+            :in-theory '(c::return-type-of-expr-binary
+                         c::expr-binary->op-of-expr-binary
+                         c::expr-binary->arg1-of-expr-binary
+                         c::expr-binary->arg2-of-expr-binary
+                         c::exec-expr-of-expr-fix-e
+                         c::expr-purep-of-expr-fix-expr
+                         c::binop-purep-of-binop-fix-op
+                         c::binop-strictp-of-binop-fix-op
+                         c::exec-binary-strict-pure-of-binop-fix-op
+                         c::errorp-of-error
+                         c::exec-binary-strict-pure
+                         c::eval-binary-strict-pure
+                         c::apconvert-expr-value-when-not-array
+                         c::type-nonchar-integerp-of-type-of-value
+                         c::value-kind-not-array-when-value-integerp
+                         c::not-errorp-when-expr-valuep
+                         c::expr-valuep-of-expr-value-fix
+                         c::expr-value->value$inline-of-expr-value-fix-x
+                         c::expr-value->value-of-expr-value
+                         c::type-of-value-of-value-fix-val
+                         c::type-of-value-of-add-values
+                         c::type-of-value-of-sub-values
+                         c::type-of-value-of-mul-values
+                         c::type-of-value-of-div-values
+                         c::type-of-value-of-rem-values
+                         c::type-of-value-of-shl-values
+                         c::type-of-value-of-shr-values
+                         c::type-of-value-of-lt-values
+                         c::type-of-value-of-gt-values
+                         c::type-of-value-of-le-values
+                         c::type-of-value-of-ge-values
+                         c::type-of-value-of-eq-values
+                         c::type-of-value-of-ne-values
+                         c::type-of-value-of-bitand-values
+                         c::type-of-value-of-bitxor-values
+                         c::type-of-value-of-bitior-values
+                         (:t c::expr-value)
+                         (:e member-equal)))
           (defruled stmt-return-value-congruence-under-compustate-equivp
             (b* ((old (c::stmt-return old-expr))
                  (new (c::stmt-return new-expr))
