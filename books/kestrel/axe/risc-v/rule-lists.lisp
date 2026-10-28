@@ -534,7 +534,11 @@
 
      acl2::ifix-when-integerp
      acl2::mod-becomes-bvchop-when-power-of-2p
-     )))
+
+     mod-of-4-becomes-bvchop ; gen
+     acl2::integerp-of-logand ; more?
+
+     riscv32im-le::read32-instr)))
 
 ;; Useful if we've disabled (:e lifter-rules32) to avoid big constant lists in proofs.
 (defthm symbol-listp-of-lifter-rules32

@@ -92,7 +92,9 @@
                         mv-nth
                         natp
                         string-append
-                        string-append-lst))))
+                        string-append-lst
+                        lifter-targetp ; move
+                        ))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -434,18 +436,24 @@
        ((when (not (natp target-offset)))
         (er hard? 'unroll-risc-v-code-core "Bad target-offset: ~x0." target-offset)
         (mv :bad-target-offset nil state))
+       ;; We postulate that there exists some base var wrt which the executable
+       ;; is loaded (only used if position-independentp):
+       (base-address-var 'base-address)
        (target-address-term (if position-independentp
                                 ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                ;; We postulate that there exists some base var wrt which the executable is loaded.
-                                (let ((base-address-var 'base-address))
-                                  ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
-                                  (if (= 0 target-offset)
-                                      base-address-var ; avoids adding 0
-                                    `(bvplus '32 ',target-offset ,base-address-var)))
+                                ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
+                                (if (= 0 target-offset)
+                                    base-address-var ; avoids adding 0
+                                  `(bvplus '32 ',target-offset ,base-address-var))
                               ;; Not position-independent, so the target is a concrete address:
                               (enquote target-offset)))
        (assumptions (append `((equal (pc stat) ,target-address-term)
-                              (stat32p stat))
+                              (stat32p stat)
+                              (equal (bvchop '2 (reg '1 stat)) '0) ; return-address is 4-byte aligned
+                              )
+                            (if position-independentp
+                                `((equal (bvchop '2 ,base-address-var) '0)) ; base address is 4-byte aligned
+                              nil)
                             assumptions))
        (assumptions (union-equal extra-assumptions assumptions))
        ;; (assumptions (set-difference-equal assumptions remove-assumptions))

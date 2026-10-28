@@ -143,6 +143,22 @@ that returns @('x')."
     (mbe :logic (ifix x) :exec x)))
 
 
+(defsection lrfix
+  :short "Guarded variant of @(see rfix) that executes as the identity."
+
+  (defun-inline lrfix (x)
+    (declare (xargs :guard (rationalp x)))
+    (mbe :logic (rfix x) :exec x)))
+
+
+(defsection lfix
+  :short "Guarded variant of @(see fix) that executes as the identity."
+
+  (defun-inline lfix (x)
+    (declare (xargs :guard (acl2-numberp x)))
+    (mbe :logic (fix x) :exec x)))
+
+
 (defsection true
   :short "A function that always just returns the constant @('t')."
   :long "<p>This is occasionally useful for @(see defattach), etc.</p>"
@@ -257,6 +273,15 @@ See also @(see chareqv).</p>"
                     x))))
 
 
+(defsection lchar-fix
+  :parents (std/basic str::equivalences)
+  :short "Guarded variant of @(see char-fix) that executes as the identity."
+
+  (defun-inline lchar-fix (x)
+    (declare (xargs :guard (characterp x)))
+    (mbe :logic (char-fix x) :exec x)))
+
+
 (defsection chareqv
   :parents (std/basic str::equivalences)
   :short "Case-sensitive character equivalence test."
@@ -317,6 +342,15 @@ See also @(see streqv).</p>"
                     x))))
 
 
+(defsection lstr-fix
+  :parents (std/basic str::equivalences)
+  :short "Guarded variant of @(see str-fix) that executes as the identity."
+
+  (defun-inline lstr-fix (x)
+    (declare (xargs :guard (stringp x)))
+    (mbe :logic (str-fix x) :exec x)))
+
+
 (defsection streqv
   :parents (std/basic str::equivalences)
   :short "Case-sensitive string equivalence test."
@@ -343,6 +377,72 @@ equal.</p>
   (defcong streqv equal (char x n) 1)
   (defcong streqv equal (string-append x y) 1)
   (defcong streqv equal (string-append x y) 2))
+
+
+(defsection symbol-fix
+  :parents (std/basic symbolp)
+  :short "@(call symbol-fix) is a fixing function for @(see symbolp); it is the
+identity for symbols and coerces non-symbols to @('acl2::||'), i.e., the empty
+symbol in the ACL2 package."
+
+  :long "<p>Unfortunately it's not currently possible to come up with a good
+symbol-fixing function that induces the proper congruences for both @(see
+symbol-name) and @(see symbol-package-name).  This definition at least gives us
+a congruence for @(see symbol-name).</p>
+
+<p>BOZO consider adding a symbolp guard, inlining it, and turning it into an
+identity function for execution.</p>"
+
+  (defund symbol-fix (x)
+    (declare (xargs :guard t))
+    (if (symbolp x)
+        x
+      'acl2::||))
+
+  (local (in-theory (enable symbol-fix)))
+
+  (defthm symbolp-of-symbol-fix
+    (symbolp (symbol-fix x))
+    :rule-classes :type-prescription)
+
+  (defthm symbol-fix-when-symbolp
+    (implies (symbolp x)
+             (equal (symbol-fix x) x))))
+
+
+(defsection bool-fix
+  :parents (std/basic booleanp)
+  :short "@(call bool-fix) is a fixing function for Booleans; it coerces any
+non-@('nil') value to @('t')."
+
+  (defund-inline bool-fix (x)
+    (declare (xargs :guard t))
+    (and x t))
+
+  (defthm booleanp-of-bool-fix
+    (booleanp (bool-fix x))
+    :rule-classes :type-prescription)
+
+  (defthm bool-fix-when-booleanp
+    (implies (booleanp x)
+             (equal (bool-fix x) x))
+    :hints (("Goal" :in-theory (enable bool-fix))))
+
+  (defcong iff equal (bool-fix x) 1
+    :hints (("Goal" :in-theory (enable bool-fix))))
+
+  (defthm bool-fix-under-iff
+    (iff (bool-fix x) x)
+    :hints (("Goal" :in-theory (enable bool-fix)))))
+
+
+(defsection lbool-fix
+  :parents (std/basic booleanp)
+  :short "Guarded variant of @(see bool-fix) that executes as the identity."
+
+  (defun-inline lbool-fix (x)
+    (declare (xargs :guard (booleanp x)))
+    (mbe :logic (bool-fix x) :exec x)))
 
 
 (defsection tuplep

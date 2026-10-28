@@ -1,6 +1,6 @@
 ; Verification of a RISC-V program that adds 2 numbers
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,10 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system)) ; for acl2::mod-becomes-bvchop-when-power-of-2p
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for ACL2::BVPLUS-OF-LOGEXT-ARG3, etc.
+(local (include-book "kestrel/bv/intro" :dir :system))
+(local (include-book "kestrel/bv/bvand" :dir :system))
+
+(local (in-theory (enable acl2::bvchop-of-logand-becomes-bvand riscv32im-le::read32-instr)))
 
 ;; Read in the executable:
 ; (depends-on "add.elf32")
@@ -33,6 +37,7 @@
                           ;(bvplus 32 65976 base-address) ; for position-independent mode (but see below)
                           )
                    (stat32p stat)
+                   (equal (bvchop '2 (reg '1 stat)) '0) ; return-address is 4-byte aligned
                    ;; Generates the assumptions:
                    ,@(assumptions-elf32! *executable*
                                          10 ; stack-slots

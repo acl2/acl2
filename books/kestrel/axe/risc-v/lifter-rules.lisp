@@ -148,3 +148,12 @@
 (defthm step32-of-if
   (equal (step32 (if test x y))
          (if test (step32 x) (step32 y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen
+(defthm mod-of-4-becomes-bvchop
+  (implies (integerp i)
+           (equal (mod i 4)
+                  (bvchop 2 i)))
+  :hints (("Goal" :in-theory (enable bvchop))))

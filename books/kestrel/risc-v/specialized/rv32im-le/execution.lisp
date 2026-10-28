@@ -50,8 +50,8 @@
      we set the error flag instead."))
   (b* (((when (error32p stat)) (stat32-fix stat))
        (pc (read32-pc stat))
-       ;; TODO: use read32-instr instead and check for error
-       (enc (read32-mem-ubyte32-lendian pc stat))
+       (enc (read32-instr pc stat))
+       ((unless enc) (error32 stat))
        (instr? (decodex enc (feat-rv32im-le)))
        ((unless instr?) (error32 stat)))
     (exec32-instr instr? pc stat)))
