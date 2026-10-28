@@ -12,13 +12,14 @@
 (in-package "ACL2")
 
 (include-book "sbvlt")
-(include-book "bvlt")
+(include-book "bvlt-def")
 (include-book "kestrel/utilities/myif-def" :dir :system)
 (include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "logext"))
 (local (include-book "logapp"))
 (local (include-book "getbit"))
 (local (include-book "bvchop"))
+(local (include-book "bvlt"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/booleans/bool-fix" :dir :system))
 
