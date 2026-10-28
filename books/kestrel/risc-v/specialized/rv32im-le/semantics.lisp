@@ -845,8 +845,7 @@
   (b* ((offset (loghead 32 (logext 21 (ash (ubyte20-fix imm) 1))))
        (pc (ubyte32-fix pc))
        (target-pc (+ pc offset))
-       ;; TODO: uncomment when downstream proofs are adapted
-       ;; ((unless (= (mod target-pc 4) 0)) (error32 stat))
+       ((unless (= (mod target-pc 4) 0)) (error32 stat))
        (next-pc (+ pc 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
@@ -883,8 +882,7 @@
        (offset (loghead 32 (logext 12 (ubyte12-fix imm))))
        (target-pc (logand #xfffffffe
                           (+ base offset)))
-       ;; TODO: uncomment when downstream proofs are adapted
-       ;; ((unless (= (mod target-pc 4) 0)) (error32 stat))
+       ((unless (= (mod target-pc 4) 0)) (error32 stat))
        (next-pc (+ (ubyte32-fix pc) 4))
        (stat (write32-xreg rd next-pc stat))
        (stat (write32-pc target-pc stat)))
@@ -924,11 +922,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (= rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                  (if (= (mod target-pc 4) 0)
+                      (write32-pc target-pc stat)
+                    (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -966,11 +962,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (/= rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1008,11 +1002,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (< rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1050,11 +1042,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (< rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1092,11 +1082,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
@@ -1134,11 +1122,9 @@
        (offset (loghead 32 (logext 13 (ash (ubyte12-fix imm) 1))))
        (target-pc (+ (ubyte32-fix pc) offset))
        (stat (if (>= rs1-operand rs2-operand)
-                 ;; TODO: uncomment when downstream proofs are adapted
-                 ;; (if (= (mod target-pc 4) 0)
-                 ;;     (write32-pc target-pc stat)
-                 ;;   (error32 stat))
-                 (write32-pc target-pc stat) ; TODO: replace with the above
+                 (if (= (mod target-pc 4) 0)
+                     (write32-pc target-pc stat)
+                   (error32 stat))
                (inc32-pc stat))))
     stat))
 
