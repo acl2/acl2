@@ -1,0 +1,4 @@
+(WEIRD-NUMP)
+(NOT-WEIRD)
+(MK-HINT)
+(BAD)

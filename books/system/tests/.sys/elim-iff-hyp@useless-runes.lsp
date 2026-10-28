@@ -6,3 +6,5 @@
  (3 3 (:TYPE-PRESCRIPTION H))
  )
 (H-ELIM)
+(BAD)
+(NIL-PROVED)

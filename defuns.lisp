@@ -8717,23 +8717,62 @@
 #-acl2-loop-only
 (defvar *debug-on* nil)
 
-(defmacro with-debug (form string &rest args)
+(defun check-with-debug-args (i whole args ctx)
+  (declare (xargs :guard (and (natp i)
+                              (true-listp args))
+; This could be in :logic mode, but there is no need.
+                  :mode :program))
+  (cond ((endp args) nil)
+        (t (let ((arg (car args)))
+             (cond ((or (symbolp arg)
+                        (and (true-listp arg)
+                             (= (length arg) 2)
+                             (eq (car arg) 'quote)))
+                    (check-with-debug-args (1+ i) whole (cdr args) ctx))
+                   (t (er hard? ctx
+                          "The ~n0 argument of the following form is neither ~
+                           a variable nor of the form (quote x), but all ~
+                           arguments of with-debug after the second must have ~
+                           that property:~|~x1"
+                          i whole)))))))
+
+(defun check-with-debug (whole string args ctx)
+
+; See with-debug.
+
+  (declare (xargs :guard (true-listp args)
+; This could be in :logic mode, but there is no need.
+                  :mode :program))
+  (cond ((not (stringp string))
+         (er hard? ctx
+             "The second argument of with-debug must be a string, but that is ~
+              not the case for the form:~|~x0"
+             whole))
+        (t (check-with-debug-args 3 whole args ctx))))
+
+(defmacro with-debug (&whole whole form string &rest args)
 
 ; String is a format string and args is a corresponding list of format
 ; arguments.  We evaluate form, but if *debug-on* is non-nil then we first
 ; print.
 
-  #-acl2-loop-only
-  `(progn (when *debug-on*
-            (let ((str (get-output-stream-from-channel
-                        (standard-co *the-live-state*))))
-              (format str "; DEBUG: ")
-              (format str ,string ,@args)))
-          ,form)
-  #+acl2-loop-only
-  (declare (ignore string args))
-  #+acl2-loop-only
-  form)
+  (prog2$
+
+; The following check is critical so that load-time-value doesn't cause
+; evaluation as a defun is processed, provided *debug-on* is nil (the default).
+; See books/system/tests/with-debug-untranslated-args.lisp.
+
+    (check-with-debug whole string args 'with-debug)
+
+    #-acl2-loop-only
+    `(progn (when *debug-on*
+              (let ((str (get-output-stream-from-channel
+                          (standard-co *the-live-state*))))
+                (format str "; DEBUG: ")
+                (format str ,string ,@args)))
+            ,form)
+    #+acl2-loop-only
+    form))
 
 #-acl2-loop-only
 (defconstant *hcomp-fake-value*

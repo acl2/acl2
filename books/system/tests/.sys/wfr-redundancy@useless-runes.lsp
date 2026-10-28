@@ -7,3 +7,5 @@
  (1 1 (:REWRITE DEFAULT-<-1))
  )
 (F)
+(NO-CONSES)
+(NIL-PROVED)

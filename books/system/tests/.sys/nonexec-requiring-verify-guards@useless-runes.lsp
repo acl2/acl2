@@ -1,0 +1,3 @@
+(F)
+(BAD)
+(NIL-PROVED)
