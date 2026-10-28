@@ -107592,6 +107592,11 @@ Bug Fixes From AI via Eric Smith
   details see [community-book]
   [30m[47msystem/tests/tautologyp-hide-in-lambda.lisp[0m[0m.
 
+  Fixed a soundness bug in converting some goal terms involving double
+  negations to a set of [clause]s.  See
+  [30m[47msystem/tests/clausify-tautology-subsumption.lisp[0m[0m and
+  [30m[47msystem/tests/guard-theorem-nontheorem.lisp[0m[0m.
+
   Fixed a soundness bug by eliminating tautologies and cleaning up
   double negations and duplicate literals.  For more details see
   [community-book] [30m[47msystem/tests/clean-clause-set-by-hint.lisp[0m[0m; also
