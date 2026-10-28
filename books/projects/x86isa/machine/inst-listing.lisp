@@ -4584,10 +4584,46 @@
     (INST "RESERVEDNOP" (OP :OP #xF1D)
           NIL 'NIL
           'NIL)
-    (INST "ENDBR32/ENDBR64" (OP :OP #xF1E)
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1E as a reserved NOP, i.e. an
+    ;; opcode reserved for future instructions, executed as a NOP by
+    ;; processors that do not implement them. Like the NOP 0F 1F /0
+    ;; below, it takes a ModR/M byte, as shown by the encodings of the
+    ;; instructions defined in this opcode so far: ENDBR32 and ENDBR64
+    ;; are F3 0F 1E FB and F3 0F 1E FA, where FB and FA are ModR/M bytes
+    ;; with mod = 3, reg = 7, and r/m = 3 and 2 respectively; RDSSPD and
+    ;; RDSSPQ are F3 0F 1E /1 with mod = 3. ENDBR32 and ENDBR64 have no
+    ;; :FEAT because they execute as NOPs on processors without CET
+    ;; (Intel Vol. 1, CET chapter).
+    (INST "ENDBR32"
+          (OP :OP #xF1E
+              :REG #x7
+              :MOD #x3
+              :R/M #x3
+              :PFX :F3
+              :SUPERSCRIPTS '(:1A :1C))
           NIL
-          '(x86-endbr32/endbr64)
-          'NIL)
+          '(X86-ENDBR32/ENDBR64)
+          '((:UD (UD-LOCK-USED))))
+    (INST "ENDBR64"
+          (OP :OP #xF1E
+              :REG #x7
+              :MOD #x3
+              :R/M #x2
+              :PFX :F3
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-ENDBR32/ENDBR64)
+          '((:UD (UD-LOCK-USED))))
+    ;; All the other encodings of 0F 1E, with or without prefixes, are
+    ;; NOPs: the ones not assigned to instructions are reserved NOPs,
+    ;; and RDSSPD/RDSSPQ are NOPs when CET shadow stacks are not
+    ;; enabled, as is always the case in this model.
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1E
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "NOP" (OP :OP #xF1F)
           (ARG :OP1 '(E V))
           '(X86-TWO-BYTE-NOP)
