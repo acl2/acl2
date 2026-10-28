@@ -670,17 +670,94 @@
 
 (defun clause-set-subsumes-1 (init-subsumes-count cl-set1 cl-set2 acc)
 
-; We return t if the first set of clauses subsumes the second in the sense that
-; for every member of cl-set2 there exists a member of cl-set1 that subsumes
-; it.  We return '? if we don't know (but this can only happen if
-; init-subsumes-count is non-nil); see the comment in subsumes.
+; This is the workhorse for clause-set-subsumes, below, which only differs by
+; checking a couple of special cases first.  Init-subsumes-count is a nil or a
+; natural, where nil is essentially ``infinity.''  Cl-set1 and cl-set2 are
+; lists of clauses, and acc is an accumulator in which we store our answer so
+; far.  Initially, acc should be t.  This workhorse returns t, nil, or ?,
+; according to whether cl-set1 definitely subsumes cl-set2, definitely does not
+; subsume it, or we can't answer with the one-way-unify budget specified by
+; init-subsumes-count.
 
-  (cond ((null cl-set2) acc)
-        (t (let ((temp (some-member-subsumes init-subsumes-count
-                                             cl-set1 (car cl-set2) nil)))
-             (and temp ; thus t or maybe, if init-subsumes-count is non-nil, ?
-                  (clause-set-subsumes-1 init-subsumes-count
-                                         cl-set1 (cdr cl-set2) temp))))))
+; We got this function wrong once (as pointed out by AI on V87).  To help get
+; it right, we thought about it this way.  Imagine that the cl-set1 clauses are
+; c1, c2, ..., cx, and the cl-set2 clauses are d1, d2, ..., dy.  We want to
+; know whether for every di there is a cj such that cj subsumes di.
+; Some-member-subsumes is the existential quantifier over the cj, for a given
+; di.  Imagine a matrix, with the di across the top and the cj along the left
+; side, where each cell contains t, nil, or ? indicating whether the cell's cj
+; subsumes the cell's di.
+
+;      d1   d2   ...   dy
+; c1   t    nil  ...   nil
+; c2  nil    ?   ...   nil
+; ... ...   ...  ...   ...
+; cx   ?    nil  ...   nil
+;     ---   ---  ---   ---
+; val  t     ?   ...   nil   ==> acc
+
+; Some-member-subsumes computes the value of the column for a given di.  We
+; compute the values from left to right, accumulating the values in acc.  We
+; can bail out as soon as we find a column of nils.  But otherwise we must keep
+; scanning.  The acc will always be either t or ?.
+
+; If a column has a t anywhere in it, the value of the column is t: some cj
+; subsumes that di.  We must keep scanning to the right to see if all the
+; other d's are subsumed.
+
+; If a column is all nils, the value of the column is nil and we can stop
+; scanning and announce cl-set1 definitely does not subsume cl-set2 because
+; that all-nil column shows that no cj subsumes the column's di.
+
+; If a column is a mix of nils and ?, the value is ?: we don't know whether
+; there is a cj that subsumes that di.  But we can't answer for the whole set
+; yet because we might discover, further to the right, that there is a dj that
+; is definitely NOT subsumed.  We must keep scanning.
+
+; Our v87 mistake was to allow acc to maintain its value when we detected a
+; column whose value was ?.  If you do that, you can prove nil, as
+; Eric Smith pointed out with an example sent by email:
+
+; (defun my-le (x y) (<= (nfix x) (nfix y)))   ; not symmetric
+; (defthm my-le-is-an-equivalence
+;    (and (booleanp (my-le x y))
+;         (my-le x x)
+;         ;; trivially true; its 22 variable literals make the symmetry
+;         ;; check give up but the buggy function reports t.
+;         (implies (and (not p1) (not p2) (not p3) (not p4) (not p5)
+;                       (not p6) (not p7) (not p8) (not p9) (not p10)
+;                       (not p11) (not p12) (not p13) (not p14) (not p15)
+;                       (not p16) (not p17) (not p18) (not p19) (not p20)
+;                       (not p21) (not p22))
+;                  (equal q q))
+;         (implies (and (my-le x y) (my-le y z)) (my-le x z)))
+;    :rule-classes :equivalence)
+; (defthm bad (implies (my-le a b) (my-le b a)) :rule-classes nil)
+; (thm nil :hints (("Goal" :use (:instance bad (a 0) (b 1)))))
+
+  (cond
+   ((null cl-set2) acc)
+   (t (let ((val (some-member-subsumes init-subsumes-count
+                                       cl-set1 (car cl-set2) nil)))
+        (cond
+         ((eq val t)
+
+; This column has a t in it, so we just continue; acc is already either ? or t.
+
+          (clause-set-subsumes-1 init-subsumes-count cl-set1 (cdr cl-set2)
+                                 acc))
+         ((eq val nil)
+
+; This column is nil, so our answer is definitely nil.
+
+          nil)
+         (t
+
+; This column is ?, i.e., composed entirely of nils and/or ? with at least one
+; ?.  So no matter what, our final answer will either be ? or nil.
+
+          (clause-set-subsumes-1 init-subsumes-count cl-set1 (cdr cl-set2)
+                                 '?)))))))
 
 (defun clause-set-subsumes (init-subsumes-count cl-set1 cl-set2)
 

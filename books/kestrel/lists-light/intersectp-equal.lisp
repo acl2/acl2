@@ -183,3 +183,13 @@
            (not (intersectp-equal small x)))
   :rule-classes ((:rewrite :match-free :all))
   :hints (("Goal" :in-theory (enable not-intersectp-equal-when-subsetp-equal-arg1))))
+
+(defthm intersectp-equal-of-true-list-fix-arg1
+  (equal (intersectp-equal (true-list-fix x) y)
+         (intersectp-equal x y))
+  :hints (("Goal" :in-theory (enable intersectp-equal true-list-fix))))
+
+(defthm intersectp-equal-of-true-list-fix-arg2
+  (equal (intersectp-equal x (true-list-fix y))
+         (intersectp-equal x y))
+  :hints (("Goal" :in-theory (enable intersectp-equal true-list-fix))))

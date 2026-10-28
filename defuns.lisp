@@ -1412,31 +1412,35 @@
 
   (clean-up-conjunction1 (clean-up-nots-lst lst nil) nil))
 
-(defun clean-up-loop$-recursion-induction-machine (tc-list)
-
-; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
-; as of this writing this function is only applied to those induction machines
-; generated from loop$ recursion induction function bodies, i.e., inductible
-; loop$ recursive functions.  This function is spiritually similar to
-; simplify-tests-and-calls but just drops cases having contradictory tests and
-; eliminates duplicates and double negations among the remaining tests.  We
-; implement this process as a separate function rather than strengthen
-; simplify-tests-and-calls because we wish not to change any existing induction
-; machines as we add the ability to induct for loop$ recursive functions.
-
-  (cond
-   ((endp tc-list) nil)
-   (t (let ((tests
-             (clean-up-conjunction
-              (access tests-and-calls (car tc-list) :tests))))
-        (cond
-         ((eq tests :contradiction)
-          (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
-         (t (cons
-             (make tests-and-calls
-                   :tests tests
-                   :calls (access tests-and-calls (car tc-list) :calls))
-             (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
+; (defun clean-up-loop$-recursion-induction-machine (tc-list)
+;
+; ; Tc-list is a list of tests-and-calls, i.e., an induction machine.  However,
+; ; as of this writing this function is only applied to those induction machines
+; ; generated from loop$ recursion induction function bodies, i.e., inductible
+; ; loop$ recursive functions.  This function is spiritually similar to
+; ; simplify-tests-and-calls but just drops cases having contradictory tests and
+; ; eliminates duplicates and double negations among the remaining tests.  We
+; ; implement this process as a separate function rather than strengthen
+; ; simplify-tests-and-calls because we wish not to change any existing induction
+; ; machines as we add the ability to induct for loop$ recursive functions.
+;
+; ; This function hasn't been deployed yet because the current code suffices for
+; ; the loop$ recursions we've tested, but we don't have any experience with
+; ; loop$ recursions arising in practical applications yet.
+;
+;   (cond
+;    ((endp tc-list) nil)
+;    (t (let ((tests
+;              (clean-up-conjunction
+;               (access tests-and-calls (car tc-list) :tests))))
+;         (cond
+;          ((eq tests :contradiction)
+;           (clean-up-loop$-recursion-induction-machine (cdr tc-list)))
+;          (t (cons
+;              (make tests-and-calls
+;                    :tests tests
+;                    :calls (access tests-and-calls (car tc-list) :calls))
+;              (clean-up-loop$-recursion-induction-machine (cdr tc-list)))))))))
 
 (defun induction-machines
   (loop$-recursion names arglists measure-alist bodies
@@ -6053,6 +6057,11 @@
 ; In the case of mutual-recursion, only the first name in the nest should be a
 ; key of this alist; see put-invariant-risk.
 
+; Every key of this alist must be a built-in function symbol, as is checked by
+; the function check-invariant-risk.  Otherwise put-invariant-risk would treat
+; a user-defined function of the same name as built-in.  (A key check-sum-inc,
+; left here when that function was removed, caused such a soundness bug.)
+
 ; At one point we thought we should mark with invariant-risk all functions that
 ; have raw code and have state as a formal.  But we see almost no way to
 ; violate an invariant by misguided updates of the (fictional) live state.  For
@@ -6077,7 +6086,6 @@
   '((aset1 . t) ; could write past the end of the real array
     (aset2 . t) ; could write past the end of the real array
     (aset1-lst . t)
-    (check-sum-inc . nil)
     (update-iprint-ar-fal . nil)
 
 ; Aset1-trusted is an untouchable version of aset1 that we use in our source
@@ -7498,7 +7506,7 @@
                   ~x2 yourself.")
         (ctx 'recover-defs-lst))
     (cond
-     ((getpropc fn "non-executablep" nil wrld)
+     ((getpropc fn 'non-executablep nil wrld)
 
 ; We shouldn't be seeing this message, as something between verify-termination
 ; and this lower-level function should be handling the non-executable case
@@ -8709,23 +8717,62 @@
 #-acl2-loop-only
 (defvar *debug-on* nil)
 
-(defmacro with-debug (form string &rest args)
+(defun check-with-debug-args (i whole args ctx)
+  (declare (xargs :guard (and (natp i)
+                              (true-listp args))
+; This could be in :logic mode, but there is no need.
+                  :mode :program))
+  (cond ((endp args) nil)
+        (t (let ((arg (car args)))
+             (cond ((or (symbolp arg)
+                        (and (true-listp arg)
+                             (= (length arg) 2)
+                             (eq (car arg) 'quote)))
+                    (check-with-debug-args (1+ i) whole (cdr args) ctx))
+                   (t (er hard? ctx
+                          "The ~n0 argument of the following form is neither ~
+                           a variable nor of the form (quote x), but all ~
+                           arguments of with-debug after the second must have ~
+                           that property:~|~x1"
+                          i whole)))))))
+
+(defun check-with-debug (whole string args ctx)
+
+; See with-debug.
+
+  (declare (xargs :guard (true-listp args)
+; This could be in :logic mode, but there is no need.
+                  :mode :program))
+  (cond ((not (stringp string))
+         (er hard? ctx
+             "The second argument of with-debug must be a string, but that is ~
+              not the case for the form:~|~x0"
+             whole))
+        (t (check-with-debug-args 3 whole args ctx))))
+
+(defmacro with-debug (&whole whole form string &rest args)
 
 ; String is a format string and args is a corresponding list of format
 ; arguments.  We evaluate form, but if *debug-on* is non-nil then we first
 ; print.
 
-  #-acl2-loop-only
-  `(progn (when *debug-on*
-            (let ((str (get-output-stream-from-channel
-                        (standard-co *the-live-state*))))
-              (format str "; DEBUG: ")
-              (format str ,string ,@args)))
-          ,form)
-  #+acl2-loop-only
-  (declare (ignore string args))
-  #+acl2-loop-only
-  form)
+  (prog2$
+
+; The following check is critical so that load-time-value doesn't cause
+; evaluation as a defun is processed, provided *debug-on* is nil (the default).
+; See books/system/tests/with-debug-untranslated-args.lisp.
+
+    (check-with-debug whole string args 'with-debug)
+
+    #-acl2-loop-only
+    `(progn (when *debug-on*
+              (let ((str (get-output-stream-from-channel
+                          (standard-co *the-live-state*))))
+                (format str "; DEBUG: ")
+                (format str ,string ,@args)))
+            ,form)
+    #+acl2-loop-only
+    form))
 
 #-acl2-loop-only
 (defconstant *hcomp-fake-value*

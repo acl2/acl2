@@ -446,15 +446,17 @@
   :hints (("Goal" :expand ((PSEUDO-TERMP TERM)
                            (FREE-VARS-IN-TERMS TERMS)
                            ;;(SUBLIS-VAR-AND-SIMPLIFY-LST ALIST (CDDR TERM))
+                           (sublis-var-and-simplify alist term true-terms false-terms) ; instead of enabling it, for speed
                            )
-           :in-theory (e/d (sublis-var-and-simplify
-                            sublis-var-and-simplify-lst
+           :in-theory (e/d (sublis-var-and-simplify-lst
                             ;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             alistp ;why?
                             )
                            (pairlis$
-                            SET-DIFFERENCE-EQUAL)))))
+                            SET-DIFFERENCE-EQUAL
+                            sublis-var-and-simplify ; for speed (we expand the call we need)
+                            )))))
 
 (verify-guards sublis-var-and-simplify :hints (("Goal" :in-theory (enable SYMBOLP-WHEN-PSEUDO-TERMP))))
 
@@ -506,13 +508,13 @@
                            ;;(SUBLIS-VAR-AND-SIMPLIFY-LST ALIST (CDDR TERM))
                            (sublis-var-and-simplify alist term true-terms false-terms)
                            )
-           :in-theory (e/d (sublis-var-and-simplify
-                            sublis-var-and-simplify-lst
+           :in-theory (e/d (sublis-var-and-simplify-lst
                             ;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             alistp ;why?
                             )
-                           (pairlis$
+                           (sublis-var-and-simplify ; for speed (we expand the call we need)
+                            pairlis$
                             SET-DIFFERENCE-EQUAL
                             legal-variablep
                             member-equal
@@ -559,13 +561,15 @@
   :hints (("Goal" :expand ((pseudo-termp term)
                            (free-vars-in-terms terms)
                            ;;(sublis-var-and-simplify-lst alist (cddr term))
+                           (sublis-var-and-simplify alist term true-terms false-terms) ; instead of enabling it, for speed
                            )
-           :in-theory (e/d (sublis-var-and-simplify
-                            sublis-var-and-simplify-lst
+           :in-theory (e/d (sublis-var-and-simplify-lst
                             ;;wrap-terms-in-lambdas
                             ;;wrap-term-in-lambda
                             equality-eval-of-fncall-args)
-                           (pairlis$
+                           (sublis-var-and-simplify ; for speed (we expand the call we need)
+                            pseudo-termp ; for speed
+                            pairlis$
                             equality-eval-of-variable
                             set-difference-equal
                             equality-eval-of-fncall-args-back

@@ -95,7 +95,7 @@
                               not-<-of-car-when-<=-all
                               <=-of-car-and-cadr-when-sortedp-<=
                               <-of-car-and-cadr-when-sortedp-<=
-                              ))))
+                              sortedp-<=-of-append))))
 
 
 (defthm nat-listp-of-remove-duplicates-from-sorted-list

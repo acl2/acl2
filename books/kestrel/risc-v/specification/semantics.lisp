@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1179,7 +1179,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SLL') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SLL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1224,7 +1224,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SRL') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SRL') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1269,7 +1269,7 @@
               (< (lnfix rs1) (feat->xnum feat))
               (< (lnfix rs2) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('SRA') instruction [ISA:4.2.2]."
+  :short "Semantics of the @('SRA') instruction [ISA:2.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1320,6 +1320,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them, and write the result to @('rd').
      We increment the program counter."))
@@ -1356,6 +1358,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them,
      we shift the product right by @('XLEN') bits,
@@ -1364,7 +1368,7 @@
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
        (product (* rs1-operand rs2-operand))
-       (result (ash product (feat->xlen feat)))
+       (result (ash product (- (feat->xlen feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
@@ -1395,6 +1399,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We multiply them,
      we shift the product right by @('XLEN') bits,
@@ -1403,7 +1409,7 @@
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (product (* rs1-operand rs2-operand))
-       (result (ash product (feat->xlen feat)))
+       (result (ash product (- (feat->xlen feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
@@ -1434,6 +1440,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read a signed @('XLEN')-bit integer from @('rs1')
      and an unsigned @('XLEN')-bit integer from @('rs2').
      We multiply them,
@@ -1443,7 +1451,7 @@
   (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
        (product (* rs1-operand rs2-operand))
-       (result (ash product (feat->xlen feat)))
+       (result (ash product (- (feat->xlen feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
@@ -1473,6 +1481,8 @@
   :short "Semantics of the @('DIV') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -1515,6 +1525,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid if the M extension is present.")
+   (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{\\mathtt{XLEN}}-1$)
@@ -1555,6 +1567,8 @@
   :short "Semantics of the @('REM') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two signed @('XLEN')-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -1597,6 +1611,8 @@
   :short "Semantics of the @('REMU') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid if the M extension is present.")
    (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -1725,13 +1741,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We subtract the second from the first, and write the result to @('rd').
+     We subtract the second from the first.
+     We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat))
        (result (- rs1-operand rs2-operand))
-       (stat (write-xreg (ubyte5-fix rd) result stat feat))
+       (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable feat->xnum ubyte5p)))
@@ -1760,6 +1779,8 @@
   :short "Semantics of the @('SLLW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
@@ -1801,6 +1822,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode.")
+   (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
@@ -1841,6 +1864,8 @@
   :short "Semantics of the @('SRAW') instruction [ISA:4.2.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read a signed 32-bit integer from @('rs1')
      and an unsigned 32-bit integer from @('rs2').
@@ -1884,6 +1909,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We multiply the two unsigned 32-bit integers.
      We write the result to @('rd') as a signed 32-bit integer.
@@ -1921,6 +1949,9 @@
   :short "Semantics of the @('DIVW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
@@ -1964,6 +1995,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
+   (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We divide the first by the second, rounding towards 0;
      if the divisor is 0, the result is @($2^{32}-1$)
@@ -2005,6 +2039,9 @@
   :short "Semantics of the @('REMW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two signed 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -2048,6 +2085,9 @@
   :short "Semantics of the @('REMUW') instruction [ISA:12.2]."
   :long
   (xdoc::topstring
+   (xdoc::p
+    "This is only valid in 64-bit mode,
+     and only if the M extension is present.")
    (xdoc::p
     "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
      We calculate the remainder of the first by the second,
@@ -2094,6 +2134,10 @@
   :returns (new-stat statp)
   :short "Semantics of the instructions with the @('OP-32') opcode
           [ISA:4.2.2] [ISA:12.1] [ISA:12.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are only valid in 64-bit mode."))
   (op-32-funct-case funct
                     :addw (exec-addw rd rs1 rs2 stat feat)
                     :subw (exec-subw rd rs1 rs2 stat feat)
@@ -2187,7 +2231,11 @@
      since instructions are 32-bit long,
      the address of the next instruction is obtained by adding 4 to @('pc'),
      which is the address of this instruction, passed as input to this function.
-     We write the jump target to the program counter."))
+     We write the jump target to the program counter.")
+   (xdoc::p
+    "If the jump target is not aligned, we stop with an error.
+     [ISA:2.2] clarifies that this happens at the jump instruction,
+     not when trying to read the target instruction."))
   (b* ((base (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (offset (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm))))
        (mask (cond ((feat-32p feat) #xfffffffe)
@@ -2723,16 +2771,18 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('LW') instruction [ISA:2.6]."
+  :short "Semantics of the @('LW') instruction [ISA:2.6] [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We calculate the effective address.
-     We read an unsigned 32-bit integer from the effective address.
+     We read an unsigned 32-bit integer from the effective address,
+     and sign-extend it to @('XLEN') bits.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((addr (eff-addr rs1 imm stat feat))
-       (result (read-mem32 addr stat feat))
+       (result (loghead (feat->xlen feat)
+                        (logext 32 (read-mem32 addr stat feat))))
        (stat (write-xreg (ubyte5-fix rd) result stat feat))
        (stat (inc4-pc stat feat)))
     stat)
@@ -2758,7 +2808,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('LW') instruction [ISA:4.3]."
+  :short "Semantics of the @('LWU') instruction [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -2796,7 +2846,7 @@
               (< (lnfix rd) (feat->xnum feat))
               (< (lnfix rs1) (feat->xnum feat)))
   :returns (new-stat statp)
-  :short "Semantics of the @('LW') instruction [ISA:4.3]."
+  :short "Semantics of the @('LD') instruction [ISA:4.3]."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -158,7 +158,7 @@
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
 ;See also sortedp-<=-of-append-simple
-(defthm sortedp-<=-of-append
+(defthmd sortedp-<=-of-append
   (equal (sortedp-<= (append x y))
          (and (sortedp-<= x)
               (sortedp-<= y)
@@ -217,7 +217,7 @@
                                      sortedp-<=
                                      <=-all
                                      revappend-becomes-append-of-reverse-list
-                                     ))))
+                                     sortedp-<=-of-append))))
 
 (defthm sortedp-<=-of-merge-sort-<
   (sortedp-<= (merge-sort-< x))

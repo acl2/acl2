@@ -75,12 +75,12 @@
   :hints (("Goal" :in-theory (enable max))))
 
 ;; In case we disable <-of-max-arg1
-(defthm not-<-of-max-when-<-arg1-arg1
+(defthm not-<-of-max-when-<=-arg1-arg1
   (implies (<= z x)
            (not (< (max x y) z))))
 
 ;; In case we disable <-of-max-arg1
-(defthm not-<-of-max-when-<-arg1-arg2
+(defthm not-<-of-max-when-<=-arg1-arg2
   (implies (<= z y)
            (not (< (max x y) z))))
 

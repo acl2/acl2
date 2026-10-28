@@ -509,8 +509,13 @@
                   :check-canonicity t))
        ((when flg0) (!!ms-fresh :rme-size-opt flg))
 
+       ;; Compute the effective address to read the displacement (if any),
+       ;; so that decoding faults are detected before any state update.
+       ;; The address is discarded here and recomputed after writing *sp,
+       ;; because it may depend on *sp.
+
        ((mv flg1
-            (the (signed-byte 64) addr)
+            & ; address
             (the (unsigned-byte 3) increment-RIP-by)
             x86)
         (if (equal mod #b11)
@@ -523,7 +528,10 @@
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((mv flg next-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
+
+       (badlength? (check-instruction-length start-rip next-rip 0))
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
@@ -540,7 +548,7 @@
 
        ((mv flg1
             (the (signed-byte 64) addr)
-            (the (unsigned-byte 3) increment-RIP-by)
+            & ; increment-rip-by
             x86)
         (if (equal mod #b11)
             (mv nil 0 0 x86)
@@ -549,9 +557,6 @@
                               x86)))
        ((when flg1) ;; #SS exception?
         (!!ms-fresh :x86-effective-addr-error flg1))
-
-       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
-       ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
 
        ((mv flg3 x86)
         (x86-operand-to-reg/mem proc-mode operand-size
@@ -567,7 +572,7 @@
        ((when flg3)
         (!!ms-fresh :x86-operand-to-reg/mem flg3))
 
-       (x86 (write-*ip proc-mode temp-rip x86)))
+       (x86 (write-*ip proc-mode next-rip x86)))
 
     x86)
 

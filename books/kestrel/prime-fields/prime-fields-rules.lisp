@@ -327,8 +327,8 @@
 (defthm add-of-add-of-mul-same-negated
   (equal (add (neg x p) (add (neg (mul k x p) p) y p) p)
          (add (neg (mul (+ 1 (ifix k)) x p) p) y p))
-  :hints (("Goal" :in-theory (enable neg sub add mul
-                                     acl2::mod-sum-cases))))
+  :hints (("Goal" :use (:instance acl2::mod-of-minus-arg1 (x (+ (ifix x) (* (ifix k) (ifix x)))) (y p)) ; much faster than enabling acl2::mod-sum-cases
+                  :in-theory (enable neg sub add mul))))
 
 (defthm add-of-neg-of-mul-and-add-of-neg-of-mul-same
   (implies (and (syntaxp (and (quotep k1)
@@ -338,8 +338,8 @@
                 (posp p))
            (equal (add (neg (mul k1 x p) p) (add (neg (mul k2 x p) p) y p) p)
                   (add (neg (mul (+ k1 k2) x p) p) y p)))
-  :hints (("Goal" :in-theory (enable neg sub add mul
-                                     acl2::mod-sum-cases))))
+  :hints (("Goal" :use (:instance acl2::mod-of-minus-arg1 (x (+ (* k1 (ifix x)) (* k2 (ifix x)))) (y p)) ; much faster than enabling acl2::mod-sum-cases
+                  :in-theory (enable neg sub add mul))))
 
 ;may be too strong
 (defthm equal-of-neg
@@ -402,8 +402,10 @@
                 (posp p))
            (equal (add x (add (neg (mul k x p) p) y p) p)
                   (add (neg (mul (+ -1 k) x p) p) y p)))
-  :hints (("Goal" :in-theory (enable neg sub add mul
-                                     acl2::mod-sum-cases))))
+  :hints (("Goal" :in-theory (e/d (neg sub add mul
+                                       acl2::mod-sum-cases)
+                                  (acl2::mod-of-minus-arg1 ; for speed
+                                   )))))
 
 (defthmd equal-of-<-and-fep
   (implies (natp x)

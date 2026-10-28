@@ -2028,12 +2028,13 @@
             (let ((,time (get-internal-time)))
               (,(if multiple-values-p 'our-multiple-value-prog1 'prog1)
                ,form
-                (let ((,time (- (get-internal-time) ,time)))
+                (let* ((,time (- (get-internal-time) ,time))
+                       (ftime (float (/ ,time
+                                        internal-time-units-per-second))))
                   (with-debug (incf (svref *pass2-def-time-info* 0)
                                     ,time)
                               "Incrementing by ~s~%"
-                              (float (/ ,time
-                                        internal-time-units-per-second)))))))
+                              ftime)))))
            (t ,form)))
   #-(and (not acl2-loop-only) acl2-pass2-def-time-info)
   (declare (ignore multiple-values-p))

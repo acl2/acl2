@@ -1157,7 +1157,7 @@
          (produce-theorem "Whether to produce a theorem about the result of the lifting (currently has to be trusted).")
          (produce-function "Whether to produce a defun in addition to a DAG, a boolean.")
          (local "Whether to make the result of @('unroll-java-code') local to the enclosing book (or @('encapsulate')).  This prevents a large DAG from being stored in the @(tsee certificate) of the book, but it means that the result of @('unroll-java-code') is not accessible from other books.  Usually, the default value of @('t') is appropriate, because the book that calls @('unroll-java-code') is not included by other books.")
-         (assume-object-params-non-null "Whether to assume that object paramaters of the method being lifted are non-null.")
+         (assume-object-params-non-null "Whether to assume that object parameters of the method being lifted are non-null.")
          )
   :description ("Given a Java method, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
                 "This event creates a @(tsee defconst) whose name is given by the @('defconst-name') argument."

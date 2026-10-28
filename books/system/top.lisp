@@ -119,6 +119,9 @@
 ; Dependency scanner help for toothbrush:
 ; toothbrush-deps.lisp
 
+; Proof about a toy version of system function arg1-almost-subsumes-arg2:
+; toy-arg1-almost-subsumes-arg2-proof.lisp
+
 ; Proof of the Correctness of CADR Centric Untranslation:
 ; untranslate-car-cdr.lisp
 

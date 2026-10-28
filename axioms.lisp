@@ -3212,6 +3212,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun return-last-fn (qfn)
 
+; Warning: Keep the following in sync with handling of 'return-last in
+; translate11.
+
 ; Return nil unless qfn is of the form (quote s) for a symbol s.
 
   (declare (xargs :guard t))
@@ -12268,7 +12271,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (and (true-listp dimensions)
              (do ((tl dimensions (cdr tl)))
                  ((null tl) t)
-                 (let ((dim (car dimensions)))
+                 (let ((dim (car tl)))
                    (or (and (integerp dim)
                             (<= 0 dim)
                             (< dim array-dimension-limit))
@@ -12276,7 +12279,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
              (< (let ((prod 1))
                   (do ((tl dimensions (cdr tl)))
                       ((null tl))
-                      (setq prod (* prod (car dimensions))))
+                      (setq prod (* prod (car tl))))
                   prod)
                 *our-array-total-size-limit*)))
       t

@@ -4298,7 +4298,7 @@ Subtopics
       Greater-than test for strings
 
   [String>=]
-      Less-than-or-equal test for strings
+      Greater-than-or-equal test for strings
 
   [Stringp]
       Recognizer for strings
@@ -49559,8 +49559,6 @@ request modifications or adopt your changes.")
 
     * Eric Smith ([30m[47meric.smith@kestrel.edu[0m[0m)
 
-    * David Rager ([30m[47mragerdl@gmail.com[0m[0m)
-
     * Sol Swords ([30m[47msswords@gmail.com[0m[0m)
 
   After you have joined the project, you can proceed as follows when
@@ -56088,7 +56086,7 @@ Required: Make Changes Only Within the [30m[47mbooks/[0m[0m Directory
   While the community is invited to submit contributions to the
   Community Books (see [COMMUNITY-BOOKS]), source files outside of
   the [30m[47mbooks/[0m[0m directory should not be modified, except by system
-  maintainers.
+  maintainers and those who have been granted permission explicitly.
 
   Suggestions for system changes can be emailed to {Matt Kaufmann |
   mailto:kaufmann@cs.utexas.edu}. (Prospective system developers
@@ -56182,8 +56180,6 @@ Frequent Contributors
   individuals:
 
     * Eric Smith ([30m[47meric.smith@kestrel.edu[0m[0m)
-
-    * David Rager ([30m[47mragerdl@gmail.com[0m[0m)
 
     * Sol Swords ([30m[47msswords@gmail.com[0m[0m)
 
@@ -107470,8 +107466,9 @@ Bug Fixes From AI via Eric Smith
 
   A soundness bug in the code the [tau-system] uses to put [30m[47mIF[0m[0m-terms
   into conjunctive or disjunctive normal form, [30m[47mcnf-dnf[0m[0m was fixed.
-  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m and
-  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m.
+  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m,
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp-v2.lisp[0m[0m.
 
   A soundness bug was fixed in [30m[47mtau-term[0m[0m due to passing the wrong
   arguments into the code that applies form 2 signature rules.  See
@@ -107557,13 +107554,57 @@ Bug Fixes From AI via Eric Smith
   produced [30m[47m(F (RETURN-LAST 'PROGN '7 (TO-DF X)))[0m[0m but now produces the
   correct result, [30m[47m(F (TO-DF X))[0m[0m.
 
-  Applied fixes from AI for bugs found by AI, numbered in the ACL2
-  sources as indicated.
+  Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields of
+  [stobj]s, by strengthening a check in each binding that the bound
+  variable agrees with the key, so that the two are not merely
+  congruent stobjs.  Thanks to Eric Smith for supplying a fix from
+  AI.
 
-    * (#1) Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields
-      of [stobj]s, by strengthening a check in each binding that the
-      bound variable agrees with the key, so that the two are not
-      merely congruent stobjs.
+  Fixed two bugs in source function [30m[47mchk-make-array$[0m[0m, which checks the
+  dimensions of a new array against the host Lisp's limits,
+  [30m[47marray-dimension-limit[0m[0m and [30m[47marray-total-size-limit[0m[0m.  For
+  two-dimensional arrays (see [arrays]), it checked only the first
+  dimension against [30m[47marray-dimension-limit[0m[0m, and it computed the
+  product of the dimensions as the square of the first dimension.  As
+  a result, [30m[47m[compress2][0m[0m could cause a raw Lisp error (heap exhaustion
+  in SBCL) rather than an ACL2 error, and it could reject legal
+  dimensions, such as [30m[47m(4194304 1)[0m[0m in recent versions of SBCL on
+  x86-64.  See [community-book]
+  [30m[47msystem/tests/chk-make-array-bugs.lisp[0m[0m.
+
+  Fixed a soundness bug caused by a stale entry, for a function that is
+  no longer built into ACL2, in the list of built-in functions given
+  special treatment for [invariant-risk].  See [community-book]
+  [30m[47msystem/tests/check-sum-inc-invariant-risk.lisp[0m[0m.  Thanks to Eric
+  Smith for supplying a fix from AI.
+
+  Fixed soundness bugs from insufficient restrictions on the use of
+  [30m[47m[non-exec][0m[0m with [30m[47m[in-logic-mode][0m[0m or [30m[47m[return-last][0m[0m.  See
+  [community-books]
+  [30m[47msystem/tests/non-exec-in-logic-mode-load-time-value.lisp[0m[0m and
+  [30m[47msystem/tests/non-exec-return-last-load-time-value.lisp[0m[0m.
+
+  Fixed a soundness bug in converting a goal term to a set of
+  [clause]s.  When the goal term involved a [lambda] application
+  (typically from the use of [30m[47m[let][0m[0m or [30m[47m[let*][0m[0m) in which the [30m[47mHIDE[0m[0m
+  function was used in the body, the variables inside the [30m[47mHIDE[0m[0m term
+  were not instantiated when the lambda was applied.  For more
+  details see [community-book]
+  [30m[47msystem/tests/tautologyp-hide-in-lambda.lisp[0m[0m.
+
+  Fixed a soundness bug by eliminating tautologies and cleaning up
+  double negations and duplicate literals.  For more details see
+  [community-book] [30m[47msystem/tests/clean-clause-set-by-hint.lisp[0m[0m; also
+  see [30m[47msystem/tests/clean-clause-set-clausify-direct.lisp[0m[0m.
+
+  Fixed a soundness bug in [forward-chaining] that failed to account
+  properly for free variables.  For more details see [community-book]
+  [30m[47msystem/tests/fc-unbound-free-capture.lisp[0m[0m; also see
+  [30m[47msystem/tests/fc-forced-free-var.lisp[0m[0m.
+
+  Fixed a soundness bug in determining when one set of first order
+  clauses subsumes another.  For more details see [community-book]
+  [30m[47msystem/tests/clause-set-subsumes-1-test.lisp[0m[0m.
 
 
 Other Bug Fixes
@@ -107653,6 +107694,8 @@ Other Bug Fixes
   (see [evaluation]) is traced, in which case an [Observation] is
   printed.  This can prevent a raw Lisp error during evaluation.
   Thanks to Warren Hunt for reporting this bug.
+
+  Applied fixes from Eric McCarthy for the [sharp-f-reader].
 
 
 Changes at the System Level
@@ -143872,7 +143915,7 @@ Subtopics
 
   ACL2 supports several facilities of a truly von Neumannesque state
   machine character, including file [io] and global variables.
-  Logically speaking, the state is a true list of the 14 components
+  Logically speaking, the state is a true list of the 11 components
   described below.  There is a ``current'' state object at the
   top-level of the ACL2 [command] loop.  This object is understood to
   be the value of what would otherwise be the free variable [30m[47mstate[0m[0m
@@ -143911,7 +143954,7 @@ Subtopics
       form [30m[47m((:header type file-name open-time) . elements)[0m[0m, where
       [30m[47mtype[0m[0m is one of [30m[47m:character[0m[0m, [30m[47m:byte[0m[0m, or [30m[47m:object[0m[0m and [30m[47melements[0m[0m is a
       list of things of the corresponding [30m[47mtype[0m[0m, i.e. characters,
-      integers of type [30m[47m(mod 255)[0m[0m, or lisp objects in our theory.
+      integers of type [30m[47m(mod 256)[0m[0m, or lisp objects in our theory.
       [30m[47mFile-name[0m[0m is a string.  [30m[47mOpen-time[0m[0m is an integer.  See [io].
 
       [30m[47mOpen-output-channels[0m[0m, an alist with keys that are symbols in package
@@ -146556,7 +146599,7 @@ Subtopics
       (string< str2 str1))")
  (STRING>=
   (STRINGS ACL2-BUILT-INS)
-  "Less-than-or-equal test for strings
+  "Greater-than-or-equal test for strings
 
   [30m[47m(String>= str1 str2)[0m[0m is non-[30m[47mnil[0m[0m if and only if the string [30m[47mstr2[0m[0m
   precedes the string [30m[47mstr1[0m[0m lexicographically or the strings are
@@ -146647,7 +146690,7 @@ Subtopics
       Greater-than test for strings
 
   [String>=]
-      Less-than-or-equal test for strings
+      Greater-than-or-equal test for strings
 
   [Stringp]
       Recognizer for strings
@@ -150282,7 +150325,7 @@ Logical Definitions
   returns (as an [error-triple], [30m[47m(mv nil ans state)[0m[0m) the current
   settings of the two flags.  For example:
 
-    ACL2 !>(tau-system)
+    ACL2 !>(tau-status)
      ((:SYSTEM NIL) (:AUTO-MODE T))
 
   intended to be self-explanatory.")
@@ -151929,7 +151972,7 @@ Subtopics
 
     (defun merge-bytes (b1 b2)
       ;; Combine two 8-bit bytes into a 16-bit result.
-      (declare (type (unsigned-byte-p 8) b1 b2))
+      (declare (type (unsigned-byte 8) b1 b2))
       (the (unsigned-byte 16)
            (logior (the (unsigned-byte 16) (ash b1 8))
                    b2)))
@@ -159542,9 +159585,9 @@ Subtopics
   (NUMBERS ACL2-BUILT-INS)
   "Recognizer for natural numbers that fit in a specified bit width
 
-  [30m[47m(Unsigned-byte-p bits x)[0m[0m is [30m[47mT[0m[0m when [30m[47mbits[0m[0m is a positive integer and [30m[47mx[0m[0m
-  is a nonnegative integer that fits into a bit-width of [30m[47mbits[0m[0m, i.e.,
-  [30m[47m0 <= x < 2^bits[0m[0m.
+  [30m[47m(Unsigned-byte-p bits x)[0m[0m is [30m[47mT[0m[0m when [30m[47mbits[0m[0m is a non-negative integer and
+  [30m[47mx[0m[0m is a nonnegative integer that fits into a bit-width of [30m[47mbits[0m[0m,
+  i.e., [30m[47m0 <= x < 2^bits[0m[0m.
 
   Note that a [type-spec] of [30m[47m(unsigned-byte i)[0m[0m for a variable [30m[47mx[0m[0m in a
   function's [30m[47m[declare][0m[0m form translates to a [guard] condition of
@@ -164206,7 +164249,7 @@ The Differences Between Well-Formed and Merely Tame Lambda Objects
   Acceptable Values
 
   Now we describe the values you may provide with the
-  [30m[47m:well-founded-guarantee[0m[0m keyword of the [30m[47m:meta[0m[0m and the
+  [30m[47m:well-formedness-guarantee[0m[0m keyword of the [30m[47m:meta[0m[0m and the
   [30m[47m:clause-processor[0m[0m rule-classes.
 
       General Forms:
@@ -170075,7 +170118,7 @@ Remarks on defaults
 
   This is the same as [30m[47mup[0m[0m followed by [30m[47m(dive n-1)[0m[0m, where [30m[47mn[0m[0m is the
   position of the current subterm in its parent term in the
-  conclusion.  Thus in particular, the [30m[47mnx[0m[0m command fails if one is
+  conclusion.  Thus in particular, the [30m[47mbk[0m[0m command fails if one is
   already at the top of the conclusion.
 
   Also see [ACL2-pc::up], [ACL2-pc::dive], [ACL2-pc::top], and
@@ -171633,7 +171676,7 @@ Subtopics
   replay will abort and ``fail'', and the state-stack will revert to
   its value before the [30m[47mput[0m[0m instruction was executed.
 
-  If [30m[47m(put var expr)[0m[0m ``succeeds'', then [30m[47m(remove-abbreviation var)[0m[0m will
+  If [30m[47m(put var expr)[0m[0m ``succeeds'', then [30m[47m(remove-abbreviations var)[0m[0m will
   be executed at the end.
 
   [31;1mRemark[0m: The [30m[47mrestore[0m[0m command will revert the state-stack to its value

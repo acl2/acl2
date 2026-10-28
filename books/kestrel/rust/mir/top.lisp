@@ -33,14 +33,18 @@
      our interpreter executes and
      our importer extracts from rustc.
      The fixtypes mirror <i>rustc's</i> MIR syntax
-     (its types, places, rvalues, statements, and terminators,
-     as the importer receives them),
-     while the interpreter's state and value model
-     will follow "
+     (its types, places, rvalues, statements, and terminators),
+     while the interpreter takes its structure from "
     (xdoc::ahref "https://github.com/minirust/minirust" "MiniRust")
-    ";
-     rustc-shaped syntax keeps the importer a near-transliteration,
-     while MiniRust supplies a rigorous semantic style.")
+    ": a machine that executes one statement or terminator per step,
+     in which places evaluate to addresses that are then loaded or stored,
+     and undefined behavior is distinguished from panics.
+     Rustc-shaped syntax keeps the importer a near-transliteration,
+     while MiniRust supplies a rigorous semantic style.
+     The interpreter's values are currently typed and structured,
+     with no byte-level memory;
+     a byte-level layer in the style of MiniRust is planned
+     (see @(see mir-values)).")
    (xdoc::p
     "MIR is not a single language:
      rustc reshapes it through three dialects as compilation proceeds
@@ -84,7 +88,10 @@
      "sources")
     " (pinned at rustc 1.87.0), and "
     (xdoc::ahref "https://github.com/minirust/minirust" "MiniRust")
-    "."))
+    ".
+     The sample program that the importer is tested on
+     was extracted with a later rustc toolchain
+     (see @(see mir-import-tests))."))
   :order-subtopics t
   :default-parent t)
 

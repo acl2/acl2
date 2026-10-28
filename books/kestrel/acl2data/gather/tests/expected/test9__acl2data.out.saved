@@ -6,7 +6,7 @@
 3 ;failure_count_book_runes
 3 ;total_count_book_runes
 62 ;failure_count_single_rune
-91 ;total_count_single_rune
+89 ;total_count_single_rune
 ((:SYSTEM .
           "kestrel/acl2data/gather/tests/runs/test9.lisp")
  (THM1
@@ -1979,9 +1979,7 @@
                      (AND (NOT (CONSP X)) (NATP NIL))))
        :RULE-CLASSES ((:REWRITE))))))
   (:BOOK-RUNES-ALIST NIL)
-  (:RUNE-ALIST (((:DEFINITION IFF) :REMOVE)
-                ((:TYPE-PRESCRIPTION STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM)
-                 :REMOVE)))
+  (:RUNE-ALIST NIL)
   (:SYMBOL-TABLE
        ((NOT . :BUILTIN)
         (NATP . :BUILTIN)
@@ -1993,10 +1991,6 @@
         (IF . :BUILTIN)
         (ELEMENT-P-OF-CAR-WHEN-ELEMENT-LIST-P-WHEN-UNKNOWN-NIL-NEGATED
              :SYSTEM . "std/lists/abstract.lisp")
-        (STD::DEFLIST-LOCAL-BOOLEANP-ELEMENT-THM
-             :SYSTEM
-             .
-             "kestrel/acl2data/gather/tests/runs/test9.lisp")
         (CONSP . :BUILTIN)
         (CAR . :BUILTIN))))
  (NAT-FREE-LISTP-OF-APPEND

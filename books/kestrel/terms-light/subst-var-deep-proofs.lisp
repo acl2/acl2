@@ -460,7 +460,7 @@
                             EMPTY-EVAL-OF-LOOKUP-EQUAL-OF-PAIRLIS$ ;bad
                             member-equal
 ;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
-                            ALISTS-EQUIV-ON-OF-APPEND-ARG1
+                            ALISTS-EQUIV-ON-OF-APPEND-ARG2
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
                             main.help.help)))))
 

@@ -6512,11 +6512,10 @@
                             (t (setq return-val nil))))))))
          (t (case type
               (defun
-                  (with-debug (setf (symbol-function name) val)
-                              "[~s] Set (symbol-function ~s), symbol-class ~s.~%"
-                              'ifatib-5
-                              name
-                              (symbol-class name0 wrld)))
+                  (let ((cls (symbol-class name0 wrld)))
+                    (with-debug (setf (symbol-function name) val)
+                                "[~s] Set (symbol-function ~s), symbol-class ~s.~%"
+                                'ifatib-5 name cls)))
               (defparameter
                 (with-debug (setf (symbol-value name) val)
                             "[~s] Set (symbol-value ~s).~%"
@@ -6557,9 +6556,10 @@
                                        nil))
    ((hcomp-build-p)
     (install-for-add-trip-hcomp-build def reclassifyingp evalp))
-   (t (with-debug (incf-pass2-def-time? (eval def))
-                  "[~s] Eval def for ~s.~%"
-                  'ifat-1 (cadr def)))))
+   (t (let ((cadr-def (cadr def)))
+        (with-debug (incf-pass2-def-time? (eval def))
+                    "[~s] Eval def for ~s.~%"
+                    'ifat-1 cadr-def)))))
 
 (defun install-defs-for-add-trip (defs reclassifying-p wrld declaim-p evalp
                                    &aux (hcomp-build-p (hcomp-build-p)))
@@ -6772,9 +6772,10 @@
          (assert evalp)
          (loop for def in defs
                when def
-               do (with-debug (incf-pass2-def-time? (eval def))
-                              "[~s] Eval def for ~s.~%"
-                              'idfat-9 (cadr def))))
+               do (let ((cadr-def (cadr def)))
+                    (with-debug (incf-pass2-def-time? (eval def))
+                                "[~s] Eval def for ~s.~%"
+                                'idfat-9 cadr-def))))
         (hcomp-build-p
          (loop for def in defs
                when def
@@ -6783,9 +6784,10 @@
         (t
          (assert evalp)
          (loop for def in defs
-               do (with-debug (incf-pass2-def-time? (eval def))
-                              "[~s] Eval def for ~s.~%"
-                              'idfat-10 (cadr def))))))
+               do (let ((cadr-def (cadr def)))
+                    (with-debug (incf-pass2-def-time? (eval def))
+                                "[~s] Eval def for ~s.~%"
+                                'idfat-10 cadr-def))))))
 
 (defun ifat-defparameter (name val form)
 
@@ -8848,6 +8850,20 @@
                 *BOOT-STRAP-INVARIANT-RISK-ALIST*, or else add it to the ~%~
                 list of ``acceptable exceptions'' in the definition of ~%~
                 check-invariant-risk."
+               bad)))
+
+; Next we check that every key of *boot-strap-invariant-risk-alist* is a
+; function symbol; see the comment about this in that constant.
+
+  (let ((bad (loop for pair in *boot-strap-invariant-risk-alist*
+                   when (not (function-symbolp (car pair)
+                                               (w *the-live-state*)))
+                   collect (car pair))))
+    (or (null bad)
+        (error "Each symbol in the following non-empty list is a key of ~%~
+                ~s but is not a function symbol:~%~s.~%~
+                Remove each such key from that alist."
+               '*boot-strap-invariant-risk-alist*
                bad)))
 
 ; See the comment about the following check in

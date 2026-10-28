@@ -38,8 +38,8 @@
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
-;ffixme get rid of bytes-to-bits using this fact:
-(defthm bytes-to-bits-rewrite
+;; We could define bytes-to-bits this way, but it seems more complicated.
+(defthmd bytes-to-bits-rewrite
   (equal (bytes-to-bits x)
          (ungroup 8 (map-unpackbv 8 1 x)))
   :hints (("Goal" :expand ((:free (a b c) (unpackbv a b c)))

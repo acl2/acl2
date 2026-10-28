@@ -46123,8 +46123,6 @@ current fast alists."
 
  <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
 
- <li>David Rager (@('ragerdl@gmail.com'))</li>
-
  <li>Sol Swords (@('sswords@gmail.com'))</li>
 
  </ul>
@@ -52564,7 +52562,7 @@ tables in the current Hons Space."
  <p>While the community is invited to submit contributions to the <see
  topic='@(url community-books)'>Community Books</see>, source files outside of
  the @('books/') directory should not be modified, except by system
- maintainers.</p>
+ maintainers and those who have been granted permission explicitly.</p>
 
  <p>Suggestions for system changes can be emailed to <a
  href='mailto:kaufmann@cs.utexas.edu'>Matt Kaufmann</a>. (Prospective system
@@ -52656,7 +52654,6 @@ tables in the current Hons Space."
  individuals:</p>
  <ul>
    <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
-   <li>David Rager (@('ragerdl@gmail.com'))</li>
    <li>Sol Swords (@('sswords@gmail.com'))</li>
  </ul>
 
@@ -110089,6 +110086,12 @@ it."
 ; source function string-downcase-sbcl) had a bug, which has been fixed.
 ; Thanks to Eric McCarthy for finding a bug in our initial fix.
 
+; Fixed a soundness bug involving unadvertised system utility with-debug, by
+; preventing it from exploiting the use of load-time-value to do unsound raw
+; Lisp evaluation at compile time.  See
+; books/system/tests/with-debug-untranslated-args.lisp.  Thanks to Eric Smith
+; for passing along this bug from AI.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110577,8 +110580,9 @@ it."
 
  <p>A soundness bug in the code the @(see tau-system) uses to put @('IF')-terms
  into conjunctive or disjunctive normal form, @('cnf-dnf') was fixed.  See
- @('system/tests/tau-cnf-dnf-sign.lisp') and
- @('system/tests/tau-cnf-dnf-not-cnfp.lisp').</p>
+ @('system/tests/tau-cnf-dnf-sign.lisp'),
+ @('system/tests/tau-cnf-dnf-not-cnfp.lisp'), and
+ @('system/tests/tau-cnf-dnf-not-cnfp-v2.lisp').</p>
 
  <p>A soundness bug was fixed in @('tau-term') due to passing the wrong
  arguments into the code that applies form 2 signature rules.  See
@@ -110660,17 +110664,53 @@ it."
  produced @('(F (RETURN-LAST 'PROGN '7 (TO-DF X)))') but now produces the
  correct result, @('(F (TO-DF X))').</p>
 
- <p>Applied fixes from AI for bugs found by AI, numbered in the ACL2 sources as
- indicated.</p>
-
- <ul>
-
- <li>(#1) Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
+ <p>Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
  fields of @(see stobj)s, by strengthening a check in each binding that the
  bound variable agrees with the key, so that the two are not merely congruent
- stobjs.</li>
+ stobjs.  Thanks to Eric Smith for supplying a fix from AI.</p>
 
- </ul>
+ <p>Fixed two bugs in source function @('chk-make-array$'), which checks the
+ dimensions of a new array against the host Lisp's limits,
+ @('array-dimension-limit') and @('array-total-size-limit').  For
+ two-dimensional arrays (see @(see arrays)), it checked only the first
+ dimension against @('array-dimension-limit'), and it computed the product of
+ the dimensions as the square of the first dimension.  As a result, @(tsee
+ compress2) could cause a raw Lisp error (heap exhaustion in SBCL) rather than
+ an ACL2 error, and it could reject legal dimensions, such as @('(4194304 1)')
+ in recent versions of SBCL on x86-64.  See @(see community-book)
+ @('system/tests/chk-make-array-bugs.lisp').</p>
+
+ <p>Fixed a soundness bug caused by a stale entry, for a function that is no
+ longer built into ACL2, in the list of built-in functions given special
+ treatment for @(see invariant-risk).  See @(see community-book)
+ @('system/tests/check-sum-inc-invariant-risk.lisp').  Thanks to Eric Smith
+ for supplying a fix from AI.</p>
+
+ <p>Fixed soundness bugs from insufficient restrictions on the use of @(tsee
+ non-exec) with @(tsee in-logic-mode) or @(tsee return-last).  See @(see
+ community-books) @('system/tests/non-exec-in-logic-mode-load-time-value.lisp')
+ and @('system/tests/non-exec-return-last-load-time-value.lisp').</p>
+
+ <p>Fixed a soundness bug in converting a goal term to a set of @(see clause)s.
+ When the goal term involved a @(see lambda) application (typically from the
+ use of @(tsee let) or @(tsee let*)) in which the @('HIDE') function was used
+ in the body, the variables inside the @('HIDE') term were not instantiated
+ when the lambda was applied.  For more details see @(see community-book)
+ @('system/tests/tautologyp-hide-in-lambda.lisp').</p>
+
+ <p>Fixed a soundness bug by eliminating tautologies and cleaning up double
+ negations and duplicate literals.  For more details see @(see community-book)
+ @('system/tests/clean-clause-set-by-hint.lisp'); also see
+ @('system/tests/clean-clause-set-clausify-direct.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see forward-chaining) that failed to account
+ properly for free variables.  For more details see @(see community-book)
+ @('system/tests/fc-unbound-free-capture.lisp'); also see
+ @('system/tests/fc-forced-free-var.lisp').</p>
+
+ <p>Fixed a soundness bug in determining when one set of first order clauses
+ subsumes another.  For more details see @(see community-book)
+ @('system/tests/clause-set-subsumes-1-test.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -110758,6 +110798,8 @@ it."
  (see @(see evaluation)) is traced, in which case an @(csee Observation) is
  printed.  This can prevent a raw Lisp error during evaluation.  Thanks to
  Warren Hunt for reporting this bug.</p>
+
+ <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader).</p>
 
  <h3>Changes at the System Level</h3>
 
@@ -144511,7 +144553,7 @@ work on <tt>(q x)</tt>.</p>
 
  <p>ACL2 supports several facilities of a truly von Neumannesque state machine
  character, including file @(see io) and global variables.  Logically speaking,
- the state is a true list of the 14 components described below.  There is a
+ the state is a true list of the 11 components described below.  There is a
  ``current'' state object at the top-level of the ACL2 @(see command) loop.
  This object is understood to be the value of what would otherwise be the free
  variable @('state') appearing in top-level input.  When any @(see command)
@@ -144548,7 +144590,7 @@ work on <tt>(q x)</tt>.</p>
  form @('((:header type file-name open-time) . elements)'), where @('type') is
  one of @(':character'), @(':byte'), or @(':object') and @('elements') is a
  list of things of the corresponding @('type'), i.e. characters, integers of
- type @('(mod 255)'), or lisp objects in our theory.  @('File-name') is a
+ type @('(mod 256)'), or lisp objects in our theory.  @('File-name') is a
  string.  @('Open-time') is an integer.  See @(see io).</p>
 
  <p>@('Open-output-channels'), an alist with keys that are symbols in package
@@ -147160,7 +147202,7 @@ work on <tt>(q x)</tt>.</p>
 
 (defxdoc string>=
   :parents (strings acl2-built-ins)
-  :short "Less-than-or-equal test for strings"
+  :short "Greater-than-or-equal test for strings"
   :long "<p>@('(String>= str1 str2)') is non-@('nil') if and only if the string
  @('str2') precedes the string @('str1') lexicographically or the strings are
  equal.  When non-@('nil'), @('(string>= str1 str2)') is the first
@@ -150725,7 +150767,7 @@ work on <tt>(q x)</tt>.</p>
  the two flags.  For example:</p>
 
  @({
-  ACL2 !>(tau-system)
+  ACL2 !>(tau-status)
    ((:SYSTEM NIL) (:AUTO-MODE T))
  })
 
@@ -152322,7 +152364,7 @@ work on <tt>(q x)</tt>.</p>
  @({
  (defun merge-bytes (b1 b2)
    ;; Combine two 8-bit bytes into a 16-bit result.
-   (declare (type (unsigned-byte-p 8) b1 b2))
+   (declare (type (unsigned-byte 8) b1 b2))
    (the (unsigned-byte 16)
         (logior (the (unsigned-byte 16) (ash b1 8))
                 b2)))
@@ -159948,7 +159990,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
   :parents (numbers acl2-built-ins)
   :short "Recognizer for natural numbers that fit in a specified bit width"
   :long "<p>@('(Unsigned-byte-p bits x)') is @('T') when @('bits') is a
- positive integer and @('x') is a nonnegative integer that fits into a
+ non-negative integer and @('x') is a nonnegative integer that fits into a
  bit-width of @('bits'), i.e., @('0 <= x < 2^bits').</p>
 
  <p>Note that a @(see type-spec) of @('(unsigned-byte i)') for a variable
@@ -164815,7 +164857,7 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
  <h4>Acceptable Values</h4>
 
  <p>Now we describe the values you may provide with the
- @(':well-founded-guarantee') keyword of the @(':meta') and the
+ @(':well-formedness-guarantee') keyword of the @(':meta') and the
  @(':clause-processor') rule-classes.
 
  @({
@@ -170896,7 +170938,7 @@ move backward one argument in the enclosing term"
 
  <p>This is the same as @('up') followed by @('(dive n-1)'), where @('n') is
  the position of the current subterm in its parent term in the conclusion.
- Thus in particular, the @('nx') command fails if one is already at the top of
+ Thus in particular, the @('bk') command fails if one is already at the top of
  the conclusion.</p>
 
  <p>Also see @(see acl2-pc::up), @(see acl2-pc::dive), @(see acl2-pc::top), and
@@ -172650,7 +172692,7 @@ substitute for a ``free variable''"
  abort and ``fail'', and the state-stack will revert to its value before the
  @('put') instruction was executed.</p>
 
- <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviation var)')
+ <p>If @('(put var expr)') ``succeeds'', then @('(remove-abbreviations var)')
  will be executed at the end.</p>
 
  <p><b>Remark</b>: The @('restore') command will revert the state-stack to its

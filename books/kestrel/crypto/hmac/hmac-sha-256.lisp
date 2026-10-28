@@ -1,6 +1,6 @@
 ; Formal specification of HMAC-SHA-256
 ;
-; Copyright (C) 2018-2019 Kestrel Institute
+; Copyright (C) 2018-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,10 +36,10 @@
                               (all-unsigned-byte-p 1 text)
                               (true-listp text)
                               ;; so that we can hash the result of step3 below:
-                              (< (len text)
-                                 (- sha2::*sha-256-max-message-bits*
-                                    ;; number of bits in step2:
-                                    (* 8 *sha-256-block-size*))))))
+                              (<= (len text)
+                                  (- sha2::*sha-256-max-message-bits*
+                                     ;; number of bits in step2:
+                                     (* 8 *sha-256-block-size*))))))
   (let* ((b *sha-256-block-size*)
          ;; (l *sha-256-output-size*)
          ;; Hash keys that are too long. See the first paragraph of Section 2:
