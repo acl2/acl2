@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "internal/in-order-defs")
 (include-book "set-defs")

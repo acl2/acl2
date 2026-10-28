@@ -13,7 +13,7 @@
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "kestrel/data/utilities/oset-defs" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "zipper")
