@@ -27,7 +27,7 @@
 ;; cbd (connected book directory).
 (defund read-and-parse-class-file (path-to-class-file error-if-doesnt-existp state)
   (declare (xargs ;; :guard (stringp path-to-class-file) ; including this may impose invariant-risk on callers
-                  :stobjs (state)))
+                  :stobjs state))
   (b* (((when (not (stringp path-to-class-file)))
         (er hard? 'read-and-parse-class-file "File name is not a string: ~x0." path-to-class-file)
         (mv :bad-filename nil nil nil state))
@@ -58,15 +58,18 @@
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm class-infop-of-mv-nth-2-of-read-and-parse-class-file
-  (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+  (implies (and (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
+                (equal class-name (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
            (jvm::class-infop (mv-nth 2 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))
-                             (mv-nth 1 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
+                             class-name))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
 
 (defthm true-listp-of-mv-nth-3-of-read-and-parse-class-file
   (implies (not (mv-nth 0 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state)))
            (true-listp (mv-nth 3 (read-and-parse-class-file path-to-class-file error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp class-name class-info field-defconsts state).
 ;; PATH-TO-CLASS-FILE is relative to either the cbd (if DIR is nil), or toa the directory previously associated
@@ -75,13 +78,12 @@
 (defund read-and-parse-class-file-with-dir (path-to-class-file ; todo: add support for absolute path (factor out?)
                                             dir ; nil, or something added by add-include-book-dir, such as :kestrel-acl2
                                             error-if-doesnt-existp
-                                            state
-                                           )
-  (declare (xargs :stobjs (state)
-                  :guard (and (stringp path-to-class-file)
+                                            state)
+  (declare (xargs :guard (and (stringp path-to-class-file)
                               (or (null dir)
                                   (keywordp dir))
-                              (booleanp error-if-doesnt-existp))))
+                              (booleanp error-if-doesnt-existp))
+                  :stobjs state))
   (b* ((directory (if dir
                       (include-book-dir$ dir state)
                     "./"))
@@ -111,9 +113,7 @@
            (true-listp (mv-nth 3 (read-and-parse-class-file-with-dir path-to-class-file dir error-if-doesnt-existp state))))
   :hints (("Goal" :in-theory (enable read-and-parse-class-file-with-dir))))
 
-;; ;;;
-;; ;;; show-raw-parsed-class
-;; ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defund show-raw-parsed-class-fn (class-file
 ;;                                   dir ; nil, or something added by add-include-book-dir, such as :kestrel-acl2
@@ -136,9 +136,7 @@
 ;;                                  (dir 'nil))
 ;;   `(show-raw-parsed-class-fn ,class-file ',dir state constant-pool))
 
-;;;
-;;; show-class-info
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund show-class-info-fn (path-to-class-file
                             dir ; nil, or something added by add-include-book-dir, such as :kestrel-acl2
