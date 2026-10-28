@@ -328,3 +328,13 @@
                   (bvminus size x (bvsx size size2 y))))
   :hints (("Goal" :cases ((equal size size2))
                   :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvchop-of-logapp-becomes-bvcat
+  (implies (and (<= size2 size)
+                (integerp size)
+                (natp size2))
+           (equal (bvchop size (logapp size2 i j))
+                  (bvcat (- size size2) j size2 i)))
+  :hints (("Goal" :in-theory (enable bvcat))))
