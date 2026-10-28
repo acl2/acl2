@@ -4138,6 +4138,8 @@
             print-event?))
        (recursivep (defind-pred-recursivep pred-info.name infos))
        (poss-thm (defind-proof-kind-poss-thm-name pred-info.name name))
+       (count-natp-thm (defind-proof-count-natp-thm-name
+                         pred-info.name t name))
        (kind-fixing-thm (defind-proof-kind-fixing-thm-name
                           pred-info.name name))
        (prem-preds (defind-preds-in-premises-of-irules
@@ -4168,8 +4170,8 @@
                     :hints (("Goal" :in-theory '(o-p
                                                  o-finp
                                                  o<
-                                                 (:t ,count-fn)
-                                                 (:e tau-system)
+                                                 natp
+                                                 ,count-natp-thm
                                                  ,poss-thm
                                                  ,@count-thms)))))
            :verify-guards nil
@@ -4273,8 +4275,8 @@
                               o-p
                               o-finp
                               o<
+                              natp
                               (:e equal)
-                              (:e tau-system)
                               ,@term-thms
                               ,@valid-tps)))
         :verify-guards nil
@@ -4766,14 +4768,11 @@
      the termination hints and the guard non-verification
      are part of a standalone function,
      while they are in the enclosing @(tsee defines) otherwise.
-     The hints of a standalone function are like the ones of
-     the standalone @('p[i]-proof-validp') function,
-     with the same count theorems,
-     because the recursive calls descend into
+     The hints of a standalone function are the same as the ones of
+     the standalone @('p[i]-proof-validp') function:
+     the recursive calls descend into
      the proofs of the premises that call @('p[i]'),
-     with @('natp') because the measure is a sum,
-     and without the tau system,
-     which is not needed and slows down these larger proofs.")
+     so the same count theorems apply.")
    (xdoc::p
     "The formals for the arguments of the conclusions
      only flow into the recursive calls, so they are irrelevant;
@@ -4796,6 +4795,8 @@
         (and standalonep
              (b* ((poss-thm (defind-proof-kind-poss-thm-name
                               pred-info.name name))
+                  (count-natp-thm (defind-proof-count-natp-thm-name
+                                    pred-info.name t name))
                   ((mv & & count-thms & &)
                    (defind-gen-proof-valid-fn-cases
                      pred-info.name
@@ -4806,7 +4807,7 @@
                                               o-finp
                                               o<
                                               natp
-                                              (:t ,count-fn)
+                                              ,count-natp-thm
                                               ,poss-thm
                                               ,@count-thms)))
                  :verify-guards nil)))))
@@ -4850,11 +4851,8 @@
      the @(tsee defines) of the @('p[i]-proof-validp') functions
      (see @(tsee defind-gen-proof-valid-fn-clique)),
      expanding the count functions on both proofs,
-     with @('natp') because the measures are sums,
-     without the rule validity predicates,
-     which the bodies do not call,
-     and without the tau system,
-     which is not needed and slows down these larger proofs."))
+     and without the rule validity predicates,
+     which the bodies do not call."))
   (b* (((when (endp pred-infos)) nil)
        ((defind-pred-info pred-info1) (car pred-infos))
        ((unless (defind-pred-recursivep pred-info1.name irule-infos)) nil)
