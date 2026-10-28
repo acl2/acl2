@@ -83,7 +83,7 @@
 
  (assert-event (not (member-eq :hints (get-event 'r*-base (w state)))))
 
- ; The predicates are guard-verified, but not the induction function.
+ ; The predicates are guard-verified, but not the induction functions.
 
  (assert-event (guard-verified-p 'r*-base-validp (w state)))
  (assert-event (guard-verified-p 'r*-refl-validp (w state)))
@@ -91,6 +91,7 @@
  (assert-event (guard-verified-p 'r*-proof-validp (w state)))
  (assert-event (guard-verified-p 'r*-proof-minimalp (w state)))
  (assert-event (guard-verified-p 'r* (w state)))
+ (assert-event (not (guard-verified-p 'r*-proof-induct2 (w state))))
  (assert-event (not (guard-verified-p 'r*-induct (w state))))
 
  ; The generated induction scheme supports rule induction.
@@ -622,7 +623,12 @@
  (must-be-redundant
   (defthm p-alt-when-p
     (implies (p x)
-             (p-alt x)))))
+             (p-alt x))))
+
+ ; No induction functions are generated.
+
+ (assert-event (not (function-symbolp 'p-proof-induct2 (w state))))
+ (assert-event (not (function-symbolp 'p-induct (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -988,6 +994,83 @@
             (evn (+ n n)))
    :rule-classes nil
    :hints (("Goal" :in-theory (enable evn-even-sum)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Induction on two proof trees, for a clique of a single predicate:
+; the third argument of SUM is determined by the first two.
+; The hint is on a call of the generated SUM-PROOF-INDUCT2,
+; whose induction rule is disabled along with the function.
+
+(must-succeed*
+
+ (definductive sums
+   :preds ((sum x y z))
+   :irules ((zero ((natp y))
+                  (sum 0 y y))
+            (succ ((natp x)
+                   (natp z)
+                   (sum x y z))
+                  (sum (1+ x) y (1+ z)))))
+
+ (defthm sum-unique
+   (implies (and (sum-proof-validp proof1 x1 y1 z1)
+                 (sum-proof-validp proof2 x2 y2 z2)
+                 (equal x1 x2)
+                 (equal y1 y2))
+            (equal z1 z2))
+   :rule-classes nil
+   :hints (("Goal"
+            :induct (sum-proof-induct2 proof1 x1 y1 z1 proof2 x2 y2 z2)
+            :in-theory (enable* sums-validp-defs
+                                (:induction sum-proof-induct2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Induction on two proof trees, for a clique of two predicates:
+; the values of expressions and of lists of expressions are determined.
+; The PLUS rule has two EVX premises and the LEN rule has an EVXS premise,
+; so the generated functions recurse into one proof and into both,
+; for premises of either predicate of the clique.
+; The theorems are proved together via the flag macro,
+; stated on the formals of the generated functions.
+
+(must-succeed*
+
+ (definductive evaluation
+   :preds ((evx e v)
+           (evxs es vs))
+   :irules ((const ()
+                   (evx (list :const c) c))
+            (plus ((acl2-numberp v1)
+                   (acl2-numberp v2)
+                   (evx e1 v1)
+                   (evx e2 v2))
+                  (evx (list :plus e1 e2) (+ v1 v2)))
+            (len ((evxs es vs))
+                 (evx (list :len es) (len vs)))
+            (lnil ()
+                  (evxs nil nil))
+            (lcons ((evx e v)
+                    (evxs es vs))
+                   (evxs (cons e es) (cons v vs)))))
+
+ (defthm-evx-proof-clique-induct2-flag
+   (defthm evx-unique
+     (implies (and (evx-proof-validp proof1 _e1 _v1)
+                   (evx-proof-validp proof2 _e2 _v2)
+                   (equal _e1 _e2))
+              (equal _v1 _v2))
+     :rule-classes nil
+     :flag evx-proof-induct2)
+   (defthm evxs-unique
+     (implies (and (evxs-proof-validp proof1 _es1 _vs1)
+                   (evxs-proof-validp proof2 _es2 _vs2)
+                   (equal _es1 _es2))
+              (equal _vs1 _vs2))
+     :rule-classes nil
+     :flag evxs-proof-induct2)
+   :hints (("Goal" :in-theory (enable* evaluation-validp-defs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
