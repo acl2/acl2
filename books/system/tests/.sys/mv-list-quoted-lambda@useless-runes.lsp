@@ -1,0 +1,8 @@
+(G
+ (1 1 (:REWRITE DEFAULT-CDR))
+ )
+(G-LOGIC)
+(G-RAW)
+(TWO)
+(K)
+(K-LOGIC)

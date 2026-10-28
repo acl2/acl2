@@ -232,7 +232,10 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
-       (x86 (!xmmi-size operand-size
+       ;; The operand size is 16 bytes (128 bits) because,
+       ;; according to the MOVD/MOVQ specification in Intel Volume 2,
+       ;; the value stored in the XMM register is zero-extended to 128 bits.
+       (x86 (!xmmi-size 16
                         (reg-index reg rex-byte #.*r*)
                         reg/mem
                         x86))

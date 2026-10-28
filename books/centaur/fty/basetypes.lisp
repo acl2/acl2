@@ -128,36 +128,6 @@
     :define t
     :topic true-p))
 
-(defsection symbol-fix
-  :parents (fty::basetypes symbolp)
-  :short "@(call symbol-fix) is a fixing function for @(see symbolp); it is the
-identity for symbols and coerces non-symbols to @('acl2::||'), i.e., the empty
-symbol in the ACL2 package."
-
-  :long "<p>Unfortunately it's not currently possible to come up with a good
-symbol-fixing function that induces the proper congruences for both @(see
-symbol-name) and @(see symbol-package-name).  This definition at least gives us
-a congruence for @(see symbol-name).</p>
-
-<p>BOZO consider adding a symbolp guard, inlining it, and turning it into an
-identity function for execution.</p>"
-
-  (defund symbol-fix (x)
-    (declare (xargs :guard t))
-    (if (symbolp x)
-        x
-      'acl2::||))
-
-  (local (in-theory (enable symbol-fix)))
-
-  (defthm symbolp-of-symbol-fix
-    (symbolp (symbol-fix x))
-    :rule-classes :type-prescription)
-
-  (defthm symbol-fix-when-symbolp
-    (implies (symbolp x)
-             (equal (symbol-fix x) x))))
-
 (defsection symbol-equiv
   :parents (fty::basetypes symbolp)
   :short "@(call symbol-equiv) recognizes symbols that are identical under
@@ -176,19 +146,6 @@ identity function for execution.</p>"
 to @(see pos-fix)."
 
   (fty::defbasetype pos-equiv posp :fix pos-fix :topic posp))
-
-
-(defsection lposfix
-  :parents (fty::basetypes posp)
-  :short "@(call lposfix) is logically identical to @(call pos-fix), but its
-guard requires that @('x') is a @(see posp) and, in the execution, it's just a
-no-op that returns @('x')."
-
-  (defun-inline lposfix (x)
-    ;; enabled
-    (declare (xargs :guard (posp x)))
-    (mbe :logic (pos-fix x)
-         :exec x)))
 
 
 (fty::deffixtype character
@@ -219,36 +176,11 @@ about types.</p>"
   :topic any-p)
 
 
-(defsection bool-fix
-  :parents (fty::basetypes booleanp)
-  :short "@(call bool-fix) is a fixing function for Booleans; it coerces any
-non-@('nil') symbol to @('t')."
-  :long "<p>BOZO: could consider putting a @(see booleanp) guard here.</p>"
-
-  (defund-inline bool-fix (x)
-    (declare (xargs :guard t))
-    (and x t))
-
-  (local (in-theory (enable bool-fix)))
-
-  (defthm booleanp-of-bool-fix
-    (booleanp (bool-fix x))
-    :rule-classes :type-prescription)
-
-  (defthm bool-fix-when-booleanp
-    (implies (booleanp x)
-             (equal (bool-fix x) x)))
-
-  (fty::deffixtype bool
-    :pred booleanp
-    :fix bool-fix
-    :equiv iff
-    :topic booleanp)
-
-  (defcong iff equal (bool-fix x) 1)
-
-  (defthm bool-fix-under-iff
-    (iff (bool-fix x) x)))
+(fty::deffixtype bool
+  :pred booleanp
+  :fix bool-fix
+  :equiv iff
+  :topic booleanp)
 
 
 

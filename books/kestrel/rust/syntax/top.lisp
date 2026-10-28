@@ -34,7 +34,7 @@
     "This directory provides the tool-oriented syntax track
      of the Rust library, in the @('\"RUST$\"') package:
      lexing (including token trees, the currency of macro expansion),
-     parsing, and eventually printing of Rust source code,
+     parsing, and printing of Rust source code,
      aiming at the full surface language.
      The language formalization track,
      in the @('\"RUST\"') package (see @(see rust::rust)),
@@ -42,5 +42,13 @@
      This two-track organization, and the @('$') package-name convention,
      follow the C library (see @(see c$::syntax-for-tools)).")
    (xdoc::p
-    "This is work in progress."))
+    "This is work in progress.
+     At this time of writing,
+     the lexical grammar covers a first slice
+     of Rust's lexical structure,
+     and the lexer and tokenizer are done for that slice.
+     Token trees have their representation,
+     well-formedness, and flattening,
+     but not yet the builder that groups tokens into trees.
+     Parsing and printing are future work."))
   :order-subtopics t)

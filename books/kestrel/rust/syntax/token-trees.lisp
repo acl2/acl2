@@ -41,9 +41,13 @@
      left unparsed until macro expansion,
      and @('macro_rules!') matchers and transcribers
      are defined over token trees.
-     Accordingly, the lexing layer produces token trees
-     (by matching delimiters in the token sequence),
-     and the parser consumes them.")
+     Accordingly, the lexing layer is to produce token trees
+     (by matching delimiters in the token sequence)
+     for the parser to consume.
+     That builder is not yet written;
+     what exists is the representation, defined here,
+     and its well-formedness and flattening
+     (see @(see token-tree-operations)).")
    (xdoc::p
     "Delimiter tokens themselves do not appear as leaves:
      a matched pair becomes a delimited group,

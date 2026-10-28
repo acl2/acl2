@@ -1193,17 +1193,31 @@
                             ,@obj-hyps1
                             old-eval
                             (equal (c::type-of-value old-val) type))))
-            :use (:instance expr-const-congruence (new-compst old-compst))
             :in-theory
             '(c::exec-expr
+              c::exec-const
+              c::eval-const
+              c::eval-iconst
+              c::check-iconst
+              c::type-of-value
               c::return-type-of-expr-const
               c::expr-const->get-of-expr-const
+              c::exec-const-of-const-fix-c
+              c::iconstp-of-const-int->get
+              c::iconst-fix-when-iconstp
+              c::expr-value->value-of-expr-value
+              c::value-fix-when-valuep
+              c::errorp-of-error
+              c::return-type-of-value-sint
+              c::return-type-of-value-slong
+              c::return-type-of-value-sllong
+              c::return-type-of-value-uint
+              c::return-type-of-value-ulong
+              c::return-type-of-value-ullong
               compustate-equivp-of-compustate-fix-old-compst
               compustate-equivp-of-compustate-fix-new-compst
               c::compustate-has-static-var-with-type-p-of-compustate-fix-compst
-              mv-nth
-              iff
-              (:e equal)))
+              (:t c::expr-value)))
           (defruled expr-binary-pure-strict-congruence-under-compustate-equivp
             (b* ((old (c::expr-binary op old-arg1 old-arg2))
                  (new (c::expr-binary op new-arg1 new-arg2))
@@ -1273,11 +1287,6 @@
                                                         '(:shl :shr))
                                           (c::promote-type type1))
                                          (t (c::type-sint)))))))
-            :use (:instance expr-binary-pure-strict-congruence
-                            (new-compst old-compst)
-                            (new-arg1 old-arg1)
-                            (new-arg2 old-arg2)
-                            (new-fenv old-fenv))
             :expand ((c::exec-expr
                       (c::expr-binary op old-arg1 old-arg2)
                       old-compst old-fenv limit)
@@ -1295,15 +1304,33 @@
                          c::exec-binary-strict-pure-of-binop-fix-op
                          c::errorp-of-error
                          c::exec-binary-strict-pure
+                         c::eval-binary-strict-pure
                          c::apconvert-expr-value-when-not-array
                          c::type-nonchar-integerp-of-type-of-value
                          c::value-kind-not-array-when-value-integerp
                          c::not-errorp-when-expr-valuep
                          c::expr-valuep-of-expr-value-fix
                          c::expr-value->value$inline-of-expr-value-fix-x
-                         mv-nth
-                         iff
-                         (:e equal)))
+                         c::expr-value->value-of-expr-value
+                         c::type-of-value-of-value-fix-val
+                         c::type-of-value-of-add-values
+                         c::type-of-value-of-sub-values
+                         c::type-of-value-of-mul-values
+                         c::type-of-value-of-div-values
+                         c::type-of-value-of-rem-values
+                         c::type-of-value-of-shl-values
+                         c::type-of-value-of-shr-values
+                         c::type-of-value-of-lt-values
+                         c::type-of-value-of-gt-values
+                         c::type-of-value-of-le-values
+                         c::type-of-value-of-ge-values
+                         c::type-of-value-of-eq-values
+                         c::type-of-value-of-ne-values
+                         c::type-of-value-of-bitand-values
+                         c::type-of-value-of-bitxor-values
+                         c::type-of-value-of-bitior-values
+                         (:t c::expr-value)
+                         (:e member-equal)))
           (defruled stmt-return-value-congruence-under-compustate-equivp
             (b* ((old (c::stmt-return old-expr))
                  (new (c::stmt-return new-expr))

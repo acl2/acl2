@@ -10,7 +10,7 @@
 
 (in-package "ACL2")
 
-(include-book "centaur/fty/basetypes" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 

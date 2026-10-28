@@ -63,8 +63,10 @@
      "[SC3] Bare carriage return in doc comments: not yet formalized.")
     (xdoc::li
      "[SC4] Unicode XID identifiers with NFC normalization:
-      not yet formalized (awaiting the XID table books;
-      the grammar is ASCII-only for identifiers meanwhile).")
+      not yet formalized.
+      The XID tables are in @(see unicode-xid),
+      but the grammar and lexer do not use them yet,
+      so identifiers are ASCII-only meanwhile.")
     (xdoc::li
      "[SC5] Raw identifier exclusions
       (@('crate'), @('self'), @('super'), @('Self')):

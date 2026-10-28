@@ -107466,8 +107466,9 @@ Bug Fixes From AI via Eric Smith
 
   A soundness bug in the code the [tau-system] uses to put [30m[47mIF[0m[0m-terms
   into conjunctive or disjunctive normal form, [30m[47mcnf-dnf[0m[0m was fixed.
-  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m and
-  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m.
+  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m,
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp-v2.lisp[0m[0m.
 
   A soundness bug was fixed in [30m[47mtau-term[0m[0m due to passing the wrong
   arguments into the code that applies form 2 signature rules.  See
@@ -107576,6 +107577,34 @@ Bug Fixes From AI via Eric Smith
   special treatment for [invariant-risk].  See [community-book]
   [30m[47msystem/tests/check-sum-inc-invariant-risk.lisp[0m[0m.  Thanks to Eric
   Smith for supplying a fix from AI.
+
+  Fixed soundness bugs from insufficient restrictions on the use of
+  [30m[47m[non-exec][0m[0m with [30m[47m[in-logic-mode][0m[0m or [30m[47m[return-last][0m[0m.  See
+  [community-books]
+  [30m[47msystem/tests/non-exec-in-logic-mode-load-time-value.lisp[0m[0m and
+  [30m[47msystem/tests/non-exec-return-last-load-time-value.lisp[0m[0m.
+
+  Fixed a soundness bug in converting a goal term to a set of
+  [clause]s.  When the goal term involved a [lambda] application
+  (typically from the use of [30m[47m[let][0m[0m or [30m[47m[let*][0m[0m) in which the [30m[47mHIDE[0m[0m
+  function was used in the body, the variables inside the [30m[47mHIDE[0m[0m term
+  were not instantiated when the lambda was applied.  For more
+  details see [community-book]
+  [30m[47msystem/tests/tautologyp-hide-in-lambda.lisp[0m[0m.
+
+  Fixed a soundness bug by eliminating tautologies and cleaning up
+  double negations and duplicate literals.  For more details see
+  [community-book] [30m[47msystem/tests/clean-clause-set-by-hint.lisp[0m[0m; also
+  see [30m[47msystem/tests/clean-clause-set-clausify-direct.lisp[0m[0m.
+
+  Fixed a soundness bug in [forward-chaining] that failed to account
+  properly for free variables.  For more details see [community-book]
+  [30m[47msystem/tests/fc-unbound-free-capture.lisp[0m[0m; also see
+  [30m[47msystem/tests/fc-forced-free-var.lisp[0m[0m.
+
+  Fixed a soundness bug in determining when one set of first order
+  clauses subsumes another.  For more details see [community-book]
+  [30m[47msystem/tests/clause-set-subsumes-1-test.lisp[0m[0m.
 
 
 Other Bug Fixes

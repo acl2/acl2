@@ -39,11 +39,6 @@
                            acl2::<-*-/-right
                            acl2::<-*-/-left)))
 
-(define lrfix ((x rationalp))
-  :inline t
-  :enabled t
-  (mbe :logic (rfix x) :exec x))
-
 (local (defthm rfix-when-rationalp
            (implies (rationalp x)
                     (equal (rfix x) x))))

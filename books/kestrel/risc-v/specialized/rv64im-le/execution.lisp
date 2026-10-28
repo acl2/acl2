@@ -50,8 +50,8 @@
      we set the error flag instead."))
   (b* (((when (error64p stat)) (state64-fix stat))
        (pc (read64-pc stat))
-       ;; TODO: use read64-instr instead and check for error
-       (enc (read64-mem-ubyte32-lendian pc stat))
+       (enc (read64-instr pc stat))
+       ((unless enc) (error64 stat))
        (instr? (decodex enc (feat-rv64im-le)))
        ((unless instr?) (error64 stat)))
     (exec64-instr instr? pc stat)))
