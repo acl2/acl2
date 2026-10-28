@@ -46123,8 +46123,6 @@ current fast alists."
 
  <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
 
- <li>David Rager (@('ragerdl@gmail.com'))</li>
-
  <li>Sol Swords (@('sswords@gmail.com'))</li>
 
  </ul>
@@ -52564,7 +52562,7 @@ tables in the current Hons Space."
  <p>While the community is invited to submit contributions to the <see
  topic='@(url community-books)'>Community Books</see>, source files outside of
  the @('books/') directory should not be modified, except by system
- maintainers.</p>
+ maintainers and those who have been granted permission explicitly.</p>
 
  <p>Suggestions for system changes can be emailed to <a
  href='mailto:kaufmann@cs.utexas.edu'>Matt Kaufmann</a>. (Prospective system
@@ -52656,7 +52654,6 @@ tables in the current Hons Space."
  individuals:</p>
  <ul>
    <li>Eric Smith (@('eric.smith@kestrel.edu'))</li>
-   <li>David Rager (@('ragerdl@gmail.com'))</li>
    <li>Sol Swords (@('sswords@gmail.com'))</li>
  </ul>
 
@@ -110089,6 +110086,12 @@ it."
 ; source function string-downcase-sbcl) had a bug, which has been fixed.
 ; Thanks to Eric McCarthy for finding a bug in our initial fix.
 
+; Fixed a soundness bug involving unadvertised system utility with-debug, by
+; preventing it from exploiting the use of load-time-value to do unsound raw
+; Lisp evaluation at compile time.  See
+; books/system/tests/with-debug-untranslated-args.lisp.  Thanks to Eric Smith
+; for passing along this bug from AI.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -110577,8 +110580,9 @@ it."
 
  <p>A soundness bug in the code the @(see tau-system) uses to put @('IF')-terms
  into conjunctive or disjunctive normal form, @('cnf-dnf') was fixed.  See
- @('system/tests/tau-cnf-dnf-sign.lisp') and
- @('system/tests/tau-cnf-dnf-not-cnfp.lisp').</p>
+ @('system/tests/tau-cnf-dnf-sign.lisp'),
+ @('system/tests/tau-cnf-dnf-not-cnfp.lisp'), and
+ @('system/tests/tau-cnf-dnf-not-cnfp-v2.lisp').</p>
 
  <p>A soundness bug was fixed in @('tau-term') due to passing the wrong
  arguments into the code that applies form 2 signature rules.  See
@@ -110681,6 +110685,32 @@ it."
  treatment for @(see invariant-risk).  See @(see community-book)
  @('system/tests/check-sum-inc-invariant-risk.lisp').  Thanks to Eric Smith
  for supplying a fix from AI.</p>
+
+ <p>Fixed soundness bugs from insufficient restrictions on the use of @(tsee
+ non-exec) with @(tsee in-logic-mode) or @(tsee return-last).  See @(see
+ community-books) @('system/tests/non-exec-in-logic-mode-load-time-value.lisp')
+ and @('system/tests/non-exec-return-last-load-time-value.lisp').</p>
+
+ <p>Fixed a soundness bug in converting a goal term to a set of @(see clause)s.
+ When the goal term involved a @(see lambda) application (typically from the
+ use of @(tsee let) or @(tsee let*)) in which the @('HIDE') function was used
+ in the body, the variables inside the @('HIDE') term were not instantiated
+ when the lambda was applied.  For more details see @(see community-book)
+ @('system/tests/tautologyp-hide-in-lambda.lisp').</p>
+
+ <p>Fixed a soundness bug by eliminating tautologies and cleaning up double
+ negations and duplicate literals.  For more details see @(see community-book)
+ @('system/tests/clean-clause-set-by-hint.lisp'); also see
+ @('system/tests/clean-clause-set-clausify-direct.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see forward-chaining) that failed to account
+ properly for free variables.  For more details see @(see community-book)
+ @('system/tests/fc-unbound-free-capture.lisp'); also see
+ @('system/tests/fc-forced-free-var.lisp').</p>
+
+ <p>Fixed a soundness bug in determining when one set of first order clauses
+ subsumes another.  For more details see @(see community-book)
+ @('system/tests/clause-set-subsumes-1-test.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 

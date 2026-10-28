@@ -8752,11 +8752,29 @@
               '(nil)            ; (AND (OR)) = NIL
               nil))))           ; (OR) = NIL
    ((eq (ffn-symb term) 'NOT)
-    (cnf-dnf (not sign) (fargn term 1) (not cnfp)))
+
+; In V8.7 the last argument to the recursive call of cnf-dnf below was (not
+; cnfp).  We changed it to cnfp after an AI agent under Eric Smith found a bug
+; in the code as it stood after we had corrected the bug mentioned in the next
+; clause of this cond (concerning the binding and use of cnfp1).  If you
+; redefine this function so the binding and use of cnfp1 is as below, but the
+; last argument of this recursive call is changed back to (not cnfp) then nil
+; is provable.  See system/tests/tau-cnf-dnf-not-cnfp-v2.lisp.  We believe the
+; flipping of cnfp here in the original code was dealing with the bad treatment
+; of cnfp in the original version of next clause of this cond and was actually
+; correct for NOT, given that treatment.
+
+    (cnf-dnf (not sign) (fargn term 1) cnfp))
    ((eq (ffn-symb term) 'IF)
     (let ((x (fargn term 1))
           (y (fargn term 2))
           (z (fargn term 3))
+
+; An AI agent discovered a bug in our handling of cnfp when the sign is
+; negative.  It is fixed by this binding and subsequent use of cnfp1.  This bug
+; is demonstrated in system/tests/tau-cnf-dnf-sign.lisp and
+; system/tests/tau-cnf-dnf-not-cnfp.lisp.
+
           (cnfp1 (if sign cnfp (not cnfp))))
 
 ; Cases we consider:

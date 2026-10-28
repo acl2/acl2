@@ -1,0 +1,4 @@
+(F
+ (6 6 (:REWRITE DEFAULT-<-2))
+ (6 6 (:REWRITE DEFAULT-<-1))
+ )

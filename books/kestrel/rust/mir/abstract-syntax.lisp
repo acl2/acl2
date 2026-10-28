@@ -155,11 +155,14 @@
        function items
        (zero-sized values of @('ty-fn-def') type,
        which is how call terminators name their callees),
-       and constant arrays
-       (how promoted table constants reach their reads;
-       rustc stores these as byte allocations,
-       which the importer decodes into structured constants).
-       By-reference constants will come with later subsets."))
+       and constant arrays.")
+     (xdoc::p
+      "The importer (see @(see mir-import)) currently produces
+       integer, boolean, unit, and function-item constants;
+       the interpreter also evaluates character and array constants,
+       which the importer does not produce yet.
+       Importing array constants (such as lookup tables)
+       and by-reference constants will come with later subsets."))
     (:bool ((value acl2::bool)))
     (:char ((value acl2::nat)))
     (:int ((value acl2::int)

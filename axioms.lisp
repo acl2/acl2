@@ -3212,6 +3212,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun return-last-fn (qfn)
 
+; Warning: Keep the following in sync with handling of 'return-last in
+; translate11.
+
 ; Return nil unless qfn is of the form (quote s) for a symbol s.
 
   (declare (xargs :guard t))

@@ -3020,65 +3020,64 @@ its attachment is ignored during proofs"))))
 
   (declare (xargs :guard (pseudo-termp term)))
   (cond ((variablep term)
-
-; Note:  What if rformals is nil?  Then we couldn't have hit a variable
-; and we aren't in a lambda.
-
          (cond (rformals
-                (cons (cons 'push-local (if-compile-formal term rformals 0))
-                      ac))
+                (cons (cons 'push-local (if-compile-formal term rformals 0)) ac))
                (t (cons (cons 'push term) ac))))
-        ((or (fquotep term)
-             (eq (ffn-symb term) 'hide))
+        ((fquotep term)
          (cons (cons 'push term) ac))
         ((flambdap (ffn-symb term))
-
-; This is a lambda application.  If we are supposed to expand lambdas
-; and there is an IF inside the body of this one, we compile the body.
-; Otherwise we treat it the same way we do ordinary function symbol
-; applications.
-
          (cond
           ((and lambda-exp
                 (ffnnamep-hide 'if (lambda-body (ffn-symb term)) lambda-exp))
+
+; An AI agent, interacting with Eric Smith, found a bug in V8.7 in which 
+
+; (equal ((lambda (x) (if x (hide x) nil)) y)
+;        (and y (hide x)))
+
+; was provable with clausify, because this function expanded the lambda
+; application without instantiating the (hide x).  Eleven bugs were reported
+; related to this failure; the bug reports all had names prefixed with ``B1-''
+; but all of those bugs exploited the same problem exemplified by the example
+; above and one fix dealt with all of them.  We contemplated ``doing it right''
+; by instantiating the hidden term, but decided that might blow things up.  So
+; we decided that clausify should not expand lambda applications if the body
+; contains a HIDE.  Of course, the rest of the prover can do that -- and do it
+; correctly -- so this would prevent us from making a mistake and probably
+; wouldn't cost much.  The agent suggested not expanding a lambda application
+; term if HIDE was mentioned anywhere in the term (including in the argument to
+; which the lambda was being applied).  But we restricted concern to the
+; lambda-body.  However, that hack prevented us from
+
+; workshops/2009/verbeek-schmaltz/verbeek/instantiations/genoc/
+;  simple-ct-global/simple.lisp
+
+; So we decided to do it right, by compiling (HIDE x) just like would would if
+; HIDE was just another fn of arity one.  Of course, if x contains IFs it will
+; blow things up (compared to doing it wrong!).  But if the IFs come in from
+; the arguments to which the lambda is applied there will be no more blow up
+; than before.
+
            (cons (cons 'ret (lambda-formals (ffn-symb term)))
-                 (if-compile (lambda-body (ffn-symb term))
-                             lambda-exp
+                 (if-compile (lambda-body (ffn-symb term)) lambda-exp
                              (cons '(push-frame-ptr)
-                                   (if-compile-lst (fargs term)
-                                                   lambda-exp ac rformals))
-                             (revappend (lambda-formals (ffn-symb term))
-                                        nil))))
-          ((or (ffnnamep-hide-lst 'if (fargs term) lambda-exp)
-               rformals)
-           (cons (cons 'call term)
-                 (if-compile-lst (fargs term)
-                                 lambda-exp ac rformals)))
+                                   (if-compile-lst (fargs term) lambda-exp ac rformals))
+                             (revappend (lambda-formals (ffn-symb term)) nil))))
+          ((or (ffnnamep-hide-lst 'if (fargs term) lambda-exp) rformals)
+           (cons (cons 'call term) (if-compile-lst (fargs term) lambda-exp ac rformals)))
           (t (cons (cons 'push term) ac))))
         ((eq (ffn-symb term) 'if)
-         (let* ((test-seg (if-compile (fargn term 1)
-                                      lambda-exp ac rformals))
+         (let* ((test-seg (if-compile (fargn term 1) lambda-exp ac rformals))
                 (n (next-tag test-seg)))
            (cons (+ n 1)
-                 (if-compile (fargn term 3)
-                             lambda-exp
+                 (if-compile (fargn term 3) lambda-exp
                              (cons n (cons (cons 'go (+ n 1))
-                                           (if-compile (fargn term 2)
-                                                       lambda-exp
-                                                       (cons (cons 'test n)
-                                                             test-seg)
+                                           (if-compile (fargn term 2) lambda-exp
+                                                       (cons (cons 'test n) test-seg)
                                                        rformals)))
                              rformals))))
-        ((or (ffnnamep-hide-lst 'if (fargs term) lambda-exp)
-             rformals)
-
-; If there is an IF in some arg, we compile the args to get rid of the
-; IFs.  Alternatively, if we are compiling a lambda body (with
-; rformals), we must compile the args to deref them via the stack.
-
-         (cons (cons 'call term)
-               (if-compile-lst (fargs term)
-                               lambda-exp ac rformals)))
+        ((or (ffnnamep-hide-lst 'if (fargs term) lambda-exp) rformals)
+         (cons (cons 'call term) (if-compile-lst (fargs term) lambda-exp ac rformals)))
         (t (cons (cons 'push term) ac))))
 
 (defun if-compile-lst (l lambda-exp ac rformals)
@@ -3357,7 +3356,15 @@ its attachment is ignored during proofs"))))
   (cond ((variablep term)
          (if-interp-assumed-value0 term assumptions))
         ((eq (ffn-symb term) 'NOT)
-         (let ((temp (if-interp-assumed-value-x (fargn term 1) assumptions)))
+         (let ((temp (if-interp-assumed-value (fargn term 1) assumptions)))
+
+; There was a bug in an earlier version of this function.  Instead of calling
+; if-interp-assumed-value, above, we called if-interp-assumed-value-x, which
+; terminates the recursion in a series of special cases for RATIONALP,
+; INTEGERP, etc.  But that meant we mistreated (NOT (NOT x)), which allowed AI
+; to construct a proof of nil.  This was reported by Eric Smith among a
+; collection of reports in the ``B1-'' family.
+
            (cond ((eq temp t) 'f)
                  ((eq temp 'f) t)
                  (t nil))))
@@ -4158,6 +4165,13 @@ its attachment is ignored during proofs"))))
 ; equivalence is the observation that we can throw out false
 ; disjuncts.
 
+; By the way, the file books/system/toy-arg1-almost-subsumes-arg2.lisp defines
+; a simplified version of this function (in which clauses are all propositional
+; -- which is all that matters here) and do not contain ``extra-info'' literals
+; (which are ignored here).  The book then proves the claim made above.  The
+; contribution of this book is to establish that the claim holds if arg1
+; contains no double negatives, no duplicated literals, and is not a tautology.
+
   (cond ((null arg1)
          'subsumed)
         ((extra-info-lit-p (car arg1))
@@ -4501,6 +4515,130 @@ its attachment is ignored during proofs"))))
                                            done-tree)
                              t)))))))
 
+; Clausify, defined below, will use strip-branches to produce a clause set and
+; formerly then called subsumption-replacement-loop to clean it up.  But that
+; function uses arg1-almost-subsumes-arg2, which depends on the clause set
+; satisfying certain cleanliness conditions.  So now, we'll call
+; clean-clause-set to establish those conditions before proceeding with
+; subsumption.
+
+; We know that arg1-almost-subsumes-arg2 is correct provided the set of clauses
+; under consideration (a) contain no doubly negated literals, (b) contain no
+; clause with duplicated literals, and (c) contain no propositional
+; tautologies.  But strip-branches can certainly produce double negatives and
+; might conceivably violate the other two conditions, so we clean up the clause
+; set produced by strip-branches before we give it to the subsumption check.
+
+; An AI agent discovered that arg1-almost-subsumes-arg2 was incorrect on
+; certain input generated by strip-branches and the agent proposed modifying
+; arg1-almost-subsumes-arg2.  But we believe it's better to actually strengthen
+; the code (by cleaning up the clause set) than hacking it to deal with ``bad''
+; clause sets.  (Actually, we knew that strip-branches could produce double
+; negatives.  See the note mentioning Version_2.7 and Qiang Zhang in the defun
+; of call-stack.  Having strip-branches remove double negatives would require
+; serious modifications since (NOT (NOT x)) is not in general EQUAL to x.  So
+; we tolerated that behavior.  However, we apparently forgot that when we wrote
+; the clausify code.)  Once the double negatives are literals in a clause,
+; cleaning is straightforward.  But cleaning up the clause set can be done in a
+; variety of ways depending on how important time and conses are.
+
+; We speculate that while strip-branches can produce clauses containing double
+; negatives, it doesn't happen too often.  So we're going to look for a double
+; negative in the clause set and if one is found, we will remove double
+; negatives from every clause in the set.  (Removing double negatives from a
+; clause that has none will copy the spine of the clause.  We could avoid that
+; by first asking whether the clause in question has double negatives.  That
+; seems to just double the time we spend asking that question.  So we'll just
+; do them all if any has a double negative.)
+
+(defun double-negativep (term)
+  (and (nvariablep term)
+       (not (fquotep term))
+       (eq (ffn-symb term) 'NOT)
+       (let ((arg (fargn term 1)))
+         (and (nvariablep arg)
+              (not (fquotep arg))
+              (eq (ffn-symb arg) 'NOT)))))
+
+(defun double-negative-in-clausep (cl)
+  (cond ((endp cl) nil)
+        (t (or (double-negativep (car cl))
+               (double-negative-in-clausep (cdr cl))))))
+
+(defun double-negative-in-clause-setp (cls)
+  (cond ((endp cls) nil)
+        (t (or (double-negative-in-clausep (car cls))
+               (double-negative-in-clause-setp (cdr cls))))))
+
+(defun remove-double-negative (term)
+
+; We rewrite (not (not a)) to a, recursively until all double negations are
+; gone.  Warning: This is only sound if the term appears in a propositional
+; setting!
+
+  (cond ((double-negativep term)
+         (remove-double-negative (fargn (fargn term 1) 1)))
+        (t term)))
+
+(defun remove-double-negative-in-clause (cl)
+  (cond ((endp cl) nil)
+        (t (cons (remove-double-negative (car cl))
+                 (remove-double-negative-in-clause (cdr cl))))))
+
+(defun remove-double-negative-in-clause-set1 (cls)
+  (cond ((endp cls) nil)
+        (t (cons (remove-double-negative-in-clause (car cls))
+                 (remove-double-negative-in-clause-set1 (cdr cls))))))
+
+(defun remove-double-negative-in-clause-set (cls)
+
+; We eliminate double negatives in every clause in cls, if any clause has a
+; double negative.
+
+  (cond ((double-negative-in-clause-setp cls)
+         (remove-double-negative-in-clause-set1 cls))
+        (t cls)))
+
+(defun clean-clause (flg cl)
+
+; Flg is initially nil and cl should contain no double negatives.  We return
+; (mv flg' cl') where cl' is equivalent to cl but possibly simpler.  Flg' is
+; nil, t, or 'tautology.  If flg is nil, it means cl' is cl, i.e., no changes
+; were made.  If flg is t, it means cl' is cl with some duplicated literals
+; eliminated.  If flg is 'tautology, it means cl' is *true-clause* and cl is a
+; propositional tautology.  Notice that if flg is either t or nil, then
+; cl' should replace cl in a clause set.  The only reason we distinguish the
+; two cases here is to avoid introducing new conses if we don't have to.
+
+  (cond ((endp cl) (mv flg nil))
+        (t (let ((temp (member-equal-+- (car cl) (cdr cl))))
+             (cond
+              ((eq temp '+)
+; (car cl) occurs more than once in cl.  We delete all but the first occurrence
+; and then continue to check for other duplications or tautological indicators.
+               (clean-clause t  ; t means we've changed cl.
+                             (cons (car cl)
+                                   (remove-equal (car cl) (cdr cl)))))
+              ((eq temp '-)
+; (car cl) occurs negated in (cdr cl).  Cl is a tautology.  We say so.
+               (mv 'tautology *true-clause*))
+              (t (mv-let (flg cl1)
+                   (clean-clause flg (cdr cl))
+                   (cond
+                    ((null flg) (mv nil cl))
+                    ((eq flg t) (mv t (cons (car cl) cl1)))
+                    (t (mv 'tautology *true-clause*))))))))))
+
+(defun clean-clause-set (cls)
+  (cond
+   ((endp cls) nil)
+   (t (mv-let (flg cl1)
+        (clean-clause nil (car cls))
+        (cond
+         ((eq flg 'tautology)
+          (clean-clause-set (cdr cls)))
+         (t (cons cl1 (clean-clause-set (cdr cls)))))))))
+
 ; Rockwell Addition: Same old lambda-exp arg.  Clausify is called in
 ; many places and now has a new last arg.  This will show up many
 ; times.
@@ -4531,9 +4669,16 @@ its attachment is ignored during proofs"))))
 
 ; Lambda-exp indicates whether we should go inside of lambdas.
 
+; There was a bug in this function in V87: strip-branches can produce clause
+; sets containing double negatives, tautologies and (maybe) duplicated
+; literals.  But that means clauses, below, violates the pre-conditions of the
+; subsumption-replacement-loop which is driven by arg1-almost-subsumes-arg2.
+; So now we clean up the clause set before passing it to subsumption.
+
   (declare (xargs :guard (pseudo-termp term)))
   (let ((clauses (pstk
-                  (strip-branches term assumptions lambda-exp))))
+                  (clean-clause-set
+                   (strip-branches term assumptions lambda-exp)))))
     (cond
      ((or (null sr-limit) (<= (length clauses) sr-limit))
       (pstk

@@ -78,9 +78,12 @@ git clone https://github.com/acl2/acl2 .
 
 See the documentation for [how to contribute][how-to-contribute].
 Note that, while contributions are welcome in the [community
-books][community books], changes to the ACL2 system itself (defined as
-anything outside the books/ directory) may only be made by the ACL2
-maintainers.
+books][community books], commits to GitHub involving changes to the
+ACL2 system itself (defined as anything outside the books/ directory)
+may only be made by the ACL2 maintainers except when permission has
+been granted explicitly.  Suggestions for such changes may be sent to
+the ACL2 maintainers (email matthew.j.kaufmann@gmail.com) or otherwise
+communicated (e.g., via Zulip or GitHub Issues).
 
 [how-to-contribute]: https://www.acl2.org/doc/index.html?topic=ACL2____HOW-TO-CONTRIBUTE
 

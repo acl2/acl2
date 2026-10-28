@@ -21786,133 +21786,35 @@
             (all-vars-bound-and-free1 (car lst) ans)))))
 )
 
-(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings)
+(defmacro mv-msg (erp msgp m &rest args)
 
-; Bindings and x are nil if we are not in translate.
+; We return (mv erp nil) if msgp is nil.  Otherwise, we return (mv erp msg)
+; where msg is constructed from m and args.  Thus, msgp indicates that we are
+; to avoid constructing a message, for example if we are to create an error
+; silently.
 
-  (macrolet ((mv-msg (erp x m &rest args)
-                     `(mv ,erp
-; Avoid constructing a message if we are to fail silently.
-                          (and ,x (msg ,m ,@args)))))
-    (cond ((and (eq key 'ec-call1-raw)
-                (not (and
-                      (consp arg3)
-                      (true-listp arg3)
-                      (and (symbolp (car arg3))
-                           (let ((fn (if (function-symbolp (car arg3) wrld)
-                                         (car arg3)
-                                       (corresponding-inline-fn (car arg3)
-                                                                wrld))))
-                             (and fn
-                                  (not (member-eq fn *ec-call-bad-ops*))))))))
-           (mv-msg t x
-                   "The argument ~x0 is illegal for ~x2, because ~@1.  A call ~
-                    of ~x2 must only be made on an argument of the form (FN ~
-                    ...), where FN is a known function symbol of the current ~
-                    ACL2 world not belonging to the list that is the value of ~
-                    the constant ~x3, or is a macro expanding in a certain ~
-                    direct way (as with defun-inline) to a call of FN$INLINE ~
-                    (i.e., the result of adding suffix \"$INLINE\" to the ~
-                    symbol-name of FN).  See :DOC ec-call."
-                   arg3
-                   (let* ((fn0 (and (consp arg3)
-                                    (car arg3)))
-                          (fn (and fn0
-                                   (symbolp fn0)
-                                   (if (function-symbolp fn0 wrld)
-                                       fn0
-                                     (corresponding-inline-fn fn0
-                                                              wrld)))))
-                     (cond ((not (and fn0
-                                      (true-listp arg3)))
-                            (msg "~x0 does not have the form of a function ~
-                                   call"
-                                 arg3))
-                           ((not (symbolp fn0))
-                            (msg "~x0 is not a symbol" fn0))
-                           ((member-eq fn *ec-call-bad-ops*)
-                            (msg "~x0 belongs to ~x1"
-                                 fn
-                                 '*ec-call-bad-ops*))
-                           ((eq (getpropc fn0 'macro-args t wrld)
-                                t)
+  `(mv ,erp
+       (and ,msgp (msg ,m ,@args))))
 
-; At this point we know that fn is nil and fn0 is not nil.  So
-; (corresponding-inline-fn fn0 wrld) is nil.  So fn0 is not a function symbol.
-; From the test just above we also know that fn0 is not a macro.
+(defun chk-return-last-call-1 (key keyp wrld x bindings)
 
-                            (msg "~x0 is not defined"
-                                 fn0))
-                           (t (msg "~x0 is a macro, not a function symbol~@1"
-                                   fn0
-                                   (let ((sym (deref-macro-name
-                                               fn0
-                                               (macro-aliases wrld))))
-                                     (cond
-                                      ((eq sym fn0) "")
-                                      (t
-                                       (msg ".  Note that ~x0 is a ~
-                                              macro-alias for ~x1 (see :DOC ~
-                                              macro-aliases-table), so a ~
-                                              solution might be to replace ~
-                                              ~x0 by ~x1"
-                                            fn0 sym))))))))
-                   'ec-call '*ec-call-bad-ops*))
-          ((and (eq key 'ec-call1-raw)
-                (not (or (null arg2)
-                         (equal arg2 *nil*)
-                         (and (true-listp arg2)
-                              (= (length arg2) 3)
-                              (eq (car arg2) 'cons)
-                              (and (qdfs-check (cadr arg2))
-                                   (qdfs-check (caddr arg2)))))))
-           (mv-msg t x
-                   "The call ~x0 is illegal.  It appears to have arisen from ~
-                    an attempt to macroexpand an illegal call of ~x1 or ~x2."
-                   x 'ec-call 'ec-call1))
-          ((and (eq key 'ec-call1-raw)
-                (bad-dfs-in-out arg2 arg3 wrld))
-           (mv-msg t x
-                   "A use of ~x0 on the term ~x1 requires ~#2~[a suitable ~
-                    :DFS-IN keyword argument~/a suitable :DFS-OUT keyword ~
-                    argument~/suitable :DFS-IN and :DFS-OUT keyword ~
-                    arguments~].  See :DOC ec-call."
-                   'ec-call
-                   arg3
-                   (let* ((bad-in/bad-out
-                           (bad-dfs-in-out arg2 arg3 wrld))
-                          (bad-in (car bad-in/bad-out))
-                          (bad-out (cdr bad-in/bad-out)))
-                     (cond ((not bad-out) 0)
-                           ((not bad-in) 1)
-                           (t 2)))))
-          ((and (eq key 'with-guard-checking1-raw)
-                (or (not (case-match arg2
-                           (('chk-with-guard-checking-arg &) t)
-                           (& nil)))
-                    (not (case-match arg3
-                           (('translate-and-test gate form)
-                            (equal gate (with-guard-checking-gate form)))
-                           (& nil))))
-                (not (global-val 'boot-strap-flg
-                                 wrld)) ; see ev-rec-return-last
-                (not (ttag wrld)))
-           (mv-msg 'trans-er+ x
-                   "The form ~x0 is essentially a call of ~x1, but without ~
-                    certain checks performed.  This is illegal unless there ~
-                    is an active trust tag; see :DOC defttag.  To avoid this ~
-                    error without use of a trust tag, call ~x1 directly."
-                   x 'with-guard-checking))
-          ((and keyp
-                (let ((val
-                       (or (return-last-lookup key wrld)
-                           (and (global-val 'boot-strap-flg wrld)
-                                (cdr (assoc-eq
-                                      key
-                                      *initial-return-last-table*))))))
-                  (or (null val)
-                      (and (consp val) ; see chk-return-last-entry
-                           (assoc-eq :stobjs-out bindings)))))
+; This is the part of the check in chk-return-last-call, on a call of
+; return-last, that ensures that when there is a quoted first argument (i.e.,
+; keyp is true), then that argument is suitable.  We make this check during
+; translation even when stobjs-out = t (for example, under a non-exec call),
+; because a bad key can cause inappropriate evaluation at compile time; see
+; books/system/tests/non-exec-return-last-load-time-value.lisp.
+
+  (cond ((and keyp
+              (let ((val
+                     (or (return-last-lookup key wrld)
+                         (and (global-val 'boot-strap-flg wrld)
+                              (cdr (assoc-eq
+                                    key
+                                    *initial-return-last-table*))))))
+                (or (null val)
+                    (and (consp val) ; see chk-return-last-entry
+                         (assoc-eq :stobjs-out bindings)))))
 
 ; In an early implementation of return-last, we insisted that keyp be true.  But
 ; when we attempted to update the "GL" work of Sol Swords to use return-last,
@@ -21922,27 +21824,141 @@
 ; want to write meta-level functions that cons up return-last terms without a
 ; quoted first argument; and since it is easy to support that, we do so.
 
-           (cond
-            ((not (or (return-last-lookup key wrld)
-                      (and (global-val 'boot-strap-flg wrld)
-                           (cdr (assoc-eq key
-                                          *initial-return-last-table*)))))
-             (mv-msg t x
-                     "The symbol ~x0 is specified in the first argument of ~
-                      the form ~x1.  But ~x0 is not associated in the table ~
-                      ~x2 with a non-nil value.  See :DOC return-last."
-                     key x 'return-last-table))
-            (t
-             (mv-msg t x
-                     "Illegal call, ~x0: the association of ~x1 with the ~
-                      symbol ~x2 has been restricted to avoid top-level ~
-                      evaluation of such calls of ~x3.  See :DOC return-last. ~
-                      ~ Also consider placing the offending call inside a ~
-                      call of ~x4; see :DOC ~x4."
-                     x key
-                     (car (return-last-lookup key wrld))
-                     'return-last 'top-level))))
-          (t (mv nil nil)))))
+         (cond
+          ((not (or (return-last-lookup key wrld)
+                    (and (global-val 'boot-strap-flg wrld)
+                         (cdr (assoc-eq key
+                                        *initial-return-last-table*)))))
+           (mv-msg t x
+                   "The symbol ~x0 is specified in the first argument of the ~
+                    form ~x1.  But ~x0 is not associated in the table ~x2 ~
+                    with a non-nil value.  See :DOC return-last."
+                   key x 'return-last-table))
+          (t
+           (mv-msg t x
+                   "Illegal call, ~x0: the association of ~x1 with the symbol ~
+                    ~x2 has been restricted to avoid top-level evaluation of ~
+                    such calls of ~x3.  See :DOC return-last. ~ Also consider ~
+                    placing the offending call inside a call of ~x4; see :DOC ~
+                    ~x4."
+                   x key
+                   (car (return-last-lookup key wrld))
+                   'return-last 'top-level))))
+        (t (mv nil nil))))
+
+(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings)
+
+; Bindings and x are nil if we are not in translate.
+
+  (cond ((and (eq key 'ec-call1-raw)
+              (not (and
+                    (consp arg3)
+                    (true-listp arg3)
+                    (and (symbolp (car arg3))
+                         (let ((fn (if (function-symbolp (car arg3) wrld)
+                                       (car arg3)
+                                     (corresponding-inline-fn (car arg3)
+                                                              wrld))))
+                           (and fn
+                                (not (member-eq fn *ec-call-bad-ops*))))))))
+         (mv-msg t x
+                 "The argument ~x0 is illegal for ~x2, because ~@1.  A call ~
+                  of ~x2 must only be made on an argument of the form (FN ~
+                  ...), where FN is a known function symbol of the current ~
+                  ACL2 world not belonging to the list that is the value of ~
+                  the constant ~x3, or is a macro expanding in a certain ~
+                  direct way (as with defun-inline) to a call of FN$INLINE ~
+                  (i.e., the result of adding suffix \"$INLINE\" to the ~
+                  symbol-name of FN).  See :DOC ec-call."
+                 arg3
+                 (let* ((fn0 (and (consp arg3)
+                                  (car arg3)))
+                        (fn (and fn0
+                                 (symbolp fn0)
+                                 (if (function-symbolp fn0 wrld)
+                                     fn0
+                                   (corresponding-inline-fn fn0
+                                                            wrld)))))
+                   (cond ((not (and fn0
+                                    (true-listp arg3)))
+                          (msg "~x0 does not have the form of a function call"
+                               arg3))
+                         ((not (symbolp fn0))
+                          (msg "~x0 is not a symbol" fn0))
+                         ((member-eq fn *ec-call-bad-ops*)
+                          (msg "~x0 belongs to ~x1"
+                               fn
+                               '*ec-call-bad-ops*))
+                         ((eq (getpropc fn0 'macro-args t wrld)
+                              t)
+
+; At this point we know that fn is nil and fn0 is not nil.  So
+; (corresponding-inline-fn fn0 wrld) is nil.  So fn0 is not a function symbol.
+; From the test just above we also know that fn0 is not a macro.
+
+                          (msg "~x0 is not defined"
+                               fn0))
+                         (t (msg "~x0 is a macro, not a function symbol~@1"
+                                 fn0
+                                 (let ((sym (deref-macro-name
+                                             fn0
+                                             (macro-aliases wrld))))
+                                   (cond
+                                    ((eq sym fn0) "")
+                                    (t
+                                     (msg ".  Note that ~x0 is a ~
+                                              macro-alias for ~x1 (see :DOC ~
+                                              macro-aliases-table), so a ~
+                                              solution might be to replace ~
+                                              ~x0 by ~x1"
+                                          fn0 sym))))))))
+                 'ec-call '*ec-call-bad-ops*))
+        ((and (eq key 'ec-call1-raw)
+              (not (or (null arg2)
+                       (equal arg2 *nil*)
+                       (and (true-listp arg2)
+                            (= (length arg2) 3)
+                            (eq (car arg2) 'cons)
+                            (and (qdfs-check (cadr arg2))
+                                 (qdfs-check (caddr arg2)))))))
+         (mv-msg t x
+                 "The call ~x0 is illegal.  It appears to have arisen from an ~
+                  attempt to macroexpand an illegal call of ~x1 or ~x2."
+                 x 'ec-call 'ec-call1))
+        ((and (eq key 'ec-call1-raw)
+              (bad-dfs-in-out arg2 arg3 wrld))
+         (mv-msg t x
+                 "A use of ~x0 on the term ~x1 requires ~#2~[a suitable ~
+                  :DFS-IN keyword argument~/a suitable :DFS-OUT keyword ~
+                  argument~/suitable :DFS-IN and :DFS-OUT keyword ~
+                  arguments~].  See :DOC ec-call."
+                 'ec-call
+                 arg3
+                 (let* ((bad-in/bad-out
+                         (bad-dfs-in-out arg2 arg3 wrld))
+                        (bad-in (car bad-in/bad-out))
+                        (bad-out (cdr bad-in/bad-out)))
+                   (cond ((not bad-out) 0)
+                         ((not bad-in) 1)
+                         (t 2)))))
+        ((and (eq key 'with-guard-checking1-raw)
+              (or (not (case-match arg2
+                         (('chk-with-guard-checking-arg &) t)
+                         (& nil)))
+                  (not (case-match arg3
+                         (('translate-and-test gate form)
+                          (equal gate (with-guard-checking-gate form)))
+                         (& nil))))
+              (not (global-val 'boot-strap-flg
+                               wrld)) ; see ev-rec-return-last
+              (not (ttag wrld)))
+         (mv-msg 'trans-er+ x
+                 "The form ~x0 is essentially a call of ~x1, but without ~
+                  certain checks performed.  This is illegal unless there is ~
+                  an active trust tag; see :DOC defttag.  To avoid this error ~
+                  without use of a trust tag, call ~x1 directly."
+                 x 'with-guard-checking))
+        (t (chk-return-last-call-1 key keyp wrld x bindings))))
 
 (mutual-recursion
 
@@ -26536,10 +26552,17 @@
                  (car x)))
      (t
       (mv-let (erp val bindings)
-        (cond ((and (not (eq stobjs-out t))
-                    (eq (car x) 'in-logic-mode))
+        (cond ((eq (car x) 'in-logic-mode)
+
+; We need to translate (cadr x) even when It is not enough to restrict to (eq
+; stobjs-out t), because of non-exec and raw Lisp evaluation at defun time from
+; load-time-value.  See
+; books/system/tests/non-exec-in-logic-mode-load-time-value.lisp.
+
                (translate11 (cadr x)
-                            nil '(nil) bindings known-stobjs known-dfs
+                            nil
+                            (if (eq stobjs-out t) t '(nil))
+                            bindings known-stobjs known-dfs
                             flet-alist cform ctx wrld state-vars))
               (t (mv nil nil bindings)))
         (cond
@@ -26758,47 +26781,15 @@
                              bindings))
                         (& (mv erp val bindings)))))
                    (t (mv erp val bindings)))))
-          ((eq stobjs-out t)
-           (trans-er-let*
-            ((args (translate11-lst (cdr x)
-                                    (ilks-per-argument-slot (car x) wrld)
-                                    t bindings known-stobjs known-dfs
-                                    nil flet-alist x ctx wrld state-vars)))
-            (trans-value (fcons-term (car x) args))))
-          ((eq (car x) 'mv-list) ; and stobjs-out is not t
-           (trans-er-let*
-            ((arg1 (translate11 (cadr x)
-                                nil ; ilk
-                                stobjs-out bindings known-stobjs known-dfs
-                                flet-alist x ctx wrld state-vars)))
-            (cond ((not (and (quotep arg1)
-                             (integerp (unquote arg1))
-                             (<= 2 (unquote arg1))))
-                   (trans-er ctx
-                             "A call of ~x0 can only be made when the first ~
-                              argument is explicitly an integer that is at ~
-                              least 2.  The call ~x1 is thus illegal."
-                             'mv-list x))
-                  (t
-                   (trans-er-let*
-                    ((arg2 (translate11 (caddr x)
-                                        nil ; ilk
-                                        (make-list (unquote arg1)
-                                                   :initial-element nil)
-                                        bindings known-stobjs known-dfs
-                                        flet-alist x ctx wrld state-vars)))
-                    (trans-value (fcons-term* 'mv-list arg1 arg2)))))))
-          ((stobj-field-fn-of-stobj-type-p
-            (car x) wrld) ; and stobjs-out is not t
-           (trans-er+ x ctx
-                      "It is illegal to call ~x0 because it is a stobj ~
-                       updater or accessor for a field of stobj type.  For a ~
-                       way to generate such a call, see :DOC stobj-let."
-                      (car x)))
-          ((eq (car x) 'return-last) ; and stobjs-out is not t
+          ((eq (car x) 'return-last)
+
+; Note that this case applies even when stobjs-out is t.  For a former
+; unsoundness when it applied only when stobjs-out is not t, see
+; books/system/tests/non-exec-return-last-load-time-value.lisp.
 
 ; Keep the following bindings in sync with those in
-; logic-code-to-runnable-code.
+; logic-code-to-runnable-code, and additionally, keep the bindings of key and
+; keyp in sync with return-last-fn.
 
            (let* ((arg1 (nth 1 x))
                   (arg2 (nth 2 x))
@@ -26811,7 +26802,8 @@
              (trans-er-let*
               ((targ1 (translate11 arg1
                                    nil ; ilk
-                                   '(nil) bindings known-stobjs known-dfs
+                                   (if (eq stobjs-out t) t '(nil))
+                                   bindings known-stobjs known-dfs
                                    flet-alist x ctx wrld state-vars)))
               (cond
                ((and keyp (not (equal targ1 arg1))) ; an optional extra check
@@ -26851,7 +26843,14 @@
                   (fcons-term* 'return-last targ1 targ2 targ3))))
                (t
                 (mv-let (erp msg)
-                  (chk-return-last-call key keyp arg2 arg3 wrld x bindings)
+                  (cond ((eq stobjs-out t)
+
+; We make a weaker check in this case than in general.  See explanatory
+; comments in chk-return-last-call-1.
+
+                         (chk-return-last-call-1 key keyp wrld x bindings))
+                        (t (chk-return-last-call key keyp arg2 arg3 wrld x
+                                                 bindings)))
                   (cond
                    (erp (if (eq erp t)
                             (trans-er ctx "~@0" msg)
@@ -26861,7 +26860,7 @@
                       (erp targ2 targ2-bindings)
                       (translate11 arg2
                                    nil ; ilk
-                                   '(nil)
+                                   (if (eq stobjs-out t) t '(nil))
                                    bindings known-stobjs known-dfs flet-alist x
                                    ctx wrld state-vars)
                       (declare (ignore targ2-bindings))
@@ -26899,6 +26898,43 @@
                          (trans-value
                           (fcons-term* 'return-last
                                        targ1 targ2 targ3))))))))))))))
+          ((eq stobjs-out t)
+           (trans-er-let*
+            ((args (translate11-lst (cdr x)
+                                    (ilks-per-argument-slot (car x) wrld)
+                                    t bindings known-stobjs known-dfs
+                                    nil flet-alist x ctx wrld state-vars)))
+            (trans-value (fcons-term (car x) args))))
+          ((eq (car x) 'mv-list) ; and stobjs-out is not t
+           (trans-er-let*
+            ((arg1 (translate11 (cadr x)
+                                nil ; ilk
+                                stobjs-out bindings known-stobjs known-dfs
+                                flet-alist x ctx wrld state-vars)))
+            (cond ((not (and (quotep arg1)
+                             (integerp (unquote arg1))
+                             (<= 2 (unquote arg1))))
+                   (trans-er ctx
+                             "A call of ~x0 can only be made when the first ~
+                              argument is explicitly an integer that is at ~
+                              least 2.  The call ~x1 is thus illegal."
+                             'mv-list x))
+                  (t
+                   (trans-er-let*
+                    ((arg2 (translate11 (caddr x)
+                                        nil ; ilk
+                                        (make-list (unquote arg1)
+                                                   :initial-element nil)
+                                        bindings known-stobjs known-dfs
+                                        flet-alist x ctx wrld state-vars)))
+                    (trans-value (fcons-term* 'mv-list arg1 arg2)))))))
+          ((stobj-field-fn-of-stobj-type-p
+            (car x) wrld) ; and stobjs-out is not t
+           (trans-er+ x ctx
+                      "It is illegal to call ~x0 because it is a stobj ~
+                       updater or accessor for a field of stobj type.  For a ~
+                       way to generate such a call, see :DOC stobj-let."
+                      (car x)))
           ((and (eq (car x) 'do$) ; and stobjs-out is not t
 
 ; Out of caution, we only allow direct translation of do$ for execution when it

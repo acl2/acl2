@@ -1,0 +1,4 @@
+(ZERO-M)
+(F)
+(BAD)
+(NIL-PROVED)
