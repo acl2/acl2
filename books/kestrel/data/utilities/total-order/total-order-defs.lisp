@@ -8,15 +8,14 @@
 
 (in-package "DATA")
 
+(include-book "misc/total-order-defs" :dir :system)
+
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "total-order"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (acl2::fast-<<
-          acl2::fast-lexorder
-          acl2::<<
-          acl2-number-<<
+  :names (acl2-number-<<
           symbol-<<
           eqlable-<<))

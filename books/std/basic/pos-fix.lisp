@@ -58,3 +58,15 @@ identity for positive integers, or returns 1 for any other object."
   (defthm pos-fix-when-posp
     (implies (posp x)
              (equal (pos-fix x) x))))
+
+
+(defsection lposfix
+  :parents (posp std/basic)
+  :short "@(call lposfix) is logically identical to @(call pos-fix), but its
+guard requires that @('x') is a @(see posp) and, in the execution, it's just a
+no-op that returns @('x')."
+
+  (defun-inline lposfix (x)
+    (declare (xargs :guard (posp x)))
+    (mbe :logic (pos-fix x)
+         :exec x)))
