@@ -511,6 +511,55 @@
 
     (xdoc::desc
      (list
+      "@('p[1]-proof-induct2')"
+      "@('...')"
+      "@('p[n]-proof-induct2')")
+     (xdoc::p
+      "Functions providing an induction scheme
+       on two proof trees for the same predicate.
+       Each takes two proofs, each followed by the arguments of its conclusion:
+       the formals of @('p[i]-proof-induct2') are
+       @('proof1'), @('_x[i,1]1'), ..., @('_x[i,m[i]]1'),
+       @('proof2'), @('_x[i,1]2'), ..., @('_x[i,m[i]]2').")
+     (xdoc::p
+      "Each recurses into the proofs of the premises
+       of the rules used at the roots of the two proofs, in two ways.
+       For each premise of either rule that calls @('p[i]') itself,
+       the function recurses into the proof of that premise,
+       leaving the other proof and its arguments unchanged:
+       this pairs a sub-proof of one proof with the whole other proof,
+       whether or not the two proofs use the same rule.
+       For each pair of premises, one of each rule,
+       that call the same predicate of the clique
+       (see the @(':irules') input),
+       the function recurses into the proofs of both premises:
+       this pairs a sub-proof of one proof with a sub-proof of the other;
+       when the two proofs use the same rule,
+       the pairs include the corresponding premises of the two instances.
+       Premises that call predicates of preceding cliques are skipped.
+       The arguments of the premises are passed along with their proofs.
+       The results of these functions are irrelevant:
+       only their recursive structure matters.")
+     (xdoc::p
+      "One event is generated for each clique of predicates.
+       For a clique of a single predicate, the event is a @(tsee define).
+       For a clique of two or more predicates,
+       the functions are mutually recursive,
+       and the event is a @(tsee defines)
+       named after the first predicate of the clique,
+       with the suffix @('-proof-clique-induct2');
+       it is generated with @(':flag-local nil'),
+       so that the flag macro it generates,
+       @('defthm-p[i]-proof-clique-induct2-flag'),
+       can be used after the call of this macro;
+       its flag function is @('p[i]-proof-clique-induct2-flag').")
+     (xdoc::p
+      "These functions are generated only for the recursive predicates.")
+     (xdoc::p
+      "These functions are disabled."))
+
+    (xdoc::desc
+     (list
       "@('p[1]-proof-minimalp')"
       "@('...')"
       "@('p[n]-proof-minimalp')")
