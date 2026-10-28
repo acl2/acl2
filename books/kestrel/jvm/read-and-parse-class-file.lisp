@@ -15,6 +15,10 @@
 (include-book "class-file-parser")
 (include-book "kestrel/utilities/file-existsp" :dir :system)
 (include-book "kestrel/utilities/include-book-dir-dollar" :dir :system)
+(include-book "class-and-path-utils")
+(include-book "class-names")
+(include-book "kestrel/strings-light/split-string-repeatedly" :dir :system)
+(include-book "kestrel/strings-light/string-ends-withp" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/utilities/state" :dir :system))
 
@@ -159,3 +163,121 @@
                            &key
                            (dir 'nil))
   `(show-class-info-fn ,path-to-class-file ',dir state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp foundp class-info state)
+(defund find-class-in-dir (rest-of-path ; starts with / and ends with .class
+                           dir ; todo: add support for .jar files
+                           fully-qualified-class-name
+                           state)
+  (declare (xargs :guard (and (stringp rest-of-path)
+                              (stringp dir)
+                              (jvm::class-namep fully-qualified-class-name))
+                  :stobjs state))
+  (b* ((dir (if (equal "" dir) "." dir)) ; treat empty entry as current dir
+       ((when (string-ends-withp dir ".jar"))
+        (cw "ERROR: .jar files are not yet supported: ~x0.~%" dir)
+        (mv `(:jar-not-supported ,dir) nil nil state))
+       (path-to-class-file (concatenate 'string dir rest-of-path))
+       ((mv existsp state)
+        (file-existsp path-to-class-file state))
+       ((when (not existsp)) ; not an error, it's just not in this dir
+        (mv nil nil nil state))
+       ;; The file exists, so we require it to read without error:
+       ((mv erp bytes state)
+        (read-file-into-byte-list path-to-class-file state))
+       ((when erp)
+        (cw "ERROR: Failed to read from file ~x0.  Result: ~x1.~%" path-to-class-file erp)
+        (mv `(:error-reading-file ,path-to-class-file) nil nil state))
+       ;; Parse the bytes read:
+       ((mv erp
+            class-name
+            class-info
+            & ; field-defconsts
+            )
+        (parse-class-file-bytes bytes))
+       ((when erp) (mv erp nil nil state))
+       ((when (not (equal class-name fully-qualified-class-name)))
+        (cw "ERROR: Class name mismatch.  File ~x0 contains ~x1 but we expected ~x2.~%" path-to-class-file class-name fully-qualified-class-name)
+        ;; We treat this as an error and stop the search:
+        (mv `(:class-name-mismatch ,path-to-class-file) nil nil state)))
+    (mv nil t class-info state)))
+
+(defthm class-infop-of-mv-nth-2-of-find-class-in-dir
+  (implies (and (not (mv-nth 0 (find-class-in-dir rest-of-path dir fully-qualified-class-name state)))
+                (mv-nth 1 (find-class-in-dir rest-of-path dir fully-qualified-class-name state)))
+           (jvm::class-infop (mv-nth 2 (find-class-in-dir rest-of-path dir fully-qualified-class-name state))
+                             fully-qualified-class-name))
+  :hints (("Goal" :in-theory (enable find-class-in-dir))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp foundp class-info state)
+(defund find-class-in-dirs-aux (rest-of-path ; starts with / and ends with .class
+                                dirs ; todo: add support for .jar files
+                                fully-qualified-class-name
+                                state)
+  (declare (xargs :guard (and (stringp rest-of-path)
+                              (string-listp dirs)
+                              (jvm::class-namep fully-qualified-class-name))
+                  :stobjs state))
+  (if (endp dirs)
+      (mv nil nil nil state)
+    (mv-let (erp foundp class-info state)
+      (find-class-in-dir rest-of-path (first dirs) fully-qualified-class-name state)
+      (if erp
+          (mv erp nil nil state)
+        (if foundp
+            (mv nil t class-info state)
+          (find-class-in-dirs-aux rest-of-path (rest dirs) fully-qualified-class-name state))))))
+
+(defthm class-infop-of-mv-nth-2-of-find-class-in-dirs-aux
+  (implies (and (not (mv-nth 0 (find-class-in-dirs-aux rest-of-path dirs fully-qualified-class-name state)))
+                (mv-nth 1 (find-class-in-dirs-aux rest-of-path dirs fully-qualified-class-name state)))
+           (jvm::class-infop (mv-nth 2 (find-class-in-dirs-aux rest-of-path dirs fully-qualified-class-name state))
+                             fully-qualified-class-name))
+  :hints (("Goal" :in-theory (enable find-class-in-dirs-aux))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Looks in each of the DIRS in turn to try to find the given class.
+;; Returns (mv erp foundp class-info state)
+(defund find-class-in-dirs (fully-qualified-class-name
+                            dirs ; todo: add support for .jar files
+                            state)
+  (declare (xargs :guard (and (jvm::class-namep fully-qualified-class-name)
+                              (string-listp dirs))
+                  :stobjs state))
+  (let ((rest-of-path (concatenate 'string "/" (path-of-class-file-within-dir fully-qualified-class-name))))
+    (find-class-in-dirs-aux rest-of-path
+                            dirs
+                            fully-qualified-class-name
+                            state)))
+
+(defthm class-infop-of-mv-nth-2-of-find-class-in-dirs
+  (implies (and (not (mv-nth 0 (find-class-in-dirs fully-qualified-class-name dirs state)))
+                (mv-nth 1 (find-class-in-dirs fully-qualified-class-name dirs state)))
+           (jvm::class-infop (mv-nth 2 (find-class-in-dirs fully-qualified-class-name dirs state))
+                             fully-qualified-class-name))
+  :hints (("Goal" :in-theory (enable find-class-in-dirs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp foundp class-info state)
+;; todo: compare to read-class-from-hierarchy
+(defund find-class-in-classpath (fully-qualified-class-name
+                                 classpath ; string containing colon-separated dirs
+                                 state)
+  (declare (xargs :guard (and (jvm::class-namep fully-qualified-class-name)
+                              (stringp classpath))
+                  :stobjs state))
+  (let ((dirs (acl2::split-string-repeatedly classpath #\:)))
+    (find-class-in-dirs fully-qualified-class-name dirs state)))
+
+(defthm class-infop-of-mv-nth-2-of-find-class-in-classpath
+  (implies (and (not (mv-nth 0 (find-class-in-classpath fully-qualified-class-name classpath state)))
+                (mv-nth 1 (find-class-in-classpath fully-qualified-class-name classpath state)))
+           (jvm::class-infop (mv-nth 2 (find-class-in-classpath fully-qualified-class-name classpath state))
+                             fully-qualified-class-name))
+  :hints (("Goal" :in-theory (enable find-class-in-classpath))))
