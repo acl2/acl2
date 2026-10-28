@@ -110580,8 +110580,9 @@ it."
 
  <p>A soundness bug in the code the @(see tau-system) uses to put @('IF')-terms
  into conjunctive or disjunctive normal form, @('cnf-dnf') was fixed.  See
- @('system/tests/tau-cnf-dnf-sign.lisp') and
- @('system/tests/tau-cnf-dnf-not-cnfp.lisp').</p>
+ @('system/tests/tau-cnf-dnf-sign.lisp'),
+ @('system/tests/tau-cnf-dnf-not-cnfp.lisp'), and
+ @('system/tests/tau-cnf-dnf-not-cnfp-v2.lisp').</p>
 
  <p>A soundness bug was fixed in @('tau-term') due to passing the wrong
  arguments into the code that applies form 2 signature rules.  See

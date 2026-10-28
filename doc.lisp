@@ -107466,8 +107466,9 @@ Bug Fixes From AI via Eric Smith
 
   A soundness bug in the code the [tau-system] uses to put [30m[47mIF[0m[0m-terms
   into conjunctive or disjunctive normal form, [30m[47mcnf-dnf[0m[0m was fixed.
-  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m and
-  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m.
+  See [30m[47msystem/tests/tau-cnf-dnf-sign.lisp[0m[0m,
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-cnf-dnf-not-cnfp-v2.lisp[0m[0m.
 
   A soundness bug was fixed in [30m[47mtau-term[0m[0m due to passing the wrong
   arguments into the code that applies form 2 signature rules.  See
