@@ -162,6 +162,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled loghead-of-ash-of-logext
+  (implies (natp m)
+           (equal (loghead n (ash (logext n x) m))
+                  (loghead n (ash x m))))
+  :enable (bitops::loghead-of-ash
+           nfix)
+  :disable acl2::nfix-under-nat-equiv
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logext-of-ash-of-loghead
   (implies (and (posp n)
                 (natp m))
