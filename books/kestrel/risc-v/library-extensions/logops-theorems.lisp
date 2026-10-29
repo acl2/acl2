@@ -90,6 +90,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled loghead-of-loghead-minus-loghead
+  (equal (loghead n (- (loghead n x) (loghead n y)))
+         (loghead n (- (ifix x) (ifix y))))
+  :enable loghead
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logext-of-loghead-plus-loghead
   (implies (posp n)
            (equal (logext n (+ (loghead n x) (loghead n y)))
@@ -102,6 +110,24 @@
                    (x (+ (ifix x) (ifix y)))
                    (m n)
                    (n n)))
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-loghead-minus-loghead
+  (implies (posp n)
+           (equal (logext n (- (loghead n x) (loghead n y)))
+                  (logext n (- (ifix x) (ifix y)))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (- (loghead n x) (loghead n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (- (ifix x) (ifix y)))
+                   (m n)
+                   (n n)))
+  :enable loghead-of-loghead-minus-loghead
   :disable bitops::cancel-loghead-under-logext
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
