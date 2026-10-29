@@ -375,6 +375,7 @@
     slice-of-read
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3
+    read-when-not-posp-cheap ; needed for an AES example
 
     ;; we will just unroll read-chunks (at least for now):
     read-chunks-base
@@ -1283,6 +1284,7 @@
     acl2::logapp-becomes-bvcat-bind-free-axe
     acl2::logtail-becomes-slice-bind-free-axe
     acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
+    acl2::logtail-becomes-0-axe ; even better than a bv op, we get the constant 0
 
     ;; Can help get rid of an intervening ifix:
     acl2::integerp-of-logand
