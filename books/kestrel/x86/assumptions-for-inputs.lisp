@@ -12,7 +12,7 @@
 (in-package "X")
 
 (include-book "portcullis")
-(include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
+(include-book "memory48") ; since this book knows about disjoint-regions48p
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/utilities/map-symbol-name" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)

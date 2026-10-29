@@ -12,7 +12,7 @@
 
 (include-book "portcullis")
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
-(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "memory48")
 (include-book "kestrel/memory/memory64" :dir :system)
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 
