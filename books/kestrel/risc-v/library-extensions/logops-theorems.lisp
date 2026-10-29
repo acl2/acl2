@@ -162,6 +162,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled logext-of-ash-of-loghead
+  (implies (and (posp n)
+                (natp m))
+           (equal (logext n (ash (loghead n x) m))
+                  (logext n (ash x m))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (ash (loghead n x) m))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (ash x m))
+                   (m n)
+                   (n n)))
+  :enable (bitops::loghead-of-ash
+           nfix)
+  :disable (bitops::cancel-loghead-under-logext
+            acl2::nfix-under-nat-equiv)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled loghead-of-1-when-bitp
   (implies (bitp b)
            (equal (loghead 1 b)
