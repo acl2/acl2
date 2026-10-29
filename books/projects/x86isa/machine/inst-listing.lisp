@@ -4362,6 +4362,12 @@
               :PFX :NO-PREFIX)
           NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
+    ;; The BNDMOV page says "#UD If the LOCK prefix is used but the
+    ;; destination is not a memory operand", which is the wording used
+    ;; for the instructions that accept the LOCK prefix; but BNDMOV is
+    ;; not one of them (see the LOCK prefix page), and the other MPX
+    ;; pages say "If the LOCK prefix is used". So all four BNDMOV
+    ;; entries raise #UD whenever the LOCK prefix is used.
     (INST "BNDMOV"
           (OP :OP #xF1A
               :MOD :MEM
