@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -241,6 +241,62 @@
              write-xreg
              inc4-pc
              write-pc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-addiw-alt-defs
+  :short "Equivalent semantic definitions of @('ADDIW')."
+
+  (defruled exec-addiw-alt-def-signed-signed
+    (equal (exec-addiw rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addiw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-plus-loghead
+                    (n 32)
+                    (x (logext 12 (ubyte12-fix imm)))
+                    (y (read-xreg-signed32 (ubyte5-fix rs1) stat feat))))
+
+  (defruled exec-addiw-alt-def-unsigned-signed
+    (equal (exec-addiw rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
+                (imm-operand (logext 12 (ubyte12-fix imm)))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addiw
+             read-xreg-unsigned32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-plus-loghead
+                    (n 32)
+                    (x (logext 12 (ubyte12-fix imm)))
+                    (y (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))))
+
+  (defruled exec-addiw-alt-def-signed-unsigned
+    (equal (exec-addiw rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (imm-operand (loghead 32 (logext 12 (ubyte12-fix imm))))
+                (result (+ rs1-operand imm-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-addiw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-plus-loghead
+                    (n 32)
+                    (x (loghead 32 (logext 12 (ubyte12-fix imm))))
+                    (y (read-xreg-signed32 (ubyte5-fix rs1) stat feat)))
+    :disable acl2::logext-+-cancel))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
