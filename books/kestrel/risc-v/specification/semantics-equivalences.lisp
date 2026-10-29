@@ -361,7 +361,7 @@
 (defsection exec-sub-alt-defs
   :short "Equivalent semantic definitions of @('SUB')."
 
-  (defruled exec-sub-alt-def
+  (defruled exec-sub-alt-def-signed-signed
     (equal (exec-sub rd rs1 rs2 stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
@@ -375,7 +375,45 @@
              inc4-pc
              write-pc
              loghead-of-logext-minus-logext
-             ifix)))
+             ifix))
+
+  (defruled exec-sub-alt-def-unsigned-signed
+    (equal (exec-sub rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (- rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sub
+             read-xreg-signed
+             write-xreg)
+    :use (:instance loghead-of-loghead-minus-loghead
+                    (n (feat->xlen feat))
+                    (x (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                    (y (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs2)
+                                                   stat feat))))
+    :disable acl2::loghead-+-cancel)
+
+  (defruled exec-sub-alt-def-signed-unsigned
+    (equal (exec-sub rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
+                (result (- rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sub
+             read-xreg-signed
+             write-xreg)
+    :use (:instance loghead-of-loghead-minus-loghead
+                    (n (feat->xlen feat))
+                    (x (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs1)
+                                                   stat feat)))
+                    (y (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
+    :disable acl2::loghead-+-cancel))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

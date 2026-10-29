@@ -963,7 +963,7 @@
    (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
      as shown in @(see exec-sub-alt-defs),
-     we could equivalently read both of them as signed.
+     we could equivalently read either or both of them as signed.
      We subtract the second integer from the first integer.
      We write the result to @('rd').
      We increment the program counter."))
