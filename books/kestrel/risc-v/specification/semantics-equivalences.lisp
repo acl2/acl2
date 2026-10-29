@@ -753,3 +753,27 @@
                     (n 32)
                     (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
                     (y (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-sllw-alt-defs
+  :short "Equivalent semantic definitions of @('SLLW')."
+
+  (defruled exec-sllw-alt-def
+    (equal (exec-sllw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed32 (ubyte5-fix rs2) stat feat))
+                (shift-amount (loghead 5 rs2-operand))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sllw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-ash-of-loghead
+                    (n 32)
+                    (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                    (m (loghead 5 (read-xreg-signed32 (ubyte5-fix rs2)
+                                                      stat feat))))))

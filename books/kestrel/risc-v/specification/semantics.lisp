@@ -1796,8 +1796,9 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-sllw-alt-defs),
+     we could equivalently read both of them as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer left by the shift amount.
      We write the result to @('rd') as a signed 32-bit integer.
