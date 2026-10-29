@@ -28,6 +28,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled equal-of-logexts-to-logheads
+  (implies (posp n)
+           (equal (equal (logext n x) (logext n y))
+                  (equal (loghead n x) (loghead n y))))
+  :use ((:instance bitops::cancel-logext-under-loghead
+                   (x x)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-logext-under-loghead
+                   (x y)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x x)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x y)
+                   (m n)
+                   (n n)))
+  :disable (bitops::cancel-logext-under-loghead
+            bitops::cancel-loghead-under-logext)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logext-of-logext-plus-logext
   (equal (logext n (+ (logext n x) (logext n y)))
          (logext n (+ (ifix x) (ifix y))))
