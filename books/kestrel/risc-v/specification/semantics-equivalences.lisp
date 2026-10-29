@@ -697,3 +697,59 @@
                     (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
                     (y (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat)))
     :disable acl2::logext-+-cancel))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-mulw-alt-defs
+  :short "Equivalent semantic definitions of @('MULW')."
+
+  (defruled exec-mulw-alt-def-signed-signed
+    (equal (exec-mulw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed32 (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mulw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-times-loghead
+                    (n 32)
+                    (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                    (y (read-xreg-signed32 (ubyte5-fix rs2) stat feat))))
+
+  (defruled exec-mulw-alt-def-unsigned-signed
+    (equal (exec-mulw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed32 (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mulw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-times-loghead
+                    (n 32)
+                    (x (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
+                    (y (read-xreg-signed32 (ubyte5-fix rs2) stat feat))))
+
+  (defruled exec-mulw-alt-def-signed-unsigned
+    (equal (exec-mulw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mulw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-loghead-times-loghead
+                    (n 32)
+                    (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                    (y (read-xreg-unsigned32 (ubyte5-fix rs2) stat feat)))))
