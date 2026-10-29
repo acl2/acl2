@@ -15,7 +15,7 @@
 
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes") ; could separate out
-(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "memory48")
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; for +-of-minus-constant-version
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))

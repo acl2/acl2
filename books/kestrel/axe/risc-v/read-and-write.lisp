@@ -17,7 +17,7 @@
 
 (include-book "portcullis")
 (include-book "kestrel/risc-v/specialized/rv32im-le/states" :dir :system)
-(include-book "kestrel/memory/memory32" :dir :system)
+(include-book "memory32")
 (include-book "risc-v-rules")
 (include-book "support") ; for write32-mem-ubyte32-lendian-alt-def
 (include-book "kestrel/bv/bvcat-def" :dir :system)

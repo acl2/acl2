@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-(include-book "kestrel/memory/memory48" :dir :system) ; since this book knows about disjoint-regions48p
+(include-book "memory48") ; since this book knows about disjoint-regions48p
 (include-book "canonical-unsigned")
 (include-book "assumptions") ; for make-standard-state-assumptions-fn-aux
 (include-book "assumptions-for-inputs")
