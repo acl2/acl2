@@ -1326,8 +1326,11 @@
    (xdoc::p
     "This is only valid if the M extension is present.")
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
-     We multiply them, and write the result to @('rd').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-mul-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We multiply the two integers.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
