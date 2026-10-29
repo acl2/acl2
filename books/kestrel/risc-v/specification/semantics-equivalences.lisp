@@ -1020,6 +1020,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection exec-jalr-alt-defs
+  :short "Equivalent semantic definitions of @('JALR')."
+
+  (defruled exec-jalr-alt-def
+    (equal (exec-jalr rd rs1 imm pc stat feat)
+           (b* ((base (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (offset
+                 (loghead (feat->xlen feat) (logext 12 (ubyte12-fix imm))))
+                (mask (cond ((feat-32p feat) #xfffffffe)
+                            ((feat-64p feat) #xfffffffffffffffe)
+                            (t (impossible))))
+                (target-pc (logand mask (+ base offset)))
+                ((unless (= (mod target-pc 4) 0)) (error stat feat))
+                (next-pc (+ pc 4))
+                (stat (write-xreg (ubyte5-fix rd) next-pc stat feat))
+                (stat (write-pc target-pc stat feat)))
+             stat))
+    :enable (exec-jalr
+             read-xreg-signed
+             loghead-of-integer-plus-logext
+             logand-of-loghead-when-unsigned-byte-p)
+    :use (:instance logand-of-loghead-when-unsigned-byte-p
+                    (n (feat->xlen feat))
+                    (mask (cond ((feat-32p feat) #xfffffffe)
+                                ((feat-64p feat) #xfffffffffffffffe)
+                                (t (impossible))))
+                    (x (+ (read-xreg-signed (ubyte5-fix rs1) stat feat)
+                          (loghead (feat->xlen feat)
+                                   (logext 12 (ubyte12-fix imm))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-beq-alt-defs
   :short "Equivalent semantic definitions of @('BEQ')."
 

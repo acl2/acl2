@@ -2252,7 +2252,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-jalr-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
      obtaining an unsigned @('XLEN')-bit offset.
      We add the offset to the integer from the register,
