@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/jvm/read-class-from-hierarchy" :dir :system)
-;(include-book "../jvm/gather-relevant-classes2")
+(include-book "kestrel/jvm/mentioned-classes" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "unroller")
 (include-book "../tactic-prover") ; has skip-proofs
@@ -502,7 +502,7 @@
                               (symbol-listp monitor)
                               (booleanp assume-object-params-non-null))
                   :stobjs state
-                  :mode :program ;; for submit-event-quiet, simp-dag-fn, and apply-tactic-prover
+                  :mode :program ;; for simp-dag-fn, and apply-tactic-prover
                   ))
   (b* ((method-name (jvm::method-id-name method-id))
        (method-descriptor (jvm::method-id-descriptor method-id))
@@ -736,32 +736,29 @@
               (class-table-alistp class-alist)))
   :hints (("Goal" :in-theory (enable class-table-alistp))))
 
+;; Adds info for each of the CLASS-NAMES to CLASS-ALIST.
 ;; Returns (mv erp class-alist state).
-(defun extend-class-alist (class-names root-dir class-alist state)
-  (declare (xargs :guard (and (jvm::class-name-listp class-names) ; do better?
-                              (stringp root-dir)
+(defund extend-class-alist (class-names classpath class-alist state)
+  (declare (xargs :guard (and (jvm::class-name-listp class-names) ; do better?  fully qualified
+                              (stringp classpath)
                               (class-table-alistp class-alist))
-                  :verify-guards nil ; todo
                   :stobjs state))
   (if (endp class-names)
       (mv (erp-nil) class-alist state)
     (b* ((class-name (first class-names))
-         ((mv erp
-              class-name-from-class-file
-              class-info
-              & ;field-defconsts
-              state)
-          (read-and-parse-class-file (concatenate 'string root-dir "/" (path-of-class-file-within-dir class-name)) t state))
+         ((mv erp foundp class-info state)
+          (find-class-in-classpath class-name classpath state))
          ((when erp) (mv erp nil state))
-         ((when (not (equal class-name class-name-from-class-file)))
-          (er hard? 'extend-class-alist "Class name mismatch: ~s0 and ~s1." class-name class-name-from-class-file)
-          (mv :class-name-mismatch nil state))
+         ((when (not foundp))
+          (er hard? 'extend-class-alist "Failed to find class ~s0 in classpath ~s1." class-name classpath)
+          (mv :failed-to-find-class nil state))
          (class-alist (acons class-name class-info class-alist)))
-      (extend-class-alist (rest class-names) root-dir class-alist state))))
+      (extend-class-alist (rest class-names) classpath class-alist state))))
 
 ;; Returns (mv erp event state), but the event is always an
 ;; empty progn.  This may need to be called inside a make-event.
-(defun test-file-fn (path-to-java-file ;; we prepend the cbd if this is not an absolute path (TODO: Perhaps instead just take the name of the class and use the classpath to find it?)
+(defun test-class-fn (class-name ; fully qualified
+                     ;; classpath ; todo
                      methods-to-test
                      classes-to-assume-initialized
                      methods-expected-to-fail ;todo: check that these are all methods in the class
@@ -776,7 +773,8 @@
                      monitor
                      assume-object-params-non-null
                      state)
-  (declare (xargs :guard (and (or (eq :auto methods-to-test)
+  (declare (xargs :guard (and (jvm::class-namep class-name)
+                              (or (eq :auto methods-to-test)
                                   (string-listp methods-to-test) ;these are just bare names, for now
                                   )
                               (classes-to-assume-initialized-optionp classes-to-assume-initialized)
@@ -791,52 +789,65 @@
                               (booleanp assume-object-params-non-null))
                   :mode :program ; because of run-formal-tests-on-methods
                   :stobjs state))
-  (b* (((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
+  (b* ((- (cw "Running tester on:~% ~s0.~%~%" class-name))
+
+       ;;(absolute-path-no-extension (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
+
+       ;; todo: remove once the classpath is passed in
+       ((mv & java-bootstrap-classes-root state) (getenv$ "JAVA_BOOTSTRAP_CLASSES_ROOT" state)) ; must contain a hierarchy of class files.  cannot be a jar.  should not end in slash.
        ((when (not java-bootstrap-classes-root))
-        (er hard? 'test-file-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
+        (er hard? 'test-class-fn "Please set your JAVA_BOOTSTRAP_CLASSES_ROOT environment var to a directory that contains a hierarchy of class files.")
         (mv :JAVA_BOOTSTRAP_CLASSES_ROOT-unset nil state))
-       ;; TODO: Build in many more classes?
-       ;; TODO: Should we save these when we build the FUT executable?
-       ;; TODO: Any way to track these dependencies?
+       (classpath (concatenate 'string ".:" java-bootstrap-classes-root) ; search in current dir first, then java-bootstrap-classes-root (todo: just pass in the classpath)
+                  )
 
-       (class-alist nil) ; better name than nil?
-       ((mv erp class-alist state)
-        (extend-class-alist '("java.lang.Object"
-                              "java.lang.Class"
-                              "java.lang.Math")
-                            java-bootstrap-classes-root
-                            class-alist state))
-       ((when erp) (mv erp nil state))
-
-       (absolute-path-to-java-file
-        (if (equal #\/ (char path-to-java-file 0))
-            path-to-java-file ; starts with slash so already absolute
-          (concatenate 'string (cbd) path-to-java-file)))
-       (- (cw "Running tester on:~% ~s0.~%~%" absolute-path-to-java-file)) ;ex: "/home/emily/foo/bar/baz/Search.java"
-       (absolute-path-no-extension (substring-before-last-occurrence absolute-path-to-java-file #\.)) ;strip the dot and extension, ex: "/home/emily/foo/bar/baz/Search"
        ;; (- (cw "Base name: ~s0~%" absolute-path-no-extension))
        ;; (root-of-user-class-hierarchy (substring-before-last-occurrence absolute-path-no-extension #\/)) ;; for now, we assume the given class is at the top level of the hierarchy (todo: deduce the root using the fully qualified name stored in the class file) ex: "/home/emily/foo/bar/baz"
        ;; (- (cw "Directory: ~s0~%" root-of-user-class-hierarchy))
-       (class-name (substring-after-last-occurrence absolute-path-no-extension #\/)) ;todo: add support for fully-qualified names
-       ;; (- (cw "Class name: ~s0~%" class-name))
-       (absolute-path-to-class-file (concatenate 'string absolute-path-no-extension ".class"))
-       ;; (- (cw "Class file name: ~s0~%" absolute-path-to-class-file))
-       ;; Read the class file:
-       ((mv erp class-name-from-class-file class-info
-            & ; field-defconsts
-            state) (read-and-parse-class-file absolute-path-to-class-file t state)) ; todo: pass an absolute path?
+       ;;(class-name (substring-after-last-occurrence absolute-path-no-extension #\/)) ;todo: add support for fully-qualified names ; todo: simplify the computation of the class-name
+
+       ;; We look up the main class first, then later we look up the classes it mentions:
+       (class-alist nil) ; better name than nil?
+       ((mv erp class-alist state)
+        (extend-class-alist (list class-name) classpath class-alist state))
        ((when erp) (mv erp nil state))
-       ((when (not (equal class-name-from-class-file
-                          class-name)))
-        (er hard? 'test-file-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
-        (mv :class-name-mismatch nil state))
-       (class-alist (acons class-name class-info class-alist))
+       (class-info (lookup-equal class-name class-alist))
+
+       (mentioned-classes (mentioned-classes-from-class-info class-info))
+       (mentioned-classes mentioned-classes
+                          ;; (remove-equal "java.lang.AssertionError" ; special case, we don't want to start creating the error objects (and that code may be provably unreachable once we try to prune), so we now we remove the class -- instead, we are trying to just not open NEW when this is the class
+                          ;;               mentioned-classes)
+                          )
+       (- (cw "(Mentioned classes to bring in: ~X01)~%" mentioned-classes nil))
+
+       ;; TODO: Build in many more classes?
+       ;; TODO: Should we save these when we build the FUT executable?
+       ;; TODO: Any way to track these dependencies?
+       ((mv erp class-alist state)
+        (extend-class-alist mentioned-classes ;'("java.lang.Object" "java.lang.Class" "java.lang.Math")
+                            classpath
+                            class-alist state))
+       ((when erp) (mv erp nil state))
+
+       ;; ;; (- (cw "Class name: ~s0~%" class-name))
+       ;; (absolute-path-to-class-file (concatenate 'string absolute-path-no-extension ".class"))
+       ;; ;; (- (cw "Class file name: ~s0~%" absolute-path-to-class-file))
+       ;; ;; Read the class file:
+       ;; ((mv erp class-name-from-class-file class-info
+       ;;      & ; field-defconsts
+       ;;      state) (read-and-parse-class-file absolute-path-to-class-file t state))
+ ; todo: pass an absolute path?
+       ;; ((when erp) (mv erp nil state))
+       ;; ((when (not (equal class-name-from-class-file
+       ;;                    class-name)))
+       ;;  (er hard? 'test-class-fn "Class-name mismatch: ~x0 vs ~x1." class-name class-name-from-class-file)
+       ;;  (mv :class-name-mismatch nil state))
 
        ;; We'll test any method whose name starts with "test" or "fail_test": ;; todo: update all docs to mention "fail_test"
        (method-info-alist (jvm::class-decl-methods class-info))
        (test-method-ids (select-method-ids-to-test method-info-alist methods-to-test))
        ((when (endp test-method-ids))
-        (er hard? 'test-file-fn "There are no methods to test.")
+        (er hard? 'test-class-fn "There are no methods to test.")
         (mv (erp-t) nil state))
        ;; Print the methods to be tested:
        (- (if (endp (rest test-method-ids))
@@ -846,7 +857,7 @@
        ;; Load the relevant classes (TODO: Consider speeding things up by doing this lazily):
        ;; ((mv erp kestrel-acl2 state) (getenv$ "KESTREL_ACL2" state))
        ;; ((when erp)
-       ;;  (er hard? 'test-file-fn "KESTREL_ACL2 environment variable is unset.")
+       ;;  (er hard? 'test-class-fn "KESTREL_ACL2 environment variable is unset.")
        ;;  (mv (erp-t) nil state))
        ;; (java-library-dir (concatenate 'string kestrel-acl2 "/examples/java7-libraries/rt.jar.unzipped"))
        ;; (- (cw "(Loading relevant classes:~%"))
@@ -868,24 +879,24 @@
        )
     (mv (erp-nil) '(progn) state)))
 
-;; Test all methods in the given file whose names start with "test" or
+;; Test all methods in the given class whose names start with "test" or
 ;; "fail_test".  This variant of the tool should be called from within the ACL2
 ;; loop, or in a book.
-(defmacro test-file (path-to-java-file &key
-                                       ;;(assumptions 'nil)
-                                       (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                       (classes-to-assume-initialized ':basic)
-                                       (expected-failures ':auto)
-                                       (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
-                                       (count-hits 'nil)
-                                       (extra-rules 'nil)
-                                       (remove-rules 'nil)
-                                       (prune-precise '10000) ; todo: can explode
-                                       (prune-approx 't)
-                                       (monitor 'nil)
-                                       (print 'nil)
-                                       (assume-object-params-non-null 't))
-  `(make-event-quiet (test-file-fn ,path-to-java-file
+(defmacro test-class (class-name &key
+                                ;;(assumptions 'nil)
+                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                (classes-to-assume-initialized ':system)
+                                (expected-failures ':auto)
+                                (error-on-unexpectedp 't) ; for interactive use, cause hard error on unexpected result
+                                (count-hits 'nil)
+                                (extra-rules 'nil)
+                                (remove-rules 'nil)
+                                (prune-precise '10000) ; todo: can explode
+                                (prune-approx 't)
+                                (monitor 'nil)
+                                (print 'nil)
+                                (assume-object-params-non-null 't))
+  `(make-event-quiet (test-class-fn ,class-name
                                    ;;',assumptions
                                    ,methods
                                    ,classes-to-assume-initialized
@@ -906,22 +917,22 @@
 ;; from an IDE, but not from the ACL2 REPL or in a book, because it causes
 ;; ACL2 to exit once it has done its work.  This does not check whether the
 ;; tests get the right answers (it allows any of the tests to fail). By
-;; contrast, test-file lets you indicate which tests should fail (and thus
+;; contrast, test-class lets you indicate which tests should fail (and thus
 ;; which tests must not fail).
-(defmacro test-file-and-exit (path-to-java-file &key
-                                                ;;(assumptions 'nil)
-                                                (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
-                                                (classes-to-assume-initialized ':basic)
-                                                (count-hits 'nil)
-                                                (extra-rules 'nil)
-                                                (remove-rules 'nil)
-                                                (prune-precise '10000) ; todo: can explode, was called was called prune-branches-precisely
-                                                (prune-approx 't) ; was called prune-branches-approximately
-                                                (monitor 'nil)
-                                                (print ':brief) ;(print 'nil)
-                                                (assume-object-params-non-null 't))
+(defmacro test-class-and-exit (class-name &key
+                                         ;;(assumptions 'nil)
+                                         (methods ':auto) ;;which methods to test (default is ones whose names start with "test" or "fail_test")
+                                         (classes-to-assume-initialized ':system)
+                                         (count-hits 'nil)
+                                         (extra-rules 'nil)
+                                         (remove-rules 'nil)
+                                         (prune-precise '10000) ; todo: can explode, was called was called prune-branches-precisely
+                                         (prune-approx 't) ; was called prune-branches-approximately
+                                         (monitor 'nil)
+                                         (print ':brief) ;(print 'nil)
+                                         (assume-object-params-non-null 't))
   `(mv-let (erp event state)
-     (test-file-fn ,path-to-java-file
+     (test-class-fn ,class-name
                    ;;',assumptions
                    ,methods
                    ,classes-to-assume-initialized
