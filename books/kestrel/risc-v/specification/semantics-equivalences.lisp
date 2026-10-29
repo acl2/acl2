@@ -338,6 +338,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection exec-slliw-alt-defs
+  :short "Equivalent semantic definitions of @('SLLIW')."
+
+  (defruled exec-slliw-alt-def
+    (equal (exec-slliw rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (shift-amount (ubyte5-fix imm))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-slliw
+             read-xreg-unsigned32
+             read-xreg-signed32
+             write-xreg-32)
+    :use (:instance logext-of-ash-of-loghead
+                    (n 32)
+                    (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                    (m (ubyte5-fix imm)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-add-alt-defs
   :short "Equivalent semantic definitions of @('ADD')."
 
