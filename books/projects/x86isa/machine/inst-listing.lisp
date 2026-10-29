@@ -4245,31 +4245,39 @@
               :GROUP '(:GROUP-16))
           NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
+    ;; The remaining encodings of 0F 18 (Group 16), with reg = 4-7 or
+    ;; mod = 3, are reserved NOPs like 0F 19 below (see the comment
+    ;; there), except for the prefetch hints that Intel has since
+    ;; defined in them: PREFETCHRST2 (0F 18 /4 with mod != 3, in the
+    ;; Intel ISE reference), and PREFETCHIT1 (0F 18 /6) and PREFETCHIT0
+    ;; (0F 18 /7), the latter two only in 64-bit mode with RIP-relative
+    ;; addressing, executing as NOPs otherwise. Being hints without
+    ;; architectural effects, they are adequately modeled as NOPs too.
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x4
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x5
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x6
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x7
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :MOD #x3
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     ;; Intel Vol. 2 (Table A-3) shows 0F 19 as a reserved NOP.
     ;; Section A.1 says that these opcodes may behave as NOPs on certain
     ;; processors. Intel's XED decoder explicitly decodes 0F 19 /r as
