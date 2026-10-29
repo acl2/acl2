@@ -4610,9 +4610,15 @@
           NIL
           '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
-    (INST "RESERVEDNOP" (OP :OP #xF1D)
-          NIL 'NIL
-          'NIL)
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1D as a reserved NOP, like
+    ;; 0F 19 above (see the comment there); no instruction has been
+    ;; defined in this opcode so far.
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1D
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     ;; Intel Vol. 2 (Table A-3) shows 0F 1E as a reserved NOP, i.e. an
     ;; opcode reserved for future instructions, executed as a NOP by
     ;; processors that do not implement them. Like the NOP 0F 1F /0
