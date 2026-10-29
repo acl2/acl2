@@ -43,6 +43,7 @@
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))

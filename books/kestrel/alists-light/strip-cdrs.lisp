@@ -67,19 +67,6 @@
                  (strip-cdrs y)))
   :hints (("Goal" :in-theory (enable strip-cdrs))))
 
-(defthm strip-cdrs-of-pairlis$-when-equal-lengths
-  (implies (equal (len x) (len y))
-           (equal (strip-cdrs (pairlis$ x y))
-                  (true-list-fix y)))
-  :hints (("Goal" :in-theory (enable strip-cdrs))))
-
-;; Also in pairlis-dollar.lisp
-;compatible with std
-(defthm strip-cdrs-of-pairlis$
-  (equal (strip-cdrs (pairlis$ x y))
-         (take (len x) y))
-  :hints (("Goal" :in-theory (enable strip-cdrs))))
-
 (defthm strip-cdrs-of-revappend
   (equal (strip-cdrs (revappend x y))
          (revappend (strip-cdrs x)
