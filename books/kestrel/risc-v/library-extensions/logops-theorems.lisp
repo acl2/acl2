@@ -17,6 +17,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled loghead-of-logext-same
+  (equal (loghead n (logext n x))
+         (loghead n x))
+  :use (:instance bitops::cancel-logext-under-loghead
+                  (x x)
+                  (m n)
+                  (n n))
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled logext-of-logext-plus-logext
   (equal (logext n (+ (logext n x) (logext n y)))
          (logext n (+ (ifix x) (ifix y))))
@@ -92,6 +103,18 @@
                    (m n)
                    (n n)))
   :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-times-logext
+  (equal (loghead n (* (logext n x) (logext n y)))
+         (loghead n (* (ifix x) (ifix y))))
+  :use (:instance bitops::loghead-of-*-of-loghead-same
+                  (x (logext n x))
+                  (y (logext n y))
+                  (n n))
+  :enable loghead-of-logext-same
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
