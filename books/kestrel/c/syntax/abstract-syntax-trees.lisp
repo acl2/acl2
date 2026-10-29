@@ -1943,6 +1943,9 @@
        An indicator of which variant is included
        in the @(':signed') case of this fixtype.")
      (xdoc::p
+      "The @('uscore') flag in the @(':bool') case keeps track of the keyword:
+       @('t') for @('_Bool'); @('nil') for @('bool'), which is only in C23.")
+     (xdoc::p
       "We also include the GCC extension @('__int128'),
        which is a (non-standard) integer type: see "
       (xdoc::ahref
@@ -1995,7 +1998,7 @@
     (:double ())
     (:signed ((uscores keyword-uscores-p)))
     (:unsigned ())
-    (:bool ())
+    (:bool ((uscore bool)))
     (:complex ())
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)

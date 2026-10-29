@@ -295,7 +295,7 @@
           :doublec (list (type-spec-double) (type-spec-complex))
           :ldoublec (list (type-spec-long)
                           (type-spec-double) (type-spec-complex))
-          :bool (list (type-spec-bool))
+          :bool (list (type-spec-bool t))
           :otherwise nil))
        ((unless tyspecs) (reterr t)))
     (retok (spec/qual-typespec-list tyspecs))))

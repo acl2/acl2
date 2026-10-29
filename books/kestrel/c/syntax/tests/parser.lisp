@@ -873,7 +873,7 @@
  parse-type-name
  "_Bool"
  :cond (and (equal (tyname->specquals ast)
-                   (list (spec/qual-typespec (type-spec-bool))))
+                   (list (spec/qual-typespec (type-spec-bool t))))
             (equal (tyname->declor? ast)
                    nil)))
 
@@ -893,7 +893,16 @@
  "bool"
  :dialect (c::make-dialect :std (c::standard-c23))
  :cond (and (equal (tyname->specquals ast)
-                   (list (spec/qual-typespec (type-spec-bool))))
+                   (list (spec/qual-typespec (type-spec-bool nil))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "_Bool"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool t))))
             (equal (tyname->declor? ast)
                    nil)))
 

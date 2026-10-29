@@ -3895,7 +3895,11 @@
                       same-vstate)
        :unsigned (retok (type-spec-unsigned) nil ext-tyspecs nil same-vstate)
        :bool (if (endp tyspecs)
-                 (retok (type-spec-bool) (type-bool) nil nil same-vstate)
+                 (retok (type-spec-bool tyspec.uscore)
+                        (type-bool)
+                        nil
+                        nil
+                        same-vstate)
                (reterr msg-bad-preceding))
        :complex (retok (type-spec-complex) nil ext-tyspecs nil same-vstate)
        :atomic (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))

@@ -246,7 +246,7 @@
              (list (type-spec-unsigned)
                    (type-spec-long)
                    (type-spec-long)))
-   :bool (list (type-spec-bool))
+   :bool (list (type-spec-bool t))
    :float (if tyspecs.complex
               (list (type-spec-float)
                     (type-spec-complex))

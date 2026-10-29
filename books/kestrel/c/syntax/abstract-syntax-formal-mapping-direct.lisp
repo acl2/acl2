@@ -307,7 +307,7 @@
                            (type-spec-long)
                            (type-spec-int)))
       (retok (c::make-tyspecseq-ullong :int t)))
-     ((equal tyspecs (list (type-spec-bool)))
+     ((equal tyspecs (list (type-spec-bool t)))
       (retok (c::tyspecseq-bool)))
      ((equal tyspecs (list (type-spec-float)))
       (retok (c::make-tyspecseq-float :complex nil)))

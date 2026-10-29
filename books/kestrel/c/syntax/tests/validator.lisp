@@ -736,6 +736,24 @@ int bar (void);
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+(test-valid
+ "_Bool x;
+")
+
+(test-valid-fail
+ "bool x;
+")
+
+(test-valid
+ "bool x;
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
+(test-valid
+ "_Bool x;
+"
+ :dialect (c::make-dialect :std (c::standard-c23)))
+
 (test-valid-fail
   "int foo(void) {
   int x;

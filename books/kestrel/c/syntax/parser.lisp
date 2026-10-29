@@ -460,10 +460,12 @@
      @('__builtin_va_list'), and
      @('__auto_type').")
    (xdoc::p
-    "We also temporarily include @('bool') as a synonym of @('_Bool').
-     We plan to parameterize this and other functions
-     over the specific dialect of C,
-     including choice of GCC/Clang extensions."))
+    "Note that @('bool') is a keyword only in C23:
+     @(tsee lex-identifier/keyword) checks the dialect of the parser state.
+     So the comparison here with that keyword
+     will always fail if the dialect does not support it,
+     because in that case it would be an identifier token,
+     not a keyword token."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -475,7 +477,7 @@
       (token-keywordp token? "__signed")
       (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
-      (token-keywordp token? "bool") ; C23
+      (token-keywordp token? "bool")
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
@@ -520,8 +522,8 @@
         ((token-keywordp token "__signed__")
          (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
-        ((token-keywordp token "bool") (type-spec-bool)) ; C23
-        ((token-keywordp token "_Bool") (type-spec-bool))
+        ((token-keywordp token "bool") (type-spec-bool nil))
+        ((token-keywordp token "_Bool") (type-spec-bool t))
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
