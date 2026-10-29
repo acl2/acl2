@@ -38,8 +38,10 @@
 (include-book "../prune-dag-approximately") ;brings in rewriter-basic
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
+(include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+;(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -485,8 +487,21 @@
 (defund classes-to-assume-initialized-optionp (classes-to-assume-initialized)
   (declare (xargs :guard t))
   (or (eq :basic classes-to-assume-initialized)
+      (eq :system classes-to-assume-initialized)
       (eq :all classes-to-assume-initialized)
       (jvm::class-name-listp classes-to-assume-initialized)))
+
+(local
+  (defthm string-listp-when-class-name-listp
+    (implies (jvm::class-name-listp names)
+             (string-listp names))
+    :hints (("Goal" :in-theory (enable jvm::class-name-listp)))))
+
+(local
+  (defthmd class-name-listp-becomes-string-listp
+    (equal (jvm::class-name-listp names)
+           (string-listp names))
+    :hints (("Goal" :in-theory (enable jvm::class-name-listp string-listp)))))
 
 ;; This is separate to avoid causing case splits in the slow guard proof for unroll-java-code-core.
 (defund choose-classes-to-assume-initialized (classes-to-assume-initialized class-alist)
@@ -496,14 +511,16 @@
       '("java.lang.Object" "java.lang.System"  "java.lang.Math" "java.lang.Float") ; might need to expand this later
     (if (eq :all classes-to-assume-initialized)
         (strip-cars class-alist)
-      ;; must be an explicit list of class names:
-      classes-to-assume-initialized)))
+      (if (eq :system classes-to-assume-initialized)
+          (strings-starting-with "java.lang." (strip-cars class-alist))
+        ;; must be an explicit list of class names:
+        classes-to-assume-initialized))))
 
 (defthm class-name-listp-of-choose-classes-to-assume-initialized
   (implies (and (classes-to-assume-initialized-optionp classes-to-assume-initialized)
                 (class-table-alistp class-alist))
            (jvm::class-name-listp (choose-classes-to-assume-initialized classes-to-assume-initialized class-alist)))
-  :hints (("Goal" :in-theory (enable choose-classes-to-assume-initialized))))
+  :hints (("Goal" :in-theory (enable choose-classes-to-assume-initialized class-name-listp-becomes-string-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
