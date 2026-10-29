@@ -660,6 +660,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection exec-srl-alt-defs
+  :short "Equivalent semantic definitions of @('SRL')."
+
+  (defruled exec-srl-alt-def
+    (equal (exec-srl rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (shift-amount
+                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
+                       ((feat-64p feat) (loghead 6 rs2-operand))
+                       (t (impossible))))
+                (result (ash rs1-operand (- shift-amount)))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-srl
+             read-xreg-signed)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-sra-alt-defs
+  :short "Equivalent semantic definitions of @('SRA')."
+
+  (defruled exec-sra-alt-def
+    (equal (exec-sra rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (shift-amount
+                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
+                       ((feat-64p feat) (loghead 6 rs2-operand))
+                       (t (impossible))))
+                (result (ash rs1-operand (- shift-amount)))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sra
+             read-xreg-signed)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-mul-alt-defs
   :short "Equivalent semantic definitions of @('MUL')."
 
@@ -941,3 +981,39 @@
                     (x (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
                     (m (loghead 5 (read-xreg-unsigned32 (ubyte5-fix rs2)
                                                         stat feat))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-srlw-alt-defs
+  :short "Equivalent semantic definitions of @('SRLW')."
+
+  (defruled exec-srlw-alt-def
+    (equal (exec-srlw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed32 (ubyte5-fix rs2) stat feat))
+                (shift-amount (loghead 5 rs2-operand))
+                (result (ash rs1-operand (- shift-amount)))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-srlw
+             read-xreg-unsigned32
+             read-xreg-signed32)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-sraw-alt-defs
+  :short "Equivalent semantic definitions of @('SRAW')."
+
+  (defruled exec-sraw-alt-def
+    (equal (exec-sraw rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed32 (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed32 (ubyte5-fix rs2) stat feat))
+                (shift-amount (loghead 5 rs2-operand))
+                (result (ash rs1-operand (- shift-amount)))
+                (stat (write-xreg-32 (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sraw
+             read-xreg-unsigned32
+             read-xreg-signed32)))

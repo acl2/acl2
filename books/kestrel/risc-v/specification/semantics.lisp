@@ -1241,7 +1241,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-srl-alt-defs),
+     we could equivalently read the second one as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1287,7 +1289,9 @@
   (xdoc::topstring
    (xdoc::p
     "We read a signed @('XLEN')-bit integer from @('rs1')
-     and an unsigned @('XLEN')-bit integer from @('rs2').
+     and an unsigned @('XLEN')-bit integer from @('rs2');
+     as shown in @(see exec-sra-alt-defs),
+     we could equivalently read the latter as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1846,7 +1850,9 @@
     "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+     and an unsigned 32-bit integer from @('rs2');
+     as shown in @(see exec-srlw-alt-defs),
+     we could equivalently read the latter as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer right by the shift amount;
      this is a logical shift, since the integer is unsigned.
@@ -1889,7 +1895,9 @@
     "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read a signed 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+     and an unsigned 32-bit integer from @('rs2');
+     as shown in @(see exec-sraw-alt-defs),
+     we could equivalently read the latter as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer right by the shift amount;
      this is an arithmetic shift, since the integer is signed.
