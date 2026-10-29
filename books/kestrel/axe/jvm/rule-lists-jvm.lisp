@@ -1513,7 +1513,8 @@
 (defun formal-unit-testing-extra-simplification-rules ()
   (declare (xargs :guard t))
   (append (sbvlt-of-bvif-rules)
-          '(bv-array-read-of-bv-array-write
+          '(bv-array-read-of-bv-array-write-both-better ; this requires the indices to be provable in bounds
+            ;;bv-array-read-of-bv-array-write ; dangerous because it can introduce ceiling-of-lg (todo: allow this if the array length is constant)
             ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
             ;;boolor  ;might have a loop
             equal-of-bvif
