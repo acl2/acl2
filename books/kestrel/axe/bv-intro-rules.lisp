@@ -255,9 +255,7 @@
 ;rename?
 (defthmd logtail-becomes-slice-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'newsize dag-array) '(newsize))
-                (<= n newsize) ;drop?
-                (integerp newsize)
-                (integerp x) ;drop
+                (<= n newsize) ;drop? ; disallow = (see rule below)?
                 (natp n)
                 (unsigned-byte-p-forced newsize x) ;switched to usb-forced? (also elsewhere!))
                 )
@@ -265,6 +263,18 @@
                   (slice (+ -1 newsize) n x)))
   :hints (("Goal" :use (:instance logtail-becomes-slice-bind-free)
            :in-theory (e/d (unsigned-byte-p-forced) (logtail-becomes-slice-bind-free)))))
+
+;; not really a bv-intro rule, but the constant 0 is even better
+;rename?
+(defthmd logtail-becomes-0-axe
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (<= xsize n)
+                (integerp n)
+                (unsigned-byte-p-forced xsize x))
+           (equal (logtail n x)
+                  0))
+  :hints (("Goal" :use (:instance logtail-becomes-0)
+           :in-theory (e/d (unsigned-byte-p-forced) (logtail-becomes-0)))))
 
 (defthmd logapp-becomes-bvcat-bind-free-axe
   (implies (and (axe-bind-free (bind-bv-size-axe j 'jsize dag-array) '(jsize))
