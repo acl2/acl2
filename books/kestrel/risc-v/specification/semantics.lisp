@@ -42,9 +42,9 @@
    (xdoc::p
     "For some integer instructions, like @('SLT') and @('SLTU'),
      it is important whether the operands are read as signed or unsigned.
-     For other instructions, like @('ADD') it does not matter.
+     For other instructions, like @('ADD'), it does not matter.
      For the latter kinds of instructions,
-     we read unsigned operands in the semntic functions;
+     we read unsigned operands in the semantic functions;
      however, in @(see semantics-equivalences) we prove
      equivalent definitions that read signed operands,
      or a mix of signed and unsigned operands.")
