@@ -1277,6 +1277,7 @@
     ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logior-becomes-bvor
     ;;acl2::bvchop-of-logxor-becomes-bvxor
+    acl2::bvchop-of-logapp-becomes-bvcat
     acl2::bvchop-of-+-becomes-bvplus
 
     acl2::logapp-becomes-bvcat-bind-free-axe
@@ -6612,6 +6613,13 @@
 ;; Only unroll if nothing else works
 (set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
 
+;; These can be slow (due to calling SMT), so We try these after other
+;; bv-array-read rules that might be cheaper (e.g., ones based on the bit width
+;; of the index term):
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-in-first-half-smt 1)
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-in-second-half-smt 1)
+
 ;; so these are tried after the rules that discard entire halves of the array:
-(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-max-smt 1)
-(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-zero-smt 1)
+;; TODO: Consider chopping off more than 1 element at a time
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-max-smt 2)
+(set-axe-rule-priority acl2::bv-array-read-shorten-when-not-zero-smt 2)
