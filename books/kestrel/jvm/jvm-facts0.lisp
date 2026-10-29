@@ -648,7 +648,11 @@
 ;; RHS, since it is assumed as a hyp in this rule.  Creates
 ;; JVM::EXECUTE-NEW-BASE-OPENER-SAFE.  TODO: Remove the "BASE" from this name:
 (acl2::defopeners jvm::execute-new
-  :hyps ((jvm::bound-in-class-tablep (farg1 jvm::inst) (jvm::class-table jvm::s)))
+  :hyps ((jvm::bound-in-class-tablep (farg1 jvm::inst) (jvm::class-table jvm::s))
+         ;; At least for now, we never want to start building assertion
+         ;; objects (previously we prevented that by not even having
+         ;; java.lang.AssertionError present in the class-table):
+         (not (equal "java.lang.AssertionError" (farg1 jvm::inst))))
   :suffix -opener-safe)
 
 ;todo: more like this

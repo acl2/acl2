@@ -17,4 +17,4 @@
 
 (with-supporters
  (local (include-book "tester" :ttags :all))
- :names (test-file-and-exit))
+ :names (test-class-and-exit))

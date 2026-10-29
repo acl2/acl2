@@ -21,4 +21,4 @@
 
 (include-book "kestrel/axe/jvm/tester" :dir :system)
 
-(test-file "AbsLong.java")
+(test-class "AbsLong")

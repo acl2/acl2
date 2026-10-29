@@ -20,4 +20,4 @@
 
 (include-book "kestrel/axe/jvm/tester" :dir :system)
 
-(test-file "BinarySearch.java")
+(test-class "BinarySearch")
