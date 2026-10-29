@@ -4370,7 +4370,7 @@
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M))
           '(X86-TWO-BYTE-NOP)
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
+          '((:UD (UD-LOCK-USED)
                  ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                  ;;   Intel MPX is enabled.
                  (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
@@ -4389,7 +4389,7 @@
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(MB))
           '(X86-TWO-BYTE-NOP)
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
+          '((:UD (UD-LOCK-USED)
                  ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                  ;;   Intel MPX is enabled.
                  (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
@@ -4499,7 +4499,7 @@
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(M) :OP2 '(RB))
           '(X86-TWO-BYTE-NOP)
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
+          '((:UD (UD-LOCK-USED)
                  ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                  ;;   Intel MPX is enabled.
                  (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
@@ -4518,7 +4518,7 @@
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(MB) :OP2 '(RB))
           '(X86-TWO-BYTE-NOP)
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
+          '((:UD (UD-LOCK-USED)
                  ;; - If ModRM.r/m and REX encodes BND4-BND15 when
                  ;;   Intel MPX is enabled.
                  (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
