@@ -1714,8 +1714,10 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We add the two unsigned 32-bit integers.
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-addw-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We add the two integers.
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
