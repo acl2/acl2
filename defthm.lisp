@@ -6357,29 +6357,21 @@
                         (value nil)))
                       (t (value nil)))))))
                 (t (er soft ctx
-                       (if subsumes ; (eq subsumes '?)
-
-; Perhaps the user could come up with a case that puts us here, but that's
-; pretty hard to imagine!  So we use *init-subsumes-count* in the call of
-; clause-set-subsumes above, so that we can complain if we get to this case.
-
-                           "This low-level implementation error is a complete ~
-                            surprise, as the subsumption check returned '? ~
-                            for the :EQUIVALENCE lemma ~x0 for function ~
-                            symbol ~x1.  This failure occurred when it was ~
-                            checked that the equivalence-relation formula ~
-                            subsumes the following canonical form: ~X23.  ~
-                            Please contact the ACL2 implementors."
-                         "~x0 is an unacceptable :EQUIVALENCE lemma for the ~
-                          function symbol ~x1.  To be acceptable the formula ~
-                          being proved must state that ~x1 is Boolean, ~
-                          reflexive, symmetric, and transitive.  This is ~
-                          checked by verifying that the formula subsumes the ~
-                          following canonical form:  ~x2.  It does not.")
+                       "~x0 is an unacceptable :EQUIVALENCE lemma for the ~
+                        function symbol ~x1.  To be acceptable the formula ~
+                        being proved must state that ~x1 is Boolean, ~
+                        reflexive, symmetric, and transitive.  This is ~
+                        checked by verifying that the formula subsumes the ~
+                        following canonical form:  ~X23.  ~#4~[It does ~
+                        not.~/We have failed to establish that this is the ~
+                        case using reasonable effort.~]"
                        name
                        fn
                        (prettyify-clause-set eqv-clauses nil wrld)
-                       nil))))))))))))
+                       nil
+                       (if subsumes ; (eq subsumes '?)
+                           1
+                         0)))))))))))))
 
 (defun add-equivalence-rule (rune nume term ens wrld)
 
