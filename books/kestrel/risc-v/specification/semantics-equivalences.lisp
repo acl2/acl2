@@ -244,6 +244,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection exec-slli32-alt-defs
+  :short "Equivalent semantic definitions of @('SLLI') in 32-bit mode."
+
+  (defruled exec-slli32-alt-def
+    (equal (exec-slli32 rd rs1 imm stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (shift-amount (ubyte5-fix imm))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-slli32
+             read-xreg-signed
+             write-xreg
+             loghead-of-ash-of-logext)
+    :disable acl2::ash-to-floor))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection exec-addiw-alt-defs
   :short "Equivalent semantic definitions of @('ADDIW')."
 

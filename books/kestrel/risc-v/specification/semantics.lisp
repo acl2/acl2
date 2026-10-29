@@ -341,7 +341,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1').
+    "We read an unsigned 32-bit integer from @('rs1');
+     as shown in @(see exec-slli32-alt-defs),
+     we could equivalently read it as signed.
      The immediate is the shift amount, from 0 to 31.
      We shift the integer left by the shift amount.
      We write the result to @('rd').
