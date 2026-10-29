@@ -525,3 +525,59 @@
              bitops::loghead-of-ash
              loghead-upper-bound)
     :disable acl2::ash-to-floor))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-mul-alt-defs
+  :short "Equivalent semantic definitions of @('MUL')."
+
+  (defruled exec-mul-alt-def-signed-signed
+    (equal (exec-mul rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mul
+             read-xreg-signed
+             write-xreg
+             loghead-of-logext-times-logext))
+
+  (defruled exec-mul-alt-def-unsigned-signed
+    (equal (exec-mul rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mul
+             read-xreg-signed
+             write-xreg)
+    :use (:instance bitops::loghead-of-*-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                    (y (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs2)
+                                                   stat feat))))
+    :disable bitops::loghead-of-*-of-loghead-same)
+
+  (defruled exec-mul-alt-def-signed-unsigned
+    (equal (exec-mul rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
+                (result (* rs1-operand rs2-operand))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-mul
+             read-xreg-signed
+             write-xreg)
+    :use (:instance bitops::loghead-of-*-of-loghead-same
+                    (n (feat->xlen feat))
+                    (x (logext (feat->xlen feat)
+                               (read-xreg-unsigned (ubyte5-fix rs1)
+                                                   stat feat)))
+                    (y (read-xreg-unsigned (ubyte5-fix rs2) stat feat)))
+    :disable bitops::loghead-of-*-of-loghead-same))
