@@ -15,7 +15,7 @@
 (include-book "readers-and-writers64")
 (include-book "read-and-write")
 (include-book "read-bytes-and-write-bytes")
-(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "memory48")
 (include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 

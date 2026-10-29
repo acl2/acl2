@@ -24,6 +24,7 @@
 (include-book "kestrel/fty/nat-result" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/strings/case-conversion" :dir :system)
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

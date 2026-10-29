@@ -33,6 +33,7 @@
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/overflow-and-underflow" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))

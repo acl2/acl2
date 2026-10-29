@@ -18,6 +18,7 @@
 (include-book "bvdiv")
 (include-book "rules8") ; for stuff like FLOOR-OF-SUM-OF-MINUS-EXPT-AND-BVCHOP
 (include-book "rules") ; make local or drop
+(local (include-book "bvlt"))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))

@@ -1,6 +1,6 @@
 ; Memory region machinery for a 32-bit address space
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/axe/risc-v/portcullis" :dir :system)
-(include-book "make-memory-region-machinery")
+(include-book "kestrel/memory/make-memory-region-machinery" :dir :system)
 
 ;; Make the machinery for a 32-bit address space (e.g., for RISC-V in 32-bit
 ;; mode):

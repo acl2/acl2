@@ -19,6 +19,7 @@
 (local (include-book "sbvlt-rules")) ;for SBVLT-REWRITE
 (local (include-book "logext"))
 (local (include-book "getbit"))
+(local (include-book "bvlt"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 ;gen the 0?
