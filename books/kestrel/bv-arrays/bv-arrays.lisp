@@ -184,6 +184,60 @@
                   (bv-array-read esize1 len index (bv-array-write esize1 len index2 val data))))
   :hints (("Goal" :in-theory (enable bv-array-read bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Simplest read-of-write-same rule (same len and width).
+(defthm bv-array-read-of-bv-array-write-basic
+  (implies (and (< index len) ; todo: make a variant with bvlt?
+                (natp index)
+                (integerp len))
+           (equal (bv-array-read width len index (bv-array-write width len index val array))
+                  (bvchop width val)))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
+
+
+;letting the lens differ is new! todo: let the lens differ on other similar lemmas?
+(defthm bv-array-read-of-bv-array-write-same
+  (implies (and (< index len2)
+                (<= len2 len)
+                (natp index)
+                (integerp len)
+                (integerp len2))
+           (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
+                  (bvchop width val)))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
+
+;this one has only one index and so only one bound hyp.  we'd prefer this one to fire first
+;see also bv-array-read-of-bv-array-write-same-better-work-hard
+(defthmd bv-array-read-of-bv-array-write-same-better
+  (implies (and (< index len)
+                (<= width width2)
+                (natp width2)
+                (natp index)
+                (integerp len))
+           (equal (bv-array-read width len index (bv-array-write width2 len index val lst))
+                  (bvchop width val)))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     ceiling-of-lg
+                                     bv-array-read
+                                     bv-array-write))))
+
+;allows the widths to differ (so we don't have to tighten the write nest first)
+;;todo: same as the above?
+(defthm bv-array-read-of-bv-array-write-same-gen
+  (implies (and (<= width1 width2)
+                (< index len)
+                (integerp width2)
+                (natp index)
+                (integerp len))
+           (equal (bv-array-read width1 len index (bv-array-write width2 len index val lst))
+                  (bvchop width1 val)))
+  :hints (("Goal" :in-theory (enable bv-array-read bv-array-write))))
+
+;; todo: allow both the len and the width to differ
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthmd bv-array-read-of-bv-array-write-diff
   (implies (and (not (equal index1 index2))
                 (< index1 len)
@@ -201,7 +255,6 @@
   (implies (and (syntaxp (and (quotep index1)
                               (quotep index2)))
                 (not (equal index1 index2))
-                ;; (equal len (len lst)) ;bozo?
                 (< index1 len)
                 (< index2 len)
                 (natp index1)
@@ -211,21 +264,31 @@
                   (bv-array-read width len index1 lst)))
   :hints (("Goal" :in-theory (enable bv-array-read-of-bv-array-write-diff))))
 
-;letting the lens differ is new! todo: let the lens differ on other similar lemmas?
-(defthm bv-array-read-of-bv-array-write-same
-  (implies (and (natp index)
-                (< index len2)
-                (<= len2 len)
-                (integerp len)
-                (integerp len2))
-           (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
-                  (bvchop width val)))
-  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
+;BOZO write a rule to allow width1 <= width2
+;todo: move up
+(defthmd bv-array-read-of-bv-array-write-diff-safe-gen
+  (implies (and (syntaxp (and (quotep index1)
+                              (quotep index2)))
+                (<= width2 width1)
+                (natp width2)
+                (integerp width1)
+                (not (equal index1 index2))
+                (natp index1)
+                (natp index2)
+                (< index1 len)
+                (< index2 len)
+                (integerp len))
+           (equal (bv-array-read width1 len index1 (bv-array-write width2 len index2 val lst))
+                  (bv-array-read width2 len index1 lst)))
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
+                                     bv-array-write-opener
+                                     bv-array-read-opener update-nth2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;see the better version below
 (defthmd bv-array-read-of-bv-array-write-both
-  (implies (and; (equal len (len lst))
-                (< index1 len)
+  (implies (and (< index1 len)
                 (< index2 len)
                 (natp index1)
                 (natp index2)
@@ -258,19 +321,6 @@
                                      bv-array-read
                                      bv-array-write))))
 
-;this one has only one index and so only one bound hyp.  we'd prefer this one to fire first
-;see also bv-array-read-of-bv-array-write-same-better-work-hard
-(defthmd bv-array-read-of-bv-array-write-same-better
-  (implies (and (< index len)
-                (natp width2)
-                (<= width width2)
-                (posp len)
-                (natp index))
-           (equal (bv-array-read width len index (bv-array-write width2 len index val lst))
-                  (bvchop width val)))
-  :hints (("Goal" :use (:instance bv-array-read-of-bv-array-write-both-better (index1 index) (index2 index))
-           :in-theory (disable bv-array-read-of-bv-array-write-both-better))))
-
 ;splits into cases
 ;does not require that the indices be in bounds
 ;special case for powers of 2?
@@ -293,6 +343,7 @@
                                      bv-array-write
                                      bv-array-read update-nth2))))
 
+;todo: rename to not include 'bv-array-read-of-bv-array-write-both' in name
 (defthm bv-array-read-of-bv-array-write-same-width
   (implies (integerp len)
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
@@ -340,17 +391,7 @@
 ;GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
                             )))))
 
-;allows the widths to differ (so we don't have to tighten the write nest first)
-(defthm bv-array-read-of-bv-array-write-same-gen
-  (implies (and (<= width1 width2)
-                (< index len)
-                (natp width1)
-                (integerp width2)
-                (natp index)
-                (integerp len))
-           (equal (bv-array-read width1 len index (bv-array-write width2 len index val lst))
-                  (bvchop width1 val)))
-  :hints (("Goal" :in-theory (enable bv-array-read bv-array-write))))
+
 
 ;rename to end in -of-bv-array-write
 (defthmd nth-of-bv-array-write-becomes-bv-array-read
@@ -777,26 +818,7 @@
                   ))
   :hints (("Goal" :in-theory (enable update-nth2 bv-array-write ceiling-of-lg))))
 
-;BOZO write a rule to allow width1 <= width2
-(defthmd bv-array-read-of-bv-array-write-diff-safe-gen
-  (implies (and (syntaxp (and (quotep index1)
-                              (quotep index2)))
-                (<= width2 width1)
-                (natp width2)
-                (integerp width1)
-                (not (equal index1 index2))
-                (natp index1)
-                (natp index2)
-                (< index1 len)
-                (< index2 len)
-                (integerp len))
-           (equal (bv-array-read width1 len index1 (bv-array-write width2 len index2 val lst))
-                  (bv-array-read width2 len index1 lst)))
-  :hints
-  (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
-                            BV-ARRAY-WRITE-opener
-                            bv-array-read-opener update-nth2)
-                           (BV-ARRAY-READ-WHEN-ALL-SAME)))))
+
 
 ;rename
 (defthmd bv-array-write-when-data-isnt-an-all-unsigned-byte-p
