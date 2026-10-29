@@ -36,7 +36,7 @@ if [[ ( ! -f ${BASE_NAME} ) || ( ${BASE_NAME} -ot tester.cert ) || ( ${BASE_NAME
     echo "(Saving an image for the Formal Unit Tester:"
 
     # (mv-let (erp val state) (ld ...) (if erp (exit 1) (value :q)))
-    (echo '(include-book "kestrel/utilities/exit-if-function-not-defined" :dir :system) (include-book "kestrel/jvm/portcullis" :dir :system) (include-book "kestrel/axe/jvm/tester" :dir :system :ttags :all) (exit-if-function-not-defined test-file-fn) :q (save-exec "'${BASE_NAME}'" "This copy of ACL2 has the Formal Unit Tester built in.")' | ${ACL2})
+    (echo '(include-book "kestrel/utilities/exit-if-function-not-defined" :dir :system) (include-book "kestrel/jvm/portcullis" :dir :system) (include-book "kestrel/axe/jvm/tester" :dir :system :ttags :all) (exit-if-function-not-defined test-class-fn) :q (save-exec "'${BASE_NAME}'" "This copy of ACL2 has the Formal Unit Tester built in.")' | ${ACL2})
     ls -l acl2-with-tester*
     echo "Done saving image.)"
 else

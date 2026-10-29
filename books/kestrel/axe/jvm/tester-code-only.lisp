@@ -27,10 +27,10 @@
   `(acl2::with-supporters
      (local (include-book "tester" :ttags :all))
      :tables (:known-booleans-table)
-     :names (test-file
-              test-file-and-exit
-              ;; names mentioned in the macro test-file/test-function:
-              test-file-fn make-event-quiet ; maybe-remove-temp-dir
+     :names (test-class
+              test-class-and-exit
+              ;; names mentioned in the macro test-class:
+              test-class-fn make-event-quiet ; maybe-remove-temp-dir
 
               ;; Rules needed by the tester:
               ,@(unroll-java-code-rules))))

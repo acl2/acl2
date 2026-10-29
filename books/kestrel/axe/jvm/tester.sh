@@ -16,13 +16,13 @@ set -e # Exit on first error
 # Check the number of arguments supplied:
 if [ $# -ne 1 ]
 then
-    echo "tester.sh: Error: Must be given one argument (path to a .java file)."
+    echo "tester.sh: Error: Must be given one argument (name of the class to test)."
     exit 1
 fi
 
-JAVA_FILE="$1"
+CLASS="$1"
 
-echo "Running Formal Unit Tester on ${JAVA_FILE}."
+echo "Running Formal Unit Tester on ${CLASS}."
 
 THISSCRIPTDIR="$( cd "$( dirname "$0" )" && pwd )" #Simpler commands can just give "." here, which seems bad.
 
@@ -32,10 +32,10 @@ export ACL2_CUSTOMIZATION=NONE
 
 #old (no saved image, slow to do the include-book):
 #acl2executable=${ACL2}
-# (echo '(with-output :off :all (include-book "'${THISSCRIPTDIR}'portcullis")) (with-output :off :all (include-book "'${THISSCRIPTDIR}'/tester" :ttags :all)) (test-file "'${JAVA_FILE}'")' | ${acl2executable})
+# (echo '(with-output :off :all (include-book "'${THISSCRIPTDIR}'portcullis")) (with-output :off :all (include-book "'${THISSCRIPTDIR}'/tester" :ttags :all)) (test-class "'${CLASS}'")' | ${acl2executable})
 
 ${THISSCRIPTDIR}/save-exec-for-tester.sh # very fast if it already exists
 
-${THISSCRIPTDIR}/../../jvm/compile-file-if-needed.sh ${JAVA_FILE}
+# ${THISSCRIPTDIR}/../../jvm/compile-file-if-needed.sh ${JAVA_FILE}
 
-(echo '(test-file-and-exit "'${JAVA_FILE}'")' | ${THISSCRIPTDIR}/acl2-with-tester)
+(echo '(test-class-and-exit "'${CLASS}'")' | ${THISSCRIPTDIR}/acl2-with-tester)
