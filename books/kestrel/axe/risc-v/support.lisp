@@ -16,7 +16,7 @@
 (include-book "risc-v-rules") ; drop?
 ;(include-book "kestrel/risc-v/portcullis" :dir :system)
 (include-book "kestrel/risc-v/specialized/rv32im-le/execution" :dir :system)
-(include-book "kestrel/memory/memory32" :dir :system)
+(include-book "memory32")
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))

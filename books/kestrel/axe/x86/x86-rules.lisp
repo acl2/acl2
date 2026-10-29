@@ -29,7 +29,7 @@
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/read-and-write2" :dir :system)
 (include-book "kestrel/x86/support64" :dir :system)
-(include-book "kestrel/memory/memory48" :dir :system)
+(include-book "kestrel/x86/memory48" :dir :system)
 (include-book "kestrel/x86/canonical-unsigned" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
