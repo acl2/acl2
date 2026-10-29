@@ -1040,3 +1040,26 @@
     :enable (exec-beq
              read-xreg-signed
              equal-of-logexts-to-logheads)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection exec-bne-alt-defs
+  :short "Equivalent semantic definitions of @('BNE')."
+
+  (defruled exec-bne-alt-def
+    (equal (exec-bne rs1 rs2 imm pc stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (offset
+                 (loghead (feat->xlen feat)
+                          (logext 13 (ash (ubyte12-fix imm) 1))))
+                (target-pc (+ pc offset))
+                (stat (if (/= rs1-operand rs2-operand)
+                          (if (= (mod target-pc 4) 0)
+                              (write-pc target-pc stat feat)
+                            (error stat feat))
+                        (inc4-pc stat feat))))
+             stat))
+    :enable (exec-bne
+             read-xreg-signed
+             equal-of-logexts-to-logheads)))

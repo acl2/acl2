@@ -2358,7 +2358,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-bne-alt-defs),
+     we could equivalently read both of them as signed.
      We use the 12 bits of the immediate as
      the high bits of a 13-bit integer,
      whose low bit is 0 (i.e. the immediate measures multiples of 2);
