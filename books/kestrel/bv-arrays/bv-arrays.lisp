@@ -288,13 +288,6 @@
                                      bv-array-write
                                      bv-array-read update-nth2))))
 
-(defthm bv-array-read-when-not-integerp-arg1-cheap
-  (implies (not (integerp element-size))
-           (equal (bv-array-read element-size len index data)
-                  0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bv-array-read))))
-
 (defthm bv-array-read-of-bv-array-write-same-width
   (implies (integerp len)
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
