@@ -1,9 +1,10 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # zip-proofs.sh --- run this from the proofs directory after generating all of
 # the proofs to generate the .tar.gz files, .zip files, and so on.
 
 set -e
+set -o pipefail
 
 # Bundle the generated proofs.  Safe to run from anywhere: the script first
 # moves to its own directory, which is where the proof subdirectories live.
@@ -46,5 +47,4 @@ fi
 
 echo "All done."
 ls -lah "$out".*
-
 

@@ -12,6 +12,7 @@
 # directory, you should erase all of the Lisp images in the milawa directory.
 
 set -e
+set -o pipefail
 
 if [ "$#" -ne "2" ]
 then
@@ -119,4 +120,3 @@ run_milawa level8 level9
 run_milawa level9 level10
 run_milawa level10 level11
 run_milawa level11 user
-
