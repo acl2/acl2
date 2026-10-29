@@ -193,7 +193,7 @@
                 (integerp len))
            (equal (bv-array-read width len index (bv-array-write width len index val array))
                   (bvchop width val)))
-  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write))))
 
 
 ;letting the lens differ is new! todo: let the lens differ on other similar lemmas?
@@ -205,7 +205,7 @@
                 (integerp len2))
            (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
                   (bvchop width val)))
-  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write ceiling-of-lg))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write))))
 
 ;this one has only one index and so only one bound hyp.  we'd prefer this one to fire first
 ;see also bv-array-read-of-bv-array-write-same-better-work-hard
@@ -218,7 +218,6 @@
            (equal (bv-array-read width len index (bv-array-write width2 len index val lst))
                   (bvchop width val)))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
-                                     ceiling-of-lg
                                      bv-array-read
                                      bv-array-write))))
 
@@ -247,7 +246,7 @@
                 (integerp len))
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
                   (bv-array-read width len index1 lst)))
-  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer bv-array-read-opener update-nth2 ceiling-of-lg
+  :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer bv-array-read-opener update-nth2
                                      bv-array-write))))
 
 ;; should this be called -cheap?
@@ -299,7 +298,7 @@
                     (bvchop width val))))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
                                      bv-array-read
-                                     ceiling-of-lg
+                                     ;ceiling-of-lg
                                      bv-array-write))))
 
 ;maybe change bv-array-read to give 0 for an out-of-bounds index (after the index is chopped - not an issue for a power of 2?)
@@ -317,7 +316,7 @@
                       (bv-array-read width len index1 lst)
                     (bvchop width val))))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
-                                     ceiling-of-lg
+                                     ;ceiling-of-lg
                                      bv-array-read
                                      bv-array-write))))
 
@@ -343,7 +342,7 @@
                                      bv-array-write
                                      bv-array-read update-nth2))))
 
-;todo: rename to not include 'bv-array-read-of-bv-array-write-both' in name
+;todo: rename to not include 'same' in name
 (defthm bv-array-read-of-bv-array-write-same-width
   (implies (integerp len)
            (equal (bv-array-read width len index1 (bv-array-write width len index2 val lst))
@@ -373,6 +372,8 @@
                     (bv-array-read width2 len index1 lst))))
   :hints (("Goal" :in-theory (e/d (power-of-2p ceiling-of-lg) (bv-array-read bv-array-write)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm bv-array-read-of-bv-array-write-too-narrow-cheap
   (implies (and (syntaxp (and (quotep len)
                               (quotep index)
@@ -385,13 +386,7 @@
                 )
            (equal (bv-array-read width len index (bv-array-write width2 len2 index2 val data))
                   0))
-  :hints (("Goal" ;:cases ((< index len))
-           :in-theory (e/d (bv-array-read-opener bv-array-write BV-ARRAY-READ-WHEN-INDEX-IS-TOO-LARGE)
-                           (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-;GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
-                            )))))
-
-
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write BV-ARRAY-READ-WHEN-INDEX-IS-TOO-LARGE))))
 
 ;rename to end in -of-bv-array-write
 (defthmd nth-of-bv-array-write-becomes-bv-array-read
