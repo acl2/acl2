@@ -4593,9 +4593,23 @@
     ;; (INST "RESERVEDNOP" (OP :OP #xF1B)
     ;;       NIL 'NIL
     ;;       'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF1C)
-          NIL 'NIL
-          'NIL)
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1C as Group 18, whose only
+    ;; instruction (Table A-6) is CLDEMOTE (NP 0F 1C /0 m8), a cache
+    ;; line hint that, according to its specification, does not modify
+    ;; architectural state and is treated as a NOP by processors that
+    ;; do not support it. We model it as a NOP, which omits two optional
+    ;; effects permitted by the specification: setting the A bit (but
+    ;; not the D bit) in the page tables, and aborting a TSX transaction.
+    ;; Earlier editions of the manual showed 0F 1C as a reserved NOP,
+    ;; which is where the mnemonic RESERVEDNOP used here comes from; we
+    ;; model all the other encodings of 0F 1C as NOPs, like 0F 19 above
+    ;; (see the comment there).
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1C
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF1D)
           NIL 'NIL
           'NIL)

@@ -305,7 +305,7 @@
   ;; Op/En: NP
   ;; 0F 1F/0
 
-  ;; This is also used for the reserved NOPs 0F 19 and 0F 1E
+  ;; This is also used for the reserved NOPs 0F 19, 0F 1C, and 0F 1E
   ;; (see inst-listing.lisp), which take a ModR/M byte like 0F 1F /0.
 
   ;; The Intel manual (Vol. 2B, NOP specification) has a note on the recommended
