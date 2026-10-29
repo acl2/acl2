@@ -17,7 +17,7 @@
 
 (include-book "portcullis")
 (include-book "kestrel/risc-v/specialized/rv32im-le/states" :dir :system)
-(include-book "kestrel/memory/memory32" :dir :system)
+(include-book "memory32")
 (include-book "risc-v-rules")
 (include-book "support") ; for write32-mem-ubyte32-lendian-alt-def
 (include-book "kestrel/bv/bvcat-def" :dir :system)
@@ -43,6 +43,7 @@
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; reduce?
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/bv/convert-to-bv-rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;(local (include-book "kestrel/arithmetic-light/top" :dir :system))

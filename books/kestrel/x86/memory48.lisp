@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/x86/portcullis" :dir :system)
-(include-book "make-memory-region-machinery")
+(include-book "kestrel/memory/make-memory-region-machinery" :dir :system)
 
 ;; Make the machinery for a 48-bit address space (e.g., for the canonical
 ;; region of memory in x86):

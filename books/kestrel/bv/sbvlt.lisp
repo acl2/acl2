@@ -12,15 +12,16 @@
 (in-package "ACL2")
 
 (include-book "sbvlt-def")
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "getbit-def")
-(local (include-book "logext")) ;todo: include less?
 (include-book "kestrel/utilities/polarity" :dir :system)
+(local (include-book "logext")) ;todo: include less?
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop?
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "signed-byte-p"))
 (local (include-book "getbit"))
+(local (include-book "bvchop"))
 
 (defthm not-sbvlt-same
   (not (sbvlt size x x))

@@ -14,6 +14,7 @@
 (include-book "leftrotate")
 (include-book "leftrotate32")
 (include-book "bvxor-def")
+(include-book "bitnot")
 (include-book "bitxor")
 (include-book "bitand")
 (include-book "bitor")
@@ -38,7 +39,19 @@
                 (leftrotate32 amt y)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
-;; do we need these?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; We could use the trim mechanism instead, but it's unclear when to trim a
+;; rotate.  When only a single bit is accessed, and we know which bit it is,
+;; trimming seems like always a good idea.
+
+(defthm bitnot-of-leftrotate-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         (quotep width)))
+           (equal (bitnot (leftrotate width amt x))
+                  (bitnot (trim 1 (leftrotate width amt x)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
 (defthm bitand-of-leftrotate-arg1-trim
   (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
                          (quotep width)))
@@ -79,6 +92,57 @@
                          (quotep width)))
            (equal (bitxor x (leftrotate width amt y))
                   (bitxor x (trim 1 (leftrotate width amt y)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bitnot-of-leftrotate32-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitnot (leftrotate32 amt x))
+                  (bitnot (trim 1 (leftrotate32 amt x)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitand-of-leftrotate32-arg1-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitand (leftrotate32 amt x) y)
+                  (bitand (trim 1 (leftrotate32 amt x)) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitand-of-leftrotate32-arg2-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitand x (leftrotate32 amt y))
+                  (bitand x (trim 1 (leftrotate32 amt y)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitor-of-leftrotate32-arg1-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitor (leftrotate32 amt x) y)
+                  (bitor (trim 1 (leftrotate32 amt x)) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitor-of-leftrotate32-arg2-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitor x (leftrotate32 amt y))
+                  (bitor x (trim 1 (leftrotate32 amt y)))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitxor-of-leftrotate32-arg1-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitxor (leftrotate32 amt x) y)
+                  (bitxor (trim 1 (leftrotate32 amt x)) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bitxor-of-leftrotate32-arg2-trim
+  (implies (syntaxp (and (quotep amt) ; so we know what bit we'll get
+                         ))
+           (equal (bitxor x (leftrotate32 amt y))
+                  (bitxor x (trim 1 (leftrotate32 amt y)))))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

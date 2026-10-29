@@ -10,8 +10,10 @@
 
 (in-package "ACL2")
 
-(include-book "bvmult")
-(include-book "bvlt")
+(include-book "bvmult-def")
+(include-book "bvlt-def")
+(local (include-book "bvchop"))
+(local (include-book "bvmult"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))

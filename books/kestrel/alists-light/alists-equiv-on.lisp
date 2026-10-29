@@ -138,13 +138,13 @@
            (alists-equiv-on (intersection-equal keys1 keys2) alist1 alist2))
   :hints (("Goal" :in-theory (enable alists-equiv-on intersection-equal))))
 
-(defthm alists-equiv-on-of-append-when-subsetp-equal-of-strip-cars-1
+(defthm alists-equiv-on-of-append-arg2-when-subsetp-equal-of-strip-cars
   (implies (subsetp-equal keys (strip-cars alist1))
            (equal (alists-equiv-on keys (append alist1 alist3) alist2)
                   (alists-equiv-on keys alist1 alist2)))
   :hints (("Goal" :in-theory (enable alists-equiv-on))))
 
-(defthm alists-equiv-on-of-append-when-subsetp-equal-of-strip-cars-2
+(defthm alists-equiv-on-of-append-arg3-when-subsetp-equal-of-strip-cars
   (implies (subsetp-equal keys (strip-cars alist2))
            (equal (alists-equiv-on keys alist1 (append alist2 alist3))
                   (alists-equiv-on keys alist1 alist2)))
