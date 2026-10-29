@@ -749,6 +749,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
+    trim-of-1-and-leftrotate32
     ;; trim-does-nothing-axe ; should not be needed?
     )))
 
@@ -787,13 +788,25 @@
      leftrotate-of-0-arg2
      leftrotate-of-0-arg3
      equal-of-leftrotate-and-leftrotate
+
      getbit-of-leftrotate-simple
+
+     ;; It seems safe to trim the rotate when we are getting a single bit and
+     ;; we know which bit it is:
+     bitnot-of-leftrotate-trim
      bitand-of-leftrotate-arg1-trim ; move these to trim-rules?
      bitand-of-leftrotate-arg2-trim
      bitor-of-leftrotate-arg1-trim
      bitor-of-leftrotate-arg2-trim
      bitxor-of-leftrotate-arg1-trim
      bitxor-of-leftrotate-arg2-trim
+     bitnot-of-leftrotate32-trim
+     bitand-of-leftrotate32-arg1-trim ; move these to trim-rules?
+     bitand-of-leftrotate32-arg2-trim
+     bitor-of-leftrotate32-arg1-trim
+     bitor-of-leftrotate32-arg2-trim
+     bitxor-of-leftrotate32-arg1-trim
+     bitxor-of-leftrotate32-arg2-trim
 
      ;; Handling rotates (32 bit):
      rightrotate32-becomes-leftrotate32-gen ;turn rightrotate32 into leftrotate32

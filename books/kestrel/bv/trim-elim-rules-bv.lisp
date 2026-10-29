@@ -144,6 +144,26 @@
   :hints (("Goal" :in-theory (enable trim bvsx))))
 
 ;; only do this if amount and size are constants?
+(defthmd trim-of-leftrotate
+  (implies (and (<= size size2)
+                (<= amount size2)
+                (natp size)
+                (posp size2)
+                (natp amount))
+           (equal (trim size (leftrotate size2 amount val))
+                  (if (< amount size)
+                      (bvcat (- size amount)
+                             val
+                             amount
+                             (slice (+ -1 size2)
+                                    (+ (- amount) size2)
+                                    val))
+                    (slice (+ -1 size2 (- amount) size)
+                           (+ (- amount) size2)
+                           val))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;; only do this if amount and size are constants?
 (defthmd trim-of-leftrotate32
   (implies (and (<= size 32)
                 (<= amount 32)
@@ -157,7 +177,7 @@
                              (slice (+ -1 32)
                                     (+ (- amount) 32)
                                     val))
-                    (slice (+ -1 (- amount) size 32)
+                    (slice (+ 31 (- amount) size)
                            (+ (- amount) 32)
                            val))))
   :hints (("Goal" :in-theory (enable trim bvchop-of-leftrotate32-both))))
@@ -170,11 +190,22 @@
                 (natp width))
            (equal (trim 1 (leftrotate width amt x))
                   (if (< 0 width)
-                      (if (< 0 amt) ; this case
+                      (if (< 0 amt)
                           (getbit (+ width (- amt)) x)
                         (getbit amt x))
                     0)))
   :hints (("Goal" :in-theory (enable trim leftrotate))))
+
+;todo: add full trim support for rotate ops
+;todo: only do this if the amt is a constant?
+(defthmd trim-of-1-and-leftrotate32
+  (implies (and (< amt 32) ; avoids mod in rhs
+                (natp amt))
+           (equal (trim 1 (leftrotate32 amt x))
+                  (if (< 0 amt)
+                      (getbit (+ 32 (- amt)) x)
+                    (getbit amt x))))
+  :hints (("Goal" :in-theory (enable trim leftrotate32))))
 
 (defthm trim-of-repeatbit
   (equal (trim size1 (repeatbit size i))
