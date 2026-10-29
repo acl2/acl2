@@ -1191,7 +1191,7 @@
    (xdoc::p
     "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
      as shown in @(see exec-sll-alt-defs),
-     we could equivalently read both of them as signed.
+     we could equivalently read either or both of them as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,

@@ -505,7 +505,7 @@
 (defsection exec-sll-alt-defs
   :short "Equivalent semantic definitions of @('SLL')."
 
-  (defruled exec-sll-alt-def
+  (defruled exec-sll-alt-def-signed-signed
     (equal (exec-sll rd rs1 rs2 stat feat)
            (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
                 (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
@@ -522,6 +522,40 @@
              write-xreg
              inc4-pc
              write-pc
+             bitops::loghead-of-ash
+             loghead-upper-bound)
+    :disable acl2::ash-to-floor)
+
+  (defruled exec-sll-alt-def-unsigned-signed
+    (equal (exec-sll rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-signed (ubyte5-fix rs2) stat feat))
+                (shift-amount
+                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
+                       ((feat-64p feat) (loghead 6 rs2-operand))
+                       (t (impossible))))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sll
+             read-xreg-signed))
+
+  (defruled exec-sll-alt-def-signed-unsigned
+    (equal (exec-sll rd rs1 rs2 stat feat)
+           (b* ((rs1-operand (read-xreg-signed (ubyte5-fix rs1) stat feat))
+                (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
+                (shift-amount
+                 (cond ((feat-32p feat) (loghead 5 rs2-operand))
+                       ((feat-64p feat) (loghead 6 rs2-operand))
+                       (t (impossible))))
+                (result (ash rs1-operand shift-amount))
+                (stat (write-xreg (ubyte5-fix rd) result stat feat))
+                (stat (inc4-pc stat feat)))
+             stat))
+    :enable (exec-sll
+             read-xreg-signed
+             write-xreg
              bitops::loghead-of-ash
              loghead-upper-bound)
     :disable acl2::ash-to-floor))
