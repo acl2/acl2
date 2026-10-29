@@ -4270,18 +4270,18 @@
                             :GROUP '(:GROUP-16))
           NIL 'NIL
           'NIL)
-    ;; Intel Vol. 2 (Table A-3) shows 0F 19 as a reserved NOP, i.e. an
-    ;; opcode reserved for future instructions, executed as a NOP by
-    ;; processors that do not implement them. Like the NOP 0F 1F /0
-    ;; below, it takes a ModR/M byte. The Intel manual does not state
-    ;; this explicitly, but it follows from the other reserved NOPs
+    ;; Intel Vol. 2 (Table A-3) shows 0F 19 as a reserved NOP.
+    ;; Section A.1 says that these opcodes may behave as NOPs on certain
+    ;; processors. Intel's XED decoder explicitly decodes 0F 19 /r as
+    ;; a NOP with a register or memory operand, requiring a ModR/M byte
+    ;; like 0F 1F /0 below. The Intel manual does not state this explicitly
+    ;; for 0F 19, but it is consistent with the other reserved NOPs
     ;; 0F 1A-1E: the instructions since defined in them (MPX, CLDEMOTE,
     ;; ENDBR32/ENDBR64, RDSSPD/RDSSPQ) all have a ModR/M byte, and the
     ;; manual says that they execute as NOPs on processors that do not
     ;; implement them, which is only possible if those processors decode
     ;; the ModR/M byte (otherwise F3 0F 1E FA, i.e. ENDBR64, would
-    ;; execute as a NOP followed by CLI). Intel's XED decoder indeed
-    ;; decodes 0F 19 /r as a NOP with a register or memory operand.
+    ;; execute as a NOP followed by CLI).
     (INST "RESERVEDNOP"
           (OP :OP #xF19
               :SUPERSCRIPTS '(:1A :1C))
