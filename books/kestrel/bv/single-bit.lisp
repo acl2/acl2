@@ -20,6 +20,7 @@
 (include-book "kestrel/booleans/boolor" :dir :system)
 (local (include-book "bvand"))
 (local (include-book "getbit"))
+(local (include-book "bvchop"))
 
 (defthm bitxor-of-bitnot-arg1
   (equal (bitxor (bitnot x) y)

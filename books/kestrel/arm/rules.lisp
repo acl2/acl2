@@ -16,6 +16,7 @@
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvxor" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

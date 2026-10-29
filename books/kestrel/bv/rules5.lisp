@@ -20,6 +20,7 @@
 (local (include-book "arith")) ; todo: drop (not easy)
 (local (include-book "bvuminus"))
 (local (include-book "bvminus"))
+(local (include-book "bvlt"))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -269,6 +270,7 @@
                 (not (equal (bvchop 32 k2) (expt 2 31)))) ;k2 not min int
            (not (signed-addition-underflowsp 32 (bvuminus 32 k2) (bvplus 32 k2 x))))
   :hints (("Goal":in-theory (e/d (signed-addition-underflowsp
+                                  signed-addition-overflowsp
                                   bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                   bvuminus
                                   logext-cases

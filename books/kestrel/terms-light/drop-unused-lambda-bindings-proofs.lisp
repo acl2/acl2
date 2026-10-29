@@ -28,7 +28,7 @@
 (local (include-book "empty-eval-helpers"))
 (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/intersection-equal" :dir :system))
-(local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
 (local (in-theory (enable make-lambda-with-hint)))
 

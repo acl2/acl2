@@ -21,6 +21,7 @@
 (include-book "sbvrem-rules")
 (include-book "unsigned-byte-p-forced")
 (local (include-book "rules")) ; reduce?
+(local (include-book "bvlt"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
