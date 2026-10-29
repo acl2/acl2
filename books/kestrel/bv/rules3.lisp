@@ -20,6 +20,7 @@
 (local (include-book "logand-b"))
 (local (include-book "bvuminus"))
 (local (include-book "bvminus"))
+(local (include-book "bvlt"))
 ;(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -1781,7 +1782,7 @@
                 (natp m))
            (equal (logext m (bvsx m n x))
                   (logext n x)))
-  :hints (("Goal" :in-theory (e/d (bvsx-rewrite) 
+  :hints (("Goal" :in-theory (e/d (bvsx-rewrite)
                                   (bvchop-of-logext-becomes-bvsx)))))
 
 (defthm bvcat-equal-expt-2-rewrite

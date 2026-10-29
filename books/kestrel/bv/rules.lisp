@@ -67,6 +67,7 @@
 (local (include-book "bvminus"))
 (local (include-book "bvand"))
 (local (include-book "bvor"))
+(local (include-book "bvlt"))
 (local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))

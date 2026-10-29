@@ -16,6 +16,7 @@
 (include-book "bvand-def")
 (include-book "bvor-def")
 (include-book "bvxor-def")
+(include-book "bvplus-def")
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (local (include-book "sbvdiv-rules"))
@@ -23,7 +24,9 @@
 (local (include-book "bvcat"))
 (local (include-book "bvand"))
 (local (include-book "getbit"))
+(local (include-book "bvlt"))
 (local (include-book "logand-b"))
+(local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 ;; Validation theorems for a future SMT-LIB translation.

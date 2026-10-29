@@ -43,6 +43,7 @@
 ;(local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 ;(local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 ;(local (include-book "kestrel/bv/sbvdiv" :dir :system))
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))

@@ -1,7 +1,7 @@
 ; Rules about bitwise AND
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,10 @@
 
 (include-book "bvand-def")
 ;(include-book "logand-b") ; todo
-(include-book "bvchop")
+(include-book "bvchop-def")
 (include-book "getbit-def")
 ;(include-book "ihs/basic-definitions" :dir :system) ;for logmaskp
+(include-book "kestrel/arithmetic-light/power-of-2p-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
