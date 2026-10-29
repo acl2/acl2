@@ -56,6 +56,8 @@
    (setq *compact-print-file-ht* (hl-mht))
    (setq *compact-print-file-n* 0)
    (setq *space-owed* nil)
+   ;; Create the directory if needed (CCL's OPEN does that, but SBCL's doesn't).
+   (ensure-directories-exist filename)
    (with-open-file (*standard-output* filename
                                       :direction :output
                                       :if-does-not-exist :create
