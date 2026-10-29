@@ -1,16 +1,28 @@
 #!/bin/sh
 
-CCL="ccl"
+# Sizing comes from the environment, so the same launcher works on any host:
+#
+#   MILAWA_CCL                 CCL executable               (default: ccl)
+#   MILAWA_CCL_THREAD_STACK    listener control/value stack (default: 128M)
+#   MILAWA_CCL_STACK           initial control stack        (default: 128M)
+#
+# CCL has no separate "binding stack": special bindings live on the value
+# stack, which -Z sizes.  The kernel images already carry 128 MB defaults from
+# milawa.lsp, so these settings are only needed for extra headroom.
+
+CCL="${MILAWA_CCL:-ccl}"
+CCL_THREAD_STACK="${MILAWA_CCL_THREAD_STACK:-128M}"
+CCL_STACK="${MILAWA_CCL_STACK:-128M}"
 
 if [ "$#" -ne "1" ]
 then
 	echo "Usage: milawa-ccl <IMAGE-FILE>"
-	echo "Where <IMAGE-FILE> is the name of an CCL image to use, typically a"
-	echo "\".ccl-image\" file, such as \"milawa.ccl-image\"."
+	echo "Where <IMAGE-FILE> is the name of a CCL image to use, typically a"
+	echo "\".ccl-<platform>\" file, such as \"base.ccl-linux-aarch64\"."
 	exit 1
 fi
 
-if [ -z "`which $CCL`" ]
+if ! command -v "$CCL" >/dev/null 2>&1
 then
 	echo "Error: CCL not found."
 	echo ""
@@ -22,11 +34,14 @@ then
 	echo ""
 	echo "Possible fixes:"
 	echo "  - Add a symlink to CCL named '$CCL' somewhere in your \$PATH?"
-	echo "  - Edit the milawa-ccl shell script and change CCL=\"...\" to the name"
-	echo "    of your CCL executable?"
+	echo "  - Set MILAWA_CCL to the name of your CCL executable?"
 	echo "  - Make sure you can start CCL by typing '$CCL'"
 	echo ""
+	exit 1
 fi
 
-exec $CCL --batch -I $1
+exec "$CCL" --batch \
+     -Z "$CCL_THREAD_STACK" \
+     -S "$CCL_STACK" \
+     -I "$1"
 
