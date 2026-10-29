@@ -42,9 +42,9 @@
    (xdoc::p
     "For some integer instructions, like @('SLT') and @('SLTU'),
      it is important whether the operands are read as signed or unsigned.
-     For other instructions, like @('ADD') it does not matter.
+     For other instructions, like @('ADD'), it does not matter.
      For the latter kinds of instructions,
-     we read unsigned operands in the semntic functions;
+     we read unsigned operands in the semantic functions;
      however, in @(see semantics-equivalences) we prove
      equivalent definitions that read signed operands,
      or a mix of signed and unsigned operands.")
@@ -274,7 +274,7 @@
      as shown in @(see exec-xori-alt-defs),
      we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
-     obtaining a (signed or unsigned) @('XLEN')-bit integer;
+     obtaining an unsigned @('XLEN')-bit integer;
      as shown in @(see exec-xori-alt-defs),
      we could equivalently leave it signed.
      We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
@@ -341,7 +341,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1').
+    "We read an unsigned 32-bit integer from @('rs1');
+     as shown in @(see exec-slli32-alt-defs),
+     we could equivalently read it as signed.
      The immediate is the shift amount, from 0 to 31.
      We shift the integer left by the shift amount.
      We write the result to @('rd').
@@ -378,7 +380,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned 64-bit integer from @('rs1').
+    "We read an unsigned 64-bit integer from @('rs1');
+     as shown in @(see exec-slli64-alt-defs),
+     we could equivalently read it as signed.
      The immediate is the shift amount, from 0 to 63.
      We shift the integer left by the shift amount.
      We write the result to @('rd').
@@ -623,10 +627,14 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1').
+    "We read an unsigned 32-bit integer from @('rs1');
+     as shown in @(see exec-addiw-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to 32 bits,
-     obtaining an unsigned 32-bit integer.
-     We add the two unsigned 32-bit integers.
+     obtaining an unsigned 32-bit integer;
+     as shown in @(see exec-addiw-alt-defs),
+     we could equivalently leave it signed.
+     We add the two integers.
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
@@ -692,7 +700,9 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1').
+    "We read an unsigned 32-bit integer from @('rs1');
+     as shown in @(see exec-slliw-alt-defs),
+     we could equivalently read it as signed.
      The immediate is the shift amount, from 0 to 31.
      We shift the integer left by the shift amount.
      We write the result to @('rd'), as a signed 32-bit integer.
@@ -919,8 +929,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-add-alt-defs),
+     we could equivalently read either or both of them as signed.
      We add the two integers.
      We write the result to @('rd').
      We increment the program counter."))
@@ -956,8 +967,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-sub-alt-defs),
+     we could equivalently read either or both of them as signed.
      We subtract the second integer from the first integer.
      We write the result to @('rd').
      We increment the program counter."))
@@ -1069,10 +1081,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
-     We perform a bitwise `and' of
-     the two unsigned @('XLEN')-bit integers.
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-and-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We perform a bitwise `and' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -1107,10 +1119,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
-     We perform a bitwise inclusive `or' of
-     the two unsigned @('XLEN')-bit integers.
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-or-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We perform a bitwise inclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -1145,10 +1157,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
-     We perform a bitwise exclusive `or' of
-     the two unsigned @('XLEN')-bit integers.
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-xor-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We perform a bitwise exclusive `or' of the two @('XLEN')-bit integers.
      We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
@@ -1183,8 +1195,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two (signed or unsigned) @('XLEN')-bit integers
-     from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-sll-alt-defs),
+     we could equivalently read either or both of them as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1228,7 +1241,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-srl-alt-defs),
+     we could equivalently read the second one as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1274,7 +1289,9 @@
   (xdoc::topstring
    (xdoc::p
     "We read a signed @('XLEN')-bit integer from @('rs1')
-     and an unsigned @('XLEN')-bit integer from @('rs2').
+     and an unsigned @('XLEN')-bit integer from @('rs2');
+     as shown in @(see exec-sra-alt-defs),
+     we could equivalently read the latter as signed.
      In 32-bit mode,
      the low 5 bits of the second integer are the shift amount, from 0 to 31;
      in 64-bit mode,
@@ -1322,8 +1339,11 @@
    (xdoc::p
     "This is only valid if the M extension is present.")
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
-     We multiply them, and write the result to @('rd').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-mul-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We multiply the two integers.
+     We write the result to @('rd').
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned (ubyte5-fix rs1) stat feat))
        (rs2-operand (read-xreg-unsigned (ubyte5-fix rs2) stat feat))
@@ -1704,8 +1724,10 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We add the two unsigned 32-bit integers.
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-addw-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We add the two integers.
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
@@ -1743,7 +1765,9 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-subw-alt-defs),
+     we could equivalently read either or both of them as signed.
      We subtract the second from the first.
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
@@ -1782,8 +1806,9 @@
    (xdoc::p
     "This is only valid in 64-bit mode.")
    (xdoc::p
-    "We read an unsigned 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-sllw-alt-defs),
+     we could equivalently read either or both of them as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer left by the shift amount.
      We write the result to @('rd') as a signed 32-bit integer.
@@ -1825,7 +1850,9 @@
     "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read an unsigned 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+     and an unsigned 32-bit integer from @('rs2');
+     as shown in @(see exec-srlw-alt-defs),
+     we could equivalently read the latter as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer right by the shift amount;
      this is a logical shift, since the integer is unsigned.
@@ -1868,7 +1895,9 @@
     "This is only valid in 64-bit mode.")
    (xdoc::p
     "We read a signed 32-bit integer from @('rs1')
-     and an unsigned 32-bit integer from @('rs2').
+     and an unsigned 32-bit integer from @('rs2');
+     as shown in @(see exec-sraw-alt-defs),
+     we could equivalently read the latter as signed.
      The low 5 bits of the second integer are the shift amount, from 0 to 31.
      We shift the first integer right by the shift amount;
      this is an arithmetic shift, since the integer is signed.
@@ -1912,8 +1941,10 @@
     "This is only valid in 64-bit mode,
      and only if the M extension is present.")
    (xdoc::p
-    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
-     We multiply the two unsigned 32-bit integers.
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-mulw-alt-defs),
+     we could equivalently read either or both of them as signed.
+     We multiply the two integers.
      We write the result to @('rd') as a signed 32-bit integer.
      We increment the program counter."))
   (b* ((rs1-operand (read-xreg-unsigned32 (ubyte5-fix rs1) stat feat))
@@ -2221,7 +2252,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read an unsigned @('XLEN')-bit integer from @('rs1').
+    "We read an unsigned @('XLEN')-bit integer from @('rs1');
+     as shown in @(see exec-jalr-alt-defs),
+     we could equivalently read it as signed.
      We sign-extend the 12-bit immediate to @('XLEN') bits,
      obtaining an unsigned @('XLEN')-bit offset.
      We add the offset to the integer from the register,
@@ -2273,7 +2306,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-beq-alt-defs),
+     we could equivalently read both of them as signed.
      We use the 12 bits of the immediate as
      the high bits of a 13-bit integer,
      whose low bit is 0 (i.e. the immediate measures multiples of 2);
@@ -2325,7 +2360,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2').
+    "We read two unsigned @('XLEN')-bit integers from @('rs1') and @('rs2');
+     as shown in @(see exec-bne-alt-defs),
+     we could equivalently read both of them as signed.
      We use the 12 bits of the immediate as
      the high bits of a 13-bit integer,
      whose low bit is 0 (i.e. the immediate measures multiples of 2);
