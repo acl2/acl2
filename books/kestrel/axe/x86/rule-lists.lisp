@@ -1373,7 +1373,10 @@
     acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
     acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
     acl2::cancel-bvplus-arg-left
-    acl2::cancel-bvplus-arg-right))
+    acl2::cancel-bvplus-arg-right
+
+    acl2::bvcat-tighten-upper-size-axe ; this is in amazing-rules-bv, but maybe including that here is too scary
+    ))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()
