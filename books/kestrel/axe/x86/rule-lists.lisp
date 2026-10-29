@@ -375,6 +375,7 @@
     slice-of-read
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3
+    read-when-not-posp-cheap ; needed for an AES example
 
     ;; we will just unroll read-chunks (at least for now):
     read-chunks-base
@@ -1283,6 +1284,7 @@
     acl2::logapp-becomes-bvcat-bind-free-axe
     acl2::logtail-becomes-slice-bind-free-axe
     acl2::logtail-of-bvchop-becomes-slice ; todo: other way?
+    acl2::logtail-becomes-0-axe ; even better than a bv op, we get the constant 0
 
     ;; Can help get rid of an intervening ifix:
     acl2::integerp-of-logand
@@ -1373,7 +1375,10 @@
     acl2::bvminus-cancel-axe ; build these 4 in deeper? ; this is because we are not rewriting bvminus away
     acl2::cancel-bvplus-arg-of-nil ; must have these if we have bvminus-cancel-axe
     acl2::cancel-bvplus-arg-left
-    acl2::cancel-bvplus-arg-right))
+    acl2::cancel-bvplus-arg-right
+
+    acl2::bvcat-tighten-upper-size-axe ; this is in amazing-rules-bv, but maybe including that here is too scary
+    ))
 
 ;; ;not used?
 ;; (defund canonical-address-rules ()
