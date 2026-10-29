@@ -1,0 +1,21 @@
+Supporting materials for the ACL2 Workshop 2026 paper "Verifying
+RustCrypto's Fixsliced AES-128 in ACL2: An Aeneas Backend and an
+Executable MIR Semantics" by Eric McCarthy.
+
+Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+
+Except as noted below, all files in this directory and under rust-src/
+are distributed under a 3-clause BSD license; see the LICENSE file
+distributed with ACL2.
+
+Exceptions, all under rust-src/:
+
+* aes_fixslice_encrypt.rs and aes_fixslice_core.rs are adapted from,
+  and reference/fixslice32-aes-v0.9.1.rs is a verbatim copy of,
+  src/soft/fixslice32.rs of the RustCrypto "aes" crate, version 0.9.1
+  (https://github.com/RustCrypto/block-ciphers), which is licensed
+  under MIT OR Apache-2.0; each file's header states its provenance.
+
+* demo.rs, loops.rs, and no_nested_borrows.rs are test sources from
+  the Aeneas project (https://github.com/AeneasVerif/aeneas), which
+  is licensed under Apache-2.0.

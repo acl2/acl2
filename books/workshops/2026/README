@@ -90,7 +90,14 @@ Formalizing a Connectivity Proof for the Matrix Multiplication Flip Graph in ACL
 ------------------------------
 
 Eric McCarthy
-Verifying RustCrypto's Fixsliced AES-128 in ACL2: An Aeneas Backend and an Executable MIR Semantics
+Verifying RustCrypto's Fixsliced AES-128 in ACL2:
+An Aeneas Backend and an Executable MIR Semantics
+
+mccarthy-aeneas/
+[books]/kestrel/rust/mir/
+[books]/kestrel/rust/import/
+[books]/kestrel/rust/samples/
+[books]/kestrel/crypto/aes/aes-spec-tests.lisp
 
 ------------------------------
 
