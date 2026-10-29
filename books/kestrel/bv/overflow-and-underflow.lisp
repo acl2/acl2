@@ -12,8 +12,8 @@
 (in-package "ACL2")
 
 (include-book "logext")
-(include-book "sbvlt")
-(include-book "bvlt")
+(include-book "sbvlt-def")
+(include-book "bvlt-def")
 (include-book "bvplus")
 (include-book "bvminus-def")
 (include-book "rules") ;reduce? for getbit-of-+

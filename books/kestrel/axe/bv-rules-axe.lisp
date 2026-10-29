@@ -33,6 +33,7 @@
 ;(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "known-booleans")
+(local (include-book "kestrel/bv/bvlt" :dir :system))
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system));drop?

@@ -15,6 +15,7 @@
 (include-book "sbvrem")
 (include-book "bvmod")
 (include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "sbvlt-def")
 (include-book "bvcat-def") ; for BVCHOP-WHEN-TOP-BIT-1
 (local (include-book "sbvlt-rules")) ; for sbvlt-rewrite
@@ -23,6 +24,7 @@
 (local (include-book "logext"))
 (local (include-book "getbit"))
 (local (include-book "bvcat"))
+(local (include-book "bvlt"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
