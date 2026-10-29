@@ -305,6 +305,9 @@
   ;; Op/En: NP
   ;; 0F 1F/0
 
+  ;; This is also used for the reserved NOPs 0F 19 and 0F 1E
+  ;; (see inst-listing.lisp), which take a ModR/M byte like 0F 1F /0.
+
   ;; The Intel manual (Vol. 2B, NOP specification) has a note on the recommended
   ;; multi-byte NOP sequences, and the address-size override prefix is
   ;; absent from all of them.  However, since the operand for the
