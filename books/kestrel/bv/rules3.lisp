@@ -1351,7 +1351,7 @@
 ;;   :hints (("Goal" :in-theory (enable myif boolif))))
 
 ;gen to non-nil?
-(defthmd myif-becomes-boolif-t-arg1
+(defthmd myif-of-t-becomes-boolor
   (implies (booleanp c)
            (equal (myif a t c)
                   (boolor a c)))
@@ -1370,7 +1370,7 @@
            (equal (myif a nil c)
                   (boolif a nil c))))
 
-(defthmd myif-becomes-boolif-nil-arg2
+(defthmd myif-of-nil-becomes-booland
   (implies (booleanp c)
            (equal (myif a c nil)
                   (booland a c)))

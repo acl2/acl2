@@ -1565,10 +1565,10 @@
   (set-difference-eq
    (formal-unit-tester-extra-simplification-rules)
    ;; since pruning doesn't know about booland/boolor/etc:
-   '(MYIF-BECOMES-BOOLIF-T-ARG1 ;rename
+   '(myif-of-t-becomes-boolor
      ;;MYIF-BECOMES-BOOLIF-T-ARG2
      ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
-     MYIF-BECOMES-BOOLIF-NIL-ARG2 ;rename
+     myif-of-nil-becomes-booland
      ;;MYIF-BECOMES-BOOLIF-AXE
      )))
 

@@ -2251,10 +2251,10 @@
             getbit-of-bvxor ; perhaps move to bv-rules-core
 
             myif-equal-nil-rewrite
-            myif-becomes-boolif-t-arg1
+            myif-of-t-becomes-boolor
             myif-becomes-boolif-t-arg2
             myif-becomes-boolif-nil-arg1
-            myif-becomes-boolif-nil-arg2
+            myif-of-nil-becomes-booland
 ;    myif-boolif
             <-of-myif-arg2 ;fffixme bad?
             myif-lemma     ;rename
