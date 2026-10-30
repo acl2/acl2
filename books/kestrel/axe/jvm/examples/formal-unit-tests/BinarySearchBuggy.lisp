@@ -27,4 +27,4 @@
 ;;   Node 2: (LEN DATA) is 10.
 ;;   Node 130: (TRUE-LISTP DATA) is T.
 ;;   Node 132: (ALL-UNSIGNED-BYTE-P '32 DATA) is T.)
-(test-file "BinarySearchBuggy.java")
+(test-class "BinarySearchBuggy")

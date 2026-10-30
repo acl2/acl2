@@ -22,4 +22,4 @@
 (include-book "kestrel/axe/jvm/tester" :dir :system)
 
 ;; TODO: BV-ARRAY-READ-OF-BV-ARRAY-WRITE introduces <
-(test-file "Prefix.java")
+(test-class "Prefix")
