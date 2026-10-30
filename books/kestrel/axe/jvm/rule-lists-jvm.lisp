@@ -1578,6 +1578,12 @@
             equal-of-addressfix-same
             jvm::execute-model-static-boolean-method
             boolif booland ; why?
+            myif-becomes-bv-array-if-axe ; proofs using this essentialy require some of the rules just below too ; todo: push back to more fundamental rule set, maybe even into the unroller
+            bv-arrayp-of-bv-array-write ; needed for myif-becomes-bv-array-if-axe
+            bv-arrayp-of-bv-array-if
+            len-of-bv-array-if ; todo: more?
+            bv-array-if-same-branches-safe
+            bv-array-read-of-bv-array-if
             )
           (formal-unit-testing-extra-simplification-rules-no-boolif)))
 
