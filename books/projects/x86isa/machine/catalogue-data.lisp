@@ -1065,7 +1065,7 @@ VMFUNC
   :doc "<p>Not yet included in opcode maps</p>")
 
 (def-sdm-instruction-section "5.27 Control Transfer Terminating Instructions"
-  :mnemonics '(ENDBR32/ENDBR64))
+  :mnemonics '(ENDBR32 ENDBR64))
 
 (def-sdm-instruction-section "5.28 Intel(R) AMX Instructions"
   :mnemonics nil

@@ -4,7 +4,7 @@
 ; http://opensource.org/licenses/BSD-3-Clause
 
 ; Copyright (C) 2015, Regents of the University of Texas
-; Copyright (C) 2018, Kestrel Technology, LLC
+; Copyright (C) 2026, Kestrel Technology, LLC
 ; All rights reserved.
 
 ; Redistribution and use in source and binary forms, with or without
@@ -515,7 +515,7 @@
                        NP-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (NP-computed-table (opcode-present? #ux0F_38_00 256 NP-pfx-insts))
+        (NP-computed-table (opcode-present? #ux0F_3A_00 256 NP-pfx-insts))
 
         (66-pfx-insts (select-insts 64-insts
                                     ;; All instructions with the appropriate
@@ -526,7 +526,7 @@
                        66-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (66-computed-table (opcode-present? #ux0F_38_00 256 66-pfx-insts))
+        (66-computed-table (opcode-present? #ux0F_3A_00 256 66-pfx-insts))
 
         (F2-pfx-insts (select-insts 64-insts
                                     ;; All instructions with the appropriate
@@ -537,7 +537,7 @@
                        F2-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (F2-computed-table (opcode-present? #ux0F_38_00 256 F2-pfx-insts))
+        (F2-computed-table (opcode-present? #ux0F_3A_00 256 F2-pfx-insts))
 
         (F3-pfx-insts (select-insts 64-insts
                                     ;; All instructions with the appropriate
@@ -548,7 +548,7 @@
                        F3-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (F3-computed-table (opcode-present? #ux0F_38_00 256 F3-pfx-insts)))
+        (F3-computed-table (opcode-present? #ux0F_3A_00 256 F3-pfx-insts)))
      `(progn
 
         (defconst *64-bit-mode-0f-3A-three-byte-no-prefix-ok-ar*
@@ -585,7 +585,7 @@
                        NP-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (NP-computed-table (opcode-present? #ux0F_38_00 256 NP-pfx-insts))
+        (NP-computed-table (opcode-present? #ux0F_3A_00 256 NP-pfx-insts))
 
         (66-pfx-insts (select-insts 32-insts
                                     ;; All instructions with the appropriate
@@ -596,7 +596,7 @@
                        66-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (66-computed-table (opcode-present? #ux0F_38_00 256 66-pfx-insts))
+        (66-computed-table (opcode-present? #ux0F_3A_00 256 66-pfx-insts))
 
         (F2-pfx-insts (select-insts 32-insts
                                     ;; All instructions with the appropriate
@@ -607,7 +607,7 @@
                        F2-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (F2-computed-table (opcode-present? #ux0F_38_00 256 F2-pfx-insts))
+        (F2-computed-table (opcode-present? #ux0F_3A_00 256 F2-pfx-insts))
 
         (F3-pfx-insts (select-insts 32-insts
                                     ;; All instructions with the appropriate
@@ -618,7 +618,7 @@
                        F3-pfx-insts
                        (append (list :avx :avx2 :bmi1 :bmi2)
                                *avx512-feature-flags*)))
-        (F3-computed-table (opcode-present? #ux0F_38_00 256 F3-pfx-insts)))
+        (F3-computed-table (opcode-present? #ux0F_3A_00 256 F3-pfx-insts)))
      `(progn
 
         (defconst *32-bit-mode-0f-3A-three-byte-no-prefix-ok-ar*
@@ -1044,7 +1044,7 @@
    (b* ((precomputed-table
          '(
            1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-           1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1
+           1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
            1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
@@ -1225,7 +1225,7 @@
          ;;   )
          '(
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-           1 1 1 0 0 0 1 0 0 0 1 1 0 0 0 0
+           1 1 1 0 0 0 1 0 0 0 1 1 0 0 1 0
            0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
@@ -1284,7 +1284,7 @@
          ;;   )
          '(
            1 1 1 1 0 0 0 0 0 0 0 0 0 1 0 0
-           1 1 1 1 1 1 1 1 1 0 1 1 0 0 0 1
+           1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
            1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
            1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
@@ -1461,7 +1461,7 @@
          ;;   )
          '(
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-           1 1 1 0 0 0 1 0 0 0 1 1 0 0 0 0
+           1 1 1 0 0 0 1 0 0 0 1 1 0 0 1 0
            0 0 0 0 0 0 0 0 0 0 1 0 1 1 0 0
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0

@@ -22,7 +22,7 @@
 ; clause when we wrote the function that called it.  Therefore, the bug was
 ; fixed by eliminating tautologies and cleaning up double negations and
 ; duplicate literals -- which in fact renders the set of clauses being analyzed
-; more manageable.  See the comment above clean-clause-set in the source code,
+; more manageable.  See the comment above double-negativep in the source code,
 ; and the use of that function in clausify.
 
 ; ISSUE B2 (arg1-almost-subsumes-arg2 replacement resolution unsound when arg1 is a tautology;

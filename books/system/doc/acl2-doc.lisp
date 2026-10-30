@@ -110698,6 +110698,11 @@ it."
  when the lambda was applied.  For more details see @(see community-book)
  @('system/tests/tautologyp-hide-in-lambda.lisp').</p>
 
+ <p>Fixed a soundness bug in converting some goal terms involving double
+ negations to a set of @(see clause)s.  See
+ @('system/tests/clausify-tautology-subsumption.lisp') and
+ @('system/tests/guard-theorem-nontheorem.lisp').</p>
+
  <p>Fixed a soundness bug by eliminating tautologies and cleaning up double
  negations and duplicate literals.  For more details see @(see community-book)
  @('system/tests/clean-clause-set-by-hint.lisp'); also see
