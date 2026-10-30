@@ -186,7 +186,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Simplest read-of-write-same rule (same len and width).
+;; Simplest read-of-write-same rule (same lens and widths).
 (defthm bv-array-read-of-bv-array-write-same-basic
   (implies (and (< index len) ; todo: make a variant with bvlt?
                 (natp index)
@@ -198,12 +198,12 @@
 
 ;letting the lens differ is new! todo: let the lens differ on other similar lemmas?
 (defthm bv-array-read-of-bv-array-write-same
-  (implies (and (< index len2)
-                (<= len2 len)
+  (implies (and (< index len2) ; therefore it's also < len1
+                (<= len2 len1)
                 (natp index)
-                (integerp len)
+                (integerp len1)
                 (integerp len2))
-           (equal (bv-array-read width len index (bv-array-write width len2 index val lst))
+           (equal (bv-array-read width len1 index (bv-array-write width len2 index val lst))
                   (bvchop width val)))
   :hints (("Goal" :in-theory (enable bv-array-read-opener bv-array-write))))
 
@@ -211,12 +211,12 @@
 ;see also bv-array-read-of-bv-array-write-same-better-work-hard
 (defthmd bv-array-read-of-bv-array-write-same-better
   (implies (and (< index len)
-                (<= width width2)
-                (natp width2)
+                (<= width1 width2)
+                (integerp width2)
                 (natp index)
                 (integerp len))
-           (equal (bv-array-read width len index (bv-array-write width2 len index val lst))
-                  (bvchop width val)))
+           (equal (bv-array-read width1 len index (bv-array-write width2 len index val lst))
+                  (bvchop width1 val)))
   :hints (("Goal" :in-theory (enable bvchop-when-i-is-not-an-integer
                                      bv-array-read
                                      bv-array-write))))
