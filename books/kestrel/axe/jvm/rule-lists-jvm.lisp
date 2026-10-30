@@ -1510,7 +1510,7 @@
     sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
 
 ;; Used during lifting and after
-(defun formal-unit-testing-extra-simplification-rules ()
+(defun formal-unit-tester-extra-simplification-rules ()
   (declare (xargs :guard t))
   (append (sbvlt-of-bvif-rules)
           '(bv-array-read-of-bv-array-write-both-better ; this requires the indices to be provable in bounds
@@ -1560,10 +1560,10 @@
           (amazing-rules-spec-and-dag)))
 
 ;;only used just below?
-(defun formal-unit-testing-extra-simplification-rules-no-boolif ()
+(defun formal-unit-tester-extra-simplification-rules-no-boolif ()
   (declare (xargs :guard t))
   (set-difference-eq
-   (formal-unit-testing-extra-simplification-rules)
+   (formal-unit-tester-extra-simplification-rules)
    ;; since pruning doesn't know about booland/boolor/etc:
    '(MYIF-BECOMES-BOOLIF-T-ARG1 ;rename
      ;;MYIF-BECOMES-BOOLIF-T-ARG2
@@ -1585,7 +1585,7 @@
             bv-array-if-same-branches-safe
             bv-array-read-of-bv-array-if
             )
-          (formal-unit-testing-extra-simplification-rules-no-boolif)))
+          (formal-unit-tester-extra-simplification-rules-no-boolif)))
 
 ;These should only be tried if the usual rules don't apply (constants are rare):
 (set-axe-rule-priority jvm::pc-opener 1)
