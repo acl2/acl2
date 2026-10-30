@@ -187,7 +187,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Simplest read-of-write-same rule (same len and width).
-(defthm bv-array-read-of-bv-array-write-basic
+(defthm bv-array-read-of-bv-array-write-same-basic
   (implies (and (< index len) ; todo: make a variant with bvlt?
                 (natp index)
                 (integerp len))
