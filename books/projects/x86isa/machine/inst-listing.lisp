@@ -4245,349 +4245,268 @@
               :GROUP '(:GROUP-16))
           NIL '(X86-TWO-BYTE-NOP)
           '((:UD (UD-LOCK-USED))))
+    ;; The remaining encodings of 0F 18 (Group 16), with reg = 4-7 or
+    ;; mod = 3, are reserved NOPs like 0F 19 below (see the comment
+    ;; there), except for the prefetch hints that Intel has since
+    ;; defined in them: PREFETCHRST2 (0F 18 /4 with mod != 3, in the
+    ;; Intel ISE reference), and PREFETCHIT1 (0F 18 /6) and PREFETCHIT0
+    ;; (0F 18 /7), the latter two only in 64-bit mode with RIP-relative
+    ;; addressing, executing as NOPs otherwise. Being hints without
+    ;; architectural effects, they are adequately modeled as NOPs too.
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x4
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x5
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x6
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :REG #x7
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "RESERVEDNOP" (OP :OP #xF18 :MOD #x3
                             :SUPERSCRIPTS '(:1A)
                             :GROUP '(:GROUP-16))
-          NIL 'NIL
-          'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF19)
           NIL '(X86-TWO-BYTE-NOP)
-          'NIL)
-    ;; Source: BNDLDX-Load Extended Bounds Using Address
-    ;; Translation, Intel Vol. 2 (May 2018 edition)
-    ;; "Any encoding of this instruction that does not specify
-    ;; base or index register will treat those registers as zero
-    ;; (constant)."
-    ;; This leads me to infer that even though the source operand
-    ;; is obtained from the SIB byte, we should not #UD when the
-    ;; SIB byte is not present (i.e., when ModR/M.r/m != #b100 --
-    ;; See Table 2-2 in Intel Vol. 2).
+          '((:UD (UD-LOCK-USED))))
+    ;; Intel Vol. 2 (Table A-3) shows 0F 19 as a reserved NOP.
+    ;; Section A.1 says that these opcodes may behave as NOPs on certain
+    ;; processors. Intel's XED decoder explicitly decodes 0F 19 /r as
+    ;; a NOP with a register or memory operand, requiring a ModR/M byte
+    ;; like 0F 1F /0 below. The Intel manual does not state this explicitly
+    ;; for 0F 19, but it is consistent with the other reserved NOPs
+    ;; 0F 1A-1E: the instructions since defined in them (MPX, CLDEMOTE,
+    ;; ENDBR32/ENDBR64, RDSSPD/RDSSPQ) all have a ModR/M byte, and the
+    ;; manual says that they execute as NOPs on processors that do not
+    ;; implement them, which is only possible if those processors decode
+    ;; the ModR/M byte (otherwise F3 0F 1E FA, i.e. ENDBR64, would
+    ;; execute as a NOP followed by CLI).
+    (INST "RESERVEDNOP"
+          (OP :OP #xF19
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
+    ;; Intel MPX is not modeled: this model has no MPX state, and thus
+    ;; no way to enable MPX. Intel Vol. 1 (Appendix E, on Intel MPX)
+    ;; says: "When Intel MPX is not enabled or not present, all Intel
+    ;; MPX instructions behave as NOP." The MPX instructions occupy
+    ;; 0F 1A and 0F 1B, and Intel Vol. 2 says that their reg-reg forms
+    ;; not assigned to instructions remain NOPs; processors without
+    ;; MPX, including all the recent Intel ones (MPX has been dropped),
+    ;; execute all these encodings as reserved NOPs, like 0F 19 above
+    ;; (see the comment there). Thus, we model all the entries for
+    ;; 0F 1A and 0F 1B below as NOPs, without :FEAT '(:MPX) because
+    ;; they are NOPs regardless of whether the processor supports MPX
+    ;; (cf. ENDBR32/ENDBR64 at 0F 1E below).
+    ;;
+    ;; Besides the LOCK prefix, the exception lists in Intel Vol. 2
+    ;; give these #UD conditions for the MPX instructions: bound
+    ;; registers beyond BND3 (explicitly "when Intel MPX is enabled"),
+    ;; 16-bit addressing (67H prefix with CS.D = 1, or no 67H prefix
+    ;; with CS.D = 0), and RIP-relative addressing for BNDLDX, BNDSTX,
+    ;; and BNDMK. All of them apply only when MPX is enabled, by the
+    ;; sentence quoted above; Intel Vol. 1 also says so specifically
+    ;; for the first two: Section E.4.1 says that opcodes "encoded to
+    ;; operate on bound registers beyond BND3 will #UD if Intel MPX is
+    ;; enabled", and Table E-3, which gives the #UD cases for 16-bit
+    ;; addressing, applies "when Intel MPX is enabled". Since MPX
+    ;; cannot be enabled in this model, we omit all those conditions
+    ;; and keep only the LOCK one, which applies to NOPs as well (see
+    ;; the NOP page), as in the RESERVEDNOP entries.
     (INST "BNDLDX"
           (OP :OP #xF1A
               :MOD :MEM
               :PFX :NO-PREFIX
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 (<= #x4
-                     ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                     ;; the Intel manuals.  It should be ModRM.reg,
-                     ;; because the latter is used to encode the BND
-                     ;; registers.
-                     ;; "- If ModRM.r/m and REX encodes BND4-BND15 when
-                     ;;    Intel MPX is enabled."
-                     (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (IF (EQL PROC-MODE #x0)
-                     ;; RIP-relative addressing in 64-bit mode
-                     ;; Source: Table 2-7 (RIP-Relative Addressing),
-                     ;; Intel Vol. 2 (May 2018 edition)
-                     ;; "- If ModRM is RIP-relative"
-                     (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR ;; SIB Byte not present
-                           (EQL (MODR/M->R/M MODR/M) #x5)
-                           (AND ;; SIB Byte present
-                            (EQL (MODR/M->R/M MODR/M) #x4)
-                            (EQL (SIB->BASE SIB) #x5)
-                            (EQL (SIB->INDEX SIB) #x4))))
-                     ;; In Compatibility/Protected Mode:
-                     ;; "- If 67H prefix is used and CS.D=1.
-                     ;;  - If 67H prefix is not used and CS.D=0."
-                     (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                         (EQL (CS.D) #x1)
-                         (EQL (CS.D) #x0))))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     ;; Source: BNDLDX-Load Extended Bounds Using Address
     ;; Translation, Intel Vol. 2 (May 2018 edition)
     ;; "The reg-reg form of this instruction will remain a NOP."
     (INST "RESERVEDNOP"
           (OP :OP #xF1A
               :MOD #x3
-              :PFX :NO-PREFIX
-              :FEAT '(:MPX))
-          NIL 'NIL
-          'NIL)
+              :PFX :NO-PREFIX)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
+    ;; The BNDMOV page says "#UD If the LOCK prefix is used but the
+    ;; destination is not a memory operand", which is the wording used
+    ;; for the instructions that accept the LOCK prefix; but BNDMOV is
+    ;; not one of them (see the LOCK prefix page), and the other MPX
+    ;; pages say "If the LOCK prefix is used". So all four BNDMOV
+    ;; entries raise #UD whenever the LOCK prefix is used.
     (INST "BNDMOV"
           (OP :OP #xF1A
               :MOD :MEM
               :PFX :66
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M))
-          'NIL
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
-                 ;; In Compatibility/Protected Mode:
-                 ;; - If 67H prefix is used and CS.D=1.
-                 ;; - If 67H prefix is not used and CS.D=0.
-                 (IF (AND (NOT (EQL PROC-MODE #x0))
-                          (EQL (PREFIXES->ADR PREFIXES) #x67))
-                     (EQL (CS.D) #x1)
-                     (EQL (CS.D) #x0)))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDMOV"
           (OP :OP #xF1A
               :MOD #x3
               :PFX :66
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(MB))
-          'NIL
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
-                 ;; In Compatibility/Protected Mode:
-                 ;; - If 67H prefix is used and CS.D=1.
-                 ;; - If 67H prefix is not used and CS.D=0.
-                 (IF (AND (NOT (EQL PROC-MODE #x0))
-                          (EQL (PREFIXES->ADR PREFIXES) #x67))
-                     (EQL (CS.D) #x1)
-                     (EQL (CS.D) #x0)))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDCL"
           (OP :OP #xF1A
               :PFX :F3
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                 ;; the Intel manuals.  It should be ModRM.reg,
-                 ;; because the latter is used to encode the BND
-                 ;; registers.
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (AND (NOT (EQL PROC-MODE #x0))
-                      ;; In Compatibility/Protected Mode:
-                      ;; - If 67H prefix is used and CS.D=1.
-                      ;; - If 67H prefix is not used and CS.D=0.
-                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                          (EQL (CS.D) #x1)
-                          (EQL (CS.D) #x0))))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDCU"
           (OP :OP #xF1A
               :PFX :F2
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                 ;; the Intel manuals.  It should be ModRM.reg,
-                 ;; because the latter is used to encode the BND
-                 ;; registers.
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (AND (NOT (EQL PROC-MODE #x0))
-                      ;; In Compatibility/Protected Mode:
-                      ;; - If 67H prefix is used and CS.D=1.
-                      ;; - If 67H prefix is not used and CS.D=0.
-                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                          (EQL (CS.D) #x1)
-                          (EQL (CS.D) #x0))))))
-    ;; Non-mpx encoding will fall through.
-    ;; (INST "RESERVEDNOP" (OP :OP #xF1A)
-    ;;       NIL 'NIL
-    ;;       'NIL)
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDSTX"
-          ;; Source: BNDSTX-Load Extended Bounds Using Address
-          ;; Translation, Intel Vol. 2 (May 2018 edition)
-          ;; "Any encoding of this instruction that does not specify
-          ;; base or index register will treat those registers as zero
-          ;; (constant)."
-          ;; Similar to BNDLDX.
           (OP :OP #xF1B
               :MOD :MEM
               :PFX :NO-PREFIX
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(M) :OP2 '(RB))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                 ;; the Intel manuals.  It should be ModRM.reg,
-                 ;; because the latter is used to encode the BND
-                 ;; registers.
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (IF (EQL PROC-MODE #x0)
-                     ;; RIP-relative addressing in 64-bit mode
-                     ;; Source: Table 2-7 (RIP-Relative Addressing),
-                     ;; Intel Vol. 2 (May 2018 edition)
-                     ;; - If ModRM is RIP-relative
-                     (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR ;; SIB Byte not present
-                           (EQL (MODR/M->R/M MODR/M) #x5)
-                           (AND ;; SIB Byte present
-                            (EQL (MODR/M->R/M MODR/M) #x4)
-                            (EQL (SIB->BASE SIB) #x5)
-                            (EQL (SIB->INDEX SIB) #x4))))
-                     ;; In Compatibility/Protected Mode:
-                     ;; - If 67H prefix is used and CS.D=1.
-                     ;; - If 67H prefix is not used and CS.D=0.
-                     (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                         (EQL (CS.D) #x1)
-                         (EQL (CS.D) #x0))))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     ;; "The reg-reg form of this instruction will remain a NOP."
     (INST "RESERVEDNOP"
           (OP :OP #xF1B
               :MOD #x3
-              :PFX :NO-PREFIX
-              :FEAT '(:MPX))
-          NIL 'NIL
-          'NIL)
+              :PFX :NO-PREFIX)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDMOV"
           (OP :OP #xF1B
               :MOD :MEM
               :PFX :66
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(M) :OP2 '(RB))
-          'NIL
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
-                 ;; In Compatibility/Protected Mode:
-                 ;; - If 67H prefix is used and CS.D=1.
-                 ;; - If 67H prefix is not used and CS.D=0.
-                 (IF (AND (NOT (EQL PROC-MODE #x0))
-                          (EQL (PREFIXES->ADR PREFIXES) #x67))
-                     (EQL (CS.D) #x1)
-                     (EQL (CS.D) #x0)))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDMOV"
           (OP :OP #xF1B
               :MOD #x3
               :PFX :66
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(MB) :OP2 '(RB))
-          'NIL
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP)
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->R/M MODR/M) REX-BYTE #x0))
-                 ;; In Compatibility/Protected Mode:
-                 ;; - If 67H prefix is used and CS.D=1.
-                 ;; - If 67H prefix is not used and CS.D=0.
-                 (IF (AND (NOT (EQL PROC-MODE #x0))
-                          (EQL (PREFIXES->ADR PREFIXES) #x67))
-                     (EQL (CS.D) #x1)
-                     (EQL (CS.D) #x0)))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDMK"
           (OP :OP #xF1B
               :MOD :MEM
               :PFX :F3
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(M Y))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                 ;; the Intel manuals.  It should be ModRM.reg,
-                 ;; because the latter is used to encode the BND
-                 ;; registers.
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (IF (EQL PROC-MODE #x0)
-                     ;; - If RIP-relative addressing is used.
-                     ;; Source: Table 2-7 (RIP-Relative Addressing),
-                     ;; Intel Vol. 2 (May 2018 edition)
-                     (AND (EQL (MODR/M->MOD MODR/M) #x0)
-                          (OR ;; SIB Byte not present
-                           (EQL (MODR/M->R/M MODR/M) #x5)
-                           (AND ;; SIB Byte present
-                            (EQL (MODR/M->R/M MODR/M) #x4)
-                            (EQL (SIB->BASE SIB) #x5)
-                            (EQL (SIB->INDEX SIB) #x4))))
-                     ;; In Compatibility/Protected Mode:
-                     ;; - If 67H prefix is used and CS.D=1.
-                     ;; - If 67H prefix is not used and CS.D=0.
-                     (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                         (EQL (CS.D) #x1)
-                         (EQL (CS.D) #x0))))))
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     ;; Source: BNDMK-Make Bounds, Intel Vol. 2 (May 2018 Edition)
     ;; "The reg-reg form of this instruction retains legacy behavior
     ;; (NOP)."
     (INST "RESERVEDNOP"
           (OP :OP #xF1B
               :MOD #x3
-              :PFX :F3
-              :FEAT '(:MPX))
-          NIL 'NIL
-          'NIL)
+              :PFX :F3)
+          NIL '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "BNDCN"
           (OP :OP #xF1B
               :PFX :F2
-              :FEAT '(:MPX)
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-16))
           (ARG :OP1 '(RB) :OP2 '(E Y))
-          'NIL
-          '((:UD (UD-LOCK-USED)
-                 ;; [Shilpi] "ModRM.r/m" below is likely a typo in
-                 ;; the Intel manuals.  It should be ModRM.reg,
-                 ;; because the latter is used to encode the BND
-                 ;; registers.
-                 ;; - If ModRM.r/m and REX encodes BND4-BND15 when
-                 ;;   Intel MPX is enabled.
-                 (<= #x4 (REG-INDEX (MODR/M->REG MODR/M) REX-BYTE #x2))
-                 (AND (NOT (EQL PROC-MODE #x0))
-                      ;; In Compatibility/Protected Mode:
-                      ;; - If 67H prefix is used and CS.D=1.
-                      ;; - If 67H prefix is not used and CS.D=0.
-                      (IF (EQL (PREFIXES->ADR PREFIXES) #x67)
-                          (EQL (CS.D) #x1)
-                          (EQL (CS.D) #x0))))))
-    ;; Non-mpx encoding will fall through.
-    ;; (INST "RESERVEDNOP" (OP :OP #xF1B)
-    ;;       NIL 'NIL
-    ;;       'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF1C)
-          NIL 'NIL
-          'NIL)
-    (INST "RESERVEDNOP" (OP :OP #xF1D)
-          NIL 'NIL
-          'NIL)
-    (INST "ENDBR32/ENDBR64" (OP :OP #xF1E)
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1C as Group 18, whose only
+    ;; instruction (Table A-6) is CLDEMOTE (NP 0F 1C /0 m8), a cache
+    ;; line hint that, according to its specification, does not modify
+    ;; architectural state and is treated as a NOP by processors that
+    ;; do not support it. We model it as a NOP, which omits two optional
+    ;; effects permitted by the specification: setting the A bit (but
+    ;; not the D bit) in the page tables, and aborting a TSX transaction.
+    ;; Earlier editions of the manual showed 0F 1C as a reserved NOP,
+    ;; which is where the mnemonic RESERVEDNOP used here comes from; we
+    ;; model all the other encodings of 0F 1C as NOPs, like 0F 19 above
+    ;; (see the comment there).
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1C
+              :SUPERSCRIPTS '(:1A :1C))
           NIL
-          '(x86-endbr32/endbr64)
-          'NIL)
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1D as a reserved NOP, like
+    ;; 0F 19 above (see the comment there); no instruction has been
+    ;; defined in this opcode so far.
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1D
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
+    ;; Intel Vol. 2 (Table A-3) shows 0F 1E as a reserved NOP, i.e. an
+    ;; opcode reserved for future instructions, executed as a NOP by
+    ;; processors that do not implement them. Like the NOP 0F 1F /0
+    ;; below, it takes a ModR/M byte, as shown by the encodings of the
+    ;; instructions defined in this opcode so far: ENDBR32 and ENDBR64
+    ;; are F3 0F 1E FB and F3 0F 1E FA, where FB and FA are ModR/M bytes
+    ;; with mod = 3, reg = 7, and r/m = 3 and 2 respectively; RDSSPD and
+    ;; RDSSPQ are F3 0F 1E /1 with mod = 3. ENDBR32 and ENDBR64 have no
+    ;; :FEAT because they execute as NOPs on processors without CET
+    ;; (Intel Vol. 1, CET chapter).
+    (INST "ENDBR32"
+          (OP :OP #xF1E
+              :REG #x7
+              :MOD #x3
+              :R/M #x3
+              :PFX :F3
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-ENDBR32/ENDBR64)
+          '((:UD (UD-LOCK-USED))))
+    (INST "ENDBR64"
+          (OP :OP #xF1E
+              :REG #x7
+              :MOD #x3
+              :R/M #x2
+              :PFX :F3
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-ENDBR32/ENDBR64)
+          '((:UD (UD-LOCK-USED))))
+    ;; All the other encodings of 0F 1E, with or without prefixes, are
+    ;; NOPs: the ones not assigned to instructions are reserved NOPs,
+    ;; and RDSSPD/RDSSPQ are NOPs when CET shadow stacks are not
+    ;; enabled, as is always the case in this model.
+    (INST "RESERVEDNOP"
+          (OP :OP #xF1E
+              :SUPERSCRIPTS '(:1A :1C))
+          NIL
+          '(X86-TWO-BYTE-NOP)
+          '((:UD (UD-LOCK-USED))))
     (INST "NOP" (OP :OP #xF1F)
           (ARG :OP1 '(E V))
           '(X86-TWO-BYTE-NOP)

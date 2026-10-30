@@ -1,7 +1,7 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,6 +14,43 @@
 (include-book "ihs/basic-definitions" :dir :system)
 (include-book "std/basic/arith-equiv-defs" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-same
+  (equal (loghead n (logext n x))
+         (loghead n x))
+  :use (:instance bitops::cancel-logext-under-loghead
+                  (x x)
+                  (m n)
+                  (n n))
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-logexts-to-logheads
+  (implies (posp n)
+           (equal (equal (logext n x) (logext n y))
+                  (equal (loghead n x) (loghead n y))))
+  :use ((:instance bitops::cancel-logext-under-loghead
+                   (x x)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-logext-under-loghead
+                   (x y)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x x)
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x y)
+                   (m n)
+                   (n n)))
+  :disable (bitops::cancel-logext-under-loghead
+            bitops::cancel-loghead-under-logext)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,6 +112,149 @@
                    (n n)))
   :enable logext-of-logext-minus-logext
   :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-plus-integer
+  (implies (integerp y)
+           (equal (loghead n (+ (logext n x) y))
+                  (loghead n (+ (ifix x) y))))
+  :use ((:instance bitops::loghead-of-+-of-loghead-same
+                   (n n)
+                   (x (logext n x))
+                   (y y))
+        (:instance bitops::loghead-of-+-of-loghead-same
+                   (n n)
+                   (x x)
+                   (y y)))
+  :enable loghead-of-logext-same
+  :disable bitops::loghead-of-+-of-loghead-same
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-integer-plus-logext
+  (implies (integerp y)
+           (equal (loghead n (+ y (logext n x)))
+                  (loghead n (+ y (ifix x)))))
+  :use loghead-of-logext-plus-integer)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-loghead-minus-loghead
+  (equal (loghead n (- (loghead n x) (loghead n y)))
+         (loghead n (- (ifix x) (ifix y))))
+  :enable loghead
+  :prep-books ((include-book "arithmetic-5/top" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-loghead-plus-loghead
+  (implies (posp n)
+           (equal (logext n (+ (loghead n x) (loghead n y)))
+                  (logext n (+ (ifix x) (ifix y)))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (+ (loghead n x) (loghead n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (+ (ifix x) (ifix y)))
+                   (m n)
+                   (n n)))
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-loghead-minus-loghead
+  (implies (posp n)
+           (equal (logext n (- (loghead n x) (loghead n y)))
+                  (logext n (- (ifix x) (ifix y)))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (- (loghead n x) (loghead n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (- (ifix x) (ifix y)))
+                   (m n)
+                   (n n)))
+  :enable loghead-of-loghead-minus-loghead
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-logext-times-logext
+  (equal (loghead n (* (logext n x) (logext n y)))
+         (loghead n (* (ifix x) (ifix y))))
+  :use (:instance bitops::loghead-of-*-of-loghead-same
+                  (x (logext n x))
+                  (y (logext n y))
+                  (n n))
+  :enable loghead-of-logext-same
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-loghead-times-loghead
+  (implies (posp n)
+           (equal (logext n (* (loghead n x) (loghead n y)))
+                  (logext n (* (ifix x) (ifix y)))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (* (loghead n x) (loghead n y)))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (* (ifix x) (ifix y)))
+                   (m n)
+                   (n n)))
+  :disable bitops::cancel-loghead-under-logext
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled loghead-of-ash-of-logext
+  (implies (natp m)
+           (equal (loghead n (ash (logext n x) m))
+                  (loghead n (ash x m))))
+  :enable (bitops::loghead-of-ash
+           nfix)
+  :disable acl2::nfix-under-nat-equiv
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logext-of-ash-of-loghead
+  (implies (and (posp n)
+                (natp m))
+           (equal (logext n (ash (loghead n x) m))
+                  (logext n (ash x m))))
+  :use ((:instance bitops::cancel-loghead-under-logext
+                   (x (ash (loghead n x) m))
+                   (m n)
+                   (n n))
+        (:instance bitops::cancel-loghead-under-logext
+                   (x (ash x m))
+                   (m n)
+                   (n n)))
+  :enable (bitops::loghead-of-ash
+           nfix)
+  :disable (bitops::cancel-loghead-under-logext
+            acl2::nfix-under-nat-equiv)
+  :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled logand-of-loghead-when-unsigned-byte-p
+  (implies (unsigned-byte-p n mask)
+           (equal (logand mask (loghead n x))
+                  (logand mask x)))
+  :use (:instance bitops::loghead-of-logand
+                  (a n)
+                  (x mask)
+                  (y x))
+  :disable bitops::loghead-of-logand
   :prep-books ((include-book "centaur/bitops/ihsext-basics" :dir :system)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

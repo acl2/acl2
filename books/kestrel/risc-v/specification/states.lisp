@@ -535,7 +535,19 @@
   (defrule read-mem8-of-loghead-xlen
     (implies (equal n (feat->xlen feat))
              (equal (read-mem8 (loghead n addr) stat feat)
-                    (read-mem8 addr stat feat)))))
+                    (read-mem8 addr stat feat))))
+
+  (defruled read-mem8-of-plus-loghead-xlen
+    (implies (and (equal n (feat->xlen feat))
+                  (integerp k))
+             (equal (read-mem8 (+ k (loghead n addr)) stat feat)
+                    (read-mem8 (+ k (ifix addr)) stat feat)))
+    :use (:instance acl2::loghead-+-loghead
+                    (size n)
+                    (i k)
+                    (j (ifix addr)))
+    :disable (acl2::loghead-+-loghead
+              acl2::loghead-+-cancel)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -573,7 +585,13 @@
   (more-returns
    (val natp
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (enable ifix))))))
+        :hints (("Goal" :in-theory (enable ifix)))))
+
+  (defrule read-mem16-of-loghead-xlen
+    (implies (equal n (feat->xlen feat))
+             (equal (read-mem16 (loghead n addr) stat feat)
+                    (read-mem16 (ifix addr) stat feat)))
+    :enable read-mem8-of-plus-loghead-xlen))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -617,7 +635,13 @@
   (more-returns
    (val natp
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (enable ifix))))))
+        :hints (("Goal" :in-theory (enable ifix)))))
+
+  (defrule read-mem32-of-loghead-xlen
+    (implies (equal n (feat->xlen feat))
+             (equal (read-mem32 (loghead n addr) stat feat)
+                    (read-mem32 (ifix addr) stat feat)))
+    :enable read-mem8-of-plus-loghead-xlen))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -673,7 +697,13 @@
   (more-returns
    (val natp
         :rule-classes :type-prescription
-        :hints (("Goal" :in-theory (enable ifix))))))
+        :hints (("Goal" :in-theory (enable ifix)))))
+
+  (defrule read-mem64-of-loghead-xlen
+    (implies (equal n (feat->xlen feat))
+             (equal (read-mem64 (loghead n addr) stat feat)
+                    (read-mem64 (ifix addr) stat feat)))
+    :enable read-mem8-of-plus-loghead-xlen))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
