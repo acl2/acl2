@@ -959,7 +959,7 @@
    (xdoc::p
     "We wrap the Unicode character in this fixtype for more abstraction,
      and to facilitate the addition of restrictions on the character,
-     namely that the character cannot be @('>') or a new-line,
+     namely that the character cannot be a double quote or a new-line,
      but for now we do not capture this restriction."))
   ((code unichar))
   :pred q-char-p
@@ -1059,11 +1059,11 @@
      @('__imag__').
      The latter three are GCC extensions; see the ABNF grammar.
      For @(':alignof'), we keep track of the underscore variant;
-     note that the variant without underscores
+     note that the @(':none') variant of @(tsee keyword-uscores)
      represents the standard @('_Alignof'),
-     not the non-existing @('alignof'),
      while the other two represent @('__alignof') and @('__alignof__');
-     see the ABNF grammar."))
+     see the ABNF grammar.
+     The C23 @('alignof') spelling is not yet represented in this fixtype."))
   (:address ())
   (:indir ())
   (:plus ())
@@ -1530,11 +1530,11 @@
        For the same reason as @('sizeof'),
        we include an ambiguous case for @('_Alignof') (and keyword variants).
        The @(':alignof') case includes an indication of the underscore variant.
-       Note that the variant without underscores
+       Note that the @(':none') variant of @(tsee keyword-uscores)
        represents the standard @('_Alignof'),
-       not the non-existing @('alignof'),
        while the other two represent @('__alignof') and @('__alignof__');
        see the ABNF grammar.
+       The C23 @('alignof') spelling is not yet represented in this fixtype.
        Presumably, @('_Alignof') was added to the grammar
        after @('__alignof') and @('__alignof__') were GCC extensions.")
      (xdoc::p
@@ -3793,7 +3793,7 @@
     (xdoc::topstring
      (xdoc::p
       "These represent @('#else') directives,
-       and all the translation items that immediately follow the @('#elif'),
+       and all the translation items that immediately follow the @('#else'),
        until and excluding the @('#endif') that is at the same nesting level.
        This is used when these preprocessing constructs
        are preserved by our preprocessor,
