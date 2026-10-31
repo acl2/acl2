@@ -475,131 +475,224 @@
 (define type-spec-list-float-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('float _Complex') or @('_Complex float')."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float)
-                              (type-spec-complex))))
+          @('float _Complex') or @('_Complex float'),
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-double-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('double _Complex') or @('_Complex double')."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-double)
-                              (type-spec-complex))))
+          @('double _Complex') or @('_Complex double'),
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-long-double-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('long double _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-long)
-                              (type-spec-double)
-                              (type-spec-complex))))
+          @('long double _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-long)
+                                  (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-long)
+                                  (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-long)
+                                  (type-spec-double)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-locase-float80-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('__float80 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-locase-float80)
-                              (type-spec-complex))))
+          @('__float80 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float80)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float80)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float80)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-locase-float128-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('__float128 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-locase-float128)
-                              (type-spec-complex))))
+          @('__float128 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float128)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float128)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-locase-float128)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float16-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float16 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float16)
-                              (type-spec-complex))))
+          @('_Float16 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float16x-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float16x _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float16x)
-                              (type-spec-complex))))
+          @('_Float16x _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16x)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16x)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float16x)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float32-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float32 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float32)
-                              (type-spec-complex))))
+          @('_Float32 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float32x-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float32x _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float32x)
-                              (type-spec-complex))))
+          @('_Float32x _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32x)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32x)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float32x)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float64-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float64 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float64)
-                              (type-spec-complex))))
+          @('_Float64 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float64x-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float64x _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float64x)
-                              (type-spec-complex))))
+          @('_Float64x _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64x)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64x)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float64x)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float128-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float128 _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float128)
-                              (type-spec-complex))))
+          @('_Float128 _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-float128x-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('_Float128x _Complex') or any permutation of it."
-  (type-spec-list-permp (type-spec-list-fix tyspecs)
-                        (list (type-spec-float128x)
-                              (type-spec-complex))))
+          @('_Float128x _Complex') or any permutation of it,
+          including the (double) underscore variations of @('_Complex')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128x)
+                                  (type-spec-complex (keyword-uscores-none))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128x)
+                                  (type-spec-complex (keyword-uscores-start))))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-float128x)
+                                  (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

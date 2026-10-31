@@ -241,7 +241,7 @@
 ;;        (unroll-java-code ,defconst-name ,method-designator-string
 ;;                          :chunkedp t)
 ;;        (prove-with-tactics ,defconst-name
-;;                            :rules (formal-unit-testing-extra-simplification-rules)
+;;                            :rules (formal-unit-tester-extra-simplification-rules)
 ;;                            :assumptions (append ',param-var-assumptions
 ;;                                                 ,assumptions)
 ;;                            :type :bit
@@ -546,10 +546,10 @@
                                        extra-rules)
                                ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
                                ;; todo: commenting these out caused a loop:
-                               (append '(MYIF-BECOMES-BOOLIF-T-ARG1
+                               (append '(MYIF-OF-T-BECOMES-BOOLOR
                                          MYIF-BECOMES-BOOLIF-T-ARG2
                                          MYIF-BECOMES-BOOLIF-NIL-ARG1
-                                         MYIF-BECOMES-BOOLIF-NIL-ARG2
+                                         MYIF-OF-NIL-BECOMES-BOOLAND
                                          MYIF-BECOMES-BOOLIF-AXE
                                          )
                                        ;; (bool-intro-rules)
@@ -584,7 +584,7 @@
        ;; ;;prune again: todo: shouldn't be needed!:
        ;; (- (cw "(Pruning again:~%"))
        ;; ((mv erp dag state)
-       ;;  (prune-dag dag nil (formal-unit-testing-extra-simplification-rules-no-boolif) nil nil state))
+       ;;  (prune-dag dag nil (formal-unit-tester-extra-simplification-rules-no-boolif) nil nil state))
        ;; ((when erp) (mv erp t state))
        ;; (- (cw "Result of pruning again: ~X01)~%"
        ;;        (dag2term dag) ;todo: limit
@@ -592,7 +592,7 @@
        ;; put boolifs back:
        ((mv erp dag state) ; todo: use jvm rewriter here?
         (simp-dag dag :rules (set-difference-equal
-                               (append (formal-unit-testing-extra-simplification-rules)
+                               (append (formal-unit-tester-extra-simplification-rules)
                                        ;; '(booland-becomes-boolif
                                        ;;   boolor-becomes-boolif)
                                        )
@@ -645,7 +645,7 @@
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
        ;; Make the rule-alist:
        (rules (append extra-rules
-                      (set-difference-eq (formal-unit-testing-extra-simplification-rules)
+                      (set-difference-eq (formal-unit-tester-extra-simplification-rules)
                                          (append ;; (bool-intro-rules)
                                           remove-rules))))
        ((mv erp rule-alist) (make-rule-alist rules (w state)))

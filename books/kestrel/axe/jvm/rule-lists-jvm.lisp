@@ -1510,10 +1510,11 @@
     sbvlt-of-bvif-when-not-sbvlt-arg4-alt))
 
 ;; Used during lifting and after
-(defun formal-unit-testing-extra-simplification-rules ()
+(defun formal-unit-tester-extra-simplification-rules ()
   (declare (xargs :guard t))
   (append (sbvlt-of-bvif-rules)
-          '(bv-array-read-of-bv-array-write
+          '(bv-array-read-of-bv-array-write-both-better ; this requires the indices to be provable in bounds
+            ;;bv-array-read-of-bv-array-write ; dangerous because it can introduce ceiling-of-lg (todo: allow this if the array length is constant)
             ;;todo: when prove-with-tactics sees a not applied to a boolor, it should try to prove both cases
             ;;boolor  ;might have a loop
             equal-of-bvif
@@ -1559,15 +1560,15 @@
           (amazing-rules-spec-and-dag)))
 
 ;;only used just below?
-(defun formal-unit-testing-extra-simplification-rules-no-boolif ()
+(defun formal-unit-tester-extra-simplification-rules-no-boolif ()
   (declare (xargs :guard t))
   (set-difference-eq
-   (formal-unit-testing-extra-simplification-rules)
+   (formal-unit-tester-extra-simplification-rules)
    ;; since pruning doesn't know about booland/boolor/etc:
-   '(MYIF-BECOMES-BOOLIF-T-ARG1 ;rename
+   '(myif-of-t-becomes-boolor
      ;;MYIF-BECOMES-BOOLIF-T-ARG2
      ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
-     MYIF-BECOMES-BOOLIF-NIL-ARG2 ;rename
+     myif-of-nil-becomes-booland
      ;;MYIF-BECOMES-BOOLIF-AXE
      )))
 
@@ -1577,8 +1578,14 @@
             equal-of-addressfix-same
             jvm::execute-model-static-boolean-method
             boolif booland ; why?
+            myif-becomes-bv-array-if-axe ; proofs using this essentialy require some of the rules just below too ; todo: push back to more fundamental rule set, maybe even into the unroller
+            bv-arrayp-of-bv-array-write ; needed for myif-becomes-bv-array-if-axe
+            bv-arrayp-of-bv-array-if
+            len-of-bv-array-if ; todo: more?
+            bv-array-if-same-branches-safe
+            bv-array-read-of-bv-array-if
             )
-          (formal-unit-testing-extra-simplification-rules-no-boolif)))
+          (formal-unit-tester-extra-simplification-rules-no-boolif)))
 
 ;These should only be tried if the usual rules don't apply (constants are rare):
 (set-axe-rule-priority jvm::pc-opener 1)

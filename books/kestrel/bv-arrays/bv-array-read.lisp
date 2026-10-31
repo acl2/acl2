@@ -292,6 +292,13 @@
   :hints (("Goal" :use equal-of-nth-and-bv-array-read-better
            :in-theory (disable equal-of-nth-and-bv-array-read-better))))
 
+(defthm bv-array-read-when-not-integerp-arg1-cheap
+  (implies (not (integerp element-size))
+           (equal (bv-array-read element-size len index data)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
 (defthm bv-array-read-when-arg3-not-integer
   (implies (not (integerp arg3))
            (equal (bv-array-read arg1 arg2 arg3 arg4)
