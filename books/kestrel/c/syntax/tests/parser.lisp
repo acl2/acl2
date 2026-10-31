@@ -873,7 +873,7 @@
  parse-type-name
  "_Bool"
  :cond (and (equal (tyname->specquals ast)
-                   (list (spec/qual-typespec (type-spec-bool))))
+                   (list (spec/qual-typespec (type-spec-bool t))))
             (equal (tyname->declor? ast)
                    nil)))
 
@@ -893,7 +893,75 @@
  "bool"
  :dialect (c::make-dialect :std (c::standard-c23))
  :cond (and (equal (tyname->specquals ast)
-                   (list (spec/qual-typespec (type-spec-bool))))
+                   (list (spec/qual-typespec (type-spec-bool nil))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "_Bool"
+ :dialect (c::make-dialect :std (c::standard-c23))
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec (type-spec-bool t))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "_Complex"
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-none)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex"
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (make-type-spec-typedef :name (ident "__complex")
+                                                  :info nil))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-start)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex__"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-both)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-start)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex__"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-both)))))
             (equal (tyname->declor? ast)
                    nil)))
 

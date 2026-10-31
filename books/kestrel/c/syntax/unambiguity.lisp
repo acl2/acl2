@@ -165,6 +165,16 @@
              (type-spec-unambp type-spec))
     :enable type-spec-unambp)
 
+  (defruled type-spec-unambp-when-bool
+    (implies (type-spec-case type-spec :bool)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
+  (defruled type-spec-unambp-when-complex
+    (implies (type-spec-case type-spec :complex)
+             (type-spec-unambp type-spec))
+    :enable type-spec-unambp)
+
   (defruled type-spec-unambp-when-typedef
     (implies (type-spec-case type-spec :typedef)
              (type-spec-unambp type-spec))
@@ -347,6 +357,8 @@
                     expr-unambp-when-label-addr
                     member-designor-unambp-when-ident
                     type-spec-unambp-when-signed
+                    type-spec-unambp-when-bool
+                    type-spec-unambp-when-complex
                     type-spec-unambp-when-typedef
                     type-spec-unambp-when-int128
                     type-spec-unambp-when-struct-empty

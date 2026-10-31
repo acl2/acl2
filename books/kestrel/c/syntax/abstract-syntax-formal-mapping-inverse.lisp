@@ -246,19 +246,19 @@
              (list (type-spec-unsigned)
                    (type-spec-long)
                    (type-spec-long)))
-   :bool (list (type-spec-bool))
+   :bool (list (type-spec-bool t))
    :float (if tyspecs.complex
               (list (type-spec-float)
-                    (type-spec-complex))
+                    (type-spec-complex (keyword-uscores-none)))
             (list (type-spec-float)))
    :double (if tyspecs.complex
                (list (type-spec-double)
-                     (type-spec-complex))
+                     (type-spec-complex (keyword-uscores-none)))
              (list (type-spec-double)))
    :ldouble (if tyspecs.complex
                 (list (type-spec-long)
                       (type-spec-double)
-                      (type-spec-complex))
+                      (type-spec-complex (keyword-uscores-none)))
               (list (type-spec-long)
                     (type-spec-double)))
    :struct (list (make-type-spec-struct

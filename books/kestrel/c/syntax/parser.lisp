@@ -433,15 +433,16 @@
    (xdoc::p
     "There are a number of type specifiers that consist of single keywords.")
    (xdoc::p
-    "We also compare the token against the GCC variants
-     @('__signed') and @('__signed__') of @('signed').
+    "We also compare the token against the GCC and Clang variants
+     @('__signed') and @('__signed__') of @('signed'),
+     and @('__complex') and @('__complex__') of @('_Complex').
      Note that these variants are keywords
-     only if GCC/Clang extensions are supported:
+     only if GCC or Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks
-     the GCC/Clang flag of the parser state.
+     the dialect of the parser state.
      So the comparison here with those variant keywords
-     will always fail if GCC/Clang extensions are not supported,
-     because in that case both @('__signed') and @('__signed__')
+     will always fail if those extensions are not supported,
+     because in that case those variants
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
     "We similarly include the GCC extension types
@@ -460,10 +461,12 @@
      @('__builtin_va_list'), and
      @('__auto_type').")
    (xdoc::p
-    "We also temporarily include @('bool') as a synonym of @('_Bool').
-     We plan to parameterize this and other functions
-     over the specific dialect of C,
-     including choice of GCC/Clang extensions."))
+    "Note that @('bool') is a keyword only in C23:
+     @(tsee lex-identifier/keyword) checks the dialect of the parser state.
+     So the comparison here with that keyword
+     will always fail if the dialect does not support it,
+     because in that case it would be an identifier token,
+     not a keyword token."))
   (or (token-keywordp token? "void")
       (token-keywordp token? "char")
       (token-keywordp token? "short")
@@ -475,9 +478,11 @@
       (token-keywordp token? "__signed")
       (token-keywordp token? "__signed__")
       (token-keywordp token? "unsigned")
-      (token-keywordp token? "bool") ; C23
+      (token-keywordp token? "bool")
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
+      (token-keywordp token? "__complex")
+      (token-keywordp token? "__complex__")
       (token-keywordp token? "__int128")
       (token-keywordp token? "__int128_t")
       (token-keywordp token? "__float80")
@@ -520,9 +525,14 @@
         ((token-keywordp token "__signed__")
          (type-spec-signed (keyword-uscores-both)))
         ((token-keywordp token "unsigned") (type-spec-unsigned))
-        ((token-keywordp token "bool") (type-spec-bool)) ; C23
-        ((token-keywordp token "_Bool") (type-spec-bool))
-        ((token-keywordp token "_Complex") (type-spec-complex))
+        ((token-keywordp token "bool") (type-spec-bool nil))
+        ((token-keywordp token "_Bool") (type-spec-bool t))
+        ((token-keywordp token "_Complex")
+         (type-spec-complex (keyword-uscores-none)))
+        ((token-keywordp token "__complex")
+         (type-spec-complex (keyword-uscores-start)))
+        ((token-keywordp token "__complex__")
+         (type-spec-complex (keyword-uscores-both)))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
         ((token-keywordp token "__float80") (type-spec-locase-float80))
