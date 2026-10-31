@@ -2474,7 +2474,11 @@
      :bool (if tyspec.uscore
                (print-astring "_Bool" pstate)
              (print-astring "bool" pstate))
-     :complex (print-astring "_Complex" pstate)
+     :complex (keyword-uscores-case
+               tyspec.uscores
+               :none (print-astring "_Complex" pstate)
+               :start (print-astring "__complex" pstate)
+               :both (print-astring "__complex__" pstate))
      :atomic (b* ((pstate (print-astring "_Atomic(" pstate))
                   (pstate (print-tyname tyspec.type pstate))
                   (pstate (print-astring ")" pstate)))

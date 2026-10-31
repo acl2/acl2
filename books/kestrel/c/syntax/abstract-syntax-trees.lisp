@@ -1938,13 +1938,24 @@
       "We model @('typedef-name')
        by inlining the type name into the @(':typedef') case of this fixtype.")
      (xdoc::p
-      "We include the GCC extension variant keywords
+      "We include the GCC/Clang extension variant keywords
        @('__signed') and @('__signed__') of @('signed').
        An indicator of which variant is included
        in the @(':signed') case of this fixtype.")
      (xdoc::p
       "The @('uscore') flag in the @(':bool') case keeps track of the keyword:
        @('t') for @('_Bool'); @('nil') for @('bool'), which is only in C23.")
+     (xdoc::p
+      "We include the Clang variant keywords
+       @('__complex') and @('__complex__') of @('_Complex').
+       An indicator of which variant is included
+       in the @(':complex') case of this fixtype.
+       Note that the @(':none') case of @(tsee keyword-uscores)
+       corresponds to @('_Complex'), which has an underscore,
+       but has no double underscores;
+       so @(tsee keyword-uscores) can be regarded as
+       indicating double (not single) underscores,
+       as in the @(':signed') summand of this fixtype.")
      (xdoc::p
       "We also include the GCC extension @('__int128'),
        which is a (non-standard) integer type: see "
@@ -1999,7 +2010,7 @@
     (:signed ((uscores keyword-uscores-p)))
     (:unsigned ())
     (:bool ((uscore bool)))
-    (:complex ())
+    (:complex ((uscores keyword-uscores-p)))
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)
               (info any)))

@@ -434,14 +434,16 @@
     "There are a number of type specifiers that consist of single keywords.")
    (xdoc::p
     "We also compare the token against the GCC variants
-     @('__signed') and @('__signed__') of @('signed').
+     @('__signed') and @('__signed__') of @('signed'),
+     and against the variants
+     @('__complex') and @('__complex__') of @('_Complex').
      Note that these variants are keywords
-     only if GCC/Clang extensions are supported:
+     only if the corresponding GCC/Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks
-     the GCC/Clang flag of the parser state.
+     the dialect of the parser state.
      So the comparison here with those variant keywords
-     will always fail if GCC/Clang extensions are not supported,
-     because in that case both @('__signed') and @('__signed__')
+     will always fail if the extensions are not supported,
+     because in that case those variants
      would be identifier tokens, not keyword tokens.")
    (xdoc::p
     "We similarly include the GCC extension types
@@ -480,6 +482,8 @@
       (token-keywordp token? "bool")
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
+      (token-keywordp token? "__complex")
+      (token-keywordp token? "__complex__")
       (token-keywordp token? "__int128")
       (token-keywordp token? "__int128_t")
       (token-keywordp token? "__float80")
@@ -524,7 +528,12 @@
         ((token-keywordp token "unsigned") (type-spec-unsigned))
         ((token-keywordp token "bool") (type-spec-bool nil))
         ((token-keywordp token "_Bool") (type-spec-bool t))
-        ((token-keywordp token "_Complex") (type-spec-complex))
+        ((token-keywordp token "_Complex")
+         (type-spec-complex (keyword-uscores-none)))
+        ((token-keywordp token "__complex")
+         (type-spec-complex (keyword-uscores-start)))
+        ((token-keywordp token "__complex__")
+         (type-spec-complex (keyword-uscores-both)))
         ((token-keywordp token "__int128") (type-spec-int128 nil))
         ((token-keywordp token "__int128_t") (type-spec-int128 t))
         ((token-keywordp token "__float80") (type-spec-locase-float80))

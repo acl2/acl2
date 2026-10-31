@@ -3901,7 +3901,11 @@
                         nil
                         same-vstate)
                (reterr msg-bad-preceding))
-       :complex (retok (type-spec-complex) nil ext-tyspecs nil same-vstate)
+       :complex (retok (type-spec-complex tyspec.uscores)
+                       nil
+                       ext-tyspecs
+                       nil
+                       same-vstate)
        :atomic (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                     ((erp new-type type types vstate)
                      (valid-tyname tyspec.type vstate)))

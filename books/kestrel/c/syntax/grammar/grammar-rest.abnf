@@ -183,7 +183,7 @@ type-specifier = %s"void"
                / signed-keyword
                / %s"unsigned"
                / bool-keyword
-               / %s"_Complex"
+               / complex-keyword
                / atomic-type-specifier
                / struct-or-union-specifier
                / enum-specifier

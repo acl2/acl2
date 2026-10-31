@@ -1867,7 +1867,7 @@
        :signed (retok (type-spec-signed tyspec.uscores) (dstate-fix dstate))
        :unsigned (retok (type-spec-unsigned) (dstate-fix dstate))
        :bool (retok (type-spec-bool tyspec.uscore) (dstate-fix dstate))
-       :complex (retok (type-spec-complex) (dstate-fix dstate))
+       :complex (retok (type-spec-complex tyspec.uscores) (dstate-fix dstate))
        :atomic (b* (((erp new-type dstate) (dimb-tyname tyspec.type dstate)))
                  (retok (type-spec-atomic new-type) dstate))
        :struct (b* (((erp new-struni-spec dstate)

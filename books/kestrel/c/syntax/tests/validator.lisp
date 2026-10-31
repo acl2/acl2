@@ -754,6 +754,21 @@ int bar (void);
 "
  :dialect (c::make-dialect :std (c::standard-c23)))
 
+(test-valid
+ "_Complex double x;
+double _Complex y;
+")
+
+(test-valid-fail
+ "__complex__ double x;
+")
+
+(test-valid
+ "__complex double x;
+double __complex__ y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
 (test-valid-fail
   "int foo(void) {
   int x;
