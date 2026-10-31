@@ -231,3 +231,38 @@
 (theory-invariant (incompatible (:rewrite boolif-when-quotep-arg2) (:rewrite booland-becomes-boolif)))
 (theory-invariant (incompatible (:rewrite boolif-when-quotep-arg3) (:rewrite booland-becomes-boolif)))
 (theory-invariant (incompatible (:rewrite boolif-x-y-x-becomes-booland) (:rewrite booland-becomes-boolif)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;gen to non-nil?
+(defthmd myif-of-t-becomes-boolor
+  (implies (booleanp c)
+           (equal (myif a t c)
+                  (boolor a c)))
+  :hints (("Goal" :in-theory (enable boolor))))
+
+;simplify rhs?
+(defthmd myif-becomes-boolif-t-arg2
+  (implies (booleanp c)
+           (equal (myif a c t)
+                  (boolif a c t)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+;simplify rhs?
+(defthmd myif-becomes-boolif-nil-arg1
+  (implies (booleanp c)
+           (equal (myif a nil c)
+                  (boolif a nil c)))
+  :hints (("Goal" :in-theory (enable myif))))
+
+(defthmd myif-of-nil-becomes-booland
+  (implies (booleanp c)
+           (equal (myif a c nil)
+                  (booland a c)))
+  :hints (("Goal" :in-theory (enable booland))))
+
+;more like this? sort of need a bool-trim rule?
+(defthm booland-of-myif-arg1
+  (equal (booland (myif test a b) c)
+         (booland (boolif test a b) c))
+  :hints (("Goal" :in-theory (enable booland boolif))))
