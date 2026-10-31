@@ -18083,10 +18083,10 @@
 ;;             (:rewrite cons-car-cdr)
 ;;             (:definition implies)
 ;;             (:nil if-becomes-myif)
-;; ;                             (:REWRITE MYIF-BECOMES-BOOLIF-t-ARG1)
+;; ;                             (:REWRITE myif-of-t-becomes-boolor)
 ;; ;                            (:REWRITE MYIF-BECOMES-BOOLIF-NIL-ARG1)
 ;; ;                           (:REWRITE MYIF-BECOMES-BOOLIF-t-ARG2)
-;; ;                          (:REWRITE MYIF-BECOMES-BOOLIF-NIL-ARG2)
+;; ;                          (:REWRITE MYIF-OF-NIL-BECOMES-BOOLAND)
 ;;             )))
 
 ;; (mv-let (alist rand)
