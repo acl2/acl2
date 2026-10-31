@@ -928,6 +928,26 @@
 (test-parse
  parse-type-name
  "__complex"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-start)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex__"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
+ :cond (and (equal (tyname->specquals ast)
+                   (list (spec/qual-typespec
+                          (type-spec-complex (keyword-uscores-both)))))
+            (equal (tyname->declor? ast)
+                   nil)))
+
+(test-parse
+ parse-type-name
+ "__complex"
  :dialect (c::make-dialect :std (c::standard-c17) :clang t)
  :cond (and (equal (tyname->specquals ast)
                    (list (spec/qual-typespec

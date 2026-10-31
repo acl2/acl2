@@ -32,7 +32,7 @@ attribute-keyword = %s"__attribute" / %s"__attribute__"
 
 bool-keyword = %s"_Bool"
 
-complex-keyword = %s"_Complex"
+complex-keyword = %s"_Complex" / %s"__complex" / %s"__complex__"
 
 const-keyword = %s"const"
 

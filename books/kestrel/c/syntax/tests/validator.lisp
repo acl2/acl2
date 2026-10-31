@@ -767,6 +767,12 @@ double _Complex y;
  "__complex double x;
 double __complex__ y;
 "
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "__complex double x;
+double __complex__ y;
+"
  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid-fail

@@ -433,16 +433,15 @@
    (xdoc::p
     "There are a number of type specifiers that consist of single keywords.")
    (xdoc::p
-    "We also compare the token against the GCC variants
+    "We also compare the token against the GCC and Clang variants
      @('__signed') and @('__signed__') of @('signed'),
-     and against the variants
-     @('__complex') and @('__complex__') of @('_Complex').
+     and @('__complex') and @('__complex__') of @('_Complex').
      Note that these variants are keywords
-     only if the corresponding GCC/Clang extensions are supported:
+     only if GCC or Clang extensions are supported:
      @(tsee lex-identifier/keyword) checks
      the dialect of the parser state.
      So the comparison here with those variant keywords
-     will always fail if the extensions are not supported,
+     will always fail if those extensions are not supported,
      because in that case those variants
      would be identifier tokens, not keyword tokens.")
    (xdoc::p

@@ -1946,7 +1946,7 @@
       "The @('uscore') flag in the @(':bool') case keeps track of the keyword:
        @('t') for @('_Bool'); @('nil') for @('bool'), which is only in C23.")
      (xdoc::p
-      "We include the Clang variant keywords
+      "We include the GCC/Clang variant keywords
        @('__complex') and @('__complex__') of @('_Complex').
        An indicator of which variant is included
        in the @(':complex') case of this fixtype.
