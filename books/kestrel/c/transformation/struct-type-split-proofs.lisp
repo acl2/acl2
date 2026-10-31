@@ -229,6 +229,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod stsp-mapping
+  :short "Fixtype of mappings for STS proofs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The STS transformation splits (``maps'')
+     a struct tag to two struct tags,
+     and a struct object to two struct objects.
+     This data structure captures this mapping,
+     as a tuple of the involved identifiers.
+     This will be generalized to richer mappings,
+     involving multiple objects,
+     but this is what we support for now."))
+  ((old-tag ident)
+   (newl-tag ident)
+   (newr-tag ident)
+   (old-name ident)
+   (newl-name ident)
+   (newr-name ident))
+  :pred stsp-mappingp)
+
+;;;;;;;;;;
+
+(defirrelevant irr-stsp-mapping
+  :short "An irrelevant mapping for STS proofs."
+  :type stsp-mappingp
+  :body (make-stsp-mapping :old-tag (irr-ident)
+                           :newl-tag (irr-ident)
+                           :newr-tag (irr-ident)
+                           :old-name (irr-ident)
+                           :newl-name (irr-ident)
+                           :newr-name (irr-ident)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum stsp-stage
   :short "Fixtypes of code scanning stages."
   :long
@@ -247,7 +282,7 @@
      (where we store all the members, their types, and the left members,
      while the right members are available from the user inputs),
      then to @(':objects') when we have found the struct objects
-     (where we store the names of the old and new objects).
+     (where we store the mapping of the old and new struct tags and objects).
      See the scanning code for details.
      The member names and types must have the same length."))
   (:init ())
@@ -257,9 +292,7 @@
                   :reqfix (if (equal (len types) (len mems)) types nil))
            (lmems ident-list))
    :require (equal (len types) (len mems)))
-  (:objects ((old-name ident)
-             (newl-name ident)
-             (newr-name ident)))
+  (:objects ((mapping stsp-mapping)))
   :pred stsp-stagep)
 
 ;;;;;;;;;;
@@ -723,9 +756,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-static-equiv ((old-name identp)
-                           (newl-name identp)
-                           (newr-name identp))
+(define stsp-static-equiv ((mapping stsp-mappingp))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate the equivalence predicate on old and new static store."
@@ -738,9 +769,10 @@
      and the values of those three objects are related by
      the equivalence predicate on struct values."))
   (b* (((reterr) '(_))
-       ((erp old-cname) (ldm-ident old-name) :iferr "")
-       ((erp newl-cname) (ldm-ident newl-name) :iferr "")
-       ((erp newr-cname) (ldm-ident newr-name) :iferr "")
+       ((stsp-mapping mapping) mapping)
+       ((erp old-cname) (ldm-ident mapping.old-name) :iferr "")
+       ((erp newl-cname) (ldm-ident mapping.newl-name) :iferr "")
+       ((erp newr-cname) (ldm-ident mapping.newr-name) :iferr "")
        (event
         `(define static-equivp ((old-static c::scopep)
                                 (new-static c::scopep))
@@ -858,12 +890,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-object-hyps ((old-name identp)
-                          (newl-name identp)
-                          (newr-name identp)
-                          (old-tag identp)
-                          (newl-tag identp)
-                          (newr-tag identp)
+(define stsp-object-hyps ((mapping stsp-mappingp)
                           (old-compst-var symbolp)
                           (new-compst-var symbolp))
   :returns (hyps true-listp "A list of terms.")
@@ -874,17 +901,18 @@
    (xdoc::p
     "The exact variables (symbols) to use for the computation states
      are passed as inputs to this function."))
-  (b* (((mv erp old-cname) (ldm-ident old-name))
+  (b* (((stsp-mapping mapping) mapping)
+       ((mv erp old-cname) (ldm-ident mapping.old-name))
        ((when erp) (raise "Internal error: ~@0" erp))
-       ((mv erp newl-cname) (ldm-ident newl-name))
+       ((mv erp newl-cname) (ldm-ident mapping.newl-name))
        ((when erp) (raise "Internal error: ~@0" erp))
-       ((mv erp newr-cname) (ldm-ident newr-name))
+       ((mv erp newr-cname) (ldm-ident mapping.newr-name))
        ((when erp) (raise "Internal error: ~@0" erp))
-       ((mv erp old-ctag) (ldm-ident old-tag))
+       ((mv erp old-ctag) (ldm-ident mapping.old-tag))
        ((when erp) (raise "Internal error: ~@0" erp))
-       ((mv erp newl-ctag) (ldm-ident newl-tag))
+       ((mv erp newl-ctag) (ldm-ident mapping.newl-tag))
        ((when erp) (raise "Internal error: ~@0" erp))
-       ((mv erp newr-ctag) (ldm-ident newr-tag))
+       ((mv erp newr-ctag) (ldm-ident mapping.newr-tag))
        ((when erp) (raise "Internal error: ~@0" erp)))
     `((c::compustate-has-static-var-with-type-p
        ',old-cname
@@ -902,12 +930,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-compustate-equiv ((old-name identp)
-                               (newl-name identp)
-                               (newr-name identp)
-                               (old-tag identp)
-                               (newl-tag identp)
-                               (newr-tag identp))
+(define stsp-compustate-equiv ((mapping stsp-mappingp))
   :returns (mv (erp maybe-msgp)
                (event pseudo-event-formp))
   :short "Generate the equivalence predicate on old and new computation state."
@@ -919,15 +942,14 @@
      the frame stacks are the same,
      and the heaps are the same."))
   (b* (((reterr) '(_))
-       ((erp old-cname) (ldm-ident old-name) :iferr "")
-       ((erp newl-cname) (ldm-ident newl-name) :iferr "")
-       ((erp newr-cname) (ldm-ident newr-name) :iferr "")
-       ((erp old-ctag) (ldm-ident old-tag) :iferr "")
-       ((erp newl-ctag) (ldm-ident newl-tag) :iferr "")
-       ((erp newr-ctag) (ldm-ident newr-tag) :iferr "")
-       (obj-hyps (stsp-object-hyps old-name newl-name newr-name
-                                   old-tag newl-tag newr-tag
-                                   'old-compst 'new-compst))
+       ((stsp-mapping mapping) mapping)
+       ((erp old-cname) (ldm-ident mapping.old-name) :iferr "")
+       ((erp newl-cname) (ldm-ident mapping.newl-name) :iferr "")
+       ((erp newr-cname) (ldm-ident mapping.newr-name) :iferr "")
+       ((erp old-ctag) (ldm-ident mapping.old-tag) :iferr "")
+       ((erp newl-ctag) (ldm-ident mapping.newl-tag) :iferr "")
+       ((erp newr-ctag) (ldm-ident mapping.newr-tag) :iferr "")
+       (obj-hyps (stsp-object-hyps mapping 'old-compst 'new-compst))
        (event
         `(define compustate-equivp ((old-compst c::compustatep)
                                     (new-compst c::compustatep))
@@ -1094,12 +1116,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-exec-expr-congruences ((old-name identp)
-                                    (newl-name identp)
-                                    (newr-name identp)
-                                    (old-tag identp)
-                                    (newl-tag identp)
-                                    (newr-tag identp))
+(define stsp-exec-expr-congruences ((mapping stsp-mappingp))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
   :short "Generate congruence theorems for expression execution."
@@ -1117,15 +1134,12 @@
      and along with several other artifacts we generate here.
      The current version is preliminary, as we are exploring approaches."))
   (b* (((reterr) nil)
-       ((erp old-cname) (ldm-ident old-name) :iferr "")
-       ((erp newl-cname) (ldm-ident newl-name) :iferr "")
-       ((erp newr-cname) (ldm-ident newr-name) :iferr "")
-       (obj-hyps (stsp-object-hyps old-name newl-name newr-name
-                                   old-tag newl-tag newr-tag
-                                   'old-compst 'new-compst))
-       (obj-hyps1 (stsp-object-hyps old-name newl-name newr-name
-                                    old-tag newl-tag newr-tag
-                                    'old-compst1 'new-compst1))
+       ((stsp-mapping mapping) mapping)
+       ((erp old-cname) (ldm-ident mapping.old-name) :iferr "")
+       ((erp newl-cname) (ldm-ident mapping.newl-name) :iferr "")
+       ((erp newr-cname) (ldm-ident mapping.newr-name) :iferr "")
+       (obj-hyps (stsp-object-hyps mapping 'old-compst 'new-compst))
+       (obj-hyps1 (stsp-object-hyps mapping 'old-compst1 'new-compst1))
        (events
         `((defruled expr-ident-congruence-under-compustate-equivp
             (b* ((expr (c::expr-ident var))
@@ -1255,13 +1269,11 @@
                             (compustate-equivp old-compst new-compst)
                             ,@obj-hyps
                             (compustate-equivp old-arg1-compst new-arg1-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-arg1-compst
                                                 'new-arg1-compst)
                             (compustate-equivp old-arg2-compst new-arg2-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-arg2-compst
                                                 'new-arg2-compst)
                             (c::type-nonchar-integerp type1)
@@ -1354,8 +1366,7 @@
                             (compustate-equivp old-compst new-compst)
                             ,@obj-hyps
                             (compustate-equivp old-expr-compst new-expr-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-expr-compst
                                                 'new-expr-compst)
                             (c::type-nonchar-integerp type))
@@ -1417,8 +1428,7 @@
                             (compustate-equivp old-compst new-compst)
                             ,@obj-hyps
                             (compustate-equivp old-stmt-compst new-stmt-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-stmt-compst
                                                 'new-stmt-compst)
                             (set::in
@@ -1486,8 +1496,7 @@
                             (compustate-equivp old-compst new-compst)
                             ,@obj-hyps
                             (compustate-equivp old-item-compst new-item-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-item-compst
                                                 'new-item-compst)
                             (equal (c::stmt-value-kind old-item-sval) :return)
@@ -1541,14 +1550,12 @@
                             (compustate-equivp old-compst new-compst)
                             ,@obj-hyps
                             (compustate-equivp old-item-compst new-item-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-item-compst
                                                 'new-item-compst)
                             (compustate-equivp old-items-compst
                                                new-items-compst)
-                            ,@(stsp-object-hyps old-name newl-name newr-name
-                                                old-tag newl-tag newr-tag
+                            ,@(stsp-object-hyps mapping
                                                 'old-items-compst
                                                 'new-items-compst)
                             (equal (c::stmt-value-kind old-item-sval) :none)
@@ -1624,12 +1631,7 @@
 (define stsp-exec-mem-eq ((mems ident-listp)
                           (types type-listp)
                           (lmems ident-listp)
-                          (old-name identp)
-                          (newl-name identp)
-                          (newr-name identp)
-                          (old-tag identp)
-                          (newl-tag identp)
-                          (newr-tag identp))
+                          (mapping stsp-mappingp))
   :guard (equal (len types) (len mems))
   :returns (mv (erp maybe-msgp)
                (events pseudo-event-form-listp))
@@ -1639,6 +1641,7 @@
           with the declared member type."
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
+       ((stsp-mapping mapping) mapping)
        (mem (car mems))
        ((erp cmem) (ldm-ident mem) :iferr "")
        ((erp ctype) (ldm-type (car types)) :iferr "")
@@ -1646,9 +1649,9 @@
                             'struct-value-))
        ((mv new newp new-name)
         (if (member-equal (ident-fix mem) (ident-list-fix lmems))
-            (mv 'newl 'newlp newl-name)
-          (mv 'newr 'newrp newr-name)))
-       ((erp old-cname) (ldm-ident old-name) :iferr "")
+            (mv 'newl 'newlp mapping.newl-name)
+          (mv 'newr 'newrp mapping.newr-name)))
+       ((erp old-cname) (ldm-ident mapping.old-name) :iferr "")
        ((erp new-cname) (ldm-ident new-name) :iferr "")
        (exec-new-struct (packn-pos (list 'exec- new '-struct) 'struct-value-))
        (value-kind-when-struct-value-newp
@@ -1688,17 +1691,14 @@
                 (old-val (c::expr-value->value old-eval))
                 (new-val (c::expr-value->value new-eval)))
              (implies (and (compustate-equivp old-compst new-compst)
-                           ,@(stsp-object-hyps old-name newl-name newr-name
-                                               old-tag newl-tag newr-tag
-                                               'old-compst 'new-compst)
+                           ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                            (not (c::errorp old-eval)))
                       (and (not (c::errorp new-eval))
                            old-eval
                            new-eval
                            (equal old-val new-val)
                            (compustate-equivp old-compst1 new-compst1)
-                           ,@(stsp-object-hyps old-name newl-name newr-name
-                                               old-tag newl-tag newr-tag
+                           ,@(stsp-object-hyps mapping
                                                'old-compst1 'new-compst1)
                            (equal (c::type-of-value old-val) ',ctype))))
            :use (struct-value-equivp-when-compustate-equivp
@@ -1774,9 +1774,7 @@
                            (:e binary-+)
                            (:e <))))))
        ((erp events)
-        (stsp-exec-mem-eq (cdr mems) (cdr types) lmems
-                          old-name newl-name newr-name
-                          old-tag newl-tag newr-tag)))
+        (stsp-exec-mem-eq (cdr mems) (cdr types) lmems mapping)))
     (retok (cons event events)))
   :hooks ((:fix :hints (("Goal"
                          :induct t
@@ -1898,9 +1896,7 @@
               (declon-annop new-declon2)
               (equal (len types) (len mems)))
   :returns (mv (erp maybe-msgp)
-               (old-name identp)
-               (newl-name identp)
-               (newr-name identp)
+               (mapping stsp-mappingp)
                (events pseudo-event-form-listp))
   :short "Check, and generate events for,
           the declarations of the old and new left and right struct objects."
@@ -1917,8 +1913,8 @@
      the equivalence predicate on old and new static stores
      and the equivalence predicate on the old and new computation states.")
    (xdoc::p
-    "We also return the names of the struct objects."))
-  (b* (((reterr) (irr-ident) (irr-ident) (irr-ident) nil)
+    "We also return the mapping of the old and new struct tags and objects."))
+  (b* (((reterr) (irr-stsp-mapping) nil)
        ((erp old-tag old-name) (stsp-check-struct-object-declon old-declon))
        ((erp newl-tag newl-name) (stsp-check-struct-object-declon new-declon))
        ((erp newr-tag newr-name) (stsp-check-struct-object-declon new-declon2))
@@ -1931,23 +1927,20 @@
        ((unless (equal newr-tag (ident-fix tag2)))
         (retmsg$ "Unsupported proof generation for ~x0."
                  (declon-fix new-declon2)))
-       ((erp static-equiv-pred)
-        (stsp-static-equiv old-name newl-name newr-name))
-       ((erp compustate-equiv-pred)
-        (stsp-compustate-equiv old-name newl-name newr-name
-                               old-tag newl-tag newr-tag))
-       ((erp exec-congs)
-        (stsp-exec-expr-congruences old-name newl-name newr-name
-                                    old-tag newl-tag newr-tag))
+       (mapping (make-stsp-mapping :old-tag old-tag
+                                   :newl-tag newl-tag
+                                   :newr-tag newr-tag
+                                   :old-name old-name
+                                   :newl-name newl-name
+                                   :newr-name newr-name))
+       ((erp static-equiv-pred) (stsp-static-equiv mapping))
+       ((erp compustate-equiv-pred) (stsp-compustate-equiv mapping))
+       ((erp exec-congs) (stsp-exec-expr-congruences mapping))
        ((erp exec-old-struct) (stsp-exec-struct-thm 'old old-name old-tag))
        ((erp exec-newl-struct) (stsp-exec-struct-thm 'newl newl-name newl-tag))
        ((erp exec-newr-struct) (stsp-exec-struct-thm 'newr newr-name newr-tag))
-       ((erp exec-members)
-        (stsp-exec-mem-eq mems types lmems old-name newl-name newr-name
-                          old-tag newl-tag newr-tag)))
-    (retok old-name
-           newl-name
-           newr-name
+       ((erp exec-members) (stsp-exec-mem-eq mems types lmems mapping)))
+    (retok mapping
            (append (list static-equiv-pred
                          compustate-equiv-pred)
                    exec-congs
@@ -2063,10 +2056,7 @@
                     (trans-item-declon (ext-declon-declon old-declon))
                     (trans-item-fix new-item)
                     (trans-item-fix new-item2)))
-          ((erp old-name
-                newl-name
-                newr-name
-                events)
+          ((erp mapping events)
            (stsp-struct-object-declon old-declon
                                       new-declon
                                       new-declon2
@@ -2075,7 +2065,7 @@
                                       stage.mems
                                       stage.types
                                       stage.lmems)))
-       (retok (stsp-stage-objects old-name newl-name newr-name)
+       (retok (stsp-stage-objects mapping)
               (trans-item-list-fix (cdr new-items))
               events))
      :objects (retmsg$ "Unsupported proof generation for ~
@@ -2102,12 +2092,7 @@
                            (const-new symbolp)
                            (thm-index posp)
                            (hints true-listp)
-                           (old-name identp)
-                           (newl-name identp)
-                           (newr-name identp)
-                           (old-tag identp)
-                           (newl-tag identp)
-                           (newr-tag identp))
+                           (mapping stsp-mappingp))
   :guard (and (expr-unambp old)
               (expr-unambp new)
               (expr-annop old)
@@ -2159,9 +2144,7 @@
               (old-val (c::expr-value->value old-eval))
               (new-val (c::expr-value->value new-eval)))
            (implies (and (compustate-equivp old-compst new-compst)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst 'new-compst)
+                         ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-eval)))
                     (and (not (c::errorp new-eval))
@@ -2173,9 +2156,7 @@
                                (equal old-val new-val)
                                (equal (c::type-of-value old-val) ',ctype)))
                          (compustate-equivp old-compst1 new-compst1)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst1 'new-compst1)
+                         ,@(stsp-object-hyps mapping 'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
@@ -2193,12 +2174,7 @@
                            (const-new symbolp)
                            (thm-index posp)
                            (hints true-listp)
-                           (old-name identp)
-                           (newl-name identp)
-                           (newr-name identp)
-                           (old-tag identp)
-                           (newl-tag identp)
-                           (newr-tag identp))
+                           (mapping stsp-mappingp))
   :guard (and (stmt-unambp old)
               (stmt-unambp new)
               (stmt-annop old)
@@ -2246,9 +2222,7 @@
                (c::exec-stmt new-stmt new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst 'new-compst)
+                         ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
@@ -2256,9 +2230,7 @@
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst1 'new-compst1)
+                         ,@(stsp-object-hyps mapping 'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event `(defrule ,thm-name
@@ -2277,12 +2249,7 @@
                                  (const-new symbolp)
                                  (thm-index posp)
                                  (hints true-listp)
-                                 (old-name identp)
-                                 (newl-name identp)
-                                 (newr-name identp)
-                                 (old-tag identp)
-                                 (newl-tag identp)
-                                 (newr-tag identp))
+                                 (mapping stsp-mappingp))
   :guard (and (block-item-unambp old)
               (block-item-unambp new)
               (block-item-annop old)
@@ -2330,9 +2297,7 @@
                (c::exec-block-item new-item new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst 'new-compst)
+                         ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
@@ -2340,9 +2305,7 @@
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst1 'new-compst1)
+                         ,@(stsp-object-hyps mapping 'old-compst1 'new-compst1)
                          ,@vars-post))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -2361,12 +2324,7 @@
                                       (const-new symbolp)
                                       (thm-index posp)
                                       (hints true-listp)
-                                      (old-name identp)
-                                      (newl-name identp)
-                                      (newr-name identp)
-                                      (old-tag identp)
-                                      (newl-tag identp)
-                                      (newr-tag identp))
+                                      (mapping stsp-mappingp))
   :guard (and (block-item-list-unambp old)
               (block-item-list-unambp new)
               (block-item-list-annop old)
@@ -2414,9 +2372,7 @@
                (c::exec-block-item-list new-items new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
                          (> (c::compustate-frames-number old-compst) 0)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
-                                             'old-compst 'new-compst)
+                         ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                          ,@vars-pre
                          (not (c::errorp old-sval)))
                     (and (not (c::errorp new-sval))
@@ -2424,8 +2380,7 @@
                          (set::in (c::type-option-of-stmt-value old-sval)
                                   ',ctypes)
                          (compustate-equivp old-compst1 new-compst1)
-                         ,@(stsp-object-hyps old-name newl-name newr-name
-                                             old-tag newl-tag newr-tag
+                         ,@(stsp-object-hyps mapping
                                              'old-compst1 'new-compst1)))))
        ((mv thm-name thm-index) (gen-thm-name const-new thm-index))
        (thm-event
@@ -2441,12 +2396,7 @@
 (define stsp-expr-ident ((old-ident identp)
                          (new-ident identp)
                          (info var-vinfop)
-                         (old-name identp)
-                         (newl-name identp)
-                         (newr-name identp)
-                         (old-tag identp)
-                         (newl-tag identp)
-                         (newr-tag identp)
+                         (mapping stsp-mappingp)
                          (gin ginp))
   :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for an identifier expression (i.e. variable)."
@@ -2476,12 +2426,12 @@
      and we generate a theorem similar to @(tsee xeq-expr-ident)."))
   (b* (((reterr) (irr-gout))
        ((gin gin) gin)
+       ((stsp-mapping mapping) mapping)
        (gout-no-thm (gout-no-thm gin))
-       ((when (equal (ident-fix old-ident)
-                     (ident-fix old-name)))
+       ((when (equal (ident-fix old-ident) mapping.old-name))
         (b* (((unless (member-equal (ident-fix new-ident)
-                                    (list (ident-fix newl-name)
-                                          (ident-fix newr-name))))
+                                    (list mapping.newl-name
+                                          mapping.newr-name)))
               (retmsg$ "The identifiers ~x0 and ~x1 do not match. ~
                         This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                         was not called on ~
@@ -2520,12 +2470,7 @@
                            gin.const-new
                            gin.thm-index
                            hints
-                           old-name
-                           newl-name
-                           newr-name
-                           old-tag
-                           newl-tag
-                           newr-tag)))
+                           mapping)))
     (retok
      (make-gout :events (cons thm-event gin.events)
                 :thm-index thm-index
@@ -2540,9 +2485,7 @@
                           (name identp)
                           (info1 type-vinfop)
                           (info2 type-vinfop)
-                          (old-name identp)
-                          (newl-name identp)
-                          (newr-name identp)
+                          (mapping stsp-mappingp)
                           (gin ginp))
   :guard (and (expr-unambp arg)
               (expr-unambp arg-new)
@@ -2561,14 +2504,14 @@
   (declare (ignore arg-thm-name info1 info2))
   (b* (((reterr) (irr-gout))
        ((gin gin))
+       ((stsp-mapping mapping) mapping)
        (gout-no-thm (gout-no-thm gin))
        ((when (and (expr-case arg :ident)
-                   (equal (expr-ident->ident arg)
-                          (ident-fix old-name))))
+                   (equal (expr-ident->ident arg) mapping.old-name)))
         (b* (((unless (and (expr-case arg-new :ident)
                            (member-equal (expr-ident->ident arg-new)
-                                         (list (ident-fix newl-name)
-                                               (ident-fix newr-name)))))
+                                         (list mapping.newl-name
+                                               mapping.newr-name))))
               (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                         This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                         was not called on ~
@@ -2594,12 +2537,7 @@
                           (arg2-thm-name symbolp)
                           (info1 type-vinfop)
                           (info2 type-vinfop)
-                          (old-name identp)
-                          (newl-name identp)
-                          (newr-name identp)
-                          (old-tag identp)
-                          (newl-tag identp)
-                          (newr-tag identp)
+                          (mapping stsp-mappingp)
                           (gin ginp))
   :guard (and (expr-unambp arg1)
               (expr-unambp arg1-new)
@@ -2690,12 +2628,7 @@
                                gin.const-new
                                gin.thm-index
                                hints
-                               old-name
-                               newl-name
-                               newr-name
-                               old-tag
-                               newl-tag
-                               newr-tag)))
+                               mapping)))
         (retok
          (make-gout :events (cons thm-event gin.events)
                     :thm-index thm-index
@@ -2711,12 +2644,7 @@
 
 (define stsp-expr ((old-expr exprp)
                    (new-expr exprp)
-                   (old-name identp)
-                   (newl-name identp)
-                   (newr-name identp)
-                   (old-tag identp)
-                   (newl-tag identp)
-                   (newr-tag identp)
+                   (mapping stsp-mappingp)
                    (gin ginp))
   :guard (and (expr-unambp old-expr)
               (expr-unambp new-expr)
@@ -2738,12 +2666,7 @@
       :ident (stsp-expr-ident old-expr.ident
                               new-expr.ident
                               old-expr.info
-                              old-name
-                              newl-name
-                              newr-name
-                              old-tag
-                              newl-tag
-                              newr-tag
+                              mapping
                               gin)
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2761,12 +2684,7 @@
                              old-expr.name new-expr.name))
                    ((erp gout) (stsp-expr old-expr.arg
                                           new-expr.arg
-                                          old-name
-                                          newl-name
-                                          newr-name
-                                          old-tag
-                                          newl-tag
-                                          newr-tag
+                                          mapping
                                           gin))
                    (arg-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2776,9 +2694,7 @@
                                   old-expr.name ; = new-expr.name
                                   old-expr.info
                                   new-expr.info
-                                  old-name
-                                  newl-name
-                                  newr-name
+                                  mapping
                                   gin))
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2796,23 +2712,13 @@
                              old-expr.op new-expr.op))
                    ((erp gout) (stsp-expr old-expr.arg1
                                           new-expr.arg1
-                                          old-name
-                                          newl-name
-                                          newr-name
-                                          old-tag
-                                          newl-tag
-                                          newr-tag
+                                          mapping
                                           gin))
                    (arg1-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout))
                    ((erp gout) (stsp-expr old-expr.arg2
                                           new-expr.arg2
-                                          old-name
-                                          newl-name
-                                          newr-name
-                                          old-tag
-                                          newl-tag
-                                          newr-tag
+                                          mapping
                                           gin))
                    (arg2-thm-name (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2825,12 +2731,7 @@
                                   arg2-thm-name
                                   old-expr.info
                                   new-expr.info
-                                  old-name
-                                  newl-name
-                                  newr-name
-                                  old-tag
-                                  newl-tag
-                                  newr-tag
+                                  mapping
                                   gin))
       :otherwise (retmsg$ "The expressions ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2847,12 +2748,7 @@
                           (expr-new exprp)
                           (expr-thm-name symbolp)
                           info
-                          (old-name identp)
-                          (newl-name identp)
-                          (newr-name identp)
-                          (old-tag identp)
-                          (newl-tag identp)
-                          (newr-tag identp)
+                          (mapping stsp-mappingp)
                           (gin ginp))
   :guard (and (expr-unambp expr)
               (expr-unambp expr-new)
@@ -2894,12 +2790,7 @@
                            gin.const-new
                            gin.thm-index
                            hints
-                           old-name
-                           newl-name
-                           newr-name
-                           old-tag
-                           newl-tag
-                           newr-tag)))
+                           mapping)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -2909,12 +2800,7 @@
 
 (define stsp-stmt ((old-stmt stmtp)
                    (new-stmt stmtp)
-                   (old-name identp)
-                   (newl-name identp)
-                   (newr-name identp)
-                   (old-tag identp)
-                   (newl-tag identp)
-                   (newr-tag identp)
+                   (mapping stsp-mappingp)
                    (gin ginp))
   :guard (and (stmt-unambp old-stmt)
               (stmt-unambp new-stmt)
@@ -2943,12 +2829,7 @@
                     (retok (gout-no-thm gin)))
                    ((erp gout) (stsp-expr old-stmt.expr?
                                           new-stmt.expr?
-                                          old-name
-                                          newl-name
-                                          newr-name
-                                          old-tag
-                                          newl-tag
-                                          newr-tag
+                                          mapping
                                           gin))
                    (expr-thm (gout->thm-name gout))
                    (gin (gin-update gin gout)))
@@ -2956,12 +2837,7 @@
                                   new-stmt.expr?
                                   expr-thm
                                   old-stmt.info
-                                  old-name
-                                  newl-name
-                                  newr-name
-                                  old-tag
-                                  newl-tag
-                                  newr-tag
+                                  mapping
                                   gin))
       :otherwise (retmsg$ "The statments ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -2977,12 +2853,7 @@
                               (stmt-thm-name symbolp)
                               info
                               info-new
-                              (old-name identp)
-                              (newl-name identp)
-                              (newr-name identp)
-                              (old-tag identp)
-                              (newl-tag identp)
-                              (newr-tag identp)
+                              (mapping stsp-mappingp)
                               (gin ginp))
   :guard (and (stmt-unambp stmt)
               (stmt-unambp stmt-new)
@@ -3031,12 +2902,7 @@
                                  gin.const-new
                                  gin.thm-index
                                  hints
-                                 old-name
-                                 newl-name
-                                 newr-name
-                                 old-tag
-                                 newl-tag
-                                 newr-tag)))
+                                 mapping)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -3046,12 +2912,7 @@
 
 (define stsp-block-item ((old-item block-itemp)
                          (new-item block-itemp)
-                         (old-name identp)
-                         (newl-name identp)
-                         (newr-name identp)
-                         (old-tag identp)
-                         (newl-tag identp)
-                         (newr-tag identp)
+                         (mapping stsp-mappingp)
                          (gin ginp))
   :guard (and (block-item-unambp old-item)
               (block-item-unambp new-item)
@@ -3074,12 +2935,7 @@
       new-item
       :stmt (b* (((erp gout) (stsp-stmt old-item.stmt
                                         new-item.stmt
-                                        old-name
-                                        newl-name
-                                        newr-name
-                                        old-tag
-                                        newl-tag
-                                        newr-tag
+                                        mapping
                                         gin))
                  (stmt-thm-name (gout->thm-name gout))
                  (gin (gin-update gin gout)))
@@ -3088,12 +2944,7 @@
                                     stmt-thm-name
                                     old-item.info
                                     new-item.info
-                                    old-name
-                                    newl-name
-                                    newr-name
-                                    old-tag
-                                    newl-tag
-                                    newr-tag
+                                    mapping
                                     gin))
       :otherwise (retmsg$ "The block items ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -3105,12 +2956,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-block-item-list-empty ((old-name identp)
-                                    (newl-name identp)
-                                    (newr-name identp)
-                                    (old-tag identp)
-                                    (newl-tag identp)
-                                    (newr-tag identp)
+(define stsp-block-item-list-empty ((mapping stsp-mappingp)
                                     (gin ginp))
   :returns (mv (erp maybe-msgp) (gout goutp))
   :short "STS proof generation for the empty list of block items."
@@ -3134,12 +2980,7 @@
                                       gin.const-new
                                       gin.thm-index
                                       hints
-                                      old-name
-                                      newl-name
-                                      newr-name
-                                      old-tag
-                                      newl-tag
-                                      newr-tag)))
+                                      mapping)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -3153,12 +2994,7 @@
                                    (items block-item-listp)
                                    (items-new block-item-listp)
                                    (items-thm-name symbolp)
-                                   (old-name identp)
-                                   (newl-name identp)
-                                   (newr-name identp)
-                                   (old-tag identp)
-                                   (newl-tag identp)
-                                   (newr-tag identp)
+                                   (mapping stsp-mappingp)
                                    (gin ginp))
   :guard (and (block-item-unambp item)
               (block-item-unambp item-new)
@@ -3256,12 +3092,7 @@
                                       gin.const-new
                                       gin.thm-index
                                       hints
-                                      old-name
-                                      newl-name
-                                      newr-name
-                                      old-tag
-                                      newl-tag
-                                      newr-tag)))
+                                      mapping)))
     (retok (make-gout :events (cons thm-event gin.events)
                       :thm-index thm-index
                       :thm-name thm-name
@@ -3271,12 +3102,7 @@
 
 (define stsp-block-item-list ((old-items block-item-listp)
                               (new-items block-item-listp)
-                              (old-name identp)
-                              (newl-name identp)
-                              (newr-name identp)
-                              (old-tag identp)
-                              (newl-tag identp)
-                              (newr-tag identp)
+                              (mapping stsp-mappingp)
                               (gin ginp))
   :guard (and (block-item-list-unambp old-items)
               (block-item-list-unambp new-items)
@@ -3304,13 +3130,7 @@
                         the old and new code of STRUCT-TYPE-SPLIT."
                        (block-item-list-fix old-items)
                        (block-item-list-fix new-items))))
-          (stsp-block-item-list-empty old-name
-                                      newl-name
-                                      newr-name
-                                      old-tag
-                                      newl-tag
-                                      newr-tag
-                                      gin)))
+          (stsp-block-item-list-empty mapping gin)))
        ((when (endp new-items))
         (retmsg$ "The lists of block items ~x0 and ~x1 do not match. ~
                   This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
@@ -3323,24 +3143,14 @@
        ((erp gout-item)
         (stsp-block-item old-item
                          new-item
-                         old-name
-                         newl-name
-                         newr-name
-                         old-tag
-                         newl-tag
-                         newr-tag
+                         mapping
                          gin))
        (item-thm-name (gout->thm-name gout-item))
        (gin (gin-update gin gout-item))
        ((erp gout-items)
         (stsp-block-item-list (cdr old-items)
                               (cdr new-items)
-                              old-name
-                              newl-name
-                              newr-name
-                              old-tag
-                              newl-tag
-                              newr-tag
+                              mapping
                               (change-gin gin
                                           :vartys (gout->vartys gout-item))))
        (items-thm-name (gout->thm-name gout-items))
@@ -3351,12 +3161,7 @@
                                (cdr old-items)
                                (cdr new-items)
                                items-thm-name
-                               old-name
-                               newl-name
-                               newr-name
-                               old-tag
-                               newl-tag
-                               newr-tag
+                               mapping
                                gin))
   :verify-guards :after-returns
   :hooks ((:fix :hints (("Goal"
@@ -3369,12 +3174,7 @@
                                               (arg-types true-listp)
                                               (const-new symbolp)
                                               (thm-index posp)
-                                              (old-name identp)
-                                              (newl-name identp)
-                                              (newr-name identp)
-                                              (old-tag identp)
-                                              (newl-tag identp)
-                                              (newr-tag identp))
+                                              (mapping stsp-mappingp))
   :returns (mv (events pseudo-event-form-listp)
                (old-thm-name symbolp)
                (newl-thm-name symbolp)
@@ -3401,17 +3201,18 @@
    (xdoc::p
     "The @('parargs') and @('arg-types') of this function are
      the homomynous outputs of @(tsee gen-from-params)."))
-  (b* (((mv erp old-cname) (ldm-ident old-name))
+  (b* (((stsp-mapping mapping) mapping)
+       ((mv erp old-cname) (ldm-ident mapping.old-name))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
-       ((mv erp newl-cname) (ldm-ident newl-name))
+       ((mv erp newl-cname) (ldm-ident mapping.newl-name))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
-       ((mv erp newr-cname) (ldm-ident newr-name))
+       ((mv erp newr-cname) (ldm-ident mapping.newr-name))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
-       ((mv erp old-ctag) (ldm-ident old-tag))
+       ((mv erp old-ctag) (ldm-ident mapping.old-tag))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
-       ((mv erp newl-ctag) (ldm-ident newl-tag))
+       ((mv erp newl-ctag) (ldm-ident mapping.newl-tag))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
-       ((mv erp newr-ctag) (ldm-ident newr-tag))
+       ((mv erp newr-ctag) (ldm-ident mapping.newr-tag))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
        ((mv old-thm-name thm-index) (gen-thm-name const-new thm-index))
        ((mv newl-thm-name thm-index) (gen-thm-name const-new thm-index))
@@ -3492,12 +3293,7 @@
 
 (define stsp-fundef ((old-fundef fundefp)
                      (new-fundef fundefp)
-                     (old-name identp)
-                     (newl-name identp)
-                     (newr-name identp)
-                     (old-tag identp)
-                     (newl-tag identp)
-                     (newr-tag identp)
+                     (mapping stsp-mappingp)
                      (gin ginp))
   :guard (and (fundef-unambp old-fundef)
               (fundef-unambp new-fundef)
@@ -3606,12 +3402,7 @@
                                               arg-types
                                               gin.const-new
                                               thm-index
-                                              old-name
-                                              newl-name
-                                              newr-name
-                                              old-tag
-                                              newl-tag
-                                              newr-tag))
+                                              mapping))
        (events (append (rev structs-push-events) events))
        (gin (change-gin gin
                         :vartys param-vartys
@@ -3624,12 +3415,7 @@
        ((erp gout)
         (stsp-block-item-list old-items
                               new-items
-                              old-name
-                              newl-name
-                              newr-name
-                              old-tag
-                              newl-tag
-                              newr-tag
+                              mapping
                               gin))
        (body-thm-name (gout->thm-name gout))
        ((unless body-thm-name) (retok gout-no-thm))
@@ -3644,14 +3430,7 @@
               ((mv new-val new-compst1)
                (c::exec-fun fun (list ,@args) new-compst new-fenv limit)))
            (implies (and (compustate-equivp old-compst new-compst)
-                         ,@(stsp-object-hyps old-name
-                                             newl-name
-                                             newr-name
-                                             old-tag
-                                             newl-tag
-                                             newr-tag
-                                             'old-compst
-                                             'new-compst)
+                         ,@(stsp-object-hyps mapping 'old-compst 'new-compst)
                          ,@arg-types
                          (equal (c::fun-env-lookup fun old-fenv)
                                 (c::fun-info-from-fundef
@@ -3795,12 +3574,7 @@
           ((erp gout)
            (stsp-fundef old-edeclon.fundef
                         new-fundef
-                        (stsp-stage-objects->old-name stage)
-                        (stsp-stage-objects->newl-name stage)
-                        (stsp-stage-objects->newr-name stage)
-                        tag
-                        tag
-                        tag2
+                        (stsp-stage-objects->mapping stage)
                         gin)))
        (retok (stsp-stage-fix stage)
               (trans-item-list-fix (cdr new-items))
