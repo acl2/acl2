@@ -546,10 +546,10 @@
                                        extra-rules)
                                ;; remove-rules, to remove from default set (since boolif isn't handled right by pruning -- todo, maybe it is handled now?):
                                ;; todo: commenting these out caused a loop:
-                               (append '(MYIF-OF-T-BECOMES-BOOLOR
+                               (append '(;MYIF-OF-T-BECOMES-BOOLOR
                                          MYIF-BECOMES-BOOLIF-T-ARG2
                                          MYIF-BECOMES-BOOLIF-NIL-ARG1
-                                         MYIF-OF-NIL-BECOMES-BOOLAND
+                                         ;MYIF-OF-NIL-BECOMES-BOOLAND
                                          MYIF-BECOMES-BOOLIF-AXE
                                          )
                                        ;; (bool-intro-rules)
