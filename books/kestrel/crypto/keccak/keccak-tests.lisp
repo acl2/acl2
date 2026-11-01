@@ -893,3 +893,52 @@
  (sha3-512-bytes (bits-to-bytes-little *k-test-input-7*))
  (hexes-string-to-list
   "88 1c 7d 6b a9 86 78 bc d9 6e 25 30 86 c4 04 8c 3e a1 53 06 d0 d1 3f f4 83 41 c6 28 5e e7 11 02 a4 7b 6f 16 e2 0e 4d 65 c0 c3 d6 77 be 68 9d fd a6 d3 26 69 56 09 cb ad fa fa 18 00 e9 eb 7f c1"))
+
+
+;; ================================
+;; Testing keccak-p with 12 rounds
+;; ================================
+
+;; The hash functions above all use 24 rounds, the full KECCAK-f[1600].
+;; KECCAK-p[1600,12] is the last 12 of those rounds (FIPS 202 Algorithm 7).
+;; It is the permutation of TurboSHAKE and KangarooTwelve,
+;; and these tests use the TurboSHAKE128 test vectors in RFC 9861, Section 5.
+;; TurboSHAKE128 is the sponge on KECCAK-p[1600,12] with rate 1344 bits.
+;; Its padding of a message M with domain separation byte D = #x1F is
+;; M || D || zero bytes, with #x80 XORed into the last byte of the last
+;; 168-byte block; as a FIPS 202 bit string, that is
+;; (h2b M) || 1111 || pad10*1.
+
+;; ptn(n) from RFC 9861, Section 5: the bytes 00 01 02 .. FA repeated
+;; and truncated to n bytes.
+(defun ptn-aux (i n)
+  (declare (xargs :measure (nfix (- n i))))
+  (if (or (not (natp i)) (not (natp n)) (>= i n))
+      nil
+    (cons (mod i 251) (ptn-aux (+ i 1) n))))
+
+(defun ptn (n)
+  (ptn-aux 0 n))
+
+;; TurboSHAKE128(M=`00`^0, D=`1F`, 64).
+;; With M empty, the padded message is the single block 1F 00 .. 00 80,
+;; so the output is the first 64 bytes of KECCAK-p[1600,12] applied to
+;; that block followed by 32 zero bytes.
+(assert-equal
+ (take 64
+       (b2h (k-string-to-bitstring
+             1600
+             (keccak-p 1600 12
+                       (bitstring-to-bv
+                        (h2b (append '(#x1F) (repeat 166 0) '(#x80) (repeat 32 0))))))))
+ (hexes-string-to-list
+  "1E 41 5F 1C 59 83 AF F2 16 92 17 27 7D 17 BB 53 8C D9 45 A3 97 DD EC 54 1F 1C E4 1A F2 C1 B7 4C 3E 8C CA E2 A4 DA E5 6C 84 A0 4C 23 85 C0 3C 15 E8 19 3B DF 58 73 73 63 32 16 91 C0 54 62 C8 DF"))
+
+;; TurboSHAKE128(M=ptn(17**2 bytes), D=`1F`, 32).
+;; The padded message is two blocks, so this also tests absorbing with 12 rounds.
+(assert-equal
+ (b2h (k-string-to-bitstring
+       256
+       (k-sponge 1600 1344 12 (append (h2b (ptn 289)) '(1 1 1 1)) 256)))
+ (hexes-string-to-list
+  "96 C7 7C 27 9E 01 26 F7 FC 07 C9 B0 7F 5C DA E1 E0 BE 60 BD BE 10 62 00 40 E7 5D 72 23 A6 24 D2"))

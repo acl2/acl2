@@ -1374,8 +1374,8 @@
 
 ;; Note:
 ;; (spec: 3.4) states that the the rounds of KECCAK-f[b] have round-index
-;; going from 0 to 11+2l; these are nr = 12+2l rounds.
-;; If KECCAK-p[b,nr] has more rounds than 12+2l, then
+;; going from 0 to 11+2l; these are n_r = 12+2l rounds.
+;; If KECCAK-p[b,n_r] has more rounds than 12+2l, then
 ;; the round index should start with the appropriate negative value.
 ;; The example given in the spec is KECCAK-p[1600,30].
 ;; In that case, the last round index should be 23, so the first round index is -6.
@@ -1436,9 +1436,7 @@
   (let* ((w (/ b 25))
          (ell (- (integer-length w) 1))) ; l = log2(w), where w is a power of 2
     (let ((state-array (k-string-to-state-array w k-string)))
-      (let* ((last-round-index (if (<= nrounds (+ 12 (* 2 ell)))
-                                   (- nrounds 1)
-                                 (+ 11 (* 2 ell))))
+      (let* ((last-round-index (+ 11 (* 2 ell)))
              (first-round-index (- last-round-index (- nrounds 1))))
         (let ((final-state-array
                (k-do-rounds w state-array first-round-index last-round-index)))
@@ -1684,7 +1682,7 @@
 ;; --------------------------------
 ;; Main bit-oriented hash functions.
 
-;; These are the functions that are closest to IFIPS 202
+;; These are the functions that are closest to FIPS 202
 ;; in terms of the input and output data types.
 
 (defund keccak-224 (M)
@@ -1801,7 +1799,7 @@
 
 ;; --------------------------------
 ;; Main byte-oriented hash functions.
-;; These are also implied by FIPS 2012.
+;; These are also implied by FIPS 202.
 
 (defund keccak-224-bytes (bytes)
   (declare (xargs :guard (and (true-listp bytes)
@@ -1950,7 +1948,7 @@
 
 ;; For each of these functions:
 ;; M is a list of bytes
-;; It returns a list of bits.
+;; It returns a list of bytes.
 
 (defun sha3-224-bytes (bytes)
   (declare (xargs :guard (and (true-listp bytes)
