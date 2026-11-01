@@ -290,20 +290,19 @@ h = 01
 
 ;; Square root in the prime field
 
-;; Euler's Criterion
-;; lets us know that "a" has a square root mod p if
-;; a^((p-1)/2) = 1 mod p.
+;; Euler's Criterion: for a not divisible by p,
+;; a has a square root mod p if and only if a^((p-1)/2) = 1 mod p.
 ;; See acl2/books/projects/numbers/support/euler.lisp
 ;; for a proof of Euler's Criterion.
 ;;
-;; Note, many references define "a is a quadratic residue of p"
-;; or "a is a residue of p" or just "a R p"
-;; to mean "a has a square root mod p".
+;; Such an a is called a quadratic residue mod p (or "a R p").
+;; By the usual definition 0 is not a quadratic residue, and
+;; 0^((p-1)/2) = 0, but 0 has the square root 0, so we return T for a = 0.
 
 (defsection secp256k1-has-square-root?
   :parents (secp256k1)
   :short "Test if @('a') has a square root in secp256k1's prime field @('p')."
-  :long "@(call secp256k1-has-square-root?) tests whether @('a') is
+  :long "@(call secp256k1-has-square-root?) tests whether @('a') is either 0 or
          a quadratic residue of @('p'), i.e., whether there exists
          an element @($x$) of the prime field such that @($x^2 = a\\ (mod\\ p)$).
          <p/>
@@ -314,9 +313,15 @@ h = 01
     (declare (xargs :guard (and (natp a) (< a (secp256k1-field-prime)))
                     :guard-hints (("Goal" :in-theory (enable secp256k1-field-prime fep)))))
     (let ((p (secp256k1-field-prime)))
-      (equal (pow a (/ (- p 1) 2) p)
-             1)))
+      (or (= a 0)
+	  (equal (pow a (/ (- p 1) 2) p)
+		 1))))
   )
+
+(assert! (secp256k1-has-square-root? 0))
+(assert! (secp256k1-has-square-root? 4))
+;; p = 3 mod 4, so -1 has no square root
+(assert! (not (secp256k1-has-square-root? (- (secp256k1-field-prime) 1))))
 
 ;; There is a reasonably simple formula for finding mod-sqrt(a)
 ;; when p = 3 (mod 4), which is the case here.
