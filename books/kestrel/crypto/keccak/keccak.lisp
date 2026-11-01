@@ -537,7 +537,7 @@
 (defthmd k-spec-3-1-2-consistency
   (implies (and (natp x) (natp y) (natp z)
                 (< x 5) (< y 5) (< z w) (k-w-val-p w)
-                (k-string-p b k-string))
+                (k-string-p (* 25 w) k-string))
            (= (k-A w (k-string-to-state-array w k-string)
                    x y z)
               (k-S (* 25 w)
@@ -594,7 +594,6 @@
 ;; Again, we index backwards because that's how bitvector packing works.
 (defthmd k-string-is-concatenation-of-planes
   (implies (and (k-w-val-p w)
-                (natp y) (< y 5)  ;; y is the plane number
                 (k-string-p (* 25 w) k-string))
            (let ((state-array (k-string-to-state-array w k-string)))
              (equal (packbv 5 (* 5 w)
@@ -1444,10 +1443,16 @@
 
 (defthm k-string-p-of-keccak-p
   (implies (and (k-string-p b k-string)
-                (natp w)
-                (equal b (* 25 w)))
+                (member b *k-b-vals*))
            (k-string-p b (keccak-p b nrounds k-string)))
   :hints (("Goal" :in-theory (disable k-string-p))))
+
+(defthm unsigned-byte-p-of-keccak-p
+  (implies (and (unsigned-byte-p b k-string)
+                (member b *k-b-vals*))
+           (unsigned-byte-p b (keccak-p b nrounds k-string)))
+  :hints (("Goal" :use k-string-p-of-keccak-p
+                  :in-theory (e/d (k-string-p) (keccak-p k-string-p-of-keccak-p)))))
 
 
 ;; ----------------
@@ -1554,24 +1559,43 @@
      (keccak-p b nrounds (bvxor b s-so-far (bitstring-to-bv (firstn r rest-of-p))))
      (nthcdr r rest-of-p))))
 
+(defthm k-string-p-of-k-sponge-aux
+  (implies (and (member b *k-b-vals*)
+                (k-string-p b s-so-far))
+           (k-string-p b (k-sponge-aux i max-i b r nrounds s-so-far rest-of-p)))
+  :hints (("Goal" :in-theory (e/d (k-string-p) (keccak-p)))))
+
 ;; Does the squeezing (spec: Figure 7)
 ;; (spec: Algorithm 8 steps 8 to 10)
 ;;   8.  Let Z = Z || Trunc_r(S)
 ;;   9.  If d <= |Z|, then return Trunc_d(Z); else continue.
 ;;   10. Let S=f(S), and continue with Step 8.
 ;; f is keccak-p()
-;; Z is a bitstring, S is a bitvector (unsigned integer).
-;; It would be more consistent to have S be a bitstring, too,
-;; but for now keccak-p expects a bitvector.
-;;
-;; Future code (not needed for now):
-;; (defun k-sponge-squeeze (b r nrounds d Z S)
-;;  (let ((new-Z (append Z (firstn r (k-string-to-bitstring d S)))))
-;;    (if (<= d (len new-Z))
-;;        (firstn d new-Z)
-;;      (let ((new-S (keccak-p b nrounds S)))
-;;        (k-sponge-squeeze b r nrounds d new-Z new-S)))))
-;;
+;; Z and S are bitvectors (unsigned integers), and zlen is |Z|.
+;; Since bit i of the bitvector Z is Z[i], Z || T is (acl2::bvcat |T| T |Z| Z).
+;; On entry, Step 8 has been done for the current S.
+(defund k-sponge-squeeze (b r nrounds d zlen z s)
+  (declare (type integer nrounds z s)
+           (type (integer 0 *) b d zlen)
+           (type (integer 1 *) r)
+           (xargs :guard (and (member b *k-b-vals*)
+                              (k-string-p b s))
+                  :measure (nfix (- d zlen))))
+  (if (or (not (posp r))
+          (not (natp zlen))
+          (not (natp d))
+          (<= d zlen)) ; Step 9
+      (slice (- d 1) 0 z)
+    (let ((s (keccak-p b nrounds s))) ; Step 10
+      (k-sponge-squeeze b r nrounds d (+ zlen r)
+                        (acl2::bvcat r (slice (- r 1) 0 s) zlen z) ; Step 8
+                        s))))
+
+(defthm unsigned-byte-p-of-k-sponge-squeeze
+  (implies (natp d)
+           (unsigned-byte-p d (k-sponge-squeeze b r nrounds d zlen z s)))
+  :hints (("Goal" :in-theory (enable k-sponge-squeeze))))
+
 ;; NOTE: k-sponge returns the bitvector (a nat) we use internally.
 ;; If you convert this to a list of bits, you should reverse the bits
 ;; if you want to match FIPS 202.
@@ -1593,15 +1617,8 @@
         ;; S starts out as 0 (Step 5),
         ;; which is the second '0' in the call to k-sponge-aux.
         (let ((S (k-sponge-aux 0 (- num-chunks 1) b r nrounds 0 P)))
-          ;; Future code (commented out for now):
-          ;; (bitstring-to-bv (k-sponge-squeeze b r nrounds d '() S))
-          ;; Replace the next form by the previous line when
-          ;; k-sponge-squeeze is defined.
-          ;; The following is adequate for f = KECCAK-p[1600, 24]
-          ;; since |Z| = 1088 and d is 256.
-          ;; That is, for now the loop in Steps 8-10 is executed only once.
-          (let ((Z (slice (- r 1) 0 S)))
-            (slice (- d 1) 0 Z)))))))
+          ;; Steps 7 and 8, then Steps 9 and 10 in k-sponge-squeeze.
+          (k-sponge-squeeze b r nrounds d r (slice (- r 1) 0 S) S))))))
 
 ;; For reference:
 ;; keccak-256 does (keccak-c 512 M 256)
