@@ -41,7 +41,7 @@
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
-;(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (in-theory (enable symbolp-of-lookup-equal-when-param-slot-to-name-alistp)))
 
@@ -512,7 +512,9 @@
     (if (eq :all classes-to-assume-initialized)
         (strip-cars class-alist)
       (if (eq :system classes-to-assume-initialized)
-          (strings-starting-with "java.lang." (strip-cars class-alist))
+          (append (strings-starting-with "java.lang." (strip-cars class-alist))
+                  (strings-starting-with "java.util." (strip-cars class-alist))
+                  (strings-starting-with "java.io." (strip-cars class-alist)))
         ;; must be an explicit list of class names:
         classes-to-assume-initialized))))
 
