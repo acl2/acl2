@@ -3857,7 +3857,7 @@
                   :guard-debug t
                   ))
   (if (zp length) ; todo: special case is due to the guard of subrange and update-subrange2
-      dest-contents
+      (true-list-fix dest-contents)
     (acl2::update-subrange2 (len dest-contents)
                             destpos
                             ;;use bvplus 32 here?
@@ -3873,6 +3873,28 @@
                             dest-contents)))
 
 (local (include-book "kestrel/lists-light/take" :dir :system))
+
+;; avoids the split on zero length
+(defthm arraycopy-redef
+  (implies (and (natp length)
+                ;; (true-listp dest-contents)
+                )
+           (equal (arraycopy src-contents srcpos dest-contents destpos length)
+                  (acl2::update-subrange2 (len dest-contents)
+                                          destpos
+                                          ;;use bvplus 32 here?
+                                          (+ destpos length -1)
+                                          ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                          ;;try: (decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
+                                          (acl2::subrange srcpos
+                                                          ;;use bvplus31?
+                                                          (+ srcpos length -1)
+                                                          ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                                          ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
+                                                          src-contents)
+                                          dest-contents)))
+  :hints (("Goal" :in-theory (enable arraycopy))))
+
 (local (include-book "kestrel/lists-light/update-subrange" :dir :system))
 (local (include-book "kestrel/lists-light/subrange" :dir :system))
 

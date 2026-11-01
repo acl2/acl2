@@ -743,7 +743,7 @@
             jvm::len-of-arraycopy
             jvm::equal-of-nil-and-arraycopy
             jvm::equal-of-arraycopy-and-nil
-            jvm::arraycopy ; todo: drop or delay
+            jvm::arraycopy-redef ; todo: drop or delay
 
             jvm::make-method-designator
             jvm::sub-classp
