@@ -1250,3 +1250,21 @@
                            (ads (get-field ad (array-contents-pair) heap)))
            :in-theory (e/d (array-refp (:i nth))
                            (in-of-nth-and-rkeys-when-array-ref-listp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Can reduce the size of terms in failed lifts.
+(defthm jvm::get-field-of-initialize-one-dim-array-of-set-field-irrel
+  (implies (or (not (equal pair1 pair3))
+               (not (equal ad1 ad3)))
+           (equal (get-field ad1 pair1 (jvm::initialize-one-dim-array ad2 element-type contents (set-field ad3 pair3 val heap)))
+                  (get-field ad1 pair1 (jvm::initialize-one-dim-array ad2 element-type contents heap))))
+  :hints (("Goal" :in-theory (enable jvm::initialize-one-dim-array))))
+
+;; Can reduce the size of terms in failed lifts.
+(defthm jvm::get-field-of-initialize-one-dim-array-of-set-fields-irrel
+  (implies (or (not (equal ad1 ad3))
+               (not (member-equal pair1 (strip-cars bindings3))))
+           (equal (get-field ad1 pair1 (jvm::initialize-one-dim-array ad2 element-type contents (set-fields ad3 bindings3 heap)))
+                  (get-field ad1 pair1 (jvm::initialize-one-dim-array ad2 element-type contents heap))))
+  :hints (("Goal" :in-theory (enable jvm::initialize-one-dim-array strip-cars))))

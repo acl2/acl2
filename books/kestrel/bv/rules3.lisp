@@ -1350,32 +1350,6 @@
 ;;          (myif x z y))
 ;;   :hints (("Goal" :in-theory (enable myif boolif))))
 
-;gen to non-nil?
-(defthmd myif-of-t-becomes-boolor
-  (implies (booleanp c)
-           (equal (myif a t c)
-                  (boolor a c)))
-  :hints (("Goal" :in-theory (enable boolor))))
-
-;simplify rhs?
-(defthmd myif-becomes-boolif-t-arg2
-  (implies (booleanp c)
-           (equal (myif a c t)
-                  (boolif a c t)))
-  :hints (("Goal" :in-theory (enable myif))))
-
-;simplify rhs?
-(defthmd myif-becomes-boolif-nil-arg1
-  (implies (booleanp c)
-           (equal (myif a nil c)
-                  (boolif a nil c))))
-
-(defthmd myif-of-nil-becomes-booland
-  (implies (booleanp c)
-           (equal (myif a c nil)
-                  (booland a c)))
-  :hints (("Goal" :in-theory (enable booland))))
-
 (defthm myif-equal-nil-rewrite
   (equal (equal (myif test a b) nil) ;reverse the equality?
          (myif test (equal a nil)
@@ -1871,12 +1845,6 @@
                     (sbvlt 32 x -1))))
   :hints (("Goal" :in-theory (e/d (sbvlt ;logext getbit slice
                                    ) (anti-slice)))))
-
-;more like this? sort of need a bool-trim rule?
-(defthm booland-of-myif-arg1
-  (equal (booland (myif test a b) c)
-         (booland (boolif test a b) c))
-  :hints (("Goal" :in-theory (enable booland boolif))))
 
 (defthm plus-of-bvplus-of-minus1
   (equal (+ 1 (bvplus 32 4294967295 x))
