@@ -537,7 +537,7 @@
 (defthmd k-spec-3-1-2-consistency
   (implies (and (natp x) (natp y) (natp z)
                 (< x 5) (< y 5) (< z w) (k-w-val-p w)
-                (k-string-p b k-string))
+                (k-string-p (* 25 w) k-string))
            (= (k-A w (k-string-to-state-array w k-string)
                    x y z)
               (k-S (* 25 w)
@@ -594,7 +594,6 @@
 ;; Again, we index backwards because that's how bitvector packing works.
 (defthmd k-string-is-concatenation-of-planes
   (implies (and (k-w-val-p w)
-                (natp y) (< y 5)  ;; y is the plane number
                 (k-string-p (* 25 w) k-string))
            (let ((state-array (k-string-to-state-array w k-string)))
              (equal (packbv 5 (* 5 w)
@@ -1374,8 +1373,8 @@
 
 ;; Note:
 ;; (spec: 3.4) states that the the rounds of KECCAK-f[b] have round-index
-;; going from 0 to 11+2l; these are nr = 12+2l rounds.
-;; If KECCAK-p[b,nr] has more rounds than 12+2l, then
+;; going from 0 to 11+2l; these are n_r = 12+2l rounds.
+;; If KECCAK-p[b,n_r] has more rounds than 12+2l, then
 ;; the round index should start with the appropriate negative value.
 ;; The example given in the spec is KECCAK-p[1600,30].
 ;; In that case, the last round index should be 23, so the first round index is -6.
@@ -1436,9 +1435,7 @@
   (let* ((w (/ b 25))
          (ell (- (integer-length w) 1))) ; l = log2(w), where w is a power of 2
     (let ((state-array (k-string-to-state-array w k-string)))
-      (let* ((last-round-index (if (<= nrounds (+ 12 (* 2 ell)))
-                                   (- nrounds 1)
-                                 (+ 11 (* 2 ell))))
+      (let* ((last-round-index (+ 11 (* 2 ell)))
              (first-round-index (- last-round-index (- nrounds 1))))
         (let ((final-state-array
                (k-do-rounds w state-array first-round-index last-round-index)))
@@ -1446,10 +1443,16 @@
 
 (defthm k-string-p-of-keccak-p
   (implies (and (k-string-p b k-string)
-                (natp w)
-                (equal b (* 25 w)))
+                (member b *k-b-vals*))
            (k-string-p b (keccak-p b nrounds k-string)))
   :hints (("Goal" :in-theory (disable k-string-p))))
+
+(defthm unsigned-byte-p-of-keccak-p
+  (implies (and (unsigned-byte-p b k-string)
+                (member b *k-b-vals*))
+           (unsigned-byte-p b (keccak-p b nrounds k-string)))
+  :hints (("Goal" :use k-string-p-of-keccak-p
+                  :in-theory (e/d (k-string-p) (keccak-p k-string-p-of-keccak-p)))))
 
 
 ;; ----------------
@@ -1541,6 +1544,7 @@
            (type (integer 0 *) r b)
            (xargs :measure (nfix (+ 1 (- max-i i)))
                   :guard (and (member b *k-b-vals*)
+                              (< r b)
                               (bit-listp rest-of-p))
                   :guard-hints (("Goal" :in-theory (enable k-string-p)))))
   (if (or (not (natp i))
@@ -1556,24 +1560,44 @@
      (keccak-p b nrounds (bvxor b s-so-far (bitstring-to-bv (firstn r rest-of-p))))
      (nthcdr r rest-of-p))))
 
+(defthm k-string-p-of-k-sponge-aux
+  (implies (and (member b *k-b-vals*)
+                (k-string-p b s-so-far))
+           (k-string-p b (k-sponge-aux i max-i b r nrounds s-so-far rest-of-p)))
+  :hints (("Goal" :in-theory (e/d (k-string-p) (keccak-p)))))
+
 ;; Does the squeezing (spec: Figure 7)
 ;; (spec: Algorithm 8 steps 8 to 10)
 ;;   8.  Let Z = Z || Trunc_r(S)
 ;;   9.  If d <= |Z|, then return Trunc_d(Z); else continue.
 ;;   10. Let S=f(S), and continue with Step 8.
 ;; f is keccak-p()
-;; Z is a bitstring, S is a bitvector (unsigned integer).
-;; It would be more consistent to have S be a bitstring, too,
-;; but for now keccak-p expects a bitvector.
-;;
-;; Future code (not needed for now):
-;; (defun k-sponge-squeeze (b r nrounds d Z S)
-;;  (let ((new-Z (append Z (firstn r (k-string-to-bitstring d S)))))
-;;    (if (<= d (len new-Z))
-;;        (firstn d new-Z)
-;;      (let ((new-S (keccak-p b nrounds S)))
-;;        (k-sponge-squeeze b r nrounds d new-Z new-S)))))
-;;
+;; Z and S are bitvectors (unsigned integers), and zlen is |Z|.
+;; Since bit i of the bitvector Z is Z[i], Z || T is (acl2::bvcat |T| T |Z| Z).
+;; On entry, Step 8 has been done for the current S.
+(defund k-sponge-squeeze (b r nrounds d zlen z s)
+  (declare (type integer nrounds z s)
+           (type (integer 0 *) b d zlen)
+           (type (integer 1 *) r)
+           (xargs :guard (and (member b *k-b-vals*)
+                              (< r b)
+                              (k-string-p b s))
+                  :measure (nfix (- d zlen))))
+  (if (or (not (posp r))
+          (not (natp zlen))
+          (not (natp d))
+          (<= d zlen)) ; Step 9
+      (slice (- d 1) 0 z)
+    (let ((s (keccak-p b nrounds s))) ; Step 10
+      (k-sponge-squeeze b r nrounds d (+ zlen r)
+                        (acl2::bvcat r (slice (- r 1) 0 s) zlen z) ; Step 8
+                        s))))
+
+(defthm unsigned-byte-p-of-k-sponge-squeeze
+  (implies (natp d)
+           (unsigned-byte-p d (k-sponge-squeeze b r nrounds d zlen z s)))
+  :hints (("Goal" :in-theory (enable k-sponge-squeeze))))
+
 ;; NOTE: k-sponge returns the bitvector (a nat) we use internally.
 ;; If you convert this to a list of bits, you should reverse the bits
 ;; if you want to match FIPS 202.
@@ -1582,6 +1606,7 @@
            (type (integer 0 *) b d)
            (type (integer 1 *) r)
            (xargs :guard (and (member b *k-b-vals*)
+                              (< r b)
                               (bit-listp n))))
   (let ((P (append N (k-pad10*1 r (len N))))) ; Step 1
     (let ((num-chunks (/ (len P) r))) ; Step 2
@@ -1595,15 +1620,8 @@
         ;; S starts out as 0 (Step 5),
         ;; which is the second '0' in the call to k-sponge-aux.
         (let ((S (k-sponge-aux 0 (- num-chunks 1) b r nrounds 0 P)))
-          ;; Future code (commented out for now):
-          ;; (bitstring-to-bv (k-sponge-squeeze b r nrounds d '() S))
-          ;; Replace the next form by the previous line when
-          ;; k-sponge-squeeze is defined.
-          ;; The following is adequate for f = KECCAK-p[1600, 24]
-          ;; since |Z| = 1088 and d is 256.
-          ;; That is, for now the loop in Steps 8-10 is executed only once.
-          (let ((Z (slice (- r 1) 0 S)))
-            (slice (- d 1) 0 Z)))))))
+          ;; Steps 7 and 8, then Steps 9 and 10 in k-sponge-squeeze.
+          (k-sponge-squeeze b r nrounds d r (slice (- r 1) 0 S) S))))))
 
 ;; For reference:
 ;; keccak-256 does (keccak-c 512 M 256)
@@ -1636,9 +1654,12 @@
 ;; if you want to match FIPS 202.
 
 ;; N is input bit string (as a list of bits), d is output size in bits
+;; FIPS 202 Section 4 (p. 18): "The rate r is a positive integer that is
+;; strictly less than the width b.  The capacity, denoted by c, is the
+;; positive integer b-r."
 (defun keccak-c (c N d)
   (declare (type (integer 0 *) d)
-           (type (integer 0 1599) c)
+           (type (integer 1 1599) c)
            (xargs :guard (bit-listp n)))
   (k-sponge 1600 (- 1600 c) 24 N d))
 
@@ -1684,7 +1705,7 @@
 ;; --------------------------------
 ;; Main bit-oriented hash functions.
 
-;; These are the functions that are closest to IFIPS 202
+;; These are the functions that are closest to FIPS 202
 ;; in terms of the input and output data types.
 
 (defund keccak-224 (M)
@@ -1801,7 +1822,7 @@
 
 ;; --------------------------------
 ;; Main byte-oriented hash functions.
-;; These are also implied by FIPS 2012.
+;; These are also implied by FIPS 202.
 
 (defund keccak-224-bytes (bytes)
   (declare (xargs :guard (and (true-listp bytes)
@@ -1950,7 +1971,7 @@
 
 ;; For each of these functions:
 ;; M is a list of bytes
-;; It returns a list of bits.
+;; It returns a list of bytes.
 
 (defun sha3-224-bytes (bytes)
   (declare (xargs :guard (and (true-listp bytes)
