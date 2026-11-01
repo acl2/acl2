@@ -1072,7 +1072,7 @@
 
 ;degenerate case?
             get-field-of-nth-new-ad-same-heap
-            initialize-one-dim-array-of-myif
+            initialize-one-dim-array-of-myif ; rename -- which arg?
             get-field-of-myif2
             get-field-of-myif
             new-ad-of-myif
@@ -1286,8 +1286,6 @@
 ;;     ;; g-of-g-of-set-field-when-pairs-different
 ;; ;    g-of-initialize-2d-array
 ;; ;    g-of-g-contents-of-initialize-2d-array-sub-array
-;;     ;; jvm::g-of-initialize-one-dim-array-irrel ;drop?
-;;     ;; jvm::g-of-initialize-one-dim-array            ;drop?
 ;;     ;; g-of-g-of-set-field-same
 ;; ; g-of-g-contents-of-initialize-2d-array-same
 ;;     ;; g-of-set-field-irrel
