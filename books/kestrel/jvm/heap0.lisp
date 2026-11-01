@@ -736,7 +736,7 @@
 ;;                   (memberp x lst))))
 
 
-;; (defthm new-ad-not-bound-helper2-better
+;; (defthm not-in-of-new-ad-aux-same-better
 ;;   (implies (case-split (sets::setp ad-set))
 ;;            (equal (memberp (new-ad-aux ad-set current-try) ad-set)
 ;;                   nil))
@@ -760,14 +760,14 @@
 ;;   (equal (sets::in (new-ad ad-list) ad-list)
 ;;          nil)
 ;;   :hints (("Goal" :in-theory (enable new-ad
-;;                                      new-ad-not-bound-helper2))))
+;;                                      not-in-of-new-ad-aux-same))))
 
 
 ;; (defthm new-ad-not-memberp-dom
 ;;   (equal (memberp (new-ad dom) dom)
 ;;          nil)
 ;;   :hints (("Goal" :in-theory (enable new-ad
-;;                                      new-ad-not-bound-helper2-better))))
+;;                                      not-in-of-new-ad-aux-same-better))))
 
 ;; (defthm new-ad-not-memberp
 ;;   (implies (sublistp list (dom heap))
@@ -1015,8 +1015,8 @@
 ;; (local (defthm new-ad-not-bound-helper3
 ;;        (implies (sets::subset bound-adrs bound-adrs2)
 ;;                 (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
-;;        :hints (("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
-;;                 :use (:instance new-ad-not-bound-helper2
+;;        :hints (("Goal" :in-theory (disable NOT-IN-OF-NEW-AD-AUX-SAME)
+;;                 :use (:instance not-in-of-new-ad-aux-same
 ;;                                        (ad-set bound-adrs2))))))
 
 

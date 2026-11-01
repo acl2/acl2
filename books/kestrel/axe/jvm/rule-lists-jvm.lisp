@@ -108,7 +108,7 @@
     ;;    n-new-ads-becomes-n-new-ads2 ;bozo put this in a list of heap rules? ;;tue jul 28 21:01:06 2015
 
     nth-new-ad-not-in-ads ;bozo why did this help (see dag2 below for a small example)? maybe something about not being able to resolve if tests?
-    new-ad-not-memberp-ads
+    not-in-of-new-ad-same
 
     not-equal-nth-new-ad-when-bound
     not-equal-nth-new-ad-when-bound-alt

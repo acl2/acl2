@@ -52,10 +52,8 @@
            :in-theory (disable G-WHEN-NOT-IN-RKEYS G-IFF-GEN G-OF-NIL-IS-NIL)
            )))
 
-(in-theory (disable NTH-NEW-AD2-COLLECT))
-
-(local (in-theory (disable SET::PICK-A-POINT-SUBSET-STRATEGY SET::DOUBLE-CONTAINMENT)))
-(local (in-theory (disable LIST::2SET
+(local (in-theory (disable SET::PICK-A-POINT-SUBSET-STRATEGY SET::DOUBLE-CONTAINMENT
+                           LIST::2SET
                            ;; LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
                            ;; LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
                            ;; LIST::MEMBER-equal-IS-MEMBERP-PROPOSITIONALLY
@@ -97,7 +95,7 @@
 ;;    (equal (n-new-ads n dom)
 ;;           (n-new-ads2 n dom))))
 
-(in-theory (disable n-new-ads-becomes-n-new-ads2))
+(in-theory (disable n-new-ads-becomes-n-new-ads2)) ; todo
 
 (defthm nth-of-n-new-ads2
   (implies (and (natp n) (natp m) (< n m) (<= 0 n))

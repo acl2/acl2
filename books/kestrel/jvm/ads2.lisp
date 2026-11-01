@@ -61,47 +61,6 @@
 ;;   :hints (("Goal" :in-theory (e/d (memberp nth) (NTH-OF-CDR
 ;;                                                        )))))
 
-;the addresses now come in in a set (because rkeys returns a set)
-;returns the smallest integer >= current-try which is not in ads
-;prove that property?
-(defund new-ad-aux (ads current-try)
-  (declare (xargs :measure (set::cardinality ads)
-                  :hints (("goal" :in-theory (disable ;DELETE-FROM-SET-IS-JUST-REMOVE
-                                              )))
-                  :guard (and (acl2-numberp current-try)
-                              (set::setp ads))))
-  (if (not (set::in current-try ads))
-      current-try
-    (new-ad-aux (set::delete current-try ads)
-                (+ 1 current-try))))
-
-(defthmd new-ad-not-bound-helper
-  (<= current-try (new-ad-aux ads current-try))
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
-(defthm integerp-of-new-ad-aux
-  (implies (integerp current-try)
-           (integerp (new-ad-aux ads current-try)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
-
-;drop?
-(defthm new-ad-aux-bound
-  (implies (integerp start)
-           (<= start (new-ad-aux ads start)))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
-           :in-theory (enable NEW-AD-aux))))
-
-(defthm new-ad-aux-<=-new-ad-aux-when-subset
-  (implies (and (set::subset ads ads2)
-                (integerp start))
-           (<= (new-ad-aux ads start)
-               (new-ad-aux ads2 start)))
-  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
-           :in-theory (enable new-ad-aux))))
-
 (defthm new-ad-aux-of-insert-irrel
   (implies (and (< ad current-try)
                 (natp ad)
@@ -140,53 +99,9 @@
 
 ;; todo: there is some redundant stuff here:
 
-;ads is a set of addresses
-;won't bind an adr which is in used-adrs or which is bound in the heap
-;Takes a set of adresses and returns a fresh address not in that list.
-;should this setify its argument before passing it to new-ad-aux?
-(defund new-ad (ads)
-  (declare (xargs :guard (set::setp ads)))
-  (new-ad-aux ads 0))
-
 (defthmd new-ad-recollapse
   (equal (new-ad-aux ads 0)
          (new-ad ads))
-  :hints (("Goal" :in-theory (enable new-ad))))
-
-(defthm new-ad-non-negative
-  (<= 0 (new-ad ads))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable new-ad new-ad-not-bound-helper))))
-
-(defthm integerp-of-new-ad
-  (integerp (new-ad ads))
-  :rule-classes (:rewrite :type-prescription))
-
-(defthm natp-of-new-ad
-  (natp (new-ad ads)))
-
-(defthm not-equal-new-ad-when-bound
-  (implies (set::in x ads)
-           (equal (equal x (new-ad ads))
-                  nil)))
-
-(defthm new-ad-of-sfix
-  (equal (new-ad (set::sfix ads))
-         (new-ad ads))
-  :hints (("Goal" :in-theory (enable new-ad))))
-
-(defthm equal-new-ad-nil
-  (equal (equal (new-ad ads) nil)
-         nil))
-
-(defthm equal-new-ad-nil2
-  (equal (equal nil (new-ad ads))
-         nil))
-
-;gen?
-(defthm new-ad-subset-bound
-  (<= (new-ad ads)
-      (new-ad (set::insert (new-ad ads) ads)))
   :hints (("Goal" :in-theory (enable new-ad))))
 
 ;;;

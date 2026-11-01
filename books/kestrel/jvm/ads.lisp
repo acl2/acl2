@@ -106,9 +106,8 @@
   :hints (("Goal" :in-theory (enable new-ad-aux))))
 
 ;strengthen to memberp?
-;rename?
 ;localize?
-(defthm new-ad-not-bound-helper2
+(defthm not-in-of-new-ad-aux-same
   (not (set::in (new-ad-aux ads current-try) ads))
   :hints (("subgoal *1/2"
            :use (:instance new-ad-not-bound-helper
@@ -117,6 +116,22 @@
           ("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
                                          )))))
+
+;drop?
+(defthm new-ad-aux-bound
+  (implies (integerp start)
+           (<= start (new-ad-aux ads start)))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
+                   :in-theory (enable NEW-AD-aux))))
+
+(defthm new-ad-aux-<=-new-ad-aux-when-subset
+  (implies (and (set::subset ads ads2)
+                (integerp start))
+           (<= (new-ad-aux ads start)
+               (new-ad-aux ads2 start)))
+  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
+           :in-theory (enable new-ad-aux))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -139,11 +154,41 @@
 (defthm natp-of-new-ad
   (natp (new-ad ads)))
 
+(defthm addressp-of-new-ad
+  (addressp (new-ad ads))
+  :hints (("Goal" :in-theory (enable addressfix))))
+
+(defthm addressfix-of-new-ad
+  (equal (addressfix (new-ad ads))
+         (new-ad ads))
+  :hints (("Goal" :in-theory (enable addressfix))))
+
 ;The key property of NEW-AD.
 ;rename
-(defthm new-ad-not-memberp-ads
+(defthm not-in-of-new-ad-same
   (not (set::in (new-ad ads) ads))
   :hints (("Goal" :in-theory (enable new-ad))))
+
+(defthm new-ad-of-sfix
+  (equal (new-ad (set::sfix ads))
+         (new-ad ads))
+  :hints (("Goal" :in-theory (enable new-ad new-ad-aux))))
+
+;rename
+(defthm not-equal-new-ad-when-bound
+  (implies (set::in x ads)
+           (not (equal x (new-ad ads)))))
+
+;rename
+(defthm not-equal-new-ad-when-bound-alt
+  (implies (set::in x ads)
+           (not (equal (new-ad ads) x))))
+
+(defthm equal-new-ad-nil
+  (not (equal (new-ad ads) nil)))
+
+(defthm equal-new-ad-nil2
+  (not (equal nil (new-ad ads))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,78 +202,20 @@
       (new-ad ads)
     (nth-new-ad (+ -1 n) (set::insert (new-ad ads) ads))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defthm addressp-of-nth-new-ad
+  (addressp (nth-new-ad n ads))
+  :hints (("Goal" :in-theory (enable addressfix))))
 
-;; (defun n-new-ads (n ads)
-;;   (if (zp n)
-;;       nil ;emptyset
-;;     (set::insert (nth-new-ad n ads)
-;;                  (n-new-ads (+ -1 n) ads))))
-
-;BOZO write this using sets as above?  did we already abandon that idea?
-;returns a list
-;inefficient!
-(defun n-new-ads-aux (n ads)
-  (declare (type (integer 0 *) n)
-           (xargs :guard (set::setp ads)))
-  (if (zp n)
-      nil ;empty list
-    (cons (nth-new-ad n ads)
-          (n-new-ads-aux (+ -1 n) ads))))
-
-;returns a list
-;inefficient!
-(defund n-new-ads (n ads)
-  (declare (type (integer 0 *) n)
-           (xargs :guard (set::setp ads)))
-  (reverse-list (n-new-ads-aux n ads)))
-
-;returns a list
-;fixme numbering starts at 1?
-(defun new-ads-slice (start end ads)
-  (declare (type (integer 1 *) start end)
-           (xargs :guard (set::setp ads)))
-  (nthcdr (+ -1 start) (n-new-ads end ads)))
-
-;rename
-(defthm in-of-nth-new-ad-and-n-new-ads
-  (implies (and (integerp n)
-                (< 0 n))
-           (memberp (NTH-NEW-AD n ADS) (N-NEW-ADS n ADS)))
-  :hints (("Goal" :expand ((N-NEW-ADS-AUX 1 ADS)
-                           (N-NEW-ADS 1 ADS))
-           :in-theory (e/d (N-NEW-ADS) (reverse)))))
+(defthm addressfix-of-nth-new-ad
+  (equal (addressfix (nth-new-ad n ads))
+         (nth-new-ad n ads))
+  :hints (("Goal" :in-theory (enable addressfix))))
 
 (defthm nth-new-ad-of-1
   (equal (nth-new-ad 1 ads)
          (new-ad ads))
   :hints (("Goal"
            :in-theory (enable nth-new-ad))))
-
-(defthm in-of-new-ad-and-n-new-ads
-  (implies (and (integerp n)
-                (< 0 n))
-           (memberp (NEW-AD ADS) (N-NEW-ADS n ADS)))
-  :hints (("Goal" :expand ((N-NEW-ADS-AUX 1 ADS)
-                           (N-NEW-ADS 1 ADS))
-           :in-theory (enable N-NEW-ADS))))
-
-
-;drop?
-(defthm new-ad-aux-bound
-  (implies (integerp start)
-           (<= start (new-ad-aux ads start)))
-  :rule-classes (:rewrite :linear)
-  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
-           :in-theory (enable NEW-AD-aux))))
-
-(defthm new-ad-aux-<=-new-ad-aux-when-subset
-  (implies (and (set::subset ads ads2)
-                (integerp start))
-           (<= (new-ad-aux ads start)
-               (new-ad-aux ads2 start)))
-  :hints (("Goal"  :do-not '(generalize eliminate-destructors)
-           :in-theory (enable new-ad-aux))))
 
 ;gen?
 (defthm new-ad-subset-bound
@@ -243,54 +230,32 @@
                   (nth-new-ad (+ 1 n) ads)))
   :hints (("Goal" :in-theory (enable nth-new-ad))))
 
-
-(defthm new-ad-of-sfix
-  (equal (new-ad (set::sfix ads))
-         (new-ad ads))
-  :hints (("Goal" :in-theory (enable new-ad new-ad-aux))))
-
-(defthm not-equal-new-ad-when-bound
-  (implies (set::in x ads)
-           (equal (equal x (new-ad ads))
-                  nil)))
-
-(defthm not-equal-new-ad-when-bound-alt
-  (implies (set::in x ads)
-           (not (equal (new-ad ads) x))))
-
+;rename
 (defthm equal-nth-new-ad-nil
-  (equal (equal (nth-new-ad n ads) nil)
-         nil))
+  (not (equal (nth-new-ad n ads) nil)))
 
+;rename
 (defthm equal-nth-new-ad-nil2
-  (equal (equal nil (nth-new-ad n ads))
-         nil))
+  (not (equal nil (nth-new-ad n ads))))
 
-
-
-
-
+;rename
 (defthm nth-new-ad-not-in-ads
-  (equal (set::in (nth-new-ad n ads) ads)
-         nil)
+  (not (set::in (nth-new-ad n ads) ads))
   :hints (("Goal" :in-theory (enable nth-new-ad))))
-
 
 (defthm nth-new-ad-collect
   (equal (new-ad (set::insert (new-ad ads) ads))
          (nth-new-ad 2 ads))
   :hints (("Goal" :expand (nth-new-ad 2 ads)
-           :in-theory (enable nth-new-ad))))
+                  :in-theory (enable nth-new-ad))))
 
 (defthm not-equal-nth-new-ad-when-bound
   (implies (set::in x ads)
-           (equal (equal x (nth-new-ad n ads))
-                  nil)))
+           (not (equal x (nth-new-ad n ads)))))
 
 (defthm not-equal-nth-new-ad-when-bound-alt
   (implies (set::in x ads)
-           (equal (equal (nth-new-ad n ads) x)
-                  nil)))
+           (not (equal (nth-new-ad n ads) x))))
 
 ;sort of lets us keep from deciding which we prefer
 (defthm new-ad-equal-nth-new-ad
@@ -298,34 +263,13 @@
          t)
   :hints (("Goal" :in-theory (enable nth-new-ad))))
 
-(defthm n-new-ads-of-0
-  (equal (n-new-ads 0 ads)
-         nil)
-  :hints (("Goal" :in-theory (enable n-new-ads))))
-
-
-(defthm equal-new-ad-nil
-  (equal (equal (new-ad ads) nil)
-         nil))
-
-(defthm equal-new-ad-nil2
-  (equal (equal nil (new-ad ads))
-         nil))
-
-
-
 ;strengthen?
 (defthm new-ad-not-equal-nth-new-ad
   (implies (and (integerp n)
                 (< 1 n))
            (not (equal (new-ad ads) (nth-new-ad n ads))))
   :hints (("Goal" :expand (nth-new-ad 2 ads)
-           :in-theory (e/d (nth-new-ad) (nth-new-ad-of-insert-new-ad NTH-NEW-AD-COLLECT)))))
-
-(defthm consp-of-n-new-ads
-  (equal (consp (n-new-ads n ads))
-         (not (zp n)))
-  :hints (("Goal" :in-theory (enable n-new-ads))))
+                  :in-theory (e/d (nth-new-ad) (nth-new-ad-of-insert-new-ad NTH-NEW-AD-COLLECT)))))
 
 (defthm equal-nth-new-ad-nth-new-ad
   (implies (and (posp m)
@@ -334,28 +278,25 @@
                   (equal n m)))
   :hints (("Goal" :in-theory (e/d (NTH-NEW-AD) (NTH-NEW-AD-OF-INSERT-NEW-AD)))))
 
-(defthm not-memberp-nth-new-ad-n-new-ads
-  (IMPLIES (AND (> m n)
-                (natp n)
-                (natp m)
-                )
-           (not (MEMBERP (NTH-NEW-AD m ADS) (N-NEW-ADS-AUX n ADS))))
-  :hints (("Goal" :in-theory (enable N-NEW-ADS-AUX))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm no-duplicatesp-equal-of-n-new-ads
-  (no-duplicatesp-equal (n-new-ads n ads))
-  :hints (("Goal" :in-theory (enable n-new-ads ;no-duplicatesp-equal-of-cons
-                                     ))))
+;; (defun n-new-ads (n ads)
+;;   (if (zp n)
+;;       nil ;emptyset
+;;     (set::insert (nth-new-ad n ads)
+;;                  (n-new-ads (+ -1 n) ads))))
 
-(defthm len-of-n-new-ads
-  (implies (natp n)
-           (equal (len (n-new-ads n ads))
-                  n))
-  :hints (("Goal" :in-theory (enable n-new-ads))))
-
-(defthm true-listp-of-n-new-ads
-  (true-listp (n-new-ads n ads))
-  :hints (("Goal" :in-theory (enable n-new-ads))))
+;BOZO write this using sets as above?  did we already abandon that idea?
+;returns a list
+;inefficient!
+;disable?
+(defun n-new-ads-aux (n ads)
+  (declare (type (integer 0 *) n)
+           (xargs :guard (set::setp ads)))
+  (if (zp n)
+      nil ;empty list
+    (cons (nth-new-ad n ads)
+          (n-new-ads-aux (+ -1 n) ads))))
 
 ;switch to use last-elem
 (defthm car-last-of-n-new-ads-aux
@@ -374,6 +315,81 @@
          (and (integerp n)
               (< 0 n)))
   :hints (("Goal" :expand ((N-NEW-ADS-AUX 1 ADS)))))
+
+(defthm not-memberp-nth-new-ad-n-new-ads
+  (IMPLIES (AND (> m n)
+                (natp n)
+                (natp m)
+                )
+           (not (MEMBERP (NTH-NEW-AD m ADS) (N-NEW-ADS-AUX n ADS))))
+  :hints (("Goal" :in-theory (enable N-NEW-ADS-AUX))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;returns a list
+;inefficient!
+(defund n-new-ads (n ads)
+  (declare (type (integer 0 *) n)
+           (xargs :guard (set::setp ads)))
+  (reverse-list (n-new-ads-aux n ads)))
+
+;rename
+(defthm in-of-nth-new-ad-and-n-new-ads
+  (implies (and (integerp n)
+                (< 0 n))
+           (memberp (NTH-NEW-AD n ADS) (N-NEW-ADS n ADS)))
+  :hints (("Goal" :expand ((N-NEW-ADS-AUX 1 ADS)
+                           (N-NEW-ADS 1 ADS))
+           :in-theory (e/d (N-NEW-ADS) (reverse)))))
+
+(defthm in-of-new-ad-and-n-new-ads
+  (implies (and (integerp n)
+                (< 0 n))
+           (memberp (NEW-AD ADS) (N-NEW-ADS n ADS)))
+  :hints (("Goal" :expand ((N-NEW-ADS-AUX 1 ADS)
+                           (N-NEW-ADS 1 ADS))
+                  :in-theory (enable N-NEW-ADS))))
+
+(defthm n-new-ads-of-0
+  (equal (n-new-ads 0 ads)
+         nil)
+  :hints (("Goal" :in-theory (enable n-new-ads))))
+
+(defthm consp-of-n-new-ads
+  (equal (consp (n-new-ads n ads))
+         (not (zp n)))
+  :hints (("Goal" :in-theory (enable n-new-ads))))
+
+(defthm no-duplicatesp-equal-of-n-new-ads
+  (no-duplicatesp-equal (n-new-ads n ads))
+  :hints (("Goal" :in-theory (enable n-new-ads ;no-duplicatesp-equal-of-cons
+                                     ))))
+
+(defthm len-of-n-new-ads
+  (implies (natp n)
+           (equal (len (n-new-ads n ads))
+                  n))
+  :hints (("Goal" :in-theory (enable n-new-ads))))
+
+(defthm true-listp-of-n-new-ads
+  (true-listp (n-new-ads n ads))
+  :hints (("Goal" :in-theory (enable n-new-ads))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;returns a list
+;fixme numbering starts at 1?
+(defun new-ads-slice (start end ads)
+  (declare (type (integer 1 *) start end)
+           (xargs :guard (set::setp ads)))
+  (nthcdr (+ -1 start) (n-new-ads end ads)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+
+
 
 ;; (defthm n-new-ads-2-recollect
 ;;   (equal (set::insert (new-ad ads) (set::insert (nth-new-ad 2 ads) ads))
@@ -810,23 +826,8 @@
 ;;          (nfix n))
 ;;   :hints (("Goal" :in-theory (enable n-new-ads-better))))
 
-(defthm addressfix-of-new-ad
-  (equal (addressfix (new-ad ads))
-         (new-ad ads))
-  :hints (("Goal" :in-theory (enable addressfix))))
 
-(defthm addressfix-of-nth-new-ad
-  (equal (addressfix (nth-new-ad n ads))
-         (nth-new-ad n ads))
-  :hints (("Goal" :in-theory (enable addressfix))))
 
-(defthm addressp-of-new-ad
-  (addressp (new-ad ads))
-  :hints (("Goal" :in-theory (enable addressfix))))
-
-(defthm addressp-of-nth-new-ad
-  (addressp (nth-new-ad n ads))
-  :hints (("Goal" :in-theory (enable addressfix))))
 
 ;fixme handle all this better!
 ;sort the inserts, collapse into unions, etc.
