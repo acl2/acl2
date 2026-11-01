@@ -13177,7 +13177,9 @@ way to split up large ACL2 developments into separate modules."
   :long "<p>This is a system function that determine whether a failed match of
   a monitored rule constitutes a near miss.</p>
 
-  <p><b>Note:</b>This function is attachable (see @(see defattach)).</p>
+  <p><b>Note:</b>This function is attachable (see @(see defattach)).  See @(see
+  monitor), specifically the section &ldquo;Criteria for Breaks&rdquo;, for the
+  default behavior of this function when monitoring a rule.</p>
 
   @({
   General Form:
