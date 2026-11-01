@@ -667,8 +667,8 @@
 					counter
 					x))))
   :hints (("Goal"
-	   :in-theory (enable-disable (limited-integers-are-standard)
-				      (taylor-exp-term)))))
+	   :in-theory (e/d (limited-integers-are-standard)
+			   (taylor-exp-term)))))
 
 ;; Now, we define a different way of getting the x^n/n! terms.  This
 ;; one is based on a recurrence relation.
@@ -891,7 +891,7 @@
   :hints (("Goal" :use ((:instance large-if->-large
 				   (x (norm (taylor-exp-term-2u x counter)))
 				   (y 1)))
-	   :in-theory (enable-disable (abs) (large-if->-large)))))
+	   :in-theory (e/d (abs) (large-if->-large)))))
 
 ;; With a little more work, we can get that the upper sums are in fact
 ;; small.  The way we do this is [x^n/n!] = x/n * [x^{n-1}/(n-1)!],
@@ -917,7 +917,7 @@
 	   :use ((:instance large-if->-large
 			    (x counter)
 			    (y (norm x))))
-	   :in-theory (enable-disable (abs) (large-if->-large)))))
+	   :in-theory (e/d (abs) (large-if->-large)))))
 
 ;; Repeating the argument above, only this time with the product of
 ;; the lower and upper sums, we get that x^n/n! is also small.  We are
@@ -1739,7 +1739,7 @@
 	     :use ((:instance large->-non-large
 			      (x counter)
 			      (y (next-integer (norm x)))))
-	     :in-theory (enable-disable (abs) (large->-non-large))))))
+	     :in-theory (e/d (abs) (large->-non-large))))))
 
  ;; And so we can prove that the second part of the sumlist-norm of
  ;; the Taylor expansion of e^x is small for small values of x.
@@ -1754,7 +1754,7 @@
    :hints (("Goal"
 	    :use ((:instance small-sumlist-norm-taylor-exp-2
 			     (prev (car (taylor-exp-list nterms counter x)))))
-	    :in-theory (enable-disable
+	    :in-theory (e/d
 			(taylor-exp-list-2-=-taylor-exp-list)
 			(small-sumlist-norm-taylor-exp-2
 			 taylor-exp-list)))))
