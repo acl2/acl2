@@ -29,6 +29,7 @@
 ; conflicts with other books.  These qualities do not prevent inclusion here.
 ; However, these skipped books require additional effort to include them.
 ; Converting any such SKIP comment to an `INCLUDE-BOOK' form is encouraged.
+
 (ifndef "ACL2_HAS_REALS"
         (include-book "abnf/top")
         :endif)
@@ -42,14 +43,18 @@
 ; arm -- SKIP
 ; async -- SKIP
 (include-book "avr-isa/avr8_isa_lemmas")
-(include-book "bls12-377-curves/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "bls12-377-curves/top")
+        :endif)
 (include-book "cache-coherence/top")
 (ifdef "ACL2_HAS_REALS"
        (include-book "cholesky/chol")
        :endif)
 (include-book "codewalker/codewalker")
 ; concurrent-programs -- SKIP
-(include-book "curve25519/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "curve25519/top")
+        :endif)
 ; die-hard-bottle-game -- SKIP:
 ;; The proofs in die-hard-bottle-game are not robust to the reordering in the
 ;; prover induced by changing packages.
@@ -60,7 +65,9 @@
 ; fields -- SKIP
 (include-book "fifo/fifo-list-based")
 ; filesystems -- SKIP
-(include-book "filesystems/utilities/cpp-syntax/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "filesystems/utilities/cpp-syntax/top")
+        :endif)
 ; fm9001 -- SKIP
 ; fm9801 -- SKIP
 ; gaussian-elim-solvers -- SKIP
@@ -80,9 +87,13 @@
 ; oracle -- SKIP
 ; paco -- SKIP
 ; pdf-parser -- SKIP
-(include-book "pfcs/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "pfcs/top")
+        :endif)
 ; pltpa -- SKIP
-(include-book "poseidon/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "poseidon/top")
+        :endif)
 (ifndef "ACL2_HAS_REALS"
         (ifndef "ACL2_HAS_PARALLEL"
                 (include-book "python/embedding/top")
@@ -104,7 +115,9 @@
 (ifndef "ACL2_HAS_REALS"
         (include-book "set-theory/top")
         :endif)
-(include-book "shnf/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "shnf/top")
+        :endif)
 ; Do not include sidekick/top here.  That book is a wrapper for sidekick/server
 ; that also starts the server.
 (ifndef "ACL2_HAS_REALS"
@@ -128,4 +141,6 @@
 ; vescmul -- SKIP
 ; vwsim -- SKIP, non-acl2r
 (include-book "wp-gen/wp-gen")
-(include-book "x86isa/top")
+(ifndef "ACL2_HAS_REALS"
+        (include-book "x86isa/top")
+        :endif)

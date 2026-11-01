@@ -16,11 +16,15 @@
      (ifndef "ACL2_HAS_REALS"
              (include-book "aleo/top")
              :endif)
-     (include-book "bls12-377-curves/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "bls12-377-curves/top")
+             :endif)
      (include-book "execloader/top")
      (include-book "farray/farray")
      (include-book "fifo/fifo-list-based")
-     (include-book "filesystems/utilities/cpp-syntax/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "filesystems/utilities/cpp-syntax/top")
+             :endif)
      (include-book "irv/top")
      (include-book "leftist-trees/top")
      (include-book "milawa/doc")
@@ -28,8 +32,12 @@
      (ifndef "ACL2_HAS_REALS"
              (include-book "omp/top-doc")
              :endif)
-     (include-book "pfcs/top")
-     (include-book "poseidon/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "pfcs/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "poseidon/top")
+             :endif)
      (ifndef "ACL2_HAS_REALS"
              (include-book "regex/regex-ui")
              :endif)
@@ -39,7 +47,9 @@
      (include-book "sat/dimacs-reader/reader")
      (include-book "sat/proof-checker-array/top")
      (include-book "sat/proof-checker-itp13/top")
-     (include-book "set-theory/doc")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "set-theory/doc")
+             :endif)
      (ifndef "ACL2_HAS_REALS"
              (include-book "sidekick/server")
              :endif)
@@ -54,7 +64,9 @@
      (include-book "vescmul/doc")
      (include-book "vwsim/vwsim-doc")
      (include-book "wp-gen/wp-gen")
-     (include-book "x86isa/doc")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "x86isa/doc")
+             :endif)
 
 
      (defxdoc projects
