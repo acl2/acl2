@@ -1544,6 +1544,7 @@
            (type (integer 0 *) r b)
            (xargs :measure (nfix (+ 1 (- max-i i)))
                   :guard (and (member b *k-b-vals*)
+                              (< r b)
                               (bit-listp rest-of-p))
                   :guard-hints (("Goal" :in-theory (enable k-string-p)))))
   (if (or (not (natp i))
@@ -1579,6 +1580,7 @@
            (type (integer 0 *) b d zlen)
            (type (integer 1 *) r)
            (xargs :guard (and (member b *k-b-vals*)
+                              (< r b)
                               (k-string-p b s))
                   :measure (nfix (- d zlen))))
   (if (or (not (posp r))
@@ -1604,6 +1606,7 @@
            (type (integer 0 *) b d)
            (type (integer 1 *) r)
            (xargs :guard (and (member b *k-b-vals*)
+                              (< r b)
                               (bit-listp n))))
   (let ((P (append N (k-pad10*1 r (len N))))) ; Step 1
     (let ((num-chunks (/ (len P) r))) ; Step 2
@@ -1651,9 +1654,12 @@
 ;; if you want to match FIPS 202.
 
 ;; N is input bit string (as a list of bits), d is output size in bits
+;; FIPS 202 Section 4 (p. 18): "The rate r is a positive integer that is
+;; strictly less than the width b.  The capacity, denoted by c, is the
+;; positive integer b-r."
 (defun keccak-c (c N d)
   (declare (type (integer 0 *) d)
-           (type (integer 0 1599) c)
+           (type (integer 1 1599) c)
            (xargs :guard (bit-listp n)))
   (k-sponge 1600 (- 1600 c) 24 N d))
 
