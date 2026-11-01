@@ -25,6 +25,7 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (defthm g-of-new-ad
   (equal (g (new-ad (rkeys heap)) heap)

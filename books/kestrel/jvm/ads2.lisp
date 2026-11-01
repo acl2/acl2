@@ -138,6 +138,8 @@
          (new-ad-aux ads current-try))
   :hints (("Goal" :in-theory (enable new-ad-aux))))
 
+;; todo: there is some redundant stuff here:
+
 ;ads is a set of addresses
 ;won't bind an adr which is in used-adrs or which is bound in the heap
 ;Takes a set of adresses and returns a fresh address not in that list.
@@ -162,25 +164,6 @@
 
 (defthm natp-of-new-ad
   (natp (new-ad ads)))
-
-;strengthen to memberp?
-(defthm new-ad-not-bound-helper2
-  (equal (set::in (new-ad-aux ads current-try) ads)
-         nil)
-  :hints (("subgoal *1/2"
-           :use (:instance new-ad-not-bound-helper
-                           (ads (set::delete CURRENT-TRY ADS))
-                           (current-try (+ 1 current-try))))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
-                                         )))))
-
-;The key property of NEW-AD.
-;rename
-(defthm new-ad-not-memberp-ads
-  (equal (set::in (new-ad ads) ads)
-         nil)
-  :hints (("Goal" :in-theory (enable new-ad))))
 
 (defthm not-equal-new-ad-when-bound
   (implies (set::in x ads)

@@ -20,9 +20,9 @@
 
 ;FIXME what about issues of addresses becoming unbound if we set values to nil?
 
-;fixme include less?
+;todo: include less?
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (local (include-book "kestrel/lists-light/memberp2" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -32,16 +32,8 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (include-book "kestrel/sets/sets" :dir :system)
-
-
-;move
-;may be safer that take-of-cons
-(defthm take-of-cons-when-posp
-  (implies (posp n)
-           (equal (take n (cons a x))
-                  (cons a (take (+ -1 n) x))))
-  :hints (("Goal" :in-theory (enable take))))
 
 (defthm intersection-equal-of-singleton-iff-arg2
   (iff (intersection-equal x (list a))
@@ -52,11 +44,6 @@
   (equal (no-duplicatesp-equal (reverse-list x))
          (no-duplicatesp-equal x))
   :hints (("Goal" :in-theory (enable reverse-list no-duplicatesp-equal))))
-
-(defthm no-duplicatesp-equal-of-nthcdr
-  (implies (no-duplicatesp-equal x)
-           (no-duplicatesp-equal (nthcdr n x)))
-  :hints (("Goal" :in-theory (enable no-duplicatesp-equal nthcdr))))
 
 ;; An address in the JVM heap is just a natural number:
 ;FIXME Should NULL be an addressp?
@@ -78,19 +65,21 @@
   (nfix item))
 
 (defthm addressp-of-addressfix
-  (acl2::addressp (addressfix item))
-  :hints (("Goal" :in-theory (enable acl2::addressp addressfix))))
+  (addressp (addressfix item))
+  :hints (("Goal" :in-theory (enable addressp addressfix))))
 
 (defthm addressfix-when-addressp
   (implies (addressp x)
            (equal (addressfix x)
                   x))
-  :hints (("Goal" :in-theory (enable acl2::addressp addressfix))))
+  :hints (("Goal" :in-theory (enable addressp addressfix))))
 
 (defthm equal-of-addressfix-same
   (equal (equal x (addressfix x))
          (addressp x))
   :hints (("Goal" :in-theory (enable addressfix))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;the addresses now come in in a set (because rkeys returns a set)
 ;returns the smallest integer >= current-try which is not in ads
@@ -116,7 +105,21 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable new-ad-aux))))
 
-;won't bind an adr which is in used-adrs or which is bound in the heap
+;strengthen to memberp?
+;rename?
+;localize?
+(defthm new-ad-not-bound-helper2
+  (not (set::in (new-ad-aux ads current-try) ads))
+  :hints (("subgoal *1/2"
+           :use (:instance new-ad-not-bound-helper
+                           (ads (set::delete CURRENT-TRY ADS))
+                           (current-try (+ 1 current-try))))
+          ("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
+                                         )))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;Takes a set of adresses and returns a fresh address not in that list.
 ;should this setify its argument before passing it to new-ad-aux?
 (defund new-ad (ads)
@@ -132,29 +135,17 @@
   (integerp (new-ad ads))
   :rule-classes (:rewrite :type-prescription))
 
-;fixme abstract natp to addressp?
+;todo: abstract natp to addressp?
 (defthm natp-of-new-ad
   (natp (new-ad ads)))
-
-;strengthen to memberp?
-(defthm new-ad-not-bound-helper2
-  (equal (set::in (new-ad-aux ads current-try) ads)
-         nil)
-  :hints (("subgoal *1/2"
-           :use (:instance new-ad-not-bound-helper
-                           (ads (set::delete CURRENT-TRY ADS))
-                           (current-try (+ 1 current-try))))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (new-ad-aux) (;DELETE-FROM-SET-IS-JUST-REMOVE
-                                         )))))
 
 ;The key property of NEW-AD.
 ;rename
 (defthm new-ad-not-memberp-ads
-  (equal (set::in (new-ad ads) ads)
-         nil)
+  (not (set::in (new-ad ads) ads))
   :hints (("Goal" :in-theory (enable new-ad))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;n should be 1 or greater (should we shift things to allow 0??)
 ;could define this by calling n-new-ads?
@@ -165,6 +156,8 @@
           (equal 1 n))
       (new-ad ads)
     (nth-new-ad (+ -1 n) (set::insert (new-ad ads) ads))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defun n-new-ads (n ads)
 ;;   (if (zp n)
@@ -197,7 +190,7 @@
            (xargs :guard (set::setp ads)))
   (nthcdr (+ -1 start) (n-new-ads end ads)))
 
-
+;rename
 (defthm in-of-nth-new-ad-and-n-new-ads
   (implies (and (integerp n)
                 (< 0 n))
@@ -206,8 +199,8 @@
                            (N-NEW-ADS 1 ADS))
            :in-theory (e/d (N-NEW-ADS) (reverse)))))
 
-(defthm NTH-NEW-AD-of-1
-  (equal (NTH-NEW-AD 1 ads)
+(defthm nth-new-ad-of-1
+  (equal (nth-new-ad 1 ads)
          (new-ad ads))
   :hints (("Goal"
            :in-theory (enable nth-new-ad))))
