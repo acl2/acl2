@@ -731,6 +731,8 @@
             jvm::get-field-of-initialize-one-dim-array-irrel-ad
             jvm::get-field-of-initialize-one-dim-array-irrel-field
             jvm::rkeys-of-initialize-one-dim-array
+            jvm::get-field-of-initialize-one-dim-array-of-set-field-irrel ; makes failures nicer
+            jvm::get-field-of-initialize-one-dim-array-of-set-fields-irrel ; makes failures nicer
 
             rkeys-of-myif ;move to a maps-rules list?
             jvm::decode-signed-non-neg
