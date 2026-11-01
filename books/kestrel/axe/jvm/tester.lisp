@@ -534,7 +534,8 @@
                                     nil ;; exception branches may be pruned below
                                     ))
        (assert-assumptions (assert-assumptions class-name))
-
+       ;; todo: think about these:
+       (user-assumptions assert-assumptions)
        (- (cw "(Unrolling code:~%"))
        ((mv erp dag & & & state)
         ;; TODO: Use assumptions here:
@@ -558,8 +559,7 @@
                                nil ; extra-assumption-rules ; consider adding support for this
                                nil ; rule-alists
                                monitor
-                               ;; todo: think about these:
-                               assert-assumptions ;; nil ;user-assumptions
+                               user-assumptions
                                t ;normalize-xors
                                classes-to-assume-initialized
                                nil ; ignore-exceptions
@@ -772,6 +772,7 @@
                      prune-approx
                      monitor
                      assume-object-params-non-null
+                     extra-classes
                      state)
   (declare (xargs :guard (and (jvm::class-namep class-name)
                               (or (eq :auto methods-to-test)
@@ -786,7 +787,8 @@
                               (count-hits-argp count-hits)
                               (prune-precise-optionp prune-precise)
                               (prune-approx-optionp prune-approx)
-                              (booleanp assume-object-params-non-null))
+                              (booleanp assume-object-params-non-null)
+                              (jvm::class-name-listp extra-classes))
                   :mode :program ; because of run-formal-tests-on-methods
                   :stobjs state))
   (b* ((- (cw "Running tester on:~% ~s0.~%~%" class-name))
@@ -814,7 +816,8 @@
        (class-info (lookup-equal class-name class-alist))
 
        (mentioned-classes (mentioned-classes-from-class-info class-info))
-       (mentioned-classes mentioned-classes
+       (mentioned-classes (append mentioned-classes
+                                  extra-classes)
                           ;; (remove-equal "java.lang.AssertionError" ; special case, we don't want to start creating the error objects (and that code may be provably unreachable once we try to prune), so we now we remove the class -- instead, we are trying to just not open NEW when this is the class
                           ;;               mentioned-classes)
                           )
@@ -895,7 +898,8 @@
                                 (prune-approx 't)
                                 (monitor 'nil)
                                 (print 'nil)
-                                (assume-object-params-non-null 't))
+                                (assume-object-params-non-null 't)
+                                (extra-classes 'nil))
   `(make-event-quiet (test-class-fn ,class-name
                                    ;;',assumptions
                                    ,methods
@@ -910,6 +914,7 @@
                                    ,prune-approx
                                    ,monitor
                                    ,assume-object-params-non-null
+                                   ,extra-classes
                                    state)))
 
 ;; Test all methods in the given file whose names start with "test" or
@@ -930,7 +935,8 @@
                                          (prune-approx 't) ; was called prune-branches-approximately
                                          (monitor 'nil)
                                          (print ':brief) ;(print 'nil)
-                                         (assume-object-params-non-null 't))
+                                         (assume-object-params-non-null 't)
+                                         (extra-classes 'nil))
   `(mv-let (erp event state)
      (test-class-fn ,class-name
                    ;;',assumptions
@@ -946,6 +952,7 @@
                    ,prune-approx
                    ,monitor
                    ,assume-object-params-non-null
+                   ,extra-classes
                    state)
      (declare (ignore erp event))
      (prog2$ (exit 0) ;; Prevent printing of stuff (NIL, a prompt, and "Bye.") before exiting
