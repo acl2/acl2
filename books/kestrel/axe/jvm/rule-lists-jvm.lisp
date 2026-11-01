@@ -1559,19 +1559,20 @@
             )
           (amazing-rules-spec-and-dag)))
 
-;;only used just below?
-(defun formal-unit-tester-extra-simplification-rules-no-boolif ()
-  (declare (xargs :guard t))
-  (set-difference-eq
-   (formal-unit-tester-extra-simplification-rules)
-   ;; since pruning doesn't know about booland/boolor/etc:
-   '(;myif-of-t-becomes-boolor
-     ;;MYIF-BECOMES-BOOLIF-T-ARG2
-     ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
-     ;myif-of-nil-becomes-booland
-     ;;MYIF-BECOMES-BOOLIF-AXE
-     )))
+;; ;;only used just below?
+;; (defun formal-unit-tester-extra-simplification-rules-no-boolif ()
+;;   (declare (xargs :guard t))
+;;   (set-difference-eq
+;;    (formal-unit-tester-extra-simplification-rules)
+;;    ;; since pruning doesn't know about booland/boolor/etc:
+;;    '(;myif-of-t-becomes-boolor
+;;      ;;MYIF-BECOMES-BOOLIF-T-ARG2
+;;      ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
+;;      ;myif-of-nil-becomes-booland
+;;      ;;MYIF-BECOMES-BOOLIF-AXE
+;;      )))
 
+;; todo: push these back to the unroller
 (defun formal-unit-tester-extra-lifting-rules ()
   (declare (xargs :guard t))
   (append '(;addressp-when-address-or-nullp-and-not-null-refp ;loops with address-or-nullp
@@ -1585,7 +1586,8 @@
             bv-array-if-same-branches-safe
             bv-array-read-of-bv-array-if
             )
-          (formal-unit-tester-extra-simplification-rules-no-boolif)))
+          ;;(formal-unit-tester-extra-simplification-rules-no-boolif)
+          (formal-unit-tester-extra-simplification-rules)))
 
 ;These should only be tried if the usual rules don't apply (constants are rare):
 (set-axe-rule-priority jvm::pc-opener 1)
