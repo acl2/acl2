@@ -959,7 +959,7 @@
    (xdoc::p
     "We wrap the Unicode character in this fixtype for more abstraction,
      and to facilitate the addition of restrictions on the character,
-     namely that the character cannot be @('>') or a new-line,
+     namely that the character cannot be a double quote or a new-line,
      but for now we do not capture this restriction."))
   ((code unichar))
   :pred q-char-p
@@ -1059,11 +1059,11 @@
      @('__imag__').
      The latter three are GCC extensions; see the ABNF grammar.
      For @(':alignof'), we keep track of the underscore variant;
-     note that the variant without underscores
+     note that the @(':none') variant of @(tsee keyword-uscores)
      represents the standard @('_Alignof'),
-     not the non-existing @('alignof'),
      while the other two represent @('__alignof') and @('__alignof__');
-     see the ABNF grammar."))
+     see the ABNF grammar.
+     The C23 @('alignof') spelling is not yet represented in this fixtype."))
   (:address ())
   (:indir ())
   (:plus ())
@@ -1530,11 +1530,11 @@
        For the same reason as @('sizeof'),
        we include an ambiguous case for @('_Alignof') (and keyword variants).
        The @(':alignof') case includes an indication of the underscore variant.
-       Note that the variant without underscores
+       Note that the @(':none') variant of @(tsee keyword-uscores)
        represents the standard @('_Alignof'),
-       not the non-existing @('alignof'),
        while the other two represent @('__alignof') and @('__alignof__');
        see the ABNF grammar.
+       The C23 @('alignof') spelling is not yet represented in this fixtype.
        Presumably, @('_Alignof') was added to the grammar
        after @('__alignof') and @('__alignof__') were GCC extensions.")
      (xdoc::p
@@ -1938,10 +1938,24 @@
       "We model @('typedef-name')
        by inlining the type name into the @(':typedef') case of this fixtype.")
      (xdoc::p
-      "We include the GCC extension variant keywords
+      "We include the GCC/Clang extension variant keywords
        @('__signed') and @('__signed__') of @('signed').
        An indicator of which variant is included
        in the @(':signed') case of this fixtype.")
+     (xdoc::p
+      "The @('uscore') flag in the @(':bool') case keeps track of the keyword:
+       @('t') for @('_Bool'); @('nil') for @('bool'), which is only in C23.")
+     (xdoc::p
+      "We include the GCC/Clang variant keywords
+       @('__complex') and @('__complex__') of @('_Complex').
+       An indicator of which variant is included
+       in the @(':complex') case of this fixtype.
+       Note that the @(':none') case of @(tsee keyword-uscores)
+       corresponds to @('_Complex'), which has an underscore,
+       but has no double underscores;
+       so @(tsee keyword-uscores) can be regarded as
+       indicating double (not single) underscores,
+       as in the @(':signed') summand of this fixtype.")
      (xdoc::p
       "We also include the GCC extension @('__int128'),
        which is a (non-standard) integer type: see "
@@ -1995,8 +2009,8 @@
     (:double ())
     (:signed ((uscores keyword-uscores-p)))
     (:unsigned ())
-    (:bool ())
-    (:complex ())
+    (:bool ((uscore bool)))
+    (:complex ((uscores keyword-uscores-p)))
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)
               (info any)))
@@ -3779,7 +3793,7 @@
     (xdoc::topstring
      (xdoc::p
       "These represent @('#else') directives,
-       and all the translation items that immediately follow the @('#elif'),
+       and all the translation items that immediately follow the @('#else'),
        until and excluding the @('#endif') that is at the same nesting level.
        This is used when these preprocessing constructs
        are preserved by our preprocessor,

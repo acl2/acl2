@@ -271,3 +271,46 @@ EM: The original content had commas separating items in each tuple.
 
 (acl2::assert!
  (run-haskoin-testcases *haskoin-tests-rfc-6979-ecdsa-secp256k1-sha-256*))
+
+
+
+;;; --------------------------------
+;;; Group 3
+;;; Using keccak-256 for the message hash, as Ethereum does.
+
+#||
+The expected signature was computed with OpenSSL 3.6:
+
+  printf abc | openssl dgst -keccak-256 -binary > digest.bin
+  openssl pkeyutl -sign -keyform DER -inkey key.der -in digest.bin \
+    -pkeyopt digest:sha256 -pkeyopt nonce-type:1
+
+where key.der is the secp256k1 private key 1.  nonce-type:1 selects the
+RFC 6979 deterministic k, and digest:sha256 makes its HMAC HMAC-SHA-256.
+OpenSSL does not restrict s, so s was replaced by q - s if s > q/2.
+
+The Keccak-256 digest of "abc" is
+4e03657aea45a94fc7d47ba826c8d667c0d1e6e33a64a036ec44f58fa12d6c45.
+||#
+
+;;; (private key, message, expected signature)
+(defconst *test-3-1*
+  (list #x1
+        "abc"
+        "e6cbd687d6cda3d7cf8e37214d3128a54196b42400aa1c246952a683462388561eee2ec3d64cb26e0edd6f86b19784552a39a351ea1779cdad6717e820093242"))
+
+;;; Keccak-256 takes FIPS 202 bit strings, so the message bytes are
+;;; converted to bits with keccak::h2b rather than with string=>bits.
+(defun test--ecdsa-sign-deterministic--keccak-256 (testcase)
+  (b* (((mv error? & & r s)
+        ;; an enhancement would be to test the returned x-index and y-even? too
+        (ecdsa-sign-deterministic-keccak-256
+         (keccak::h2b (acl2::string=>nats (second testcase)))
+         (first testcase)
+         t
+         t)))
+    (and (eq error? nil)
+         (equal (list r s)
+                (r-s-string-to-r-s-list (third testcase))))))
+
+(assert-event (test--ecdsa-sign-deterministic--keccak-256 *test-3-1*))

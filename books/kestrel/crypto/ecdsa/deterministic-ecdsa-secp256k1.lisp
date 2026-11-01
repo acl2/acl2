@@ -1775,6 +1775,11 @@
              using <see topic=\"KECCAK____KECCAK\">KECCAK-256</see> for hashing the input message,
              but using <see topic=\"SHA2____SHA-2\">SHA-256</see> when
              applying <see topic=\"HMAC____HMAC\">HMAC</see>.")
+   (xdoc::p "The Keccak-256 digest is passed to RFC 6979 as a list of bits
+             with each byte's most significant bit first,
+             the reverse of the order within each byte
+             in the list of bits returned by
+             <see topic=\"KECCAK____KECCAK\">KECCAK-256</see>.")
    (xdoc::p "Arguments:")
    (xdoc::ol
     (xdoc::li
@@ -1821,7 +1826,16 @@
                                 (< privkey *q*)
                                 (booleanp small-x?))))
     (ecdsa-sign-deterministic-prehashed
-     (keccak::keccak-256 m)
+     ;; keccak-256 takes and returns a list of bits where each 8 bits are
+     ;; a byte in little-endian order.  This is consistent with keccak-256-bytes,
+     ;; which converts bytes to little-endian bits on input, and little-endian
+     ;; bits back to bytes on output.
+     ;; However, RFC 6979 (sections 2.3.*) specifies that bytes should be
+     ;; converted to big-endian bitstrings.  In order to satisfy RFC 6979
+     ;; we convert the bitstring output of keccak-256 to bytes (FIPS 202
+     ;; Algorithm 11) and then create a bitstring by appending the bytes'
+     ;; big-endian bitstrings.
+     (bytes-to-bits (keccak::b2h (keccak::keccak-256 m)))
      privkey
      small-x?
      small-s?))

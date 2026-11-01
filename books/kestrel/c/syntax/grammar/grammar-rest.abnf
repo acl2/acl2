@@ -20,9 +20,6 @@
 
 ; Declarations [C17:A.2.2]
 
-; As a temporary C23 extension, we include 'bool' as a synonym of '_Bool'.
-; We plan to modularize this grammar according to C versions.
-
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a (member) structure declaration
 ; and at the start of a (non-static-assertion) declaration.
@@ -185,9 +182,8 @@ type-specifier = %s"void"
                / %s"double"
                / signed-keyword
                / %s"unsigned"
-               / %s"bool" ; C23
-               / %s"_Bool"
-               / %s"_Complex"
+               / bool-keyword
+               / complex-keyword
                / atomic-type-specifier
                / struct-or-union-specifier
                / enum-specifier

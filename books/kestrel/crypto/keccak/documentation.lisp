@@ -53,6 +53,14 @@
 (keccak-384-bytes byte-list)
 (keccak-512-bytes byte-list)")
    (xdoc::p
+    "The two sets of functions are related by the conversions between bytes
+     and bit strings in FIPS 202 (Section B.1, Algorithms 10 and 11),
+     under which each byte corresponds to 8 bits
+     listed least significant bit first;
+     for example, the byte @('#x4e') corresponds to @('(0 1 1 1 0 0 1 0)').
+     This is the reverse of the bit order within each byte
+     used by SHA-2 and by RFC 6979.")
+   (xdoc::p
     "See the comments in the source file for more information.")
    ))
 
