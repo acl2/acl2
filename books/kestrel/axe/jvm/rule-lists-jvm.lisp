@@ -738,6 +738,13 @@
             jvm::decode-signed-non-neg
             ;; todo: add some float and double stuff here!
 
+            jvm::bv-array-read-of-arraycopy
+            jvm::arraycopy-when-whole
+            jvm::len-of-arraycopy
+            jvm::equal-of-nil-and-arraycopy
+            jvm::equal-of-arraycopy-and-nil
+            jvm::arraycopy ; todo: drop or delay
+
             jvm::make-method-designator
             jvm::sub-classp
             jvm::sub-class-or-same-classp
@@ -1585,7 +1592,7 @@
             len-of-bv-array-if ; todo: more?
             bv-array-if-same-branches-safe
             bv-array-read-of-bv-array-if
-            )
+            true-listp-of-bv-array-if)
           ;;(formal-unit-tester-extra-simplification-rules-no-boolif)
           (formal-unit-tester-extra-simplification-rules)))
 

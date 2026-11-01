@@ -56,6 +56,8 @@
 
 ;fixme: for things like IADD, make sure the bit patterns are the same regardless of whether the operands are signed or unsigned
 
+(local (in-theory (disable initialize-locals-aux-unroll))) ; todo
+
 (defthm class-name-listp-of-reverse-list
   (equal (class-name-listp (acl2::reverse-list x))
          (class-name-listp (true-list-fix x)))
@@ -3843,6 +3845,93 @@
                                   (method-program ; todo
                                    )))))
 
+;; todo: recharacterize as a loop?
+(defund arraycopy (src-contents srcpos dest-contents destpos length)
+  (declare (xargs :guard (and (true-listp src-contents) ; todo: tighten - split into bv arrays and ref arrays?
+                              (true-listp dest-contents) ; todo: tighten - split into bv arrays and ref arrays?
+                              (natp srcpos)
+                              (natp destpos)
+                              (natp length)
+                              (<= (+ srcpos length) (len src-contents))
+                              (<= (+ destpos length) (len dest-contents)))
+                  :guard-debug t
+                  ))
+  (if (zp length) ; todo: special case is due to the guard of subrange and update-subrange2
+      dest-contents
+    (acl2::update-subrange2 (len dest-contents)
+                            destpos
+                            ;;use bvplus 32 here?
+                            (+ destpos length -1)
+                            ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                            ;;try: (decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
+                            (acl2::subrange srcpos
+                                            ;;use bvplus31?
+                                            (+ srcpos length -1)
+                                            ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                            ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
+                                            src-contents)
+                            dest-contents)))
+
+(local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/update-subrange" :dir :system))
+(local (include-book "kestrel/lists-light/subrange" :dir :system))
+
+(defthm bv-array-read-of-arraycopy
+  (implies (and (<= (+ srcpos length) (len src-contents))
+                (<= (+ destpos length) (len dest-contents))
+                (< index (len dest-contents))
+                (equal len (len dest-contents))
+                (natp srcpos)
+                (natp destpos)
+                (natp length)
+                (natp index))
+           (equal (acl2::bv-array-read width len index (arraycopy src-contents srcpos dest-contents destpos length))
+                  (if (or (< index destpos) ; todo: use bvlt
+                          (<= (+ destpos length) index))
+                      (acl2::bv-array-read width len index dest-contents)
+                    (acl2::bv-array-read width (len src-contents) (+ (- index destpos) srcpos) src-contents))))
+  :hints (("Goal" :in-theory (enable arraycopy acl2::bv-array-read-opener))))
+
+(defthm arraycopy-when-whole
+  (implies (and (equal srcpos 0)
+                (equal destpos 0)
+                (equal length (len dest-contents))
+                (equal length (len src-contents))
+                (true-listp src-contents)
+                (true-listp dest-contents))
+           (equal (arraycopy src-contents srcpos dest-contents destpos length)
+                  src-contents))
+  :hints (("Goal" :in-theory (enable arraycopy))))
+
+(local (include-book "kestrel/lists-light/append" :dir :system))
+
+(defthm len-of-arraycopy
+  (equal (len (arraycopy src-contents srcpos dest-contents destpos length))
+         (len dest-contents))
+  :hints (("Goal" :in-theory (enable arraycopy))))
+
+(defthm equal-of-nil-and-arraycopy
+  (implies (true-listp dest-contents)
+           (equal (equal nil (arraycopy src-contents srcpos dest-contents destpos length))
+                  (equal 0 (len dest-contents))))
+  :hints (("Goal" :in-theory (enable arraycopy))))
+
+(defthm equal-of-arraycopy-and-nil
+  (implies (true-listp dest-contents)
+           (equal (equal (arraycopy src-contents srcpos dest-contents destpos length) nil)
+                  (equal 0 (len dest-contents))))
+  :hints (("Goal" :in-theory (enable arraycopy))))
+
+;; todo: we need the element width, if it's an array of BVs
+;; (thm
+;;  (implies (posp length)
+;;           (equal (arraycopy src-contents srcpos dest-contents destpos length)
+;;                  (arraycopy src-contents
+;;                             (+ 1 srcpos)
+;;                             (bv-array-write .. dest-contents)
+;;                             (+ 1 destpos)
+;;                             (+ -1 length)))))
+
 ;FFFIXME add lots of checks for exceptions
 ;see http://java.sun.com/j2se/1.4.2/docs/api/java/lang/System.html#arraycopy(java.lang.Object,%20int,%20java.lang.Object,%20int,%20int)
 (defun execute-java.lang.System.arraycopy (th s)
@@ -3887,21 +3976,22 @@
                       :stack (popn-operands 5 (stack (thread-top-frame th s)))
                       :heap (acl2::set-field (addressfix dest)
                                              (acl2::array-contents-pair)
-                                             ;;i saw a case where it was tricky to recover the length of this:
-                                             ;;also, what do we know about the return type?
-                                             (acl2::update-subrange2 dest-length
-                                                                     (decode-signed-non-neg destpos)
-                                                                     ;;use bvplus 32 here?
-                                                                     (+ (decode-signed-non-neg destpos) (decode-signed-non-neg length) -1)
-                                                                     ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                                                     ;try:(decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
-                                                                     (acl2::subrange (decode-signed-non-neg srcpos)
-                                                                                     ;;use bvplus31?
-                                                                                     (+ (decode-signed-non-neg srcpos) (decode-signed-non-neg length) -1)
-                                                                                     ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                                                                     ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
-                                                                                     src-contents)
-                                                                     dest-contents)
+                                             ;; ;;i saw a case where it was tricky to recover the length of this:
+                                             ;; ;;also, what do we know about the return type?
+                                             ;; (acl2::update-subrange2 dest-length
+                                             ;;                         (decode-signed-non-neg destpos)
+                                             ;;                         ;;use bvplus 32 here?
+                                             ;;                         (+ (decode-signed-non-neg destpos) (decode-signed-non-neg length) -1)
+                                             ;;                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                             ;;                         ;try:(decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
+                                             ;;                         (acl2::subrange (decode-signed-non-neg srcpos)
+                                             ;;                                         ;;use bvplus31?
+                                             ;;                                         (+ (decode-signed-non-neg srcpos) (decode-signed-non-neg length) -1)
+                                             ;;                                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                             ;;                                         ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
+                                             ;;                                         src-contents)
+                                             ;;                         dest-contents)
+                                             (arraycopy src-contents (decode-signed-non-neg srcpos) dest-contents (decode-signed-non-neg destpos) (decode-signed-non-neg length))
                                              heap)))))))))
 
 (defund is-java.lang.System.arraycopy (obj-class-name method-name descriptor)
@@ -4516,7 +4606,8 @@
                                      jvm-instruction-okayp
                                      instructionp-redef
                                      instruction-args
-                                     instruction-argsp))))
+                                     instruction-argsp
+                                     arraycopy))))
 
 
 ; (:INVOKESTATIC class-name method-name method-descriptor formal-slot-count)
