@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function take.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,6 +36,13 @@
          (if (zp n)
              nil
            (cons a (take (+ -1 n) x))))
+  :hints (("Goal" :in-theory (enable take))))
+
+;may be safer that take-of-cons
+(defthmd take-of-cons-when-posp
+  (implies (posp n)
+           (equal (take n (cons a x))
+                  (cons a (take (+ -1 n) x))))
   :hints (("Goal" :in-theory (enable take))))
 
 (defthm take-of-0
