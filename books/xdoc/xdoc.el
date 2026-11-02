@@ -1,3 +1,4 @@
+;;; -*- lexical-binding: t -*-
 ; XDOC Documentation System for ACL2
 ; Copyright (C) 2009-2011 Centaur Technology
 ;
