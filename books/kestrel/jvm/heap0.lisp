@@ -20,11 +20,12 @@
 
 (include-book "kestrel/maps/maps" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
-(include-book "adstop")
+(include-book "ads")
+;(include-book "adstop") ; reduce?
 (include-book "types")
 (include-book "fields")
 (local (include-book "kestrel/sequences/defforall" :dir :system))
-(include-book "utilities")
+;(include-book "utilities")
 (include-book "utilities2") ; for rules like 2LIST-OF-DELETE
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -549,6 +550,12 @@
          )
   :hints (("goal" :cases ((equal ref1 ref2)))))
 
+(include-book "kestrel/maps/maps" :dir :system)
+(defthm g-of-new-ad
+  (equal (g (new-ad (rkeys heap)) heap)
+         nil)
+  :hints (("Goal" :in-theory (enable g-iff-gen))))
+
 (defthm get-field-of-new-ad
   (equal (get-field (new-ad (rkeys heap)) pair heap)
          nil)
@@ -667,7 +674,8 @@
 
 (defthm all-addressp-of-n-new-ads
   (acl2::all-addressp (acl2::n-new-ads n ads))
-  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (N-NEW-ADS-BECOMES-N-NEW-ADS2)))))
+  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (;N-NEW-ADS-BECOMES-N-NEW-ADS2
+                                                                                            )))))
 
 (defthm heapp-of-set-fields
   (implies (and (jvm::heapp heap)
@@ -736,7 +744,7 @@
 ;;                   (memberp x lst))))
 
 
-;; (defthm new-ad-not-bound-helper2-better
+;; (defthm not-in-of-new-ad-aux-same-better
 ;;   (implies (case-split (sets::setp ad-set))
 ;;            (equal (memberp (new-ad-aux ad-set current-try) ad-set)
 ;;                   nil))
@@ -760,14 +768,14 @@
 ;;   (equal (sets::in (new-ad ad-list) ad-list)
 ;;          nil)
 ;;   :hints (("Goal" :in-theory (enable new-ad
-;;                                      new-ad-not-bound-helper2))))
+;;                                      not-in-of-new-ad-aux-same))))
 
 
 ;; (defthm new-ad-not-memberp-dom
 ;;   (equal (memberp (new-ad dom) dom)
 ;;          nil)
 ;;   :hints (("Goal" :in-theory (enable new-ad
-;;                                      new-ad-not-bound-helper2-better))))
+;;                                      not-in-of-new-ad-aux-same-better))))
 
 ;; (defthm new-ad-not-memberp
 ;;   (implies (sublistp list (dom heap))
@@ -1015,8 +1023,8 @@
 ;; (local (defthm new-ad-not-bound-helper3
 ;;        (implies (sets::subset bound-adrs bound-adrs2)
 ;;                 (not (sets::in (new-ad-aux bound-adrs2 current-try) bound-adrs)))
-;;        :hints (("Goal" :in-theory (disable NEW-AD-NOT-BOUND-HELPER2)
-;;                 :use (:instance new-ad-not-bound-helper2
+;;        :hints (("Goal" :in-theory (disable NOT-IN-OF-NEW-AD-AUX-SAME)
+;;                 :use (:instance not-in-of-new-ad-aux-same
 ;;                                        (ad-set bound-adrs2))))))
 
 

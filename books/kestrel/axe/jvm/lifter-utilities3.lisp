@@ -469,7 +469,8 @@
                 (posp m)
                 (integerp n))
            (set::in (nth-new-ad m dom) (list::2set (n-new-ads n dom))))
-  :hints (("Goal" :in-theory (disable n-new-ads-becomes-n-new-ads2))))
+  :hints (("Goal" :in-theory (disable ;n-new-ads-becomes-n-new-ads2
+                              ))))
 
 ;; assumes that we can tell all the addresses apart syntactically
 (defun heap-triple-fields-for-ad (heap-triples address)

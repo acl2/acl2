@@ -15,6 +15,7 @@
 
 (include-book "jvm") ; for JVM::CALL-STACK, etc
 (include-book "arrays")
+(local (include-book "adstop"))
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system) ;todo drop? for set-row
 (include-book "kestrel/lists-light/union-equal" :dir :system)
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
@@ -1753,10 +1754,7 @@
   (equal (myif (new-ad dom) thenpart elsepart)
          thenpart))
 
-(defthm unique-of-N-NEW-ADS2
-  (implies (natp n)
-           (NO-DUPLICATESP-EQUAL (N-NEW-ADS2 n ads)))
-  :hints (("Goal" :in-theory (enable n-NEW-ADS2))))
+
 
 (defthm null-refp-of-myif
   (equal (null-refp (myif test tp ep))

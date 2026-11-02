@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function no-duplicatesp-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,6 +32,11 @@
   (implies (no-duplicatesp-equal x)
            (no-duplicatesp-equal (cdr x)))
   :hints (("Goal" :in-theory (enable no-duplicatesp-equal))))
+
+(defthm no-duplicatesp-equal-of-nthcdr
+  (implies (no-duplicatesp-equal x)
+           (no-duplicatesp-equal (nthcdr n x)))
+  :hints (("Goal" :in-theory (enable no-duplicatesp-equal nthcdr))))
 
 (defthm no-duplicatesp-equal-of-member-equal
   (implies (no-duplicatesp-equal x)

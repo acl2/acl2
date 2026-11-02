@@ -25,6 +25,26 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: move to lists-light
+
+(defthm memberp-when-memberp-of-firstn
+  (implies (memberp a (firstn n x))
+           (memberp a x)))
+
+(defthm not-memberp-of-firstn-when-memberp-of-nthcdr-and-unique
+  (implies (and (natp n)
+                (<= n (len lst))
+                (memberp x (nthcdr n lst))
+                (no-duplicatesp-equal lst))
+           (not (memberp x (firstn n lst))))
+  :hints (("Goal" :in-theory (e/d (nthcdr firstn no-duplicatesp-equal)
+                                  (NTHCDR-OF-CDR-COMBINE-STRONG)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm g-of-new-ad
   (equal (g (new-ad (rkeys heap)) heap)
@@ -51,10 +71,8 @@
            :in-theory (disable G-WHEN-NOT-IN-RKEYS G-IFF-GEN G-OF-NIL-IS-NIL)
            )))
 
-(in-theory (disable NTH-NEW-AD2-COLLECT))
-
-(local (in-theory (disable SET::PICK-A-POINT-SUBSET-STRATEGY SET::DOUBLE-CONTAINMENT)))
-(local (in-theory (disable LIST::2SET
+(local (in-theory (disable SET::PICK-A-POINT-SUBSET-STRATEGY SET::DOUBLE-CONTAINMENT
+                           LIST::2SET
                            ;; LIST::MEMBER-EQ-IS-MEMBERP-PROPOSITIONALLY
                            ;; LIST::MEMBER-IS-MEMBERP-PROPOSITIONALLY
                            ;; LIST::MEMBER-equal-IS-MEMBERP-PROPOSITIONALLY
@@ -91,13 +109,6 @@
 ;;                    (LIST::|2SET| (NEW-ADS-SLICE low2 high1 dom))))
 ;;    :hints (("Goal" :in-theory (enable NEW-ADS-SLICE LIST::|2SET| N-NEW-ADS)))))
 
-;; (skip-proofs
-;;  (defthmd n-new-ads-becomes-n-new-ads2
-;;    (equal (n-new-ads n dom)
-;;           (n-new-ads2 n dom))))
-
-(in-theory (disable n-new-ads-becomes-n-new-ads2))
-
 (defthm nth-of-n-new-ads2
   (implies (and (natp n) (natp m) (< n m) (<= 0 n))
            (equal (nth n (n-new-ads2 m dom))
@@ -119,7 +130,7 @@
            (equal (MEMBERP (NEW-AD DOM)
                                  (N-new-ads2 N DOM))
                   t))
-  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE))
+  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS-slice MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE))
           :use (:instance IN-OF-NEW-AD-AND-N-NEW-ADS (ads dom))))
 )
 
@@ -153,7 +164,7 @@
    (EQUAL
     (NEW-AD (SET::UNION (LIST::|2SET| (N-new-ads2 N DOM)) DOM))
     (NTH-NEW-AD (+ 1 N) DOM)))
-  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt))
+  :hints (("Goal" :in-theory (e/d (N-NEW-ADS-BECOMES-N-NEW-ADS2) (IN-OF-NEW-AD-AND-N-NEW-ADS NEW-AD-NOT-MEMBERP-OF-NEW-ADS-slice MEMBERP-WHEN-NOT-MEMBERP-OF-CDR-CHEAP NEW-AD-NOT-MEMBERP-OF-NEW-ADS-SLICE NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt))
           :use NEW-AD-OF-UNION-DOM-AND-N-NEW-ADSalt)))
 
 (DEFTHM INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
@@ -164,7 +175,6 @@
     (SET::UNION DOM (LIST::|2SET| (N-NEW-ADS M DOM))))))
 
 (in-theory (disable N-NEW-ADS2))
-(in-theory (enable N-NEW-ADS-BECOMES-N-NEW-ADS2))
 
 (DEFTHM INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt-better
   (IMPLIES
@@ -173,8 +183,9 @@
     (SET::INSERT (NTH-NEW-AD M DOM) (SET::UNION (LIST::|2SET| (N-new-ads2 N DOM)) DOM))
     (SET::UNION DOM (LIST::|2SET| (N-new-ads2 M DOM)))))
   :hints (("Goal" :use INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
-           :in-theory (disable INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
-                               INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS))))
+                  :in-theory (e/d (n-new-ads-becomes-n-new-ads2)
+                  (INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
+                   INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS)))))
 
 (DEFTHM INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt-better-rev
   (IMPLIES
@@ -183,10 +194,9 @@
     (SET::INSERT (NTH-NEW-AD M DOM) (SET::UNION DOM (LIST::|2SET| (N-new-ads2 N DOM))))
     (SET::UNION DOM (LIST::|2SET| (N-new-ads2 M DOM)))))
   :hints (("Goal" :use INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
-           :in-theory (disable INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
-                               INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS))))
-
-
+                  :in-theory (e/d (n-new-ads-becomes-n-new-ads2)
+                                  (INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADSalt
+                                   INSERT-OF-NEXT-AD-ONTO-UNION-OF-DOM-AND-N-NEW-ADS)))))
 
 (defthm new-ad-not-equal-nth-new-ad2
   (implies (and (integerp n)
@@ -214,10 +224,7 @@
            :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (NOT-MEMBERP-N-NEW-ADS2 NOT-MEMBERP-N-NEW-ADS)))))
 
 
-(defthm N-NEW-ADS2-AUX-of-0
-  (equal (N-NEW-ADS2-AUX 0 CT DOM)
-         nil)
-  :hints (("Goal" :in-theory (enable N-NEW-ADS2-AUX))))
+
 
 (defthm new-ad-aux-of-insert-of-next
   (implies (natp current-try)
@@ -255,21 +262,9 @@
             :in-theory (enable NEW-AD-AUX NEW-AD-AUX-IS-CURRENT-TRY))))
 
 
-(defthm N-NEW-ADS2-AUX-of-delete-irrel
-  (implies (and (< ct ct2)
-                (natp ct)
-                (natp ct2))
-           (equal (N-NEW-ADS2-AUX N CT2 (SET::DELETE CT DOM))
-                  (N-NEW-ADS2-AUX N CT2 DOM)))
-  :hints (("Goal" :in-theory (enable N-NEW-ADS2-AUX))))
 
-(defthm memberp-of-n-new-ads2-aux-irrel
-  (implies (and (< ct ct2)
-                (natp ct)
-                (natp ct2))
-           (not (memberp ct (n-new-ads2-aux n ct2 dom))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable n-new-ads2-aux))))
+
+
 
 (defthm memberp-of-new-ad-aux-and-n-new-ads2-aux-irrel
  (implies (and (< (new-ad-aux dom ct) ct2)
@@ -281,11 +276,6 @@
  :hints (("Goal" :do-not '(generalize eliminate-destructors)
           :expand ((new-ad-aux (set::union dom s) ct))
           :in-theory (enable new-ad-aux new-ad-aux-is-current-try))))
-
-(defthm n-new-ads2-aux-of-sfix
-  (equal (n-new-ads2-aux m ct (set::sfix dom))
-         (n-new-ads2-aux m ct dom))
-  :hints (("Goal" :in-theory (enable n-new-ads2-aux))))
 
 
 
@@ -338,7 +328,7 @@
                  (natp n))
             (equal (n-new-ads2 m (set::union dom (list::2set (n-new-ads2 n dom))))
                    (new-ads-slice (+ 1 n) (+ m n) dom)))
-   :hints (("Goal" :in-theory (enable n-new-ads2 new-ads-slice))))
+   :hints (("Goal" :in-theory (enable n-new-ads2 new-ads-slice n-new-ads-becomes-n-new-ads2))))
 
 
 ;; (skip-proofs
@@ -369,8 +359,7 @@
 
 (DEFTHM NOT-MEMBERP-OF-NEW-ADS-SLICE2
   (IMPLIES (SET::IN AD DOM)
-           (equal (MEMBERP AD (NEW-ADS-SLICE START END DOM))
-                  nil))
+           (not (MEMBERP AD (NEW-ADS-SLICE START END DOM))))
   :hints (("Goal" :IN-THEORY (ENABLE NEW-ADS-SLICE))))
 
 (defthm not-memberp-of-cdr-when-infirstn-and-unique
@@ -378,8 +367,7 @@
                 (<= n (len lst))
                 (memberp x (firstn n lst))
                 (no-duplicatesp-equal lst))
-           (equal (memberp x (nthcdr n lst))
-                  nil))
+           (not (memberp x (nthcdr n lst))))
   :hints (("Goal" :in-theory (e/d (nthcdr firstn no-duplicatesp-equal)
                                   (NTHCDR-OF-CDR-COMBINE-STRONG)))))
 
@@ -401,8 +389,7 @@
                 (natp end)
 ;(posp start)
                 (natp start))
-           (equal (MEMBERP (NTH-NEW-AD N DOM) (NEW-ADS-SLICE START END DOM))
-                  nil))
+           (not (MEMBERP (NTH-NEW-AD N DOM) (NEW-ADS-SLICE START END DOM))))
   :hints (("Goal"
            :use (:instance not-memberp-of-cdr-when-infirstn-and-unique (x (NTH-NEW-AD N DOM)) (n (+ -1 start)) (lst (N-NEW-ADS END DOM)))
            :in-theory (e/d (NEW-ADS-SLICE ;N-NEW-ADS
@@ -439,16 +426,10 @@
 ;;            (REVERSE-LIST (N-NEW-ADS-AUX (+ M N) DOM)))))
 ;;  :hints (("Goal" :expand ((N-NEW-ADS-AUX N DOM)))))
 
-
-
 (defthm new-ad-not-memberp-of-new-ads-slice2 ;new-ads-not-memberp-of-new-ads-slice
   (implies (and (< 1 start)
                 (natp start))
-           (equal (memberp (NEW-AD dom)
-                                 (NEW-ADS-SLICE start end dom))
-                  nil)))
-
-
+           (not (memberp (new-ad dom) (new-ads-slice start end dom)))))
 
 (defthm union-commutative-2-2set-of-new-ads-slice
   (equal (set::union (list::|2SET| (new-ads-slice m n x))
@@ -472,29 +453,7 @@
 ;;  :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;           :in-theory (enable n-new-ads2-aux))))
 
-(defthm not-memberp-of-firstn-when-memberp-of-nthcdr-and-unique
-  (implies (and (natp n)
-                (<= n (len lst))
-                (memberp x (nthcdr n lst))
-                (no-duplicatesp-equal lst))
-           (equal (memberp x (firstn n lst))
-                  nil))
-  :hints (("Goal" :in-theory (e/d (nthcdr firstn no-duplicatesp-equal)
-                                  (NTHCDR-OF-CDR-COMBINE-STRONG)))))
 
-
-(defthm memberp-of-NEW-AD-AUX-and-N-NEW-ADS2-AUX
-  (implies (posp n)
-           (MEMBERP (NEW-AD-AUX DOM 0) (N-NEW-ADS2-AUX N 0 DOM)))
-  :hints (("Goal" :in-theory (enable N-NEW-ADS2-AUX))))
-
-(defthm unique-of-n-new-ads2-aux
-  (implies (and (natp m)
-                (natp ct))
-           (no-duplicatesp-equal (n-new-ads2-aux m ct dom)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable n-new-ads2-aux ;no-duplicatesp-equal-of-cons
-                              ))))
 
 ;; (local
 ;;  (defthm coi-memberp-becomes-memberp
@@ -502,10 +461,6 @@
 ;;           (memberp a x))
 ;;    :hints (("Goal" :in-theory (enable memberp list::memberp)))))
 
-;move
-(defthm memberp-when-memberp-of-firstn
-  (implies (memberp a (firstn n x))
-           (memberp a x)))
 
 (defthm memberp-of-nth-new-ad-and-n-new-ads-better
   (implies (and (posp m)
@@ -540,7 +495,7 @@
            (equal (NEW-AD (SET::UNION dom (LIST::|2SET| (N-NEW-ADS2 n dom))))
                   (NTH-NEW-AD (+ 1 N) DOM)))
   :hints (("Goal" :use NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS
-           :in-theory (disable NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS))))
+           :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (NEW-AD-OF-UNION-DOM-AND-N-NEW-ADS)))))
 
 (DEFTHM NTH-NEW-AD-OF-UNION-DOM-N-new-ads-better
   (IMPLIES (AND (NATP M) (< 0 M) (NATP N))
@@ -550,7 +505,7 @@
              (SET::UNION DOM (LIST::|2SET| (N-new-ads2 N DOM))))
             (NTH-NEW-AD (+ M N) DOM)))
   :hints (("Goal" :use NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS
-           :in-theory (disable NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS))))
+           :in-theory (e/d (n-new-ads-becomes-n-new-ads2) (NTH-NEW-AD-OF-UNION-DOM-N-NEW-ADS)))))
 
 
 (defthm take-of-N-NEW-ADS2
@@ -572,7 +527,7 @@
            (equal (set::union (list::2set (new-ads-slice low high dom)) (list::2set (n-new-ads2 low-1 dom)))
                   (list::2set (n-new-ads2 high dom))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (new-ads-slice UNION-OF-2SET-AND-2SET-BACK)
+  :hints (("Goal" :in-theory (e/d (new-ads-slice UNION-OF-2SET-AND-2SET-BACK n-new-ads-becomes-n-new-ads2)
                                   (;LIST::EQUAL-APPEND-REDUCTION!-ALT LIST::APPEND-TAKE-NTHCDR LIST::EQUAL-APPEND-REDUCTION!
                                    UNION-OF-2SET-AND-2SET))
            :use (:instance APPEND-OF-TAKE-AND-NTHCDR-2 (l (N-NEW-ADS2 HIGH DOM))
