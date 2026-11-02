@@ -205,7 +205,10 @@
                                                  `((set::in (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term) (rkeys ,heap-term))
                                                    ;; todo: also specify the type of the backing array?
                                                    (not (null-refp (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term)))
-                                                   )))
+                                                   (equal (get-field (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term)
+                                                                     '(:special-data . :class)
+                                                                     ,heap-term)
+                                                          (jvm::make-one-dim-array-type :char)))))
                                       `((address-or-nullp ,parameter-name)
                                         (has-class-or-nullp ,parameter-name ',type ,heap-term)
                                         )))
