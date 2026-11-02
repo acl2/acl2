@@ -12,6 +12,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -39,7 +40,6 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
-(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -821,15 +821,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define comp-db-absolute-path-list
-  ((directory stringp)
-   (paths string-listp))
-  :returns (paths$ string-listp)
+(std::defprojection comp-db-absolute-path-list ((directory stringp)
+                                                (x string-listp))
+  :returns (paths string-listp)
   :short "Lift @(tsee comp-db-absolute-path) to lists."
-  (if (endp paths)
-      nil
-    (cons (comp-db-absolute-path directory (first paths))
-          (comp-db-absolute-path-list directory (rest paths)))))
+  (comp-db-absolute-path directory x))
 
 (define comp-db-entries-with-output
   ((output stringp)
@@ -1125,7 +1121,7 @@
   :measure (acl2-count (comp-db-fix db)))
 
 (define comp-db-shared-files-msg
-  ((files string-listp)
+  ((files true-listp)
    (db comp-dbp))
   :returns (msg msgp)
   :short "Describe, for each of the given source files, the outputs of the
@@ -1157,11 +1153,7 @@
     (msg$ "~#0~[A source file is~/Some source files are~] compiled into ~
            more than one of the selected objects, which is not supported:~%~@1"
           files
-          (comp-db-shared-files-msg files db)))
-  :guard-hints
-  (("Goal"
-    :use (:instance std::deflist-lemma-subsetp-equal-of-duplicated-members
-                    (std::x (comp-db-files db))))))
+          (comp-db-shared-files-msg files db))))
 
 (define to-preprocess-map
   ((db comp-dbp)
