@@ -731,10 +731,19 @@
             jvm::get-field-of-initialize-one-dim-array-irrel-ad
             jvm::get-field-of-initialize-one-dim-array-irrel-field
             jvm::rkeys-of-initialize-one-dim-array
+            jvm::get-field-of-initialize-one-dim-array-of-set-field-irrel ; makes failures nicer
+            jvm::get-field-of-initialize-one-dim-array-of-set-fields-irrel ; makes failures nicer
 
             rkeys-of-myif ;move to a maps-rules list?
             jvm::decode-signed-non-neg
             ;; todo: add some float and double stuff here!
+
+            jvm::bv-array-read-of-arraycopy
+            jvm::arraycopy-when-whole
+            jvm::len-of-arraycopy
+            jvm::equal-of-nil-and-arraycopy
+            jvm::equal-of-arraycopy-and-nil
+            jvm::arraycopy-redef ; todo: drop or delay
 
             jvm::make-method-designator
             jvm::sub-classp
@@ -1070,7 +1079,7 @@
 
 ;degenerate case?
             get-field-of-nth-new-ad-same-heap
-            initialize-one-dim-array-of-myif
+            initialize-one-dim-array-of-myif ; rename -- which arg?
             get-field-of-myif2
             get-field-of-myif
             new-ad-of-myif
@@ -1284,8 +1293,6 @@
 ;;     ;; g-of-g-of-set-field-when-pairs-different
 ;; ;    g-of-initialize-2d-array
 ;; ;    g-of-g-contents-of-initialize-2d-array-sub-array
-;;     ;; jvm::g-of-initialize-one-dim-array-irrel ;drop?
-;;     ;; jvm::g-of-initialize-one-dim-array            ;drop?
 ;;     ;; g-of-g-of-set-field-same
 ;; ; g-of-g-contents-of-initialize-2d-array-same
 ;;     ;; g-of-set-field-irrel
@@ -1559,19 +1566,20 @@
             )
           (amazing-rules-spec-and-dag)))
 
-;;only used just below?
-(defun formal-unit-tester-extra-simplification-rules-no-boolif ()
-  (declare (xargs :guard t))
-  (set-difference-eq
-   (formal-unit-tester-extra-simplification-rules)
-   ;; since pruning doesn't know about booland/boolor/etc:
-   '(myif-of-t-becomes-boolor
-     ;;MYIF-BECOMES-BOOLIF-T-ARG2
-     ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
-     myif-of-nil-becomes-booland
-     ;;MYIF-BECOMES-BOOLIF-AXE
-     )))
+;; ;;only used just below?
+;; (defun formal-unit-tester-extra-simplification-rules-no-boolif ()
+;;   (declare (xargs :guard t))
+;;   (set-difference-eq
+;;    (formal-unit-tester-extra-simplification-rules)
+;;    ;; since pruning doesn't know about booland/boolor/etc:
+;;    '(;myif-of-t-becomes-boolor
+;;      ;;MYIF-BECOMES-BOOLIF-T-ARG2
+;;      ;;MYIF-BECOMES-BOOLIF-NIL-ARG1
+;;      ;myif-of-nil-becomes-booland
+;;      ;;MYIF-BECOMES-BOOLIF-AXE
+;;      )))
 
+;; todo: push these back to the unroller
 (defun formal-unit-tester-extra-lifting-rules ()
   (declare (xargs :guard t))
   (append '(;addressp-when-address-or-nullp-and-not-null-refp ;loops with address-or-nullp
@@ -1584,8 +1592,9 @@
             len-of-bv-array-if ; todo: more?
             bv-array-if-same-branches-safe
             bv-array-read-of-bv-array-if
-            )
-          (formal-unit-tester-extra-simplification-rules-no-boolif)))
+            true-listp-of-bv-array-if)
+          ;;(formal-unit-tester-extra-simplification-rules-no-boolif)
+          (formal-unit-tester-extra-simplification-rules)))
 
 ;These should only be tried if the usual rules don't apply (constants are rare):
 (set-axe-rule-priority jvm::pc-opener 1)

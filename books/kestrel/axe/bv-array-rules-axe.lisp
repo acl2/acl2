@@ -60,6 +60,10 @@
 (defthmd bv-array-read-non-negative
   (not (< (bv-array-read esize len index data) 0)))
 
+;; Only needed for Axe
+(defthm true-listp-of-bv-array-if
+  (true-listp (bv-array-if element-size len test array1 array2)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;maybe not true?

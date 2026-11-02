@@ -199,7 +199,13 @@
                                     ;; TODO: Error if abstract class or interface.
                                     (if assume-object-params-non-null
                                         `((addressp ,parameter-name)
-                                          (equal (get-field ,parameter-name ',(class-pair) ,heap-term) ',type))
+                                          (equal (get-field ,parameter-name ',(class-pair) ,heap-term) ',type)
+                                          ;; special case for String:
+                                          ,@(and (equal type "java.lang.String")
+                                                 `((set::in (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term) (rkeys ,heap-term))
+                                                   ;; todo: also specify the type of the backing array?
+                                                   (not (null-refp (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term)))
+                                                   )))
                                       `((address-or-nullp ,parameter-name)
                                         (has-class-or-nullp ,parameter-name ',type ,heap-term)
                                         )))
