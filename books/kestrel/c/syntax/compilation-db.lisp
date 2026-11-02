@@ -34,12 +34,14 @@
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/filepath/paths" :dir :system)
 
+(include-book "std/basic/symbol-lfix" :dir :system)
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -408,7 +410,7 @@
     "A short option is a dash, followed by a single uppercase letter, followed
      by a value. For instance, @('-I/usr/include').")
   (b* (((reterr) (irr-comp-db-arg))
-       (argument (mbe :logic (acl2::str-fix argument) :exec argument)))
+       (argument (acl2::lstr-fix argument)))
     (if (and (< 1 (length argument))
              (eql (char argument 0) #\-)
              (acl2::upper-case-p (char argument 1)))
@@ -425,7 +427,7 @@
   (xdoc::topstring-p
     "For instance, @('-std=c17').")
   (b* (((reterr) (irr-comp-db-arg))
-       (argument (mbe :logic (acl2::str-fix argument) :exec argument))
+       (argument (acl2::lstr-fix argument))
        (pos (str::strpos "=" argument))
        ((unless pos)
         (reterr t))
@@ -558,7 +560,7 @@
      suffix @('\".o\"') yield @('foo.o'). The output is placed in the working
      directory of the compilation, not in the directory of the source
      file.")
-  (b* ((file (mbe :logic (acl2::str-fix file) :exec file))
+  (b* ((file (acl2::lstr-fix file))
        ((mv slashp - base) (acl2::split-string-last file #\/))
        (base (if slashp base file))
        ((mv - stem -) (acl2::split-string-last base #\.)))
@@ -665,7 +667,7 @@
                state)
   :short "Parse a @(see compilation-database) from a file."
   (b* (((reterr) nil state)
-       (filename (mbe :logic (acl2::str-fix filename) :exec filename))
+       (filename (acl2::lstr-fix filename))
        ((erp parsed state)
         (acl2::parse-file-as-json filename state))
        ((erp value) (json::parsed-to-value parsed))
@@ -765,8 +767,8 @@
      @('directory') is a physical path, as recorded by tools such as Bear
      (which use the working directory of the compiler process), and that
      @('path') does not traverse such a link.")
-  (b* ((directory (mbe :logic (acl2::str-fix directory) :exec directory))
-       (path (mbe :logic (acl2::str-fix path) :exec path)))
+  (b* ((directory (acl2::lstr-fix directory))
+       (path (acl2::lstr-fix path)))
     (filepath::path-to-string
       (filepath::normalize-path
         (filepath::resolve (filepath::parse-path directory)
@@ -776,7 +778,7 @@
   ((directory stringp)
    (arguments comp-db-arg-listp))
   :returns (arguments$ comp-db-arg-listp)
-  (b* ((directory (acl2::str-fix directory))
+  (b* ((directory (acl2::lstr-fix directory))
        (arguments (comp-db-arg-list-fix arguments))
        ((when (endp arguments))
         nil)
@@ -832,7 +834,7 @@
    (db comp-dbp))
   :returns (db$ comp-dbp)
   :short "The entries of a @(see compilation-database) with a given output."
-  (b* ((output (mbe :logic (acl2::str-fix output) :exec output))
+  (b* ((output (acl2::lstr-fix output))
        (db (comp-db-fix db))
        ((when (endp db))
         nil)
@@ -875,7 +877,7 @@
      files other than @('.c') files. None of these outputs are selected.")
   (b* (((when (endp outputs))
         (mv nil nil nil nil))
-       (output (acl2::str-fix (first outputs)))
+       (output (acl2::lstr-fix (first outputs)))
        ((mv db$ missing ambiguous non-c)
         (comp-db-select-outputs (rest outputs) db))
        (entries (comp-db-entries-with-output output db))
@@ -960,7 +962,7 @@
                (db$ comp-dbp))
   (b* ((db (comp-db-fix db))
        ((reterr) db)
-       (path (mbe :logic (acl2::str-fix path) :exec path))
+       (path (acl2::lstr-fix path))
        ((when (endp db))
         (retok nil))
        (output (car (first db)))
@@ -984,7 +986,7 @@
   ((str stringp))
   :returns (str$ stringp)
   :short "Escape characters interpreted specially by the shell."
-  (b* ((str (mbe :logic (acl2::str-fix str) :exec str))
+  (b* ((str (acl2::lstr-fix str))
        (str (str::strsubst "\\" "\\\\" str))
        (str (str::strsubst "\"" "\\\"" str))
        (str (str::strsubst "$" "\\$" str))
@@ -1063,7 +1065,7 @@
      keep the entries which produce the given objects (see @(tsee
      comp-db-select)).")
   (b* (((reterr) (comp-db-fix db) nil)
-       (path (mbe :logic (acl2::str-fix path) :exec path))
+       (path (acl2::lstr-fix path))
        ((unless (canonical-pathname path t state))
         (retmsg$ "The specified path does not exist or is not a directory: ~x0"
                  path))
@@ -1110,7 +1112,7 @@
   :returns (outputs true-listp)
   :short "The outputs of the entries of a @(see compilation-database)
           which compile a given source file."
-  (b* ((file (mbe :logic (acl2::str-fix file) :exec file))
+  (b* ((file (acl2::lstr-fix file))
        (db (comp-db-fix db))
        ((when (endp db))
         nil)
@@ -1121,14 +1123,14 @@
   :measure (acl2-count (comp-db-fix db)))
 
 (define comp-db-shared-files-msg
-  ((files true-listp)
+  ((files string-listp)
    (db comp-dbp))
   :returns (msg msgp)
   :short "Describe, for each of the given source files, the outputs of the
           @(see compilation-database) entries which compile it."
   (b* (((when (endp files))
         "")
-       (file (acl2::str-fix (first files)))
+       (file (acl2::lstr-fix (first files)))
        (line (msg$ "~x0 is compiled into ~&1."
                    file
                    (comp-db-outputs-of-file file db)))
@@ -1221,7 +1223,7 @@
    (show-warnings booleanp)
    state)
   :returns (mv erp event state)
-  (b* ((const-name (mbe :logic (acl2::symbol-fix const-name) :exec const-name))
+  (b* ((const-name (acl2::symbol-lfix const-name))
        ((unless (or (eq objects :all) (string-listp objects)))
         (mv (msg$ "The :OBJECTS input must be :ALL or a list of strings, ~
                    but it is ~x0 instead."
