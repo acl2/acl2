@@ -3971,50 +3971,53 @@
       (if (null-refp src)
           (prog2$ (cw "ERROR: Trying to call arraycopy with a NULL src.")
                   (obtain-and-throw-exception *NullPointerException* 'arraycopy th s))
-        ;;ffixme check that src and dest point to okay things.  Do these 5 checks:
-        ;; The src argument refers to an object that is not an array.
-        ;; The dest argument refers to an object that is not an array.
-        ;; The src argument and dest argument refer to arrays whose component types are different primitive types.
-        ;; The src argument refers to an array with a primitive component type and the dest argument refers to an array with a reference component type.
-        ;; The src argument refers to an array with a reference component type and the dest argument refers to an array with a primitive component type.
-        (if (or (acl2::sbvlt 32 srcpos 0)
-                (acl2::sbvlt 32 destpos 0)
-                (acl2::sbvlt 32 length 0))
-            (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list 'arraycopy (decode-signed srcpos) (decode-signed destpos) (decode-signed length) src dest) th s) ;ffixme this should actually be an IndexOutOfBoundsException?  add that to the list of built-in classes?
-          (let* ((src-contents (acl2::get-field src (acl2::array-contents-pair) heap))
-                 (dest-contents (acl2::get-field dest (acl2::array-contents-pair) heap))
-                 (src-length (len src-contents)) ;a usb31
-                 (dest-length (len dest-contents))) ;a usb31
-            ;; We use BVMINUS here to prevent overflow when adding
-            ;; srcPos+length and destPos+length.  The difference is the number
-            ;; of elements that can be safely copied.
-            (if (or (acl2::sbvlt 32 (bvminus 32 src-length srcpos) length)
-                    (acl2::sbvlt 32 (bvminus 32 dest-length destpos) length))
-                (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list 'arraycopy src (decode-signed srcpos) dest (decode-signed destpos) (decode-signed length)) th s) ;ffixme this should actually be an IndexOutOfBoundsException?  add that to the list of built-in classes?
-              ;;fixme more checks here
-              (modify th s
-                      :pc (+ 3 ;the length of the invokestatic instruction
-                             (pc (thread-top-frame th s)))
-                      :stack (popn-operands 5 (stack (thread-top-frame th s)))
-                      :heap (acl2::set-field (addressfix dest)
-                                             (acl2::array-contents-pair)
-                                             ;; ;;i saw a case where it was tricky to recover the length of this:
-                                             ;; ;;also, what do we know about the return type?
-                                             ;; (acl2::update-subrange2 dest-length
-                                             ;;                         (decode-signed-non-neg destpos)
-                                             ;;                         ;;use bvplus 32 here?
-                                             ;;                         (+ (decode-signed-non-neg destpos) (decode-signed-non-neg length) -1)
-                                             ;;                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                             ;;                         ;try:(decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
-                                             ;;                         (acl2::subrange (decode-signed-non-neg srcpos)
-                                             ;;                                         ;;use bvplus31?
-                                             ;;                                         (+ (decode-signed-non-neg srcpos) (decode-signed-non-neg length) -1)
-                                             ;;                                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
-                                             ;;                                         ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
-                                             ;;                                         src-contents)
-                                             ;;                         dest-contents)
-                                             (arraycopy src-contents (decode-signed-non-neg srcpos) dest-contents (decode-signed-non-neg destpos) (decode-signed-non-neg length))
-                                             heap)))))))))
+        (let ((src-type (acl2::get-class src heap))
+              (dest-type (acl2::get-class dest heap)))
+          (if (or (not (array-typep src-type))
+                  (not (array-typep dest-type)))
+              (obtain-and-throw-exception *ArrayStoreException* (list 'arraycopy src (decode-signed srcpos) dest (decode-signed destpos) (decode-signed length)) th s)
+            ;;ffixme check that src and dest point to okay things.  Do these additional checks:
+            ;; The src argument and dest argument refer to arrays whose component types are different primitive types.
+            ;; The src argument refers to an array with a primitive component type and the dest argument refers to an array with a reference component type.
+            ;; The src argument refers to an array with a reference component type and the dest argument refers to an array with a primitive component type.
+            (if (or (acl2::sbvlt 32 srcpos 0)
+                    (acl2::sbvlt 32 destpos 0)
+                    (acl2::sbvlt 32 length 0))
+                (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list 'arraycopy (decode-signed srcpos) (decode-signed destpos) (decode-signed length) src dest) th s) ;ffixme this should actually be an IndexOutOfBoundsException?  add that to the list of built-in classes?
+              (let* ((src-contents (acl2::get-field src (acl2::array-contents-pair) heap))
+                     (dest-contents (acl2::get-field dest (acl2::array-contents-pair) heap))
+                     (src-length (len src-contents))  ;a usb31
+                     (dest-length (len dest-contents))) ;a usb31
+                ;; We use BVMINUS here to prevent overflow when adding
+                ;; srcPos+length and destPos+length.  The difference is the number
+                ;; of elements that can be safely copied.
+                (if (or (acl2::sbvlt 32 (bvminus 32 src-length srcpos) length)
+                        (acl2::sbvlt 32 (bvminus 32 dest-length destpos) length))
+                    (obtain-and-throw-exception *ArrayIndexOutOfBoundsException* (list 'arraycopy src (decode-signed srcpos) dest (decode-signed destpos) (decode-signed length)) th s) ;ffixme this should actually be an IndexOutOfBoundsException?  add that to the list of built-in classes?
+                  ;;fixme more checks here
+                  (modify th s
+                          :pc (+ 3 ;the length of the invokestatic instruction
+                                 (pc (thread-top-frame th s)))
+                          :stack (popn-operands 5 (stack (thread-top-frame th s)))
+                          :heap (acl2::set-field (addressfix dest)
+                                                 (acl2::array-contents-pair)
+                                                 ;; ;;i saw a case where it was tricky to recover the length of this:
+                                                 ;; ;;also, what do we know about the return type?
+                                                 ;; (acl2::update-subrange2 dest-length
+                                                 ;;                         (decode-signed-non-neg destpos)
+                                                 ;;                         ;;use bvplus 32 here?
+                                                 ;;                         (+ (decode-signed-non-neg destpos) (decode-signed-non-neg length) -1)
+                                                 ;;                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                                 ;;                         ;try:(decode-signed (bvplus 32 destpos (bvplus 32 length -1))) ;todo: fix the -1
+                                                 ;;                         (acl2::subrange (decode-signed-non-neg srcpos)
+                                                 ;;                                         ;;use bvplus31?
+                                                 ;;                                         (+ (decode-signed-non-neg srcpos) (decode-signed-non-neg length) -1)
+                                                 ;;                                         ;;TODO: Do the math using ACL2 integers and prove equivalent:
+                                                 ;;                                         ;;try: (bvplus 32 srcpos (bvplus 32 length -1)) ;todo: fix the -1
+                                                 ;;                                         src-contents)
+                                                 ;;                         dest-contents)
+                                                 (arraycopy src-contents (decode-signed-non-neg srcpos) dest-contents (decode-signed-non-neg destpos) (decode-signed-non-neg length))
+                                                 heap)))))))))))
 
 (defund is-java.lang.System.arraycopy (obj-class-name method-name descriptor)
   (declare (xargs :guard t))
