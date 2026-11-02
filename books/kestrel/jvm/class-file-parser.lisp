@@ -37,7 +37,7 @@
 (include-book "classes") ; this brings in defforall
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system)) ;for EQUAL-OF-BOOLEANS
+;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system)) ;for EQUAL-OF-BOOLEANS
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
@@ -60,6 +60,14 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
+
+;move
+(local
+ (defthm not-member-equal-when-member-equal-and-not-intersectp-equal
+   (implies (and (member-equal x l1)
+                 (not (intersectp-equal l1 l2)))
+            (not (member-equal x l2)))))
 
 (in-theory (disable mv-nth))
 
@@ -1885,7 +1893,7 @@
                )
           (equal (mv-nth 2 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool)) ; number of extra bytes
                  (+ -1 (jvm::inst-len (mv-nth 1 (translate-instruction opcode-name byte-number-of-opcode bytes constant-pool))))))
- :hints (("Goal" :in-theory (enable member-equal jvm::inst-len translate-instruction lookup-equal jvm::instructionp jvm::instruction-opcode))))
+ :hints (("Goal" :in-theory (enable jvm::inst-len translate-instruction lookup-equal jvm::instructionp jvm::instruction-opcode))))
 
 ;; don't really know what to put for the valid PCs
 ;; (thm

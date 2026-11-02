@@ -18,6 +18,7 @@
 (include-book "kestrel/jvm/execution-common" :dir :system) ; for TH
 (include-book "kestrel/jvm/jvm-rules" :dir :system)
 (include-book "kestrel/jvm/int-subtypes" :dir :system)
+(include-book "kestrel/jvm/ads2" :dir :system) ; drop?
 (include-book "../known-booleans")
 (include-book "../bv-list-rules-axe")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
