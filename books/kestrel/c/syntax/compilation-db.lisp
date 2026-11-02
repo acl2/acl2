@@ -38,6 +38,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -569,14 +570,16 @@
 (define comp-db-drop-non-c
   ((db comp-dbp))
   :returns (db$ comp-dbp)
-  :short "Drop @(see compilation-database) entries which do not apply to
-          @('.c') file or which don't include a @('-c') flag."
+  :short "Drop @(see compilation-database) entries which produce no file,
+          which do not apply to a @('.c') file, or which don't include a
+          @('-c') flag."
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
        (output (car (first db)))
        (entry (comp-db-entry-fix (cdr (first db))))
-       (keep (and (str::strsuffixp ".c" (comp-db-entry->file entry))
+       (keep (and output
+                  (str::strsuffixp ".c" (comp-db-entry->file entry))
                   (member-equal (make-comp-db-arg :name "-c"
                                                   :separator ""
                                                   :value nil)
@@ -938,23 +941,35 @@
 (define to-preprocess-db
   ((db comp-dbp)
    (path stringp)
+   (objects (or (eq objects :all) (string-listp objects)))
    state)
   :returns (mv (er? maybe-msgp)
-               (db$ comp-dbp))
+               (db$ comp-dbp)
+               (warnings acl2::msg-listp))
   :short "Transform a @(see compilation-database) to prepare for use in
           preprocessing."
-  (b* (((reterr) (comp-db-fix db))
+  :long
+  (xdoc::topstring-p
+    "If @('objects') is @(':all'), we keep all the entries which compile a
+     @('.c') file to a file (see @(tsee comp-db-drop-non-c)). Otherwise, we
+     keep the entries which produce the given objects (see @(tsee
+     comp-db-select)).")
+  (b* (((reterr) (comp-db-fix db) nil)
        (path (mbe :logic (acl2::str-fix path) :exec path))
        ((unless (canonical-pathname path t state))
         (retmsg$ "The specified path does not exist or is not a directory: ~x0"
                  path))
        (path (comp-db-absolute-path (acl2::str-fix (cbd)) path))
-       (db (comp-db-drop-non-c db))
+       (db (if (eq objects :all) (comp-db-drop-non-c db) db))
        (db (comp-db-keep-only-preprocessor-args db))
        (db (comp-db-absolute-paths db))
+       ((erp db warnings)
+        (if (eq objects :all)
+            (mv nil db nil)
+          (comp-db-select db objects path)))
        ((erp db) (comp-db-relativize-files db path))
        (db (comp-db-escape-for-shell db)))
-    (retok db)))
+    (retok db warnings)))
 
 (define preprocess-db-to-map
   ((db comp-dbp))
@@ -970,20 +985,106 @@
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
+(define comp-db-files
+  ((db comp-dbp))
+  :returns (files string-listp)
+  :short "The source files of the entries of a @(see compilation-database)."
+  (b* ((db (comp-db-fix db))
+       ((when (endp db))
+        nil))
+    (cons (comp-db-entry->file (cdr (first db)))
+          (comp-db-files (rest db))))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-outputs-of-file
+  ((file stringp)
+   (db comp-dbp))
+  :returns (outputs true-listp)
+  :short "The outputs of the entries of a @(see compilation-database)
+          which compile a given source file."
+  (b* ((file (mbe :logic (acl2::str-fix file) :exec file))
+       (db (comp-db-fix db))
+       ((when (endp db))
+        nil)
+       (outputs (comp-db-outputs-of-file file (rest db))))
+    (if (equal (comp-db-entry->file (cdr (first db))) file)
+        (cons (car (first db)) outputs)
+      outputs))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-shared-files-msg
+  ((files string-listp)
+   (db comp-dbp))
+  :returns (msg msgp)
+  :short "Describe, for each of the given source files, the outputs of the
+          @(see compilation-database) entries which compile it."
+  (b* (((when (endp files))
+        "")
+       (file (acl2::str-fix (first files)))
+       (line (msg$ "~x0 is compiled into ~&1."
+                   file
+                   (comp-db-outputs-of-file file db)))
+       ((when (endp (rest files)))
+        line))
+    (msg$ "~@0~%~@1" line (comp-db-shared-files-msg (rest files) db))))
+
+(define comp-db-check-unique-files
+  ((db comp-dbp))
+  :returns (er? maybe-msgp)
+  :short "Check that no two entries of a @(see compilation-database) compile
+          the same source file."
+  :long
+  (xdoc::topstring-p
+    "A preprocessing map associates a single list of arguments to each source
+     file, so it cannot describe a source file which is compiled into more
+     than one object. This is the case even if the arguments are the same,
+     since each object is a separate translation unit.")
+  (b* ((files (acl2::duplicated-members (comp-db-files db)))
+       ((unless files)
+        nil))
+    (msg$ "~#0~[A source file is~/Some source files are~] compiled into ~
+           more than one of the selected objects, which is not supported:~%~@1"
+          files
+          (comp-db-shared-files-msg files db)))
+  :guard-hints
+  (("Goal"
+    :use (:instance std::deflist-lemma-subsetp-equal-of-duplicated-members
+                    (std::x (comp-db-files db))))))
+
 (define to-preprocess-map
   ((db comp-dbp)
    (path stringp)
+   (objects (or (eq objects :all) (string-listp objects)))
    state)
   :returns (mv (er? maybe-msgp)
-               (map acl2::string-stringlist-mapp))
-  (b* (((reterr) nil)
-       ((erp db$)
-        (to-preprocess-db db path state)))
-    (retok (preprocess-db-to-map db$))))
+               (map acl2::string-stringlist-mapp)
+               (warnings acl2::msg-listp))
+  :short "Turn a @(see compilation-database) into a map from source files to
+          preprocessor arguments."
+  :long
+  (xdoc::topstring-p
+    "The entries are first selected and prepared by @(tsee to-preprocess-db).
+     It is an error if a source file is compiled into more than one of the
+     selected objects (see @(tsee comp-db-check-unique-files)).")
+  (b* (((reterr) nil nil)
+       ((erp db$ warnings)
+        (to-preprocess-db db path objects state))
+       (er? (comp-db-check-unique-files db$))
+       ((when er?)
+        (reterr (if (eq objects :all)
+                    (msg$ "~@0~%~%This happens when a project builds a ~
+                           source file in several ways, for instance for ~
+                           different programs or libraries. Selecting the ~
+                           objects of a single program, with the :OBJECTS ~
+                           input, avoids it."
+                          er?)
+                  er?))))
+    (retok (preprocess-db-to-map db$) warnings)))
 
 (define preprocess-map-from-comp-file
   ((filename stringp)
    (path stringp)
+   (objects (or (eq objects :all) (string-listp objects)))
    (warnings acl2::msg-listp)
    state)
   :returns (mv erp
@@ -995,9 +1096,9 @@
        ((reterr) nil warnings state)
        ((erp db state)
         (parse-comp-db filename state))
-       ((erp map)
-        (to-preprocess-map db path state)))
-    (retok map warnings state)))
+       ((erp map warnings$)
+        (to-preprocess-map db path objects state)))
+    (retok map (append warnings warnings$) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1012,13 +1113,21 @@
   ((const-name symbolp)
    (filename stringp)
    (path stringp)
+   objects
    (show-warnings booleanp)
    state)
   :returns (mv erp event state)
   (b* ((const-name (mbe :logic (acl2::symbol-fix const-name) :exec const-name))
+       ((unless (or (eq objects :all) (string-listp objects)))
+        (mv (msg$ "The :OBJECTS input must be :ALL or a list of strings, ~
+                   but it is ~x0 instead."
+                  objects)
+            nil
+            state))
        ((mv erp map warnings state)
         (preprocess-map-from-comp-file filename
                                        path
+                                       objects
                                        nil
                                        state))
        (- (if show-warnings
@@ -1035,7 +1144,8 @@
    &key
    file
    (path '".")
+   (objects ':all)
    (show-warnings 't))
   `(make-event
      (defpreprocess-map-fn
-       ',name ',file ',path ',show-warnings state)))
+       ',name ',file ',path ,objects ',show-warnings state)))
