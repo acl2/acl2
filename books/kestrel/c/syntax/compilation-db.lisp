@@ -28,6 +28,7 @@
 (include-book "std/strings/strsubst" :dir :system)
 (include-book "std/strings/suffixp" :dir :system)
 
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/filepath/paths" :dir :system)
@@ -70,12 +71,118 @@
       @('Makefile')-based projects by intercepting and recording compiler
       calls.")
    (xdoc::p
+     "A compilation database has an entry for each compilation step, which
+      records the source file, the working directory, the compiler arguments,
+      and (optionally) the output file. A project may compile the same source
+      file several times with different arguments, for instance once for each
+      program or library it is linked into, so a source file may appear in
+      several entries. Outputs, on the other hand, normally identify entries,
+      so we "
+     (xdoc::seetopic "comp-db" "represent")
+     " a compilation database as an alist from outputs to entries. Only
+      entries which give the compiler command as an @('arguments') array are
+      supported, not entries which give it as a @('command') string.")
+   (xdoc::p
      "Currently, the primary use-case for compilation database files is to
       gather all the necessary flags to pass to the C "
      (xdoc::seetopic "preprocessing" "preprocessor")
-     "."))
+     ", using @(tsee defpreprocess-map)."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ defpreprocess-map
+  :parents (compilation-database)
+  :short "Define a map from source files to preprocessor arguments, read from a
+          @(see compilation-database)."
+  :long
+  (xdoc::topstring
+   (xdoc::evmac-section-intro
+    (xdoc::p
+      "This macro reads a JSON compilation database and defines a constant
+       whose value is an omap from source files to lists of preprocessor
+       arguments. The map is meant for the @(':preprocess-args') input of
+       @(tsee input-files), with the @(':base-dir') input of that macro being
+       the @(':path') input of this one.")
+    (xdoc::p
+      "A compilation database may record several compilations of the same
+       source file with different arguments, for instance one for each program
+       or library the file is linked into. Since compilation databases do not
+       record which objects are linked into which program, the @(':objects')
+       input lets the user specify the objects of the program of interest, and
+       only the compilations producing those objects are used.")
+    (xdoc::p
+      "Paths are made absolute "
+      (xdoc::seetopic "comp-db-absolute-path" "syntactically")
+      ", without following symbolic links, so the map refers to source files
+       by the paths with which they were compiled."))
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(defpreprocess-map name"
+     "                   :file          ...  ; required, no default"
+     "                   :path          ...  ; default \".\""
+     "                   :objects       ...  ; default :all"
+     "                   :show-warnings ...  ; default t"
+     "  )"))
+   (xdoc::evmac-section-inputs
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+       "Name of the constant to define."))
+    (xdoc::desc
+     "@(':file') &mdash; required, no default"
+     (xdoc::p
+       "Path of the compilation database file. A relative path is relative to
+        the connected book directory (see @(tsee cbd))."))
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+       "Path of the root directory of the project. A relative path is relative
+        to the connected book directory.")
+     (xdoc::p
+       "The keys of the map are the paths of the source files relative to this
+        directory. It is an error if a source file whose compilation is used is
+        not in this directory."))
+    (xdoc::desc
+     "@(':objects') &mdash; default @(':all')"
+     (xdoc::p
+       "Term evaluating to @(':all') or to a list of strings, which are paths
+        of object files. Relative paths are relative to @(':path').")
+     (xdoc::p
+       "If this is a list, only the compilations producing the given objects
+        are used. These are typically the objects linked into a program,
+        including the members of the static archives which are linked into
+        it. They may be read, for instance, from the link command of the
+        program, as printed by the build or as recorded by Bear's
+        @('intercept') command, which records all the commands that a build
+        executes.")
+     (xdoc::p
+       "It is an error if no compilation produces one of the objects, or if
+        several compilations with different source files or arguments produce
+        it. Objects compiled from source files other than @('.c') files (e.g.
+        assembly files) are left out, with a warning.")
+     (xdoc::p
+       "If this is @(':all'), every compilation of a @('.c') file into an
+        object file is used.")
+     (xdoc::p
+       "In either case, it is an error if a source file is compiled into more
+        than one of the objects used, since the map associates a single list
+        of arguments to each source file."))
+    (xdoc::desc
+     "@(':show-warnings') &mdash; default @('t')"
+     (xdoc::p
+       "Whether to print warnings.")))
+   (xdoc::evmac-section-generated
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+       "Constant whose value is the map. The arguments of each source file are
+        the "
+       (xdoc::seetopic "comp-db-keep-only-preprocessor-args"
+                       "preprocessing-relevant")
+       " arguments of its compilation, with relative directories made absolute
+        and characters which are special to the shell escaped.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -652,7 +759,12 @@
      resolve @('path') against @('directory') and remove @('.') and @('..')
      segments. Symbolic links are not followed, since the compiler names a
      file (for instance in quoted @('#include') directives and in
-     @('__FILE__')) by the path it was given.")
+     @('__FILE__')) by the path it was given. Cancelling @('..') segments
+     syntactically agrees with the file system unless a segment followed by
+     @('..') is a symbolic link to a directory. Thus we assume that
+     @('directory') is a physical path, as recorded by tools such as Bear
+     (which use the working directory of the compiler process), and that
+     @('path') does not traverse such a link.")
   (b* ((directory (mbe :logic (acl2::str-fix directory) :exec directory))
        (path (mbe :logic (acl2::str-fix path) :exec path)))
     (filepath::path-to-string
