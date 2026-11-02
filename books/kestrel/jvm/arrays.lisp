@@ -16,6 +16,7 @@
 (include-book "heap-clearing") ; drop?
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
+(local (include-book "adstop")) ; todo: reduce
 (local (include-book "kestrel/sequences/defforall" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
