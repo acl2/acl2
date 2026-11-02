@@ -747,6 +747,11 @@
     (type-case ty
       :var (type-var-to-pform ty.var)
       :base (base-type-to-pform ty.type)
+      ;; A scalar type has no concrete syntax:
+      ;; it is printed as its element type,
+      ;; which the concrete syntax allows where an array type is expected
+      ;; (see the :scalar summand of @(tsee type)).
+      :scalar (type-to-pform ty.elem)
       :array (pform-op "A"
                        (type-to-pform ty.elem)
                        (ispace-to-pform ty.ispace))

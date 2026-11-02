@@ -49,6 +49,9 @@
      (xdoc::p
       "A base type is always valid.")
      (xdoc::p
+      "A scalar type is valid iff
+       its element type is valid and atom-kinded (i.e. not an array type).")
+     (xdoc::p
       "An array type is valid iff
        its element type is valid and atom-kinded (i.e. not an array type),
        and its ispace is valid.")
@@ -58,7 +61,7 @@
        and its ispaces are valid.")
      (xdoc::p
       "The atom-kind requirement on the element type of
-       an array or bracket type is the only kind constraint:
+       a scalar, array, or bracket type is the only kind constraint:
        as explained in @(tsee type),
        an atom-kinded type may otherwise be used
        wherever an array-kinded type is expected,
@@ -79,6 +82,8 @@
      type
      :var (consp (omap::assoc type.var (type-senv->types tenv)))
      :base t
+     :scalar (and (check-type type.elem ienv tenv)
+                  (type-atom-kindp type.elem))
      :array (and (check-type type.elem ienv tenv)
                  (type-atom-kindp type.elem)
                  (check-ispace type.ispace ienv))
