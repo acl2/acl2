@@ -917,7 +917,7 @@
                                    ,extra-classes
                                    state)))
 
-;; Test all methods in the given file whose names start with "test" or
+;; Test all methods in the given class whose names start with "test" or
 ;; "fail_test".  This variant of the tool should be called from the shell or
 ;; from an IDE, but not from the ACL2 REPL or in a book, because it causes
 ;; ACL2 to exit once it has done its work.  This does not check whether the

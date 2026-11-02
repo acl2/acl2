@@ -740,6 +740,7 @@
     jvm::no-locked-object
     jvm::empty-operand-stack
     jvm::push-operand ; for (jvm::push-operand '0 'nil) -- might not be needed if we always keep empty-operand-stack
+    acl2::null-ref ; todo: package
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
