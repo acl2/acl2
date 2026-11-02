@@ -20,6 +20,7 @@
 (include-book "kestrel/jvm/set-classes" :dir :system)
 (include-book "kestrel/jvm/do-inst-rules" :dir :system)
 (include-book "kestrel/jvm/arrays-2d" :dir :system)
+(include-book "kestrel/jvm/adstop" :dir :system) ; reduce?
 (include-book "kestrel/arrays-2d/arrays-2d" :dir :system)
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for acl2-numberp-when-integerp
 (include-book "jvm-rules-axe")

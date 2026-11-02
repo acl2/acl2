@@ -20,11 +20,12 @@
 
 (include-book "kestrel/maps/maps" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
-(include-book "adstop")
+(include-book "ads")
+;(include-book "adstop") ; reduce?
 (include-book "types")
 (include-book "fields")
 (local (include-book "kestrel/sequences/defforall" :dir :system))
-(include-book "utilities")
+;(include-book "utilities")
 (include-book "utilities2") ; for rules like 2LIST-OF-DELETE
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
@@ -549,6 +550,12 @@
          )
   :hints (("goal" :cases ((equal ref1 ref2)))))
 
+(include-book "kestrel/maps/maps" :dir :system)
+(defthm g-of-new-ad
+  (equal (g (new-ad (rkeys heap)) heap)
+         nil)
+  :hints (("Goal" :in-theory (enable g-iff-gen))))
+
 (defthm get-field-of-new-ad
   (equal (get-field (new-ad (rkeys heap)) pair heap)
          nil)
@@ -667,7 +674,8 @@
 
 (defthm all-addressp-of-n-new-ads
   (acl2::all-addressp (acl2::n-new-ads n ads))
-  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (N-NEW-ADS-BECOMES-N-NEW-ADS2)))))
+  :hints (("Goal" :in-theory (e/d (acl2::all-addressp acl2::n-new-ads acl2::n-new-ads-aux) (;N-NEW-ADS-BECOMES-N-NEW-ADS2
+                                                                                            )))))
 
 (defthm heapp-of-set-fields
   (implies (and (jvm::heapp heap)

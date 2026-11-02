@@ -61,48 +61,8 @@
 ;;   :hints (("Goal" :in-theory (e/d (memberp nth) (NTH-OF-CDR
 ;;                                                        )))))
 
-(defthm new-ad-aux-of-insert-irrel
-  (implies (and (< ad current-try)
-                (natp ad)
-                (natp current-try))
-           (equal (new-ad-aux (set::insert ad ads) current-try)
-                  (new-ad-aux ads current-try)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (new-ad-aux ads current-try)
-           :do-not-induct t
-           :expand ((NEW-AD-AUX (SET::INSERT AD ADS)
-                        CURRENT-TRY))
-           :in-theory (enable new-ad-aux))))
-
-(defthmd new-ad-aux-is-current-try
-  (implies (not (set::in current-try ads))
-           (equal (new-ad-aux ads current-try)
-                  current-try))
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
-(defthm new-ad-aux-of-insert-irrel2
-  (implies (and (not (equal ad (new-ad-aux ads current-try)))
-                (natp current-try)
-                (natp ad))
-           (equal (new-ad-aux (set::insert ad ads) current-try)
-                  (new-ad-aux ads current-try)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (new-ad-aux ads current-try)
-           :do-not-induct t
-           :expand ((new-ad-aux (set::insert ad ads) current-try))
-           :in-theory (enable new-ad-aux set-delete-insert-strong))))
-
-(defthm new-ad-aux-of-sfix
-  (equal (new-ad-aux (set::sfix ads) current-try)
-         (new-ad-aux ads current-try))
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
 ;; todo: there is some redundant stuff here:
 
-(defthmd new-ad-recollapse
-  (equal (new-ad-aux ads 0)
-         (new-ad ads))
-  :hints (("Goal" :in-theory (enable new-ad))))
 
 ;;;
 ;;; n-new-ads2-aux
@@ -121,6 +81,78 @@
   (implies (natp n)
            (equal (len (n-new-ads2-aux n current-try ads))
                   n)))
+
+(defthm n-new-ads2-aux-of-0
+  (equal (n-new-ads2-aux 0 ct dom)
+         nil)
+  :hints (("Goal" :in-theory (enable n-new-ads2-aux))))
+
+(defthm memberp-of-new-ad-aux-and-n-new-ads2-aux
+  (implies (posp n)
+           (memberp (new-ad-aux dom 0) (n-new-ads2-aux n 0 dom)))
+  :hints (("Goal" :in-theory (enable n-new-ads2-aux))))
+
+(defthm n-new-ads2-aux-of-sfix
+  (equal (n-new-ads2-aux m ct (set::sfix dom))
+         (n-new-ads2-aux m ct dom))
+  :hints (("Goal" :in-theory (enable n-new-ads2-aux))))
+
+(defthm memberp-of-n-new-ads2-aux-irrel
+  (implies (and (< ct ct2)
+                (natp ct)
+                (natp ct2))
+           (not (memberp ct (n-new-ads2-aux n ct2 dom))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+                  :in-theory (enable n-new-ads2-aux))))
+
+(defthm n-new-ads2-aux-of-delete-irrel
+  (implies (and (< ct ct2)
+                (natp ct)
+                (natp ct2))
+           (equal (N-NEW-ADS2-AUX N CT2 (SET::DELETE CT DOM))
+                  (N-NEW-ADS2-AUX N CT2 DOM)))
+  :hints (("Goal" :in-theory (enable N-NEW-ADS2-AUX))))
+
+(defthm no-duplicatesp-equal-of-n-new-ads2-aux
+  (implies (and ;(natp m)
+                (natp ct))
+           (no-duplicatesp-equal (n-new-ads2-aux m ct dom)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :in-theory (enable n-new-ads2-aux ;no-duplicatesp-equal-of-cons
+                              ))))
+
+
+(local
+ (defun ind (m n)
+  (if (or (zp m)
+          (zp n))
+      (list m n)
+    (ind (+ -1 m) (+ -1 n)))))
+
+(defthm subbagp-of-n-new-ads2-aux-and-n-new-ads2-aux
+  (implies (and (<= m n)
+                (natp m)
+                (natp n))
+           (subsetp-equal (n-new-ads2-aux m try ads)
+                          (n-new-ads2-aux n try ads)))
+  :hints (("Goal" ;:induct (ind m n)
+           :do-not '(generalize eliminate-destructors)
+           :in-theory (enable n-new-ads2-aux))))
+
+(defthm n-new-ads2-aux-of-insert-irrel
+  (implies (and (< ad current-try)
+                (natp current-try)
+                (natp ad)
+                (natp n)
+                )
+           (equal (n-new-ads2-aux n current-try (set::insert ad ads))
+                  (n-new-ads2-aux n current-try ads)))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (n-new-ads2-aux n current-try ads)
+           :expand ((N-NEW-ADS2-AUX N CURRENT-TRY (SET::INSERT AD ADS)))
+           )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund n-new-ads2 (n ads)
   (declare (type (integer 0 *) n)
@@ -148,6 +180,20 @@
          nil)
   :hints (("Goal" :in-theory (enable n-new-ads2))))
 
+(defthm no-duplicatesp-equal-of-n-new-ads2
+  (no-duplicatesp-equal (n-new-ads2 n ads))
+  :hints (("Goal" :in-theory (enable n-new-ads2))))
+
+(defthm subbagp-of-n-new-ads2-and-n-new-ads2
+  (implies (and (<= m n)
+                (natp m)
+                (natp n))
+           (subsetp-equal (n-new-ads2 m ads)
+                          (n-new-ads2 n ads)))
+  :hints (("Goal" :in-theory (enable n-new-ads2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;these would be faster:
 ;; (defun nth-new-ad2-aux (n prev-new-ad ads)
 ;;   (if (zp n)
@@ -166,11 +212,6 @@
       (new-ad ads)
     (nth (+ -1 n) (n-new-ads2 n ads))))
 
-;fixme faster way to write this?
-;returns a list, because the order matters
-(defun new-ads-slice2 (start end ads)
-  (nthcdr (+ -1 start) (n-new-ads2 end ads)))
-
 (defthm nth-new-ad2-of-1
   (equal (nth-new-ad2 1 ads)
          (new-ad ads))
@@ -187,31 +228,6 @@
                           (N-NEW-ADS2 n ADS))
                   t))
   :hints (("Goal" :in-theory (enable NTH-NEW-AD2))))
-
-(local
- (defun ind (m n)
-  (if (or (zp m)
-          (zp n))
-      (list m n)
-    (ind (+ -1 m) (+ -1 n)))))
-
-(defthm subbagp-of-n-new-ads2-aux-and-n-new-ads2-aux
-  (implies (and (<= m n)
-                (natp m)
-                (natp n))
-           (subsetp-equal (n-new-ads2-aux m try ads)
-                          (n-new-ads2-aux n try ads)))
-  :hints (("Goal" ;:induct (ind m n)
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (enable n-new-ads2-aux))))
-
-(defthm subbagp-of-n-new-ads2-and-n-new-ads2
-  (implies (and (<= m n)
-                (natp m)
-                (natp n))
-           (subsetp-equal (n-new-ads2 m ads)
-                          (n-new-ads2 n ads)))
-  :hints (("Goal" :in-theory (enable n-new-ads2))))
 
 (defthm member-of-nth-new-ad2-and-n-new-ads2-gen
   (implies (and (natp n)
@@ -230,8 +246,15 @@
 ;           :use (:instance bag::memberp-subbagp (bag::a (nth-new-ad2 m ads)) (bag::y (n-new-ads2 m ads)) (bag::x (n-new-ads2 n ads)))
            )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;fixme faster way to write this?
+;returns a list, because the order matters
+(defun new-ads-slice2 (start end ads)
+  (nthcdr (+ -1 start) (n-new-ads2 end ads)))
 
 ;rename
+;move
 (defthm in-of-new-ad-and-n-new-ads2
   (implies (and (integerp n)
                 (< 0 n))
@@ -241,18 +264,6 @@
   :hints (("Goal" :use (:instance member-of-nth-new-ad2-and-n-new-ads2-gen (m 1))
            :in-theory (disable member-of-nth-new-ad2-and-n-new-ads2-gen))))
 
-(defthm n-new-ads2-aux-of-insert-irrel
-  (implies (and (< ad current-try)
-                (natp current-try)
-                (natp ad)
-                (natp n)
-                )
-           (equal (n-new-ads2-aux n current-try (set::insert ad ads))
-                  (n-new-ads2-aux n current-try ads)))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (n-new-ads2-aux n current-try ads)
-           :expand ((N-NEW-ADS2-AUX N CURRENT-TRY (SET::INSERT AD ADS)))
-           )))
 
 (defthm n-new-ads2-aux-of-insert-irrel2
   (implies (and (not (memberp ad (n-new-ads2-aux n current-try ads))) ;this case
@@ -272,79 +283,7 @@
 ;the last case is when ad is in (n-new-ads2-aux n current-try ads)
 ;prove a theorem about splitting n-new-ads2-aux  ?  then split right at the point of insertion?  or union??
 
-(defthm new-ad-aux-of-delete-irrel
-  (implies (and (< x current-try)
-                (natp x)
-                (natp current-try))
-           (equal (new-ad-aux (set::delete x ads) current-try)
-                  (new-ad-aux ads current-try)))
-  :hints (("Goal" :induct (new-ad-aux ads current-try)
-           :in-theory (enable new-ad new-ad-aux))))
-
-
-
-(defthm new-ad-aux-known
-  (implies (and (not (set::in hole ads))
-                (<= hole (new-ad-aux ads current-try))
-                (<= current-try hole)
-                (natp current-try)
-                (natp hole))
-           (equal (new-ad-aux ads current-try)
-                  hole))
-  :hints (("Goal" :in-theory (enable new-ad new-ad-aux))))
-
-(defthm new-ad-known
-  (implies (and (not (set::in hole ads))
-                (<= hole (new-ad ads))
-                (natp hole))
-           (equal (new-ad ads)
-                  hole))
-  :hints (("Goal" :in-theory (enable new-ad new-ad-aux))))
-
-
-
 (local (in-theory (disable SET::USE-WEAK-INSERT-INDUCTION)))
-
-
-
-(defthm new-ad-aux-of-delete-irrel2
-  (implies (and (< (new-ad-aux ads current-try) x)
-                (natp x)
-                (natp current-try))
-           (equal (new-ad-aux (set::delete x ads) current-try)
-                  (new-ad-aux ads current-try)))
-  :hints (("Goal" :induct (new-ad-aux ads current-try)
-           :expand ((NEW-AD-AUX (SET::DELETE X ADS)
-                            CURRENT-TRY))
-           :in-theory (enable new-ad new-ad-aux))))
-
-(defthm new-ad-of-delete-irrel2
-  (implies (and (< (new-ad ads) x)
-                (natp x))
-           (equal (new-ad (set::delete x ads))
-                  (new-ad ads)))
-  :hints (("Goal" :in-theory (enable new-ad))))
-
-(defthmd advance-current-try
-  (implies (and (<= current-try (new-ad ads))
-                (natp current-try))
-           (equal (new-ad-aux ads current-try)
-                  (new-ad-aux ads (new-ad-aux ads current-try))))
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
-(defthmd advance-current-try2
-  (equal (new-ad ads)
-         (new-ad-aux ads (new-ad ads)))
-  :hints (("Goal" :in-theory (enable new-ad-aux))))
-
-(defthm new-ad-aux-of-insert-helper
-  (implies (and (<= current-try (new-ad ads))
-                (natp current-try))
-           (equal (new-ad-aux (set::insert (new-ad ads) ads) (new-ad ads))
-                  (new-ad-aux ads (+ 1 (new-ad ads)))))
-  :hints (("Goal" :expand ((new-ad-aux (set::insert (new-ad ads) ads) (new-ad ads))))))
-
-
 
 ;; (DEFUN ind2 (ADS CURRENT-TRY CURRENT-TRY2)
 ;;   (DECLARE (XARGS :MEASURE (SET::CARDINALITY ADS)
@@ -371,45 +310,7 @@
 ;;            :do-not-induct t
 ;;            :in-theory (enable new-ad-aux))))
 
-(defthmd advance-current-try3
-  (implies (and (<= current-try (new-ad-aux ads lo))
-                (<= lo current-try)
-                (natp lo)
-                (natp current-try))
-           (equal (new-ad-aux ads current-try)
-                  (new-ad-aux ads lo)))
-  :hints (("subgoal *1/6" :cases ((equal lo current-try)))
-          ("Goal"
-           :do-not '(generalize eliminate-destructors fertilize)
-;           :do-not-induct t
-           :in-theory (enable new-ad-aux))))
-
-(defthmd advance-current-try3-special
-  (implies (and (<= current-try (new-ad-aux ads 0))
-                (natp current-try))
-           (equal (new-ad-aux ads current-try)
-                  (new-ad-aux ads 0)))
-  :hints (("Goal" :use (:instance advance-current-try3 (lo 0))
-           :in-theory (disable advance-current-try3))))
-
-(defthmd advance-current-try3-special-safe
-  (implies (and (syntaxp (not (quotep current-try)))
-                (<= current-try (new-ad-aux ads 0))
-                (natp current-try))
-           (equal (new-ad-aux ads current-try)
-                  (new-ad-aux ads 0)))
-  :hints (("Goal" :use advance-current-try3-special)))
-
-
-(defthm new-ad-aux-of-insert-of-delete-irrel
-  (implies (and (< x current-try)
-                (natp x)
-                (natp current-try))
-           (equal (new-ad-aux (set::insert y (set::delete x ads)) current-try)
-                  (new-ad-aux (set::insert y ads) current-try)))
-  :hints (("Goal" :in-theory (e/d (set-insert-delete-strong) (set-delete-insert set::insert set::delete)))))
-
-
+;move!
 (defthm new-ad-aux-of-insert-bound
   (implies (and (natp ad)
                 (natp current-try))
@@ -418,8 +319,7 @@
   :hints (("Goal" :in-theory (enable new-ad-aux)
            :induct t
            :expand ((new-ad-aux (set::insert ad ads)
-                                current-try))
-           )))
+                                current-try)))))
 
 (defthm new-ad-aux-hole-bound
   (implies (and (not (set::in hole ads))
@@ -474,9 +374,7 @@
            :use (new-ad-aux-of-insert-helper
                  (:instance advance-current-try3 (ads (SET::INSERT (NEW-AD ADS) ADS))  (lo current-try) (current-try (NEW-AD ADS)))
 ;                 (:instance advance-current-try (ads (SET::INSERT (NEW-AD ADS) ADS))
-                 (:instance new-ad-aux-of-insert-bound (ad (NEW-AD ADS)))
-                 )))
-  )
+                 (:instance new-ad-aux-of-insert-bound (ad (NEW-AD ADS)))))))
 
 (defthm new-ad-aux-of-insert-of-new-ad-aux
   (implies (and (<= current-try (new-ad ads))
@@ -780,8 +678,6 @@
   :hints (("Goal" :cases ((natp n))
            :in-theory (enable n-new-ads n-new-ads2 N-NEW-ADS-BECOMES-N-NEW-ADS2-helper))))
 
-;; zz
-
 ;; (defthm nth-new-ad2-of-insert-new-ad
 ;;   (implies (and (integerp n)
 ;;                 (< 0 n))
@@ -859,13 +755,6 @@
 ;;                                (N-NEW-ADS2-AUX n ADS))
 ;;                   nil))
 ;;   :hints (("Goal" :in-theory (enable N-NEW-ADS2-AUX))))
-
-
-
-;; (defthm unique-of-n-new-ads2
-;;   (no-duplicatesp-equal (n-new-ads2 n ads))
-;;   :hints (("Goal" :in-theory (enable n-new-ads2 no-duplicatesp-equal-of-cons))))
-
 
 
 
@@ -1134,30 +1023,6 @@
 ;;            (equal (memberp (nth-new-ad2 n ads) (new-ads-slice start end ads))
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (enable new-ads-slice N-NEW-ADS2))))
-
-;; (defthm new-ad-not-memberp-of-new-ads
-;;   (implies (and (natp start)
-;;                 (< 1 start))
-;;            (equal (memberp (new-ad ads) (new-ads-slice start end ads))
-;;                   nil))
-;;   :hints (("Goal" :in-theory (enable new-ads-slice n-new-ads2))))
-
-;; (defthm new-ads-slice-iff
-;;   (implies (and (natp start)
-;;                 (natp end)
-;;                 (<= 1 start))
-;;            (iff (new-ads-slice start end ads)
-;;                 (<= start end)))
-;;   :hints (("Goal" :in-theory (enable new-ads-slice n-new-ads2))))
-
-;; (defthm new-ads-type
-;;   (implies (and (natp start)
-;;                 (natp end)
-;;                 (<= 1 start)
-;;                 (<= start end))
-;;            (consp (new-ads-slice start end ads)))
-;;   :rule-classes (:rewrite :type-prescription)
-;;   :hints (("Goal" :in-theory (enable new-ads-slice n-new-ads2))))
 
 ;; (defthmd new-ads-slice-recollect-1
 ;;   (implies (and (natp m)
