@@ -110880,6 +110880,15 @@ it."
  handles certain floating-point exceptions.  (ACL2 supports floating-point
  computations; see @(see df).)</p>
 
+ <p>(SBCL only) The SBCL &ldquo;nursery&rdquo; (roughly, the memory allocated
+ between garbage collections) is now 200 megabytes by default.  It was formerly
+ 1.6 gigabytes, because SBCL makes it 5% of the dynamic space size that ACL2
+ specifies.  This change can substantially reduce memory usage, especially when
+ certifying books in parallel, and it may also improve speed slightly.  A
+ different size, in megabytes, may be specified with environment variable
+ @('ACL2_SBCL_NURSERY_SIZE').  See the comment in the definition of
+ @('*sbcl-nursery-size*') in the ACL2 source code.</p>
+
  <p>(CMUCL only) Fixed CMUCL builds of ACL2 so that @('\"lisp\"') can be the
  specified Lisp program name and to avoid a problem with
  @('-dynamic-space-size') on some systems.  However, the CMUCL version must now

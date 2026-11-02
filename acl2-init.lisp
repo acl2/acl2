@@ -1608,7 +1608,70 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (lp))
 
 #+sbcl
+(defvar *sbcl-nursery-size*
+
+; This value, in megabytes, is the size of SBCL's "nursery": roughly, the
+; memory allocated between garbage collections.  It is overridden when ACL2
+; starts up if environment variable ACL2_SBCL_NURSERY_SIZE is set to a positive
+; integer (also in megabytes); see sbcl-nursery-size.  The user is also welcome
+; to set this variable before saving an ACL2 image, where nil means to leave
+; SBCL's default alone, or to change the nursery size in raw Lisp by setting
+; (sb-ext:bytes-consed-between-gcs), which is in bytes.
+
+; SBCL's default nursery is 5% of the dynamic space size, which for the default
+; value of *sbcl-dynamic-space-size* is 1.6 gigabytes.  SBCL returns pages
+; freed by collections of the youngest generations to the operating system only
+; after collecting an older generation, so that much memory tends to stay
+; resident in every ACL2 process.
+
+; In November 2026 we certified five community books (kestrel/bv/rules,
+; kestrel/x86/read-and-write, and three under kestrel/axe/x86/) using SBCL
+; 2.6.1.  A 200 megabyte nursery reduced peak memory usage by 1.1 to 1.4
+; gigabytes per book, and certification was also somewhat faster.  This value
+; is close to SBCL's own default nursery size for its default dynamic space
+; size (4 gigabytes).
+
+  200)
+
+#+sbcl
+(defun sbcl-nursery-size ()
+
+; Return the size, in megabytes, to use for SBCL's nursery, or nil to leave
+; SBCL's default alone.  See *sbcl-nursery-size*.
+
+; This is called when ACL2 starts up, before the ACL2 loop is entered.  So for
+; an illegal value of the environment variable we exit rather than cause an
+; error, since an error would put us in the SBCL debugger, which could then
+; read and evaluate input intended for the ACL2 loop, for example when
+; certifying a book.
+
+  (let* ((size0 (getenv$-raw "ACL2_SBCL_NURSERY_SIZE"))
+         (size (and (stringp size0)
+                    (string-trim '(#\Space #\Tab) size0))))
+    (cond ((or (null size)
+               (equal size ""))
+           *sbcl-nursery-size*)
+          (t (multiple-value-bind
+              (value posn)
+              (parse-integer size :junk-allowed t)
+              (cond ((and (integerp value)
+                          (< 0 value)
+                          (equal posn (length size)))
+                     value)
+                    (t (format *error-output*
+                               "~&Invalid value for environment variable ~
+                                ACL2_SBCL_NURSERY_SIZE: ~s~%(should be a ~
+                                positive integer, in megabytes).  Exiting ~
+                                ACL2.~%"
+                               size0)
+                       (finish-output *error-output*)
+                       (sb-ext:exit :code 1 :abort t))))))))
+
+#+sbcl
 (defun sbcl-restart ()
+  (let ((size (sbcl-nursery-size)))
+    (when size
+      (setf (sb-ext:bytes-consed-between-gcs) (* size 1024 1024))))
   (acl2-default-restart)
 ; Use eval to avoid style-warning for undefined function LP.
   (eval '(lp)))
