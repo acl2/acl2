@@ -46,8 +46,8 @@
 (include-book "arith-and-logic-spec")
 (include-book "../decoding-and-spec-utils")
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+;(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;(local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 
 ;; ======================================================================
 
@@ -119,26 +119,7 @@
                  (signed-byte-p 48 y))
             (signed-byte-p 49 (+ (- x) y)))))
 
-(local
- (defthm unsigned-byte-p-32-of-rml08
-   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
-                 (x86p x86))
-            (unsigned-byte-p 32 (mv-nth 1 (rml08 lin-addr r-w-x x86))))
-   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
-(local
- (defthm unsigned-byte-p-32-of-rml16
-   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
-                 (x86p x86))
-            (unsigned-byte-p 32 (mv-nth 1 (rml16 lin-addr r-w-x x86))))
-   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
-
-(local
- (defthm unsigned-byte-p-64-of-rml08
-   (implies (and (signed-byte-p *max-linear-address-size* lin-addr)
-                 (x86p x86))
-            (unsigned-byte-p 64 (mv-nth 1 (rml08 lin-addr r-w-x x86))))
-   :hints (("Goal" :in-theory (e/d* (unsigned-byte-p member-equal) (ash))))))
 
 (local
  (defthm member-equal-and-integers
@@ -158,7 +139,8 @@
 (local (in-theory (e/d* ()
                         (member-equal
                          signed-byte-p
-                         unsigned-byte-p))))
+                         unsigned-byte-p
+                         rml-size))))
 
 ;; ======================================================================
 ;; INSTRUCTIONS: (one-byte opcode map)
@@ -539,15 +521,6 @@
                   (not (equal proc-mode #.*64-bit-mode*))
                   t))
 
-  :guard-hints (("Goal" :in-theory (e/d (n08-to-i08
-                                         n16-to-i16
-                                         n32-to-i32
-                                         n64-to-i64
-                                         rme-size-of-1-to-rme08
-                                         rme-size-of-2-to-rme16
-                                         rme-size-of-4-to-rme32)
-                                        ())))
-
   :returns (x86 x86p :hyp (x86p x86)
                 :hints (("Goal" :in-theory (e/d* ()
                                                  (force
@@ -715,10 +688,6 @@
 
   :guard (and (natp operation)
               (<= operation 8))
-
-  :guard-hints (("Goal" :in-theory (enable rme-size-of-1-to-rme08
-                                           rme-size-of-2-to-rme16
-                                           rme-size-of-4-to-rme32)))
 
   :prepwork ((local (in-theory (e/d* () (commutativity-of-+)))))
 

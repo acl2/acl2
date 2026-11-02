@@ -660,7 +660,13 @@
      (rme-size proc-mode 32 eff-addr seg-reg r-x check-alignment? x86
                :mem-ptr? mem-ptr?)
      (rme256 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-    :enable (rme-size rme256)))
+    :enable (rme-size rme256))
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rme-size
+    (implies (and (<= (* 8 nbytes) size)
+                  (natp size))
+             (unsigned-byte-p size (mv-nth 1 (rme-size proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86))))
+    :hints (("Goal" :in-theory (disable rml-size)))))
 
 (define rime-size
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
@@ -792,7 +798,13 @@
               (rime-size proc-mode 8 eff-addr seg-reg r-x check-alignment? x86
                          :mem-ptr? mem-ptr?)
               (rime64 proc-mode eff-addr seg-reg r-x check-alignment? x86))
-            :enable (rime-size rime64)))
+            :enable (rime-size rime64))
+
+  (defthm signed-byte-p-of-mv-nth-1-of-rime-size
+    (implies (and (<= (* 8 nbytes) size)
+                  (member-equal nbytes '(1 2 4 8))
+                  (integerp size))
+             (signed-byte-p size (mv-nth 1 (rime-size proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86))))))
 
 ;; ----------------------------------------------------------------------
 

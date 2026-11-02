@@ -49,10 +49,13 @@
 
 (include-book "crc32-spec")
 (include-book "../decoding-and-spec-utils")
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
 ;; ======================================================================
+
+(local
+  (in-theory (disable rml-size)))
 
 (local
  (defthm dumb-signed-byte-p-guard-lemma
@@ -96,9 +99,6 @@
     "See Table 3-2 of Intel manual Volume 2 (Feb 2026)."))
 
   :returns (x86 x86p :hyp (x86p x86))
-
-  :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
-                                        ())))
 
   :prepwork
   ((local

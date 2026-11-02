@@ -46,7 +46,7 @@
 (include-book "shifts-spec")
 (include-book "rotates-spec")
 (include-book "../decoding-and-spec-utils")
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
 ;; INSTRUCTION: SAL/SAR/SHL/SHR/RCL/RCR/ROL/ROR
@@ -59,6 +59,8 @@
             (integerp (mv-nth 1 (add-to-*ip proc-mode *ip delta x86))))
    :in-theory (e/d (add-to-*ip) ())
    :rule-classes (:rewrite :type-prescription)))
+
+(local (in-theory (disable acl2::member-of-cons signed-byte-p)))
 
 (def-inst x86-sal/sar/shl/shr/rcl/rcr/rol/ror
 

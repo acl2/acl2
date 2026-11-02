@@ -621,6 +621,12 @@ are used to write natural numbers into the GPRs.</p>"
        ;; anything else.
        0)))
 
+  (encapsulate ()
+    (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+    (defthm rgfi-size-linear
+      (< (rgfi-size nbytes index rex x86) (expt 2 (* 8 nbytes)))
+      :rule-classes :linear
+      :hints (("Goal" :in-theory (enable rgfi-size)))))
 
   (define !rgfi-size
     ((nbytes :type (unsigned-byte 4))
