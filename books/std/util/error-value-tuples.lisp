@@ -1,4 +1,4 @@
-; ABNF (Augmented Backus-Naur Form) Library
+; Error-Value Tuples
 ;
 ; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
