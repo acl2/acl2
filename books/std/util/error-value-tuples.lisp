@@ -247,7 +247,7 @@
       "((erp val1 ... valN) (f ...))")
      (xdoc::p
       "where @('erp') is in the @('ACL2') package
-       (but can imported into the package of interest).
+       (but can be imported into the package of interest).
        If @('N') is 0, the binding is @('((erp) (f ...))').
        The @('val1'), ..., @('valN') may be @(tsee b*) patterns
        that can be used as components of the @(tsee patbind-mv) binder.")
@@ -285,7 +285,7 @@
      "Catching Errors"
 
      (xdoc::p
-      "To catch (i.e not propagate) an error from a called ACL2 function,
+      "To catch (i.e. not propagate) an error from a called ACL2 function,
        a caller ACL2 function can use an @('mv') binder for the call,
        check the @('erp') result,
        and continue its computation if an error occurs,
@@ -360,7 +360,7 @@
      (xdoc::p
       "A "
       (xdoc::seetopic "er" "soft error")
-      " print a message to ACL2's error output,
+      " prints a message to ACL2's error output,
        but does not stop execution.
        It causes the current function to return an "
       (xdoc::seetopic "error-triple" "error triple")
@@ -397,7 +397,7 @@
        must be accessed as elements of the list,
        which is not as direct
        (see @(tsee std::tuple) for a macro to facilitate
-       the declaration of multiple value reuslts
+       the declaration of multiple value results
        in @(tsee define) return specifiers).
        Another possible aggregation is a user-defined product type
        (e.g. @(tsee std::defaggregate) or @(tsee fty::defprod)),
@@ -436,7 +436,7 @@
        which makes context-message pairs
        slightly less convenient than hard and soft errors in this respect.
        However, an advantage is that state
-       does not need not be taken and returned.")
+       does not need to be taken and returned.")
 
      (xdoc::p
       "Note that,
@@ -452,14 +452,14 @@
        in which ideally every result of a function has a clear type.
        If the value may be a message,
        its type is the union of the ``real'' type and the type of messages,
-       which is a little more complicated than just using the ``real''type,
+       which is a little more complicated than just using the ``real'' type,
        and makes it necessary to create a type for the union.")
 
      (xdoc::p
       "Context-message pairs are thus quite similar to error-value tuples,
        and are sometimes used as context-message tuples
        (i.e. with more than one value).
-       The difference is that, in error-message pairs,
+       The difference is that, in error-value tuples,
        we put the message in the error,
        so that values have more uniform types.
        The error-value tuple utilities are also tailored to this."))
