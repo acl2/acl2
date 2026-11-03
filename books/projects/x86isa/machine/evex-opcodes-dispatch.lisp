@@ -47,6 +47,7 @@
 (include-book "instructions/psub")
 (include-book "instructions/pcmp")
 (include-book "instructions/rotate-and-shift")
+(include-book "instructions/multiply")
 (include-book "instructions/fp/logical")
 (include-book "instructions/move-vex")
 (include-book "instructions/fp/non-arith")
