@@ -1,6 +1,6 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,9 +26,6 @@
   :long
 
   (xdoc::topstring
-
-   (xdoc::p
-    "These are experimental utilities for now.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,8 +68,8 @@
       and @('val1'), ..., @('valN') contain irrelevant values.")
 
     (xdoc::p
-     "There is no strict requirements on the type of @('erp'),
-      but it should be, or include, an optional "
+     "There is no strict requirement on the type of @('erp'),
+      but it could be, or include, an optional "
      (xdoc::seetopic "msg" "message")
      " that describes the error in human-readable terms;
       for instance, an error could be a @(tsee cons) pair
@@ -81,7 +78,7 @@
       When writing code in a statically strongly typed style,
       particularly using @(tsee define) with argument and result types
       (the latter in @(':returns')),
-      it may be better to leave @('erp') untyped for future extensibility,
+      @('erp') could be left untyped for future extensibility,
       while @('val1'), ..., @('valN') should have types
       that make sense when no error occurs.
       If a type for @('erp') is used, e.g. @(tsee maybe-msgp),
@@ -211,12 +208,10 @@
      (xdoc::codeblock
       "(retok val1 ... valN)")
      (xdoc::p
-      "If @('N') is 0, it is writte as @('(retok)'),
-       which in a way may be more clear than @('nil')
-       in saying that things are okay, i.e. no error occurred.
-       It is also symmetric with @('reterr').
-       However, admittedly this does not provide huge advantages
-       over just @('(mv nil val1 .. valN)') or @('nil').")
+      "If @('N') is 0, it is written as @('(retok)'),
+       which is more clear than @('nil') in saying that things are okay,
+       i.e. no error occurred.
+       It is also symmetric with @('reterr').")
 
      (xdoc::p
       "Note that while @('reterr') is local to a function,
@@ -282,15 +277,7 @@
       "or, if @('N') is 0, to")
      (xdoc::codeblock
       "(erp (f ...))"
-      "((when erp) (reterr erp1))")
-     (xdoc::p
-      "We expect that this option may be used less often than not.")
-
-     (xdoc::p
-      "Because on the restriction on stobj results with @('reterr'),
-       this binder cannot be currently used when
-       the values of error-value triples include stobjs.
-       In this case, errors must be checked and propagated explicitly."))
+      "((when erp) (reterr erp1))"))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -334,7 +321,7 @@
       (xdoc::seetopic "er" "hard error")
       " is a bit like an exception.
        When a hard error occurs,
-       it print a message to ACL2's error output,
+       it prints a message to ACL2's error output,
        and it stops execution.
        A hard error is automatically propagated
        through the callers up the stack.
@@ -503,7 +490,7 @@
        of aggregations of multiple results.")
 
      (xdoc::p
-      "Result types may be more appropriate for development
+      "Result types may be more appropriate for developments
        in which ACL2 is used as a logical language,
        e.g. in a formalization,
        where clarity has paramount importance,
