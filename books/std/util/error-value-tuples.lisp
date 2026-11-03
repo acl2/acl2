@@ -319,12 +319,14 @@
       "A "
       (xdoc::seetopic "er" "hard error")
       " is a bit like an exception.
-       When a hard error occurs,
-       it prints a message to ACL2's error output,
-       and it stops execution.
+       A hard error normally prints a message to ACL2's error output
+       and aborts the current computation.
        A hard error is automatically propagated
        through the callers up the stack.
-       However, a hard error cannot be caught: it always stops execution.")
+       It cannot be caught by checking a returned value,
+       although evaluation facilities can catch it
+       (for example, @(tsee prove$) can turn hard errors from the prover
+       into ordinary proof failures).")
 
      (xdoc::p
       "Since logically a hard error returns @('nil'),
@@ -343,7 +345,8 @@
        Thus, all in all, using error-value tuples,
        with the utilities provided here,
        takes about the same amount of code as using hard errors,
-       with the advantage that errors can be potentially caught,
+       with the advantage that errors can be caught by callers
+       simply by checking return values,
        which is useful for using tools programmatically besides interactively.
        The only extra effort required for error-value tuples is that,
        if the error is not caught,
