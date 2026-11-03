@@ -510,7 +510,7 @@
 
 (def-b*-binder reterr
   :parents (error-value-tuples)
-  :short "Binder to introduce a local function that returns
+  :short "Binder to introduce a local macro that returns
           an error-value tuple with certain irrelevant values."
   :long
   (xdoc::topstring
