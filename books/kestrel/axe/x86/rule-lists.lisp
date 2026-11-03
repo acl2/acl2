@@ -6618,7 +6618,7 @@
 ;; Only unroll if nothing else works
 (set-axe-rule-priority acl2::bv-array-read-chunk-little-unroll 1)
 
-;; These can be slow (due to calling SMT), so We try these after other
+;; These can be slow (due to calling SMT), so we try these after other
 ;; bv-array-read rules that might be cheaper (e.g., ones based on the bit width
 ;; of the index term):
 (set-axe-rule-priority acl2::bv-array-read-shorten-when-in-first-half-smt 1)

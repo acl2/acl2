@@ -625,14 +625,15 @@
    (xdoc::p
     "A pattern base type matches only the same base type.")
    (xdoc::p
-    "A pattern array or bracket type matches
-     an array or bracket type, in either summand,
+    "A pattern scalar, array, or bracket type matches
+     a scalar, array, or bracket type, in any summand,
      or an atom type, regarded as a scalar array type:
      we use @(tsee type-match-array) to obtain
      the element type and the ispace of the type
      (this fails on an array type variable, which thus does not match),
      and we match them to the element type and the ispace of the pattern,
-     where the ispaces of a bracket pattern are combined
+     where the ispace of a scalar pattern is the empty shape,
+     and the ispaces of a bracket pattern are combined
      into a single shape ispace, as @(tsee type-match-array) does.
      The ispaces are matched via the @(see ispace-matcher),
      modulo ispace equivalence.")
@@ -699,6 +700,24 @@
                    (string-type-map-fix atom-subst)
                    (string-type-map-fix array-subst))
              (mv nil nil nil nil nil))
+     :scalar (b* ((array (type-match-array type))
+                  ((when (reserrp array)) (mv nil nil nil nil nil))
+                  ((type+ispace array) array)
+                  ((mv okp dim-subst shape-subst atom-subst array-subst)
+                   (type-match array.type
+                               pat.elem
+                               dim-subst
+                               shape-subst
+                               atom-subst
+                               array-subst))
+                  ((unless okp) (mv nil nil nil nil nil))
+                  ((mv okp dim-subst shape-subst)
+                   (ispace-match array.ispace
+                                 (ispace-shape (shape-dims nil))
+                                 dim-subst
+                                 shape-subst))
+                  ((unless okp) (mv nil nil nil nil nil)))
+               (mv t dim-subst shape-subst atom-subst array-subst))
      :array (b* ((array (type-match-array type))
                  ((when (reserrp array)) (mv nil nil nil nil nil))
                  ((type+ispace array) array)

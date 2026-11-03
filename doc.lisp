@@ -16330,7 +16330,9 @@ Subtopics
   This is a system function that determine whether a failed match of a
   monitored rule constitutes a near miss.
 
-  [31;1mNote:[0mThis function is attachable (see [defattach]).
+  [31;1mNote:[0mThis function is attachable (see [defattach]).  See [monitor],
+  specifically the section ``Criteria for Breaks'', for the default
+  behavior of this function when monitoring a rule.
 
     General Form:
     (brr-near-missp msgp lemma target rcnst criteria-alist)

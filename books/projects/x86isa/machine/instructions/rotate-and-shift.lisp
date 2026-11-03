@@ -543,3 +543,83 @@
   :guard-hints (("Goal" :in-theory (enable shlx-spec sarx-spec shrx-spec))))
 
 ;; ======================================================================
+;; INSTRUCTION: RORX
+;; ======================================================================
+
+(def-inst x86-rorx
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :parents (three-byte-opcodes)
+
+  :short "RORX: Rotate right without affecting flags."
+
+  :modr/m t
+
+  :vex t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; VEX.W selects a 64-bit operand only in 64-bit mode.
+       ;; In other modes the operand is always 32 bits,
+       ;; and the VEX register-extension bits (in particular VEX.B) are ignored.
+       (64-bit-mode? (equal proc-mode #.*64-bit-mode*))
+       (operand-size (if (and 64-bit-mode?
+                              (equal (vex->w vex-prefixes) 1))
+                         8
+                       4))
+       (rex-byte (if 64-bit-mode?
+                     (rex-byte-from-vex-prefixes vex-prefixes)
+                   0))
+
+       ;; Read the source specified by ModR/M.r/m.
+       ;; Include the immediate byte in RIP-relative address calculation.
+       ((mv flg src increment-rip-by & x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               t ; inst-ac?
+                                               nil ; memory-ptr?
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               1 ; num-imm-bytes
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       ;; Read the imm8.
+       ((mv flg cnt x86) (rme08 proc-mode temp-rip #.*cs* :x x86))
+       ((when flg) (!!ms-fresh :imm-rme08-error flg))
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip 1 x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?) (!!fault-fresh :gp 0 :instruction-length badlength?))
+
+       (result (rorx-spec operand-size src cnt))
+       ;; ModR/M.reg supplies the destination.
+       ;; A 32-bit write also clears its upper half,
+       ;; even when the masked rotation count is zero.
+       ;; No flags are read or written.
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        result
+                        rex-byte
+                        x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================

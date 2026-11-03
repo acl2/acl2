@@ -217,7 +217,8 @@
     "We apply the above normalization to
      both the @(':array') and the @(':bracket') summands,
      provided that their ispaces are equivalent to the empty list of dimensions;
-     for bracket types, we form a concatenation prior to the comparison.")
+     for bracket types, we form a concatenation prior to the comparison.
+     A @(':scalar') type is always normalized to its element type.")
    (xdoc::p
     "An array type variable @('*t') stands for
      the array type @('(A &t @t)') in Remora
@@ -236,6 +237,7 @@
     "The normalization is recursive."))
   (type-case
    type
+   :scalar (normalize-type type.elem)
    :array (if (ispace-equivp type.ispace
                              (ispace-shape (shape-dims nil)))
               (normalize-type type.elem)
@@ -293,7 +295,9 @@
      but they do not need to be in the same summand.
      The scalar normalization is handled
      via @(tsee normalize-type) for the second type,
-     and directly for the first type.")
+     and directly for the first type;
+     a first type in the @(':scalar') summand
+     is likewise compared as its element type.")
    (xdoc::p
     "In the case of function types, we follow the curried view:
      an n-ary function type with one or more input types
@@ -357,6 +361,7 @@
             type2
             :base (equal type1.type type2.type)
             :otherwise nil))
+   :scalar (type-equivp type1.elem type2)
    :array (if (ispace-equivp type1.ispace
                              (ispace-shape (shape-dims nil)))
               (type-equivp type1.elem type2)
