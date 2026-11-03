@@ -89,8 +89,7 @@
      "We provide utilities, described below,
       to facilitate the use of error-value tuples.
       More utilities may be added in the future,
-      particularly for richer forms of @('erp'),
-      which for now is assumed to be an optional message.")
+      particularly for richer forms of @('erp').")
 
     (xdoc::p
      "This is not a new idea, but just a variation of existing ideas.
