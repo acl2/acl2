@@ -12,6 +12,7 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defprojection" :dir :system)
 (include-book "std/util/defirrelevant" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -28,14 +29,19 @@
 (include-book "std/strings/strsubst" :dir :system)
 (include-book "std/strings/suffixp" :dir :system)
 
+(include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "kestrel/strings-light/split-string-last" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-(include-book "system/extend-pathname" :dir :system)
+(include-book "kestrel/filepath/paths" :dir :system)
 
+(include-book "std/basic/symbol-lfix" :dir :system)
 (include-book "std/basic/controlled-configuration" :dir :system)
-(acl2::controlled-configuration :hooks nil)
+(acl2::controlled-configuration)
 
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/strings-light/char" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
+(local (include-book "std/typed-lists/string-listp" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -67,12 +73,118 @@
       @('Makefile')-based projects by intercepting and recording compiler
       calls.")
    (xdoc::p
+     "A compilation database has an entry for each compilation step, which
+      records the source file, the working directory, the compiler arguments,
+      and (optionally) the output file. A project may compile the same source
+      file several times with different arguments, for instance once for each
+      program or library it is linked into, so a source file may appear in
+      several entries. Outputs, on the other hand, normally identify entries,
+      so we "
+     (xdoc::seetopic "comp-db" "represent")
+     " a compilation database as an alist from outputs to entries. Only
+      entries which give the compiler command as an @('arguments') array are
+      supported, not entries which give it as a @('command') string.")
+   (xdoc::p
      "Currently, the primary use-case for compilation database files is to
       gather all the necessary flags to pass to the C "
      (xdoc::seetopic "preprocessing" "preprocessor")
-     "."))
+     ", using @(tsee defpreprocess-map)."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ defpreprocess-map
+  :parents (compilation-database)
+  :short "Define a map from source files to preprocessor arguments, read from a
+          @(see compilation-database)."
+  :long
+  (xdoc::topstring
+   (xdoc::evmac-section-intro
+    (xdoc::p
+      "This macro reads a JSON compilation database and defines a constant
+       whose value is an omap from source files to lists of preprocessor
+       arguments. The map is meant for the @(':preprocess-args') input of
+       @(tsee input-files), with the @(':base-dir') input of that macro being
+       the @(':path') input of this one.")
+    (xdoc::p
+      "A compilation database may record several compilations of the same
+       source file with different arguments, for instance one for each program
+       or library the file is linked into. Since compilation databases do not
+       record which objects are linked into which program, the @(':objects')
+       input lets the user specify the objects of the program of interest, and
+       only the compilations producing those objects are used.")
+    (xdoc::p
+      "Paths are made absolute "
+      (xdoc::seetopic "comp-db-absolute-path" "syntactically")
+      ", without following symbolic links, so the map refers to source files
+       by the paths with which they were compiled."))
+   (xdoc::evmac-section-form
+    (xdoc::codeblock
+     "(defpreprocess-map name"
+     "                   :file          ...  ; required, no default"
+     "                   :path          ...  ; default \".\""
+     "                   :objects       ...  ; default :all"
+     "                   :show-warnings ...  ; default t"
+     "  )"))
+   (xdoc::evmac-section-inputs
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+       "Name of the constant to define."))
+    (xdoc::desc
+     "@(':file') &mdash; required, no default"
+     (xdoc::p
+       "Path of the compilation database file. A relative path is relative to
+        the connected book directory (see @(tsee cbd))."))
+    (xdoc::desc
+     "@(':path') &mdash; default @('\".\"')"
+     (xdoc::p
+       "Path of the root directory of the project. A relative path is relative
+        to the connected book directory.")
+     (xdoc::p
+       "The keys of the map are the paths of the source files relative to this
+        directory. It is an error if a source file whose compilation is used is
+        not in this directory."))
+    (xdoc::desc
+     "@(':objects') &mdash; default @(':all')"
+     (xdoc::p
+       "Term evaluating to @(':all') or to a list of strings, which are paths
+        of object files. Relative paths are relative to @(':path').")
+     (xdoc::p
+       "If this is a list, only the compilations producing the given objects
+        are used. These are typically the objects linked into a program,
+        including the members of the static archives which are linked into
+        it. They may be read, for instance, from the link command of the
+        program, as printed by the build or as recorded by Bear's
+        @('intercept') command, which records all the commands that a build
+        executes.")
+     (xdoc::p
+       "It is an error if no compilation produces one of the objects, or if
+        several compilations with different source files or arguments produce
+        it. Objects compiled from source files other than @('.c') files (e.g.
+        assembly files) are left out, with a warning.")
+     (xdoc::p
+       "If this is @(':all'), every compilation of a @('.c') file into an
+        object file is used.")
+     (xdoc::p
+       "In either case, it is an error if a source file is compiled into more
+        than one of the objects used, since the map associates a single list
+        of arguments to each source file."))
+    (xdoc::desc
+     "@(':show-warnings') &mdash; default @('t')"
+     (xdoc::p
+       "Whether to print warnings.")))
+   (xdoc::evmac-section-generated
+    (xdoc::desc
+     "@('name')"
+     (xdoc::p
+       "Constant whose value is the map. The arguments of each source file are
+        the "
+       (xdoc::seetopic "comp-db-keep-only-preprocessor-args"
+                       "preprocessing-relevant")
+       " arguments of its compilation, with relative directories made absolute
+        and characters which are special to the shell escaped.")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,8 +217,7 @@
   :returns (string stringp)
   :short "Turn a @(see comp-db-arg) into a string."
   (b* (((comp-db-arg arg) arg))
-    (concatenate 'string arg.name arg.separator (or arg.value "")))
-  :hooks (:fix))
+    (concatenate 'string arg.name arg.separator (or arg.value ""))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,10 +225,9 @@
   :short "A fixtype for lists of compiler arguments parsed from a @(see
           compilation-database)."
   :long
-  (xdoc::topstring
-    (xdoc::p
-      "Note that the order of argument is meaningful. For instance, the
-       argument @('-U') cancels previous definitions."))
+  (xdoc::topstring-p
+    "Note that the order of argument is meaningful. For instance, the
+     argument @('-U') cancels previous definitions.")
   :elt-type comp-db-arg
   :true-listp t
   :elementp-of-nil nil
@@ -130,27 +240,33 @@
   (if (endp args)
       nil
     (cons (comp-db-arg-to-string (first args))
-          (comp-db-arg-list-to-string-list (rest args))))
-  :hooks (:fix))
+          (comp-db-arg-list-to-string-list (rest args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: consider storing directories, source files, and outputs as structured
+;; paths from the filepath::paths library once there is a fixtype for them.
+;; For now, they are strings, which we parse and print back on demand (see
+;; comp-db-absolute-path).
 (fty::defprod comp-db-entry
   :short "A fixtype for entries parsed from a @(see compilation-database)."
   :long
-  (xdoc::topstring
-    (xdoc::p
-      "The @('exec') field is the executable which performs compilation. The
-       @('directory') is the working directory in which to compile. The
-       optional @('output') field represents the created file (typically a
-       @('.o') file. When present, it is the value associated with the @('-o')
-       flag for C compilations. Lastly, @('arguments') is a list of arguments
-       provided to the compiler."))
+  (xdoc::topstring-p
+    "The @('exec') field is the executable which performs compilation. The
+     @('directory') is the working directory in which to compile. The
+     @('file') field is the source file being compiled, as it appears in the
+     compilation database (it may be relative to @('directory')). Lastly,
+     @('arguments') is a list of arguments provided to the compiler.")
   ((exec string)
    (directory string)
-   (output acl2::string-option)
+   (file string)
    (arguments comp-db-arg-list))
   :pred comp-db-entryp)
+
+(defirrelevant irr-comp-db-entry
+  :short "An irrelevant @(see comp-db-entry)."
+  :type comp-db-entryp
+  :body (make-comp-db-entry :exec "" :directory "" :file "" :arguments nil))
 
 (encapsulate ()
   (local (set-induction-depth-limit 1))
@@ -160,14 +276,23 @@
     :long
     (xdoc::topstring
       (xdoc::p
-        "This type is an alist associating file names to "
+        "This type is an alist associating outputs to "
         (xdoc::seetopic "comp-db-entry" "entries")
-        ". Note that a file name may be associated with "
+        ", in the order in which the entries appear in the compilation
+         database. An output is the file produced by the compilation step, as
+         it appears in the compilation database or as determined by "
+        (xdoc::seetopic "comp-db-implicit-output" "the compiler's defaults")
+        " when the database does not record it. It may be relative to the
+         entry's directory, and it is @('nil') if the step produces no
+         file.")
+      (xdoc::p
+        "Note that an output may be associated with "
         (xdoc::i "multiple")
-        " entries. This may happen if, for instance, if a compilation database
-         stores the compilation step for both a regular and a
-         position-independent version of the same source file."))
-    :key-type string
+        " entries. This may happen if, for instance, a single command compiles
+         and links several source files: the compilation database then holds
+         an entry for each source file, each with the linked program as its
+         output."))
+    :key-type acl2::string-option
     :val-type comp-db-entry
     :true-listp t
     :pred comp-dbp))
@@ -203,7 +328,7 @@
 (define json-to-comp-db-get-file
   ((entry json::valuep))
   :guard (eq (json::value-kind entry) :object)
-  :returns (mv erp (file stringp))
+  :returns (mv (er? maybe-msgp) (file stringp))
   (b* (((reterr) "")
        (entry (json::value-fix entry))
        (values (json::object-member-values "file" entry))
@@ -220,17 +345,16 @@
       value
       :string (retok value.get)
       :otherwise (retmsg$ "Expected string type in member field \"file\" of ~
-                           JSON compilation database entry.
+                           JSON compilation database entry. ~
                            Found ~x0 instead."
-                          (json::value-kind value))))
-  :hooks (:fix))
+                          (json::value-kind value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db-get-output
   ((entry json::valuep))
   :guard (eq (json::value-kind entry) :object)
-  :returns (mv erp (output? string-optionp))
+  :returns (mv (er? maybe-msgp) (output? string-optionp))
   (b* (((reterr) nil)
        (entry (json::value-fix entry))
        (values (json::object-member-values "output" entry))
@@ -245,17 +369,16 @@
       value
       :string (retok value.get)
       :otherwise (retmsg$ "Expected string type in member field \"output\" of ~
-                           JSON compilation database entry.
+                           JSON compilation database entry. ~
                            Found ~x0 instead."
-                         (json::value-kind value))))
-  :hooks (:fix))
+                         (json::value-kind value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db-get-directory
   ((entry json::valuep))
   :guard (eq (json::value-kind entry) :object)
-  :returns (mv erp (directory stringp))
+  :returns (mv (er? maybe-msgp) (directory stringp))
   (b* (((reterr) "")
        (entry (json::value-fix entry))
        (values (json::object-member-values "directory" entry))
@@ -272,10 +395,9 @@
       value
       :string (retok value.get)
       :otherwise (retmsg$ "Expected string type in member field \"directory\" ~
-                           of JSON compilation database entry.
+                           of JSON compilation database entry. ~
                            Found ~x0 instead."
-                         (json::value-kind value))))
-  :hooks (:fix))
+                         (json::value-kind value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -284,11 +406,11 @@
   :returns (mv erp (argument$ comp-db-argp))
   :short "Try to parse a short option."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "A short option is a dash, followed by a single uppercase letter, followed
-      by a value. For instance, @('-I/usr/include')."))
-  (b* (((reterr) (irr-comp-db-arg)))
+  (xdoc::topstring-p
+    "A short option is a dash, followed by a single uppercase letter, followed
+     by a value. For instance, @('-I/usr/include').")
+  (b* (((reterr) (irr-comp-db-arg))
+       (argument (acl2::lstr-fix argument)))
     (if (and (< 1 (length argument))
              (eql (char argument 0) #\-)
              (acl2::upper-case-p (char argument 1)))
@@ -302,10 +424,10 @@
   :returns (mv erp (argument$ comp-db-argp))
   :short "Try to parse an argument with an @('=') separator."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "For instance, @('-std=c17')."))
+  (xdoc::topstring-p
+    "For instance, @('-std=c17').")
   (b* (((reterr) (irr-comp-db-arg))
+       (argument (acl2::lstr-fix argument))
        (pos (str::strpos "=" argument))
        ((unless pos)
         (reterr t))
@@ -318,7 +440,7 @@
 
 (define json-to-comp-db-arguments
   ((arguments json::value-listp))
-  :returns (mv erp (arguments$ comp-db-arg-listp))
+  :returns (mv (er? maybe-msgp) (arguments$ comp-db-arg-listp))
   :short "Parse an argument list into structured, name/value arguments."
   (b* (((reterr) nil)
        (arguments (json::value-list-fix arguments))
@@ -327,7 +449,7 @@
        (name-value? (first arguments))
        ((unless (eq (json::value-kind name-value?) :string))
         (retmsg$ "Expected string type in \"arguments\" array of ~
-                  JSON compilation database entry.
+                  JSON compilation database entry. ~
                   Found ~x0 instead."
                  (json::value-kind name-value?)))
        (name-value?-str (json::value-string->get name-value?))
@@ -352,7 +474,7 @@
              (value (second arguments))
              ((unless (eq (json::value-kind value) :string))
               (retmsg$ "Expected string type in \"arguments\" array of ~
-                        JSON compilation database entry.
+                        JSON compilation database entry. ~
                         Found ~x0 instead."
                        (json::value-kind value)))
              (value-str (json::value-string->get value)))
@@ -363,14 +485,13 @@
        ((erp arguments$) (json-to-comp-db-arguments rest-arguments)))
     (retok (cons comp-db-arg arguments$)))
   :measure (json::value-list-count arguments)
-  :hints (("Goal" :in-theory (enable json::value-list-fix)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable json::value-list-fix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db-exec-and-arguments
   ((arguments json::value-listp))
-  :returns (mv erp (exec stringp) (arguments$ comp-db-arg-listp))
+  :returns (mv (er? maybe-msgp) (exec stringp) (arguments$ comp-db-arg-listp))
   (b* (((reterr) "" nil)
        (arguments (json::value-list-fix arguments))
        ((when (endp arguments))
@@ -379,18 +500,17 @@
        (exec (first arguments))
        ((unless (eq (json::value-kind exec) :string))
         (retmsg$ "Expected string type in \"arguments\" array of ~
-                  JSON compilation database entry.
+                  JSON compilation database entry. ~
                   Found ~x0 instead."
                  (json::value-kind exec)))
        (exec-str (json::value-string->get exec))
        ((erp arguments$) (json-to-comp-db-arguments (rest arguments))))
-    (retok exec-str arguments$))
-  :hooks (:fix))
+    (retok exec-str arguments$)))
 
 (define json-to-comp-db-get-exec-and-arguments
   ((entry json::valuep))
   :guard (equal (json::value-kind entry) :object)
-  :returns (mv erp (exec stringp) (arguments$ comp-db-arg-listp))
+  :returns (mv (er? maybe-msgp) (exec stringp) (arguments$ comp-db-arg-listp))
   (b* (((reterr) "" nil)
        (entry (json::value-fix entry))
        (values (json::object-member-values "arguments" entry))
@@ -407,170 +527,184 @@
       value
       :array (json-to-comp-db-exec-and-arguments value.elements)
       :otherwise (retmsg$ "Expected array type in member field \"arguments\" ~
-                           of JSON compilation database entry.
+                           of JSON compilation database entry. ~
                            Found ~x0 instead."
-                         (json::value-kind value))))
-  :hooks (:fix))
+                         (json::value-kind value)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define comp-db-arguments-last-output
+  ((arguments comp-db-arg-listp))
+  :returns (output? acl2::string-optionp)
+  :short "The value of the last @('-o') argument, if any."
+  (b* (((when (endp arguments))
+        nil)
+       (output? (comp-db-arguments-last-output (rest arguments)))
+       ((when output?)
+        output?)
+       ((comp-db-arg argument) (first arguments)))
+    (and (equal argument.name "-o")
+         argument.value)))
+
+(define comp-db-default-output-name
+  ((file stringp)
+   (suffix stringp))
+  :returns (name stringp)
+  :short "The name a compiler gives an output file
+          when there is no @('-o') argument."
+  :long
+  (xdoc::topstring-p
+    "GCC and Clang name the output after the source file, without its
+     directory, with the suffix of the source file (if any) replaced by
+     @('suffix'). For instance, the source file @('lib/foo.c') and the
+     suffix @('\".o\"') yield @('foo.o'). The output is placed in the working
+     directory of the compilation, not in the directory of the source
+     file.")
+  (b* ((file (acl2::lstr-fix file))
+       ((mv slashp - base) (acl2::split-string-last file #\/))
+       (base (if slashp base file))
+       ((mv - stem -) (acl2::split-string-last base #\.)))
+    (concatenate 'string stem suffix)))
+
+(define comp-db-implicit-output
+  ((file stringp)
+   (arguments comp-db-arg-listp))
+  :returns (output? acl2::string-optionp)
+  :short "The output of a compilation step, as determined by its arguments."
+  :long
+  (xdoc::topstring-p
+    "This determines the output of @(see compilation-database) entries
+     which have no @('output') member, following the behavior of GCC and
+     Clang. With @('-fsyntax-only'), no file is produced, even with an
+     @('-o') argument. Otherwise, the last @('-o') argument names the
+     output. Without @('-o'), @('-E'), @('-M'), and @('-MM') write to
+     standard output, while @('-S') and @('-c') produce an assembly and an
+     object file, respectively, "
+    (xdoc::seetopic "comp-db-default-output-name" "named after the source
+                     file")
+    ". With none of these flags, the compiler links a program named
+     @('a.out').")
+  (b* ((flags (comp-db-arg-list-to-string-list arguments))
+       ((when (member-equal "-fsyntax-only" flags))
+        nil)
+       (output? (comp-db-arguments-last-output arguments))
+       ((when output?)
+        output?)
+       ((when (or (member-equal "-E" flags)
+                  (member-equal "-M" flags)
+                  (member-equal "-MM" flags)))
+        nil)
+       ((when (member-equal "-S" flags))
+        (comp-db-default-output-name file ".s"))
+       ((when (member-equal "-c" flags))
+        (comp-db-default-output-name file ".o")))
+    "a.out"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db-entry
-  ((entry json::valuep)
-   (db comp-dbp)
-   (warnings-onp booleanp)
-   (warnings acl2::msg-listp))
-  :returns (mv erp
-               (db$ comp-dbp)
-               (warnings$ acl2::msg-listp))
-  (b* ((db (comp-db-fix db))
-       (warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
-                      :exec warnings))
-       ((reterr) nil warnings))
+  ((entry json::valuep))
+  :returns (mv (er? maybe-msgp)
+               (output acl2::string-optionp)
+               (entry$ comp-db-entryp))
+  (b* (((reterr) nil (irr-comp-db-entry)))
     (json::value-case
       entry
       :object
       (b* (((erp file) (json-to-comp-db-get-file entry))
-           (warnings (if (and warnings-onp
-                              (assoc-equal file db))
-                         (cons (msg$ "Found multiple entries for file: ~x0"
-                                     file)
-                               warnings)
-                       warnings))
            ((erp output) (json-to-comp-db-get-output entry))
            ((erp directory) (json-to-comp-db-get-directory entry))
            ((erp exec arguments) (json-to-comp-db-get-exec-and-arguments entry))
-           (entry (make-comp-db-entry :exec exec
-                                      :directory directory
-                                      :output output
-                                      :arguments arguments)))
-        (retok (cons (cons file entry) (comp-db-fix db)) warnings))
+           (output (or output (comp-db-implicit-output file arguments))))
+        (retok output
+               (make-comp-db-entry :exec exec
+                                   :directory directory
+                                   :file file
+                                   :arguments arguments)))
       :otherwise (retmsg$ "Expected object type in ~
-                           JSON compilation database entry.
+                           JSON compilation database entry. ~
                            Found ~x0 instead."
-                          (json::value-kind entry))))
-  :hooks (:fix))
+                          (json::value-kind entry)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db-entry-list
-  ((entries json::value-listp)
-   (db comp-dbp)
-   (warnings-onp booleanp)
-   (warnings acl2::msg-listp))
-  :returns (mv erp
-               (db$ comp-dbp)
-               (warnings$ acl2::msg-listp))
-  (b* ((warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
-                      :exec warnings))
-       ((reterr) nil warnings)
+  ((entries json::value-listp))
+  :returns (mv (er? maybe-msgp)
+               (db comp-dbp))
+  (b* (((reterr) nil)
        ((when (endp entries))
-        (retok (comp-db-fix db) warnings))
-       ((erp db warnings)
-        (json-to-comp-db-entry (first entries) db warnings-onp warnings)))
-    (json-to-comp-db-entry-list (rest entries) db warnings-onp warnings))
-  :hooks (:fix))
+        (retok nil))
+       ((erp output entry) (json-to-comp-db-entry (first entries)))
+       ((erp db) (json-to-comp-db-entry-list (rest entries))))
+    (retok (acons output entry db)))
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define json-to-comp-db
-  ((value json::valuep)
-   (warnings-onp booleanp)
-   (warnings acl2::msg-listp))
-  :returns (mv erp
-               (db comp-dbp)
-               (warnings$ acl2::msg-listp))
-  (b* ((warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
-                      :exec warnings))
-       ((reterr) nil warnings))
+  ((value json::valuep))
+  :returns (mv (er? maybe-msgp)
+               (db comp-dbp))
+  (b* (((reterr) nil))
     (json::value-case
       value
-      :array (json-to-comp-db-entry-list value.elements
-                                         nil
-                                         warnings-onp
-                                         warnings)
+      :array (json-to-comp-db-entry-list value.elements)
       :otherwise
       (retmsg$ "Expected array type at ~
                 top level of JSON compilation database. ~
                 Found ~x0 instead."
-               (json::value-kind value))))
-  :hooks (:fix))
+               (json::value-kind value)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define parse-comp-db
   ((filename stringp)
-   (warnings-onp booleanp)
-   (warnings acl2::msg-listp)
    state)
   :returns (mv erp
                (db comp-dbp)
-               (warnings$ acl2::msg-listp)
                state)
   :short "Parse a @(see compilation-database) from a file."
-  (b* ((warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
-                      :exec warnings))
-       ((reterr) nil warnings state)
+  (b* (((reterr) nil state)
+       (filename (acl2::lstr-fix filename))
        ((erp parsed state)
         (acl2::parse-file-as-json filename state))
        ((erp value) (json::parsed-to-value parsed))
-       ((erp db warnings) (json-to-comp-db value warnings-onp warnings)))
-    (retok db warnings state)))
+       ((erp db) (json-to-comp-db value)))
+    (retok db state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define comp-db-drop-non-c
   ((db comp-dbp))
   :returns (db$ comp-dbp)
-  :short "Drop @(see compilation-database) entries which do not apply to
-          @('.c') file or which don't include a @('-c') flag."
+  :short "Drop @(see compilation-database) entries which produce no file,
+          which do not apply to a @('.c') file, or which don't include a
+          @('-c') flag."
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
-       (file (acl2::str-fix (car (first db))))
+       (output (car (first db)))
        (entry (comp-db-entry-fix (cdr (first db))))
-       (keep (and (str::strsuffixp ".c" file)
+       (keep (and output
+                  (str::strsuffixp ".c" (comp-db-entry->file entry))
                   (member-equal (make-comp-db-arg :name "-c"
                                                   :separator ""
                                                   :value nil)
                                 (comp-db-entry->arguments entry)))))
     (if keep
-        (acons file
+        (acons output
                entry
                (comp-db-drop-non-c (rest db)))
       (comp-db-drop-non-c (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
-
-(define comp-db-drop-shared
-  ((db comp-dbp))
-  :returns (db$ comp-dbp)
-  :short "Drop @(see compilation-database) entries which produce shared or
-          position-independent code."
-  (b* ((db (comp-db-fix db))
-       ((when (endp db))
-        nil)
-       (entry (cdr (first db)))
-       (drop (or (member-equal (make-comp-db-arg :name "-fPIC"
-                                                 :separator ""
-                                                 :value nil)
-                               (comp-db-entry->arguments entry))
-                 (member-equal (make-comp-db-arg :name "-fpic"
-                                                 :separator ""
-                                                 :value nil)
-                               (comp-db-entry->arguments entry)))))
-    (if drop
-        (comp-db-drop-shared (rest db))
-      (cons (first db)
-            (comp-db-drop-shared (rest db)))))
-  :measure (acl2-count (comp-db-fix db))
-  :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: why is the fix hook of this function taking a little long?
 (define comp-db-arguments-keep-only-preprocessor-args
   ((arguments comp-db-arg-listp))
   :returns (arguments$ comp-db-arg-listp)
@@ -584,9 +718,7 @@
                   (not (eql (char argument-name 0) #\-))))
         (comp-db-arguments-keep-only-preprocessor-args (rest arguments))))
     (cons (comp-db-arg-fix argument)
-          (comp-db-arguments-keep-only-preprocessor-args (rest arguments))))
-  ;; TODO: why is this hook taking a little long?
-  :hooks (:fix))
+          (comp-db-arguments-keep-only-preprocessor-args (rest arguments)))))
 
 (define comp-db-keep-only-preprocessor-args
   ((db comp-dbp))
@@ -594,38 +726,59 @@
   :short "Filter out @(see compilation-database) arguments which are disruptive
           or irrelevant to preprocessing."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "Generally, it seems easier to blacklist arguments which are disruptive to
-      preprocessing than it is to whitelist the preprocessing-relevant
-      arguments. Most flags do not prevent us from preprocessing, and some are
-      surprisingly relevant to preprocessing (fir instance, the @('-fPIE') flag
-      indicates a code-generation strategy, but it also causes two macros to be
-      defined: @('__pie__') and @('__PIE__'))."))
+  (xdoc::topstring-p
+    "Generally, it seems easier to blacklist arguments which are disruptive to
+     preprocessing than it is to whitelist the preprocessing-relevant
+     arguments. Most flags do not prevent us from preprocessing, and some are
+     surprisingly relevant to preprocessing (for instance, the @('-fPIE') flag
+     indicates a code-generation strategy, but it also causes two macros to be
+     defined: @('__pie__') and @('__PIE__')).")
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
-       (file (car (first db)))
+       (output (car (first db)))
        (entry (cdr (first db)))
        (arguments (comp-db-arguments-keep-only-preprocessor-args
                     (comp-db-entry->arguments entry)))
        (entry (change-comp-db-entry entry :arguments arguments)))
-    (acons file
+    (acons output
            entry
            (comp-db-keep-only-preprocessor-args (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define comp-db-absolute-path
+  ((directory stringp)
+   (path stringp))
+  :returns (path$ stringp)
+  :short "Make a path absolute, relative to a directory."
+  :long
+  (xdoc::topstring-p
+    "This is purely syntactic: using the @(see filepath::paths) library, we
+     resolve @('path') against @('directory') and remove @('.') and @('..')
+     segments. Symbolic links are not followed, since the compiler names a
+     file (for instance in quoted @('#include') directives and in
+     @('__FILE__')) by the path it was given. Cancelling @('..') segments
+     syntactically agrees with the file system unless a segment followed by
+     @('..') is a symbolic link to a directory. Thus we assume that
+     @('directory') is a physical path, as recorded by tools such as Bear
+     (which use the working directory of the compiler process), and that
+     @('path') does not traverse such a link.")
+  (b* ((directory (acl2::lstr-fix directory))
+       (path (acl2::lstr-fix path)))
+    (filepath::path-to-string
+      (filepath::normalize-path
+        (filepath::resolve (filepath::parse-path directory)
+                           (filepath::parse-path path))))))
+
 (define comp-db-arguments-absolute-dirs
   ((directory stringp)
-   (arguments comp-db-arg-listp)
-   state)
+   (arguments comp-db-arg-listp))
   :returns (arguments$ comp-db-arg-listp)
-  (b* ((directory (acl2::str-fix directory))
+  (b* ((directory (acl2::lstr-fix directory))
        (arguments (comp-db-arg-list-fix arguments))
        ((when (endp arguments))
         nil)
@@ -633,89 +786,199 @@
        ((comp-db-arg argument) argument)
        ((unless (member-equal argument.name *cc-options-dir*))
         (cons (comp-db-arg-fix argument)
-              (comp-db-arguments-absolute-dirs directory (rest arguments) state)))
-       (value (if argument.value
-                  (ec-call (extend-pathname directory argument.value state))
-                argument.value))
-       (value (if (stringp value) value argument.value)))
+              (comp-db-arguments-absolute-dirs directory (rest arguments))))
+       (value (and argument.value
+                   (comp-db-absolute-path directory argument.value))))
     (cons (change-comp-db-arg argument :value value)
-          (comp-db-arguments-absolute-dirs directory (rest arguments) state)))
+          (comp-db-arguments-absolute-dirs directory (rest arguments))))
   :measure (acl2-count (comp-db-arg-list-fix arguments))
-  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix)))
-  :hooks ((:fix
-           :hints (("Goal" :induct t
-                           :expand ((comp-db-arguments-absolute-dirs
-                                      directory
-                                      (comp-db-arg-list-fix arguments)
-                                      state))
-                           :in-theory (disable acl2::member-of-cons
-                                               acl2::member-when-atom))))))
+  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix))))
 
-(define comp-db-absolute-dirs
-  ((db comp-dbp)
-   state)
+(define comp-db-absolute-paths
+  ((db comp-dbp))
   :returns (db$ comp-dbp)
-  :short "Make relative directories absolute in directory-valued arguments of a
-          @(see compilation-database)."
+  :short "Make relative paths absolute in a @(see compilation-database)."
+  :long
+  (xdoc::topstring-p
+    "The outputs, source files, and directory-valued arguments of each entry
+     are made absolute "
+    (xdoc::seetopic "comp-db-absolute-path" "relative to")
+    " the entry's directory.")
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
-       (file (car (first db)))
+       (output (car (first db)))
        ((comp-db-entry entry) (cdr (first db)))
+       (output (and output (comp-db-absolute-path entry.directory output)))
+       (file (comp-db-absolute-path entry.directory entry.file))
        (arguments (comp-db-arguments-absolute-dirs entry.directory
-                                                   entry.arguments
-                                                   state))
-       (entry (change-comp-db-entry entry :arguments arguments)))
-    (acons file
+                                                   entry.arguments))
+       (entry (change-comp-db-entry entry :file file :arguments arguments)))
+    (acons output
            entry
-           (comp-db-absolute-dirs (rest db) state)))
+           (comp-db-absolute-paths (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection comp-db-absolute-path-list ((directory stringp)
+                                                (x string-listp))
+  :returns (paths string-listp)
+  :short "Lift @(tsee comp-db-absolute-path) to lists."
+  (comp-db-absolute-path directory x))
+
+(define comp-db-entries-with-output
+  ((output stringp)
+   (db comp-dbp))
+  :returns (db$ comp-dbp)
+  :short "The entries of a @(see compilation-database) with a given output."
+  (b* ((output (acl2::lstr-fix output))
+       (db (comp-db-fix db))
+       ((when (endp db))
+        nil)
+       (rest-db (comp-db-entries-with-output output (rest db))))
+    (if (equal (car (first db)) output)
+        (cons (first db) rest-db)
+      rest-db))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-entries-agree-p
+  ((entry comp-db-entryp)
+   (db comp-dbp))
+  :returns (yes/no booleanp)
+  :short "Check whether all entries of a @(see compilation-database) have the
+          same source file and arguments as a given entry."
+  (b* ((db (comp-db-fix db))
+       ((when (endp db))
+        t)
+       ((comp-db-entry entry) entry)
+       ((comp-db-entry other) (cdr (first db))))
+    (and (equal other.file entry.file)
+         (equal other.arguments entry.arguments)
+         (comp-db-entries-agree-p entry (rest db))))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-select-outputs
+  ((outputs string-listp)
+   (db comp-dbp))
+  :returns (mv (db$ comp-dbp)
+               (missing string-listp)
+               (ambiguous string-listp)
+               (non-c string-listp))
+  :short "Select the @(see compilation-database) entries
+          which produce the given outputs."
+  :long
+  (xdoc::topstring-p
+    "Besides the selected entries, we return the outputs which no entry
+     produces, the outputs which several entries with different source files
+     or arguments produce, and the outputs which are produced from source
+     files other than @('.c') files. None of these outputs are selected.")
+  (b* (((when (endp outputs))
+        (mv nil nil nil nil))
+       (output (acl2::lstr-fix (first outputs)))
+       ((mv db$ missing ambiguous non-c)
+        (comp-db-select-outputs (rest outputs) db))
+       (entries (comp-db-entries-with-output output db))
+       ((when (endp entries))
+        (mv db$ (cons output missing) ambiguous non-c))
+       (entry (cdr (first entries)))
+       ((unless (comp-db-entries-agree-p entry (rest entries)))
+        (mv db$ missing (cons output ambiguous) non-c))
+       ((unless (str::strsuffixp ".c" (comp-db-entry->file entry)))
+        (mv db$ missing ambiguous (cons output non-c))))
+    (mv (acons output entry db$) missing ambiguous non-c))
+  :verify-guards :after-returns
+  :guard-hints
+  (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite
+                              acl2::consp-of-car-when-alistp-alt))))
+
+(define comp-db-select
+  ((db comp-dbp)
+   (objects string-listp)
+   (path stringp))
+  :returns (mv (er? maybe-msgp)
+               (db$ comp-dbp)
+               (warnings acl2::msg-listp))
+  :short "Select the @(see compilation-database) entries
+          which produce the given object files."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The objects are typically the inputs of a link step, which compilation
+      databases do not record. Relative object paths are taken relative to
+      @('path'). Like the outputs of the compilation database (see @(tsee
+      comp-db-absolute-paths)), they are made absolute syntactically.")
+   (xdoc::p
+     "It is an error if an object is produced by no entry, or by several
+      entries which differ in their source files or arguments. In the latter
+      case, we cannot know which of the entries produced the object being
+      linked. Several entries may produce the same object if, for instance,
+      the object was rebuilt while the compilation database was recorded, or
+      if the build reuses an object file name. Entries which agree are
+      collapsed into one.")
+   (xdoc::p
+     "Objects which are compiled from source files other than @('.c') files
+      (e.g. assembly files) are not selected, with a warning."))
+  (b* (((reterr) nil nil)
+       (outputs (remove-duplicates-equal
+                  (comp-db-absolute-path-list path objects)))
+       ((mv db$ missing ambiguous non-c)
+        (comp-db-select-outputs outputs db))
+       (missing-msg
+         (msg$ "No compilation database entry produces the object~#0~[~/s~] ~
+                ~&0. The compilation database may be incomplete: for ~
+                instance, it may have been recorded from a build which did ~
+                not recompile every object, in which case a clean build may ~
+                help."
+               missing))
+       (ambiguous-msg
+         (msg$ "Several compilation database entries with different source ~
+                files or arguments produce the object~#0~[~/s~] ~&0, so it ~
+                cannot be determined how ~#0~[it was~/they were~] built."
+               ambiguous))
+       ((when (and missing ambiguous))
+        (retmsg$ "~@0~%~%~@1" missing-msg ambiguous-msg))
+       ((when missing)
+        (reterr missing-msg))
+       ((when ambiguous)
+        (reterr ambiguous-msg))
+       (warnings (and non-c
+                      (list (msg$ "The object~#0~[~/s~] ~&0 ~#0~[is~/are~] not ~
+                                   compiled from C source files, so ~
+                                   ~#0~[it is~/they are~] not selected."
+                                  non-c)))))
+    (retok db$ warnings)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: support paths which are not contained within base
 ;; (i.e., allow ".." to backtrack higher up the base path as necessary).
-(define relativize-path
-  ((path stringp)
-   (base stringp))
-  :returns (mv (erp booleanp)
-               (relative-path stringp))
-  (b* (((reterr) "")
-       (path (mbe :logic (acl2::str-fix path) :exec path))
-       (base (mbe :logic (acl2::str-fix base) :exec base))
-       ((unless (str::strprefixp base path))
-        (reterr t)))
-    (retok (subseq (the string path)
-                   (length (the string base))
-                   nil)))
-  :guard-hints (("Goal" :in-theory (enable length)))
-  :hooks (:fix))
-
-(define comp-db-relativize-keys
+(define comp-db-relativize-files
   ((db comp-dbp)
    (path stringp))
   :returns (mv (er? maybe-msgp)
                (db$ comp-dbp))
   (b* ((db (comp-db-fix db))
        ((reterr) db)
-       (path (mbe :logic (acl2::str-fix path) :exec path))
+       (path (acl2::lstr-fix path))
        ((when (endp db))
         (retok nil))
-       (file (car (first db)))
-       (entry (cdr (first db)))
-       ((erp file$)
-        (relativize-path file path)
-        :iferr (msg$ "Cannot make file path ~x0 relative to base path ~x1."
-                     file
-                     path))
+       (output (car (first db)))
+       ((comp-db-entry entry) (cdr (first db)))
+       (base (filepath::parse-path path))
+       (file (filepath::parse-path entry.file))
+       ((unless (filepath::path-prefixp base file))
+        (retmsg$ "Cannot make file path ~x0 relative to base path ~x1."
+                 entry.file
+                 path))
+       (file (filepath::path-to-string (filepath::relativize-path base file)))
        ((erp rest-db)
-        (comp-db-relativize-keys (rest db) path)))
-    (retok (cons (cons file$ entry) rest-db)))
-  :measure (acl2-count (comp-db-fix db))
-  :hooks (:fix))
+        (comp-db-relativize-files (rest db) path)))
+    (retok (cons (cons output (change-comp-db-entry entry :file file))
+                 rest-db)))
+  :measure (acl2-count (comp-db-fix db)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -723,7 +986,8 @@
   ((str stringp))
   :returns (str$ stringp)
   :short "Escape characters interpreted specially by the shell."
-  (b* ((str (str::strsubst "\\" "\\\\" str))
+  (b* ((str (acl2::lstr-fix str))
+       (str (str::strsubst "\\" "\\\\" str))
        (str (str::strsubst "\"" "\\\"" str))
        (str (str::strsubst "$" "\\$" str))
        (str (str::strsubst "`" "\\`" str))
@@ -760,8 +1024,7 @@
     (cons argument$
           (comp-db-arguments-escape-for-shell  (rest arguments))))
   :measure (acl2-count (comp-db-arg-list-fix arguments))
-  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix)))
-  :hooks (:fix))
+  :hints (("Goal" :in-theory (enable comp-db-arg-list-fix))))
 
 (define comp-db-escape-for-shell
   ((db comp-dbp))
@@ -771,44 +1034,52 @@
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
-       (file (car (first db)))
+       (output (car (first db)))
        ((comp-db-entry entry) (cdr (first db)))
        (arguments
          (comp-db-arguments-escape-for-shell entry.arguments))
        (entry (change-comp-db-entry entry :arguments arguments)))
-    (acons file
+    (acons output
            entry
            (comp-db-escape-for-shell (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-preprocess-db
   ((db comp-dbp)
    (path stringp)
-   (drop-shared booleanp)
+   (objects (or (eq objects :all) (string-listp objects)))
    state)
   :returns (mv (er? maybe-msgp)
-               (db$ comp-dbp))
+               (db$ comp-dbp)
+               (warnings acl2::msg-listp))
   :short "Transform a @(see compilation-database) to prepare for use in
           preprocessing."
-  (b* (((reterr) (comp-db-fix db))
-       (path (mbe :logic (acl2::str-fix path) :exec path))
-       (path$ (canonical-pathname path t state))
-       ((unless path$)
+  :long
+  (xdoc::topstring-p
+    "If @('objects') is @(':all'), we keep all the entries which compile a
+     @('.c') file to a file (see @(tsee comp-db-drop-non-c)). Otherwise, we
+     keep the entries which produce the given objects (see @(tsee
+     comp-db-select)).")
+  (b* (((reterr) (comp-db-fix db) nil)
+       (path (acl2::lstr-fix path))
+       ((unless (canonical-pathname path t state))
         (retmsg$ "The specified path does not exist or is not a directory: ~x0"
                  path))
-       (db (comp-db-drop-non-c db))
-       (db (if drop-shared (comp-db-drop-shared db) db))
+       (path (comp-db-absolute-path (acl2::str-fix (cbd)) path))
+       (db (if (eq objects :all) (comp-db-drop-non-c db) db))
        (db (comp-db-keep-only-preprocessor-args db))
-       (db (comp-db-absolute-dirs db state))
-       ((erp db) (comp-db-relativize-keys db path$))
+       (db (comp-db-absolute-paths db))
+       ((erp db warnings)
+        (if (eq objects :all)
+            (mv nil db nil)
+          (comp-db-select db objects path)))
+       ((erp db) (comp-db-relativize-files db path))
        (db (comp-db-escape-for-shell db)))
-    (retok db))
-  :hooks (:fix))
+    (retok db warnings)))
 
 (define preprocess-db-to-map
   ((db comp-dbp))
@@ -816,34 +1087,110 @@
   (b* ((db (comp-db-fix db))
        ((when (endp db))
         nil)
-       (file (car (first db)))
        ((comp-db-entry entry) (cdr (first db))))
-    (omap::update file
+    (omap::update entry.file
                   (comp-db-arg-list-to-string-list entry.arguments)
                   (preprocess-db-to-map (rest db))))
   :measure (acl2-count (comp-db-fix db))
   :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite)))
-  :hooks (:fix))
+  :guard-hints (("Goal" :in-theory (enable alistp-when-comp-dbp-rewrite))))
+
+(define comp-db-files
+  ((db comp-dbp))
+  :returns (files string-listp)
+  :short "The source files of the entries of a @(see compilation-database)."
+  (b* ((db (comp-db-fix db))
+       ((when (endp db))
+        nil))
+    (cons (comp-db-entry->file (cdr (first db)))
+          (comp-db-files (rest db))))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-outputs-of-file
+  ((file stringp)
+   (db comp-dbp))
+  :returns (outputs true-listp)
+  :short "The outputs of the entries of a @(see compilation-database)
+          which compile a given source file."
+  (b* ((file (acl2::lstr-fix file))
+       (db (comp-db-fix db))
+       ((when (endp db))
+        nil)
+       (outputs (comp-db-outputs-of-file file (rest db))))
+    (if (equal (comp-db-entry->file (cdr (first db))) file)
+        (cons (car (first db)) outputs)
+      outputs))
+  :measure (acl2-count (comp-db-fix db)))
+
+(define comp-db-shared-files-msg
+  ((files string-listp)
+   (db comp-dbp))
+  :returns (msg msgp)
+  :short "Describe, for each of the given source files, the outputs of the
+          @(see compilation-database) entries which compile it."
+  (b* (((when (endp files))
+        "")
+       (file (acl2::lstr-fix (first files)))
+       (line (msg$ "~x0 is compiled into ~&1."
+                   file
+                   (comp-db-outputs-of-file file db)))
+       ((when (endp (rest files)))
+        line))
+    (msg$ "~@0~%~@1" line (comp-db-shared-files-msg (rest files) db))))
+
+(define comp-db-check-unique-files
+  ((db comp-dbp))
+  :returns (er? maybe-msgp)
+  :short "Check that no two entries of a @(see compilation-database) compile
+          the same source file."
+  :long
+  (xdoc::topstring-p
+    "A preprocessing map associates a single list of arguments to each source
+     file, so it cannot describe a source file which is compiled into more
+     than one object. This is the case even if the arguments are the same,
+     since each object is a separate translation unit.")
+  (b* ((files (acl2::duplicated-members (comp-db-files db)))
+       ((unless files)
+        nil))
+    (msg$ "~#0~[A source file is~/Some source files are~] compiled into ~
+           more than one of the selected objects, which is not supported:~%~@1"
+          files
+          (comp-db-shared-files-msg files db))))
 
 (define to-preprocess-map
   ((db comp-dbp)
    (path stringp)
-   (drop-shared booleanp)
+   (objects (or (eq objects :all) (string-listp objects)))
    state)
   :returns (mv (er? maybe-msgp)
-               (map acl2::string-stringlist-mapp))
-  (b* (((reterr) nil)
-       ((erp db$)
-        (to-preprocess-db db path drop-shared state)))
-    (retok (preprocess-db-to-map db$)))
-  :hooks (:fix))
+               (map acl2::string-stringlist-mapp)
+               (warnings acl2::msg-listp))
+  :short "Turn a @(see compilation-database) into a map from source files to
+          preprocessor arguments."
+  :long
+  (xdoc::topstring-p
+    "The entries are first selected and prepared by @(tsee to-preprocess-db).
+     It is an error if a source file is compiled into more than one of the
+     selected objects (see @(tsee comp-db-check-unique-files)).")
+  (b* (((reterr) nil nil)
+       ((erp db$ warnings)
+        (to-preprocess-db db path objects state))
+       (er? (comp-db-check-unique-files db$))
+       ((when er?)
+        (reterr (if (eq objects :all)
+                    (msg$ "~@0~%~%This happens when a project builds a ~
+                           source file in several ways, for instance for ~
+                           different programs or libraries. Selecting the ~
+                           objects of a single program, with the :OBJECTS ~
+                           input, avoids it."
+                          er?)
+                  er?))))
+    (retok (preprocess-db-to-map db$) warnings)))
 
 (define preprocess-map-from-comp-file
   ((filename stringp)
    (path stringp)
-   (drop-shared booleanp)
-   (warnings-onp booleanp)
+   (objects (or (eq objects :all) (string-listp objects)))
    (warnings acl2::msg-listp)
    state)
   :returns (mv erp
@@ -853,11 +1200,11 @@
   (b* ((warnings (mbe :logic (if (acl2::msg-listp warnings) warnings nil)
                       :exec warnings))
        ((reterr) nil warnings state)
-       ((erp db warnings state)
-        (parse-comp-db filename warnings-onp warnings state))
-       ((erp map)
-        (to-preprocess-map db path drop-shared state)))
-    (retok map warnings state)))
+       ((erp db state)
+        (parse-comp-db filename state))
+       ((erp map warnings$)
+        (to-preprocess-map db path objects state)))
+    (retok map (append warnings warnings$) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -872,15 +1219,21 @@
   ((const-name symbolp)
    (filename stringp)
    (path stringp)
-   (drop-shared booleanp)
+   objects
    (show-warnings booleanp)
    state)
   :returns (mv erp event state)
-  (b* (((mv erp map warnings state)
+  (b* ((const-name (acl2::symbol-lfix const-name))
+       ((unless (or (eq objects :all) (string-listp objects)))
+        (mv (msg$ "The :OBJECTS input must be :ALL or a list of strings, ~
+                   but it is ~x0 instead."
+                  objects)
+            nil
+            state))
+       ((mv erp map warnings state)
         (preprocess-map-from-comp-file filename
                                        path
-                                       drop-shared
-                                       show-warnings
+                                       objects
                                        nil
                                        state))
        (- (if show-warnings
@@ -897,8 +1250,8 @@
    &key
    file
    (path '".")
-   (drop-shared 'nil)
+   (objects ':all)
    (show-warnings 't))
   `(make-event
      (defpreprocess-map-fn
-       ',name ',file ',path ',drop-shared ',show-warnings state)))
+       ',name ',file ',path ,objects ',show-warnings state)))
