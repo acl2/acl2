@@ -32,6 +32,7 @@
 
 (include-book "logicman-transform")
 (include-book "stack-ev")
+(include-book "binding-domains")
 (include-book "constraint-db")
 (include-book "scratch-isomorphic")
 
@@ -95,6 +96,11 @@
        ((mv rest memo) (fgl-arglist-map-bfrs (cdr x) litarr memo)))
     (mv (cons arg rest) memo))
   ///
+  (defret fgl-arglist-unbounds-of-<fn>
+    (equal (fgl-arglist-unbounds new-x)
+           (fgl-arglist-unbounds x))
+    :hints (("Goal" :in-theory (enable fgl-arglist-unbounds))))
+
   (defret len-of-<fn>
     (equal (len new-x) (len x)))
 
@@ -625,3 +631,24 @@
                   (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
              (bfr-listp (constraint-db-bfrlist new-x) bfrstate))))
 
+(defret fgl-bindings-domain-of-<fn>
+  (equal (fgl-bindings-domain new-x)
+         (fgl-bindings-domain x))
+  :hints (("Goal" :in-theory (enable fgl-bindings-domain <fn>
+                                     fgl-object-alist-map-bfrs fgl-object-bindings-fix)
+           :induct (fgl-object-bindings-fix x)))
+  :fn fgl-object-bindings-map-bfrs)
+
+(defret minor-stack-binding-domains-of-<fn>
+  (equal (minor-stack-binding-domains new-x)
+         (minor-stack-binding-domains x))
+  :hints (("Goal" :in-theory (enable minor-stack-binding-domains
+                                     minor-frame-map-bfrs <fn>)))
+  :fn minor-stack-map-bfrs)
+
+(defret stack-binding-domains-of-<fn>
+  (equal (stack-binding-domains new-x)
+         (stack-binding-domains x))
+  :hints (("Goal" :in-theory (enable stack-binding-domains
+                                     major-frame-map-bfrs <fn>)))
+  :fn major-stack-map-bfrs)

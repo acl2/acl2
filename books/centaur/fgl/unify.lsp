@@ -458,18 +458,11 @@
                                               fgl-arg-bfrlist)))))
 
         
-        (define fgl-arglist-unbounds ((x fgl-arglist-p))
-          :returns (vars pseudo-var-list-p)
-          (b* (((when (atom x)) nil)
-               (x1 (car x)))
-            (fgl-arg-case x1
-              :unbound (cons x1.var (fgl-arglist-unbounds (cdr x)))
-              :otherwise (fgl-arglist-unbounds (cdr x))))
-          ///
-          (defret fgl-arglist-all-boundp-in-terms-of-<fn>
-            (iff (fgl-arglist-all-boundp x)
-                 (not vars))
-            :hints(("Goal" :in-theory (enable fgl-arglist-all-boundp)))))
+        (defthm fgl-arglist-all-boundp-in-terms-of-fgl-arglist-unbounds
+          (iff (fgl-arglist-all-boundp x)
+               (not (fgl-arglist-unbounds x)))
+          :hints (("Goal" :in-theory (enable fgl-arglist-all-boundp
+                                             fgl-arglist-unbounds))))
         :endif)
 
 

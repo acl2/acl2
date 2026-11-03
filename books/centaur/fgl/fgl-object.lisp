@@ -33,6 +33,7 @@
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
+(include-book "centaur/meta/fnsymlist" :dir :system)
 (include-book "arith-base")
 (include-book "std/basic/two-nats-measure" :dir :system)
 (local (std::add-default-post-define-hook :fix))
@@ -576,3 +577,11 @@ object, or else an unbound variable awaiting an assignment.</p>"
 
 (fty::deflist fgl-arglist :elt-type fgl-arg :true-listp t)
 
+
+(define fgl-arglist-unbounds ((x fgl-arglist-p))
+  :returns (vars pseudo-var-list-p)
+  (b* (((when (atom x)) nil)
+       (x1 (car x)))
+    (fgl-arg-case x1
+      :unbound (cons x1.var (fgl-arglist-unbounds (cdr x)))
+      :otherwise (fgl-arglist-unbounds (cdr x)))))
