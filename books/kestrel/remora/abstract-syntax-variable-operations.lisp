@@ -10,11 +10,14 @@
 
 (in-package "REMORA")
 
+(include-book "variable-name-sets")
 (include-book "bound-variable-operations")
 (include-book "free-variable-operations")
 (include-book "all-variable-operations")
+(include-book "free-variables-in-all-variables")
 (include-book "fresh-variable-operations")
 (include-book "variable-renaming-operations")
+(include-book "renaming-no-capture-when-avoided")
 (include-book "variable-renaming-alpha-operations")
 (include-book "variable-substitution-operations")
 (include-book "variable-substitution-alpha-operations")
@@ -27,11 +30,14 @@
 (defxdoc+ abstract-syntax-variable-operations
   :parents (abstract-syntax)
   :short "Operations on ASTs related to variables."
-  :order-subtopics (bound-variable-operations
+  :order-subtopics (variable-name-sets
+                    bound-variable-operations
                     free-variable-operations
                     all-variable-operations
+                    free-variables-in-all-variables
                     fresh-variable-operations
                     variable-renaming-operations
+                    renaming-no-capture-when-avoided
                     variable-renaming-alpha-operations
                     variable-substitution-operations
                     variable-substitution-alpha-operations

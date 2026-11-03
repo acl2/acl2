@@ -982,7 +982,14 @@
        thus, the restricted environment of the closure must retain
        the type and ispace variables free in them.
        If the optional result type is present,
-       we also evaluate it here, ignoring the resulting type value for now.
+       we also evaluate it here.
+       As for a term lambda abstraction,
+       the resulting type value is stored in the value
+       when there is just one parameter,
+       so that the value is the one the desugared binding would yield;
+       with two or more parameters,
+       the result type travels with the innermost abstraction
+       (see @(tsee lambda-curried-body)) and is not stored in the value.
        A function binding with no parameters
        is treated as a plain value binding,
        consistently with the validator and with [impl],
@@ -1069,10 +1076,15 @@
                  ((ok param) (eval-var+type? (car bind.params)
                                              (expr-denv->tenv denv)))
                  (body (lambda-curried-body bind.params bind.expr bind.type?))
+                 ((ok type?) (type-option-case
+                              bind.type?
+                              :some (eval-type bind.type?.val
+                                               (expr-denv->tenv denv))
+                              :none nil))
                  (val (make-expr-value-lambda
                        :param param
                        :body body
-                       :type? nil
+                       :type? (if (endp (cdr bind.params)) type? nil)
                        :denv (expr-denv-restrict
                               (expr-free-ispace-vars body)
                               (expr-free-type-vars body)
@@ -1080,12 +1092,7 @@
                                (expr-free-expr-vars bind.expr)
                                (set::mergesort
                                 (var+type?-list->var bind.params)))
-                              denv)))
-                 ((ok &) (type-option-case
-                          bind.type?
-                          :some (eval-type bind.type?.val
-                                           (expr-denv->tenv denv))
-                          :none nil)))
+                              denv))))
               (expr-denv-add-expr bind.var val denv))
        :tfun (b* (((when (endp bind.params))
                    (b* (((ok val) (eval-expr bind.expr denv (1- limit)))
