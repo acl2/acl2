@@ -37,6 +37,8 @@
 ; #!/usr/bin/env bash
 ; open -a 'firefox' "$@"
 
+(declare-function acl2-doc-topic-at-point "acl2-doc")
+
 (defun manual-dir ()
   (concat *acl2-doc-directory* "../../doc/manual"))
 
