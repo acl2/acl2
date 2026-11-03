@@ -107,7 +107,14 @@
           (base-typep btype))
          (type-ok ivars tvars (type-base btype)))
 
-   ;; array and bracket types:
+   ;; scalar, array, and bracket types:
+
+   (scalar ((ispace-var-setp ivars)
+            (type-var-setp tvars)
+            (typep type)
+            (type-ok ivars tvars type)
+            (type-atom-kindp type))
+           (type-ok ivars tvars (type-scalar type)))
 
    (array ((ispace-var-setp ivars)
            (type-var-setp tvars)
@@ -325,7 +332,15 @@
              (type-ok ivars tvars (type-base btype)))
     :use (:instance type-ok-base (btype (base-type-fix btype))))
 
-  ;; array and bracket types:
+  ;; scalar, array, and bracket types:
+
+  (defruled type-ok-scalar!
+    (implies (and (type-ok ivars tvars type)
+                  (type-atom-kindp type))
+             (type-ok ivars tvars (type-scalar type)))
+    :use type-ok-scalar
+    :enable (ispace-var-setp-and-type-var-setp-when-type-ok
+             typep-when-type-ok))
 
   (defruled type-ok-array!
     (implies (and (type-ok ivars tvars type)

@@ -20,5 +20,4 @@
 (test-class "ClassTest" :assume-object-params-non-null t)
 
 ;; In this one, we don't assume x is non-null, relying on the null test in the code:
-;; TODO: Avoid printing "WARNING: Unexpected state term:" in this example:
 (test-class "ClassTest" :assume-object-params-non-null nil)

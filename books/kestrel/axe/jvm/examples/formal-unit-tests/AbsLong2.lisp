@@ -1,7 +1,7 @@
-; Apply the Formal Unit Tester to AbsLong.
+; Apply the Formal Unit Tester to AbsLong2Test.
 ;
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,12 @@
 
 (in-package "ACL2")
 
-;; This book runs the Formal Unit Tester on all the tests in AbsLong.java.
+;; This book runs the Formal Unit Tester on the tests in AbsLong2Test.java.
+;; The point of this book is to show that the tool works when the tests are in
+;; a separate class from the code being tested.
 
-;; NOTE: This file is only used for regression testing and debugging.  Normally
-;; the Formal Unit Tester would be invoked from the command line or from within
-;; an IDE.
-
-; (depends-on "AbsLong.class")
+; (depends-on "AbsLong2Test.class")
 
 (include-book "kestrel/axe/jvm/tester" :dir :system)
 
-;; todo: get this working:
 (test-class "AbsLong2Test")

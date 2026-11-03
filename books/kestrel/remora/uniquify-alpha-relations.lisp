@@ -4221,6 +4221,7 @@
                 (cdr wpair)
               (type-value-witness-leaf)))
      :base (type-value-witness-leaf)
+     :scalar (type-value-witness-array (eval-type-witness ty.elem r wmap))
      :array (type-value-witness-array (eval-type-witness ty.elem r wmap))
      :bracket (type-value-witness-array (eval-type-witness ty.elem r wmap))
      :fun (type-value-witness-fun (eval-type-witness ty.in r wmap)

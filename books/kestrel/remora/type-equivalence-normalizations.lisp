@@ -302,6 +302,13 @@
                         (type-eq-proof-array-var name))))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* (((mv new-elem proof)
+                   (decompose-array-vars-in-type type.elem)))
+               (mv (type-scalar new-elem)
+                   (make-type-eq-proof-scalar
+                    :type1 type.elem
+                    :type2 new-elem
+                    :premise1-proof proof)))
      :array (b* (((mv new-elem proof)
                   (decompose-array-vars-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
@@ -407,6 +414,7 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-array-var-validp
@@ -570,6 +578,13 @@
               (type-eq-proof-refl (type-var type.var)))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* (((mv new-elem proof)
+                   (unbracket-in-type type.elem)))
+               (mv (type-scalar new-elem)
+                   (make-type-eq-proof-scalar
+                    :type1 type.elem
+                    :type2 new-elem
+                    :premise1-proof proof)))
      :array (b* (((mv new-elem proof)
                   (unbracket-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
@@ -687,6 +702,7 @@
                                 type-eq-refl-validp
                                 types-eq-refl-validp
                                 type-eq-trans-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-bracket-validp
@@ -830,7 +846,7 @@
      according to the rule @('fun2m').
      The components of the resulting unary function type
      are rewritten via the congruence rule @('fun')
-     (the scalar array type via @(tsee type-eq-cong-scalar)),
+     (the scalar array type via @(tsee type-eq-cong-scalar-array)),
      with the two steps chained via the rule @('trans').
      Since the function type with the remaining inputs
      is a constructed n-ary function type,
@@ -863,6 +879,12 @@
             (type-eq-proof-refl (type-var type.var)))
    :base (mv (type-base type.type)
              (type-eq-proof-refl (type-base type.type)))
+   :scalar (b* (((mv new-elem proof) (unarize-funs-in-type type.elem)))
+             (mv (type-scalar new-elem)
+                 (make-type-eq-proof-scalar
+                  :type1 type.elem
+                  :type2 new-elem
+                  :premise1-proof proof)))
    :array (b* (((mv new-elem proof) (unarize-funs-in-type type.elem)))
             (mv (type-array new-elem type.ispace)
                 (make-type-eq-proof-array
@@ -921,8 +943,8 @@
                                  :premise2-proof proof-out)))))
         (rest-type (type-funn (cdr type.in) type.out))
         ((mv new-rest proof-rest) (unarize-funs-in-type rest-type))
-        (mid-type (type-fun type-in (type-scalar rest-type)))
-        (new-type (type-fun new-in (type-scalar new-rest))))
+        (mid-type (type-fun type-in (type-scalar-array rest-type)))
+        (new-type (type-fun new-in (type-scalar-array new-rest))))
      (mv new-type
          (make-type-eq-proof-trans
           :type1 (type-funn type.in type.out)
@@ -936,10 +958,10 @@
           :premise2-proof (make-type-eq-proof-fun
                            :type-in1 type-in
                            :type-in2 new-in
-                           :type-out1 (type-scalar rest-type)
-                           :type-out2 (type-scalar new-rest)
+                           :type-out1 (type-scalar-array rest-type)
+                           :type-out2 (type-scalar-array new-rest)
                            :premise1-proof proof-in
-                           :premise2-proof (make-type-eq-proof-cong-scalar
+                           :premise2-proof (make-type-eq-proof-cong-scalar-array
                                             :type1 rest-type
                                             :type2 new-rest
                                             :premise1-proof proof-rest)))))
@@ -973,6 +995,7 @@
              :in-theory (enable type-eq-proof-validp
                                 type-eq-refl-validp
                                 type-eq-trans-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-fun0-validp
@@ -993,7 +1016,7 @@
     (type-nofunnp new-type)
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nofunnp-rules type-scalar))
+             :in-theory (enable* ast-nofunnp-rules type-scalar-array))
             '(:expand ((type-nofunnp type)
                        (:free (p b) (type-nofunnp (type-forall p b)))
                        (:free (p b) (type-nofunnp (type-foralln p b)))
@@ -1007,7 +1030,7 @@
              (type-noarrayvarp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-noarrayvarp-rules type-scalar))
+             :in-theory (enable* ast-noarrayvarp-rules type-scalar-array))
             '(:expand ((type-noarrayvarp type)
                        (:free (p b) (type-noarrayvarp (type-forall p b)))
                        (:free (p b) (type-noarrayvarp (type-foralln p b)))
@@ -1021,7 +1044,7 @@
              (type-nobracketp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nobracketp-rules type-scalar))
+             :in-theory (enable* ast-nobracketp-rules type-scalar-array))
             '(:expand ((type-nobracketp type)
                        (:free (p b) (type-nobracketp (type-forall p b)))
                        (:free (p b) (type-nobracketp (type-foralln p b)))
@@ -1035,7 +1058,7 @@
              (type-noforallnp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-noforallnp-rules type-scalar))
+             :in-theory (enable* ast-noforallnp-rules type-scalar-array))
             '(:expand ((type-noforallnp type)
                        (:free (p b) (type-noforallnp (type-forall p b)))
                        (:free (p b) (type-noforallnp (type-foralln p b)))
@@ -1049,7 +1072,7 @@
              (type-nopinp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nopinp-rules type-scalar))
+             :in-theory (enable* ast-nopinp-rules type-scalar-array))
             '(:expand ((type-nopinp type)
                        (:free (p b) (type-nopinp (type-forall p b)))
                        (:free (p b) (type-nopinp (type-foralln p b)))
@@ -1063,7 +1086,7 @@
              (type-nosigmanp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nosigmanp-rules type-scalar))
+             :in-theory (enable* ast-nosigmanp-rules type-scalar-array))
             '(:expand ((type-nosigmanp type)
                        (:free (p b) (type-nosigmanp (type-forall p b)))
                        (:free (p b) (type-nosigmanp (type-foralln p b)))
@@ -1119,6 +1142,13 @@
               (type-eq-proof-refl (type-var type.var)))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* (((mv new-elem proof)
+                   (unarize-foralls-in-type type.elem)))
+               (mv (type-scalar new-elem)
+                   (make-type-eq-proof-scalar
+                    :type1 type.elem
+                    :type2 new-elem
+                    :premise1-proof proof)))
      :array (b* (((mv new-elem proof)
                   (unarize-foralls-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
@@ -1167,7 +1197,7 @@
                    (params (cddr type.params)))
                 (if (endp params)
                     (mv (type-forall param1
-                                     (type-scalar
+                                     (type-scalar-array
                                       (type-forall param2 type.body)))
                         (make-type-eq-proof-forall2
                          :param1 param1
@@ -1175,7 +1205,7 @@
                          :type type.body))
                   (mv (type-forall
                        param1
-                       (type-scalar
+                       (type-scalar-array
                         (type-foralln (cons param2 params) type.body)))
                       (make-type-eq-proof-forall3m
                        :param1 param1
@@ -1244,6 +1274,7 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-forall2-validp
@@ -1389,6 +1420,12 @@
               (type-eq-proof-refl (type-var type.var)))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* (((mv new-elem proof) (unarize-pis-in-type type.elem)))
+               (mv (type-scalar new-elem)
+                   (make-type-eq-proof-scalar
+                    :type1 type.elem
+                    :type2 new-elem
+                    :premise1-proof proof)))
      :array (b* (((mv new-elem proof) (unarize-pis-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
                   (make-type-eq-proof-array
@@ -1438,13 +1475,13 @@
                (params (cddr type.params)))
             (if (endp params)
                 (mv (type-pi param1
-                             (type-scalar (type-pi param2 type.body)))
+                             (type-scalar-array (type-pi param2 type.body)))
                     (make-type-eq-proof-pi2
                      :param1 param1
                      :param2 param2
                      :type type.body))
               (mv (type-pi param1
-                           (type-scalar
+                           (type-scalar-array
                             (type-pin (cons param2 params) type.body)))
                   (make-type-eq-proof-pi3m
                    :param1 param1
@@ -1508,6 +1545,7 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-pi2-validp
@@ -1653,6 +1691,13 @@
               (type-eq-proof-refl (type-var type.var)))
      :base (mv (type-base type.type)
                (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* (((mv new-elem proof)
+                   (unarize-sigmas-in-type type.elem)))
+               (mv (type-scalar new-elem)
+                   (make-type-eq-proof-scalar
+                    :type1 type.elem
+                    :type2 new-elem
+                    :premise1-proof proof)))
      :array (b* (((mv new-elem proof)
                   (unarize-sigmas-in-type type.elem)))
               (mv (type-array new-elem type.ispace)
@@ -1709,7 +1754,7 @@
                   (params (cddr type.params)))
                (if (endp params)
                    (mv (type-sigma param1
-                                   (type-scalar
+                                   (type-scalar-array
                                     (type-sigma param2 type.body)))
                        (make-type-eq-proof-sigma2
                         :param1 param1
@@ -1717,7 +1762,7 @@
                         :type type.body))
                  (mv (type-sigma
                       param1
-                      (type-scalar
+                      (type-scalar-array
                        (type-sigman (cons param2 params) type.body)))
                      (make-type-eq-proof-sigma3m
                       :param1 param1
@@ -1778,6 +1823,7 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
+                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-sigma2-validp

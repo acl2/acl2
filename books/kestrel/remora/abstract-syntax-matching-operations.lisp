@@ -51,13 +51,18 @@
     "In ASTs, atom types may be used where array types are expected.
      Thus, this function succeeds on atom types,
      regarding them as scalar (i.e. 0-ranked) arrays.
-     The function also succeeds in array types,
+     The function also succeeds on scalar types,
+     whose ispace is the empty shape,
+     and on array types,
      both explicit and in bracket form.
      The only case in which this does not succeed is on array type variables,
      because we could not obtain the element atom type and the ispace."))
   (cond
    ((type-atom-kindp type)
     (make-type+ispace :type type :ispace (ispace-shape (shape-dims nil))))
+   ((type-case type :scalar)
+    (make-type+ispace :type (type-scalar->elem type)
+                      :ispace (ispace-shape (shape-dims nil))))
    ((type-case type :array)
     (make-type+ispace :type (type-array->elem type)
                       :ispace (type-array->ispace type)))
