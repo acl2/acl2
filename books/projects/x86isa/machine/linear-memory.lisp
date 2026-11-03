@@ -53,6 +53,7 @@
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "std/basic/inductions" :dir :system))
+(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (set-case-split-limitations '(0 100)) ; for speed
 
@@ -486,7 +487,17 @@
       :bound m
       :concl (mv-nth 1 (rb-1 n addr r-x x86))
       :hints (("Goal" :in-theory (e/d* (rvm08) (unsigned-byte-p signed-byte-p))))
-      :gen-linear t))
+      :gen-linear t)
+
+    (encapsulate ()
+      (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+      (defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
+        (implies (and (<= (* 8 n) size)
+                      (natp size))
+                 (unsigned-byte-p size (mv-nth 1 (rb-1 n addr r-x x86))))
+        :hints (("Goal" :use (:instance size-of-rb-1 (m (ash n 3)))
+                 :in-theory (e/d (ash) (size-of-rb-1))))))
+    )
 
   (define las-to-pas
     ((n         natp "Number of bytes to be read")
@@ -672,6 +683,15 @@
                             :hints (("Goal" :in-theory (e/d* () (signed-byte-p))))
                             :gen-type t
                             :gen-linear t)
+
+    (encapsulate ()
+      (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+      (defthm unsigned-byte-p-of-read-from-physical-memory
+        (implies (and (<= (* 8 (len p-addrs)) size)
+                      (integerp size))
+                 (unsigned-byte-p size (read-from-physical-memory p-addrs x86)))
+        :hints (("Goal" :use (:instance size-of-read-from-physical-memory (n (* 8 (len p-addrs))))
+                 :in-theory (e/d (ash) (size-of-read-from-physical-memory))))))
 
     (defthm read-from-physical-memory-xw-rflags
             (equal (read-from-physical-memory p-addrs (xw :rflags nil val x86))
@@ -1385,6 +1405,11 @@
                           :gen-linear t
                           :gen-type t)
 
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml08
+    (implies (and (<= 8 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml08 lin-addr r-x x86)))))
+
   (defthm x86p-rml08
           (implies (force (x86p x86))
                    (x86p (mv-nth 2 (rml08 lin-addr r-x x86))))
@@ -1703,6 +1728,11 @@
                           :gen-linear t
                           :gen-type t)
 
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml16
+    (implies (and (<= 16 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml16 lin-addr r-x x86)))))
+
   (defthm x86p-rml16
           (implies (force (x86p x86))
                    (x86p (mv-nth 2 (rml16 lin-addr r-x x86))))
@@ -1810,6 +1840,13 @@
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
                         :gen-type t)
+
+  (defthm signed-byte-p-of-mv-nth-1-of-riml16
+    (implies (and (<= 16 size)
+                  (integerp size))
+             (signed-byte-p size (mv-nth 1 (riml16 lin-addr r-x x86))))
+    :hints (("Goal" :use (i16p-mv-nth-1-riml16)
+             :in-theory (disable i16p-mv-nth-1-riml16 riml16))))
 
   (defthm x86p-riml16
           (implies (force (x86p x86))
@@ -2007,6 +2044,11 @@
                           :gen-linear t
                           :gen-type t)
 
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml32
+    (implies (and (<= 32 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml32 lin-addr r-x x86)))))
+
   (defthm x86p-rml32
           (implies (force (x86p x86))
                    (x86p (mv-nth 2 (rml32 lin-addr r-x x86))))
@@ -2114,6 +2156,13 @@
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
                         :gen-type t)
+
+  (defthm signed-byte-p-of-mv-nth-1-of-riml32
+    (implies (and (<= 32 size)
+                  (integerp size))
+             (signed-byte-p size (mv-nth 1 (riml32 lin-addr r-x x86))))
+    :hints (("Goal" :use (i32p-mv-nth-1-riml32)
+             :in-theory (disable i32p-mv-nth-1-riml32 riml32))))
 
   (defthm x86p-riml32
           (implies (force (x86p x86))
@@ -2389,6 +2438,11 @@
                           :otf-flg t
                           :gen-linear t
                           :gen-type t)
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml48
+    (implies (and (<= 48 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml48 lin-addr r-x x86)))))
 
   (defthm x86p-rml48
           (implies (force (x86p x86))
@@ -2783,6 +2837,11 @@
                           :otf-flg t
                           :gen-linear t
                           :gen-type t)
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml64
+    (implies (and (<= 64 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml64 lin-addr r-x x86)))))
 
   (defthm x86p-rml64
           (implies (force (x86p x86))
@@ -3206,6 +3265,11 @@
                           :otf-flg t
                           :gen-linear t
                           :gen-type t)
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml80
+    (implies (and (<= 80 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml80 lin-addr r-x x86)))))
 
   (defthm x86p-rml80
           (implies (force (x86p x86))
@@ -3680,6 +3744,11 @@
                           :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
                           :gen-linear t
                           :gen-type t)
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml128
+    (implies (and (<= 128 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml128 lin-addr r-x x86)))))
 
   (defthm x86p-rml128
           (implies (force (x86p x86))
@@ -4323,6 +4392,11 @@
                                               x86isa::la-to-pa$inline))))
     :gen-linear t
     :gen-type t)
+
+  (defthm unsigned-byte-p-of-mv-nth-1-of-rml256
+    (implies (and (<= 256 size)
+                  (integerp size))
+             (unsigned-byte-p size (mv-nth 1 (rml256 lin-addr r-x x86)))))
 
   (defthm x86p-rml256
     (implies (force (x86p x86))
@@ -6179,7 +6253,16 @@
     ;;                   (equal x86-1 x86-2))))
     ;;   :hints (("Goal" :in-theory (e/d* (signed-byte-p rml08 rml128 rml32 rml48 rml64 rml80 rml16)
     ;;                                    ()))))
-    )
+
+    (defthm natp-of-mv-nth-1-of-rml-size-type
+      (natp (mv-nth 1 (rml-size nbytes addr r-x x86)))
+      :rule-classes :type-prescription)
+
+    (defthm unsigned-byte-p-of-mv-nth-1-of-rml-size
+      (implies (and (<= (* 8 nbytes) size)
+                    (natp size))
+               (unsigned-byte-p size (mv-nth 1 (rml-size nbytes addr r-x x86))))
+      :hints (("Goal" :cases ((natp nbytes))))))
 
   (define riml-size ((nbytes :type (member 1 2 4 8))
                     (addr   :type (signed-byte #.*max-linear-address-size*))

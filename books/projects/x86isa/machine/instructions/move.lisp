@@ -47,7 +47,14 @@
 
 (include-book "../decoding-and-spec-utils")
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
+(local (in-theory (e/d (bigger-bound-of-mv-nth-1-x86-operand-from-modr/m-and-sib-bytes-operand)
+                       (signed-byte-p
+                        acl2::member-of-cons
+                        rme-size$inline
+                        rml-size$inline
+                        unsigned-byte-p))))
 
 ;; ======================================================================
 ;; INSTRUCTION: MOV
@@ -66,9 +73,6 @@
   ;; 8C: MOV r64/m16, Sreg
 
   :parents (one-byte-opcodes)
-
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32)
-                                        ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -148,8 +152,6 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d () ())))
-
   :returns (x86 x86p :hyp (x86p x86))
 
   :modr/m t
@@ -217,13 +219,6 @@
   :parents (one-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
-
-  :guard-hints (("Goal" :in-theory (e/d (select-address-size
-                                         segment-base-and-bounds
-                                         ea-to-la
-                                         rme-size
-                                         rime-size)
-                                        (unsigned-byte-p))))
 
   :body
 
@@ -309,12 +304,6 @@
 
   :returns (x86 x86p :hyp (x86p x86))
 
-  :guard-hints (("Goal" :in-theory (e/d (select-address-size
-                                         segment-base-and-bounds
-                                         ea-to-la
-                                         rme-size
-                                         rime-size)
-                                        (unsigned-byte-p))))
   :body
 
   (b* (;; This instruction does not require a ModR/M byte.
@@ -409,8 +398,6 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (rme-size riml08 riml32) ())))
-
   :returns (x86 x86p :hyp (x86p x86))
 
   :body
@@ -457,10 +444,6 @@
   ;; C7/0: MOV r/m64, imm32
 
   :parents (one-byte-opcodes)
-
-  :guard-hints (("Goal" :in-theory (e/d (riml08
-                                         riml32
-                                         rme-size) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -558,8 +541,6 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
-
   :returns (x86 x86p :hyp (x86p x86))
 
   :modr/m t
@@ -617,8 +598,6 @@
   ;;       MOVSXD r64, r/m32 (Move doubleword to quadword with sign-extension)
 
   :parents (one-byte-opcodes)
-
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -699,13 +678,6 @@
   ;; just an omission from the manuals, and therefore our model supports it.
 
   :parents (two-byte-opcodes)
-
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32
-                                               n08-to-i08
-                                               n16-to-i16
-                                               n32-to-i32
-                                               n64-to-i64)
-                                        ())))
 
   :returns (x86 x86p :hyp (x86p x86))
 
@@ -801,8 +773,6 @@
 
   :parents (two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
-
   :returns (x86 x86p :hyp (x86p x86))
 
   :modr/m t
@@ -891,8 +861,6 @@
 
   :parents (two-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
-
   :returns (x86 x86p :hyp (x86p x86))
 
   :modr/m t
@@ -968,8 +936,6 @@
   ;; data and limits.
 
   :parents (two-byte-opcodes)
-
-  :guard-hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
 
   :returns (x86 x86p :hyp (x86p x86))
 

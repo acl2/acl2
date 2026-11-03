@@ -416,19 +416,6 @@
   (implies (byte-listp bytes)
            (byte-listp (acl2::true-list-fix bytes))))
 
-; better than x86isa::size-of-rb-1
-(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
-  (implies (and (<= (* 8 n) m)
-                (natp m)
-                (x86p x86))
-           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
-                                  (X86ISA::ADDR addr)
-                                  (X86ISA::R-X r-x)
-                                  (m (* 8 n)))
-           :in-theory (e/d (ash rb-1 ifix)
-                           (x86isa::size-of-rb-1)))))
-
 (defthm combine-bytes-when-singleton
   (implies (equal 1 (len lst))
            (equal (x86isa::combine-bytes lst)

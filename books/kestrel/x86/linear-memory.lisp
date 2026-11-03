@@ -107,16 +107,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable rb-1))))
 
-; better than x86isa::size-of-rb-1
-(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
-  (implies (and (<= (* 8 n) m)
-                (natp m)
-                (x86p x86))
-           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
-  :hints (("Goal" :use (:instance size-of-rb-1 (m (* 8 n)))
-           :in-theory (e/d (ash ifix)
-                           (size-of-rb-1)))))
-
 (defthm mv-nth-2-of-rb-1-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 2 (rb-1 n addr r-x x86))

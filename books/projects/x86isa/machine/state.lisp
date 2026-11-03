@@ -708,6 +708,17 @@ before including the x86 books:</p>
   :gen-linear t
   :gen-type t)
 
+(encapsulate ()
+  (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+
+  (defthm unsigned-byte-p-of-xr-seg-visible
+    (implies (and (<= 16 size)
+                  (integerp size))
+             (unsigned-byte-p size (xr :seg-visible i x86)))
+    :hints (("Goal" :use n16p-xr-seg-visible
+             :in-theory (disable n16p-xr-seg-visible
+                                 elem-p-of-xr-seg-visible)))))
+
 (defthm-unsigned-byte-p n64p-xr-seg-hidden-base
   :hyp t
   :bound 64
