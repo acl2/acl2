@@ -49,7 +49,8 @@
 (fty::defprod type-vinfo
   :short "Fixtype of validator information consisting of a type."
   ((type type))
-  :pred type-vinfop)
+  :pred type-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,7 +58,8 @@
   :short "Fixtype of validator information consisting of a type and a UID."
   ((type type)
    (uid uid))
-  :pred type+uid-vinfop)
+  :pred type+uid-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,7 +76,8 @@
      and the numeric value of the constant, as an ACL2 natural number."))
   ((type type)
    (value nat))
-  :pred iconst-vinfop)
+  :pred iconst-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +97,8 @@
   ((type type)
    (linkage linkage)
    (uid uid))
-  :pred var-vinfop)
+  :pred var-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;
 
@@ -134,7 +138,8 @@
      The information for a constant expression consists of
      its value after evaluation."))
   ((value valuep))
-  :pred const-expr-vinfop)
+  :pred const-expr-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,7 +162,8 @@
                         :tag/members (make-type-struni-tag/members-tagged
                                        :tag (irr-ident))))))
   :require (type-case type :struct)
-  :pred type-spec-struct-vinfop)
+  :pred type-spec-struct-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,7 +186,8 @@
                       :tag/members (make-type-struni-tag/members-tagged
                                     :tag (irr-ident))))))
   :require (type-case type :union)
-  :pred type-spec-union-vinfop)
+  :pred type-spec-union-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +206,8 @@
      the validator may add a designation here
      corresponding to the implicitly initialized subobject."))
   ((designors designor-list))
-  :pred desiniter-vinfop)
+  :pred desiniter-vinfop
+  :layout :list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,7 +233,8 @@
   ((type type)
    (typedefp bool)
    (uid uid))
-  :pred init-declor-vinfop)
+  :pred init-declor-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +250,8 @@
      The table @('scopes') is expected to be a singleton,
      representing the file-scope at the end of the translation unit."))
   ((table-end valid-table))
-  :pred trans-unit-vinfop)
+  :pred trans-unit-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +269,8 @@
      from each translation unit."))
   ((externals valid-externals)
    (completions type-completions))
-  :pred trans-ensemble-vinfop)
+  :pred trans-ensemble-vinfop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
