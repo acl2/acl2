@@ -132,7 +132,9 @@
       "Specifies arguments to pass to the external preprocessor.")
      (xdoc::p
       "This must evaluate to a list of strings
-       or to an omap from strings to lists of strings.")
+       or to an omap from strings to lists of strings.
+       Such an omap may be obtained from a compilation database
+       via @(tsee defpreprocess-map).")
      (xdoc::p
       "If @(':preprocess') is @('nil') or @(':internal'),
        the @(':preprocess-args') input must evaluate to @('nil').")

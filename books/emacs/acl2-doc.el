@@ -51,6 +51,7 @@
             (setq *acl2-sources-dir*
                   (substring dir 0 (1+ posn)))))))
 
+(require 'ansi-color) ; for acl2-doc-handle-color
 (require 'etags) ; for "/" and "W" commands, e.g., tags-lazy-completion-table
 
 ; Essay on ACL2-doc Data Structures
