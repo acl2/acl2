@@ -16,13 +16,12 @@
 (include-book "proof-generation")
 
 (include-book "../atc/symbolic-execution-rules/flexible-array-member")
+(include-book "../language/dynamic-semantics")
 (include-book "../representation/shallow-deep-relation")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
+(include-book "../syntax/types-formal-subset-and-mapping")
 
-(include-book "kestrel/c/language/dynamic-semantics" :dir :system)
-(include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
-(include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-
 (include-book "std/basic/symbol-lfix" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
@@ -1480,7 +1479,8 @@
               (:e set::insert)
               mv-nth
               (:e equal)))
-          (defruled block-item-list-cons-first-congruence-under-compustate-equivp
+          (defruled
+            block-item-list-cons-first-congruence-under-compustate-equivp
             (b* ((old (cons old-item old-items))
                  (new (cons new-item new-items))
                  ((mv old-item-sval old-item-compst)
