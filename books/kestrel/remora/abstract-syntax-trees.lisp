@@ -464,6 +464,7 @@
       "There are
        variables (of two kinds),
        base types,
+       scalar (i.e. zero-ranked array) types with an element type,
        array types consisting of a type for the elements
        and an ispace indicating how the elements are arranged,
        bracket types which are similar to array types
@@ -472,6 +473,13 @@
        universal types (quantified over type variables),
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters).")
+     (xdoc::p
+      "The @(':scalar') type is used when
+       atom-kinded types are auto-lifted to array-kinded types.
+       Although an @(':array') type could be used instead,
+       an explicit @(':scalar') type preserves the information about
+       whether the type was originally an explicit array-kinded type
+       or the type was an atom-kinded type standing for an array-kinded one.")
      (xdoc::p
       "The @(':fun') summand is the main, core form of function types,
        which is unary, i.e. it has exactly one input type.
@@ -499,6 +507,11 @@
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
+      "This fixtype does not capture the restriction that
+       the element type of a scalar, array or bracket type
+       must be atom-kinded, not array-kinded.
+       This is enforced in the static semantics, as also done in [impl].")
+     (xdoc::p
       "[impl] has two slightly different AST variants for types,
        one produced by the parser and one resulting from elaboration.
        The former has unary function types
@@ -507,6 +520,7 @@
        The latter also separates, syntactically, atom from array types."))
     (:var ((var type-var)))
     (:base ((type base-type)))
+    (:scalar ((elem type)))
     (:array ((elem type)
              (ispace ispace)))
     (:bracket ((elem type)

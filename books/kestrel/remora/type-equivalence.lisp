@@ -73,9 +73,11 @@
      including the normalization ones,
      and thus neither symmetry nor transitivity is derivable.")
    (xdoc::p
-    "Next we have congruence for array types,
+    "Next we have congruence for scalar types,
+     and congruence for array types,
      which relies on ispace equivalence.
-     The rule in [thesis] and [arxiv] includes a premise for ispace equivalence,
+     The rule for array types in [thesis] and [arxiv]
+     includes a premise for ispace equivalence,
      but, as noted in @(see ispace-equivalence),
      [thesis] and [arxiv] do not provide
      explicit inference rules for ispace equivalence.
@@ -214,6 +216,13 @@
            (types-eq types1 types2)
            (types-eq types2 types3))
           (types-eq types1 types3))
+
+   ;; scalar type congruence:
+
+   (scalar ((typep type1)
+            (typep type2)
+            (type-eq type1 type2))
+           (type-eq (type-scalar type1) (type-scalar type2)))
 
    ;; array type congruence:
 
@@ -388,7 +397,7 @@
            (typep type-out))
           (type-eq (type-funn (list* type-in1 type-in2 types-in) type-out)
                    (t-> type-in1
-                        (type-scalar
+                        (type-scalar-array
                          (type-funn (cons type-in2 types-in) type-out)))))
 
    ;; normalization of n-ary universal types:
@@ -398,7 +407,8 @@
              (typep type))
             (type-eq (type-foralln (list param1 param2) type)
                      (type-forall param1
-                                  (type-scalar (type-forall param2 type)))))
+                                  (type-scalar-array
+                                   (type-forall param2 type)))))
 
    (forall3m ((type-varp param1)
               (type-varp param2)
@@ -407,7 +417,7 @@
               (typep type))
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
-                                   (type-scalar
+                                   (type-scalar-array
                                     (type-foralln (cons param2 params) type)))))
 
    ;; normalization of n-ary product types:
@@ -417,7 +427,7 @@
          (typep type))
         (type-eq (type-pin (list param1 param2) type)
                  (type-pi param1
-                          (type-scalar (type-pi param2 type)))))
+                          (type-scalar-array (type-pi param2 type)))))
 
    (pi3m ((ispace-varp param1)
           (ispace-varp param2)
@@ -426,7 +436,7 @@
           (typep type))
          (type-eq (type-pin (list* param1 param2 params) type)
                   (type-pi param1
-                           (type-scalar
+                           (type-scalar-array
                             (type-pin (cons param2 params) type)))))
 
    ;; normalization of n-ary sum types:
@@ -436,7 +446,7 @@
             (typep type))
            (type-eq (type-sigman (list param1 param2) type)
                     (type-sigma param1
-                                (type-scalar (type-sigma param2 type)))))
+                                (type-scalar-array (type-sigma param2 type)))))
 
    (sigma3m ((ispace-varp param1)
              (ispace-varp param2)
@@ -445,7 +455,7 @@
              (typep type))
             (type-eq (type-sigman (list* param1 param2 params) type)
                      (type-sigma param1
-                                 (type-scalar
+                                 (type-scalar-array
                                   (type-sigman (cons param2 params) type))))))
 
   :guard-hints
@@ -554,6 +564,14 @@
              (types-eq types1 types3))
     :use types-eq-trans
     :enable type-listp-when-types-eq)
+
+  ;; scalar type congruence:
+
+  (defruled type-eq-scalar!
+    (implies (type-eq type1 type2)
+             (type-eq (type-scalar type1) (type-scalar type2)))
+    :use type-eq-scalar
+    :enable typep-when-type-eq)
 
   ;; array type congruence:
 
@@ -730,7 +748,7 @@
   (defruled type-eq-fun2m!
     (type-eq (type-funn (list* type-in1 type-in2 types-in) type-out)
              (t-> type-in1
-                  (type-scalar
+                  (type-scalar-array
                    (type-funn (cons type-in2 types-in) type-out))))
     :use (:instance type-eq-fun2m
                     (type-in1 (type-fix type-in1))
@@ -743,7 +761,7 @@
   (defruled type-eq-forall2!
     (type-eq (type-foralln (list param1 param2) type)
              (type-forall param1
-                          (type-scalar (type-forall param2 type))))
+                          (type-scalar-array (type-forall param2 type))))
     :use (:instance type-eq-forall2
                     (param1 (type-var-fix param1))
                     (param2 (type-var-fix param2))
@@ -753,7 +771,7 @@
     (implies (consp params)
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
-                                   (type-scalar
+                                   (type-scalar-array
                                     (type-foralln (cons param2 params) type)))))
     :use (:instance type-eq-forall3m
                     (param1 (type-var-fix param1))
@@ -766,7 +784,7 @@
   (defruled type-eq-pi2!
     (type-eq (type-pin (list param1 param2) type)
              (type-pi param1
-                      (type-scalar (type-pi param2 type))))
+                      (type-scalar-array (type-pi param2 type))))
     :use (:instance type-eq-pi2
                     (param1 (ispace-var-fix param1))
                     (param2 (ispace-var-fix param2))
@@ -776,7 +794,7 @@
     (implies (consp params)
              (type-eq (type-pin (list* param1 param2 params) type)
                       (type-pi param1
-                               (type-scalar
+                               (type-scalar-array
                                 (type-pin (cons param2 params) type)))))
     :use (:instance type-eq-pi3m
                     (param1 (ispace-var-fix param1))
@@ -789,7 +807,7 @@
   (defruled type-eq-sigma2!
     (type-eq (type-sigman (list param1 param2) type)
              (type-sigma param1
-                         (type-scalar (type-sigma param2 type))))
+                         (type-scalar-array (type-sigma param2 type))))
     :use (:instance type-eq-sigma2
                     (param1 (ispace-var-fix param1))
                     (param2 (ispace-var-fix param2))
@@ -799,7 +817,7 @@
     (implies (consp params)
              (type-eq (type-sigman (list* param1 param2 params) type)
                       (type-sigma param1
-                                  (type-scalar
+                                  (type-scalar-array
                                    (type-sigman (cons param2 params) type)))))
     :use (:instance type-eq-sigma3m
                     (param1 (ispace-var-fix param1))

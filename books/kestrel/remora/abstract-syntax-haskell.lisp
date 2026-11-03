@@ -78,6 +78,10 @@
        "Shape splices,
         because [impl] has no corresponding constructor.")
       (xdoc::li
+       "Scalar types,
+        because [impl] has no corresponding constructor
+        in its unchecked ASTs, which do not separate atom from array types.")
+      (xdoc::li
        "Array types with non-shape ispaces,
         because [impl]'s @('TEArray') holds a @('Shape'), not an @('ISpace').")
       (xdoc::li
@@ -157,6 +161,7 @@
     ((shape :dims (and (consp shape.dims)
                        (endp (cdr shape.dims))))
      (shape :splice nil)
+     (type :scalar nil)
      (type :array (and (type-huncheckedp type.elem)
                        (ispace-huncheckedp type.ispace)
                        (ispace-case type.ispace :shape)))
@@ -232,6 +237,11 @@
     (defruled type-huncheckedp-when-base
         (implies (type-case type :base)
                  (type-huncheckedp type))
+      :enable type-huncheckedp)
+
+    (defruled not-type-huncheckedp-when-scalar
+        (implies (equal (type-kind type) :scalar)
+                 (not (type-huncheckedp type)))
       :enable type-huncheckedp)
 
     (defruled type-huncheckedp-when-array
@@ -443,6 +453,7 @@
                       ispace-huncheckedp-when-dim
                       type-huncheckedp-when-var
                       type-huncheckedp-when-base
+                      not-type-huncheckedp-when-scalar
                       type-huncheckedp-when-array
                       not-type-huncheckedp-when-array-with-dim
                       not-type-huncheckedp-when-bracket
