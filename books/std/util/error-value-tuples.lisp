@@ -128,34 +128,34 @@
        that defines the irrelevant values once,
        and that makes it possible for the rest of the code in the function
        to mention just @('erp') when returning an error.
-       The binder is used, generally at the beginning of a function, as"
-      (xdoc::codeblock
-       "((reterr) irr-val1 ... irr-valN)")
-      (xdoc::p
-       "where the symbol @('reterr') is in the @('ACL2') package,
-        but can be of course imported in the application package of interest,
-        and where @('irr-val1'), ..., @('irr-valN') are
-        irrelevant values of appropriate types,
-        to be returned along with a non-@('nil') @('erp').
-        If @('N') is 0, the binding is just @('((reterr))'),
-        but must still be provided."))
+       The binder is used, generally at the beginning of a function, as")
+     (xdoc::codeblock
+      "((reterr) irr-val1 ... irr-valN)")
+     (xdoc::p
+      "where the symbol @('reterr') is in the @('ACL2') package,
+       but can be of course imported in the application package of interest,
+       and where @('irr-val1'), ..., @('irr-valN') are
+       irrelevant values of appropriate types,
+       to be returned along with a non-@('nil') @('erp').
+       If @('N') is 0, the binding is just @('((reterr))'),
+       but must still be provided.")
 
      (xdoc::p
       "The binding expands to a local macro (in the @(tsee macrolet) sense),
        also named @('reterr') in the @('ACL2') package,
        that takes one argument @('erp')
        and extends it to an error-value tuple with the irrelevant values.
-       This way, code in the function can return an error as"
-      (xdoc::codeblock
-       "(reterr erp)")
-      (xdoc::p
-       "where @('erp') is the desired error, e.g. @('(msg ...)').
-        This not only makes the call more clear and compact,
-        by hiding the irrelevant values,
-        but also avoids repeating the irrelevant values
-        as many times as there are points in the code that return errors.
-        It makes it easier to change the code
-        if the numbers or types of the values change."))
+       This way, code in the function can return an error as")
+     (xdoc::codeblock
+      "(reterr erp)")
+     (xdoc::p
+      "where @('erp') is the desired error, e.g. @('(msg ...)').
+       This not only makes the call more clear and compact,
+       by hiding the irrelevant values,
+       but also avoids repeating the irrelevant values
+       as many times as there are points in the code that return errors.
+       It makes it easier to change the code
+       if the numbers or types of the values change.")
 
      (xdoc::p
       "The practice of causing "
