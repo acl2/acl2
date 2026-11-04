@@ -14,6 +14,8 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "internal/map-values-all-posp-defs")
 
@@ -24,6 +26,8 @@
 
 (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
+(local (include-book "kestrel/data/treemap/update" :dir :system))
+(local (include-book "kestrel/data/treemap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 
@@ -111,6 +115,24 @@
 
 (add-to-ruleset break-abstraction '(map-values-all-posp-of-fix))
 
+;; Binding an element to a positive value, or removing it, in the underlying
+;; treemap yields a bag.
+
+(defruled bagp-of-treemap-update
+  (implies (posp v)
+           (bagp (treemap::update x v (fix bag))))
+  :enable (bagp
+           break-abstraction))
+
+(add-to-ruleset break-abstraction '(bagp-of-treemap-update))
+
+(defruled bagp-of-treemap-delete
+  (bagp (treemap::delete x (fix bag)))
+  :enable (bagp
+           break-abstraction))
+
+(add-to-ruleset break-abstraction '(bagp-of-treemap-delete))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define equiv
@@ -150,7 +172,7 @@
   :short "Check if a @(see treebag) is empty."
   (treemap::emptyp (fix bag))
   :inline t
-  :guard-hints (("Goal" :in-theory (enable bagp))))
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 

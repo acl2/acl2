@@ -62,7 +62,7 @@
              (count k bag)
            d))
   :enable (count
-           map-values-all-posp-of-fix
+           break-abstraction
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -158,7 +158,7 @@
            (equiv x y))
   :rule-classes :refinement
   :enable (equiv
-           mapp-of-fix
+           break-abstraction
            treemap::extensionality
            lookup-of-fix-becomes-count))
 

@@ -10,12 +10,15 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
+(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "bag-defs")
 
@@ -26,6 +29,8 @@
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/treemap/update" :dir :system))
+(local (include-book "kestrel/data/treemap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "bag"))
@@ -36,11 +41,12 @@
   (declare (xargs :type-prescription :none))
   :returns (count natp
                   :rule-classes ((:rewrite) (:type-prescription))
-                  :hints (("Goal" :in-theory (enable fix bagp empty))))
+                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   ;; Reading 0 for an absent element loses nothing, since no element of a
   ;; @(see treebag) is bound to 0.
   (treemap::lookup x (fix bag) :default 0)
-  :guard-hints (("Goal" :in-theory (enable bagp))))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,6 +80,30 @@
   (equal (count x (empty))
          0)
   :enable count-when-emptyp)
+
+;; Reading counts after binding an element to a positive value, or removing
+;; it, in the underlying treemap.
+
+(defruled count-of-treemap-update
+  (implies (posp v)
+           (equal (count y (treemap::update x v (fix bag)))
+                  (if (equal y x)
+                      v
+                    (count y bag))))
+  :enable (count
+           break-abstraction))
+
+(add-to-ruleset break-abstraction '(count-of-treemap-update))
+
+(defruled count-of-treemap-delete
+  (equal (count y (treemap::delete x (fix bag)))
+         (if (equal y x)
+             0
+           (count y bag)))
+  :enable (count
+           break-abstraction))
+
+(add-to-ruleset break-abstraction '(count-of-treemap-delete))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -21,7 +21,9 @@
               defmacro+
               defxdoc+
               enable*
+              fast-nat-equiv
               lnfix
+              nat-equiv
               treebag
               treeset::acl2-number-hash
               treeset::eqlable-hash
