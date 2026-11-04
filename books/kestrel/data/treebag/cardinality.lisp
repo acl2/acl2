@@ -10,7 +10,11 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
+
+(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "internal/cardinality-defs")
 (include-book "bag-defs")
@@ -24,6 +28,8 @@
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/treemap/update" :dir :system))
+(local (include-book "kestrel/data/treemap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/cardinality"))
@@ -66,6 +72,18 @@
            equal-of-tree-cardinality-and-0-when-tree-all-vals-posp
            treemap::emptyp))
 
+;; The reverse direction, for proving emptiness from the cardinality.
+
+(defruled emptyp-becomes-equal-of-cardinality-and-0
+  (equal (emptyp bag)
+         (equal (cardinality bag)
+                0))
+  :enable equal-of-cardinality-and-0-becomes-emptyp)
+
+(theory-invariant
+  (incompatible! (:rewrite emptyp-becomes-equal-of-cardinality-and-0)
+                 (:rewrite equal-of-cardinality-and-0-becomes-emptyp)))
+
 (defrule cardinality-when-emptyp-forward-chaining
   (implies (emptyp bag)
            (equal (cardinality bag)
@@ -96,3 +114,48 @@
            break-abstraction
            treemap::lookup
            treemap::keys))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; Reading the cardinality after binding an element to a positive value, or
+;; removing it, in the underlying treemap. The treemap operation must stay
+;; closed until the bag fixer around it is gone, so these lemmas open it only
+;; beneath the tree walk.
+
+(defruledl tree-cardinality-of-treemap-update
+  (equal (tree-cardinality (treemap::update x v map))
+         (tree-cardinality
+           (treemap::tree-update x (treeset::hash x) v (treemap::fix map))))
+  :enable treemap::update)
+
+(defruledl tree-cardinality-of-treemap-delete
+  (equal (tree-cardinality (treemap::delete x map))
+         (tree-cardinality (treemap::tree-delete x (treemap::fix map))))
+  :enable treemap::delete)
+
+(defruled cardinality-of-treemap-update
+  (implies (posp v)
+           (equal (cardinality (treemap::update x v (fix bag)))
+                  (+ v (- (cardinality bag) (count x bag)))))
+  :enable (cardinality
+           count
+           break-abstraction
+           tree-cardinality-of-treemap-update
+           treemap::lookup
+           treemap::keys
+           nfix))
+
+(add-to-ruleset break-abstraction '(cardinality-of-treemap-update))
+
+(defruled cardinality-of-treemap-delete
+  (equal (cardinality (treemap::delete x (fix bag)))
+         (- (cardinality bag) (count x bag)))
+  :enable (cardinality
+           count
+           break-abstraction
+           tree-cardinality-of-treemap-delete
+           treemap::lookup
+           treemap::keys
+           nfix))
+
+(add-to-ruleset break-abstraction '(cardinality-of-treemap-delete))

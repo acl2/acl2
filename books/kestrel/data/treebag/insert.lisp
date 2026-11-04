@@ -18,6 +18,7 @@
 
 (include-book "bag-defs")
 (include-book "count-defs")
+(include-book "cardinality-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -28,6 +29,7 @@
 
 (local (include-book "bag"))
 (local (include-book "count"))
+(local (include-book "cardinality"))
 (local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,6 +99,13 @@
               (emptyp bag)))
   :enable (insert-many
            emptyp
+           break-abstraction
+           nat-equiv))
+
+(defrule cardinality-of-insert-many
+  (equal (cardinality (insert-many x n bag))
+         (+ (nfix n) (cardinality bag)))
+  :enable (insert-many
            break-abstraction
            nat-equiv))
 
@@ -175,6 +184,11 @@
 
 (defrule emptyp-of-insert
   (not (emptyp (insert x bag)))
+  :enable insert)
+
+(defrule cardinality-of-insert
+  (equal (cardinality (insert x bag))
+         (+ 1 (cardinality bag)))
   :enable insert)
 
 (defrule commutativity-of-insert

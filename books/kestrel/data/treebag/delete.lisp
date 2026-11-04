@@ -20,6 +20,7 @@
 (include-book "bag-defs")
 (include-book "count-defs")
 (include-book "insert-defs")
+(include-book "cardinality-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -28,6 +29,7 @@
 
 (local (include-book "bag"))
 (local (include-book "count"))
+(local (include-book "cardinality"))
 (local (include-book "extensionality"))
 (local (include-book "insert"))
 
@@ -120,6 +122,54 @@
                   (fix bag)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-many-when-count-0)
+
+;; The removal takes either every occurrence or exactly n of them.
+
+(defruled cardinality-of-delete-many
+  (equal (cardinality (delete-many x n bag))
+         (if (<= (count x bag) (nfix n))
+             (- (cardinality bag) (count x bag))
+           (- (cardinality bag) (nfix n))))
+  :enable (delete-many
+           break-abstraction
+           posp))
+
+(defrule cardinality-of-delete-many-when-count-<=
+  (implies (<= (count x bag) (nfix n))
+           (equal (cardinality (delete-many x n bag))
+                  (- (cardinality bag) (count x bag))))
+  :enable cardinality-of-delete-many)
+
+(defrule cardinality-of-delete-many-when-<=-count
+  (implies (<= (nfix n) (count x bag))
+           (equal (cardinality (delete-many x n bag))
+                  (- (cardinality bag) (nfix n))))
+  :enable cardinality-of-delete-many)
+
+(defrule cardinality-of-delete-many-<=-cardinality-linear
+  (<= (cardinality (delete-many x n bag))
+      (cardinality bag))
+  :rule-classes :linear
+  :enable cardinality-of-delete-many)
+
+(defrule cardinality-of-delete-many-<-cardinality-linear
+  (implies (and (not (equal (count x bag) 0))
+                (not (nat-equiv n 0)))
+           (< (cardinality (delete-many x n bag))
+              (cardinality bag)))
+  :rule-classes :linear
+  :enable (cardinality-of-delete-many
+           nat-equiv))
+
+;; Removing up to n occurrences of x empties a bag exactly when x is its only
+;; element and occurs at most n times.
+
+(defrule emptyp-of-delete-many
+  (equal (emptyp (delete-many x n bag))
+         (and (<= (count x bag) (nfix n))
+              (equal (cardinality bag) (count x bag))))
+  :enable (emptyp-becomes-equal-of-cardinality-and-0
+           cardinality-of-delete-many))
 
 (defrule delete-many-of-arg1-and-delete-many
   (equal (delete-many x m (delete-many x n bag))
@@ -247,6 +297,45 @@
                   (fix bag)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-when-count-0)
+
+(defruled cardinality-of-delete
+  (equal (cardinality (delete x bag))
+         (if (equal (count x bag) 0)
+             (cardinality bag)
+           (- (cardinality bag) 1)))
+  :enable (delete
+           cardinality-of-delete-many))
+
+(defrule cardinality-of-delete-when-count-0
+  (implies (equal (count x bag) 0)
+           (equal (cardinality (delete x bag))
+                  (cardinality bag)))
+  :enable cardinality-of-delete)
+
+(defrule cardinality-of-delete-when-count-nonzero
+  (implies (not (equal (count x bag) 0))
+           (equal (cardinality (delete x bag))
+                  (- (cardinality bag) 1)))
+  :enable cardinality-of-delete)
+
+(defrule cardinality-of-delete-<=-cardinality-linear
+  (<= (cardinality (delete x bag))
+      (cardinality bag))
+  :rule-classes :linear
+  :enable cardinality-of-delete)
+
+(defrule cardinality-of-delete-<-cardinality-linear
+  (implies (not (equal (count x bag) 0))
+           (< (cardinality (delete x bag))
+              (cardinality bag)))
+  :rule-classes :linear
+  :enable cardinality-of-delete)
+
+(defrule emptyp-of-delete
+  (equal (emptyp (delete x bag))
+         (and (<= (count x bag) 1)
+              (equal (cardinality bag) (count x bag))))
+  :enable delete)
 
 (defrule commutativity-of-delete
   (equal (delete y (delete x bag))
@@ -396,6 +485,8 @@
     count-of-delete
     delete-many-when-count-0
     delete-when-count-0
+    cardinality-of-delete-many
+    cardinality-of-delete
     delete-many-of-arg1-and-insert-many
     delete-of-insert
     delete-of-arg1-and-insert-many
