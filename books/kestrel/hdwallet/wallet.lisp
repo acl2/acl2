@@ -1287,11 +1287,11 @@
      since according to [BIP44] address keys are not hardened,
      their indices are limited to the set @($[0,2^{31})$).
      In the first case,
-     this function returns @(':address-key-derivation-failed')
-     as the error flag.
+     this function returns
+     an @(':address-key-derivation-fail') @(tsee command-error).
      In the second case,
-     this function returns @(':address-key-index-too-large')
-     as the error flag.
+     this function returns
+     an @(':address-key-index-limit') @(tsee command-error).
      In all the other cases, the error flag is @('nil'), i.e. success.
      If key derivation fails, the state is updated
      by increasing the number of (attempted) address keys nonetheless,
@@ -1688,7 +1688,12 @@
      otherwise it describes success along with
      the index and the address of the generated key.")
    (xdoc::p
-    "The file is overwritten with the new wallet state."))
+    "The file is overwritten with the new wallet state.
+     This happens even if @(tsee next-key) returns an error:
+     if the derivation of the address key failed,
+     the new state has an advanced counter,
+     which must be saved so that the failed index is skipped next time;
+     in the other error case, the state is unchanged."))
   (b* (((unless (= (len arguments) 0))
         (mv (command-error-message *command-name-next-key*
                                    (command-error-wrong-number-of-arguments
@@ -1703,10 +1708,10 @@
         (mv (command-error-message *command-name-next-key* error?)
             state))
        ((mv error? index address stat) (next-key stat?))
+       (state (save-stat stat state))
        ((when error?)
         (mv (command-error-message *command-name-next-key* error?)
             state))
-       (state (save-stat stat state))
        (msg (msg "The address key with index ~x0 ~
                   has been successfully generated. ~
                   Its associated 20-byte address is~%~%~
@@ -1802,7 +1807,9 @@
     :no-function t)
 
   (defmacro wallet (&rest inputs)
-    `(with-output :off :all :on error
+    ;; COMMENT must stay on: WALLET-FN shows its message via CW,
+    ;; which :OFF :ALL would otherwise suppress.
+    `(with-output :off :all :on (error comment)
        (make-event
         (wallet-fn (list ,@inputs) state)
         :on-behalf-of :quiet))))

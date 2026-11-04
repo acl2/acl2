@@ -33,6 +33,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define public-key-to-bytes ((pub-key secp256k1-pub-key-p))
+  :returns (bytes byte-list64p
+                  :hints (("Goal" :in-theory (enable byte-list64p))))
+  :parents (addresses)
+  :short "Serialize a public key into 64 bytes, as in [YP:(277)]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function @($\\mathtt{ECDSAPUBKEY}$) [YP:(277)]
+     returns a public key as an array of 64 bytes,
+     consisting of the x and y coordinates of the elliptic curve point,
+     each as a 32-byte big-endian unsigned integer [YP:F].")
+   (xdoc::p
+    "This is not one of the point encodings defined in SEC 1 (Section 2.3.3),
+     which are produced by @(tsee secp256k1-point-to-bytes).
+     Those start with a byte that identifies the form:
+     2 or 3 for the compressed form, 4 for the uncompressed form.
+     The SEC 1 uncompressed form consists of that byte 4
+     followed by the 64 bytes produced by this function,
+     as proved below.
+     Only the 64 bytes, without the byte 4,
+     are hashed to obtain the address of the public key
+     (see @(tsee public-key-to-address)).")
+   (xdoc::p
+    "Since a public key is never the point at infinity,
+     this function does not need a representation for that point,
+     unlike SEC 1."))
+  (b* ((pub-key (mbe :logic (secp256k1-pub-key-fix pub-key) :exec pub-key)))
+    (append (acl2::nat=>bebytes 32 (ecurve::secp256k1-point->x pub-key))
+            (acl2::nat=>bebytes 32 (ecurve::secp256k1-point->y pub-key))))
+  :hooks (:fix)
+  ///
+
+  (defrule len-of-public-key-to-bytes
+    (equal (len (public-key-to-bytes pub-key))
+           64))
+
+  (defruled secp256k1-point-to-bytes-uncompressed-of-public-key
+    (equal (secp256k1-point-to-bytes (secp256k1-pub-key-fix pub-key) nil)
+           (cons 4 (public-key-to-bytes pub-key)))
+    :enable (secp256k1-point-to-bytes
+             ecurve::secp256k1-pub-key-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define public-key-to-address ((pub-key secp256k1-pub-key-p))
   :returns (address byte-list20p
                     :hints (("Goal" :in-theory (enable byte-list20p))))
@@ -50,17 +95,18 @@
      because it takes a public key as argument,
      corresponding to @($\\mathtt{ECDSAPUBKEY}(p_\\mathrm{r})$) in [YP:(284)].
      The function @($\\mathtt{ECDSAPUBKEY}$)
-     returns an array of 64 bytes [YP:(277)]
-     which suggests that the public key is represented
-     as an elliptic curve point in uncompressed form.
-     Thus, we use the library function @(tsee secp256k1-point-to-bytes)
-     to turn the public key into that form.")
+     returns an array of 64 bytes [YP:(277)],
+     which we obtain via @(tsee public-key-to-bytes).
+     Note that the hashed bytes are not
+     the SEC 1 uncompressed form of the public key,
+     which has an additional leading byte 4:
+     hashing that form would yield a different address,
+     for which nobody knows a private key.")
    (xdoc::p
     "The function @(tsee private-key-to-address) calculates an address
      from a private key instead."))
-  (b* ((pub-key (mbe :logic (secp256k1-pub-key-fix pub-key) :exec pub-key))
-       (uncompressed-form (secp256k1-point-to-bytes pub-key nil))
-       (hash (keccak-256-bytes uncompressed-form))
+  (b* ((bytes (public-key-to-bytes pub-key))
+       (hash (keccak-256-bytes bytes))
        (address (nthcdr 12 hash)))
     address)
   :hooks (:fix))

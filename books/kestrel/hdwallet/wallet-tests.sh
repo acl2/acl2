@@ -36,7 +36,7 @@ sum /tmp/hdwallet/wallet-state
 # 56443 1 /tmp/hdwallet/wallet-state
 
 ./wallet next-key
-# should output E2C12CCF1D64740C7880FFA150A60B9D7679BB69
+# should output CDC6AC675D533786D84C55E69AABEF3A3C52D61D
 
 ./wallet sign 50 4 1000 0011223344556677889900112233445566778899 1000000 abababab 0
 # should output
