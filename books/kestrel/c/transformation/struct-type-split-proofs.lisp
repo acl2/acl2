@@ -133,7 +133,7 @@
        ((unless (code-ensemble-annop code))
         (retmsg$ "The code ensemble ~x0 ~
                   that is the value of the constant ~x1 ~
-                  must contains validation information, ~
+                  must contain validation information, ~
                   but it does not."
                  code const)))
     (retok code))
@@ -182,7 +182,7 @@
                  new-tag))
        ((unless (and (string-listp right-members)
                      (no-duplicatesp-equal right-members)))
-        (retmsg$ "The ;RIGHT-MEMBERS input must be ~
+        (retmsg$ "The :RIGHT-MEMBERS input must be ~
                   a list of strings without repetitions, ~
                   but it is ~x0 instead."
                  right-members)))
@@ -264,7 +264,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stsp-stage
-  :short "Fixtypes of code scanning stages."
+  :short "Fixtype of code scanning stages."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -315,7 +315,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The declaration must consists of a single struct type specifier
+    "The declaration must consist of a single struct type specifier
      with a tag and with members each of which consists of
      an identifier with type specifiers for an integer type
      (except for plain @('char'),
@@ -409,7 +409,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The declaration must consists of
+    "The declaration must consist of
      a single struct type specifier with a tag and without members
      followed by a single identifier declarator.
      If that is the case, we return the tag and name."))
@@ -1987,7 +1987,7 @@
      Then we advance the stage.")
    (xdoc::p
     "If we are in the @(':types') stage,
-     the declaration in the fold code must be that of the struct object.
+     the declaration in the old code must be that of the struct object.
      We must find, in the new code, two declarations,
      for the two struct objects into which the original one is split.
      We use a separate function to handle those three declarations.
@@ -2839,7 +2839,7 @@
                                   old-stmt.info
                                   mapping
                                   gin))
-      :otherwise (retmsg$ "The statments ~x0 and ~x1 do not match. ~
+      :otherwise (retmsg$ "The statements ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                            was not called on ~
                            the old and new code of STRUCT-TYPE-SPLIT."
@@ -2860,7 +2860,7 @@
               (stmt-annop stmt)
               (stmt-annop stmt-new))
   :returns (mv (erp maybe-msgp) (gout goutp))
-  :short "STS proof generation for a block items that is a statement."
+  :short "STS proof generation for a block item that is a statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3179,12 +3179,12 @@
                (old-thm-name symbolp)
                (newl-thm-name symbolp)
                (newr-thm-name symbolp)
-               (udpated-thm-index posp))
+               (updated-thm-index posp))
   :short "Generate theorems about the struct objects after pushing a frame."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in the generate proofs for function definitions.
+    "This is used in the generated proofs for function definitions.
      In that proof, among other things, we need to show that
      if the global struct objects are in the initial states
      (i.e. the states just before the function call),
@@ -3200,7 +3200,7 @@
      from the names of the struct objects.")
    (xdoc::p
     "The @('parargs') and @('arg-types') of this function are
-     the homomynous outputs of @(tsee gen-from-params)."))
+     the homonymous outputs of @(tsee gen-from-params)."))
   (b* (((stsp-mapping mapping) mapping)
        ((mv erp old-cname) (ldm-ident mapping.old-name))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
