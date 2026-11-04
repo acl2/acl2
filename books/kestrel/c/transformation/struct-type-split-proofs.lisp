@@ -1609,7 +1609,7 @@
                        ',cname (c::type-struct ',ctag) ,compst)
                       (equal expr (c::expr-ident ',cname))
                       (not (zp limit)))
-                 (equal (c::exec-expr expr ,compst old-fenv limit)
+                 (equal (c::exec-expr expr ,compst fenv limit)
                         (mv (c::expr-value
                              (c::read-object
                               (c::objdesign-of-var ',cname ,compst)
