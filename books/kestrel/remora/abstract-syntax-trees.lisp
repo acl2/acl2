@@ -630,6 +630,21 @@
              (equal (type-option-some->val x) x))
     :enable type-option-some->val))
 
+;;;;;;;;;;
+
+(defruled type-option-some->val-when-typep
+  :short "A type, as an optional type, is its own value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is left disabled because its left side is general enough
+     to interfere elsewhere (it perturbs the @(tsee fty::deffixequiv) proofs
+     of some predicates over optional types);
+     it is enabled where type annotations are unfolded."))
+  (implies (typep x)
+           (equal (type-option-some->val x) x))
+  :enable type-option-some->val)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type-list-option
@@ -1401,6 +1416,19 @@
     :true-listp t
     :elementp-of-nil nil
     :pred bind-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-count-positive
+  :short "The size of an expression is positive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a linear rule, for the termination of functions
+     whose measures are sums of sizes of expressions."))
+  (< 0 (expr-count x))
+  :rule-classes :linear
+  :expand ((expr-count x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
