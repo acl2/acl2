@@ -293,6 +293,13 @@
   :rule-classes :congruence
   :enable map-values-all-posp)
 
+(defrule tree-all-vals-posp-when-map-values-all-posp
+  (implies (and (treemap::mapp map)
+                (map-values-all-posp (double-rewrite map)))
+           (tree-all-vals-posp map))
+  :enable (map-values-all-posp
+           tree-all-vals-posp-becomes-set-all-posp-of-values))
+
 (defruled map-values-all-posp-when-emptyp
   (implies (treemap::emptyp map)
            (map-values-all-posp map))

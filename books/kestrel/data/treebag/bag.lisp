@@ -115,6 +115,12 @@
 
 (add-to-ruleset break-abstraction '(map-values-all-posp-of-fix))
 
+(defruled tree-all-vals-posp-of-fix
+  (tree-all-vals-posp (fix bag))
+  :enable break-abstraction)
+
+(add-to-ruleset break-abstraction '(tree-all-vals-posp-of-fix))
+
 ;; Binding an element to a positive value, or removing it, in the underlying
 ;; treemap yields a bag.
 
