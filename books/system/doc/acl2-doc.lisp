@@ -110887,7 +110887,8 @@ it."
  certifying books in parallel, and it may also improve speed slightly.  A
  different size, in megabytes, may be specified with environment variable
  @('ACL2_SBCL_NURSERY_SIZE').  See the comment in the definition of
- @('*sbcl-nursery-size*') in the ACL2 source code.</p>
+ @('*sbcl-nursery-size*') in the ACL2 source code.  This change was made by AI;
+ thanks to Eric Smith for reviewing it.</p>
 
  <p>(CMUCL only) Fixed CMUCL builds of ACL2 so that @('\"lisp\"') can be the
  specified Lisp program name and to avoid a problem with

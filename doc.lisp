@@ -107773,6 +107773,17 @@ Changes at the System Level
   change, which handles certain floating-point exceptions.  (ACL2
   supports floating-point computations; see [df].)
 
+  (SBCL only) The SBCL ``nursery'' (roughly, the memory allocated
+  between garbage collections) is now 200 megabytes by default.  It
+  was formerly 1.6 gigabytes, because SBCL makes it 5% of the dynamic
+  space size that ACL2 specifies.  This change can substantially
+  reduce memory usage, especially when certifying books in parallel,
+  and it may also improve speed slightly.  A different size, in
+  megabytes, may be specified with environment variable
+  [30m[47mACL2_SBCL_NURSERY_SIZE[0m[0m.  See the comment in the definition of
+  [30m[47m*sbcl-nursery-size*[0m[0m in the ACL2 source code.  This change was made
+  by AI; thanks to Eric Smith for reviewing it.
+
   (CMUCL only) Fixed CMUCL builds of ACL2 so that [30m[47m\"lisp\"[0m[0m can be the
   specified Lisp program name and to avoid a problem with
   [30m[47m-dynamic-space-size[0m[0m on some systems.  However, the CMUCL version
