@@ -74,3 +74,21 @@
   (equal (count x (empty))
          0)
   :enable count-when-emptyp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define in (x (bag bagp))
+  :parents (treebag)
+  :short "Check if a value occurs in a @(see treebag)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(\\log(m))$), where @($m$) is the number of
+       distinct elements of the bag.")
+    (xdoc::p
+      "This is a convenient abbreviation, not the logical normal form used by
+       this library. It is enabled, so @('(in x bag)') becomes @('(< 0 (count
+       x bag))')."))
+  (< 0 (count x bag))
+  :enabled t
+  :inline t)

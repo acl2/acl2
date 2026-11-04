@@ -19,4 +19,5 @@
 
 (std::defredundant
   :names (count
+          in
           ))
