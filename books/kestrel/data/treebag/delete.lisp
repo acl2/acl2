@@ -152,6 +152,30 @@
            count-of-insert-many
            nfix))
 
+(defruled delete-many-of-insert-many-when-not-equal
+  (implies (not (equal x y))
+           (equal (delete-many x m (insert-many y n bag))
+                  (insert-many y n (delete-many x m bag))))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-insert-many))
+
+(defrule delete-many-of-insert-many-when-not-equal-cheap
+  (implies (not (equal x y))
+           (equal (delete-many x m (insert-many y n bag))
+                  (insert-many y n (delete-many x m bag))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-many-of-insert-many-when-not-equal)
+
+(defrule insert-many-of-delete-many-same
+  (implies (<= (nfix n) (count x bag))
+           (equal (insert-many x n (delete-many x n bag))
+                  (fix bag)))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-insert-many
+           nfix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete (x (bag bagp))
@@ -265,6 +289,56 @@
            count-of-delete
            count-of-insert))
 
+(defruled delete-of-arg1-and-insert-many
+  (equal (delete x (insert-many x n bag))
+         (if (equal (nfix n) 0)
+             (delete x bag)
+           (insert-many x (- (nfix n) 1) bag)))
+  :enable (extensionality
+           count-of-delete
+           count-of-insert-many
+           nfix))
+
+(defruled delete-of-insert-many-when-not-equal
+  (implies (not (equal x y))
+           (equal (delete x (insert-many y n bag))
+                  (insert-many y n (delete x bag))))
+  :enable (extensionality
+           count-of-delete
+           count-of-insert-many))
+
+(defrule delete-of-insert-many-when-not-equal-cheap
+  (implies (not (equal x y))
+           (equal (delete x (insert-many y n bag))
+                  (insert-many y n (delete x bag))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-of-insert-many-when-not-equal)
+
+(defruled delete-many-of-arg1-and-insert
+  (equal (delete-many x n (insert x bag))
+         (if (equal (nfix n) 0)
+             (insert x bag)
+           (delete-many x (- (nfix n) 1) bag)))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-insert
+           nfix))
+
+(defruled delete-many-of-insert-when-not-equal
+  (implies (not (equal x y))
+           (equal (delete-many x n (insert y bag))
+                  (insert y (delete-many x n bag))))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-insert))
+
+(defrule delete-many-of-insert-when-not-equal-cheap
+  (implies (not (equal x y))
+           (equal (delete-many x n (insert y bag))
+                  (insert y (delete-many x n bag))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-many-of-insert-when-not-equal)
+
 ;; Nests of deletes are sorted by element, whether a layer is delete or
 ;; delete-many. Where an element has both, delete comes outside.
 
@@ -324,4 +398,6 @@
     delete-when-count-0
     delete-many-of-arg1-and-insert-many
     delete-of-insert
+    delete-of-arg1-and-insert-many
+    delete-many-of-arg1-and-insert
     ))
