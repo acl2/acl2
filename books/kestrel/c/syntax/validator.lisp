@@ -1283,7 +1283,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (vstate vstatep))
-  :returns (mv (erp maybe-msgp) (type typep) (linkage linkagep) (uid uidp))
+  :returns (mv (erp maybe-msgp)
+               (type typep)
+               (linkage linkagep)
+               (uid uidp)
+               (new-vstate vstatep))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -1299,9 +1303,29 @@
      it is found in the validation table,
      recorded as denoting an object or function
      [C17:6.5.1/2].
-     The type and the linkage are obtained from the table."))
-  (b* (((reterr) (irr-type) (irr-linkage) (irr-uid))
+     The type and the linkage are obtained from the table.")
+   (xdoc::p
+    "If the identifier is not in the table
+     but satisfies @(tsee prefixed-built-in-identp),
+     we first add it to the file scope,
+     with the unknown built-in type,
+     in the same way as the built-ins in our table
+     (see @(tsee vstate-add-built-in-funs))."))
+  (b* (((reterr) (irr-type) (irr-linkage) (irr-uid) (irr-vstate))
        ((mv info &) (vstate-lookup-ord var vstate))
+       ((mv info vstate)
+        (if (and (not info)
+                 (prefixed-built-in-identp
+                  var (ienv->dialect (vstate->ienv vstate))))
+            (b* ((linkage (linkage-external))
+                 ((mv uid vstate) (vstate-get-fresh-uid var linkage vstate))
+                 (info (make-valid-ord-info-objfun
+                        :type (type-unknown-builtin)
+                        :linkage linkage
+                        :defstatus (valid-defstatus-defined)
+                        :uid uid)))
+              (mv info (vstate-add-ord-file-scope var info vstate)))
+          (mv info (vstate-fix vstate))))
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
        ((unless (valid-ord-info-case info :objfun))
@@ -1310,7 +1334,8 @@
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
            (valid-ord-info-objfun->linkage info)
-           (valid-ord-info-objfun->uid info))))
+           (valid-ord-info-objfun->uid info)
+           vstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3101,7 +3126,8 @@
          (ienv (vstate->ienv vstate)))
       (expr-case
        expr
-       :ident (b* (((erp type linkage uid) (valid-var expr.ident vstate))
+       :ident (b* (((erp type linkage uid vstate)
+                    (valid-var expr.ident vstate))
                    (info (make-var-vinfo :type type
                                          :linkage linkage
                                          :uid uid)))
@@ -3109,7 +3135,7 @@
                                         :info info)
                        type
                        nil
-                       (vstate-fix vstate)))
+                       vstate))
        :const (b* (((erp const type) (valid-const expr.const vstate))
                    (info (make-type-vinfo :type type)))
                 (retok (make-expr-const :const const

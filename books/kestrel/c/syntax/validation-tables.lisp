@@ -45,7 +45,8 @@
   (:external ())
   (:internal ())
   (:none ())
-  :pred linkagep)
+  :pred linkagep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -87,7 +88,8 @@
   (:static ())
   (:thread ())
   (:auto ())
-  :pred lifetimep)
+  :pred lifetimep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -120,7 +122,8 @@
   (:undefined ())
   (:tentative ())
   (:defined ())
-  :pred valid-defstatusp)
+  :pred valid-defstatusp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,7 +161,8 @@
   (:enumconst ())
   (:typedef ((def type)
              (uid uid)))
-  :pred valid-ord-infop)
+  :pred valid-ord-infop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +206,8 @@
      We omit @(':enum'), whose tags are not yet being tracked."))
   (:struct ())
   (:union ())
-  :pred tag-kindp)
+  :pred tag-kindp
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +227,8 @@
      under a separate @(tsee type-completions) map."))
   ((kind tag-kind)
    (uid uid))
-  :pred valid-tag-infop)
+  :pred valid-tag-infop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -265,7 +271,8 @@
      and the name space of tags."))
   ((ord valid-ord-scope)
    (tag valid-tag-scope))
-  :pred valid-scopep)
+  :pred valid-scopep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -302,7 +309,8 @@
      (or exactly once, if the identifier is used in an expression) [C17:6.9/5].
      For now, we conservatively allow any number of definitions."))
   ((type type))
-  :pred valid-ext-infop)
+  :pred valid-ext-infop
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -362,7 +370,8 @@
    (macros macro-table)
    (externals valid-externals)
    (completions type-completions))
-  :pred valid-tablep)
+  :pred valid-tablep
+  :layout :fulltree)
 
 ;;;;;;;;;;;;;;;;;;;;
 

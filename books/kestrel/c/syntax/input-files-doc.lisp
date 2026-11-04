@@ -282,7 +282,18 @@
        These processing levels are orthogonal to
        the preprocessing specified by @(':preprocess'),
        since they apply equally to
-       either the original or the preprocessed files."))
+       either the original or the preprocessed files.")
+     (xdoc::p
+      "Unless the internal preprocessor is used,
+       each file goes through all the required stages
+       (preprocessing, if any, and the processing levels up to @(':process'))
+       before the next file is processed,
+       so the intermediate results of a file
+       are not kept while the other files are processed.
+       With the internal preprocessor,
+       each stage is applied to all the files before the next stage,
+       because @('#include') directives preserved by the internal preprocessor
+       make the disambiguation of a file involve the files it includes."))
 
     (xdoc::desc
      "@(':const') &mdash; required, no default"
@@ -332,9 +343,13 @@
      (xdoc::p
       "Boolean flag saying whether to keep going after failing to input a file.
        When @('t'), files which fail parsing, disambiguation, or validation
-       are dropped and the relevant error is printed.
-       Furthermore, at the end of each stage, if any file has failed,
-       then the fraction of successful files is also printed.")
+       are dropped and the relevant error is printed;
+       unless the internal preprocessor is used,
+       so are files which cannot be read or preprocessed.
+       Furthermore, if any file has failed,
+       the fraction of successful files is also printed:
+       at the end, unless the internal preprocessor is used,
+       and otherwise at the end of each stage.")
      (xdoc::p
       "This flag is provided primarily for debugging purposes.
        Successful validation of later files following the first failure

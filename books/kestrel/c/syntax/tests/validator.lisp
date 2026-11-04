@@ -2182,6 +2182,49 @@ void * g(void) {
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+;; Undeclared __builtin_ identifiers not in the built-in table
+;; are built-ins of unknown type, usable as functions or objects.
+(test-valid
+ "int f(int x) {
+  __builtin_ia32_emms();
+  return __builtin_not_a_real_builtin(x, &x) + __builtin_not_a_real_object;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void f(void) {
+  __builtin_ia32_emms();
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;; Without GCC or Clang extensions, they are not in scope.
+(test-valid-fail
+ "void f(void) {
+  __builtin_ia32_emms();
+}
+")
+
+;; They are added to the file scope with external linkage.
+(test-valid-fail
+ "void f(void) {
+  __builtin_not_a_real_builtin();
+}
+static int __builtin_not_a_real_builtin(void);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;; A declared __builtin_ identifier has its declared type.
+(test-valid-fail
+ "struct s { int a; };
+struct s __builtin_my_own(void);
+int f(void) {
+  return __builtin_my_own() + 1;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 ;; Under :keep-going, a unit that fails disambiguation
 ;; does not discard the units disambiguated before it.
 (test-valid
