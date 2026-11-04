@@ -36,6 +36,7 @@
                                ;; TODO: prune some of these
                                #!STD
                                '(cardinality
+                                 count
                                  delete
                                  difference
                                  double-containment
