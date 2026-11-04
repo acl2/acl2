@@ -25,7 +25,6 @@
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
 (local (include-book "kestrel/data/treemap/extensionality" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
@@ -51,6 +50,20 @@
        is the one place the representation invariant is visible from outside,
        and it is what lets a single quantifier do the work that @(see
        treemap::extensionality) needs two for.")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A lookup in the underlying treemap, read through count. An element is bound
+;; exactly when its count is positive, since no element is bound to zero.
+
+(defruledl lookup-of-fix-becomes-count
+  (equal (treemap::lookup k (fix bag) :default d)
+         (if (posp (count k bag))
+             (count k bag)
+           d))
+  :enable (count
+           map-values-all-posp-of-fix
+           treemap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,79 +135,42 @@
                    (x y)
                    (y x))))
 
+(defrule transitivity-of-ext-equal
+  (implies (and (ext-equal x y)
+                (ext-equal y z))
+           (ext-equal x z))
+  :expand (ext-equal x z)
+  :enable ext-equal-necc)
+
+(defequiv ext-equal)
+
+(defrulel count-when-ext-equal-congruence
+  (implies (ext-equal x y)
+           (equal (count elem x)
+                  (count elem y)))
+  :rule-classes :congruence
+  :by ext-equal-necc)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The invariant, in the form this proof needs it: a zero reading means the
-;; element is absent, since no element is bound to zero.
-
-(defruledl equal-of-count-and-0-becomes-not-in
-  (equal (equal (count x bag) 0)
-         (not (treemap::in x (fix bag))))
-  :enable (count
-           map-values-all-posp-of-fix)
-  :use (:instance posp-of-lookup-when-map-values-all-posp
-                  (k x)
-                  (map (fix bag)))
-  :disable posp-of-lookup-when-map-values-all-posp)
-
-;; So bags agreeing on multiplicities agree on lookups at every default: at a
-;; bound element the default is not consulted, and at an absent one both sides
-;; return the default itself.
-
-(defruledl lookup-of-fix-when-count-equal
-  (implies (equal (count k x) (count k y))
-           (equal (treemap::lookup k (fix x) :default d)
-                  (treemap::lookup k (fix y) :default d)))
-  :use ((:instance equal-of-count-and-0-becomes-not-in (x k) (bag x))
-        (:instance equal-of-count-and-0-becomes-not-in (x k) (bag y)))
-  :enable (count
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
-
-;; Which is @(see treemap::extensionality)'s hypothesis, at its own witness.
-
-(defruledl treemap-ext-equal-when-ext-equal
-  (implies (ext-equal x y)
-           (treemap::ext-equal (fix x) (fix (double-rewrite y))))
-  :expand (treemap::ext-equal (fix x) (fix y))
-  :use ((:instance ext-equal-necc
-                   (elem (mv-nth 0 (treemap::ext-equal-witness (fix x)
-                                                               (fix y)))))
-        (:instance lookup-of-fix-when-count-equal
-                   (k (mv-nth 0 (treemap::ext-equal-witness (fix x) (fix y))))
-                   (d (mv-nth 1 (treemap::ext-equal-witness (fix x)
-                                                            (fix y)))))))
-
-(defruledl equiv-when-ext-equal
+(defrulel ext-equal-refines-equiv
   (implies (ext-equal x y)
            (equiv x y))
+  :rule-classes :refinement
   :enable (equiv
-           treemap::equiv
-           treemap-ext-equal-when-ext-equal
-           mapp-of-fix)
-  :use (:instance treemap::ext-equal-becomes-equiv
-                  (treemap::x (fix x))
-                  (treemap::y (fix y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+           mapp-of-fix
+           treemap::extensionality
+           lookup-of-fix-becomes-count))
 
 (defruled ext-equal-becomes-equiv
   (equal (ext-equal x y)
          (equiv x y))
-  :use equiv-when-ext-equal
-  :enable ext-equal)
+  :cases ((ext-equal x y)))
 
 (defruled equiv-becomes-ext-equal
   (equal (equiv x y)
          (ext-equal x y))
   :by ext-equal-becomes-equiv)
-
-(defrule transitivity-of-ext-equal
-  (implies (and (ext-equal x y)
-                (ext-equal y z))
-           (ext-equal x z))
-  :enable ext-equal-becomes-equiv)
-
-(defequiv ext-equal)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
