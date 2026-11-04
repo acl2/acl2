@@ -87,7 +87,10 @@
         "Compound atoms serialize their parts in sequence: symbols as their
          package name and symbol name (each length-prefixed), rationals as
          numerator and denominator (self-delimiting LEB128 encodings), and
-         numbers as their real and imaginary parts."))
+         numbers as their real and imaginary parts.")
+      (xdoc::li
+        "The symbol @('nil') is an exception: it is serialized as a single tag
+         byte of its own."))
     (xdoc::p
       "These functions are specifications. They are executable, but no attempt
        is made to execute them efficiently; a hash function is expected to fuse
@@ -125,6 +128,7 @@
 (defconst *tag-rational* #x75)
 (defconst *tag-complex* #x76)
 (defconst *tag-bad-atom* #x77)
+(defconst *tag-nil* #x78)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,7 +140,8 @@
         *tag-integer*
         *tag-rational*
         *tag-complex*
-        *tag-bad-atom*))
+        *tag-bad-atom*
+        *tag-nil*))
 
 ;; Sanity check
 (rule
@@ -540,11 +545,17 @@
   (xdoc::topstring
     (xdoc::p
       "The package name followed by the symbol name, each length-prefixed. By
-       @('acl2::symbol-equality'), these two strings determine the symbol."))
+       @('acl2::symbol-equality'), these two strings determine the symbol.")
+    (xdoc::p
+      "The exception is @('nil'), which is serialized as a single tag byte of
+       its own. Since @('nil') terminates every true list, it is typically the
+       most common atom by far."))
   :returns (bytes byte-listp)
-  (cons *tag-symbol*
-        (append (string-contents-to-bytes (symbol-package-name symbol))
-                (string-contents-to-bytes (symbol-name symbol)))))
+  (if (eq symbol nil)
+      (list *tag-nil*)
+    (cons *tag-symbol*
+          (append (string-contents-to-bytes (symbol-package-name symbol))
+                  (string-contents-to-bytes (symbol-name symbol))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
