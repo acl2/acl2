@@ -384,13 +384,18 @@ bindings resulting from rewriting the second term.</p>")
 ;; <p>We'll skip past most of the hypotheses and focus on one particular conclusion:</p>
 
 ;; @({
-;;  (fgl-ev-context-equiv-forall-extensions
-;;   (interp-st->equiv-contexts interp-st)
-;;   (fgl-object-eval xobj env new-logicman)
-;;   x
-;;   eval-alist)
+;;  (and (fgl-ev-context-equiv-forall-extensions
+;;        (interp-st->equiv-contexts interp-st) x eval-alist)
+;;       (equal (fgl-ev-context-fix (interp-st->equiv-contexts interp-st)
+;;                                  (fgl-object-eval xobj env new-logicman))
+;;              (fgl-ev-context-fix (interp-st->equiv-contexts interp-st)
+;;                                  (fgl-ev x eval-alist))))
 ;;  })
 
+;; <p>The first conjunct says that evaluating the term under any extension of
+;; @('eval-alist') preserves its value up to the current equivalence contexts.
+;; The second relates the value at @('eval-alist') to the returned symbolic object.</p>
+;;
 ;; <p>Here the @('xobj') is the symbolic object returned from @('fgl-interp-term'),
 ;; @('new-logicman') is the logicman field of the resulting interpreter state
 ;; after executing @('fgl-interp-term'), @('x') is the input term, and

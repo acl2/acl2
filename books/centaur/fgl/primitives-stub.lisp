@@ -66,27 +66,32 @@
   :hints(("Goal" :in-theory (enable fgl-ev-equiv-necc))))
 
 
+;; These relations express stability under extensions.  Correspondence with an
+;; interpreted object is stated separately at the original evaluation alist.
+;; The syntaxp guards prevent necessity rules from rewriting an evaluation to
+;; itself when the extension is syntactically the original alist.
 (defsection fgl-ev-context-equiv-forall-extensions
 
   (defun-sk fgl-ev-context-equiv-forall-extensions (contexts
-                                                    obj
                                                     term
                                                     eval-alist)
     (forall (ext)
-            (implies (eval-alist-extension-p ext eval-alist)
+            (implies (and (syntaxp (not (equal ext eval-alist)))
+                          (eval-alist-extension-p ext eval-alist))
                      (equal (fgl-ev-context-fix contexts
                                                 (fgl-ev term ext))
-                            (fgl-ev-context-fix contexts obj))))
+                            (fgl-ev-context-fix contexts (fgl-ev term eval-alist)))))
     :rewrite :direct)
   (acl2::defquantexpr fgl-ev-context-equiv-forall-extensions
-    :predicate (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
+    :predicate (fgl-ev-context-equiv-forall-extensions contexts term eval-alist)
     :quantifier :forall
     :witnesses ((ext (fgl-ev-context-equiv-forall-extensions-witness
-                      contexts obj term eval-alist)))
-    :expr (implies (eval-alist-extension-p ext eval-alist)
+                      contexts term eval-alist)))
+    :expr (implies (and (syntaxp (not (equal ext eval-alist)))
+                        (eval-alist-extension-p ext eval-alist))
                    (equal (fgl-ev-context-fix contexts
                                               (fgl-ev term ext))
-                          (fgl-ev-context-fix contexts obj)))
+                          (fgl-ev-context-fix contexts (fgl-ev term eval-alist))))
     :instance-rulename fgl-ev-context-equiv-forall-extensions-instancing
     :wcp-witness-rulename fgl-ev-context-equiv-forall-extensions-witnessing)
 
@@ -109,8 +114,8 @@
       fgl-ev-context-equiv-forall-extensions-fgl-ev-example
       fgl-ev-context-equiv-forall-extensions-fgl-ev-list-example))
 
-  (defcong fgl-ev-equiv equal (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist) 3
-    :hints (("goal" :cases ((fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))
+  (defcong fgl-ev-equiv equal (fgl-ev-context-equiv-forall-extensions contexts term eval-alist) 2
+    :hints (("goal" :cases ((fgl-ev-context-equiv-forall-extensions contexts term eval-alist)))
             (acl2::witness :ruleset fgl-ev-context-equiv-forall)))
   )
 
@@ -118,21 +123,23 @@
                            fgl-ev-context-equiv-forall-extensions-necc)))
 
 (defsection iff-forall-extensions
-  (defun-sk iff-forall-extensions (obj term eval-alist)
+  (defun-sk iff-forall-extensions (term eval-alist)
     (forall (ext)
-            (implies (eval-alist-extension-p ext eval-alist)
+            (implies (and (syntaxp (not (equal ext eval-alist)))
+                          (eval-alist-extension-p ext eval-alist))
                      (iff (fgl-ev term ext)
-                          obj)))
+                          (fgl-ev term eval-alist))))
     :rewrite :direct)
 
   (acl2::defquantexpr iff-forall-extensions
-    :predicate (iff-forall-extensions obj term eval-alist)
+    :predicate (iff-forall-extensions term eval-alist)
     :quantifier :forall
     :witnesses ((ext (iff-forall-extensions-witness
-                      obj term eval-alist)))
-    :expr (implies (eval-alist-extension-p ext eval-alist)
+                      term eval-alist)))
+    :expr (implies (and (syntaxp (not (equal ext eval-alist)))
+                        (eval-alist-extension-p ext eval-alist))
                    (iff* (fgl-ev term ext)
-                         obj))
+                         (fgl-ev term eval-alist)))
     :instance-rulename iff-forall-extensions-instancing
     :wcp-witness-rulename iff-forall-extensions-witnessing)
 
@@ -160,23 +167,22 @@
   (acl2::def-witness-ruleset context-equiv-forall
     '(iff-forall fgl-ev-context-equiv-forall))
 
-  (defcong iff equal (iff-forall-extensions obj term eval-alist) 1
-    :hints (("goal" :cases ((iff-forall-extensions obj term eval-alist)))
-            (acl2::witness :ruleset iff-forall)))
-
-  (defcong fgl-ev-iff-equiv equal (iff-forall-extensions obj term eval-alist) 2
-    :hints (("goal" :cases ((iff-forall-extensions obj term eval-alist))
+  (defcong fgl-ev-iff-equiv equal (iff-forall-extensions term eval-alist) 1
+    :hints (("goal" :cases ((iff-forall-extensions term eval-alist))
              :in-theory (enable iff*))
             (acl2::witness :ruleset iff-forall)
             (and stable-under-simplificationp
                  '(:use ((:instance fgl-ev-iff-equiv-necc
                           (x term) (y term-equiv)
-                          (env ext0)))))))
+                          (env ext0))
+                         (:instance fgl-ev-iff-equiv-necc
+                          (x term) (y term-equiv)
+                          (env eval-alist)))))))
 
   (defthm fgl-ev-context-equiv-forall-extensions-when-iff
     (iff (fgl-ev-context-equiv-forall-extensions
-          '(iff) obj term eval-alist)
-         (iff-forall-extensions obj term eval-alist))
+          '(iff) term eval-alist)
+         (iff-forall-extensions term eval-alist))
     :hints ((acl2::witness :ruleset context-equiv-forall)
             (and stable-under-simplificationp
                  '(:in-theory (enable iff*))))))
@@ -598,7 +604,7 @@
                   eval-alist
                   (fgl-object-bindings-eval bindings env (interp-st->logicman new-interp-st)))
                  (fgl-ev (conjoin hyps) eval-alist)
-                 (interp-st-bvar-db-ok new-interp-st env)
+                 (case-split (interp-st-bvar-db-ok new-interp-st env))
                  (not (interp-st->errmsg new-interp-st)))
             (equal (fgl-ev-context-fix
                     contexts
@@ -1076,7 +1082,7 @@
                   (logicman-pathcond-eval (fgl-env->bfr-vals env)
                                           (interp-st->pathcond interp-st)
                                           (interp-st->logicman interp-st))
-                  (interp-st-bvar-db-ok new-interp-st env)
+                  (case-split (interp-st-bvar-db-ok new-interp-st env))
                   (not (interp-st->errmsg new-interp-st)))
              (equal (fgl-ev-context-fix contexts
                                         (fgl-object-eval ans env (interp-st->logicman new-interp-st)))
