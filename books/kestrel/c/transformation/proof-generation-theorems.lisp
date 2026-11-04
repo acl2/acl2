@@ -14,10 +14,11 @@
 
 (include-book "std/util/defund-sk" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (in-theory (enable c::not-errorp-when-expr-valuep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -168,8 +169,7 @@
              c::eval-const
              c::eval-iconst
              c::check-iconst
-             c::type-of-value)
-    :disable ((:e tau-system))) ; for speed
+             c::type-of-value))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1721,7 +1721,7 @@
                         new-compst
                         limit)
     (declare (xargs :measure (nfix limit)
-                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable nfix o< o-p o-finp)))))
     (b* (((when (zp limit)) nil)
          ((unless (equal old-compst new-compst)) nil)
          ((mv old-test-eval old-compst)
@@ -1892,7 +1892,7 @@
                           new-compst
                           limit)
     (declare (xargs :measure (nfix limit)
-                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable nfix o< o-p o-finp)))))
     (b* (((when (zp limit)) nil)
          ((unless (equal old-compst new-compst)) nil)
          (old-compst (c::enter-scope old-compst))
