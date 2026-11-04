@@ -3308,10 +3308,7 @@
     "For now we require the two function definitions
      to be identical except for possibly the body,
      and also that both functions satisfy certain conditions
-     (currently stringent, but we plan to relax them).
-     If this and other checks fail,
-     it is not an error,
-     but we just do not generate a theorem for the function."))
+     (currently stringent, but we plan to relax them)."))
   (b* (((reterr) (irr-gout))
        ((gin gin))
        (gout-no-thm (gout-no-thm gin))
