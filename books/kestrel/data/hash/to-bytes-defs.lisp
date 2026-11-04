@@ -30,6 +30,7 @@
           *tag-complex*
           *tag-bad-atom*
           *tag-nil*
+          *tag-keyword*
           nat-to-bytes
           nat-to-leb128-groups
           integer-contents-to-bytes

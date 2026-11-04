@@ -657,13 +657,17 @@
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
   (the (unsigned-byte 32)
-    (if (eq symbol nil)
-        (jenkins-acc-byte #x78 acc)
-      (jenkins-acc-string-contents
-        (symbol-name symbol)
-        (jenkins-acc-string-contents
-          (symbol-package-name symbol)
-          (jenkins-acc-byte #x71 acc)))))
+    (cond ((eq symbol nil)
+           (jenkins-acc-byte #x78 acc))
+          ((keywordp symbol)
+           (jenkins-acc-string-contents
+             (symbol-name symbol)
+             (jenkins-acc-byte #x79 acc)))
+          (t (jenkins-acc-string-contents
+               (symbol-name symbol)
+               (jenkins-acc-string-contents
+                 (symbol-package-name symbol)
+                 (jenkins-acc-byte #x71 acc))))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
