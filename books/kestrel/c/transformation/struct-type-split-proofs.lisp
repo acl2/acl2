@@ -1665,10 +1665,7 @@
         (packn-pos (list 'value-struct-read-
                          (c::ident->name cmem)
                          '-when-struct-value-
-                         (if (member-equal (ident-fix mem)
-                                           (ident-list-fix lmems))
-                             'newlp
-                           'newrp))
+                         newp)
                    'struct-value-))
        (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
                            'struct-value-))
