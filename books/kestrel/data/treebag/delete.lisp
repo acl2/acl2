@@ -128,9 +128,13 @@
            count-of-delete-many
            nfix))
 
+;; The loop-stopper sorts by element alone. The default one would compare
+;; multiplicities first, which can keep two occurrences of an element apart.
+
 (defrule commutativity-of-delete-many
   (equal (delete-many y m (delete-many x n bag))
          (delete-many x n (delete-many y m bag)))
+  :rule-classes ((:rewrite :loop-stopper ((y x))))
   :enable (extensionality
            count-of-delete-many
            nfix))
@@ -261,9 +265,30 @@
            count-of-delete
            count-of-insert))
 
+;; Nests of deletes are sorted by element, whether a layer is delete or
+;; delete-many. Where an element has both, delete comes outside.
+
 (defrule delete-many-of-delete
   (equal (delete-many x n (delete y bag))
          (delete y (delete-many x n bag)))
+  :rule-classes ((:rewrite :loop-stopper ((x y))))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-delete
+           nfix))
+
+(defrule delete-of-delete-many
+  (equal (delete x (delete-many y n bag))
+         (delete-many y n (delete x bag)))
+  :rule-classes ((:rewrite :loop-stopper ((x y))))
+  :enable (extensionality
+           count-of-delete-many
+           count-of-delete
+           nfix))
+
+(defrule delete-many-of-arg1-and-delete
+  (equal (delete-many x n (delete x bag))
+         (delete x (delete-many x n bag)))
   :enable (extensionality
            count-of-delete-many
            count-of-delete

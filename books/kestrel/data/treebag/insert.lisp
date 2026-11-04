@@ -111,9 +111,13 @@
   :enable (extensionality
            count-of-insert-many))
 
+;; The loop-stopper sorts by element alone. The default one would compare
+;; multiplicities first, which can keep two occurrences of an element apart.
+
 (defrule commutativity-of-insert-many
   (equal (insert-many y m (insert-many x n bag))
          (insert-many x n (insert-many y m bag)))
+  :rule-classes ((:rewrite :loop-stopper ((y x))))
   :enable (extensionality
            count-of-insert-many))
 
@@ -179,9 +183,28 @@
   :enable (extensionality
            count-of-insert))
 
+;; Nests of inserts are sorted by element, whether a layer is insert or
+;; insert-many. Where an element has both, insert comes outside.
+
 (defrule insert-many-of-insert
   (equal (insert-many x n (insert y bag))
          (insert y (insert-many x n bag)))
+  :rule-classes ((:rewrite :loop-stopper ((x y))))
+  :enable (extensionality
+           count-of-insert-many
+           count-of-insert))
+
+(defrule insert-of-insert-many
+  (equal (insert x (insert-many y n bag))
+         (insert-many y n (insert x bag)))
+  :rule-classes ((:rewrite :loop-stopper ((x y))))
+  :enable (extensionality
+           count-of-insert-many
+           count-of-insert))
+
+(defrule insert-many-of-arg1-and-insert
+  (equal (insert-many x n (insert x bag))
+         (insert x (insert-many x n bag)))
   :enable (extensionality
            count-of-insert-many
            count-of-insert))
