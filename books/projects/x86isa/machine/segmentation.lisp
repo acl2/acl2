@@ -225,6 +225,10 @@
     :gen-type t
     :gen-linear t)
 
+  (defthm natp-of-mv-nth-0-of-segment-base-and-bounds-type
+    (natp (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86)))
+    :rule-classes :type-prescription)
+
   (defthm-unsigned-byte-p
     segment-lower-bound-is-n33p
     :bound 33

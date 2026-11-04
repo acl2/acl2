@@ -160,7 +160,10 @@
           var+type?-list
           exprs/atoms/binds
           expr-list-list
-          atom-list-list)
+          atom-list-list
+          decl
+          decl-list
+          file)
   :result booleanp
   :default t
   :combine and

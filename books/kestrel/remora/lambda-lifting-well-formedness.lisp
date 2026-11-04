@@ -334,6 +334,12 @@
   :enable (extend-tenv-with-binds
            type-map-wfp-when-type-map-all-wfp))
 
+(defrule type-map-wfp-of-extend-tenv-with-let-bind
+  (implies (type-map-wfp tenv)
+           (type-map-wfp (mv-nth 0 (extend-tenv-with-let-bind b tenv tlets locals))))
+  :enable (extend-tenv-with-let-bind
+           type-map-wfp-when-type-map-all-wfp))
+
 (defrule type-map-wfp-of-primop-types
   :short "The primitive operations' types are well formed."
   (type-map-wfp (primop-types))
@@ -348,12 +354,14 @@
 ; above.
 
 (defrule wfp-of-nested-lambda
-  :short "The parameters and body a lambda is flattened into are well formed."
-  (b* (((mv nestedp params inner) (nested-lambda body)))
+  :short "The parameters, body, and result type a lambda is flattened into
+          are well formed."
+  (b* (((mv nestedp params inner type?) (nested-lambda body)))
     (implies (and (expr-wfp body)
                   nestedp)
              (and (var+type?-list-wfp params)
-                  (expr-wfp inner))))
+                  (expr-wfp inner)
+                  (type-option-wfp type?))))
   :enable (nested-lambda var+type?-list-wfp)
   :expand ((expr-wfp body)
            (atom-wfp (expr-atom->atom body))))
@@ -375,12 +383,17 @@
           and a well-formed definition."
   (implies (and (var+type?-list-wfp params)
                 (expr-wfp body)
+                (type-option-wfp type?)
                 (type-map-wfp tenv))
            (b* (((mv e lifted &)
-                 (emit-lifted-lambda params body tenv locals used)))
+                 (emit-lifted-lambda params body type? tenv locals used)))
              (and (expr-wfp e)
                   (bind-list-wfp lifted))))
+  :cases ((consp (mv-nth 1 (emit-lifted-lambda params body type?
+                                               tenv locals used))))
   :enable (emit-lifted-lambda
+           make-atom-lambda/lambdan
+           var+type?-list-wfp
            bind-list-wfp
            bind-wfp
            type-option-wfp
@@ -392,6 +405,9 @@
            valid-identifier-string-list-p-when-valid-identifier-string-set-p
            (:e valid-identifier-string-p))
   :expand ((:free (n) (expr-wfp (expr-var n)))
+           (:free (a) (expr-wfp (expr-atom a)))
+           (:free (p b ty) (atom-wfp (atom-lambda p b ty)))
+           (:free (ps b ty) (atom-wfp (atom-lambdan ps b ty)))
            (:free (v ps ty e) (bind-wfp (bind-fun v ps ty e)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -495,6 +511,7 @@
   (defret wfp-of-ll-lambda
     (implies (and (var+type?-list-wfp params)
                   (expr-wfp body)
+                  (type-option-wfp type?)
                   (type-map-wfp tenv)
                   (expr-map-wfp lmap))
              (and (expr-wfp e) (bind-list-wfp lifted)))
@@ -533,10 +550,9 @@
              (and (bind-wfp new-x) (bind-list-wfp lifted)))
     :fn ll-bind)
   :mutual-recursion lambda-lift-exprs/atoms/binds
-  :hints (("Goal" :in-theory (enable type-map-wfp-of-extend-tenv-with-var
+  :hints (("Goal" :in-theory (e/d (type-map-wfp-of-extend-tenv-with-var
                                      type-map-wfp-of-extend-tenv-with-params
-                                     type-map-wfp-of-extend-tenv-with-binds
-                                     ll-expr
+                                     type-map-wfp-of-extend-tenv-with-let-bind
                                      ll-lambda
                                      ll-let-binds
                                      liftable-lambda-p
@@ -552,7 +568,16 @@
                                      bind-list-wfp-of-append
                                      consp-when-positive-len
                                      positive-len-when-consp)
-           :expand ((:free (n) (expr-wfp (expr-var n)))
+                               (binary-append
+                                len
+                                acl2::utf8-table36-length-lemmas
+                                acl2::consp-when-member-equal-of-cons-listp
+                                var+type?-list->var-when-not-consp
+                                default-+-2
+                                default-+-1
+                                default-cdr))
+           :expand ((ll-expr x tenv tlets locals lmap used)
+                    (:free (n) (expr-wfp (expr-var n)))
                     (:free (a) (expr-wfp (expr-atom a)))
                     (:free (ds as) (expr-wfp (expr-array ds as)))
                     (:free (ds es) (expr-wfp (expr-frame ds es)))

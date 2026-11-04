@@ -10278,11 +10278,12 @@
 
 ; Function binds with parameters: the bound value is the closure of the
 ; lambda atom over the parameters and the body, i.e. a unary closure over
-; the first parameter whose body is the curried remainder, with no
-; annotation; its environment is restricted to the free ispace and type
-; variables of the curried body (which include those of the remaining
-; parameters' types) and to the free expression variables of the body
-; minus all the parameters.
+; the first parameter whose body is the curried remainder; its annotation is
+; stored in the closure, evaluated, only if there is just one parameter (with
+; more, it travels with the innermost abstraction, in the curried body); its
+; environment is restricted to the free ispace and type variables of the
+; curried body (which include those of the remaining parameters' types) and
+; to the free expression variables of the body minus all the parameters.
 
 (defruled eval-bind-when-fun-consp
   (implies (and (equal (bind-kind bind) :fun)
@@ -10294,10 +10295,14 @@
                        (body (lambda-curried-body (bind-fun->params bind)
                                                   (bind-fun->expr bind)
                                                   (bind-fun->type? bind)))
+                       ((ok type?) (eval-type-option (bind-fun->type? bind)
+                                                     (expr-denv->tenv denv)))
                        (val (make-expr-value-lambda
                              :param param
                              :body body
-                             :type? nil
+                             :type? (if (consp (cdr (bind-fun->params bind)))
+                                        nil
+                                      type?)
                              :denv (expr-denv-restrict
                                     (expr-free-ispace-vars body)
                                     (expr-free-type-vars body)
@@ -10305,16 +10310,13 @@
                                      (expr-free-expr-vars (bind-fun->expr bind))
                                      (set::mergesort
                                       (var+type?-list->var (bind-fun->params bind))))
-                                    denv)))
-                       (type? (bind-fun->type? bind))
-                       ((ok &) (type-option-case
-                                type?
-                                :some (eval-type type?.val (expr-denv->tenv denv))
-                                :none nil)))
+                                    denv))))
                     (expr-denv-add-expr (bind-fun->var bind) val denv))))
+  :enable eval-type-option
   :expand ((eval-bind bind denv limit)))
 
-; Function binds with one parameter: the curried body is the body itself.
+; Function binds with one parameter: the curried body is the body itself,
+; and the bound value is the one of the unary lambda atom with the annotation.
 
 (defruled eval-bind-when-fun-1
   (implies (and (equal (bind-kind bind) :fun)
@@ -10324,10 +10326,12 @@
            (equal (eval-bind bind denv limit)
                   (b* (((ok param) (eval-var+type? (car (bind-fun->params bind))
                                                    (expr-denv->tenv denv)))
+                       ((ok type?) (eval-type-option (bind-fun->type? bind)
+                                                     (expr-denv->tenv denv)))
                        (val (make-expr-value-lambda
                              :param param
                              :body (bind-fun->expr bind)
-                             :type? nil
+                             :type? type?
                              :denv (expr-denv-restrict
                                     (expr-free-ispace-vars (bind-fun->expr bind))
                                     (expr-free-type-vars (bind-fun->expr bind))
@@ -10335,33 +10339,31 @@
                                      (expr-free-expr-vars (bind-fun->expr bind))
                                      (set::mergesort
                                       (var+type?-list->var (bind-fun->params bind))))
-                                    denv)))
-                       (type? (bind-fun->type? bind))
-                       ((ok &) (type-option-case
-                                type?
-                                :some (eval-type type?.val (expr-denv->tenv denv))
-                                :none nil)))
+                                    denv))))
                     (expr-denv-add-expr (bind-fun->var bind) val denv))))
   :enable (eval-bind-when-fun-consp lambda-curried-body))
 
-(defruled eval-atom-of-atom-lambda-nil
+(defruled eval-atom-of-atom-lambda
   (implies (and (var+type?-p param)
                 (exprp body)
+                (type-optionp type?)
                 (not (zp limit)))
-           (equal (eval-atom (atom-lambda param body nil) denv limit)
-                  (b* (((ok pv) (eval-var+type? param (expr-denv->tenv denv))))
+           (equal (eval-atom (atom-lambda param body type?) denv limit)
+                  (b* (((ok pv) (eval-var+type? param (expr-denv->tenv denv)))
+                       ((ok tv) (eval-type-option type?
+                                                  (expr-denv->tenv denv))))
                     (make-expr-value-lambda
                      :param pv
                      :body body
-                     :type? nil
+                     :type? tv
                      :denv (expr-denv-restrict
                             (expr-free-ispace-vars body)
                             (expr-free-type-vars body)
                             (set::delete (var+type?->var param)
                                          (expr-free-expr-vars body))
                             denv)))))
-  :enable (eval-atom-when-lambda eval-type-option)
-  :expand ((atom-free-expr-vars (atom-lambda param body nil))))
+  :enable eval-atom-when-lambda
+  :expand ((atom-free-expr-vars (atom-lambda param body type?))))
 
 (defruled var+type?->type?-of-car-when-set-vars-of-rename
   (implies (and (equal ps (var+type?-list-set-vars
@@ -10393,10 +10395,10 @@
                 (atom-alpha-related-p
                  (atom-lambda (car (bind-fun->params new-bind))
                               (bind-fun->expr new-bind)
-                              nil)
+                              (bind-fun->type? new-bind))
                  (atom-lambda (car (bind-fun->params bind))
                               (bind-fun->expr bind)
-                              nil)
+                              (bind-fun->type? bind))
                  r)))
   :expand ((bind-alpha-related-p new-bind bind r)
            (:free (a x) (atom-alpha-related-p a x r)))
@@ -10419,10 +10421,10 @@
            (atom-alpha-fresh-p
             (atom-lambda (car (bind-fun->params new-bind))
                          (bind-fun->expr new-bind)
-                         nil)
+                         (bind-fun->type? new-bind))
             (atom-lambda (car (bind-fun->params bind))
                          (bind-fun->expr bind)
-                         nil)
+                         (bind-fun->type? bind))
             r b))
   :expand ((bind-alpha-fresh-p new-bind bind r b)
            (:free (a x) (atom-alpha-fresh-p a x r b)))
@@ -10482,9 +10484,9 @@
                                            (bind-free-type-vars bind)
                                            (bind-free-expr-vars bind)))
            (and (expr-denv-alpha-avoided-p new-denv denv r
-                                           (atom-free-ispace-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil))
-                                           (atom-free-type-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil))
-                                           (atom-free-expr-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil)))
+                                           (atom-free-ispace-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind)))
+                                           (atom-free-type-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind)))
+                                           (atom-free-expr-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind))))
                 (expr-denv-alpha-avoided-p new-denv denv r
                                            (type-option-free-ispace-vars
                                             (bind-fun->type? bind))
@@ -10494,9 +10496,9 @@
   :expand ((bind-free-ispace-vars bind)
            (bind-free-type-vars bind)
            (bind-free-expr-vars bind)
-           (:free (p e) (atom-free-ispace-vars (atom-lambda p e nil)))
-           (:free (p e) (atom-free-type-vars (atom-lambda p e nil)))
-           (:free (p e) (atom-free-expr-vars (atom-lambda p e nil))))
+           (:free (p e t?) (atom-free-ispace-vars (atom-lambda p e t?)))
+           (:free (p e t?) (atom-free-type-vars (atom-lambda p e t?)))
+           (:free (p e t?) (atom-free-expr-vars (atom-lambda p e t?))))
   :enable (var+type?-list->var
            var+type?-list-free-ispace-vars
            var+type?-list-free-type-vars
@@ -10510,14 +10512,15 @@
            subset-union-drop-middle
            set::pick-a-point-subset-strategy
            set::subset-in
-           set::union-in)
+           set::union-in
+           set::union-symmetric)
   :use ((:instance expr-denv-alpha-avoided-p-monotone
                    (ivars2 (bind-free-ispace-vars bind))
                    (tvars2 (bind-free-type-vars bind))
                    (evars2 (bind-free-expr-vars bind))
-                   (ivars1 (atom-free-ispace-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil)))
-                   (tvars1 (atom-free-type-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil)))
-                   (evars1 (atom-free-expr-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) nil))))
+                   (ivars1 (atom-free-ispace-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind))))
+                   (tvars1 (atom-free-type-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind))))
+                   (evars1 (atom-free-expr-vars (atom-lambda (car (bind-fun->params bind)) (bind-fun->expr bind) (bind-fun->type? bind)))))
         (:instance expr-denv-alpha-avoided-p-monotone
                    (ivars2 (bind-free-ispace-vars bind))
                    (tvars2 (bind-free-type-vars bind))
@@ -10551,7 +10554,7 @@
            (bind-name bind)
            (bind-name new-bind))
   :enable (eval-bind-when-fun-1
-           eval-atom-of-atom-lambda-nil
+           eval-atom-of-atom-lambda
            var+type?-list->var
            mergesort-when-consp
            set::difference-insert-y
@@ -10570,10 +10573,10 @@
         (:instance eval-atom-ok-when-lambda-aux
                    (atom (atom-lambda (car (bind-fun->params bind))
                                       (bind-fun->expr bind)
-                                      nil))
+                                      (bind-fun->type? bind)))
                    (new-atom (atom-lambda (car (bind-fun->params new-bind))
                                           (bind-fun->expr new-bind)
-                                          nil)))
+                                          (bind-fun->type? new-bind))))
         (:instance eval-type-option-alpha-of-expr-denvs
                    (type? (bind-fun->type? bind))
                    (ivars (type-option-free-ispace-vars (bind-fun->type? bind)))
@@ -10586,7 +10589,8 @@
                     (eval-var+type? (car (bind-fun->params bind))
                                     (expr-denv->tenv denv))
                     (bind-fun->expr bind)
-                    nil
+                    (eval-type-option (bind-fun->type? bind)
+                                      (expr-denv->tenv denv))
                     (expr-denv-restrict
                      (expr-free-ispace-vars (bind-fun->expr bind))
                      (expr-free-type-vars (bind-fun->expr bind))
@@ -10597,7 +10601,8 @@
                     (eval-var+type? (car (bind-fun->params new-bind))
                                     (expr-denv->tenv new-denv))
                     (bind-fun->expr new-bind)
-                    nil
+                    (eval-type-option (bind-fun->type? new-bind)
+                                      (expr-denv->tenv new-denv))
                     (expr-denv-restrict
                      (expr-free-ispace-vars (bind-fun->expr new-bind))
                      (expr-free-type-vars (bind-fun->expr new-bind))
@@ -10673,7 +10678,7 @@
            (bind-name bind)
            (bind-name new-bind))
   :enable (eval-bind-when-fun-1
-           eval-atom-of-atom-lambda-nil
+           eval-atom-of-atom-lambda
            lambda-curried-body
            var+type?-list->var
            mergesort-when-consp
@@ -26237,6 +26242,7 @@
            (bind-name new-bind))
   :cases ((consp (bind-fun->params bind)))
   :enable (eval-bind-when-fun-consp
+           eval-type-option
            eval-atom-of-atom-lambdan
            type-option-rename-all-vars-when-typep
            type-option-rename-all-vars-of-nil

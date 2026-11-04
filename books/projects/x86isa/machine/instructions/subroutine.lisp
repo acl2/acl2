@@ -47,7 +47,8 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils")
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+;(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
+
 
 ;; ======================================================================
 ;; INSTRUCTION: CALL
@@ -91,8 +92,8 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08
-                                         riml32
+  :guard-hints (("Goal" :in-theory (e/d (;riml08
+                                         ;riml32
                                          rime-size-of-2-to-rime16
                                          rime-size-of-4-to-rime32
                                          select-address-size)
@@ -169,8 +170,8 @@
 
   :parents (one-byte-opcodes)
 
-  :guard-hints (("Goal" :in-theory (e/d (riml08
-                                         riml32
+  :guard-hints (("Goal" :in-theory (e/d (;riml08
+                                         ;riml32
                                          select-address-size)
                                         ())))
 
@@ -696,6 +697,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; for speed:
+(local (in-theory (disable acl2::member-of-cons member-equal
+                           rgfi-size$inline)))
+
 (def-inst x86-enter
 
   ;; The ENTER instruction creates a stack frame for a procedure,
@@ -731,8 +736,10 @@
   :guard-hints (("Goal" :in-theory (e/d (rme-size-of-2-to-rme16
                                          rme-size-of-4-to-rme32
                                          rme-size-of-8-to-rme64
-                                         rme64)
-                                        ())))
+                                         ;rme64
+                                         )
+                                        (;signed-byte-p
+                                         ))))
 
   :returns (x86 x86p :hyp (x86p x86))
 
