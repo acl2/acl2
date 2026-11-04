@@ -18,10 +18,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (enable c::not-errorp-when-expr-valuep)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ proof-generation-theorems
   :parents (transformation-tools)
   :short "Theorems supporting proof generation."
@@ -236,6 +232,7 @@
              c::exec-unary
              c::eval-unary
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-arithmeticp
              c::value-realp
              c::value-integerp
@@ -285,6 +282,7 @@
     :enable (c::exec-cast
              c::eval-cast
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -352,6 +350,7 @@
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -390,6 +389,7 @@
              (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -440,6 +440,7 @@
              (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -478,6 +479,7 @@
              (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -528,6 +530,7 @@
              (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -566,6 +569,7 @@
     :enable (c::exec-expr
              c::expr-purep
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp)
     :expand ((c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
@@ -622,6 +626,7 @@
              (c::exec-expr (c::expr-cond new-test new-then new-else)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -672,6 +677,7 @@
              (c::exec-expr (c::expr-cond new-test new-then new-else)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,6 +713,7 @@
              (c::exec-initer (c::initer-single new-expr)
                              new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
 
@@ -792,6 +799,7 @@
     :expand ((c::exec-stmt (c::stmt-return old-expr) old-compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::type-option-of-stmt-value
              c::type-of-value-option
@@ -859,6 +867,7 @@
              (c::exec-stmt
               (c::stmt-if new-test new-then) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -895,6 +904,7 @@
              (c::exec-stmt
               (c::stmt-if new-test new-then) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -942,6 +952,7 @@
               (c::stmt-ifelse new-test new-then new-else)
               new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -989,6 +1000,7 @@
               (c::stmt-ifelse new-test new-then new-else)
               new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1837,6 +1849,7 @@
     :enable (while-induct
              c::exec-stmt-while
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              expr-compustate-vars-multi)
     :hints ('(:use ((:instance while-test-hyp-necc
@@ -2012,6 +2025,7 @@
     :enable (dowhile-induct
              c::exec-stmt-dowhile
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::compustate-has-vars-with-types-p-of-enter-scope
              c::compustate-has-vars-with-types-p-of-exit-exec-enter
