@@ -418,3 +418,48 @@
             (equal (stored-value box) -2))
        box))
  :stobjs-out '(nil box))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-zero (x)
+  (b* (((reterr))
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp) (zero-vals x)))
+    nil)
+  :guard-hints (("Goal" :in-theory (enable zero-vals))))
+
+(assert-equal (static-exclude-zero 1)
+              nil)
+
+(assert-equal (static-exclude-zero -1)
+              :fail)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-one (x)
+  (b* (((reterr) "irrelevant")
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp a) (one-val x)))
+    (retok a))
+  :guard-hints (("Goal" :in-theory (enable one-val))))
+
+(assert-equal (mv-list 2 (static-exclude-one 1))
+              (list nil "okay"))
+
+(assert-equal (mv-list 2 (static-exclude-one -1))
+              (list :fail "irrelevant"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-two (x)
+  (b* (((reterr) "irrelevant" 'irrelevant)
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp a b) (two-vals x)))
+    (retok a b))
+  :guard-hints (("Goal" :in-theory (enable two-vals))))
+
+(assert-equal (mv-list 3 (static-exclude-two 1))
+              (list nil "okay" 'okay))
+
+(assert-equal (mv-list 3 (static-exclude-two -1))
+              (list :fail "irrelevant" 'irrelevant))
