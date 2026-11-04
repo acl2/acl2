@@ -2,7 +2,9 @@
 ; Written by Matt Kaufmann
 ; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
 
-; Avoid randomness (see ../permute-randomly.lisp):
+; Avoid randomness (see ../permute-randomly.lisp), and give retries of quick
+; proofs enough time to survive a garbage collection (see acl2data-time-limit
+; in ../patch.lsp):
 (f-put-global 'acl2data-testing t state)
 
 ; When the following was on one line, there was a report of "Bad path" in the
