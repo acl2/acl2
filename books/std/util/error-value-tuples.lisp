@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -303,7 +304,59 @@
        Error-value tuples are intended for when execution
        runs into exceptional conditions,
        similarly to the situations in which languages with exceptions
-       would throw exceptions.")))
+       would throw exceptions."))
+
+;;;;;;;;;;;;;;;;;;;;
+
+    (xdoc::subsection
+     "Statically Excluding Errors"
+
+     (xdoc::p
+      "There are situations where an error-value tuple,
+       typically returned by a function call,
+       is known to not include an error, i.e. to have @('nil') as @('erp').
+       In these situations,
+       it is best to engender a proof obligation to that effect,
+       which could be manually done as")
+     (xdoc::codeblock
+      "((mv erp val1 ... valN) (f ...))"
+      "((when erp) (reterr (impossible)))")
+     (xdoc::p
+      "or, if @('N') is 0, as")
+     (xdoc::codeblock
+      "(erp (f ...))"
+      "((when erp) (reterr (impossible)))")
+     (xdoc::p
+      "where @(tsee impossible) logically returns @('nil')
+       and also engenders a guard obligation to show that @('nil') holds,
+       which is the case only when that code is provably unreachable.
+       The reason for wrapping it in @('reterr') is so that
+       the code returns one or more values of the appropriate types.
+       Although the @('nil') value of @(tsee impossible)
+       is at odds with @('reterr') because it normally indicates no error,
+       this is never actually executed,
+       because it must be provably unreachable under the guards.
+       The alternative @('(prog2$ (impossible) (reterr <not-nil>))')
+       is less robust because the code containing the snippet above
+       may be expected to return some specific type of error in @('erp'),
+       but @('nil') must be always a value of that type.")
+
+     (xdoc::p
+      "We provide a @(tsee b*) binder @(tsee patbind-noerp)
+       that expands to the code shown just above.
+       This is used as")
+     (xdoc::codeblock
+      "((noerp val1 ... valN) (f ...))")
+     (xdoc::p
+      "where @('noerp') is in the @('ACL2') package
+       (but can be imported into the package of interest).
+       If @('N') is 0, the binding is @('((noerp) (f ...))').
+       The @('val1'), ..., @('valN') may be @(tsee b*) patterns
+       that can be used as components of the @(tsee patbind-mv) binder.")
+
+     (xdoc::p
+      "This binder assumes that @('reterr') is a local macro
+       introduced by a preceding @('reterr') binder (described above).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -565,7 +618,7 @@
                                      (cw "~%~%**** ERROR ****~%~
                                           The ERP binder ~
                                           must be followed by ~
-                                          exactly one form,
+                                          exactly one form, ~
                                           optionally followed by ~
                                           :IFERR and a form, ~
                                           but instead this ERP binder ~
@@ -580,4 +633,31 @@
          ,(if (consp (cdr forms))
               `(reterr ,(caddr forms))
             '(reterr erp))
+       ,rest-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-b*-binder noerp
+  :parents (error-value-tuples)
+  :short "Binder to statically check that an error-value tuple has no error."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see error-value-tuples) for details."))
+  :decls ((declare (xargs :guard (or (and (consp forms)
+                                          (null (cdr forms)))
+                                     (cw "~%~%**** ERROR ****~%~
+                                          The NOERP binder ~
+                                          must be followed by ~
+                                          exactly one form, ~
+                                          but instead this NOERP binder ~
+                                          is followed by the forms ~x0.~%~%"
+                                         forms)))))
+  :body
+  `(b* ((,(if (consp args)
+              `(mv erp ,@args)
+            'erp)
+         ,(car forms)))
+     (if erp
+         (reterr (impossible))
        ,rest-expr)))
