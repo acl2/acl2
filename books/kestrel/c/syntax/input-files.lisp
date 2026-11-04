@@ -684,7 +684,7 @@
     "We process each file and, when validating,
      merge its information into @('mstate'),
      in the same order and with the same error handling as
-     @(tsee valid-filepath-trans-unit-map-loop).
+     @(tsee valid-filepath-trans-unit-map).
      We accumulate the translation units in @('tumap')."))
   (b* (((reterr) nil (irr-valid-merge-state) state)
        ((when (set::emptyp (filepath-set-fix paths)))
