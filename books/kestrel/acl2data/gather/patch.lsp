@@ -90,7 +90,7 @@ Now (IMPLIES 'T (=< X (CONS A Y))) is replaced by (=< X (CONS A Y)).
 (include-book "event-symbol-table")
 (reset-prehistory) ; avoid losing these with certify-book!.
 
-(defun acl2data-time-limit (time)
+(defun acl2data-time-limit (time state)
 
 ; This is adapted from remove-hyps-formula-steps in tools/remove-hyps.  We
 ; might want to use a bigger limit here, since if we run out of time too soon
@@ -123,10 +123,23 @@ Now (IMPLIES 'T (=< X (CONS A Y))) is replaced by (=< X (CONS A Y)).
 ;   rune at a time we can use a bigger time-limit, but let's not mess with the
 ;   success of previous runs and remove-hyps.
 
-  (declare (xargs :guard (or (null time)
+; 11/2026: When state global acl2data-testing is true, as it is for the tests
+; in tests/ (see tests/cert.acl2), the minimum is 1 second instead.  A garbage
+; collection can take several hundredths of a second, so when one happened
+; during the retry of a quick proof, the retry could run out of time before
+; reaching any checkpoint; it was then recorded as :FAIL instead of with the
+; expected checkpoints, and the tests failed sporadically.  We keep the minimum
+; of 1/20 when gathering data, so as not to change those runs.
+
+  (declare (xargs :stobjs state
+                  :guard (or (null time)
                              (rationalp time))))
   (and time
-       (+ 1/20 (* 3 time))))
+       (+ (if (and (f-boundp-global 'acl2data-testing state)
+                   (f-get-global 'acl2data-testing state))
+              1
+            1/20)
+          (* 3 time))))
 
 (set-evisc-tuple t :sites :gag-mode) ; suppress some printing
 
