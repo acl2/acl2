@@ -301,3 +301,48 @@
 (input-files :files '("failvalidate.c")
              :process :disambiguate
              :const *failvalidate-parse-and-dimb-only*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Keep going after errors, dropping the files that fail.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files '("simple.c" "failparse.c" "faildimb.c" "failvalidate.c")
+             :process :parse
+             :keep-going t
+             :const *keep-going-parse*)
+
+(acl2::assert-equal
+ (trans-ensemble-paths (code-ensemble->trans-units *keep-going-parse*))
+ (set::mergesort (list (filepath "simple.c")
+                       (filepath "faildimb.c")
+                       (filepath "failvalidate.c"))))
+
+(input-files :files '("simple.c" "failparse.c" "faildimb.c" "failvalidate.c")
+             :process :disambiguate
+             :keep-going t
+             :const *keep-going-disamb*)
+
+(acl2::assert-equal
+ (trans-ensemble-paths (code-ensemble->trans-units *keep-going-disamb*))
+ (set::mergesort (list (filepath "simple.c")
+                       (filepath "failvalidate.c"))))
+
+(input-files :files '("simple.c" "failparse.c" "faildimb.c" "failvalidate.c")
+             :process :validate
+             :keep-going t
+             :const *keep-going-valid*)
+
+(acl2::assert-equal
+ (trans-ensemble-paths (code-ensemble->trans-units *keep-going-valid*))
+ (set::mergesort (list (filepath "simple.c"))))
+
+;; A file that cannot be read is dropped too.
+(input-files :files '("simple.c" "not-a-file.c")
+             :keep-going t
+             :const *keep-going-missing*)
+
+(acl2::assert-equal
+ (trans-ensemble-paths (code-ensemble->trans-units *keep-going-missing*))
+ (set::mergesort (list (filepath "simple.c"))))

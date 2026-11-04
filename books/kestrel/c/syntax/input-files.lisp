@@ -579,40 +579,298 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-gen-events ((files string-listp)
-                                (base-dir stringp)
-                                (preprocessor string-optionp)
-                                (preprocess-extra-args
-                                 (or (acl2::string-stringlist-mapp
-                                      preprocess-extra-args)
-                                     (string-listp preprocess-extra-args)))
-                                (options ppoptionsp)
-                                (include-dirs string-listp)
-                                (process input-files-process-inputp)
-                                (const symbolp)
-                                (keep-going booleanp)
-                                (ienv ienvp)
-                                (progp booleanp)
-                                state)
+(define input-files-one-file ((path filepathp)
+                              (base-dir stringp)
+                              (preprocessor string-optionp)
+                              (preprocess-extra-args
+                               (or (acl2::string-stringlist-mapp
+                                    preprocess-extra-args)
+                                   (string-listp preprocess-extra-args)))
+                              (process input-files-process-inputp)
+                              (ienv ienvp)
+                              state)
+  :guard (not (equal preprocessor ""))
   :returns (mv erp
-               (events pseudo-event-form-listp)
-               (code code-ensemblep)
+               (tunit trans-unitp)
+               (externals valid-externalsp)
+               (completions type-completions-p)
                state)
-  :short "Generate the events."
+  :short "Process one file."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We perform all the necessary preprocessing and processing.
-     Besides the events, we also return the code ensemble
-     resulting from processing the (possibly preprocessed) files,
-     together with the implementation environment.
-     If the programmatic interface is being used,
-     no events are actually generated."))
-  (b* (((reterr) nil (irr-code-ensemble) state)
-       ;; Initialize list of generated events.
-       (events nil)
+    "We preprocess the file as @(tsee preprocess-files) does,
+     or just read it if there is no preprocessor.
+     Then we parse, disambiguate, and validate it,
+     as required by @(':process'),
+     as @(tsee parse-fileset), @(tsee dimb-trans-ensemble),
+     and @(tsee valid-trans-ensemble) do for each file.")
+   (xdoc::p
+    "When validating, we also return the file's information
+     about identifiers with external linkage and type completions,
+     for the caller to merge (see @(tsee input-files-per-file-loop));
+     otherwise, we return empty ones.")
+   (xdoc::p
+    "The internal preprocessor is excluded by the guard:
+     it may preserve @('#include') directives,
+     and disambiguating those involves other files."))
+  (b* (((reterr) (irr-trans-unit) (treemap::empty) (treemap::empty) state)
+       (file (filepath->string path))
+       ;; BASE-DIR never ends with / (unless it is just /),
+       ;; because input processing removes the ending slash.
+       (path-to-read (str::cat base-dir "/" file))
+       ((erp data state)
+        (b* (((reterr) (irr-filedata) state))
+          (if preprocessor
+              (b* (((erp - data state)
+                    (preprocess-file path-to-read
+                                     :preprocessor preprocessor
+                                     :extra-args (preprocess-file-extra-args
+                                                  file preprocess-extra-args)
+                                     :state state)))
+                (retok data state))
+            (b* (((mv erp bytes state)
+                  (acl2::read-file-into-byte-list path-to-read state))
+                 ((when erp)
+                  (reterr (msg "Reading ~x0 failed." path-to-read))))
+              (retok (filedata bytes) state)))))
+       ((erp tunit)
+        (parse-file path (filedata->bytes data) (ienv->dialect ienv) t))
+       ((when (eq process :parse))
+        (retok tunit (treemap::empty) (treemap::empty) state))
+       ((mv erp tunit & &)
+        (dimb-trans-unit tunit (init-dstate path ienv) nil nil nil 1000000000))
+       ((when erp)
+        (reterr (msg "Error in translation unit ~x0: ~@1" file erp)))
+       ((when (eq process :disambiguate))
+        (retok tunit (treemap::empty) (treemap::empty) state))
+       ((mv erp tunit externals completions)
+        (valid-trans-unit path tunit ienv))
+       ((when erp)
+        (reterr (msg "Error in translation unit ~x0: ~@1" file erp))))
+    (retok tunit externals completions state))
+
+  ///
+
+  (defret trans-unit-unambp-of-input-files-one-file
+    (implies (not erp)
+             (trans-unit-unambp tunit))
+    :hyp (not (equal process :parse))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-per-file-loop ((paths filepath-setp)
+                                   (base-dir stringp)
+                                   (preprocessor string-optionp)
+                                   (preprocess-extra-args
+                                    (or (acl2::string-stringlist-mapp
+                                         preprocess-extra-args)
+                                        (string-listp preprocess-extra-args)))
+                                   (process input-files-process-inputp)
+                                   (keep-going booleanp)
+                                   (ienv ienvp)
+                                   (tumap filepath-trans-unit-mapp)
+                                   (mstate valid-merge-statep)
+                                   state)
+  :guard (not (equal preprocessor ""))
+  :returns (mv erp
+               (new-tumap filepath-trans-unit-mapp)
+               (new-mstate valid-merge-statep)
+               state)
+  :short "Loop for @(tsee input-files-per-file)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We process each file and, when validating,
+     merge its information into @('mstate'),
+     in the same order and with the same error handling as
+     @(tsee valid-filepath-trans-unit-map-loop).
+     We accumulate the translation units in @('tumap')."))
+  (b* (((reterr) nil (irr-valid-merge-state) state)
+       ((when (set::emptyp (filepath-set-fix paths)))
+        (retok (filepath-trans-unit-map-fix tumap)
+               (valid-merge-state-fix mstate)
+               state))
+       (path (set::head paths))
+       ((mv erp tunit externals completions state)
+        (input-files-one-file path
+                              base-dir
+                              preprocessor
+                              preprocess-extra-args
+                              process
+                              ienv
+                              state))
+       ((mv erp new-mstate)
+        (b* (((when erp) (mv erp (irr-valid-merge-state)))
+             ((unless (eq process :validate))
+              (mv nil (valid-merge-state-fix mstate)))
+             ((mv erp new-mstate)
+              (valid-merge-trans-unit externals completions mstate ienv))
+             ((when erp)
+              (mv (msg "Error in translation unit ~x0: ~@1"
+                       (filepath->string path)
+                       erp)
+                  (irr-valid-merge-state))))
+          (mv nil new-mstate)))
+       ((when erp)
+        (if keep-going
+            (prog2$ (cw "~@0~%" erp)
+                    (input-files-per-file-loop (set::tail paths)
+                                               base-dir
+                                               preprocessor
+                                               preprocess-extra-args
+                                               process
+                                               keep-going
+                                               ienv
+                                               tumap
+                                               mstate
+                                               state))
+          (mv erp nil (irr-valid-merge-state) state)))
+       (tumap (omap::update path tunit (filepath-trans-unit-map-fix tumap))))
+    (input-files-per-file-loop (set::tail paths)
+                               base-dir
+                               preprocessor
+                               preprocess-extra-args
+                               process
+                               keep-going
+                               ienv
+                               tumap
+                               new-mstate
+                               state))
+  :prepwork ((local (in-theory (enable emptyp-of-filepath-set-fix))))
+
+  ///
+
+  (defret filepath-trans-unit-map-unambp-of-input-files-per-file-loop
+    (implies (not erp)
+             (filepath-trans-unit-map-unambp new-tumap))
+    :hyp (and (filepath-trans-unit-map-unambp (double-rewrite tumap))
+              (not (equal process :parse)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable filepath-trans-unit-map-unambp-of-update)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-filepaths ((files string-listp))
+  :returns (paths filepath-setp)
+  :short "Set of file paths of the files."
+  (if (endp files)
+      nil
+    (set::insert (filepath (car files))
+                 (input-files-filepaths (cdr files))))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-per-file ((files string-listp)
+                              (base-dir stringp)
+                              (preprocessor string-optionp)
+                              (preprocess-extra-args
+                               (or (acl2::string-stringlist-mapp
+                                    preprocess-extra-args)
+                                   (string-listp preprocess-extra-args)))
+                              (process input-files-process-inputp)
+                              (keep-going booleanp)
+                              (ienv ienvp)
+                              state)
+  :guard (not (equal preprocessor ""))
+  :returns (mv erp (tunits trans-ensemblep) state)
+  :short "Process the files one at a time."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each file goes through all the required stages
+     before the next file is processed,
+     so the intermediate results of a file
+     are not kept while the other files are processed.
+     This requires the files to be independent,
+     which is why the guard excludes the internal preprocessor
+     (see @(tsee input-files-one-file)).")
+   (xdoc::p
+    "If @(':keep-going') is @('t') and some file has failed,
+     we print how many files succeeded.
+     When validating, we annotate the translation ensemble
+     with the merged information, as @(tsee valid-trans-ensemble) does."))
+  (b* (((reterr) (irr-trans-ensemble) state)
+       (paths (input-files-filepaths files))
+       (preprocess-extra-args (input-files-complete-preprocess-extra-args
+                               preprocess-extra-args
+                               ienv))
+       ((erp tumap mstate state)
+        (input-files-per-file-loop paths
+                                   base-dir
+                                   preprocessor
+                                   preprocess-extra-args
+                                   process
+                                   keep-going
+                                   ienv
+                                   nil
+                                   (init-valid-merge-state)
+                                   state))
+       (- (if keep-going
+              (b* ((len-paths (set::cardinality paths))
+                   (len-tumap (omap::size tumap)))
+                (if (= len-paths len-tumap)
+                    nil
+                  (cw "~s0 ~x1/~x2 files.~%"
+                      (case process
+                        (:parse "Parsed")
+                        (:disambiguate "Disambiguated")
+                        (t "Validated"))
+                      len-tumap
+                      len-paths)))
+            nil))
+       ((valid-merge-state mstate) mstate)
+       (info (and (eq process :validate)
+                  (make-trans-ensemble-vinfo
+                   :externals mstate.externals
+                   :completions mstate.completions))))
+    (retok (make-trans-ensemble :units tumap
+                                :resolved-includes nil
+                                :info info)
+           state))
+
+  ///
+
+  (defret trans-ensemble-unambp-of-input-files-per-file
+    (implies (not erp)
+             (trans-ensemble-unambp tunits))
+    :hyp (not (equal process :parse))
+    :hints
+    (("Goal" :in-theory (enable trans-ensemble-unambp-of-trans-ensemble)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-per-stage ((files string-listp)
+                               (base-dir stringp)
+                               (preprocessor string-optionp)
+                               (preprocess-extra-args
+                                (or (acl2::string-stringlist-mapp
+                                     preprocess-extra-args)
+                                    (string-listp preprocess-extra-args)))
+                               (options ppoptionsp)
+                               (include-dirs string-listp)
+                               (process input-files-process-inputp)
+                               (keep-going booleanp)
+                               (ienv ienvp)
+                               state)
+  :returns (mv erp (tunits trans-ensemblep) state)
+  :short "Process the files one stage at a time."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each stage is applied to all the files before the next stage.
+     This works with any preprocessing,
+     but it keeps the results of each stage for all the files.
+     The internal preprocessor may preserve @('#include') directives,
+     and disambiguating those involves other files
+     (see @(tsee dimb-filepath-trans-unit-map)),
+     so with that preprocessor the files cannot be processed one at a time
+     as in @(tsee input-files-per-file)."))
+  (b* (((reterr) (irr-trans-ensemble) state)
        ;; Preprocess if required, or just read files from file system.
-       ;; Unless we use our own internal preprocessor,
+       ;; Unless we use the internal preprocessor,
        ;; the RESOLVED-INCLUDES mapping is empty (NIL).
        ((erp files resolved-includes state)
         (b* (((reterr) (irr-fileset) nil state))
@@ -643,31 +901,80 @@
        ;; directly in the #include ASTs, coming from our preprocessor.
        (tunits (change-trans-ensemble tunits
                                       :resolved-includes resolved-includes))
-       ;; If only parsing is required, we are done;
-       ;; generate :CONST constant with the parsed translation units.
-       ((when (eq process :parse))
-        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
-             (events (if (not progp)
-                         (rcons `(defconst ,const ',code) events)
-                       events)))
-          (retok events code state)))
+       ;; If only parsing is required, we are done.
+       ((when (eq process :parse)) (retok tunits state))
        ;; Disambiguation is required, if we get here.
        ((erp tunits) (dimb-trans-ensemble tunits ienv keep-going))
-       ;; If no validation is required, we are done;
-       ;; generate :CONST constant with the disambiguated translation unit.
-       ((when (eq process :disambiguate))
-        (b* ((code (make-code-ensemble :trans-units tunits :ienv ienv))
-             (events (if (not progp)
-                         (rcons `(defconst ,const ',code) events)
-                       events)))
-          (retok events code state)))
+       ;; If no validation is required, we are done.
+       ((when (eq process :disambiguate)) (retok tunits state))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going))
+       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going)))
+    (retok tunits state))
+
+  ///
+
+  (defret trans-ensemble-unambp-of-input-files-per-stage
+    (implies (not erp)
+             (trans-ensemble-unambp tunits))
+    :hyp (not (equal process :parse))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-gen-events ((files string-listp)
+                                (base-dir stringp)
+                                (preprocessor string-optionp)
+                                (preprocess-extra-args
+                                 (or (acl2::string-stringlist-mapp
+                                      preprocess-extra-args)
+                                     (string-listp preprocess-extra-args)))
+                                (options ppoptionsp)
+                                (include-dirs string-listp)
+                                (process input-files-process-inputp)
+                                (const symbolp)
+                                (keep-going booleanp)
+                                (ienv ienvp)
+                                (progp booleanp)
+                                state)
+  :returns (mv erp
+               (events pseudo-event-form-listp)
+               (code code-ensemblep)
+               state)
+  :short "Generate the events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We perform all the necessary preprocessing and processing.
+     With the internal preprocessor, we do that one stage at a time;
+     otherwise, we do that one file at a time, which uses less memory.
+     Besides the events, we also return the code ensemble
+     resulting from processing the (possibly preprocessed) files,
+     together with the implementation environment.
+     If the programmatic interface is being used,
+     no events are actually generated."))
+  (b* (((reterr) nil (irr-code-ensemble) state)
+       ((erp tunits state)
+        (if (equal preprocessor "")
+            (input-files-per-stage files
+                                   base-dir
+                                   preprocessor
+                                   preprocess-extra-args
+                                   options
+                                   include-dirs
+                                   process
+                                   keep-going
+                                   ienv
+                                   state)
+          (input-files-per-file files
+                                base-dir
+                                preprocessor
+                                preprocess-extra-args
+                                process
+                                keep-going
+                                ienv
+                                state)))
        (code (make-code-ensemble :trans-units tunits :ienv ienv))
-       ;; Generate :CONST constant with the validated translation unit.
-       (events (if (not progp)
-                   (rcons `(defconst ,const ',code) events)
-                 events)))
+       ;; Generate :CONST constant with the code ensemble.
+       (events (if progp nil (list `(defconst ,const ',code)))))
     (retok events code state))
 
   ///
