@@ -52,13 +52,12 @@
     "The theorems for identifier expressions (i.e. variables) and constants
      are a bit different from the others,
      because those expressions have no sub-expressions.
-     However, the form is fairly similar, given that difference.
+     However, the form is fairly similar, considering that difference.
      The theorem for variables has an additional hypothesis about
      the variable being in the computation state with a certain type,
      which serves to establish the assertion about the type.")
    (xdoc::p
-    "The theorems make use of @(tsee b*) bindings
-     to keep them more readable.
+    "The theorems make use of @(tsee b*) bindings to keep them more readable.
      The theorems include additional hypotheses, in some cases,
      to ensure that the constructs in question are amenable to
      our formal dynamic semantics of C, which currently only covers a subset.")
