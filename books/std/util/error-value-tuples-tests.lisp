@@ -13,6 +13,7 @@
 (include-book "error-value-tuples")
 
 (include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ; cert_param: (non-acl2r)
 
@@ -434,6 +435,20 @@
 (assert-equal (static-exclude-zero -1)
               :fail)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-zero-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr))
+          ((noerp) (zero-vals x))) ; x may be negative
+       nil))
+
+   (must-fail
+    (verify-guards static-exclude-zero-invalid
+      :hints (("Goal" :in-theory (enable zero-vals)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define static-exclude-one (x)
@@ -449,6 +464,20 @@
 (assert-equal (mv-list 2 (static-exclude-one -1))
               (list :fail "irrelevant"))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-one-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr) "irrelevant")
+          ((noerp a) (one-val x))) ; x may be negative
+       (retok a)))
+
+   (must-fail
+    (verify-guards static-exclude-one-invalid
+      :hints (("Goal" :in-theory (enable one-val)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define static-exclude-two (x)
@@ -463,3 +492,17 @@
 
 (assert-equal (mv-list 3 (static-exclude-two -1))
               (list :fail "irrelevant" 'irrelevant))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-two-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr) "irrelevant" 'irrelevant)
+          ((noerp a b) (two-vals x))) ; x may be negative
+       (retok a b)))
+
+   (must-fail
+    (verify-guards static-exclude-two-invalid
+      :hints (("Goal" :in-theory (enable two-vals)))))))
