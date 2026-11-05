@@ -266,7 +266,7 @@
 (define generic-union
   ((x mapp)
    (y mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map mapp
                 :hints (("Goal" :in-theory (enable mapp
                                                    fix

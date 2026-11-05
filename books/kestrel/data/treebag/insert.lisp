@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert-many (x (n natp) (bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag$ bagp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      nat-equiv))))
@@ -155,7 +155,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert (x (bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag$ bagp)
   :parents (treebag)
   :short "Add an occurrence of a value to a @(see treebag)."

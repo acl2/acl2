@@ -431,7 +431,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-tree ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (key-tree treeset::treep)
   (if (tree-empty-p tree)
       nil
@@ -664,7 +664,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-acl2-numberp ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-acl2-numberp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -685,7 +685,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-symbolp ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-symbolp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -706,7 +706,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-eqlablep ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (treeset::set-all-eqlablep (tree-key-set tree))
        :exec (or (tree-empty-p tree)

@@ -80,7 +80,7 @@
 ;; it is the function the generic laws are instantiated at.
 
 (define set-all-posp ((set treeset::setp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   (or (treeset::emptyp set)
       (and (posp (treeset::min set))
@@ -272,7 +272,7 @@
 ;; Time complexity: @($O(n)$).
 
 (define map-values-all-posp ((map treemap::mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   (mbe :logic (set-all-posp (treemap::values map))
        :exec (tree-all-vals-posp map))

@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-many (x (n natp) (bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag$ bagp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      posp))))
@@ -255,7 +255,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete (x (bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag$ bagp)
   :parents (treebag)
   :short "Remove an occurrence of a value from a @(see treebag)."

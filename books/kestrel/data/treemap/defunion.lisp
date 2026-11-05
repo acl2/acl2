@@ -248,7 +248,7 @@
        (define ,name
          ((x mapp)
           (y mapp))
-         (declare (xargs :type-prescription :none))
+         :type-prescription :none
          ,@xdoc
          :returns (map mapp
                        :hints ,(defunion-hints 'mapp-of-generic-union

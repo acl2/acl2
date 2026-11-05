@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define count (x (bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp
                   :rule-classes ((:rewrite) (:type-prescription))
                   :hints (("Goal" :in-theory (enable* break-abstraction))))

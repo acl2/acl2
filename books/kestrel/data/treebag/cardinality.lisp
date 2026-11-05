@@ -39,7 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (cardinality natp
                         :rule-classes ((:rewrite) (:type-prescription)))
   :parents (treebag)

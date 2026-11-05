@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bagp (x)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (treebag)
   :short "Recognizer for @(see treebag)s."
@@ -52,7 +52,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag bagp)
   :parents (treebag)
   :short "The empty @(see treebag)."
@@ -66,7 +66,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (bag$ bagp)
   :parents (treebag)
   :short "Fixer for @(see treebag)s."
@@ -153,7 +153,7 @@
 (define equiv
   ((x bagp)
    (y bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (treebag)
   :short "Equivalence up to @(tsee fix)."
@@ -181,7 +181,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((bag bagp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (treebag)
   :short "Check if a @(see treebag) is empty."

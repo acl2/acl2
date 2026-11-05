@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define mapp (x)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   :parents (treemap)
   :short "Recognizer for @(see treemap)s."
@@ -137,7 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   :parents (treemap)
   :short "Fixer for @(see treemap)s."
@@ -205,7 +205,7 @@
 (define equiv
   ((x mapp)
    (y mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   :parents (treemap)
   :short "Equivalence up to @(tsee fix)."
@@ -249,7 +249,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   :parents (treemap)
   :short "Check if a @(see treemap) is empty."
