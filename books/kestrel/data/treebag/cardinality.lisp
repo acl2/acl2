@@ -125,7 +125,7 @@
 (defruledl tree-cardinality-of-treemap-update
   (equal (tree-cardinality (treemap::update x v map))
          (tree-cardinality
-           (treemap::tree-update x (treeset::hash x) v (treemap::fix map))))
+           (treemap::tree-update x v (treemap::fix map))))
   :enable treemap::update)
 
 (defruledl tree-cardinality-of-treemap-delete

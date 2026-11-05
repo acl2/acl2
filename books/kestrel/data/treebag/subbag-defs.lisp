@@ -17,6 +17,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; As in treeset's subset-defs: std::defredundant cannot reproduce a
+;; guard-verified define-sk, so the quantified form is stated here with its
+;; guards verified separately.
+
+(defun-sk subbag-sk (sub sup)
+  (declare (xargs :verify-guards nil))
+  (declare (xargs :guard t))
+  (forall (elem)
+          (non-exec (<= (count elem sub) (count elem sup))))
+  :rewrite
+  (implies (subbag-sk sub sup)
+           (non-exec (<= (count elem sub) (count elem sup))))
+  :skolem-name subbag-sk-witness
+  :thm-name subbag-sk-necc)
+
+(verify-guards subbag-sk)
+
 (std::defredundant
   :names (subbag
           subbag-sk-witness

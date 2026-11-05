@@ -155,13 +155,13 @@
 (defrule tree-cardinality-of-tree-update
   (implies (and (treemap::bstp tree)
                 (tree-all-vals-posp tree))
-           (equal (tree-cardinality (treemap::tree-update key hash val tree))
+           (equal (tree-cardinality (treemap::tree-update key val tree))
                   (+ (nfix val)
                      (if (treeset::in key (treemap::tree-key-set tree))
                          (- (tree-cardinality tree)
                             (treemap::tree-lookup key tree))
                        (tree-cardinality tree)))))
-  :induct (treemap::tree-update key hash val tree)
+  :induct (treemap::tree-update key val tree)
   :enable (treemap::tree-update
            tree-cardinality
            tree-all-vals-posp
