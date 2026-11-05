@@ -1256,13 +1256,24 @@
   :vex t
   :body
   ;; placeholder
-  (b* ((operand-size (if (and (eql proc-mode #.*64-bit-mode*)
+  (b* ((64-bit-mode? (eql proc-mode #.*64-bit-mode*))
+
+       ;; VEX.W selects a 64-bit operand only in 64-bit mode.
+       ;; In other modes the operand is always 32 bits.
+       ;; The decoder requires VEX.R = VEX.X = 1 to distinguish
+       ;; the 3-byte VEX prefix from LES, so REX.R and REX.X are already 0.
+       ;; The zero REX byte further below also ignores VEX.B
+       ;; (see Intel manual Volume 2 Sections 2.3.5.2 to 2.3.5.4).
+       ;; The high bit of VEX.vvvv is ignored via the masking below
+       ;; (see Section 2.3.5.6).
+       (operand-size (if (and 64-bit-mode?
                               (eql (vex->w vex-prefixes) 1))
                          8
                        4))
 
        ((the (unsigned-byte 4) src1-index)
         (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+       (src1-index (if 64-bit-mode? src1-index (loghead 3 src1-index)))
 
        (badlength? (check-instruction-length start-rip temp-rip 0))
        ((when badlength?)
@@ -1274,7 +1285,9 @@
                    (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
-       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+       (rex-byte (if 64-bit-mode?
+                     (rex-byte-from-vex-prefixes vex-prefixes)
+                   0))
 
        (inst-ac? t)
        ((mv flg0
