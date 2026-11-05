@@ -148,7 +148,6 @@
   :doc "<p>Many of these instructions are VEX encoded but operate on GPRs.
   The following are unimplemented.</p>
 <ul>
-<li>LZCNT -- leading zero count</li>
 <li>BLSMSK, BLSR -- operations involving lowest set bit</li>
 <li>BZHI -- zero bits left of an index</li>
 <li>PDEP/PEXT -- bitmask deposit/extract</li>
