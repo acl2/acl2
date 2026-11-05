@@ -382,6 +382,7 @@
   (type-case type
              :var (type-var-case type.var :atom)
              :base t
+             :scalar nil
              :array nil
              :bracket nil
              :fun t
@@ -404,6 +405,9 @@
 
   (defrule type-atom-kindp-of-type-base
     (type-atom-kindp (type-base type)))
+
+  (defrule type-atom-kindp-of-type-scalar
+    (not (type-atom-kindp (type-scalar elem))))
 
   (defrule type-atom-kindp-of-type-array
     (not (type-atom-kindp (type-array elem ispace))))
@@ -458,6 +462,7 @@
            (type-case type
                       :var (type-var-case type.var :array)
                       :base nil
+                      :scalar t
                       :array t
                       :bracket t
                       :fun nil
@@ -483,16 +488,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-scalar ((type typep))
+(define type-scalar-array ((type typep))
   :guard (type-atom-kindp type)
-  :returns (scalar-type typep)
-  :short "Lift an atom type to a scalar (i.e. zero-ranked) array type."
+  :returns (array-type typep)
+  :short "Lift an atom type to a scalar (i.e. zero-ranked) @(':array') type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This builds an @(':array') type with the empty shape,
+     not a @(':scalar') type (see @(tsee type)).
+     We may eventually eliminate this function,
+     using the constructor @(tsee type-scalar) instead."))
   (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
 
   ///
 
-  (defret type-array-kindp-of-type-scalar
-    (type-array-kindp scalar-type)
+  (defret type-array-kindp-of-type-scalar-array
+    (type-array-kindp array-type)
     :hints (("Goal" :in-theory (enable type-array-kindp-alt-def)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1167,6 +1179,7 @@
   (type-case type
              :var 0
              :base 0
+             :scalar 0
              :array 0
              :bracket 0
              :fun 0
@@ -1190,7 +1203,7 @@
    (xdoc::p
     "We peel off universal and product types,
      collecting their bound variables in order, outermost first,
-     and we traverse array and bracket types to their element types,
+     and we traverse scalar, array, and bracket types to their element types,
      disregarding their ispaces.
      Any other type stops the peeling,
      and is returned along with the collected variables."))
@@ -1198,6 +1211,7 @@
    type
    :var (mv nil (type-fix type))
    :base (mv nil (type-fix type))
+   :scalar (type-peel-binders type.elem)
    :array (type-peel-binders type.elem)
    :bracket (type-peel-binders type.elem)
    :fun (mv nil (type-fix type))

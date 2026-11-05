@@ -187,6 +187,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define preprocess-file-extra-args
+  ((file stringp "The file to preprocess.")
+   (extra-args (or (string-listp extra-args)
+                   (acl2::string-stringlist-mapp extra-args))
+               "The @(':extra-args') input of @(tsee preprocess-files)."))
+  :returns
+  (args string-listp
+        :hyp :guard
+        :hints
+        (("Goal"
+          :in-theory
+          (enable
+           acl2::string-stringlist-mapp
+           acl2::string-listp-of-cdr-of-assoc-when-string-stringlist-map))))
+  :parents (external-preprocessing)
+  :short "The arguments to preprocess a file with."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "This is how @(tsee preprocess-files) interprets @(':extra-args')
+      for each file: an omap is looked up by file name,
+      with no arguments for a file without an association,
+      and a list of strings is used for every file."))
+  (if (and (consp extra-args)
+           (consp (first extra-args)))
+      (cdr (omap::assoc file extra-args))
+    extra-args))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define preprocess-files
   ((files
      string-listp
@@ -257,11 +287,7 @@
                                      ".i")))))
        (filename (first files))
        (full-filename (concatenate 'string path "/" filename))
-       (extra-args-is-mapp (and (consp extra-args)
-                                (consp (first extra-args))))
-       (preprocessor-args (if extra-args-is-mapp
-                              (cdr (omap::assoc filename extra-args))
-                            extra-args))
+       (preprocessor-args (preprocess-file-extra-args filename extra-args))
        ((erp - filedata state)
         (preprocess-file full-filename
                          :out out
@@ -281,8 +307,4 @@
                                   filedata
                                   fileset.files))
            state))
-  :guard-hints
-  (("Goal" :in-theory
-           (enable acl2::string-stringlist-mapp
-                   acl2::string-listp-of-cdr-of-assoc-when-string-stringlist-map)))
   :verify-guards :after-returns)

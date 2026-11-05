@@ -50,12 +50,14 @@
    (and (equal error? nil)
         (equal stat? *init-stat*))))
 
+;; Cross-checked against ethers.js v6 and bip_utils/python-mnemonic:
+;; m/44'/60'/0'/0/0 for the mnemonic above with passphrase "pass".
 (defconst *address-0*
-  '(226 193 44 207 29 100 116 12 120 128 255 161 80 166 11 157 118 121 187 105))
+  '(205 198 172 103 93 83 55 134 216 76 85 230 154 171 239 58 60 82 214 29))
 
 ;; The wallet command "next-key" prints out the address in this convenient form.
 (defconst *address-0-bighexstring*
-  "E2C12CCF1D64740C7880FFA150A60B9D7679BB69")
+  "CDC6AC675D533786D84C55E69AABEF3A3C52D61D")
 
 (assert-event
  (equal *address-0*
@@ -115,7 +117,7 @@
         (equal signed-transaction *signed-transaction-0*))))
 
 (defconst *address-1*
-  '(88 133 87 238 125 118 70 35 87 7 171 39 94 41 209 203 55 88 21 80))
+  '(205 204 2 194 91 203 67 106 156 87 33 209 95 36 26 210 67 226 84 73))
 
 (defconst *stat-1*
   '(:state
@@ -140,6 +142,32 @@
         (equal index 1)
         (equal address *address-1*)
         (equal stat *stat-1*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Known-answer test from outside this code base: the widely published
+;; default accounts of Hardhat and Anvil, derived from the mnemonic
+;; "test test ... junk" with the empty passphrase at m/44'/60'/0'/0/i.
+
+(assert-event
+ (mv-let (error? stat)
+   (init-from-mnemonic
+    "test test test test test test test test test test test junk" "")
+   (and (equal error? nil)
+        (mv-let (error? index address stat)
+          (next-key stat)
+          (and (equal error? nil)
+               (equal index 0)
+               (equal address
+                      (hexstring=>ubyte8s
+                       "F39FD6E51AAD88F6F4CE6AB8827279CFFFB92266"))
+               (mv-let (error? index address stat)
+                 (next-key stat)
+                 (declare (ignore stat))
+                 (and (equal error? nil)
+                      (equal index 1)
+                      (equal address
+                             (hexstring=>ubyte8s
+                              "70997970C51812DC3A010C7D01B50E0D17DC79C8")))))))))
 
 #|
 

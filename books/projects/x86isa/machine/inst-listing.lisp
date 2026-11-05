@@ -20059,23 +20059,23 @@
     (INST "MULX"
           (OP :OP #xF38F6
               :VEX '(:0F38 :NDD :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(B Y)
                :OP2 '(G Y)
                :OP3 '(:RDX)
                :OP4 '(E Y))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '(X86-MULX)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "MULX"
           (OP :OP #xF38F6
               :VEX '(:0F38 :NDD :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(B Y)
                :OP2 '(G Y)
                :OP3 '(:RDX)
                :OP4 '(E Y))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '(X86-MULX)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "BEXTR"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :W0)
@@ -21867,21 +21867,21 @@
     (INST "RORX"
           (OP :OP #xF3AF0
               :VEX '(:0F3A :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(I B))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '(X86-RORX)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "RORX"
           (OP :OP #xF3AF0
               :VEX '(:0F3A :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(I B))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))))
+          '(X86-RORX)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))))
 
 ;; ----------------------------------------------------------------------
 

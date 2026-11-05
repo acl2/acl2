@@ -5318,7 +5318,6 @@
                                       (standalonep booleanp)
                                       (name symbolp))
   :returns (mv (expands true-listp)
-               (uses true-listp)
                (rules true-listp))
   :short "Generate the pieces of the termination hints of
           the @('p[i]-induct') functions of a clique."
@@ -5326,11 +5325,7 @@
   (xdoc::topstring
    (xdoc::p
     "For each predicate of the clique we expand
-     the validity and the count of its witness proof,
-     and we supply the possible kinds of that proof.
-     The latter are needed because
-     the count function is defined by cases on the kind,
-     and returns a number only for the kinds of the fixtype.")
+     the validity and the count of its witness proof.")
    (xdoc::p
     "The rules, which the caller puts into a quoted theory,
      are the following, for each predicate of the clique:
@@ -5343,35 +5338,52 @@
      and whose validity hypothesis comes first,
      so that free variable matching binds the proof from it
      rather than from the weaker recognizer hypothesis;
+     the theorem about the possible kinds of proofs,
+     which is needed because
+     the count function is defined by cases on the kind,
+     and returns a number only for the kinds of the fixtype;
      and the return theorems of the premise accessors,
      for the premises that call predicates of the clique,
      i.e. the ones that give rise to the recursive calls
      (see @(tsee defind-gen-ind-fn-case-calls));
-     these theorems relieve that recognizer hypothesis."))
-  (b* (((when (endp pred-infos)) (mv nil nil nil))
+     these theorems relieve that recognizer hypothesis.")
+   (xdoc::p
+    "The theorem about the possible kinds of proofs
+     is a disjunction with a disjunct for each kind,
+     and a @(':forward-chaining') rule.
+     We enable it as such,
+     rather than supplying its instance for the witness proof
+     via a @(':use') hint:
+     with multiple predicates in the clique,
+     the case splits on the instances would multiply,
+     giving a number of cases equal to
+     the product of the numbers of rules of the predicates,
+     which is impractical already for moderately large cliques.
+     Each case of the measure conjecture
+     only needs the theorem for the predicate whose function it is about."))
+  (b* (((when (endp pred-infos)) (mv nil nil))
        ((defind-pred-info pred-info) (car pred-infos))
        (witness (defind-proof-witness-fn-name pred-info.name name))
        (wcall `(,witness ,@pred-info.formals))
        (proof-validp (defind-proof-valid-fn-name pred-info.name name))
        (count-fn (defind-proof-count-fn-name pred-info.name name))
        (poss-thm (defind-proof-kind-poss-thm-name pred-info.name name))
-       (xvar (defind-proof-xvar-name name))
        (count-natp-thm (defind-proof-count-natp-thm-name
                          pred-info.name standalonep name))
        (count-bound-thm (defind-proof-count-bound-thm-name
                           pred-info.name name))
        (prem-acc-thms (defind-proof-prem-acc-return-thm-names
                         pred-info.name irule-infos clique-preds name))
-       ((mv expands uses rules)
+       ((mv expands rules)
         (defind-gen-ind-fn-hint-parts
           (cdr pred-infos) irule-infos clique-preds standalonep name)))
     (mv (list* `(,proof-validp ,wcall ,@pred-info.formals)
                `(,count-fn ,wcall)
                expands)
-        (cons `(:instance ,poss-thm (,xvar ,wcall)) uses)
         (list* pred-info.name
                count-natp-thm
                count-bound-thm
+               poss-thm
                (append prem-acc-thms rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5420,11 +5432,10 @@
        ((unless (defind-pred-recursivep pred-info1.name irule-infos))
         (mv nil nil nil))
        (standalonep (endp (cdr pred-infos)))
-       ((mv expands uses rules)
+       ((mv expands rules)
         (defind-gen-ind-fn-hint-parts
           pred-infos irule-infos clique-preds standalonep name))
        (hints `(("Goal" :expand ,expands
-                        :use ,uses
                         :in-theory '(eql o-p o-finp o< natp ,@rules))))
        (fn-name1 (defind-ind-fn-name pred-info1.name name))
        (count-fn1 (defind-proof-count-fn-name pred-info1.name name))

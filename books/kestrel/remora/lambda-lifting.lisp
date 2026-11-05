@@ -14,6 +14,7 @@
 (include-book "all-variable-operations")
 (include-book "static-environments")
 (include-book "type-environments")
+(include-book "type-evaluation")
 (include-book "abstract-syntax-well-formedness")
 (include-book "free-variable-operations")
 (include-book "fresh-variable-operations")
@@ -62,7 +63,11 @@
     "The definition contains no lambda.  A lambda whose whole body is
      another lambda is flattened into it, so a chain of them yields one
      definition with all their parameters.  This is the flat form of
-     [impl]'s @('LambdaLift'); as there, captured variables come first.")
+     [impl]'s @('LambdaLift'); as there, captured variables come first.
+     The definition has the result type of the lambda.  A lambda annotated
+     with a result type is not flattened into, though (each inner lambda is
+     lifted on its own): the value of such a lambda carries that type,
+     which the curried value of the flattened definition would not.")
    (xdoc::p
     (xdoc::b "What is lifted."))
    (xdoc::p
@@ -80,9 +85,12 @@
      variable whose type is open in one, e.g. a parameter of type @('&t')
      of an enclosing lambda under a @('t-fn') binding @('&t'): the captured
      variable becomes a parameter of the definition, typed as the
-     environment types it, and the definition is outside that binder.  All
-     of these are left in place, so the transformation is always defined,
-     and its result may still contain lambdas of those kinds.")
+     environment types it, and the definition is outside that binder.  Nor
+     is one that captures a variable the environment does not type, such as
+     the variable of an unboxing: the parameter it would become would be
+     untyped, and evaluating the definition would fail.  All of these are
+     left in place, so the transformation is always defined, and its result
+     may still contain lambdas of those kinds.")
    (xdoc::p
     "Every lambda in expression position is lifted, including one that is
      already the right-hand side of a binding, which merely gains a level of
@@ -101,8 +109,8 @@
      @(':fun') with no parameters stays local as well: it is a value
      binding, whose body is evaluated where it is bound, and hoisting it
      would change when that happens.  So does a function that is open in a
-     type or ispace variable, or captures a variable whose type is, as for
-     lambdas.  A @(':let') all of whose bindings are hoisted disappears.")
+     type or ispace variable, or captures a variable whose type is, or one
+     that the environment does not type, as for lambdas.  A @(':let') all of whose bindings are hoisted disappears.")
    (xdoc::p
     "The guards of @(tsee lambda-lift-top-expr) and @(tsee lambda-lift-file)
      require the binders of the input to bind distinct names (see @(tsee
@@ -207,63 +215,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The lifting step itself, for a lambda whose parameters have been collected
-; and whose body has already been lifted out of.  It is not recursive.
-
-(define emit-lifted-lambda ((params var+type?-listp)
-                            (body exprp)
-                            (tenv string-type-mapp)
-                            (locals string-setp)
-                            (used string-setp))
-  :returns (mv (e exprp) (lifted bind-listp) (new-used string-setp))
-  :short "Make the definition of a lambda, and the reference that replaces it."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The definition is a @(':fun') under a fresh name whose parameters are
-     the variables the lambda captures followed by the lambda's own
-     parameters, and whose body is the lambda's body.  So it contains no
-     lambda: this is the flat form of lambda lifting, as in [impl]'s
-     @('LambdaLift'), where the captured variables become leading
-     parameters.  They are the lambda's free variables that are locally
-     bound --- the intersection of the free variables with the local
-     names --- typed from the environment.")
-   (xdoc::p
-    "The expression returned, which replaces the lambda, is the name
-     applied to the captured variables alone.  That is a partial
-     application of the definition, which is what the lambda was: a
-     function of its own parameters."))
-  (b* ((params (var+type?-list-fix params))
-       (body (expr-fix body))
-       (used (string-sfix used))
-       (fv (set::intersect
-            (set::difference (expr-free-expr-vars body)
-                             (set::mergesort (var+type?-list->var params)))
-            locals))
-       (name (fresh-expr-var "lam_" used))
-       (used (set::insert name used))
-       (bind (make-bind-fun :var name
-                            :params (append (names-to-params fv tenv) params)
-                            :type? (type-option-none)
-                            :expr body)))
-    (mv (apply-to-names (expr-var name) fv) (list bind) used)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; A chain of nested lambdas, each the whole body of the previous one, is
 ; flattened into one definition with all their parameters.  This is the
 ; step of that: does the body consist of a lambda, and if so of what.
 
 (define nested-lambda ((body exprp))
-  :returns (mv (nestedp booleanp) (params var+type?-listp) (inner exprp))
-  :short "Whether an expression is a lambda, and if so its parameters and body."
+  :returns (mv (nestedp booleanp)
+               (params var+type?-listp)
+               (inner exprp)
+               (type? type-optionp))
+  :short "Whether an expression is a lambda, and if so its parameters, body,
+          and result type annotation."
   (b* ((body (expr-fix body))
-       ((unless (expr-case body :atom)) (mv nil nil body))
+       ((unless (expr-case body :atom)) (mv nil nil body (type-option-none)))
        (a (expr-atom->atom body)))
     (atom-case a
-      :lambda (mv t (list a.param) a.body)
-      :lambdan (mv t a.params a.body)
-      :otherwise (mv nil nil body)))
+      :lambda (mv t (list a.param) a.body a.type?)
+      :lambdan (mv t a.params a.body a.type?)
+      :otherwise (mv nil nil body (type-option-none))))
 
   ///
 
@@ -293,9 +262,200 @@
     (and (set::emptyp (var+type?-list-free-type-vars params))
          (set::emptyp (var+type?-list-free-ispace-vars params)))))
 
+; A captured variable becomes a parameter typed as the environment types it,
+; and evaluating a lambda value requires the type of its parameter.  So a
+; lambda is lifted, or a local function hoisted, only if the environment
+; types every variable it captures.  It may not: an unboxed variable, for
+; instance, is local but untyped there.
+
+; The application of a lambda checks the dimensions of its argument against
+; the type of its parameter, but against the outer dimensions only (see
+; EXPR-VALUES-MATCH-TYPE-VALUES-P), while type equivalence unwraps a
+; zero-rank array, so that a value may have a nested array type whose outer
+; dimensions are not its own.  So a captured variable becomes a parameter
+; only if its type is flat: an atom type, or an array type of an atom type.
+
+(define type-evals-to-atom-p ((type typep))
+  :returns (yes/no booleanp)
+  :short "Whether a type is syntactically an atom type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A function type with no inputs is its output type, which may be an
+     array type."))
+  (type-case type
+             :base t
+             :fun t
+             :funn (consp type.in)
+             :forall t
+             :foralln t
+             :pi t
+             :pin t
+             :sigma t
+             :sigman t
+             :otherwise nil))
+
+(define type-flat-syntax-p ((type typep))
+  :returns (yes/no booleanp)
+  :short "Whether a type is syntactically flat:
+          an atom type, or an array type of an atom type."
+  (type-case type
+             :var nil
+             :scalar (type-evals-to-atom-p type.elem)
+             :array (type-evals-to-atom-p type.elem)
+             :bracket (type-evals-to-atom-p type.elem)
+             :funn (if (consp type.in) t (type-flat-syntax-p type.out))
+             :otherwise t)
+  :measure (type-count type))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; A lifted or hoisted definition is bound at the top, where its binding is
+; evaluated: that evaluates the type of its first parameter and its result
+; type (see EVAL-BIND), whether or not the original program ever evaluates
+; the lambda or the binding it comes from.  So those types must evaluate
+; successfully; they are closed (see CAPTURED-PARAMS-CLOSED-P), so this is
+; checked in the empty environment.  (A closed type may fail to evaluate,
+; e.g. if a dimension is a subtraction with a negative result.)
+
+(define type-evaluable-p ((type typep))
+  :returns (yes/no booleanp)
+  :short "Whether a type evaluates successfully in the empty environment."
+  (not (reserrp (eval-type type (type-denv (ispace-denv nil) nil)))))
+
+(define type-option-evaluable-p ((type? type-optionp))
+  :returns (yes/no booleanp)
+  :short "Whether an optional type is absent or evaluates successfully
+          in the empty environment."
+  (type-option-case type?
+                    :none t
+                    :some (type-evaluable-p type?.val)))
+
+(define param-evaluable-p ((param var+type?-p))
+  :returns (yes/no booleanp)
+  :short "Whether a parameter has a type that evaluates successfully
+          in the empty environment."
+  (b* ((type? (var+type?->type? param)))
+    (type-option-case type?
+                      :none nil
+                      :some (type-evaluable-p type?.val))))
+
+(define captured-params-typed-p ((captured string-setp)
+                                 (tenv string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Whether the environment types every captured variable,
+          with a flat type."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lifted or hoisted definition takes the variables it captures as
+     leading parameters, typed as @('tenv') types them (see @(tsee
+     names-to-params)); a variable that @('tenv') does not type would
+     become an untyped parameter, on which evaluation fails.  The variable
+     of an unboxing, for instance, is local but not in @('tenv').  The
+     types must be flat (see @(tsee type-flat-syntax-p)), for the
+     application that passes the variable to check its dimensions, and
+     they must evaluate successfully (see @(tsee type-evaluable-p)), since
+     the first of them is evaluated where the definition is bound."))
+  (b* (((unless (mbt (string-setp captured))) nil)
+       ((when (set::emptyp captured)) t)
+       (type? (name-to-type-option (set::head captured) tenv)))
+    (and (type-option-case type? :some)
+         (type-flat-syntax-p (type-option-some->val type?))
+         (type-evaluable-p (type-option-some->val type?))
+         (captured-params-typed-p (set::tail captured) tenv)))
+  :measure (acl2-count captured))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The lifting step itself, for a lambda whose parameters have been collected
+; and whose body has already been lifted out of.  It is not recursive.
+
+(define emit-lifted-lambda ((params var+type?-listp)
+                            (body exprp)
+                            (type? type-optionp)
+                            (tenv string-type-mapp)
+                            (locals string-setp)
+                            (used string-setp))
+  :returns (mv (e exprp) (lifted bind-listp) (new-used string-setp))
+  :short "Make the definition of a lambda, and the reference that replaces it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The definition is a @(':fun') under a fresh name whose parameters are
+     the variables the lambda captures followed by the lambda's own
+     parameters, and whose body is the lambda's body.  So it contains no
+     lambda: this is the flat form of lambda lifting, as in [impl]'s
+     @('LambdaLift'), where the captured variables become leading
+     parameters.  They are the lambda's free variables that are locally
+     bound --- the intersection of the free variables with the local
+     names --- typed from the environment.")
+   (xdoc::p
+    "The result type of the definition is that of the lambda,
+     @('type?').  It travels with the innermost abstraction of the
+     definition's curried value (see @(tsee eval-bind)), which is the one
+     over the lambda's last parameter, as it does for the lambda.")
+   (xdoc::p
+    "The expression returned, which replaces the lambda, is the name
+     applied to the captured variables alone.  That is a partial
+     application of the definition, which is what the lambda was: a
+     function of its own parameters.")
+   (xdoc::p
+    "The definition is bound at the top, which evaluates the type of its
+     first parameter and its result type (see @(tsee type-evaluable-p)),
+     and the reference passes the captured variables to its parameters,
+     which checks their dimensions (see @(tsee captured-params-typed-p)).
+     So the captured variables must have flat types that evaluate, and the
+     first parameter and the result type must have types that evaluate.
+     Otherwise the lambda is not lifted: what is returned is the lambda
+     itself, over the parameters collected and the body lifted out of,
+     and no definition."))
+  (b* ((params (var+type?-list-fix params))
+       (body (expr-fix body))
+       (used (string-sfix used))
+       (fv (set::intersect
+            (set::difference (expr-free-expr-vars body)
+                             (set::mergesort (var+type?-list->var params)))
+            locals))
+       (def-params (append (names-to-params fv tenv) params))
+       ((unless (and (consp params)
+                     (captured-params-typed-p fv tenv)
+                     (param-evaluable-p (car def-params))
+                     (type-option-evaluable-p type?)))
+        (mv (if (consp params)
+                (expr-atom (make-atom-lambda/lambdan params body type?))
+              body)
+            nil
+            used))
+       (name (fresh-expr-var "lam_" used))
+       (used (set::insert name used))
+       (bind (make-bind-fun :var name
+                            :params def-params
+                            :type? type?
+                            :expr body)))
+    (mv (apply-to-names (expr-var name) fv) (list bind) used)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lambda-chain-result-type ((body exprp) (type? type-optionp))
+  :returns (result-type? type-optionp)
+  :short "The result type of the definition a lambda is lifted to."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lambda whose body is a lambda, and which is not annotated, is
+     flattened into it (see @(tsee ll-lambda)): the definition has the
+     result type of the innermost lambda of the chain."))
+  (b* (((mv nestedp & inner inner-type?) (nested-lambda body)))
+    (if (and nestedp (type-option-case type? :none))
+        (lambda-chain-result-type inner inner-type?)
+      (type-option-fix type?)))
+  :measure (expr-count body))
+
 (define liftable-lambda-p ((a atomp)
                            (tenv string-type-mapp)
-                           (locals string-setp))
+                           (locals string-setp)
+                           (lmap string-expr-mapp))
   :returns (yes/no booleanp)
   :short "Whether an atom is a lambda that lifting handles."
   :long
@@ -307,13 +467,35 @@
      it uses (whose uses are replaced by applications to them), but those
      were checked when the functions were hoisted (see @(tsee
      hoist-local-fun)), and they are not bound again in their scope, so
-     they still have the types checked then."))
-  (and (or (atom-case a :lambda) (atom-case a :lambdan))
-       (set::emptyp (atom-free-type-vars a))
-       (set::emptyp (atom-free-ispace-vars a))
-       (captured-params-closed-p (set::intersect (atom-free-expr-vars a)
-                                                 (string-sfix locals))
-                                 tenv)))
+     they still have the types checked then.")
+   (xdoc::p
+    "Conversely, a hoisted function the lambda uses is local, but it is not
+     captured: its uses are replaced (see @('lmap')).  Its type need not be
+     known --- the type checker may well fail on its binding alone, which
+     refers to variables bound outside it --- so it is exempt from the check
+     that the captured variables are typed.")
+   (xdoc::p
+    "The type of the lambda's first parameter, and the result type of the
+     definition, must evaluate successfully, since they may be evaluated
+     where the definition is bound (see @(tsee type-evaluable-p))."))
+  (b* ((captured (set::intersect (atom-free-expr-vars a)
+                                 (string-sfix locals))))
+    (and (atom-case a
+                    :lambda (and (param-evaluable-p a.param)
+                                 (type-option-evaluable-p
+                                  (lambda-chain-result-type a.body a.type?)))
+                    :lambdan (and (consp a.params)
+                                  (param-evaluable-p (car a.params))
+                                  (type-option-evaluable-p
+                                   (lambda-chain-result-type a.body a.type?)))
+                    :otherwise nil)
+         (set::emptyp (atom-free-type-vars a))
+         (set::emptyp (atom-free-ispace-vars a))
+         (captured-params-typed-p
+          (set::difference captured
+                           (omap::keys (string-expr-map-fix lmap)))
+          tenv)
+         (captured-params-closed-p captured tenv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -371,9 +553,10 @@
      @('rebound') bound by the binders in the scope of the binding, and the
      environment outside it: if it is a @(':fun') with at least one
      parameter, closed in type and ispace variables, whose captured
-     variables are not functions, are not in @('rebound'), and have types
+     variables are not functions, are not in @('rebound'), and have types,
      closed in type and ispace variables (see @(tsee
-     captured-params-closed-p)), the result is @('t'), its variable, a
+     captured-params-typed-p) and @(tsee captured-params-closed-p)), the
+     result is @('t'), its variable, a
      definition of it under a fresh name with the captured variables as
      leading parameters, and the expression --- that name applied to the
      captured variables --- that replaces its uses.  Otherwise the result
@@ -392,12 +575,15 @@
        ((unless (bind-case b :fun)) (mv nil "" b (expr-var "") used))
        ((bind-fun b) b)
        ((unless (and (consp b.params)
+                     (param-evaluable-p (car b.params))
+                     (type-option-evaluable-p b.type?)
                      (set::emptyp (bind-free-type-vars b))
                      (set::emptyp (bind-free-ispace-vars b))))
         (mv nil b.var b (expr-var b.var) used))
        (fv (set::intersect (bind-free-expr-vars b) locals))
        ((when (or (captures-function-p fv tenv)
                   (intersectp-equal fv (str::string-list-fix rebound))
+                  (not (captured-params-typed-p fv tenv))
                   (not (captured-params-closed-p fv tenv))))
         (mv nil b.var b (expr-var b.var) used))
        (name (fresh-expr-var b.var used))
@@ -440,14 +626,98 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The types of the variables bound by a :LET are inferred by the type
+; checker (see EXTEND-TENV-WITH-BINDS), but only from the types of other
+; such variables: a binding is checked only if every local variable it
+; refers to is one whose type was inferred so, and the types inferred are
+; kept only if they are closed.  The set TLETS of those variables travels
+; with the type environment.
+;
+; The reason is the validation of lambda lifting (see
+; LAMBDA-LIFTING-VALIDATION), which relies on the soundness of the type
+; checker: a captured variable's value must have the shape of its type.  For
+; a parameter that is checked by the application that binds it.  For a
+; variable bound by a :LET it follows from the soundness of the checker for
+; the binding, provided the variables the binding refers to have values of
+; their types --- which is known of variables bound by :LETs in this way,
+; but not of parameters, whose values are checked for their shapes only.
+
+(define tlets-without ((names string-listp) (tlets string-setp))
+  :returns (new-tlets string-setp)
+  :short "Remove some names from the set of variables with inferred types."
+  (set::difference (string-sfix tlets)
+                   (set::mergesort (str::string-list-fix names))))
+
+(define type-map-all-closed-p ((tmap string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Whether all the types in a map are closed
+          in type and ispace variables."
+  (b* ((tmap (string-type-map-fix tmap))
+       ((when (omap::emptyp tmap)) t)
+       (type (omap::head-val tmap)))
+    (and (set::emptyp (type-free-type-vars type))
+         (set::emptyp (type-free-ispace-vars type))
+         (type-map-all-closed-p (omap::tail tmap))))
+  :measure (acl2-count (string-type-map-fix tmap)))
+
+(local
+ (defrule string-setp-of-keys-when-string-type-mapp
+   (implies (string-type-mapp m)
+            (string-setp (omap::keys m)))
+   :induct (omap::keys m)
+   :enable (omap::keys string-type-mapp)))
+
+(define extend-tenv-with-let-bind ((b bindp)
+                                   (tenv string-type-mapp)
+                                   (tlets string-setp)
+                                   (locals string-setp))
+  :returns (mv (new-tenv string-type-mapp)
+               (new-tlets string-setp))
+  :short "Record the types of the variables a binding of a @(':let') binds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The binding is checked by the type checker, as in @(tsee
+     extend-tenv-with-binds), but only if the local variables it refers to
+     are all in @('tlets'), and only with their types (over the primitive
+     operations).  The types inferred for the variables it binds are kept
+     if they are well formed and closed, and those variables are then in
+     @('tlets'); otherwise they are not."))
+  (b* ((b (bind-fix b))
+       (tenv (string-type-map-fix tenv))
+       (tlets (string-sfix tlets))
+       (vars (bind-bound-expr-vars b))
+       (others (set::difference tlets vars))
+       (free-locals (set::intersect (bind-free-expr-vars b)
+                                    (string-sfix locals)))
+       ((unless (set::subset free-locals tlets)) (mv tenv others))
+       (scope (restrict-to-keys free-locals tenv))
+       (sbs (check-bind-list (list b)
+                             (init-ispace-senv)
+                             (init-type-senv)
+                             (tenv-to-expr-senv scope)))
+       ((when (reserrp sbs)) (mv tenv others))
+       (new (restrict-to-keys vars (expr-senv->exprs (senvs+binds->eenv sbs))))
+       ((unless (and (type-map-all-wfp new)
+                     (type-map-all-closed-p new)))
+        (mv tenv others)))
+    (mv (omap::update* new tenv)
+        (set::union (omap::keys new) others)))
+  :guard-hints
+  (("Goal" :in-theory (enable senvs+binds-p-when-result-not-error))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines lambda-lift-exprs/atoms/binds
   :short "Lift the lambdas out of expressions, atoms, and bindings,
           and hoist the local functions."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Besides the node, each function takes the type environment @('tenv')
-     and the set of local names @('locals') of the variables bound around
+    "Besides the node, each function takes the type environment @('tenv'),
+     the set @('tlets') of the variables in it whose types were inferred
+     from their @(':let') bindings (see @(tsee extend-tenv-with-let-bind)),
+     the set of local names @('locals') of the variables bound around
      the node within the declaration, the map @('lmap') from the hoisted
      local functions in scope to the expressions that replace their uses,
      and the set @('used') of names in use.  The first three are scoped ---
@@ -457,6 +727,7 @@
 
   (define ll-expr ((x exprp)
                    (tenv string-type-mapp)
+                   (tlets string-setp)
                    (locals string-setp)
                    (lmap string-expr-mapp)
                    (used string-setp))
@@ -467,63 +738,66 @@
                  nil
                  (string-sfix used)))
       :atom (b* ((a x.atom)
-                 ((when (liftable-lambda-p a tenv locals))
+                 ((when (liftable-lambda-p a tenv locals lmap))
                   (atom-case a
-                    :lambda (ll-lambda (list a.param) a.body
-                                       tenv locals lmap used)
-                    :lambdan (ll-lambda a.params a.body tenv locals lmap used)
+                    :lambda (ll-lambda (list a.param) a.body a.type?
+                                       tenv tlets locals lmap used)
+                    :lambdan (ll-lambda a.params a.body a.type?
+                                        tenv tlets locals lmap used)
                     :otherwise (mv (expr-fix x) nil (string-sfix used))))
-                 ((mv new-a lifted used) (ll-atom a tenv locals lmap used)))
+                 ((mv new-a lifted used) (ll-atom a tenv tlets locals lmap used)))
               (mv (expr-atom new-a) lifted used))
       :array (b* (((mv new-as lifted used)
-                   (ll-atom-list x.atoms tenv locals lmap used)))
+                   (ll-atom-list x.atoms tenv tlets locals lmap used)))
                (mv (expr-array x.dims new-as) lifted used))
       :frame (b* (((mv new-es lifted used)
-                   (ll-expr-list x.exprs tenv locals lmap used)))
+                   (ll-expr-list x.exprs tenv tlets locals lmap used)))
                (mv (expr-frame x.dims new-es) lifted used))
-      :app (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv locals lmap used))
-                ((mv new-a lifted2 used) (ll-expr x.arg tenv locals lmap used)))
+      :app (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv tlets locals lmap used))
+                ((mv new-a lifted2 used) (ll-expr x.arg tenv tlets locals lmap used)))
              (mv (expr-app new-f new-a) (append lifted1 lifted2) used))
-      :appn (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv locals lmap used))
+      :appn (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv tlets locals lmap used))
                  ((mv new-as lifted2 used)
-                  (ll-expr-list x.args tenv locals lmap used)))
+                  (ll-expr-list x.args tenv tlets locals lmap used)))
               (mv (expr-appn new-f new-as) (append lifted1 lifted2) used))
-      :tapp (b* (((mv new-f lifted used) (ll-expr x.fun tenv locals lmap used)))
+      :tapp (b* (((mv new-f lifted used) (ll-expr x.fun tenv tlets locals lmap used)))
               (mv (expr-tapp new-f x.arg) lifted used))
-      :tappn (b* (((mv new-f lifted used) (ll-expr x.fun tenv locals lmap used)))
+      :tappn (b* (((mv new-f lifted used) (ll-expr x.fun tenv tlets locals lmap used)))
                (mv (expr-tappn new-f x.args) lifted used))
-      :iapp (b* (((mv new-f lifted used) (ll-expr x.fun tenv locals lmap used)))
+      :iapp (b* (((mv new-f lifted used) (ll-expr x.fun tenv tlets locals lmap used)))
               (mv (expr-iapp new-f x.arg) lifted used))
-      :iappn (b* (((mv new-f lifted used) (ll-expr x.fun tenv locals lmap used)))
+      :iappn (b* (((mv new-f lifted used) (ll-expr x.fun tenv tlets locals lmap used)))
                (mv (expr-iappn new-f x.args) lifted used))
-      :capp (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv locals lmap used))
+      :capp (b* (((mv new-f lifted1 used) (ll-expr x.fun tenv tlets locals lmap used))
                  ((mv new-as lifted2 used)
-                  (ll-expr-list x.args tenv locals lmap used)))
+                  (ll-expr-list x.args tenv tlets locals lmap used)))
               (mv (expr-capp new-f x.targs x.iargs new-as)
                   (append lifted1 lifted2) used))
-      :unbox (b* ((body-locals (set::insert x.var (string-sfix locals)))
+      :unbox (b* ((body-tlets (tlets-without (list x.var) tlets))
+                  (body-locals (set::insert x.var (string-sfix locals)))
                   (body-lmap (string-expr-map-remove-keys (list x.var) lmap))
                   ((mv new-t lifted1 used)
-                   (ll-expr x.target tenv locals lmap used))
+                   (ll-expr x.target tenv tlets locals lmap used))
                   ((mv new-b lifted2 used)
-                   (ll-expr x.body tenv body-locals body-lmap used)))
+                   (ll-expr x.body tenv body-tlets body-locals body-lmap used)))
                (mv (expr-unbox x.ispace x.var new-t new-b x.type?)
                    (append lifted1 lifted2) used))
-      :unboxn (b* ((body-locals (set::insert x.var (string-sfix locals)))
+      :unboxn (b* ((body-tlets (tlets-without (list x.var) tlets))
+                   (body-locals (set::insert x.var (string-sfix locals)))
                    (body-lmap (string-expr-map-remove-keys (list x.var) lmap))
                    ((mv new-t lifted1 used)
-                    (ll-expr x.target tenv locals lmap used))
+                    (ll-expr x.target tenv tlets locals lmap used))
                    ((mv new-b lifted2 used)
-                    (ll-expr x.body tenv body-locals body-lmap used)))
+                    (ll-expr x.body tenv body-tlets body-locals body-lmap used)))
                 (mv (expr-unboxn x.ispaces x.var new-t new-b x.type?)
                     (append lifted1 lifted2) used))
       :bracket (b* (((mv new-es lifted used)
-                     (ll-expr-list x.exprs tenv locals lmap used)))
+                     (ll-expr-list x.exprs tenv tlets locals lmap used)))
                  (mv (expr-bracket new-es) lifted used))
-      :let (b* (((mv kept lifted1 tenv locals lmap used)
+      :let (b* (((mv kept lifted1 tenv locals lmap used tlets)
                  (ll-let-binds x.binds (expr-expr-var-binders x.body)
-                               tenv locals lmap used))
-                ((mv new-b lifted2 used) (ll-expr x.body tenv locals lmap used)))
+                               tenv tlets locals lmap used))
+                ((mv new-b lifted2 used) (ll-expr x.body tenv tlets locals lmap used)))
              ;; a :LET all of whose bindings were hoisted is just its body
              (mv (if (consp kept) (expr-let kept new-b) new-b)
                  (append lifted1 lifted2)
@@ -531,32 +805,42 @@
       :otherwise (mv (expr-fix x) nil (string-sfix used)))
     :measure (two-nats-measure (expr-count x) 0))
 
-  ; A lambda, with the parameters collected so far.  A body that is itself
-  ; a lambda is absorbed into the parameter list rather than lifted on its
-  ; own, so that a chain of lambdas yields one definition.
+  ; A lambda, with the parameters collected so far and its result type
+  ; annotation.  A body that is itself a lambda is absorbed into the
+  ; parameter list rather than lifted on its own, so that a chain of lambdas
+  ; yields one definition --- but only if the lambda is not annotated: the
+  ; value of an annotated lambda carries its result type (see EVAL-ATOM),
+  ; and the value of the definition, applied to the same parameters, would
+  ; not, since the definition's result type is the inner one.
   (define ll-lambda ((params var+type?-listp)
                      (body exprp)
+                     (type? type-optionp)
                      (tenv string-type-mapp)
+                     (tlets string-setp)
                      (locals string-setp)
                      (lmap string-expr-mapp)
                      (used string-setp))
     :returns (mv (e exprp) (lifted bind-listp) (new-used string-setp))
     (b* ((params (var+type?-list-fix params))
          (tenv (extend-tenv-with-params params tenv))
+         (tlets (tlets-without (var+type?-list->var params) tlets))
          (locals (locals-with-params params locals))
          (lmap (string-expr-map-remove-keys (var+type?-list->var params) lmap))
-         ((mv nestedp more-params inner) (nested-lambda body))
-         ((when nestedp)
-          (ll-lambda (append params more-params) inner tenv locals lmap used))
-         ((mv new-body lifted used) (ll-expr body tenv locals lmap used))
+         ((mv nestedp more-params inner inner-type?) (nested-lambda body))
+         ((when (and nestedp (type-option-case type? :none)))
+          (ll-lambda (append params more-params) inner inner-type?
+                     tenv tlets locals lmap used))
+         ((mv new-body lifted used) (ll-expr body tenv tlets locals lmap used))
          ;; the definitions lifted out of the body go before this one,
          ;; which refers to them
-         ((mv e more used) (emit-lifted-lambda params new-body tenv locals used)))
+         ((mv e more used)
+          (emit-lifted-lambda params new-body type? tenv locals used)))
       (mv e (append lifted more) used))
     :measure (two-nats-measure (expr-count body) 1))
 
   (define ll-expr-list ((x expr-listp)
                         (tenv string-type-mapp)
+                        (tlets string-setp)
                         (locals string-setp)
                         (lmap string-expr-mapp)
                         (used string-setp))
@@ -565,51 +849,57 @@
                  (lifted bind-listp)
                  (new-used string-setp))
     (b* (((when (endp x)) (mv nil nil (string-sfix used)))
-         ((mv new-e lifted1 used) (ll-expr (car x) tenv locals lmap used))
-         ((mv new-es lifted2 used) (ll-expr-list (cdr x) tenv locals lmap used)))
+         ((mv new-e lifted1 used) (ll-expr (car x) tenv tlets locals lmap used))
+         ((mv new-es lifted2 used) (ll-expr-list (cdr x) tenv tlets locals lmap used)))
       (mv (cons new-e new-es) (append lifted1 lifted2) used))
     :measure (two-nats-measure (expr-list-count x) 0))
 
   (define ll-atom ((x atomp)
                    (tenv string-type-mapp)
+                   (tlets string-setp)
                    (locals string-setp)
                    (lmap string-expr-mapp)
                    (used string-setp))
     :returns (mv (new-x atomp) (lifted bind-listp) (new-used string-setp))
     (atom-case x
       :lambda (b* ((body-tenv (extend-tenv-with-params (list x.param) tenv))
+                   (body-tlets (tlets-without (list (var+type?->var x.param))
+                                              tlets))
                    (body-locals (locals-with-params (list x.param) locals))
                    (body-lmap (string-expr-map-remove-keys
                                (list (var+type?->var x.param))
                                lmap))
                    ((mv new-b lifted used)
-                    (ll-expr x.body body-tenv body-locals body-lmap used)))
+                    (ll-expr x.body body-tenv body-tlets body-locals body-lmap used)))
                 (mv (atom-lambda x.param new-b x.type?) lifted used))
       :lambdan (b* ((body-tenv (extend-tenv-with-params x.params tenv))
+                    (body-tlets (tlets-without (var+type?-list->var x.params)
+                                               tlets))
                     (body-locals (locals-with-params x.params locals))
                     (body-lmap (string-expr-map-remove-keys
                                 (var+type?-list->var x.params)
                                 lmap))
                     ((mv new-b lifted used)
-                     (ll-expr x.body body-tenv body-locals body-lmap used)))
+                     (ll-expr x.body body-tenv body-tlets body-locals body-lmap used)))
                  (mv (atom-lambdan x.params new-b x.type?) lifted used))
-      :tlambda (b* (((mv new-b lifted used) (ll-expr x.body tenv locals lmap used)))
+      :tlambda (b* (((mv new-b lifted used) (ll-expr x.body tenv tlets locals lmap used)))
                  (mv (atom-tlambda x.param new-b) lifted used))
-      :tlambdan (b* (((mv new-b lifted used) (ll-expr x.body tenv locals lmap used)))
+      :tlambdan (b* (((mv new-b lifted used) (ll-expr x.body tenv tlets locals lmap used)))
                   (mv (atom-tlambdan x.params new-b) lifted used))
-      :ilambda (b* (((mv new-b lifted used) (ll-expr x.body tenv locals lmap used)))
+      :ilambda (b* (((mv new-b lifted used) (ll-expr x.body tenv tlets locals lmap used)))
                  (mv (atom-ilambda x.param new-b) lifted used))
-      :ilambdan (b* (((mv new-b lifted used) (ll-expr x.body tenv locals lmap used)))
+      :ilambdan (b* (((mv new-b lifted used) (ll-expr x.body tenv tlets locals lmap used)))
                   (mv (atom-ilambdan x.params new-b) lifted used))
-      :box (b* (((mv new-a lifted used) (ll-expr x.array tenv locals lmap used)))
+      :box (b* (((mv new-a lifted used) (ll-expr x.array tenv tlets locals lmap used)))
              (mv (atom-box x.ispace new-a x.type?) lifted used))
-      :boxn (b* (((mv new-a lifted used) (ll-expr x.array tenv locals lmap used)))
+      :boxn (b* (((mv new-a lifted used) (ll-expr x.array tenv tlets locals lmap used)))
               (mv (atom-boxn x.ispaces new-a x.type?) lifted used))
       :otherwise (mv (atom-fix x) nil (string-sfix used)))
     :measure (two-nats-measure (atom-count x) 0))
 
   (define ll-atom-list ((x atom-listp)
                         (tenv string-type-mapp)
+                        (tlets string-setp)
                         (locals string-setp)
                         (lmap string-expr-mapp)
                         (used string-setp))
@@ -618,39 +908,44 @@
                  (lifted bind-listp)
                  (new-used string-setp))
     (b* (((when (endp x)) (mv nil nil (string-sfix used)))
-         ((mv new-a lifted1 used) (ll-atom (car x) tenv locals lmap used))
-         ((mv new-as lifted2 used) (ll-atom-list (cdr x) tenv locals lmap used)))
+         ((mv new-a lifted1 used) (ll-atom (car x) tenv tlets locals lmap used))
+         ((mv new-as lifted2 used) (ll-atom-list (cdr x) tenv tlets locals lmap used)))
       (mv (cons new-a new-as) (append lifted1 lifted2) used))
     :measure (two-nats-measure (atom-list-count x) 0))
 
   (define ll-bind ((x bindp)
                    (tenv string-type-mapp)
+                   (tlets string-setp)
                    (locals string-setp)
                    (lmap string-expr-mapp)
                    (used string-setp))
     :returns (mv (new-x bindp) (lifted bind-listp) (new-used string-setp))
     (bind-case x
-      :val (b* (((mv new-e lifted used) (ll-expr x.expr tenv locals lmap used)))
+      :val (b* (((mv new-e lifted used) (ll-expr x.expr tenv tlets locals lmap used)))
              (mv (bind-val x.var x.type? new-e) lifted used))
       :fun (b* ((body-tenv (extend-tenv-with-params x.params tenv))
+                (body-tlets (tlets-without (var+type?-list->var x.params)
+                                           tlets))
                 (body-locals (locals-with-params x.params locals))
                 (body-lmap (string-expr-map-remove-keys
                             (var+type?-list->var x.params)
                             lmap))
                 ((mv new-e lifted used)
-                 (ll-expr x.expr body-tenv body-locals body-lmap used)))
+                 (ll-expr x.expr body-tenv body-tlets body-locals body-lmap used)))
              (mv (bind-fun x.var x.params x.type? new-e) lifted used))
-      :tfun (b* (((mv new-e lifted used) (ll-expr x.expr tenv locals lmap used)))
+      :tfun (b* (((mv new-e lifted used) (ll-expr x.expr tenv tlets locals lmap used)))
               (mv (bind-tfun x.var x.params x.type? new-e) lifted used))
-      :ifun (b* (((mv new-e lifted used) (ll-expr x.expr tenv locals lmap used)))
+      :ifun (b* (((mv new-e lifted used) (ll-expr x.expr tenv tlets locals lmap used)))
               (mv (bind-ifun x.var x.params x.type? new-e) lifted used))
       :cfun (b* ((body-tenv (extend-tenv-with-params x.params tenv))
+                 (body-tlets (tlets-without (var+type?-list->var x.params)
+                                            tlets))
                  (body-locals (locals-with-params x.params locals))
                  (body-lmap (string-expr-map-remove-keys
                              (var+type?-list->var x.params)
                              lmap))
                  ((mv new-e lifted used)
-                  (ll-expr x.expr body-tenv body-locals body-lmap used)))
+                  (ll-expr x.expr body-tenv body-tlets body-locals body-lmap used)))
               (mv (bind-cfun x.var x.tparams? x.iparams? x.params x.type new-e)
                   lifted used))
       :otherwise (mv (bind-fix x) nil (string-sfix used)))
@@ -665,6 +960,7 @@
   (define ll-let-binds ((binds bind-listp)
                         (body-binders string-listp)
                         (tenv string-type-mapp)
+                        (tlets string-setp)
                         (locals string-setp)
                         (lmap string-expr-mapp)
                         (used string-setp))
@@ -673,15 +969,17 @@
                  (new-tenv string-type-mapp)
                  (new-locals string-setp)
                  (new-lmap string-expr-mapp)
-                 (new-used string-setp))
+                 (new-used string-setp)
+                 (new-tlets string-setp))
     (b* (((when (endp binds))
           (mv nil nil
               (string-type-map-fix tenv)
               (string-sfix locals)
               (string-expr-map-fix lmap)
-              (string-sfix used)))
+              (string-sfix used)
+              (string-sfix tlets)))
          (b (bind-fix (car binds)))
-         ((mv new-b lifted1 used) (ll-bind b tenv locals lmap used))
+         ((mv new-b lifted1 used) (ll-bind b tenv tlets locals lmap used))
          (rebound (append (bind-list-expr-var-binders (cdr binds))
                           (str::string-list-fix body-binders)))
          ((mv hoistedp var hoisted replacement used)
@@ -689,16 +987,16 @@
          ;; the binding is in scope for the rest, kept or not: a hoisted
          ;; name is replaced wherever it is not hidden, so recording it is
          ;; harmless
-         (tenv (extend-tenv-with-binds (list b) tenv))
+         ((mv tenv tlets) (extend-tenv-with-let-bind b tenv tlets locals))
          (locals (set::union (bind-bound-expr-vars b) (string-sfix locals)))
          (lmap (if hoistedp
                    (omap::update var replacement (string-expr-map-fix lmap))
                  (string-expr-map-remove-keys (bind-bound-expr-vars b) lmap)))
-         ((mv kept lifted2 tenv locals lmap used)
-          (ll-let-binds (cdr binds) body-binders tenv locals lmap used)))
+         ((mv kept lifted2 tenv locals lmap used tlets)
+          (ll-let-binds (cdr binds) body-binders tenv tlets locals lmap used)))
       (mv (if hoistedp kept (cons new-b kept))
           (append lifted1 (if hoistedp (list hoisted) nil) lifted2)
-          tenv locals lmap used))
+          tenv locals lmap used tlets))
     :measure (two-nats-measure (bind-list-count binds) 0))
 
   :verify-guards :after-returns
@@ -707,7 +1005,11 @@
   ; their own book.
   :flag-local nil
 
-  :returns-hints (("Goal" :in-theory (enable len))))
+  :returns-hints (("Goal" :in-theory (e/d (len)
+                                          (binary-append
+                                           acl2::utf8-table36-length-lemmas
+                                           acl2::consp-when-member-equal-of-cons-listp
+                                           member-equal)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -727,7 +1029,7 @@
     "The guard requires the binders of @('x') to bind distinct names, as
      @(tsee expr-uniquify-names) makes them; see @(see lambda-lifting)."))
   (b* ((used (expr-all-expr-vars x))
-       ((mv new-x lifted &) (ll-expr x nil nil nil used)))
+       ((mv new-x lifted &) (ll-expr x nil nil nil nil used)))
     (nest-let-binds lifted new-x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -745,7 +1047,7 @@
      the top-level bindings before it, which they may refer to, and the
      binding is in their scope."))
   (b* (((when (endp binds)) nil)
-       ((mv new-b lifted used) (ll-bind (car binds) nil nil nil used)))
+       ((mv new-b lifted used) (ll-bind (car binds) nil nil nil nil used)))
     (append lifted
             (cons new-b (lambda-lift-top-binds (cdr binds) used)))))
 

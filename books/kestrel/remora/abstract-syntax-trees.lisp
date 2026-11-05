@@ -464,6 +464,7 @@
       "There are
        variables (of two kinds),
        base types,
+       scalar (i.e. zero-ranked array) types with an element type,
        array types consisting of a type for the elements
        and an ispace indicating how the elements are arranged,
        bracket types which are similar to array types
@@ -472,6 +473,13 @@
        universal types (quantified over type variables),
        product types (quantified over ispace parameters),
        and sum types (quantified over ispace parameters).")
+     (xdoc::p
+      "The @(':scalar') type is used when
+       atom-kinded types are auto-lifted to array-kinded types.
+       Although an @(':array') type could be used instead,
+       an explicit @(':scalar') type preserves the information about
+       whether the type was originally an explicit array-kinded type
+       or the type was an atom-kinded type standing for an array-kinded one.")
      (xdoc::p
       "The @(':fun') summand is the main, core form of function types,
        which is unary, i.e. it has exactly one input type.
@@ -499,6 +507,11 @@
        Note the slight difference with function types,
        where singleton lists are allowed as explained above.")
      (xdoc::p
+      "This fixtype does not capture the restriction that
+       the element type of a scalar, array or bracket type
+       must be atom-kinded, not array-kinded.
+       This is enforced in the static semantics, as also done in [impl].")
+     (xdoc::p
       "[impl] has two slightly different AST variants for types,
        one produced by the parser and one resulting from elaboration.
        The former has unary function types
@@ -507,6 +520,7 @@
        The latter also separates, syntactically, atom from array types."))
     (:var ((var type-var)))
     (:base ((type base-type)))
+    (:scalar ((elem type)))
     (:array ((elem type)
              (ispace ispace)))
     (:bracket ((elem type)
@@ -615,6 +629,21 @@
     (implies (typep x)
              (equal (type-option-some->val x) x))
     :enable type-option-some->val))
+
+;;;;;;;;;;
+
+(defruled type-option-some->val-when-typep
+  :short "A type, as an optional type, is its own value."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is left disabled because its left side is general enough
+     to interfere elsewhere (it perturbs the @(tsee fty::deffixequiv) proofs
+     of some predicates over optional types);
+     it is enabled where type annotations are unfolded."))
+  (implies (typep x)
+           (equal (type-option-some->val x) x))
+  :enable type-option-some->val)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1387,6 +1416,19 @@
     :true-listp t
     :elementp-of-nil nil
     :pred bind-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule expr-count-positive
+  :short "The size of an expression is positive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a linear rule, for the termination of functions
+     whose measures are sums of sizes of expressions."))
+  (< 0 (expr-count x))
+  :rule-classes :linear
+  :expand ((expr-count x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

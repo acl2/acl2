@@ -1,6 +1,6 @@
-; ABNF (Augmented Backus-Naur Form) Library
+; Error-Value Tuples
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "error-value-tuples")
 
 (include-book "std/testing/assert-equal" :dir :system)
+(include-book "std/testing/must-fail" :dir :system)
 
 ; cert_param: (non-acl2r)
 
@@ -198,6 +199,21 @@
 (assert-equal (mv-list 2 (call-one-from-one-iferr -2))
               (list "Overwrite." ""))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define call-one-from-one-iferr-wrap ((x integerp))
+  :returns (mv erp (a stringp))
+  (b* (((reterr) "irrelevant")
+       ((erp a) (one-val x) :iferr (cons :wrapped erp)))
+    (retok a)))
+
+(assert-equal (mv-list 2 (call-one-from-one-iferr-wrap 5))
+              (list nil "okay"))
+
+(assert-equal (mv-list 2 (call-one-from-one-iferr-wrap -2))
+              (list (cons :wrapped (msg "~x0 is negative." -2))
+                    "irrelevant"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define call-one-from-two ((x integerp))
@@ -369,3 +385,124 @@
     (if (> x 0)
         (retok (1- (ifix x)))
       (reterr "negative"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defstobj box
+  (stored-value :type integer :initially 0))
+
+(define update-box ((x integerp) box)
+  :returns (mv erp box)
+  (b* (((reterr) box)
+       (box (update-stored-value x box))
+       ((when (< x 0)) (reterr :negative)))
+    (retok box)))
+
+(define call-update-box ((x integerp) box)
+  :returns (mv erp (donep booleanp) box)
+  (b* (((reterr) nil box)
+       ((erp box) (update-box x box)))
+    (retok t box)))
+
+(assert-event
+ (b* (((mv erp donep box) (call-update-box 5 box)))
+   (mv (and (not erp)
+            donep
+            (equal (stored-value box) 5))
+       box))
+ :stobjs-out '(nil box))
+
+(assert-event
+ (b* (((mv erp donep box) (call-update-box -2 box)))
+   (mv (and (equal erp :negative)
+            (not donep)
+            (equal (stored-value box) -2))
+       box))
+ :stobjs-out '(nil box))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-zero (x)
+  (b* (((reterr))
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp) (zero-vals x)))
+    nil)
+  :guard-hints (("Goal" :in-theory (enable zero-vals))))
+
+(assert-equal (static-exclude-zero 1)
+              nil)
+
+(assert-equal (static-exclude-zero -1)
+              :fail)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-zero-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr))
+          ((noerp) (zero-vals x))) ; x may be negative
+       nil))
+
+   (must-fail
+    (verify-guards static-exclude-zero-invalid
+      :hints (("Goal" :in-theory (enable zero-vals)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-one (x)
+  (b* (((reterr) "irrelevant")
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp a) (one-val x)))
+    (retok a))
+  :guard-hints (("Goal" :in-theory (enable one-val))))
+
+(assert-equal (mv-list 2 (static-exclude-one 1))
+              (list nil "okay"))
+
+(assert-equal (mv-list 2 (static-exclude-one -1))
+              (list :fail "irrelevant"))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-one-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr) "irrelevant")
+          ((noerp a) (one-val x))) ; x may be negative
+       (retok a)))
+
+   (must-fail
+    (verify-guards static-exclude-one-invalid
+      :hints (("Goal" :in-theory (enable one-val)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-two (x)
+  (b* (((reterr) "irrelevant" 'irrelevant)
+       ((unless (and (integerp x) (>= x 0))) (reterr :fail))
+       ((noerp a b) (two-vals x)))
+    (retok a b))
+  :guard-hints (("Goal" :in-theory (enable two-vals))))
+
+(assert-equal (mv-list 3 (static-exclude-two 1))
+              (list nil "okay" 'okay))
+
+(assert-equal (mv-list 3 (static-exclude-two -1))
+              (list :fail "irrelevant" 'irrelevant))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(local
+ (progn
+   (define static-exclude-two-invalid ((x integerp))
+     :verify-guards nil
+     (b* (((reterr) "irrelevant" 'irrelevant)
+          ((noerp a b) (two-vals x))) ; x may be negative
+       (retok a b)))
+
+   (must-fail
+    (verify-guards static-exclude-two-invalid
+      :hints (("Goal" :in-theory (enable two-vals)))))))

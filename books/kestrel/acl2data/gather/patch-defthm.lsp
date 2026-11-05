@@ -200,7 +200,8 @@
                                                  wrld1)))) ;patch;
                                             (acl2data-time-limit ;patch;
                                              (value (acl2data-time-limit ;patch;
-                                                     *acl2data-prove-time*))) ;patch;
+                                                     *acl2data-prove-time* ;patch;
+                                                     state))) ;patch;
                                             #-skip-hyp ;patch;
                                             (hyp-alist ;patch;
                                              (note-retries ;patch;

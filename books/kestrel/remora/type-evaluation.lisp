@@ -63,6 +63,10 @@
      (xdoc::p
       "A base type evaluates to itself.")
      (xdoc::p
+      "For a scalar type,
+       we evaluate the element type,
+       and we put the result into an array type value with no dimensions.")
+     (xdoc::p
       "For an array type,
        we evaluate the element type and the ispace,
        we turn the ispace value into a list of dimensions,
@@ -87,6 +91,8 @@
      type
      :var (type-denv-lookup-type type.var denv)
      :base (type-value-base type.type)
+     :scalar (b* (((ok elem-tval) (eval-type type.elem denv)))
+               (make-type-value-array :elem elem-tval :dims nil))
      :array (b* (((ok elem-tval) (eval-type type.elem denv))
                  ((ok ival) (eval-ispace type.ispace (type-denv->ienv denv)))
                  (dims (ispace-value-to-dims ival)))

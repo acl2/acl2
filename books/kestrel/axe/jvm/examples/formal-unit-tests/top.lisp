@@ -16,8 +16,10 @@
 
 #|
 (include-book "AbsLong")
+(include-book "AbsLong2")
 (include-book "Prefix")
 (include-book "BinarySearch")
 (include-book "BinarySearchBuggy")
 (include-book "ClassTest")
+(include-book "foo.bar.AbsLong")
 |#

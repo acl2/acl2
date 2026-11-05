@@ -455,3 +455,91 @@
     x86))
 
 ;; ======================================================================
+;; INSTRUCTION: MULX
+;; ======================================================================
+
+(def-inst x86-mulx
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :parents (three-byte-opcodes)
+
+  :short "MULX: Unsigned multiply without affecting flags."
+
+  :modr/m t
+
+  :vex t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; VEX.W selects a 64-bit operand only in 64-bit mode.
+       ;; In other modes the operand is always 32 bits,
+       ;; and the VEX register-extension bits are ignored:
+       ;; VEX.R and VEX.B via the zero REX byte here,
+       ;; and the high bit of VEX.vvvv via the masking further below
+       ;; (see Intel manual Volume 2 Section 2.3.5.6).
+       (64-bit-mode? (equal proc-mode #.*64-bit-mode*))
+       (operand-size (if (and 64-bit-mode?
+                              (equal (vex->w vex-prefixes) 1))
+                         8
+                       4))
+       (rex-byte (if 64-bit-mode?
+                     (rex-byte-from-vex-prefixes vex-prefixes)
+                   0))
+
+       ;; Read the explicit source specified by ModR/M.r/m.
+       ((mv flg src2 increment-rip-by & x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               t ; inst-ac?
+                                               nil ; memory-ptr?
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; num-imm-bytes
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?) (!!fault-fresh :gp 0 :instruction-length badlength?))
+
+       ;; Read the implicit source EDX/RDX
+       ;; before writing the destinations, which may include it.
+       (src1 (rgfi-size operand-size *rdx* rex-byte x86))
+
+       ;; The product is the same as for MUL, just without the flag updates.
+       ((mv product-high product-low &) (mul-spec operand-size src1 src2))
+
+       ;; VEX.vvvv supplies the destination of the low half,
+       ;; and ModR/M.reg the destination of the high half.
+       ;; The high half is written last, so that it prevails
+       ;; when the two destinations are the same register,
+       ;; as the Intel manual prescribes.
+       ;; A 32-bit write also clears its upper half.
+       ;; No flags are read or written.
+       (low-reg (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+       (low-reg (if 64-bit-mode? low-reg (loghead 3 low-reg)))
+       (x86 (!rgfi-size operand-size low-reg product-low rex-byte x86))
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        product-high
+                        rex-byte
+                        x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================

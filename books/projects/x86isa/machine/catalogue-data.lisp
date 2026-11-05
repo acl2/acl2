@@ -154,11 +154,7 @@
 <li>BZHI -- zero bits left of an index</li>
 <li>PDEP/PEXT -- bitmask deposit/extract</li>
 <li>BEXTR -- bit field extract</li>
-<li>MULX -- multiply without affecting flags</li>
-<li>RORX -- rotate without affecting flags</li>
-</ul>
-<p>The ones that are implemented are TZCNT (trailing 0 count) and shifts without
-  affecting flags (SARX, SHLX, SHRX).</p>")
+</ul>")
 
 ;; (def-sdm-instruction-section "5.1.16.1 Detection of VEX-Encoded GPR Instructions, LZCNT, TZCNT, and PREFETCHW")
 

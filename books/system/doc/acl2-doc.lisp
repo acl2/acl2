@@ -13177,7 +13177,9 @@ way to split up large ACL2 developments into separate modules."
   :long "<p>This is a system function that determine whether a failed match of
   a monitored rule constitutes a near miss.</p>
 
-  <p><b>Note:</b>This function is attachable (see @(see defattach)).</p>
+  <p><b>Note:</b>This function is attachable (see @(see defattach)).  See @(see
+  monitor), specifically the section &ldquo;Criteria for Breaks&rdquo;, for the
+  default behavior of this function when monitoring a rule.</p>
 
   @({
   General Form:
@@ -110717,6 +110719,10 @@ it."
  subsumes another.  For more details see @(see community-book)
  @('system/tests/clause-set-subsumes-1-test.lisp').</p>
 
+ <p>Cause an error when @(tsee close-input-channel) attempts to close Lisp's
+ standard input stream.  This could happen in @(':')@(tsee program)-mode code,
+ causing an infinite loop in at least one Lisp implementation (SBCL).</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -110877,6 +110883,16 @@ it."
  Arm-based Mac.  Thanks to Yahya Sohail for supplying that change, which
  handles certain floating-point exceptions.  (ACL2 supports floating-point
  computations; see @(see df).)</p>
+
+ <p>(SBCL only) The SBCL &ldquo;nursery&rdquo; (roughly, the memory allocated
+ between garbage collections) is now 200 megabytes by default.  It was formerly
+ 1.6 gigabytes, because SBCL makes it 5% of the dynamic space size that ACL2
+ specifies.  This change can substantially reduce memory usage, especially when
+ certifying books in parallel, and it may also improve speed slightly.  A
+ different size, in megabytes, may be specified with environment variable
+ @('ACL2_SBCL_NURSERY_SIZE').  See the comment in the definition of
+ @('*sbcl-nursery-size*') in the ACL2 source code.  This change was made by AI;
+ thanks to Eric Smith for reviewing it.</p>
 
  <p>(CMUCL only) Fixed CMUCL builds of ACL2 so that @('\"lisp\"') can be the
  specified Lisp program name and to avoid a problem with

@@ -51,9 +51,9 @@
                        (bitops::logand-with-negated-bitmask
                         force (force)))))
 
-;; Note: SRC operand is either an (unsigned-byte 6) or (unsigned-byte
-;; 5) since it is masked before the actual rotate or shift
-;; operations.
+;; For RCL/RCR/ROL/ROR, the SRC count operand is an (unsigned-byte 6)
+;; or (unsigned-byte 5), since the caller masks it before the rotation.
+;; RORX takes the full immediate byte and masks it in its specification.
 
 ;; ======================================================================
 
@@ -806,5 +806,32 @@ result.</p>"
     :concl (mv-nth 2 (ror-spec size dst src input-rflags))
     :gen-type t
     :gen-linear t))
+
+;; ======================================================================
+
+(define rorx-spec
+  ((size :type (member 4 8))
+   src
+   (cnt :type (unsigned-byte 8)))
+  :guard (case size
+           (4 (n32p src))
+           (8 (n64p src))
+           (otherwise nil))
+  :returns (result natp :rule-classes :type-prescription)
+  :parents (instruction-semantic-functions)
+  :short "Specification for the @('RORX') instruction."
+  :long
+  "<p>The immediate count is masked to five or six bits according to
+   the operand size.  RORX neither reads nor writes flags, so this
+   function does not take or return flags.</p>"
+  (case size
+    (4 (fast-rotate-right src 32 (logand cnt #x1f)))
+    (8 (fast-rotate-right src 64 (logand cnt #x3f)))
+    (otherwise 0))
+  :inline t
+  ///
+  (defthm unsigned-byte-p-of-rorx-spec
+    (implies (member size '(4 8))
+             (unsigned-byte-p (* 8 size) (rorx-spec size src cnt)))))
 
 ;; ======================================================================

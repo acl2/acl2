@@ -16330,7 +16330,9 @@ Subtopics
   This is a system function that determine whether a failed match of a
   monitored rule constitutes a near miss.
 
-  [31;1mNote:[0mThis function is attachable (see [defattach]).
+  [31;1mNote:[0mThis function is attachable (see [defattach]).  See [monitor],
+  specifically the section ``Criteria for Breaks'', for the default
+  behavior of this function when monitoring a rule.
 
     General Form:
     (brr-near-missp msgp lemma target rcnst criteria-alist)
@@ -107611,6 +107613,11 @@ Bug Fixes From AI via Eric Smith
   clauses subsumes another.  For more details see [community-book]
   [30m[47msystem/tests/clause-set-subsumes-1-test.lisp[0m[0m.
 
+  Cause an error when [30m[47m[close-input-channel][0m[0m attempts to close Lisp's
+  standard input stream.  This could happen in [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code,
+  causing an infinite loop in at least one Lisp implementation
+  (SBCL).
+
 
 Other Bug Fixes
 
@@ -107770,6 +107777,17 @@ Changes at the System Level
   on an Arm-based Mac.  Thanks to Yahya Sohail for supplying that
   change, which handles certain floating-point exceptions.  (ACL2
   supports floating-point computations; see [df].)
+
+  (SBCL only) The SBCL ``nursery'' (roughly, the memory allocated
+  between garbage collections) is now 200 megabytes by default.  It
+  was formerly 1.6 gigabytes, because SBCL makes it 5% of the dynamic
+  space size that ACL2 specifies.  This change can substantially
+  reduce memory usage, especially when certifying books in parallel,
+  and it may also improve speed slightly.  A different size, in
+  megabytes, may be specified with environment variable
+  [30m[47mACL2_SBCL_NURSERY_SIZE[0m[0m.  See the comment in the definition of
+  [30m[47m*sbcl-nursery-size*[0m[0m in the ACL2 source code.  This change was made
+  by AI; thanks to Eric Smith for reviewing it.
 
   (CMUCL only) Fixed CMUCL builds of ACL2 so that [30m[47m\"lisp\"[0m[0m can be the
   specified Lisp program name and to avoid a problem with
