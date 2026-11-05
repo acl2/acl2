@@ -450,15 +450,24 @@
        (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
 
-       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
-
-       ;; The operand size is always 32 in 32-bit mode.
-       ;; In 64-bit mode, it is 32 or 64 based on whether VEX.W is 0 or 1.
+       ;; VEX.W selects a 64-bit operand only in 64-bit mode.
+       ;; In other modes the operand is always 32 bits.
+       ;; The decoder requires VEX.R = VEX.X = 1 to distinguish
+       ;; the 3-byte VEX prefix from LES, so REX.R and REX.X are already 0.
+       ;; The zero REX byte below also ignores VEX.B
+       ;; (see Intel manual Volume 2 Sections 2.3.5.2 to 2.3.5.4).
+       ;; The high bit of VEX.vvvv is ignored
+       ;; via the masking of the register index further below
+       ;; (see Section 2.3.5.6).
+       (64-bit-mode? (equal proc-mode #.*64-bit-mode*))
        ((the (integer 4 8) operand-size)
-        (if (and (equal proc-mode #.*64-bit-mode*)
+        (if (and 64-bit-mode?
                  (equal (vex->w vex-prefixes) 1))
             8
           4))
+       (rex-byte (if 64-bit-mode?
+                     (rex-byte-from-vex-prefixes vex-prefixes)
+                   0))
 
        ;; Since the Intel manual does not say anything specific about registers,
        ;; the registers for the operands must be the general-purpose ones.
@@ -499,6 +508,8 @@
        ;; is specified in the vvvv bits of the VEX prefix,
        ;; in negated (one's complement) form;
        ;; see Figure 2-9 of the Intel manual Volume 2 of Dec 2023.
+       ;; Outside 64-bit mode, the high bit of vvvv is ignored (see above),
+       ;; so the register index is masked to its low 3 bits.
        ;; This operand is the count by which
        ;; the other source operand must be shifted.
        ;; Based on the operand size,
@@ -506,6 +517,7 @@
        ;; as specified in the pseudocode of the Intel manual
        ;; for these instructions.
        (cnt-reg (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+       (cnt-reg (if 64-bit-mode? cnt-reg (loghead 3 cnt-reg)))
        (cnt-to-shift (rgfi-size operand-size
                                 cnt-reg
                                 rex-byte
@@ -520,8 +532,8 @@
        ;; See Figure 2-9 of Intel manual Volume 2 of Dec 2023.
        (result (case (vex->pp vex-prefixes)
                  (#b01 (shlx-spec operand-size val-to-shift cnt-to-shift)) ; 66
-                 (#b10 (sarx-spec operand-size val-to-shift cnt-to-shift)) ; F2
-                 (#b11 (shrx-spec operand-size val-to-shift cnt-to-shift)) ; F3
+                 (#b10 (sarx-spec operand-size val-to-shift cnt-to-shift)) ; F3
+                 (#b11 (shrx-spec operand-size val-to-shift cnt-to-shift)) ; F2
                  (otherwise 0))) ; cannot happen
 
        ;; The destination operand, i.e. Operand 1 in the Intel manual,
