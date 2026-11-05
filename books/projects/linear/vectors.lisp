@@ -3,8 +3,9 @@
 (include-book "projects/linear/reduction" :dir :system)
 (local (include-book "support/vectors"))
 
-;; This formalization of vector spaces is not complete, but currently meets our first objective of providing the results
-;; required for our development of Galois theory (lemmas vdepp-if->-dim, injection-dim-<=, and injection-dim-=).
+;; This formalization of vector spaces is not complete, but currently meets our first objective of providing the
+;; results required for our development of Galois theory (lemmas vcomb-v0-if->-vdim, injection-dim-<=,
+;; injection-surjection-dim-=).
 
 ;;---------------------------------------------------------------------------------------------------------------------
 ;;  Vector Space Axioms
@@ -379,14 +380,14 @@
 
 ;; If m > vdim, then since (fmatp a m (vdim)), (row-rank a) <= vdim < m, i.e., (vdepp l):
 
-(defthmd vdepp-if->-dim
+(defthmd vdepp-if->-vdim
   (implies (and (natp m) (> m (vdim))
 		(vlistnp l m))
 	   (vdepp l)))
 
-;; Combining vdepp-vcomb-v0 with vdepp-if->-dim, we construct a linear dependency of any list of more than vdim vectors:
+;; Combining vdepp-vcomb-v0 with vdepp-if->-vdim, we construct a linear dependency of any list of more than vdim vectors:
 
-(defthmd vcomb-v0-if->-dim
+(defthmd vcomb-v0-if->-vdim
   (implies (and (posp m) (vlistnp l m) (> m (vdim)))
 	   (let ((c (vdep-coeffs l)))
 	     (and (flistnp c m)
@@ -461,7 +462,7 @@
 ;; those pertaining to row reduction.  Functional instantiation of the following is much simpler (see, for example
 ;; vdepp-sk-if->-sdim):
 
-(defthmd vdepp-sk-if->-dim
+(defthmd vdepp-sk-if->-vdim
   (implies (and (natp m) (> m (vdim))
 		(vlistnp l m))
 	   (vdepp-sk l)))
@@ -482,7 +483,7 @@
 (defthm vbasisp-vbasis0
   (vbasisp (vbasis0)))
 
-;; Let b  be a vbasis.  By vdepp-if->-dim, for any vector x, the list (cons x b) is linearly dependent, and therefore, 
+;; Let b  be a vbasis.  By vdepp-if->-vdim, for any vector x, the list (cons x b) is linearly dependent, and therefore, 
 ;; by vdepp-vcomb, b spans the space:
 
 (defthmd vbasis-spans
@@ -506,11 +507,6 @@
 	          (vcoords0 x))))
 
 ;; The coordinates of a basis element:
-
-(defthm vcomb-funit
-  (implies (and (natp n) (natp j) (< j n) (vlistnp l n))
-           (equal (vcomb (funit j n) l)
-	          (nth j l))))
 
 (defthm vcoords-nth-basis
   (implies (and (vbasisp b) (natp j) (< j (vdim)))
@@ -537,7 +533,7 @@
 	   (equal (vcoords (vcomb c l) b)
 		  (car (fmat* (list c) (vbasis-mat l b))))))
 
-;; Combining vcoords-vcom and vbasis-spans, we have the following formula relating coordinates with respect to
+;; Combining vcoords-vcomb and vbasis-spans, we have the following formula relating coordinates with respect to
 ;; 2 vbases:
 
 (defthmd vcoords-convert
@@ -704,7 +700,7 @@
   (defthmd posp-wdim
     (posp (wdim)))
   (in-theory (disable (wdim) (wlistnp) (wcomb)))
-  (defthm wlistnp-basis
+  (defthm wlistnp-basis0
     (wlistnp (wbasis0) (wdim)))
   (defthm flistnp-wcoords0
     (implies (wp x) (flistnp (wcoords0 x) (wdim))))
@@ -723,7 +719,7 @@
 (defthm w+id-comm
   (implies (wp x) (equal (w+ (w0) x) x)))
 
-(defthm w+inw-comm
+(defthm w+inv-comm
     (implies (wp x) (equal (w+ (w- x) x) (w0))))
 
 (defthm f0*w0
@@ -835,7 +831,7 @@
 	   (equal c (flistn0 m)))
   :rule-classes ())
 
-(defthmd wdep-if->-dim
+(defthmd wdepp-if->-wdim
   (implies (and (natp m) (> m (wdim))
 		(wlistnp l m))
 	   (wdepp l)))
@@ -882,7 +878,7 @@
            (iff (windepp-sk l)
 	        (windepp l))))
 
-(defthmd wdepp-sk-if->-dim
+(defthmd wdepp-sk-if->-wdim
   (implies (and (natp m) (> m (wdim))
 		(wlistnp l m))
 	   (wdepp-sk l)))
@@ -917,6 +913,25 @@
   (implies (and (natp n) (natp j) (< j n) (wlistnp l n))
            (equal (wcomb (funit j n) l)
 	          (nth j l))))
+
+(defthm nth-windepp-not-w0
+  (implies (and (natp m)
+		(wlistnp l m)
+		(windepp l)
+		(natp j)
+		(< j m))
+	   (not (equal (nth j l) (w0)))))
+
+(defthm w0-not-member-windepp
+  (implies (and (natp m)
+		(wlistnp l m)
+		(windepp l))
+	   (not (member (w0) l))))
+
+(defthmd wdepp-w0
+  (implies (wp x)
+           (iff (wdepp (list x))
+                (equal (w0) x))))
 
 (defthm wcoords-nth-basis
   (implies (and (wbasisp b) (natp j) (< j (wdim)))
@@ -1044,14 +1059,14 @@
 ;; If (vp x), then (wcoords0 (lin x)) = (car (fmat* (list (vcoords0 x)) (lin-mat)).
 
 ;; Proof: Let c = (vcoords0 x). By vbasis0-spans, x = (vcomb c (vbasis0)), and by lin-vcomb,
-;; (lin x) = (wcomb c (lin-list (wbasis0))).  Thus, by wcoords0-wcomb,
+;; (lin x) = (wcomb c (lin-list (vbasis0))).  Thus, by wcoords0-wcomb,
 
 ;;   (wcoords0 (lin x)) = (wcoords0 (wcomb c (wbasis0)))
-;;                     = (car (fmat* (list c) (wcoord-mat (wbasis0))))
-;; 		       = (car (fmat* (list (vcoords0 x)) (lin-mat)))
+;;                      = (car (fmat* (list c) (wcoord-mat (wbasis0))))
+;; 		        = (car (fmat* (list (vcoords0 x)) (lin-mat)))
 
 (defthmd lin-mat-lin
-  (implies (and (vp x))
+  (implies (vp x)
            (equal (wcoords0 (lin x))
 	          (car (fmat* (list (vcoords0 x)) (lin-mat))))))
 
@@ -1111,21 +1126,21 @@
   (implies (and (lin-injective-p) (natp n) (vlistnp l n) (vindepp l))
            (windepp (lin-list l))))
 
-;; If lin is injective, then (dimv) <= (dimw).
+;; If lin is injective, then (vdim) <= (wdim).
 
-;; Proof: Suppose (dimv) > (dimw).  Then (len (lin-list (vbasis0))) = (len (vbasis0)) = (dimv) > (dimw).
-;; By wdep-if->-dim, (lin-list (vbasis0)) is linearly dependent, but by lin-injective-vindepp-windepp, this
+;; Proof: Suppose (vdim) > (wdim).  Then (len (lin-list (vbasis0))) = (len (vbasis0)) = (vdim) > (wdim).
+;; By wdepp-if->-wdim, (lin-list (vbasis0)) is linearly dependent, but by lin-injective-vindepp-windepp, this
 ;; contradicts the linear independence of (vbasis0).
 
 (defthmd injection-dim-<=
   (implies (lin-injective-p)
            (<= (vdim) (wdim))))
 
-;; If lin is injective, then lin is surjective iff (dimv) = (dimw).
+;; If lin is injective, then lin is surjective iff vdim = wdim.
 
 ;; Proof: Let l = (lin-list (vbasis0)).  By lin-injective-vindepp-windepp, l is linearly independent.
-;; Suppose vdim = wdim.  Let (wp y).  Since (len (cons y l)) = vdim + 1 = wdim + 1 > wdim.  By wdep-if->-dim,
-;; (cons y l) is linearly dependent.  By wdepp-wcomb and lin-vcomb,
+;; Suppose vdim = wdim.  Let (wp y).  Since (len (cons y l)) = vdim + 1 = wdim + 1 > wdim, (cons y l) is linearly
+;; dependent by wdepp-if->-wdim.  By wdepp-wcomb and lin-vcomb,
 
 ;;    y = (wcomb (wcoords y l) l) = (lin (vcomb (wcoords y l) (vbasis0))).
 
@@ -1145,16 +1160,16 @@
 ;; of the lemma lin-lin-inv below, resulting in an executable definition of the inverse operator of the Galois group.
 
 ;; First we show that if lin is injective, then (row-rank (lin-mat)) = vdim.
-;; Let m = vdim, n = wdim, a = lin-mat, ar = (row-reduce a), and p = (row-reduce-mat a).
+;; Let m = vdim, n = wdim, a = lin-mat, ar = (row-reduce a), p = (row-reduce-mat a), and p' = (inverse-mat p).
 ;; Let z = (funit (1- m) m) and z' = (car (fmat* (list z) p)).  Then 
 
-;;   (car (fmat* (list z') (inverse-mat p))) = (car (fmat* (list (car (fmat* (list z) p))) (inverse-mat p)))
-;;                                           = (car (fmat* (fmat* (list z) p) (inverse-mat p)))
-;;                                           = (car (fmat* (list z) (fmat* p (inverse-mat p))))
-;;                                           = (car (list z))
-;;                                           = z
+;;   (car (fmat* (list z') p')) = (car (fmat* (list (car (fmat* (list z) p))) p'))
+;;                              = (car (fmat* (fmat* (list z) p) p'))
+;;                              = (car (fmat* (list z) (fmat* p p')))
+;;                              = (car (list z))
+;;                              = z
 
-;; and since z != (flistn0 n), it follows that z' != (flistn0 n).
+;; and since z != (flistn0 m), it follows that z' != (flistn0 m).
 ;; Suppose (row-rank a) < m.  Then the final row of ar is zero: (flist0p (row (1- m) ar)).  It is easily shown that
 
 ;;   (car (fmat* (list z) ar)) = (flistn0 n),
@@ -1167,7 +1182,7 @@
 
 ;;   (wcoords0 (lin x)) = (car (fmat* (list z') a)) = (flistn0 n)
 
-;; and hence, (lin x) = (w0), contradicting injectivity:
+;; and hence, (lin x) = w0, contradicting injectivity:
 
 (defthmd row-rank-lin-mat
   (implies (lin-injective-p)
@@ -1266,7 +1281,7 @@
 (defun sbasis0-aux (l)
   (declare (xargs :measure (nfix (- (vdim) (len l)))
                   :hints (("Goal" :in-theory (enable vdepp)
-		                  :use ((:instance vdepp-if->-dim
+		                  :use ((:instance vdepp-if->-vdim
 				         (m (1+ (len l)))
 				         (l (cons (sunspanned l) l))))))))
   (let ((x (sunspanned l)))
@@ -1290,7 +1305,7 @@
   (and (slistnp (sbasis0) (sdim))
        (vindepp (sbasis0))))
 
-;; By vdepp-if->-dim, sdim <= vdim:
+;; By vdepp-if->-vdim, sdim <= vdim:
 
 (defthmd sdim-bound
   (<= (sdim) (vdim)))
@@ -1340,9 +1355,9 @@
 ;; Note that we have verified analogs of all of the axioms of V with the exception of sdim > 0.  Thus, any proven
 ;; result for V may be instantiated for S under this assumption.
 
-;; For example, we shall prove an analog of vdepp-if->-dim: every list of vectors of S of length exceeding sdim is
-;; linearly dependent.  To prove this directly by functional instantiation of vdepp-if->-dim would be difficult
-;; because of the complicated definition of vindepp.  Instead, we functionally instantiate not-vindepp-sk-if->-dim:
+;; For example, we shall prove an analog of vdepp-if->-vdim: every list of vectors of S of length exceeding sdim is
+;; linearly dependent.  To prove this directly by functional instantiation of vdepp-if->-vdim would be difficult
+;; because of the complicated definition of vindepp.  Instead, we functionally instantiate vindepp-sk-if->-vdim:
 
 (defthmd vdepp-sk-if->-sdim
   (implies (and (> (sdim) 0) (natp m) (> m (sdim))
@@ -1384,7 +1399,7 @@
 (defthmd sdim-sdim1-0
   (iff (= (sdim) 0) (= (sdim1) 0)))
 
-;; We shall prove the analog of vdepp-if->-dim for sdim1 in the same way that we proved vdepp-if->-sdim. First we
+;; We shall prove the analog of vdepp-if->-vdim for sdim1 in the same way that we proved vdepp-if->-sdim. First we
 ;; derive the following from vindepp-sbasis1 and vindepp-vcomb-v0:
 
 (defthmd sbasis1-lin-indep
@@ -1392,7 +1407,7 @@
                 (equal (vcomb c (sbasis1)) (v0)))
            (equal (flistn0 (sdim1)) c)))
 
-;; Now functionally instantiate not-vindepp-sk-if->-dim:
+;; Now functionally instantiate vindepp-sk-if->-vdim:
 
 (defthmd vdepp-sk-if->-sdim1
   (implies (and (> (sdim1) 0) (natp m) (> m (sdim1))
@@ -1430,28 +1445,22 @@
 ;; The subspace axioms are easily verified:
 
 (defthm in-kernel-p-vp
-  (implies (in-kernel-p x) (vp x))
-  :hints (("Goal" :in-theory (enable in-kernel-p))))
+  (implies (in-kernel-p x) (vp x)))
 
 (defthmd in-kernel-p-v0
-  (in-kernel-p (v0))
-  :hints (("Goal" :in-theory (enable in-kernel-p))))
+  (in-kernel-p (v0)))
 
 (defthm in-kernel-p-v+
   (implies (and (in-kernel-p x) (in-kernel-p y))
-           (in-kernel-p (v+ x y)))
-  :hints (("Goal" :in-theory (enable in-kernel-p))))
+           (in-kernel-p (v+ x y))))
 
 (defthm in-kernel-p-v*
   (implies (and (fp c) (in-kernel-p x))
-           (in-kernel-p (v* c x)))
-  :hints (("Goal" :in-theory (enable in-kernel-p))))
+           (in-kernel-p (v* c x))))
 
 (defthm in-kernel-p-v-
   (implies (in-kernel-p x) 
-           (in-kernel-p (v- x)))
-  :hints (("Goal" :in-theory (enable in-kernel-p)  
-                  :use (v*f-f1 (:instance in-kernel-p-v* (c (f- (f1))))))))
+           (in-kernel-p (v- x))))
 
 ;; List of kernel elements:
 
@@ -1501,7 +1510,7 @@
 
 ;; (a) If i is in l, let k = (index i l), i.e., i = (nth k l).  Then (nth i c)) = (f- (entry k j ar)).
 ;; (b) If i = j, then (nth i c) = (f1).
-;; (c) If i is in f and i !+ j, then (nth i c) = (f0).
+;; (c) If i is in f and i != j, then (nth i c) = (f0).
 
 (defund kbasis-coord (i j)
   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
@@ -1516,7 +1525,7 @@
   (implies (and (natp j) (< j (vdim)))
            (fp (kbasis-coord i j))))
 
-;; Thus, c = (kbasis-elt-coords j), defined as follows:
+;; Thus, c = (kbasis-coords j), defined as follows:
 
 (defun kbasis-coords-aux (i j)
   (if (posp i)
@@ -1571,6 +1580,13 @@
 ;;   (nth i (kbasis)) =  (vcomb (kbasis-coords j) (vbasis0)),
 
 ;; which implies (vp (nth i (kbasis))) and (vcoords0 (nth i (kbasis))) = (kbasis-coords j).
+
+(defthmd vcoords-nth-kbasis
+  (let* ((ar (row-reduce (transpose-mat (lin-mat))))
+          (f (free-inds ar (vdim))))
+    (implies (and (natp i) (< i (len f)))
+             (equal (vcoords0 (nth i (kbasis)))
+                    (kbasis-coords (nth i f))))))
 
 ;; Thus, to prove that every member of kbasis is in the kernel, it suffices to show that for all j in f,
 
@@ -1628,21 +1644,21 @@
 
 (defthmd nth-vcomb-nth-c
   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
-          (f (free-inds ar (vdim))))
+         (f (free-inds ar (vdim))))
     (implies (and (flistnp c (len f)) (natp i) (< i (len f)))
              (equal (nth-vcomb (nth i f) c (kbasis))
 	            (nth i c)))))
 
-;; Combine nth-vcomb-val and nth-vcomb-val:
+;; Combine nth-vcomb-val and nth-vcomb-nth-c:
 
 (defthmd nth-vcomb-kbasis 
   (let* ((ar (row-reduce (transpose-mat (lin-mat))))
-          (f (free-inds ar (vdim))))
+         (f (free-inds ar (vdim))))
      (implies (and (flistnp c (kdim)) (natp i) (< i (kdim)))
               (equal (nth (nth i f) (vcoords0 (vcomb c (kbasis))))
 	             (nth i c)))))
 
-;; Now suppose (vcomb c (kbasis)) = 0. Then (vcoords0 (vcomb c (kbasis))) = (flistn0 (kbasis)).  It follows that
+;; Now suppose (vcomb c (kbasis)) = 0. Then (vcoords0 (vcomb c (kbasis))) = (flistn0 (vdim)).  It follows that
 ;; (nth i c) = 0 for all i < kdim, and therefore c = (flistn0 (kdim):
   
 (defthmd vcomb-kbasis-v0
@@ -1670,9 +1686,7 @@
 ;; The first requirement of this function is trivial:
 
 (defthm flistnp-kcoords
-  (implies (in-kernel-p x) (flistnp (kcoords x) (kdim)))
-  :hints (("Goal" :in-theory (enable in-kernel-p kdim kcoords)
-                  :use (kdim-val sublistp-f))))
+  (implies (in-kernel-p x) (flistnp (kcoords x) (kdim))))
 
 ;; Another immediate consequence of the definition:
 
@@ -1706,6 +1720,14 @@
   (let ((p (lin-preimage x)))
     (and (vp p) (equal (lin p) x))))
 
+(defthmd in-image-p-lemma
+  (implies (and (vp p) (equal (lin p) x))
+           (in-image-p x)))
+  
+(defthm in-image-p-lin
+  (implies (vp x)
+           (in-image-p (lin x))))
+
 ;; The subspace axioms are easily verified:
 
 (defthm in-image-p-wp
@@ -1726,7 +1748,7 @@
   (implies (in-image-p x)
            (in-image-p (w- x))))
 
-;; We shall show that the dimension of the image is the difference vdim - kdim:
+;; We shall show that the dimension of the image is the difference vdim - kdim, which is the row rank of a:
 
 (defun idim () (- (vdim) (kdim)))
 
@@ -1749,7 +1771,7 @@
 (defthmd vbasisp-extend-kbasis
   (vbasisp (extend-kbasis)))
 
-;; The image basis consists of the first idim members of the extended basis:
+;; The image basis consists of the images of the first idim members of the extended basis:
 
 (defun firstn (n l)
   (if (zp n)
@@ -1771,15 +1793,19 @@
          (in-image-p (car x))
          (ilistnp (cdr x) (1- n)))))
 
+(defthmd ilistnp-wlistnp
+  (implies (ilistnp x n)
+           (wlistnp x n)))
+
 (defthm ilistnp-ibasis
   (ilistnp (ibasis) (idim)))
 
-;; To show that ibasis is linearly dependent, suppose (flistnp c (idim)) and (wcomb c (ibasis)) = w0.
+;; To show that ibasis is linearly independent, suppose (flistnp c (idim)) and (wcomb c (ibasis)) = w0.
 ;; Let l = (firstn (idim) (extend-kbasis)).  Then
 
 ;;   (lin (vcomb c l)) = (wcomb c (lin-list l)) = (wcomb c (ibasis)) = w0,
 
-;; i.e., (in-kernel-p (vcomb c l).  Let d = (kcoords (vcomb c l)).  By kbasis-spans,
+;; i.e., (in-kernel-p (vcomb c l)).  Let d = (kcoords (vcomb c l)).  By kbasis-spans,
 
 ;; (vcomb c l) = (vcomb d (kbasis)).  It follows that
 
@@ -1791,7 +1817,7 @@
 ;;     = (vcomb (flistn0 kdim) (kbasis))
 ;;     = v0.
 
-;; Since kbasis is linearly independent, (append c (flist-minus d)) = (flistn0 (vdim)), which implies
+;; Since (extend-kbasis) is linearly independent, (append c (flist-minus d)) = (flistn0 (vdim)), which implies
 ;; c = (flistn0 (idim)).  Thus, ibasis is linearly independent:
 
 (defthmd ibasis-lin-indep
@@ -1809,7 +1835,7 @@
 ;; If (in-image-p x), then
 
 ;;   x = (lin (lin-preimage x))
-;;     = (lin (vcomb (vcoords (lin-preimage x) (extend-kbasis)) (kbasis)))
+;;     = (lin (vcomb (vcoords (lin-preimage x) (extend-kbasis)) (extend-kbasis)))
 ;;     = (lin (v+ (vcomb (firstn (idim) (vcoords (lin-preimage x) (extend-kbasis)))
 ;;                       (firstn (idim) (extend-kbasis)))
 ;;                (vcomb (nthcdr (idim) (vcoords (lin-preimage x) (extend-kbasis)))

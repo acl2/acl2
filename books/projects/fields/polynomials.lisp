@@ -535,7 +535,7 @@
 (defun vdep-coeffs (l)
   (nth (1- (len l)) (row-reduce-mat (vcoord-mat l))))
 
-(defthmd vcomb-v0-if->-dim
+(defthmd vcomb-v0-if->-vdim
   (implies (and (posp m) (vlistnp l m) (> m (vdim)))
 	   (let ((c (vdep-coeffs l)))
 	     (and (flistnp c m)
