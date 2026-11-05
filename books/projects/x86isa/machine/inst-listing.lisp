@@ -19892,21 +19892,21 @@
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W0)
-              :FEAT '(:BMI1 :AVX))
+              :FEAT '(:BMI1))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
+          '(X86-ANDN)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1)))))
     (INST "ANDN"
           (OP :OP #xF38F2
               :VEX '(:0F38 :NDS :LZ :W1)
-              :FEAT '(:BMI1 :AVX))
+              :FEAT '(:BMI1))
           (ARG :OP1 '(G Y)
                :OP2 '(B Y)
                :OP3 '(E Y))
-          NIL
-          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
+          '(X86-ANDN)
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1)))))
     ;; BLSR, BLSMSK, BLSI are VEX-only instructions.
     ;; (INST "BLSR"
     ;;       (OP :OP #xF38F3

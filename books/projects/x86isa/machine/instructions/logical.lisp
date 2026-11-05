@@ -48,6 +48,101 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; ANDN
+
+(def-inst x86-andn
+
+  :parents (three-byte-opcodes)
+
+  :short "ANDN: Logical AND NOT."
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :vex t
+
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override* (prefixes->adr prefixes)))
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ;; VEX.W selects a 64-bit operand only in 64-bit mode.
+       ;; In other modes the operand is always 32 bits.
+       ;; The decoder requires VEX.R = VEX.X = 1 to distinguish
+       ;; the 3-byte VEX prefix from LES, so REX.R and REX.X are already 0.
+       ;; The zero REX byte below also ignores VEX.B
+       ;; (see Intel manual Volume 2 Sections 2.3.5.2 to 2.3.5.4).
+       ;; The high bit of VEX.vvvv is ignored via the masking below
+       ;; (see Section 2.3.5.6).
+       (64-bit-mode? (equal proc-mode #.*64-bit-mode*))
+       (operand-size (if (and 64-bit-mode?
+                              (equal (vex->w vex-prefixes) 1))
+                         8
+                       4))
+       (rex-byte (if 64-bit-mode?
+                     (rex-byte-from-vex-prefixes vex-prefixes)
+                   0))
+
+       ;; VEX.vvvv specifies the first source, which is complemented.
+       ;; Read both sources before writing the destination, which may alias them.
+       (src1-index (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+       (src1-index (if 64-bit-mode? src1-index (loghead 3 src1-index)))
+       (src1 (rgfi-size operand-size src1-index rex-byte x86))
+
+       ;; ModR/M.r/m specifies the second source.
+       ((mv flg src2 increment-rip-by & x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*gpr-access*
+                                               operand-size
+                                               t ; inst-ac?
+                                               nil ; memory-ptr?
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ; num-imm-bytes
+                                               x86))
+       ((when flg) (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg))
+
+       ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-rip-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?) (!!fault-fresh :gp 0 :instruction-length badlength?))
+
+       (result (logand (lognot src1) src2))
+       (result (if (equal operand-size 8) (n64 result) (n32 result)))
+
+       ;; Unlike AND, ANDN leaves PF undefined as well as AF.
+       ;; SF and ZF reflect the result; CF and OF are cleared.
+       (output-rflags
+        (change-rflagsBits (rflags x86)
+                           :cf 0
+                           :of 0
+                           :sf (logbit (1- (* 8 operand-size)) result)
+                           :zf (bool->bit (equal result 0))))
+       (undefined-flags (change-rflagsBits 0 :af 1 :pf 1))
+
+       ;; ModR/M.reg specifies the destination.
+       ;; A 32-bit write also clears its upper half.
+       (x86 (!rgfi-size operand-size
+                        (reg-index reg rex-byte #.*r*)
+                        result
+                        rex-byte
+                        x86))
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; MMX variants
 
 (def-inst x86-pand/pandn/por/pxor-mmx

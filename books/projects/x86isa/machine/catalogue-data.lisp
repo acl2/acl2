@@ -145,11 +145,10 @@
 (def-sdm-instruction-section "5.1.16 BMI1 and BMI2 Instructions"
   :mnemonics '(ANDN BEXTR BLSI BLSMSK BLSR BZHI LZCNT MULX PDEP PEXT RORX SARX
                     SHLX SHRX TZCNT)
-  :doc "<p>Most of these are unimplemented. Many of them are VEX encoded but
-  operate on GPRs.</p>
+  :doc "<p>Many of these instructions are VEX encoded but operate on GPRs.
+  The following are unimplemented.</p>
 <ul>
 <li>LZCNT -- leading zero count</li>
-<li>ANDN -- logical AND NOT</li>
 <li>BLSMSK, BLSR -- operations involving lowest set bit</li>
 <li>BZHI -- zero bits left of an index</li>
 <li>PDEP/PEXT -- bitmask deposit/extract</li>
