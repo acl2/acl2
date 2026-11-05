@@ -299,3 +299,33 @@
   (equal (bvif 1 test x (getbit 0 y))
          (bvif 1 test x y))
   :hints (("Goal" :in-theory (enable bvif))))
+
+;; todo: generalize to any bvif nest with constants at the leaves
+(defthm bvplus-of-bvif-arg2-gen-safe
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep k3)
+                         (quotep size)
+                         (quotep size2)))
+           (equal (bvplus size (bvif size2 test k2 k3) k1)
+                  (bvif size
+                        test
+                        (bvplus size (bvchop size2 k2) k1) ; gets computed
+                        (bvplus size (bvchop size2 k3) k1) ; gets computed
+                        )))
+  :hints (("Goal" :in-theory (enable bvif))))
+
+;; todo: generalize to any bvif nest with constants at the leaves
+(defthm bvplus-of-bvif-arg3-gen-safe
+  (implies (syntaxp (and (quotep k1)
+                         (quotep k2)
+                         (quotep k3)
+                         (quotep size)
+                         (quotep size2)))
+           (equal (bvplus size k1 (bvif size2 test k2 k3))
+                  (bvif size
+                        test
+                        (bvplus size k1 (bvchop size2 k2)) ; gets computed
+                        (bvplus size k1 (bvchop size2 k3)) ; gets computed
+                        )))
+  :hints (("Goal" :in-theory (enable bvif))))
