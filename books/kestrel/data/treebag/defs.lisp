@@ -17,3 +17,4 @@
 (include-book "sum-defs")
 (include-book "union-defs")
 (include-book "intersect-defs")
+(include-book "diff-defs")

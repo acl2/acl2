@@ -64,9 +64,12 @@
         (xdoc::td "@($O(m\\log(n/m))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee intersect)")
+        (xdoc::td "@($O(m\\log(n/m))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee diff)")
         (xdoc::td "@($O(m\\log(n/m))$)")))
     (xdoc::p
       "(where @($m$) and @($n$) are numbers of distinct elements, and @($m
-       \\leq n$) for @(tsee subbag), @(tsee sum), @(tsee union), and @(tsee
-       intersect))."))
+       \\leq n$) for @(tsee subbag), @(tsee sum), @(tsee union), @(tsee
+       intersect), and @(tsee diff))."))
   :order-subtopics t)
