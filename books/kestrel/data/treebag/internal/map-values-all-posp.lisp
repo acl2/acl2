@@ -21,6 +21,8 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 
 (include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/lookup-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/values-defs" :dir :system)
@@ -46,6 +48,7 @@
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 
 (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/internal/values" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
@@ -261,6 +264,58 @@
            (treemap::tree-all-vals-genericp tree-all-vals-posp))
          (treemap::map map))
   :enable (set-all-posp
+           tree-all-vals-posp))
+
+(defrule tree-all-vals-posp-of-tree-split.left-when-tree-all-vals-posp
+  (implies (tree-all-vals-posp tree)
+           (tree-all-vals-posp (mv-nth 1 (treemap::tree-split key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::tree-all-vals-genericp-of-tree-split.left-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule tree-all-vals-posp-of-tree-split.right-when-tree-all-vals-posp
+  (implies (tree-all-vals-posp tree)
+           (tree-all-vals-posp (mv-nth 2 (treemap::tree-split key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::tree-all-vals-genericp-of-tree-split.right-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule posp-of-cdr-of-tree-search-assoc-when-tree-all-vals-posp
+  (implies (and (tree-all-vals-posp tree)
+                (treemap::tree-search-assoc key tree))
+           (posp (cdr (treemap::tree-search-assoc key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::genericp-of-cdr-of-tree-search-assoc-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule posp-of-tree-lookup-when-tree-all-vals-posp
+  (implies (and (tree-all-vals-posp tree)
+                (treeset::in key (treemap::tree-key-set (double-rewrite tree))))
+           (posp (treemap::tree-lookup key tree)))
+  :rule-classes
+  (:rewrite
+   (:linear :corollary
+            (implies (and (tree-all-vals-posp tree)
+                          (treeset::in key (treemap::tree-key-set
+                                             (double-rewrite tree))))
+                     (< 0 (treemap::tree-lookup key tree)))))
+  :induct t
+  :enable (treemap::tree-lookup
            tree-all-vals-posp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

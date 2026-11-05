@@ -54,11 +54,12 @@
           as in another."
   :long
   (xdoc::topstring-p
-    "Time complexity: @($O(m(\\log(m) + \\log(n)))$), where @($m$) and
-     @($n$) are the numbers of distinct elements of @('sub') and @('sup').")
-  (tree-subbag-p (fix sub) sub sup)
+    "Time complexity: @($O(m\\log(n/m))$), where @($m \\leq n$) are the
+     numbers of distinct elements of @('sub') and @('sup').")
+  (tree-subbag-p (fix sub) (fix sup))
   :inline t
   :guard-hints (("Goal" :in-theory (enable bagp
+                                           tree-all-vals-posp-of-fix
                                            treemap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -88,10 +89,13 @@
            (<= (count x sub)
                (count x sup)))
   :rule-classes :linear
-  :cases ((treeset::in x (treemap::tree-key-set (fix sub))))
   :enable (subbag
-           count-<=-count-when-tree-subbag-p
-           count-when-not-in-tree-key-set-of-fix))
+           count
+           treemap::lookup
+           treemap::keys
+           break-abstraction
+           in-of-tree-key-set-when-tree-subbag-p
+           tree-lookup-<=-tree-lookup-when-tree-subbag-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,12 +111,19 @@
 
 (in-theory (disable (:t subbag-sk)))
 
-(defruledl tree-subbag-p-when-subbag-sk
-  (implies (subbag-sk sub sup)
-           (tree-subbag-p tree sub sup))
-  :induct t
-  :enable (tree-subbag-p
-           subbag-sk-necc))
+;; The check fails, if at all, at its witness.
+
+(defruledl subbag-becomes-<=-of-count-at-witness
+  (equal (subbag sub sup)
+         (let ((x (tree-subbag-p-witness (fix sub) (fix sup))))
+           (<= (count x sub)
+               (count x sup))))
+  :enable (subbag
+           tree-subbag-p-pick-a-point
+           count
+           treemap::lookup
+           treemap::keys
+           break-abstraction))
 
 (defruledl subbag-sk-when-subbag
   (implies (subbag (double-rewrite sub) (double-rewrite sup))
@@ -122,8 +133,8 @@
 (defruledl subbag-when-subbag-sk
   (implies (subbag-sk sub sup)
            (subbag sub sup))
-  :enable (subbag
-           tree-subbag-p-when-subbag-sk))
+  :enable (subbag-becomes-<=-of-count-at-witness
+           subbag-sk-necc))
 
 (defruled subbag-becomes-subbag-sk
   (equal (subbag sub sup)
