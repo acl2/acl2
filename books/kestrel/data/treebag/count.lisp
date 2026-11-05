@@ -43,6 +43,12 @@
   :returns (count natp
                   :rule-classes ((:rewrite) (:type-prescription))
                   :hints (("Goal" :in-theory (enable* break-abstraction))))
+  :parents (treebag)
+  :short "The number of occurrences of a value in a @(see treebag)."
+  :long
+  (xdoc::topstring-p
+    "Time complexity: @($O(\\log(m))$), where @($m$) is the number of distinct
+     elements of the bag.")
   ;; Reading 0 for an absent element loses nothing, since no element of a
   ;; @(see treebag) is bound to 0.
   (treemap::lookup x (fix bag) :default 0)
