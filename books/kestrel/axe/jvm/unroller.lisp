@@ -381,7 +381,7 @@
                                      (cw ")~%"))
                            (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
                                    (print-dag-with-elided-method-info dag "") ; todo: use the indent?
-                                   (cw ")")))))))
+                                   (cw ")~%")))))))
             (repeatedly-run dag
                             (- steps-left steps-for-this-iteration)
                             step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
@@ -815,7 +815,7 @@
           ))
        ((when erp) (mv erp nil nil nil nil state))
        (- (and (print-level-at-least-tp print)
-               (cw "(Simplified assumptions:~%~X01" all-assumptions nil)))
+               (cw "(Simplified assumptions:~%~X01)" all-assumptions nil)))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil state))
