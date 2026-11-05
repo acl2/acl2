@@ -1,6 +1,6 @@
 ; Printing an R1CS in a more human-readable format.
 ;
-; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (https://www.kestrel.edu)
 ; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -248,6 +248,9 @@
               (str::int-to-dec-string (first term))))))))
 ;;  TODO: try Dave Greve's minimal fraction code (ACL2 Workshop 2020).
 ;;  Does it work for small negative fractions?
+;;  TODO: print other large coefficients readably, e.g. as sums of small
+;;  multiples of powers of 2: 1701411834604692317446000245674807918592.X
+;;  as (5.2^128 + 7.2^64).X.
 
 (defthm p1cs-neg-string
   (implies (p1cs-negative fp x)
@@ -331,6 +334,32 @@
         (p1cs-term fp term)
         (p1cs-sv-rest fp (rest sv))))))
 
+;; Coefficients are integers, so a field element can be written in more than
+;; one way, e.g. -1 and fp-1.  We reduce the coefficients modulo fp before
+;; recognizing bit constraints and before printing, so that neither depends
+;; on how the coefficients are written.
+(defun p1cs-normalize-sv (fp sv)
+  (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
+                              (sparse-vectorp sv))
+                  :guard-hints (("Goal" :in-theory (enable sparse-vectorp)))))
+  (if (atom sv)
+      nil
+    (cons (list (mod (first (first sv)) fp) (second (first sv)))
+          (p1cs-normalize-sv fp (rest sv)))))
+
+(defthm sparse-vectorp-of-p1cs-normalize-sv
+  (implies (and (sparse-vectorp sv)
+                (integerp fp))
+           (sparse-vectorp (p1cs-normalize-sv fp sv)))
+  :hints (("Goal" :in-theory (enable sparse-vectorp mod))))
+
+(defun p1cs-normalize-constraint (fp constraint)
+  (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
+                              (r1cs-constraintp constraint))))
+  (r1cs-constraint (p1cs-normalize-sv fp (r1cs-constraint->a constraint))
+                   (p1cs-normalize-sv fp (r1cs-constraint->b constraint))
+                   (p1cs-normalize-sv fp (r1cs-constraint->c constraint))))
+
 ;; Print a linear combination as one of A, B, or C in A * B = C.
 ;; The empty linear combination is printed as 0, as in computer algebra
 ;; systems, where an empty sum is 0.
@@ -368,9 +397,10 @@
                               (sparse-vectorp (r1cs-constraint->b constraint))
                               (sparse-vectorp (r1cs-constraint->c constraint)))
                   :normalize nil)) ; this is supposed to make a redef of p1cs1-right-margin work
-  (let ((a-string (p1cs-lc-string fp (r1cs-constraint->a constraint)))
-        (b-string (p1cs-lc-string fp (r1cs-constraint->b constraint)))
-        (c-string (p1cs-lc-string fp (r1cs-constraint->c constraint))))
+  (let* ((constraint (p1cs-normalize-constraint fp constraint))
+         (a-string (p1cs-lc-string fp (r1cs-constraint->a constraint)))
+         (b-string (p1cs-lc-string fp (r1cs-constraint->b constraint)))
+         (c-string (p1cs-lc-string fp (r1cs-constraint->c constraint))))
     (if (> (+ (length a-string) 3 (length b-string))
            (p1cs1-right-margin))
         ;; If a+b overflow, put each of a,b,c on its own line
@@ -446,6 +476,10 @@
   :hints (("Goal" :in-theory (enable lc-first-var-term lc-termp)))
   )
 
+; The following recognizers of parts of bit constraints expect the
+; coefficients to be reduced modulo fp (see p1cs-normalize-constraint),
+; so that, for example, -1 is written as fp-1.
+
 ; A bit constraint a*b=c can have many forms.
 ; One of a and b has two terms and the other has one term.
 ; The one that has two terms looks like either x-1 or 1-x.
@@ -488,20 +522,14 @@
               (equal 1 (first var-term))
               (second var-term)))))
 
-; It might be that c=0 could be represented as
-; a linear combination of zero terms,
-; or a single cosntant term of 0*1.
-; Any zero coefficients of variables should have been canonicalized out.
+; c=0 can be represented as a linear combination of zero terms,
+; or as a single term with coefficient 0, such as 0*1.
 (defun zero-lc-p (lc)
   (declare (xargs :guard (sparse-vectorp lc)
-                  :guard-hints (("Goal" :in-theory (enable sparse-vectorp
-                                                           iff-consp-when-true-listp
-                                                           true-listp-of-lc-first-var-term)))))
+                  :guard-hints (("Goal" :in-theory (enable sparse-vectorp)))))
   (or (null lc)
       (and (= 1 (len lc))
-           (let ((var-term (lc-first-var-term lc)))
-             (and var-term
-                  (equal 0 (first var-term)))))))
+           (equal 0 (first (first lc))))))
 
 (defun bit-constraint-var (fp constraint)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
@@ -510,20 +538,21 @@
   ;; this returns the name of that var.
   ;; If not, this returns NIL.
   ;; WARNING: DON'T USE 'NIL as a constraint var.
-  (and (zero-lc-p (r1cs-constraint->c constraint))
-       (let* ((lc-a (r1cs-constraint->a constraint))
-              (lc-b (r1cs-constraint->b constraint)))
-         (let ((var1 (bit-0-lc-var lc-a))
-               (var2 (bit-1-lc-var fp lc-b)))
-           (if (and var1 var2
-                    (equal var1 var2))
-               var1
-             (let ((var1 (bit-1-lc-var fp lc-a))
-                   (var2 (bit-0-lc-var lc-b)))
-               (if (and var1 var2
-                        (equal var1 var2))
-                   var1
-                 nil)))))))
+  (let ((constraint (p1cs-normalize-constraint fp constraint)))
+    (and (zero-lc-p (r1cs-constraint->c constraint))
+         (let* ((lc-a (r1cs-constraint->a constraint))
+                (lc-b (r1cs-constraint->b constraint)))
+           (let ((var1 (bit-0-lc-var lc-a))
+                 (var2 (bit-1-lc-var fp lc-b)))
+             (if (and var1 var2
+                      (equal var1 var2))
+                 var1
+               (let ((var1 (bit-1-lc-var fp lc-a))
+                     (var2 (bit-0-lc-var lc-b)))
+                 (if (and var1 var2
+                          (equal var1 var2))
+                     var1
+                   nil))))))))
 
 ; In case we need a T/NIL predicate
 (defun bit-constraint-p (fp constraint)
@@ -671,8 +700,12 @@
   (implies (true-listp bit-vars)
            (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
 
+(defthm mv-nth-1-of-bit-var-range-starting-with-is-symbol-listp
+  (implies (symbol-listp bit-vars)
+           (symbol-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
+
 (defun bit-var-ranges (bit-vars)
-  (declare (xargs :guard (true-listp bit-vars)
+  (declare (xargs :guard (symbol-listp bit-vars)
                   :measure (len bit-vars)
                   :hints (("Goal" :in-theory (disable
                                                bit-var-range-starting-with
@@ -684,7 +717,7 @@
        (base-and-num (bit-var-base-and-num (car bit-vars)))
        ((acl2::when (null base-and-num))
         ;; a singleton
-        (cons (car bit-vars)
+        (cons (symbol-name (car bit-vars))
               (bit-var-ranges (cdr bit-vars))))
        ((mv range-string rest-bit-vars)
         (bit-var-range-starting-with
