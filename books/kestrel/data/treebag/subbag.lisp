@@ -37,6 +37,7 @@
 (local (include-book "kestrel/data/treemap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
+(local (include-book "internal/induction"))
 (local (include-book "internal/subbag"))
 (local (include-book "bag"))
 (local (include-book "count"))
@@ -252,19 +253,6 @@
 ;; a subbag and its superbag takes an induction. Each step removes every
 ;; occurrence of the subbag's smallest element from both bags.
 
-(local
-  (define subbag-induction ((sub bagp)
-                            (sup bagp))
-    (if (emptyp sub)
-        (list sub sup)
-      (let ((x (treemap::min-key (fix sub))))
-        (subbag-induction (treemap::delete x (fix sub))
-                          (treemap::delete x (fix sup)))))
-    :measure (treeset::cardinality (treemap::keys (fix sub)))
-    :hints (("Goal" :in-theory (enable* emptyp
-                                        break-abstraction)))
-    :verify-guards nil))
-
 (defruledl subbag-of-treemap-delete-and-treemap-delete
   (implies (subbag sub sup)
            (subbag (treemap::delete x (fix sub))
@@ -280,9 +268,8 @@
            (<= (- (count x sup) (count x sub))
                (- (cardinality sup) (cardinality sub))))
   :rule-classes ((:linear :trigger-terms ((count x sup))))
-  :induct (subbag-induction sub sup)
-  :enable (subbag-induction
-           break-abstraction
+  :induct (min-delete-both-induction sub sup)
+  :enable (break-abstraction
            subbag-of-treemap-delete-and-treemap-delete)
   :disable fix-when-bagp)
 
@@ -291,9 +278,8 @@
            (<= (cardinality sub)
                (cardinality sup)))
   :rule-classes :linear
-  :induct (subbag-induction sub sup)
-  :enable (subbag-induction
-           break-abstraction
+  :induct (min-delete-both-induction sub sup)
+  :enable (break-abstraction
            subbag-of-treemap-delete-and-treemap-delete)
   :disable fix-when-bagp)
 
