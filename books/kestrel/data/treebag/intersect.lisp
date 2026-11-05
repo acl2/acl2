@@ -17,7 +17,10 @@
 (include-book "count-defs")
 (include-book "cardinality-defs")
 (include-book "subbag-defs")
+(include-book "insert-defs")
+(include-book "delete-defs")
 (include-book "union-defs")
+(include-book "sum-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -37,7 +40,10 @@
 (local (include-book "cardinality"))
 (local (include-book "extensionality"))
 (local (include-book "subbag"))
+(local (include-book "insert"))
+(local (include-book "delete"))
 (local (include-book "union"))
+(local (include-book "sum"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,6 +181,14 @@
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar))
 
+(defrule subbag-of-arg1-and-intersect
+  (equal (subbag c (intersect a b))
+         (and (subbag c a)
+              (subbag c b)))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           acl2::min))
+
 (defrule monotonicity-of-intersect
   (implies (and (subbag a0 a1)
                 (subbag b0 b1))
@@ -301,3 +315,127 @@
   (equal (< (cardinality (intersect a b)) (cardinality a))
          (not (subbag a b)))
   :enable intersect-when-subbag-arg1-arg2)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule sum-of-union-and-intersect
+  (equal (sum (union a b) (intersect a b))
+         (sum a b))
+  :enable (extensionality
+           acl2::max
+           acl2::min))
+
+(defrule cardinality-of-union
+  (equal (cardinality (union a b))
+         (- (+ (cardinality a) (cardinality b))
+            (cardinality (intersect a b))))
+  :use (cardinality-of-sum
+        (:instance cardinality-of-sum
+                   (a (union a b))
+                   (b (intersect a b))))
+  :disable cardinality-of-sum)
+
+(defruled cardinality-of-intersect
+  (equal (cardinality (intersect a b))
+         (+ (cardinality a) (cardinality b)
+            (- (cardinality (union a b))))))
+
+(theory-invariant (incompatible! (:rewrite cardinality-of-union)
+                                 (:rewrite cardinality-of-intersect)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled intersect-of-insert
+  (equal (intersect (insert x a) b)
+         (if (< (count x a) (count x b))
+             (insert x (intersect a b))
+           (intersect a b)))
+  :enable (extensionality
+           count-of-insert
+           acl2::min))
+
+(defrule intersect-of-insert-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (intersect (insert x a) b)
+                  (insert x (intersect a b))))
+  :enable intersect-of-insert)
+
+(defrule intersect-of-insert-when-count-<=-count
+  (implies (<= (count x b) (count x a))
+           (equal (intersect (insert x a) b)
+                  (intersect a b)))
+  :enable intersect-of-insert)
+
+(defruled intersect-of-arg1-and-insert
+  (equal (intersect a (insert x b))
+         (if (< (count x b) (count x a))
+             (insert x (intersect a b))
+           (intersect a b)))
+  :enable (extensionality
+           count-of-insert
+           acl2::min))
+
+(defrule intersect-of-arg1-and-insert-when-count-<-count
+  (implies (< (count x b) (count x a))
+           (equal (intersect a (insert x b))
+                  (insert x (intersect a b))))
+  :enable intersect-of-arg1-and-insert)
+
+(defrule intersect-of-arg1-and-insert-when-count-<=-count
+  (implies (<= (count x a) (count x b))
+           (equal (intersect a (insert x b))
+                  (intersect a b)))
+  :enable intersect-of-arg1-and-insert)
+
+(defruled intersect-of-delete
+  (equal (intersect (delete x a) b)
+         (if (<= (count x a) (count x b))
+             (delete x (intersect a b))
+           (intersect a b)))
+  :enable (extensionality
+           count-of-delete
+           acl2::min
+           nfix))
+
+(defrule intersect-of-delete-when-count-<=-count
+  (implies (<= (count x a) (count x b))
+           (equal (intersect (delete x a) b)
+                  (delete x (intersect a b))))
+  :enable intersect-of-delete)
+
+(defrule intersect-of-delete-when-count-<-count
+  (implies (< (count x b) (count x a))
+           (equal (intersect (delete x a) b)
+                  (intersect a b)))
+  :enable intersect-of-delete)
+
+(defruled intersect-of-arg1-and-delete
+  (equal (intersect a (delete x b))
+         (if (<= (count x b) (count x a))
+             (delete x (intersect a b))
+           (intersect a b)))
+  :enable (extensionality
+           count-of-delete
+           acl2::min
+           nfix))
+
+(defrule intersect-of-arg1-and-delete-when-count-<=-count
+  (implies (<= (count x b) (count x a))
+           (equal (intersect a (delete x b))
+                  (delete x (intersect a b))))
+  :enable intersect-of-arg1-and-delete)
+
+(defrule intersect-of-arg1-and-delete-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (intersect a (delete x b))
+                  (intersect a b)))
+  :enable intersect-of-arg1-and-delete)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy intersect-extra-rules
+  '(intersect-of-insert
+    intersect-of-arg1-and-insert
+    intersect-of-delete
+    intersect-of-arg1-and-delete
+    ))

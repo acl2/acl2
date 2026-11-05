@@ -17,6 +17,8 @@
 (include-book "count-defs")
 (include-book "cardinality-defs")
 (include-book "subbag-defs")
+(include-book "insert-defs")
+(include-book "delete-defs")
 (include-book "union-defs")
 (include-book "intersect-defs")
 (include-book "sum-defs")
@@ -43,6 +45,8 @@
 (local (include-book "cardinality"))
 (local (include-book "extensionality"))
 (local (include-book "subbag"))
+(local (include-book "insert"))
+(local (include-book "delete"))
 (local (include-book "union"))
 (local (include-book "intersect"))
 (local (include-book "sum"))
@@ -274,3 +278,72 @@
                   (a (diff a b))
                   (b (intersect a b)))
   :disable cardinality-of-sum)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled diff-of-insert
+  (equal (diff (insert x a) b)
+         (if (< (count x a) (count x b))
+             (diff a b)
+           (insert x (diff a b))))
+  :enable (extensionality
+           count-of-insert
+           nfix))
+
+(defrule diff-of-insert-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (diff (insert x a) b)
+                  (diff a b)))
+  :enable diff-of-insert)
+
+(defrule diff-of-insert-when-count-<=-count
+  (implies (<= (count x b) (count x a))
+           (equal (diff (insert x a) b)
+                  (insert x (diff a b))))
+  :enable diff-of-insert)
+
+(defrule diff-of-arg1-and-insert
+  (equal (diff a (insert x b))
+         (delete x (diff a b)))
+  :enable (extensionality
+           count-of-insert
+           count-of-delete
+           nfix))
+
+(defrule diff-of-delete
+  (equal (diff (delete x a) b)
+         (delete x (diff a b)))
+  :enable (extensionality
+           count-of-delete
+           nfix))
+
+(defruled diff-of-arg1-and-delete
+  (equal (diff a (delete x b))
+         (if (and (not (equal (count x b) 0))
+                  (<= (count x b) (count x a)))
+             (insert x (diff a b))
+           (diff a b)))
+  :enable (extensionality
+           count-of-insert
+           count-of-delete
+           nfix))
+
+(defrule diff-of-arg1-and-delete-when-count-<=-count
+  (implies (and (not (equal (count x b) 0))
+                (<= (count x b) (count x a)))
+           (equal (diff a (delete x b))
+                  (insert x (diff a b))))
+  :enable diff-of-arg1-and-delete)
+
+(defrule diff-of-arg1-and-delete-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (diff a (delete x b))
+                  (diff a b)))
+  :enable diff-of-arg1-and-delete)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy diff-extra-rules
+  '(diff-of-insert
+    diff-of-arg1-and-delete
+    ))
