@@ -20,3 +20,4 @@
 (include-book "union")
 (include-book "intersect")
 (include-book "diff")
+(include-book "fty")
