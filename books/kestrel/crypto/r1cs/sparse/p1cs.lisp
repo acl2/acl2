@@ -331,6 +331,20 @@
         (p1cs-term fp term)
         (p1cs-sv-rest fp (rest sv))))))
 
+;; Print a linear combination as one of A, B, or C in A * B = C.
+;; The empty linear combination is printed as 0, as in computer algebra
+;; systems, where an empty sum is 0.
+;; Otherwise the terms are printed in parentheses as they are written,
+;; including terms with coefficient 0.  Thus 0 is the empty linear
+;; combination, (0) is the linear combination with the single term 0*1,
+;; and (0.x) is the linear combination with the single term 0*x.
+(defun p1cs-lc-string (fp lc)
+  (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
+                              (sparse-vectorp lc))))
+  (if (atom lc)
+      "0"
+    (str::cat "(" (p1cs-sv fp lc) ")")))
+
 ;; Note, changing the following margin using
 ;; !>:redef
 ;; doesn't seem to work, even with the ":normalize nil" declaration below.
@@ -354,12 +368,9 @@
                               (sparse-vectorp (r1cs-constraint->b constraint))
                               (sparse-vectorp (r1cs-constraint->c constraint)))
                   :normalize nil)) ; this is supposed to make a redef of p1cs1-right-margin work
-  (let ((a-string (str::cat "(" (p1cs-sv fp (r1cs-constraint->a constraint)) ")"))
-        (b-string (str::cat "(" (p1cs-sv fp (r1cs-constraint->b constraint)) ")"))
-        (c-string (let ((c-constraint (r1cs-constraint->c constraint)))
-                    (if (null c-constraint)
-                        "0"
-                      (str::cat "(" (p1cs-sv fp c-constraint) ")")))))
+  (let ((a-string (p1cs-lc-string fp (r1cs-constraint->a constraint)))
+        (b-string (p1cs-lc-string fp (r1cs-constraint->b constraint)))
+        (c-string (p1cs-lc-string fp (r1cs-constraint->c constraint))))
     (if (> (+ (length a-string) 3 (length b-string))
            (p1cs1-right-margin))
         ;; If a+b overflow, put each of a,b,c on its own line
