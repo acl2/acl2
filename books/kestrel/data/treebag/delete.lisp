@@ -21,16 +21,19 @@
 (include-book "count-defs")
 (include-book "insert-defs")
 (include-book "cardinality-defs")
+(include-book "subbag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (local (include-book "bag"))
 (local (include-book "count"))
 (local (include-book "cardinality"))
 (local (include-book "extensionality"))
+(local (include-book "subbag"))
 (local (include-book "insert"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -170,6 +173,29 @@
               (equal (cardinality bag) (count x bag))))
   :enable (emptyp-becomes-equal-of-cardinality-and-0
            cardinality-of-delete-many))
+
+(defrule subbag-of-delete-many
+  (subbag (delete-many x n bag) bag)
+  :enable (pick-a-point
+           count-of-delete-many
+           nfix))
+
+(defrule subbag-of-arg1-and-delete-many
+  (equal (subbag bag (delete-many x n bag))
+         (or (equal (nfix n) 0)
+             (equal (count x bag) 0)))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           count-of-delete-many
+           nfix))
+
+(defrule monotonicity-of-delete-many
+  (implies (subbag sub sup)
+           (subbag (delete-many x n sub)
+                   (delete-many x n sup)))
+  :enable (pick-a-point-polar
+           count-of-delete-many
+           nfix))
 
 (defrule delete-many-of-arg1-and-delete-many
   (equal (delete-many x m (delete-many x n bag))
@@ -336,6 +362,28 @@
          (and (<= (count x bag) 1)
               (equal (cardinality bag) (count x bag))))
   :enable delete)
+
+(defrule subbag-of-delete
+  (subbag (delete x bag) bag)
+  :enable (pick-a-point
+           count-of-delete
+           nfix))
+
+(defrule subbag-of-arg1-and-delete
+  (equal (subbag bag (delete x bag))
+         (equal (count x bag) 0))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           count-of-delete
+           nfix))
+
+(defrule monotonicity-of-delete
+  (implies (subbag sub sup)
+           (subbag (delete x sub)
+                   (delete x sup)))
+  :enable (pick-a-point-polar
+           count-of-delete
+           nfix))
 
 (defrule commutativity-of-delete
   (equal (delete y (delete x bag))

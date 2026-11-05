@@ -227,6 +227,15 @@
            (subbag x z))
   :enable pick-a-point-polar)
 
+;; The same with the hypotheses in the other order, so that the middle bag can
+;; be found from a known superbag instead of a known subbag.
+
+(defrule subbag-transitivity-alt
+  (implies (and (subbag y z)
+                (subbag x y))
+           (subbag x z))
+  :by subbag-transitivity)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled double-containment

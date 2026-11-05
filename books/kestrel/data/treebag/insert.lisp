@@ -19,11 +19,13 @@
 (include-book "bag-defs")
 (include-book "count-defs")
 (include-book "cardinality-defs")
+(include-book "subbag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (local (include-book "kestrel/data/treemap/update" :dir :system))
 
@@ -31,6 +33,7 @@
 (local (include-book "count"))
 (local (include-book "cardinality"))
 (local (include-book "extensionality"))
+(local (include-book "subbag"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,6 +111,25 @@
   :enable (insert-many
            break-abstraction
            nat-equiv))
+
+(defrule subbag-of-arg1-and-insert-many
+  (subbag bag (insert-many x n bag))
+  :enable (pick-a-point
+           count-of-insert-many))
+
+(defrule subbag-of-insert-many
+  (equal (subbag (insert-many x n sub) sup)
+         (and (subbag sub sup)
+              (<= (+ (nfix n) (count x sub))
+                  (count x sup))))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           count-of-insert-many))
+
+(defrule monotonicity-of-insert-many
+  (implies (subbag sub sup)
+           (subbag (insert-many x n sub)
+                   (insert-many x n sup))))
 
 (defrule insert-many-of-0
   (equal (insert-many x 0 bag)
@@ -190,6 +212,25 @@
   (equal (cardinality (insert x bag))
          (+ 1 (cardinality bag)))
   :enable insert)
+
+(defrule subbag-of-arg1-and-insert
+  (subbag bag (insert x bag))
+  :enable (pick-a-point
+           count-of-insert))
+
+(defrule subbag-of-insert
+  (equal (subbag (insert x sub) sup)
+         (and (subbag sub sup)
+              (< (count x sub)
+                 (count x sup))))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           count-of-insert))
+
+(defrule monotonicity-of-insert
+  (implies (subbag sub sup)
+           (subbag (insert x sub)
+                   (insert x sup))))
 
 (defrule commutativity-of-insert
   (equal (insert y (insert x bag))
