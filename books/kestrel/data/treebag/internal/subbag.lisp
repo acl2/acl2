@@ -28,11 +28,7 @@
 
 (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
 (local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
 
-(local (include-book "map-values-all-posp"))
 (local (include-book "../bag"))
 (local (include-book "../count"))
 
@@ -82,16 +78,3 @@
                (count x sup)))
   :induct t
   :enable tree-subbag-p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; A value that is not a key of a bag's tree does not occur in the bag.
-
-(defruled count-when-not-in-tree-key-set-of-fix
-  (implies (not (treeset::in x (treemap::tree-key-set (fix bag))))
-           (equal (count x bag)
-                  0))
-  :enable (count
-           break-abstraction
-           treemap::lookup
-           treemap::keys))

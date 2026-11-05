@@ -14,6 +14,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
@@ -104,6 +105,19 @@
            break-abstraction))
 
 (add-to-ruleset break-abstraction '(count-of-treemap-delete))
+
+;; A value that is not a key of a bag's tree does not occur in the bag.
+
+(defruled count-when-not-in-tree-key-set-of-fix
+  (implies (not (treeset::in x (treemap::tree-key-set (fix bag))))
+           (equal (count x bag)
+                  0))
+  :enable (count
+           break-abstraction
+           treemap::lookup
+           treemap::keys))
+
+(add-to-ruleset break-abstraction '(count-when-not-in-tree-key-set-of-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
