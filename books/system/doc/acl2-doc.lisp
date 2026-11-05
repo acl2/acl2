@@ -110719,6 +110719,10 @@ it."
  subsumes another.  For more details see @(see community-book)
  @('system/tests/clause-set-subsumes-1-test.lisp').</p>
 
+ <p>Cause an error when @(tsee close-input-channel) attempts to close Lisp's
+ standard input stream.  This could happen in @(':')@(tsee program)-mode code,
+ causing an infinite loop in at least one Lisp implementation (SBCL).</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
