@@ -16,3 +16,4 @@
 (include-book "subbag-defs")
 (include-book "sum-defs")
 (include-book "union-defs")
+(include-book "intersect-defs")

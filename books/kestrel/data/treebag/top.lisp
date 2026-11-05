@@ -18,3 +18,4 @@
 (include-book "subbag")
 (include-book "sum")
 (include-book "union")
+(include-book "intersect")
