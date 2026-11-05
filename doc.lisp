@@ -107709,6 +107709,16 @@ Other Bug Fixes
 
   Applied fixes from Eric McCarthy for the [sharp-f-reader].
 
+  Applied fixes from Eric McCarthy for the [sharp-f-reader] (Pull
+  Request #2086), [sharp-u-reader] (Pull Request #2087), and
+  [sharp-d-reader] (Pull Request #2088).
+
+  Avoid clearing standard input --- specifically, [30m[47m[*standard-oi*][0m[0m ---
+  there is a reader error while reading other than [30m[47m*standard-oi*[0m[0m.
+  This change closes PR #2099 and includes the tests from that PR in
+  [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
+  McCarthy and AI for that PR.
+
 
 Changes at the System Level
 

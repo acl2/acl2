@@ -110812,6 +110812,16 @@ it."
 
  <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader).</p>
 
+ <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader) (Pull
+ Request #2086), @(see sharp-u-reader) (Pull Request #2087), and @(see
+ sharp-d-reader) (Pull Request #2088).</p>
+
+ <p>Avoid clearing standard input &mdash; specifically, @(tsee *standard-oi*)
+ &mdash; there is a reader error while reading other than @('*standard-oi*').
+ This change closes PR #2099 and includes the tests from that PR in @(see
+ community-books) @('system/tests/reader-error*.*'); thanks to Eric McCarthy
+ and AI for that PR.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now

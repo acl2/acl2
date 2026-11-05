@@ -992,8 +992,44 @@ be SPECIAL.")
          (and (constant-backquote-term-p (car l))
               (constant-backquote-lst-p (cdr l))))))
 
+; The following symbol is the property under which we store Common
+; Lisp streams on the property lists of channels.
+
+(defconstant *open-input-channel-key*
+  'acl2_invisible::|Open Input Channel Key|)
+
+; The following symbol is the property under which we store the types
+; of Common Lisp streams on the property lists of channels.
+
+(defconstant *open-input-channel-type-key*
+  'acl2_invisible::|Open Input Channel Type Key|)
+
+(defconstant *open-output-channel-key*
+  'acl2_invisible::|Open Output Channel Key|)
+
+(defconstant *open-output-channel-type-key*
+  'acl2_invisible::|Open Output Channel Type Key|)
+
+(defconstant *non-existent-stream*
+  'acl2_invisible::|A Non-Existent Stream|)
+
+(defmacro get-input-stream-from-channel (channel)
+  (list 'get
+        channel
+        (list 'quote *open-input-channel-key*)
+        (list 'quote *non-existent-stream*)))
+
+(defmacro get-output-stream-from-channel (channel)
+  (list 'get
+        channel
+        (list 'quote *open-output-channel-key*)
+        (list 'quote *non-existent-stream*)))
+
 (defun acl2-reader-error (string &rest args)
-  (clear-input)
+  (when (eq (qfuncall standard-oi *the-live-state*)
+            (symbol-value '*standard-oi*))
+    (qfuncall clear-input (qfuncall get-input-stream-from-channel
+                                    (symbol-value '*standard-oi*))))
   (let ((*hard-error-returns-nilp* nil))
     (declare (special *hard-error-returns-nilp*))
     (qfuncall hard-error
@@ -1447,9 +1483,9 @@ notation causes an error and (b) the use of ,. is not permitted."
                      (cond ((numberp n) n)
                            (*read-suppress* nil)
                            (t (acl2-reader-error
-                               "Failure to read #u expression: result ~s is ~
+                               "Failure to read #u expression: result ~x0 is ~
                                 not a numeral."
-                                     n)))))))))))
+                               n)))))))))))
 
 (defun read-digits (stream base-16-p)
 
@@ -1547,6 +1583,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 (defun sharp-d-read (stream char n)
   (declare (ignore char n))
   (let ((num (read stream t nil t)))
+    (when *read-suppress*
+      (return-from sharp-d-read nil))
     (when (not (typep num 'double-float))
       (acl2-reader-error
        "The value, ~s0, was read from a token following #d that did not have ~

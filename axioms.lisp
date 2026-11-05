@@ -1515,27 +1515,6 @@
 
        (error "Unrecognized op in push-wormhole-undo-formi, ~s." op)))))
 
-; The following symbol is the property under which we store Common
-; Lisp streams on the property lists of channels.
-
-(defconstant *open-input-channel-key*
-  'acl2_invisible::|Open Input Channel Key|)
-
-; The following symbol is the property under which we store the types
-; of Common Lisp streams on the property lists of channels.
-
-(defconstant *open-input-channel-type-key*
-  'acl2_invisible::|Open Input Channel Type Key|)
-
-(defconstant *open-output-channel-key*
-  'acl2_invisible::|Open Output Channel Key|)
-
-(defconstant *open-output-channel-type-key*
-  'acl2_invisible::|Open Output Channel Type Key|)
-
-(defconstant *non-existent-stream*
-  'acl2_invisible::|A Non-Existent Stream|)
-
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
@@ -17947,20 +17926,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (state-p state))))
   (prog2$ (check-null-or-natp n 'print-right-margin)
           (f-put-global 'print-right-margin n state)))
-
-#-acl2-loop-only
-(defmacro get-input-stream-from-channel (channel)
-  (list 'get
-        channel
-        (list 'quote *open-input-channel-key*)
-        (list 'quote *non-existent-stream*)))
-
-#-acl2-loop-only
-(defmacro get-output-stream-from-channel (channel)
-  (list 'get
-        channel
-        (list 'quote *open-output-channel-key*)
-        (list 'quote *non-existent-stream*)))
 
 (defun raw-print-vars-alist (print-control-defaults-tail)
 
