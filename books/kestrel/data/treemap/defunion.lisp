@@ -68,7 +68,7 @@
         (xdoc::p
           "A predicate on values, and its check over a @(see
            acl2::treeset). They are given together or not at all. The set
-           check must be defined as @(tsee treeset::set-all-genericp) is,
+           check must be defined as @('treeset::set-all-genericp') is,
            with @(':val-pred') in place of @('treeset::genericp'). When they
            are given, the combination must preserve @(':val-pred'), and the
            union of maps whose values satisfy it is generated."))
