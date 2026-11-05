@@ -73,7 +73,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-generic-count ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       0
@@ -156,7 +156,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-generic-count ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (tree-generic-count (fix map))
   :guard-hints (("Goal" :in-theory (enable mapp))))

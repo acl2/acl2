@@ -56,7 +56,7 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc true-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (llist-fix acc)
@@ -112,7 +112,7 @@
 
 (define tree-in-order
   ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Create an in-order list of values from a tree."

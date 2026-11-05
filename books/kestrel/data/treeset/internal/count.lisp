@@ -30,7 +30,7 @@
 (define tree-nodes-count-acc
   ((tree treep)
    (acc natp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (lnfix acc)
@@ -79,7 +79,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-nodes-count ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "The number of elements in a tree."
   :returns (count natp :rule-classes :type-prescription)

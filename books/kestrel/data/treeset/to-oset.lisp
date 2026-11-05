@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-oset ((set setp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treeset)
   :short "Build an oset from a @(see treeset)."
   :long
