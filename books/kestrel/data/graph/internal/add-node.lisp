@@ -47,7 +47,7 @@
 ;;
 ;; Time complexity: @($O(\\log(n))$).
 
-(define add-node (node (adjl adj-listp))
+(define adj-list-add-node (node (adjl adj-listp))
   :returns (new-adjl treemap::mapp)
   (if (treemap::in node adjl)
       (treemap::fix adjl)
@@ -55,49 +55,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule add-node-when-treemap-equiv-of-arg2-congruence
+(defrule adj-list-add-node-when-treemap-equiv-of-arg2-congruence
   (implies (treemap::equiv adjl0 adjl1)
-           (equal (add-node node adjl0)
-                  (add-node node adjl1)))
+           (equal (adj-list-add-node node adjl0)
+                  (adj-list-add-node node adjl1)))
   :rule-classes :congruence
-  :enable add-node)
+  :enable adj-list-add-node)
 
-(defrule map-values-all-adjacencyp-of-add-node
+(defrule map-values-all-adjacencyp-of-adj-list-add-node
   (implies (map-values-all-adjacencyp adjl)
-           (map-values-all-adjacencyp (add-node node adjl)))
-  :enable add-node)
+           (map-values-all-adjacencyp (adj-list-add-node node adjl)))
+  :enable adj-list-add-node)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The effect on the node and edge sets: the node is added, and no edges are.
 
-(defrule keys-of-add-node
-  (equal (treemap::keys (add-node node adjl))
+(defrule keys-of-adj-list-add-node
+  (equal (treemap::keys (adj-list-add-node node adjl))
          (treeset::insert node (treemap::keys adjl)))
-  :enable add-node)
+  :enable adj-list-add-node)
 
-(defrule adj-list-edges-of-add-node
-  (equal (adj-list-edges (add-node node adjl))
+(defrule adj-list-edges-of-adj-list-add-node
+  (equal (adj-list-edges (adj-list-add-node node adjl))
          (adj-list-edges adjl))
-  :enable add-node)
+  :enable adj-list-add-node)
 
 ;; Adding a node only enlarges the node set and adds no targets, so it
 ;; preserves well-formedness.
 
-(defrule well-formedp-of-add-node
+(defrule well-formedp-of-adj-list-add-node
   (implies (well-formedp adjl)
-           (well-formedp (add-node node adjl)))
-  :enable (add-node
+           (well-formedp (adj-list-add-node node adjl)))
+  :enable (adj-list-add-node
            well-formedp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule add-node-of-add-node-same
-  (equal (add-node node (add-node node adjl))
-         (add-node node adjl))
-  :enable add-node)
+(defrule adj-list-add-node-of-adj-list-add-node-same
+  (equal (adj-list-add-node node (adj-list-add-node node adjl))
+         (adj-list-add-node node adjl))
+  :enable adj-list-add-node)
 
-(defrule add-node-of-add-node-commutative
-  (equal (add-node node0 (add-node node1 adjl))
-         (add-node node1 (add-node node0 adjl)))
-  :enable add-node)
+(defrule adj-list-add-node-of-adj-list-add-node-commutative
+  (equal (adj-list-add-node node0 (adj-list-add-node node1 adjl))
+         (adj-list-add-node node1 (adj-list-add-node node0 adjl)))
+  :enable adj-list-add-node)

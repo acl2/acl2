@@ -59,7 +59,7 @@
 ;; number of targets of the source and @($l$) the number of labels from the
 ;; source to the target.
 
-(define add-edge (from to label (adjl adj-listp))
+(define adj-list-add-edge (from to label (adjl adj-listp))
   :returns (new-adjl treemap::mapp)
   (b* ((adj (treemap::lookup from adjl :default (treemap::empty)))
        (labels (treemap::lookup to adj :default (treeset::empty))))
@@ -71,17 +71,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule add-edge-when-treemap-equiv-of-arg4-congruence
+(defrule adj-list-add-edge-when-treemap-equiv-of-arg4-congruence
   (implies (treemap::equiv adjl0 adjl1)
-           (equal (add-edge from to label adjl0)
-                  (add-edge from to label adjl1)))
+           (equal (adj-list-add-edge from to label adjl0)
+                  (adj-list-add-edge from to label adjl1)))
   :rule-classes :congruence
-  :enable add-edge)
+  :enable adj-list-add-edge)
 
-(defrule map-values-all-adjacencyp-of-add-edge
+(defrule map-values-all-adjacencyp-of-adj-list-add-edge
   (implies (map-values-all-adjacencyp adjl)
-           (map-values-all-adjacencyp (add-edge from to label adjl)))
-  :enable add-edge)
+           (map-values-all-adjacencyp (adj-list-add-edge from to label adjl)))
+  :enable adj-list-add-edge)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,15 +89,15 @@
 ;; one edge is. Neither needs a hypothesis: when the source or the target is
 ;; absent, the corresponding lookup reads as empty.
 
-(defrule keys-of-add-edge
-  (equal (treemap::keys (add-edge from to label adjl))
+(defrule keys-of-adj-list-add-edge
+  (equal (treemap::keys (adj-list-add-edge from to label adjl))
          (treeset::insert from (treemap::keys adjl)))
-  :enable add-edge)
+  :enable adj-list-add-edge)
 
-(defrule adj-list-edges-of-add-edge
-  (equal (adj-list-edges (add-edge from to label adjl))
+(defrule adj-list-edges-of-adj-list-add-edge
+  (equal (adj-list-edges (adj-list-add-edge from to label adjl))
          (treeset::insert (edge from to label) (adj-list-edges adjl)))
-  :enable (add-edge
+  :enable (adj-list-add-edge
            treeset::extensionality-no-backchain-limit-polar
            in-of-adj-list-edges)
   :disable adj-list-edges-of-update)
@@ -106,37 +106,40 @@
 ;; node. The source needs no such hypothesis: it is made a key by the operation
 ;; itself.
 
-(defrule well-formedp-of-add-edge
+(defrule well-formedp-of-adj-list-add-edge
   (implies (and (well-formedp adjl)
                 (treeset::in to (treemap::keys adjl)))
-           (well-formedp (add-edge from to label adjl)))
-  :enable (add-edge
+           (well-formedp (adj-list-add-edge from to label adjl)))
+  :enable (adj-list-add-edge
            well-formedp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule add-edge-of-add-edge-same
-  (equal (add-edge from to label (add-edge from to label adjl))
-         (add-edge from to label adjl))
-  :enable add-edge)
+(defrule adj-list-add-edge-of-adj-list-add-edge-same
+  (equal (adj-list-add-edge from to label
+                            (adj-list-add-edge from to label adjl))
+         (adj-list-add-edge from to label adjl))
+  :enable adj-list-add-edge)
 
-(defrule add-edge-of-add-edge-commutative
-  (equal (add-edge from0 to0 label0 (add-edge from1 to1 label1 adjl))
-         (add-edge from1 to1 label1 (add-edge from0 to0 label0 adjl)))
-  :enable (add-edge
+(defrule adj-list-add-edge-of-adj-list-add-edge-commutative
+  (equal (adj-list-add-edge from0 to0 label0
+                            (adj-list-add-edge from1 to1 label1 adjl))
+         (adj-list-add-edge from1 to1 label1
+                            (adj-list-add-edge from0 to0 label0 adjl)))
+  :enable (adj-list-add-edge
            treemap::extensionality-polar))
 
 ;; Adding an edge already adds its source as a node, and adding a node commutes
 ;; with adding an edge.
 
-(defrule add-node-of-add-edge-same
-  (equal (add-node from (add-edge from to label adjl))
-         (add-edge from to label adjl))
-  :enable add-node)
+(defrule adj-list-add-node-of-adj-list-add-edge-same
+  (equal (adj-list-add-node from (adj-list-add-edge from to label adjl))
+         (adj-list-add-edge from to label adjl))
+  :enable adj-list-add-node)
 
-(defrule add-edge-of-add-node
-  (equal (add-edge from to label (add-node node adjl))
-         (add-node node (add-edge from to label adjl)))
-  :enable (add-edge
-           add-node
+(defrule adj-list-add-edge-of-adj-list-add-node
+  (equal (adj-list-add-edge from to label (adj-list-add-node node adjl))
+         (adj-list-add-node node (adj-list-add-edge from to label adjl)))
+  :enable (adj-list-add-edge
+           adj-list-add-node
            treemap::extensionality-polar))
