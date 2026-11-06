@@ -187,10 +187,10 @@ In these macros, each field of the fgl-config object is assigned as follows:</p>
 
 <ul>
 <li>The explicit value given as a keyword argument to the macro, if there is one</li>
-<li>Else if the table @('fgl::fgl-config-table') has an entry for the keyword field name, the value to which it is bound</li>
 <li>Else if the keyword field name prefixed by \"FGL-\" is bound as a state
 global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
 @('trace-rewrites') config field).</li>
+<li>Else if the table @('fgl::fgl-config-table') has an entry for the keyword field name, the value to which it is bound</li>
 <li>Else the default value defined by @(see make-fgl-config).</li>
 </ul>"
 

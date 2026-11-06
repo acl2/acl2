@@ -33,6 +33,7 @@
 (include-book "logicman")
 (include-book "stack")
 (local (std::add-default-post-define-hook :fix))
+(local (include-book "std/lists/len" :dir :system))
 
 (define fgl-object-concretize ((x fgl-object-p)
                                (env fgl-env-p)
@@ -541,5 +542,234 @@
     :hints(("Goal" :in-theory (enable fgl-major-stack-concretize)))))
 
 
+;; Relations that ignore the active frame's changing bindings/debug data.
+
+(define minor-stack-equiv-except-top-debug ((x minor-stack-p)
+                                            (y minor-stack-p))
+  (b* (((minor-frame x1) (car x))
+       ((minor-frame y1) (car y)))
+    (and (equal x1.bindings y1.bindings)
+         (equal x1.scratch y1.scratch)
+         (mbe :logic (and (minor-stack-equiv (cdr x) (cdr y))
+                          (iff (consp (cdr x)) (consp (cdr y))))
+              :exec (if (atom (cdr x))
+                        (atom (cdr y))
+                      (and (consp (cdr y))
+                           (minor-stack-equiv (cdr x) (cdr y)))))))
+
+  ///
+  (defequiv minor-stack-equiv-except-top-debug)
+
+  (defthm minor-stack-equiv-except-top-debug-implies-len-equal
+    (implies (minor-stack-equiv-except-top-debug x y)
+             (equal (len (minor-stack-fix x)) (len (minor-stack-fix y))))
+    :hints(("Goal" :use ((:instance len-of-minor-stack-fix (x (cdr x)))
+                         (:instance len-of-minor-stack-fix (x (cdr y)))
+                         (:instance len-of-minor-stack-fix (x x))
+                         (:instance len-of-minor-stack-fix (x y)))
+            :in-theory (e/d (len) (len-of-minor-stack-fix))))
+    :rule-classes :congruence)
+
+  (defcong minor-stack-equiv-except-top-debug
+    minor-stack-equiv-except-top-debug
+    (fgl-minor-stack-concretize stack env logicman) 1
+    :hints(("Goal" :in-theory (enable fgl-minor-stack-concretize fgl-minor-frame-concretize)))))
+
+(define stack-equiv-except-top-bindings ((x major-stack-p)
+                                         (y major-stack-p))
+
+  (b* (((major-frame x1) (car x))
+       ((major-frame y1) (car y)))
+    (and (minor-stack-equiv-except-top-debug x1.minor-stack y1.minor-stack)
+         (mbe :logic (and (major-stack-equiv (cdr x) (cdr y))
+                          (iff (consp (cdr x)) (consp (cdr y))))
+              :exec (if (atom (cdr x))
+                        (atom (cdr y))
+                      (and (consp (cdr y))
+                           (major-stack-equiv (cdr x) (cdr y)))))))
+  ///
+  (defequiv stack-equiv-except-top-bindings)
+
+  (local (defthm len-equal-when-major-stack-fix
+           (implies (and (equal (major-stack-fix x) (major-stack-fix y))
+                         (consp x) (consp y))
+                    (equal (equal (len x) (len y)) t))
+           :hints (("Goal" :use ((:instance len-of-major-stack-fix)
+                                 (:instance len-of-major-stack-fix (x y)))
+                    :in-theory (disable len len-of-major-stack-fix)))))
+
+  (local (defthm equal-+-1
+           (equal (equal (+ 1 x) (+ 1 y))
+                  (equal (fix x) (fix y)))))
+
+  (defcong stack-equiv-except-top-bindings equal (stack$a-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-frames len))))
+
+  (defcong stack-equiv-except-top-bindings equal (stack$a-minor-frames x) 1
+    :hints(("Goal" :in-theory (e/d (stack$a-minor-frames)
+                                   (minor-stack-equiv-except-top-debug-implies-len-equal))
+            :use ((:instance minor-stack-equiv-except-top-debug-implies-len-equal
+                   (x (major-frame->minor-stack (car x)))
+                   (y (major-frame->minor-stack (car x-equiv))))))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (fgl-major-stack-concretize stack env logicman) 1
+    :hints(("Goal" :in-theory (enable fgl-major-stack-concretize fgl-major-frame-concretize))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-scratch stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch
+                                      minor-stack-equiv-except-top-debug))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-set-rule debug stack) 2
+    :hints(("Goal" :in-theory (enable stack$a-set-rule))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-set-phase debug stack) 2
+    :hints(("Goal" :in-theory (enable stack$a-set-phase))))
+
+  (defcong stack-equiv-except-top-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-minor-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame
+                                      minor-stack-equiv-except-top-debug))))
+
+  (defcong stack-equiv-except-top-bindings
+    equal
+    (stack$a-pop-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame
+                                      major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-bindings-of-add-binding
+    (stack-equiv-except-top-bindings
+     (fgl-major-stack-concretize
+      (stack$a-add-binding var obj stack) env logicman)
+     (fgl-major-stack-concretize
+      stack env logicman))
+    :hints(("Goal" :in-theory (enable stack$a-add-binding
+                                      fgl-major-stack-concretize
+                                      fgl-major-frame-concretize))))
 
 
+  (defthm stack-equiv-except-top-bindings-of-set-rule
+    (stack-equiv-except-top-bindings (stack$a-set-rule rule stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-rule major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-bindings-of-set-phase
+    (stack-equiv-except-top-bindings (stack$a-set-phase phase stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-phase major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-bindings-of-stack$a-set-term-index
+    (stack-equiv-except-top-bindings (stack$a-set-term-index val stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-term-index
+                                      minor-stack-equiv-except-top-debug
+                                      major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-bindings-of-stack$a-set-term
+    (stack-equiv-except-top-bindings (stack$a-set-term val stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-term
+                                      minor-stack-equiv-except-top-debug
+                                      major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-bindings-of-stack$a-set-bindings
+    (stack-equiv-except-top-bindings (stack$a-set-bindings bindings stack)
+                                     stack)
+    :hints(("Goal" :in-theory (enable stack$a-set-bindings
+                                      minor-stack-equiv-except-top-debug
+                                      major-stack-fix default-car)))))
+
+(define minor-stack-equiv-except-top-bindings ((x minor-stack-p)
+                                               (y minor-stack-p))
+
+  (b* (((minor-frame x1) (car x))
+       ((minor-frame y1) (car y)))
+    (and (scratchlist-equiv x1.scratch y1.scratch)
+         (mbe :logic (and (minor-stack-equiv (cdr x) (cdr y))
+                          (iff (consp (cdr x)) (consp (cdr y))))
+              :exec (if (atom (cdr x))
+                        (atom (cdr y))
+                      (and (consp (cdr y))
+                           (minor-stack-equiv (cdr x) (cdr y)))))))
+  ///
+  (defequiv minor-stack-equiv-except-top-bindings)
+  (defrefinement minor-stack-equiv-except-top-debug minor-stack-equiv-except-top-bindings
+    :hints(("Goal" :in-theory (enable minor-stack-equiv-except-top-debug)))))
+
+(define stack-equiv-except-top-major/minor-bindings ((x major-stack-p)
+                                                     (y major-stack-p))
+
+  (b* (((major-frame x1) (car x))
+       ((major-frame y1) (car y)))
+    (and (minor-stack-equiv-except-top-bindings x1.minor-stack y1.minor-stack)
+         (mbe :logic (and (major-stack-equiv (cdr x) (cdr y))
+                          (iff (consp (cdr x)) (consp (cdr y))))
+              :exec (if (atom (cdr x))
+                        (atom (cdr y))
+                      (and (consp (cdr y))
+                           (major-stack-equiv (cdr x) (cdr y)))))))
+  ///
+  (defequiv stack-equiv-except-top-major/minor-bindings)
+  (local (in-theory (enable minor-stack-equiv-except-top-bindings)))
+
+  (local (defthm len-equal-when-major-stack-fix
+           (implies (and (equal (major-stack-fix x) (major-stack-fix y))
+                         (consp x) (consp y))
+                    (equal (equal (len x) (len y)) t))
+           :hints (("Goal" :use ((:instance len-of-major-stack-fix)
+                                 (:instance len-of-major-stack-fix (x y)))
+                    :in-theory (disable len len-of-major-stack-fix)))))
+
+  (local (defthm equal-+-1
+           (equal (equal (+ 1 x) (+ 1 y))
+                  (equal (fix x) (fix y)))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings equal (stack$a-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-frames len))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings equal (stack$a-minor-frames x) 1
+    :hints(("Goal" :in-theory (enable stack$a-minor-frames len))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-major/minor-bindings
+    (fgl-major-stack-concretize stack env logicman) 1
+    :hints(("Goal" :in-theory (enable fgl-major-stack-concretize fgl-major-frame-concretize fgl-minor-stack-concretize fgl-minor-frame-concretize))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-major/minor-bindings
+    (stack$a-pop-scratch stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-scratch))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    equal
+    (stack$a-pop-frame stack) 1
+    :hints(("Goal" :in-theory (enable stack$a-pop-frame
+                                      major-stack-fix default-car))))
+
+  (defthm stack-equiv-except-top-major/minor-bindings-of-stack$a-add-minor-bindings
+    (stack-equiv-except-top-major/minor-bindings
+     (stack$a-add-minor-bindings bindings stack)
+     stack)
+    :hints(("Goal" :in-theory (enable stack$a-add-minor-bindings
+                                      major-stack-fix default-car))))
+
+  (defcong stack-equiv-except-top-major/minor-bindings
+    stack-equiv-except-top-bindings
+    (stack$a-pop-minor-frame stack)
+    1
+    :hints(("Goal" :in-theory (enable stack$a-pop-minor-frame
+                                      minor-stack-equiv-except-top-debug
+                                      stack-equiv-except-top-bindings))))
+
+  (defrefinement stack-equiv-except-top-bindings
+    stack-equiv-except-top-major/minor-bindings
+    :hints(("Goal" :in-theory (enable stack-equiv-except-top-bindings
+                                      minor-stack-equiv-except-top-debug)))))

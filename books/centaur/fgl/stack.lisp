@@ -4250,3 +4250,36 @@
               (stack-pop-frame :logic stack$a-pop-frame :exec stack$c-pop-frame :protect t)
               (stack-extract :logic stack$a-extract :exec stack$c-extract)
               (stack-empty :logic stack$a-empty :exec stack$c-empty :protect t))))
+
+
+;; Extend the active major frame's bindings.
+
+(define stack-add-bindings ((bindings fgl-object-bindings-p) stack)
+  :returns (new-stack)
+  :prepwork
+  ((local (defthm fgl-object-bindings-bfrlist-of-append
+            (equal (fgl-object-bindings-bfrlist (append x y))
+                   (append (fgl-object-bindings-bfrlist x)
+                           (fgl-object-bindings-bfrlist y)))
+            :hints (("Goal" :induct (append x y)
+                     :in-theory (enable fgl-object-bindings-bfrlist))))))
+  (stack-set-bindings (append (fgl-object-bindings-fix bindings)
+                              (stack-bindings stack))
+                      stack)
+  ///
+
+
+  (defret bfr-listp-of-<fn>
+    (implies (And (bfr-listp (fgl-object-bindings-bfrlist bindings))
+                  (bfr-listp (major-stack-bfrlist stack)))
+             (bfr-listp (major-stack-bfrlist new-stack)))
+    :hints(("Goal" :in-theory (enable major-stack-bfrlist major-frame-bfrlist
+                                      stack$a-set-bindings stack$a-bindings))))
+
+  (defthm stack$A-bindings-of-stack-add-bindings
+    (equal (stack$a-bindings (stack-add-bindings bindings stack))
+           (append (fgl-object-bindings-fix bindings)
+                   (stack$a-bindings stack)))
+    :hints(("Goal" :in-theory (enable stack$a-bindings
+                                      stack$a-set-bindings
+                                      stack-add-bindings)))))

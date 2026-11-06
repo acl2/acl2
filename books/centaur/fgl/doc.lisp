@@ -1831,7 +1831,7 @@ involving SAT checks and a mix of logical and extralogical code.</p>
 
 <h3>Basic Example</h3> 
 
-<p> Suppose we want to check whether several conditions are satisfiable,
+<p> Suppose we want to check whether several conditions are valid,
 summarize the results in an object and pretty-print that summary. </p>
 
 @({
@@ -1839,7 +1839,7 @@ summarize the results in an object and pretty-print that summary. </p>
  (defun my-test-condition (n x) ...)
 
  ;; Iterate from M-1 down to 0 testing each condition and collect a list of the
- ;; indices of all those that were invalid.
+ ;; indices of all those that were not proved valid.
  (def-fgl-program test-my-conditions (m x)
    (if (zp m)
        nil
@@ -1852,13 +1852,13 @@ summarize the results in an object and pretty-print that summary. </p>
                                     testcond))
             ;; Note: validity-check-result is syntactically T if the validity
             ;; check was successful.  If not, it's some symbolic truth value
-            ;; represented as a g-boolean object.
+            ;; represented as NIL or a non-constant g-boolean object.
             (valid (syntax-interp (eq validity-check-result t))))
         (if valid
             (test-my-conditions next-m x)
           (cons next-m (test-my-conditions next-m x))))))
 
- ;; Summarize the list of non-valid condition indices.
+ ;; Summarize the list of condition indices that were not proved valid.
  (defun my-print-test-condition-results (indices-list) ...)
 
  ;; Run a fake proof in which the conditions are tested.
@@ -1888,7 +1888,9 @@ some other symbolic Boolean object: either @('nil') or a non-constant
 @('g-boolean') object.  To check whether the condition was found to be always
 true, we check whether the object resulting from @('fgl-validity-check') is
 syntactically @('t').  We collect the indices of those conditions that are not
-constant-true.</p>
+constant-true. This list includes conditions for which the solver failed or
+reached a resource limit; it does not establish that those conditions are
+invalid.</p>
 
 <p>Note that the body for @('test-my-conditions') above could not exist if
 @('test-my-conditions') were to be interpreted under @('equal') rather than
@@ -2131,7 +2133,7 @@ derivation errors.</li>
 @('interp-st-counterex-bindings/print-errors') but uses the bindings of the top stack
 frame (i.e. the rewrite rule from which this function is called).</li>
 
-<li>@('interp-st-counterex-prev-stack-bindings/print-errors'): like
+<li>@('interp-st-counterex-stack-prev-bindings/print-errors'): like
 @('interp-st-counterex-stack-bindings/print-errors') but uses the bindings of
 the next-to-top stack frame (i.e. the caller of the rewrite rule from which
 this function is called).</li>

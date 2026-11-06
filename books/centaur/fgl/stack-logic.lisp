@@ -849,3 +849,11 @@ passed into a function or bound to a different variable in a lambda.</p>
     (equal ok
            (bfr-listp (scratchlist-bfrlist x)))
     :hints(("Goal" :in-theory (e/d (scratchlist-bfrlist))))))
+
+
+;; Advance the optional term position recorded by a stack frame.
+
+(define term-index-incr ((n posp) (term-index acl2::maybe-natp))
+  :inline t
+  :returns (new-index natp :rule-classes :type-prescription)
+  (+ (lposfix n) (or (acl2::maybe-natp-fix term-index) -1)))

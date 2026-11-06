@@ -1217,3 +1217,247 @@
         0
       (+ (fgl-minor-frame-subterm-count (car x))
          (fgl-minor-frame-subtermlist-count (cdr x))))))
+
+
+;; Interpreter resource limits, frame setup, and binding access.
+
+(local (include-book "tools/trivial-ancestors-check" :dir :system))
+(std::make-returnspec-config :hints-sub-returnnames t)
+
+(define interp-st-cancel-error ((msg symbolp) interp-st)
+  :returns new-interp-st
+  :hooks nil
+  (if (eq (interp-st->errmsg interp-st) msg)
+      (update-interp-st->errmsg nil interp-st)
+    interp-st)
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (not (equal (interp-st-field-fix key) :errmsg))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (not (equal (interp-st->errmsg interp-st) msg))
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret <fn>-something-different
+    (implies (and msg2 (not (equal msg2 msg)))
+             (equal (equal (interp-st->errmsg new-interp-st) msg2)
+                    (equal (interp-st->errmsg interp-st) msg2)))))
+
+(define interp-st-restore-reclimit ((reclimit natp)
+                                    interp-st)
+  :guard (acl2::nat-equiv reclimit (interp-st->reclimit interp-st))
+  :inline t
+  :enabled t
+  (mbe :logic (update-interp-st->reclimit (lnfix reclimit) interp-st)
+       :exec interp-st))
+
+(define fgl-interp-check-reclimit (interp-st)
+  :inline t
+  (or (zp (interp-st->reclimit interp-st))
+      (interp-st->errmsg interp-st))
+  ///
+  (defthm not-check-reclimit-implies-posp-reclimit
+    (implies (not (fgl-interp-check-reclimit interp-st))
+             (posp (interp-st->reclimit interp-st)))
+    :rule-classes :forward-chaining)
+
+  (def-updater-independence-thm fgl-interp-check-reclimit-of-update
+    (implies (and (equal (interp-st->reclimit new) (interp-st->reclimit old))
+                  (equal (interp-st->errmsg new) (interp-st->errmsg old)))
+             (equal (fgl-interp-check-reclimit new) (fgl-interp-check-reclimit old)))))
+
+(define interp-st-term-index (interp-st)
+  :enabled t :hooks nil :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (idx)
+             (stack-term-index stack)
+             idx))
+
+(define interp-st-incr-term-index ((n posp) interp-st)
+  :enabled t :hooks nil :inline t
+  ;; Note: this increments by a positive value, starting from a default value
+  ;; (when nil) of -1.  This is so that we can increment every time we enter
+  ;; the term interpreter, but have the first term correspond to index 0.
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-set-term-index (term-index-incr n (stack-term-index stack)) stack)
+             interp-st))
+
+(define interp-st-incr-phase (interp-st)
+  :enabled t :hooks nil :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-set-phase (+ 1 (or (stack-phase stack) 0)) stack)
+             interp-st))
+
+(define interp-st-phase (interp-st)
+  :enabled t :hooks nil :inline t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (phase)
+             (stack-phase stack)
+             phase))
+
+(define interp-st-check-stacklimit (interp-st)
+  :returns (new-interp-st)
+  (if (< (interp-st->stacklimit interp-st)
+         (interp-st-stack-frames interp-st))
+      (fgl-interp-store-debug-info "Stack limit exceeded" nil interp-st)
+    interp-st)
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+
+(define interp-st-tick-steplimit (interp-st)
+  :returns (new-interp-st)
+  (b* ((steplimit (interp-st->steplimit interp-st))
+       ((when (eql 0 steplimit))
+        (fgl-interp-store-debug-info "Step limit exceeded" nil interp-st)))
+    (update-interp-st->steplimit (1- steplimit) interp-st))
+  ///
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable)))))
+
+(define interp-st-push-rule-frame-core ((rule fgl-rule-p)
+                                        (bindings fgl-object-bindings-p)
+                                        interp-st)
+  :enabled t
+  :guard-hints (("goal" :in-theory (enable stack$a-set-phase
+                                           stack$a-set-rule
+                                           stack$a-set-bindings
+                                           stack$a-push-frame)))
+  ;; (mbe :logic (non-exec (update-interp-st->stack
+  ;;                        (cons (make-major-frame :rule (fgl-rule-fix rule)
+  ;;                                                :bindings bindings
+  ;;                                                :phase 0)
+  ;;                              (major-stack-fix (interp-st->stack interp-st)))
+  ;;                        interp-st))
+  ;;      :exec
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (b* ((stack (stack-push-frame stack))
+                  (stack (stack-set-bindings bindings stack))
+                  (stack (stack-set-rule (fgl-rule-fix rule) stack)))
+               (stack-set-phase 0 stack))
+             interp-st))
+
+(define interp-st-push-rule-frame ((rule fgl-rule-p)
+                                   (bindings fgl-object-bindings-p)
+                                   interp-st)
+  :returns (new-interp-st)
+  (b* ((interp-st (interp-st-push-rule-frame-core rule bindings interp-st))
+       (interp-st (interp-st-check-stacklimit interp-st)))
+    (interp-st-tick-steplimit interp-st))
+  ///
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :stack))
+                  (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+
+  (defret stack-of-<fn>
+    (equal (interp-st->stack new-interp-st)
+           (interp-st->stack (interp-st-push-rule-frame-core rule bindings interp-st))))
+
+  )
+
+(define interp-st-push-non-rule-frame ((bindings fgl-object-bindings-p)
+                                       interp-st)
+  :returns (new-interp-st)
+  (b* ((interp-st (interp-st-push-frame bindings interp-st))
+       (interp-st (interp-st-check-stacklimit interp-st)))
+    (interp-st-tick-steplimit interp-st))
+  ///
+
+  (defret interp-st-get-of-<fn>
+    (implies (and (not (equal (interp-st-field-fix key) :stack))
+                  (not (equal (interp-st-field-fix key) :steplimit))
+                  (not (equal (interp-st-field-fix key) :errmsg))
+                  (not (equal (interp-st-field-fix key) :debug-info))
+                  (not (equal (interp-st-field-fix key) :debug-stack)))
+             (equal (interp-st-get key new-interp-st)
+                    (interp-st-get key interp-st))))
+
+  (defret <fn>-preserves-error
+    (implies (interp-st->errmsg interp-st)
+             (equal (interp-st->errmsg new-interp-st)
+                    (interp-st->errmsg interp-st))))
+
+  (local (acl2::use-trivial-ancestors-check))
+
+  (defret interp-st->errmsg-equal-unreachable-of-<fn>
+    (implies (not (equal (interp-st->errmsg interp-st) :unreachable))
+             (not (equal (interp-st->errmsg new-interp-st) :unreachable))))
+
+  (defret stack-of-<fn>
+    (equal (interp-st->stack new-interp-st)
+           (interp-st->stack (interp-st-push-frame bindings interp-st))))
+
+  )
+
+(define fgl-var-lookup ((varname pseudo-var-p) interp-st)
+  :enabled t
+  (b* ((varname (pseudo-var-fix varname)))
+    (or (assoc-eq varname (interp-st-bindings interp-st))
+        (assoc-eq varname (interp-st-minor-bindings interp-st)))))
+
+(define fgl-free-var-p ((arg pseudo-termp) interp-st)
+  (b* (((unless (pseudo-term-case arg :var)) nil)
+       (varname (pseudo-term-var->name arg)))
+    (not (fgl-var-lookup varname interp-st)))
+  ///
+  (defthm pseudo-term-kind-when-free-var
+    (implies (fgl-free-var-p arg interp-st)
+             (equal (pseudo-term-kind arg) :var))
+    :rule-classes :forward-chaining))
+
+(define interp-st-add-bindings ((bindings fgl-object-bindings-p) interp-st)
+  :enabled t
+  (stobj-let ((stack (interp-st->stack interp-st)))
+             (stack)
+             (stack-add-bindings bindings stack)
+             interp-st))

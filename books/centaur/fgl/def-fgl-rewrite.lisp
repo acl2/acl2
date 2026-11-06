@@ -140,7 +140,9 @@
                "The name of a rewrite rule must either be a bare symbol or a ~
                 :rewrite, :definition, or :formula FGL rune -- ~x0 is not." name))))
 
-(defun fgl-rewrite-arg-modes-fit-lhses-p (arg-modes lhses)
+(define fgl-rewrite-arg-modes-fit-lhses-p ((arg-modes fgl-rule-arg-mode-list-p)
+                                           (lhses pseudo-term-listp))
+  :returns (fitp booleanp)
   (if (atom lhses)
       t
     (and (or (not (and (consp (car lhses))

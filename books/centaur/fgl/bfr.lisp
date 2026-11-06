@@ -1482,3 +1482,54 @@ bfrstate object.  If no bfrstate object is supplied, the variable named
     (equal ok
            (bfr-listp (fgl-arglist-bfrlist x)))
     :hints(("Goal" :in-theory (enable fgl-arglist-bfrlist)))))
+
+
+(defthm member-bfrlist-of-lookup-in-fgl-object-bindings
+  (implies (and (not (member v (fgl-object-bindings-bfrlist x)))
+                (pseudo-var-p k))
+           (not (member v (fgl-object-bfrlist (cdr (hons-assoc-equal k x))))))
+  :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist hons-assoc-equal))))
+
+;; BFR properties of the argument/object utilities.
+(defsection fgl-arglist-bfr-properties
+  (local (defthm assoc-when-nonnil
+           (implies k
+                    (equal (assoc k x) (hons-assoc-equal k x)))
+           :hints (("Goal" :in-theory (enable hons-assoc-equal)))))
+
+  (defret fgl-objectlist-bfrlist-of-<fn>
+    (implies (fgl-arglist-all-boundp x)
+             (equal (fgl-objectlist-bfrlist objs)
+                    (fgl-arglist-bfrlist x)))
+    :hints(("Goal" :in-theory (enable fgl-arglist->objects fgl-arglist-unbounds fgl-objectlist-bfrlist
+                                      fgl-arglist-bfrlist
+                                      fgl-arglist-all-boundp
+                                      fgl-arg-bfrlist)))
+    :fn fgl-arglist->objects)
+
+  (defret fgl-arglist-bfrlist-of-<fn>
+    (equal (fgl-arglist-bfrlist new-x)
+           (fgl-objectlist-bfrlist x))
+    :hints (("Goal" :in-theory (e/d (fgl-arg-bfrlist fgl-objectlist->arglist
+                                                     fgl-arglist-bfrlist
+                                                     fgl-objectlist-bfrlist)
+                                    nil)))
+    :fn fgl-objectlist->arglist)
+
+  (defret fgl-arglist-bfrs-ok-of-<fn>
+    (equal (fgl-arglist-bfrs-ok new-x bfrstate)
+           (fgl-objectlist-bfrs-ok x bfrstate))
+    :hints (("Goal" :in-theory (e/d (fgl-arglist-bfrs-ok-in-terms-of-bfrlist
+                                     fgl-objectlist-bfrs-ok-in-terms-of-bfrlist)
+                                    nil)))
+    :fn fgl-objectlist->arglist)
+
+  (defret bfr-listp-of-<fn>
+    (implies (and (bfr-listp (fgl-object-bindings-bfrlist bindings))
+                  (bfr-listp (fgl-arglist-bfrlist x)))
+             (bfr-listp (fgl-arglist-bfrlist new-x)))
+    :hints(("Goal" :in-theory (enable fgl-arglist-substitute-newly-bound fgl-arg-bfrlist
+                                      fgl-arglist-bfrlist bfr-listp-when-not-member-witness)))
+    :fn fgl-arglist-substitute-newly-bound)
+
+  )

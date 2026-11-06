@@ -29,6 +29,8 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "FGL")
+
+(local (include-book "std/alists/alist-keys" :dir :system))
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "centaur/misc/numlist" :dir :system)
 (include-book "centaur/fty/baselists" :dir :system)
@@ -557,16 +559,14 @@ object, or else an unbound variable awaiting an assignment.</p>"
     :hints(("Goal" :in-theory (enable fgl-arg-p
                                       fgl-arg-kind))))
   (defthmd fgl-arg->obj-when-not-unbound
-    (implies ;;(and (fgl-arg-p x)
-     (not (fgl-arg-case x :unbound))
-     (equal (fgl-arg-obj->obj x) (fgl-object-fix x)))
+    (implies (not (fgl-arg-case x :unbound))
+             (equal (fgl-arg-obj->obj x) (fgl-object-fix x)))
     :hints(("Goal" :in-theory (enable fgl-arg-p fgl-arg-kind
                                       fgl-arg-obj->obj))))
 
   (defthmd fgl-arg-fix-when-not-unbound
-    (implies ;;(and (fgl-arg-p x)
-     (not (fgl-arg-case x :unbound))
-     (equal (fgl-arg-fix x) (fgl-object-fix x)))
+    (implies (not (fgl-arg-case x :unbound))
+             (equal (fgl-arg-fix x) (fgl-object-fix x)))
     :hints(("Goal" :in-theory (enable fgl-arg-p fgl-arg-kind
                                       fgl-arg-fix))))
 
@@ -585,3 +585,172 @@ object, or else an unbound variable awaiting an assignment.</p>"
     (fgl-arg-case x1
       :unbound (cons x1.var (fgl-arglist-unbounds (cdr x)))
       :otherwise (fgl-arglist-unbounds (cdr x)))))
+
+
+;; Object classification and concrete argument lists.
+
+(define fgl-term-obj-p ((x fgl-object-p))
+  (declare (xargs :guard t))
+  (fgl-object-case x
+    :g-ite t
+    :g-var t
+    :g-apply t
+    :otherwise nil))
+
+(define g-concretelist-p ((x fgl-objectlist-p))
+  (if (atom x)
+      t
+    (and (fgl-object-case (car x) :g-concrete)
+         (g-concretelist-p (Cdr x)))))
+
+(define g-concretelist-vals ((x fgl-objectlist-p))
+  :guard (g-concretelist-p x)
+  :guard-hints (("goal" :in-theory (enable g-concretelist-p)))
+  (if (atom x)
+      nil
+    (cons (g-concrete->val (car x))
+          (g-concretelist-vals (cdr x)))))
+
+;; Boundness and conversions between arguments and objects.
+
+(define fgl-arglist-all-boundp ((x fgl-arglist-p))
+  (if (atom x)
+      t
+    (and (fgl-arg-case (car x) :obj)
+         (fgl-arglist-all-boundp (cdr x)))))
+
+(define fgl-arglist->objects ((x fgl-arglist-p))
+  :guard (fgl-arglist-all-boundp x)
+  :verify-guards nil
+  :returns (objs fgl-objectlist-p)
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (fgl-arg-obj->obj (car x))
+                      (fgl-arglist->objects (cdr x))))
+       :exec x)
+  ///
+  (local (defthm fgl-arglist-objects-identity
+           (implies (and (fgl-arglist-all-boundp x)
+                         (fgl-arglist-p x))
+                    (equal (fgl-arglist->objects x)
+                           x))
+           :hints(("Goal" :in-theory (enable fgl-arglist-all-boundp
+                                             fgl-objectlist-fix
+                                             fgl-arg->obj-when-not-unbound
+                                             fgl-object-p-when-not-unbound)))))
+  (verify-guards fgl-arglist->objects
+    :hints(("Goal" :in-theory (enable fgl-arg->obj-when-not-unbound
+                                      fgl-object-p-when-not-unbound
+                                      fgl-arglist-all-boundp
+                                      fgl-arglist-p)))))
+
+(defthm fgl-arglist-all-boundp-in-terms-of-fgl-arglist-unbounds
+  (iff (fgl-arglist-all-boundp x)
+       (not (fgl-arglist-unbounds x)))
+  :hints (("Goal" :in-theory (enable fgl-arglist-all-boundp
+                                     fgl-arglist-unbounds))))
+
+(define fgl-objectlist->arglist ((x fgl-objectlist-p))
+  :returns (new-x fgl-arglist-p)
+  :verify-guards nil
+  (mbe :logic (if (atom x)
+                  nil
+                (cons (fgl-arg-obj (car x))
+                      (fgl-objectlist->arglist (cdr x))))
+       :exec x)
+  ///
+  (local (defret <fn>-identity
+           (implies (fgl-objectlist-p x)
+                    (equal new-x x))
+           :hints(("Goal" :in-theory (enable fgl-arg-obj)))))
+
+
+  (verify-guards fgl-objectlist->arglist
+    :hints(("Goal" :in-theory (enable fgl-objectlist-p fgl-arg-obj))))
+  (local (in-theory (disable fgl-objectlist->arglist-identity)))
+
+  (defthm fgl-arglist->objects-of-fgl-objectlist->arglist
+    (equal (fgl-arglist->objects (fgl-objectlist->arglist x))
+           (fgl-objectlist-fix x))
+    :hints(("Goal" :in-theory (enable fgl-arglist->objects fgl-objectlist->arglist))))
+  (local (in-theory (enable fgl-objectlist-fix))))
+
+;; Substitute assignments for previously unbound arguments.
+
+(define fgl-arglist-substitute-newly-bound ((x fgl-arglist-p)
+                                            (bindings fgl-object-bindings-p))
+  :returns (new-x fgl-arglist-p)
+  :prepwork
+  ((local (defthm assoc-equal-when-nonnil
+            (implies key
+                     (equal (assoc-equal key a)
+                            (hons-assoc-equal key a)))
+            :hints (("Goal" :in-theory (enable hons-assoc-equal))))))
+  (b* (((when (atom x)) nil)
+       (x1 (car x))
+       ((when (fgl-arg-case x1 :obj))
+        (cons (fgl-arg-fix x1)
+              (fgl-arglist-substitute-newly-bound (cdr x) bindings)))
+       (var (fgl-arg-unbound->var x1))
+       (look (assoc-eq var (fgl-object-bindings-fix bindings)))
+       ((when look)
+        (cons (fgl-arg-obj (cdr look))
+              (fgl-arglist-substitute-newly-bound (cdr x) bindings))))
+    (cons (fgl-arg-fix x1)
+          (fgl-arglist-substitute-newly-bound (cdr x) bindings)))
+  ///
+  (defret <fn>-when-all-boundp
+    (implies (fgl-arglist-all-boundp x)
+             (equal new-x (fgl-arglist-fix x)))
+    :hints(("Goal" :in-theory (enable fgl-arglist-unbounds))))
+
+
+  (defret fgl-arglist-unbounds-of-<fn>
+    (equal (fgl-arglist-unbounds new-x)
+           (set-difference-equal (fgl-arglist-unbounds x)
+                                 (alist-keys (fgl-object-bindings-fix bindings))))
+    :hints (("Goal" :in-theory
+             (enable fgl-arglist-unbounds set-difference-equal))))
+
+  (defret len-of-<fn>
+    (equal (len new-x) (len x))))
+
+(define fgl-arglist-substitute-newly-bound-exec (all-boundp
+                                                 (x fgl-arglist-p)
+                                                 (bindings fgl-object-bindings-p))
+  :guard (equal all-boundp (fgl-arglist-all-boundp x))
+  :guard-hints (("goal" :in-theory (enable fgl-arglist-substitute-newly-bound-when-all-boundp)))
+  :returns (new-x fgl-arglist-p)
+  :enabled t
+  (mbe :logic (fgl-arglist-substitute-newly-bound x bindings)
+       :exec (if all-boundp
+                 (fgl-arglist-fix x)
+               (fgl-arglist-substitute-newly-bound x bindings))))
+
+(define fgl-arglist-unbound-vars-match-p ((args fgl-arglist-p)
+                                          (terms pseudo-term-listp))
+  :returns (matchp booleanp)
+  (if (atom args)
+      t
+    (b* ((arg (car args))
+         (term (car terms)))
+      (and (fgl-arg-case arg
+             :unbound (pseudo-term-case term
+                        :var (equal term.name arg.var)
+                        :otherwise nil)
+             :obj t)
+           (fgl-arglist-unbound-vars-match-p (cdr args) (cdr terms))))))
+
+(defthm fgl-arglist-unbound-vars-match-p-of-substitute-newly-bound
+  (implies (fgl-arglist-unbound-vars-match-p args terms)
+           (fgl-arglist-unbound-vars-match-p
+            (fgl-arglist-substitute-newly-bound args bindings) terms))
+  :hints (("Goal" :induct (fgl-arglist-unbound-vars-match-p args terms)
+           :in-theory (enable fgl-arglist-unbound-vars-match-p
+                              fgl-arglist-substitute-newly-bound)
+           :do-not-induct t)))
+
+(defthm fgl-arglist-unbounds-of-fgl-objectlist->arglist
+  (equal (fgl-arglist-unbounds (fgl-objectlist->arglist x)) nil)
+  :hints(("Goal" :in-theory (enable fgl-arglist-unbounds
+                                    fgl-objectlist->arglist))))
