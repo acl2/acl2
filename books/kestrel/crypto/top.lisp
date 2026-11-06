@@ -31,6 +31,12 @@
 
 (include-book "attachments/top")
 
+;; Some of the books above install I/O pairs for primep (see add-io-pairs)
+;; that cover only the primes known when those books were certified,
+;; replacing the I/O pairs installed by books included before them.
+;; Reinstall all the I/O pairs, so that primep is fast on every prime above.
+(acl2::install-io-pairs dm::primep)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc cryptography

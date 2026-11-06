@@ -39,6 +39,7 @@
 (include-book "../prune-dag-precisely") ;brings in rewriter-basic
 (include-book "../dag-info")
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
+(include-book "kestrel/terms-light/termp-simple" :dir :system)
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
@@ -380,7 +381,7 @@
                                      (cw ")~%"))
                            (progn$ (cw "(DAG after ~x0 steps:~%" total-steps)
                                    (print-dag-with-elided-method-info dag "") ; todo: use the indent?
-                                   (cw ")")))))))
+                                   (cw ")~%")))))))
             (repeatedly-run dag
                             (- steps-left steps-for-this-iteration)
                             step-increment rule-alists assumptions normalize-xors rules-to-monitor ; use-internal-contextsp
@@ -646,6 +647,7 @@
                               (booleanp error-on-incomplete-runsp)
                               (booleanp assume-object-params-non-null)
                               (class-table-alistp class-alist) ; rename
+                              (plist-worldp-with-formals (w state))
                               )
                   :stobjs state
                   :guard-hints (("Goal" :in-theory (e/d (symbol-listp-of-unroll-java-code-rules
@@ -794,6 +796,10 @@
        ((mv erp assumption-rule-alists)
         (add-to-rule-alists extra-assumption-rules assumption-rule-alists (w state)))
        ((when erp) (mv erp nil nil nil nil state))
+       ;; todo: perhaps remove this:
+       ((when (not (term-listp-simple all-assumptions (w state))))
+        (er hard? 'unroll-java-code-core "Non-term(s) found among the assumptions, ~X01." all-assumptions nil)
+        (mv :non-term-assumption nil nil nil nil state))
        ((mv erp all-assumptions &)
         (acl2::simplify-conjunction-with-rule-alists-basic ;simplify-terms-repeatedly
           all-assumptions
@@ -809,7 +815,7 @@
           ))
        ((when erp) (mv erp nil nil nil nil state))
        (- (and (print-level-at-least-tp print)
-               (cw "(Simplified assumptions:~%~X01" all-assumptions nil)))
+               (cw "(Simplified assumptions:~%~X01)" all-assumptions nil)))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ((mv erp dag-to-simulate) (make-term-into-dag-basic term-to-run-with-output-extractor nil))
        ((when erp) (mv erp nil nil nil nil state))
