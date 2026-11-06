@@ -10,5 +10,5 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 
 export ACL2="${REPO_ROOT}/saved_acl2"
 
-"${REPO_ROOT}/books/build/cert.pl" -j "$(nproc)" \
+"${REPO_ROOT}/books/build/cert.pl" --clean-certs -j "$(nproc)" \
   "${REPO_ROOT}/books/arithmetic-5/top.lisp"

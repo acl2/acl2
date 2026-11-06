@@ -33,7 +33,7 @@
 (defun angle-equiv-up-to-180 (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
-    (rationalp (/ z w))))
+    (real/rationalp (/ z w))))
 
 (thm (angle-equiv-up-to-180 1 -1))
 (thm (not (angle-equiv-up-to-180 1 #C(0 1))))
@@ -41,7 +41,7 @@
 (defun angle-equiv (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
-    (and (rationalp (/ z w))
+    (and (real/rationalp (/ z w))
          (< 0 (/ z w)))))
 
 (encapsulate ()
@@ -54,15 +54,15 @@
                 :rule-classes nil))
 
              (local
-              (defthm rationalp-quotient-symm
-                  (implies (rationalp (* x (/ y)))
-                           (rationalp (* (/ x) y)))
+              (defthm real/rationalp-quotient-symm
+                  (implies (real/rationalp (* x (/ y)))
+                           (real/rationalp (* (/ x) y)))
                 :hints (("Goal" :use quotient-symm-ident
                                 :in-theory (disable |(/ (* x y))|)))))
 
              (local
               (defthm positive-quotient-symm
-                  (implies (and (rationalp (* x (/ y)))
+                  (implies (and (real/rationalp (* x (/ y)))
                                 (< 0 (* x (/ y))))
                            (< 0 (* (/ x) y)))
                 :hints (("Goal" :use quotient-symm-ident
@@ -77,12 +77,12 @@
                 :rule-classes nil))
 
              (local
-              (defthm rationalp-quotient-trans
+              (defthm real/rationalp-quotient-trans
                   (implies (and (acl2-numberp y)
                                 (not (equal y 0))
-                                (rationalp (* x (/ y)))
-                                (rationalp (* y (/ z))))
-                           (rationalp (* x (/ z))))
+                                (real/rationalp (* x (/ y)))
+                                (real/rationalp (* y (/ z))))
+                           (real/rationalp (* x (/ z))))
                 :hints (("Goal" :use quotient-trans-ident
                                 :in-theory (disable |(* (* x y) z)| |(* y (* x z))|)))))
 
@@ -90,8 +90,8 @@
               (defthm positive-quotient-trans
                   (implies (and (acl2-numberp y)
                                 (not (equal y 0))
-                                (rationalp (* x (/ y)))
-                                (rationalp (* y (/ z)))
+                                (real/rationalp (* x (/ y)))
+                                (real/rationalp (* y (/ z)))
                                 (< 0 (* x (/ y)))
                                 (< 0 (* y (/ z))))
                            (< 0 (* x (/ z))))
@@ -273,15 +273,15 @@
                             (* (imagpart x) (realpart y))))
                 :hints (("Goal" :use mult-def-complex)))
 
-              (defthm realpart-when-rationalp
-                  (implies (rationalp x)
+              (defthm realpart-when-real/rationalp
+                  (implies (real/rationalp x)
                            (equal (realpart x) x))
                 :hints (("Goal" :use ((:instance complex-definition (x x) (y 0))
                                       (:instance realpart-complex (x x) (y 0)))
                                 :in-theory (disable realpart-complex))))
 
-              (defthm imagpart-when-rationalp
-                  (implies (rationalp x)
+              (defthm imagpart-when-real/rationalp
+                  (implies (real/rationalp x)
                            (equal (imagpart x) 0))
                 :hints (("Goal" :use ((:instance complex-definition (x x) (y 0))
                                       (:instance imagpart-complex (x x) (y 0)))
@@ -324,7 +324,7 @@
 
               (local
                (defthm expt-2-nonnegative
-                   (implies (rationalp x)
+                   (implies (real/rationalp x)
                             (<= 0 (expt x 2)))
                  :hints (("Goal" :cases ((< x 0))))
                  :rule-classes (:linear :type-prescription :rewrite)))
@@ -530,7 +530,7 @@
 
 (defthm associativity-of-angle*-lemma-2
     (implies (and (< 0 y)
-                  (rationalp y)
+                  (real/rationalp y)
                   (< 0 (imagpart z)))
              (< 0 (imagpart (* y z)))))
 
