@@ -61,6 +61,20 @@
  (bit-vars-message '(x y z))
  "These variables have bit constraints: X, Y, Z")
 
+;; Names whose digits have leading zeros are shown as they are,
+;; not as part of a range.
+(acl2::assert-equal
+ (bit-vars-message '(b01 b02 b03))
+ "These variables have bit constraints: B01, B02, B03")
+
+(acl2::assert-equal
+ (bit-vars-message '(b007))
+ "These variables have bit constraints: B007")
+
+(acl2::assert-equal
+ (bit-vars-message '(b08 b09 b10 b11))
+ "These variables have bit constraints: B08, B09, B10..B11")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Printing constraints
 

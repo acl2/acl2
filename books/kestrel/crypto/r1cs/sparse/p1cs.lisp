@@ -620,6 +620,9 @@
   ;; If bit-var symbol name is of the form:  nondigit+ digits+
   ;; then return a list of the base string and the number.
   ;; Otherwise return nil.
+  ;; The digits must be the decimal numeral of the number, without leading
+  ;; zeros, because ranges are printed from the base and the number;
+  ;; for example, b01 is not split, since it would be printed as b1.
   (if (or (null bit-var) (not (symbolp bit-var)))
       nil
     (let* ((base-name (symbol-name bit-var))
@@ -627,9 +630,12 @@
            (first-digit-pos (position-if-digit chars 0)))
       (and (natp first-digit-pos)
            (> first-digit-pos 0)
-           (let ((num (str::strval (subseq base-name first-digit-pos (length base-name)))))
-             (if num
-                 (list (subseq base-name 0 first-digit-pos) num)
+           (let ((base (subseq base-name 0 first-digit-pos))
+                 (num (str::strval (subseq base-name first-digit-pos (length base-name)))))
+             (if (and num
+                      (equal (concatenate 'string base (str::nat-to-dec-string num))
+                             base-name))
+                 (list base num)
                nil))))))
 
 (local
