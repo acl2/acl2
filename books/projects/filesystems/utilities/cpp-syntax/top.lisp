@@ -42,7 +42,7 @@
      casts.  A bare @('(ident)e') is a cast when the operand begins with
      an identifier, literal, @('('), @('++'), @('--'), @('~'), @('!'),
      @('+'), @('-'), or @('&'), and is treated as binary multiplication
-     when the operand begins with a bare @('*') — that case is genuinely
+     when the operand begins with a bare @('*') -- that case is genuinely
      ambiguous without a symbol table of type names, so multiplication is
      the deliberate default.")
    (xdoc::p
@@ -50,7 +50,7 @@
    (xdoc::ul
     (xdoc::li "@(see cpp-keywords): the list of C++-only keyword strings
                and the predicate @('cpp-only-keyword-p')")
-    (xdoc::li "@(see cpp-abstract-syntax): fixtypes for C++ AST nodes —
+    (xdoc::li "@(see cpp-abstract-syntax): fixtypes for C++ AST nodes --
                access specifiers, type specifiers, typed parameters,
                template parameters, class specifiers, namespace definitions,
                operator function identifiers, lambda captures,
@@ -70,7 +70,7 @@
                and range-based @('for')), lambda expressions with capture lists,
                constructor initializer lists, and class bodies with inline
                member definitions (@('parse-cpp-class-specifier-full'))")
-    (xdoc::li "@(see cpp-top-level-parser): the top-level dispatch loop —
+    (xdoc::li "@(see cpp-top-level-parser): the top-level dispatch loop --
                @('parse-cpp-translation-unit') iterates over top-level
                declarations including namespace definitions (with full bodies),
                class definitions (with inline method bodies),

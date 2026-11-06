@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "WP-GEN")
 
 (include-book "shared")
 (include-book "mutrec/mutrec")
@@ -253,7 +253,7 @@
 ;; create a (hopefully) new name for a wp function according to index
 ;; and provided prefix
 (defun make-wp-string (idx prefix)
-  (intern
+  (intern-in-package-of-symbol
     (concatenate
      'string
      (if prefix
@@ -265,7 +265,7 @@
        "wp-")
      (coerce (explode-atom idx 10)
 	     'string))
-   "ACL2"))
+   (pkg-witness "WP-GEN")))
 
 ;; Efficient disjunction of uninterpreted terms (not necessary but
 ;; makes function definitions simpler in the end)
@@ -535,7 +535,7 @@
                 ,mutrec))))))
 
 (defxdoc run-wp
-  :parents (run-wp)
+  :parents (acl2::wp-gen)
   :short "Generate WP functions"
   :long "<p>See :DOC WEAKEST-PRECONDITIONS-GENERATOR.</p>
 
@@ -684,7 +684,7 @@
 )
 
 (defxdoc weakest-preconditions-generator
-  :parents (weakest-preconditions-generator)
+  :parents (acl2::wp-gen)
   :short "Generate WP functions"
   :long "<p>*OVERVIEW*</p>
 

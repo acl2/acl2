@@ -417,9 +417,9 @@
 		  (:instance lemma-1
 			     (x (+ (circle x) (- (circle y))))
 			     (y (+ x (- y)))))
-	    :in-theory (enable-disable (i-close)
-				       (circle-differentiable
-					lemma-1)))))
+	    :in-theory (e/d (i-close)
+			    (circle-differentiable
+			     lemma-1)))))
  )
 
 

@@ -1,3 +1,4 @@
-(in-package "ACL2")
+(include-book "portcullis") ; Added with wrapper package
+(in-package "WP-GEN")
 ; cert-flags: ? t :ttags (:ccg)
 (certify-book "wp-gen" ? t :ttags (:ccg))
