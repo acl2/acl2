@@ -110053,10 +110053,10 @@ it."
 ; need for a theorem F-IS-G, rather than |F-is-G|.  The error message also
 ; notes that the supporting theorem must be admitted non-locally.
 
-; Made several proof-builder variables and functions untouchable, which can
-; avoid soundness bugs.  For examples see community book
-; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
-; passing along this issue from AI.
+; Made several variables and functions untouchable, in particular pertaining to
+; the proof-builder, which can avoid soundness bugs.  For a few examples see
+; community book system/tests/proof-builder-untouchables.lisp.  Thanks to Eric
+; Smith for passing along this issue from AI.
 
 ; Tweaked the definition of built-in function ev-fncall-rec-logical by adding
 ; ec-call wrappers.  See that definition, in ACL2 source file
@@ -110093,6 +110093,13 @@ it."
 ; Lisp evaluation at compile time.  See
 ; books/system/tests/with-debug-untranslated-args.lisp.  Thanks to Eric Smith
 ; for passing along this bug from AI.
+
+; State global in-verify-flg is the ld-level when inside verify, as before.
+; But now it is t instead of nil when inside the proof-builder but not inside
+; verify.  New function (in-verify state) uses in-verify-flg to recognize when
+; we are inside verify.  These changes support the release note item on
+; disallowing the use of verify or retrieve inside the proof-builder (whether
+; or not inside verify).
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
@@ -110723,6 +110730,12 @@ it."
  standard input stream.  This could happen in @(':')@(tsee program)-mode code,
  causing an infinite loop in at least one Lisp implementation (SBCL).</p>
 
+ <p>Calls of @(tsee verify) and @(tsee retrieve) are now illegal when made
+ inside the @(see proof-builder).  This change avoids unsoundness: proofs of
+ @('nil') were possible due to the lack of those restrictions.  See for example
+ @(see community-books) files @('system/tests/verify-fn-pc-macro-book.lsp') and
+ @('system/tests/pc-macro-retrieve-fn-error-save.lsp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -110821,6 +110834,16 @@ it."
  This change closes PR #2099 and includes the tests from that PR in @(see
  community-books) @('system/tests/reader-error*.*'); thanks to Eric McCarthy
  and AI for that PR.</p>
+
+ <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder).
+ The following example shows why.</p>
+
+ @({
+ (verify (equal x x))
+ (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
+ :q
+ ; Now the exit command failed to work, so we were stuck in the proof-builder.
+ })
 
  <h3>Changes at the System Level</h3>
 

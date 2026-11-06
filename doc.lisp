@@ -107618,6 +107618,13 @@ Bug Fixes From AI via Eric Smith
   causing an infinite loop in at least one Lisp implementation
   (SBCL).
 
+  Calls of [30m[47m[verify][0m[0m and [30m[47m[retrieve][0m[0m are now illegal when made inside the
+  [proof-builder].  This change avoids unsoundness: proofs of [30m[47mnil[0m[0m
+  were possible due to the lack of those restrictions.  See for
+  example [community-books] files
+  [30m[47msystem/tests/verify-fn-pc-macro-book.lsp[0m[0m and
+  [30m[47msystem/tests/pc-macro-retrieve-fn-error-save.lsp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -107718,6 +107725,14 @@ Other Bug Fixes
   This change closes PR #2099 and includes the tests from that PR in
   [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
   McCarthy and AI for that PR.
+
+  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder].  The
+  following example shows why.
+
+    (verify (equal x x))
+    (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
+    :q
+    ; Now the exit command failed to work, so we were stuck in the proof-builder.
 
 
 Changes at the System Level
