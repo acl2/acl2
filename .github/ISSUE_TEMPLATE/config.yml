@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask on the acl2-help mailing list
+    url: https://utlists.utexas.edu/sympa/info/acl2-help
+    about: Questions about using ACL2. Post to acl2-help@utlists.utexas.edu.
+  - name: Ask on the ACL2 Zulip
+    url: https://www.acl2.org/doc/index.html?topic=ACL2____COMMUNITY
+    about: Questions and discussion with the ACL2 community. Zulip is invitation-only; this page explains how to join.
