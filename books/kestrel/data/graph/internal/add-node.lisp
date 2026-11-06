@@ -88,8 +88,7 @@
   (implies (well-formedp adjl)
            (well-formedp (add-node node adjl)))
   :enable (add-node
-           well-formedp
-           map-values-all-keys-subsetp-when-map-values-all-keys-subsetp-and-subset))
+           well-formedp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -14,6 +14,7 @@
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
@@ -36,6 +37,7 @@
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
 (local (include-book "kestrel/data/treeset/cardinality" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
@@ -234,6 +236,13 @@
            (map-values-all-keys-subsetp map nodes1))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp-when-set-all-keys-subsetp-and-subset))
+
+;; The usual way the node set grows, with no free variable.
+
+(defrule map-values-all-keys-subsetp-of-arg1-and-insert
+  (implies (map-values-all-keys-subsetp map nodes)
+           (map-values-all-keys-subsetp map (treeset::insert node nodes)))
+  :enable map-values-all-keys-subsetp-when-map-values-all-keys-subsetp-and-subset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
