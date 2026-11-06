@@ -12,6 +12,7 @@
 (include-book "gadgets/boolean")
 (include-book "gadgets/boolean-alt")
 (include-book "gadgets/xor")
+(include-book "gadgets/selection")
 (include-book "std/testing/assert-equal" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -97,3 +98,33 @@
 (acl2::assert-equal
  (p1cs1 (fp1) (r1cs-constraint (list (list (- (fp1) (expt 2 40)) 'x)) '((1 y)) '((1 z))))
  "(-(2^40).X) * (Y) = (Z)")
+
+;; A gadget constraint.
+(acl2::assert-equal
+ (p1cs1 (fp1) (make-selection-constraint 'b 'x 'y 'z))
+ "(B) * (Y - X) = (Y - Z)")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Coefficients printed by name
+
+;; Each field element has at most one name.
+(assert-event (no-duplicatesp (strip-cars (nums-to-strings (fp1)))))
+(assert-event (no-duplicatesp (strip-cars (nums-to-strings (fp2)))))
+
+(acl2::assert-equal
+ (p1cs1 (fp1) (r1cs-constraint (list (list (expt 2 200) 'x)) '((1 y)) '((1 z))))
+ "(2^200.X) * (Y) = (Z)")
+
+;; (1/2)^200, using 1/2 = (fp+1)/2
+(acl2::assert-equal
+ (p1cs1 (fp1) (r1cs-constraint (list (list (mod (expt (/ (+ (fp1) 1) 2) 200) (fp1)) 'x))
+                               '((1 y))
+                               '((1 z))))
+ "(1/2^200.X) * (Y) = (Z)")
+
+;; (-2)^199
+(acl2::assert-equal
+ (p1cs1 (fp1) (r1cs-constraint (list (list (mod (- (fp1) (mod (expt 2 199) (fp1))) (fp1)) 'x))
+                               '((1 y))
+                               '((1 z))))
+ "(-(2^199).X) * (Y) = (Z)")

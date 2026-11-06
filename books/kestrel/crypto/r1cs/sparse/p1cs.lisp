@@ -191,47 +191,40 @@
                "Unsupported prime: ~x0. Currently supported primes are ~x1 and ~x2."
                prime (fp1) (fp2)))))
 
-(in-theory (disable (:e nums-to-strings)))
-
-(defthm alistp-of-nums-to-strings-fp1
-  (alistp (nums-to-strings (fp1)))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
-
-(defthm alistp-of-nums-to-strings-fp2
-  (alistp (nums-to-strings (fp2)))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
+(local (in-theory (disable (:e nums-to-strings))))
 
 ;generalized predicate for alist format of nums-to-strings
-(defun natural-to-singleton-string-list-alistp (alist)
-  (declare (xargs :guard t))
-  (if (atom alist)
-      (null alist)
-    (and (consp (car alist))
-         (let ((entry (car alist)))
-           (and (consp entry)
-                (natp (car entry))
-                (consp (cdr entry))
-                (stringp (cadr entry))
-                (null (cddr entry))))
-         (natural-to-singleton-string-list-alistp (cdr alist)))))
+(local
+  (defun natural-to-singleton-string-list-alistp (alist)
+    (declare (xargs :guard t))
+    (if (atom alist)
+        (null alist)
+      (and (consp (car alist))
+           (let ((entry (car alist)))
+             (and (consp entry)
+                  (natp (car entry))
+                  (consp (cdr entry))
+                  (stringp (cadr entry))
+                  (null (cddr entry))))
+           (natural-to-singleton-string-list-alistp (cdr alist)))))
+  )
 
 ;theorem that shows cadr of every entry in this alist format is a string
-(defthm nat-single-string-list-alist-implies-stringp-values
-  (implies (and (natural-to-singleton-string-list-alistp alist)
-                (assoc-equal key alist))
-           (stringp (cadr (assoc-equal key alist))))
-  :hints (("Goal" :in-theory (enable assoc-equal))))
+(local
+  (defthm stringp-of-cadr-of-assoc-equal-when-natural-to-singleton-string-list-alistp
+    (implies (and (natural-to-singleton-string-list-alistp alist)
+                  (assoc-equal key alist))
+             (stringp (cadr (assoc-equal key alist))))
+    :hints (("Goal" :in-theory (enable assoc-equal))))
+  )
 
-;;This shows there are no collisions:
-;;(assert-equal (len (nums-to-strings fp1)) (len (remove-duplicates (strip-cars (nums-to-strings fp1)))))
-
-(defun p1cs-negative (fp x)
+(defund p1cs-negative (fp x)
   (declare (xargs :guard (and (natp fp) (< 1 fp) (integerp x))))
   (if (> x (/ fp 2))
       (str::int-to-dec-string (- x fp))
     nil))
 
-(defun p1cs-coefficient (fp term)
+(defund p1cs-coefficient (fp term)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (sparse-vector-elementp term))
                   :guard-hints (("Goal" :in-theory (e/d (nums-to-strings) (assoc-equal))))))
@@ -252,26 +245,11 @@
 ;;  multiples of powers of 2: 1701411834604692317446000245674807918592.X
 ;;  as (5.2^128 + 7.2^64).X.
 
-(defthm p1cs-neg-string
-  (implies (p1cs-negative fp x)
-           (stringp (p1cs-negative fp x))))
-
-;these theorems become much more efficient
-(defthm stringp-of-nums-to-strings-fp1-values
-  (implies (assoc-equal x (nums-to-strings (fp1)))
-           (stringp (cadr (assoc-equal x (nums-to-strings (fp1))))))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
-
-(defthm stringp-of-nums-to-strings-fp2-values
-  (implies (assoc-equal x (nums-to-strings (fp2)))
-           (stringp (cadr (assoc-equal x (nums-to-strings (fp2))))))
-  :hints (("Goal" :in-theory (enable nums-to-strings))))
-
 (defun p1cs-var (term)
   (declare (xargs :guard (sparse-vector-elementp term)))
   (if (symbolp (second term))
       ;; Skip the package prefix and the vertical bars.
-      ;; This would be unsafe if the vars were not aleady unique
+      ;; This would be unsafe if the vars were not already unique
       ;; or did not have print-read equivalence.
       (str::cat (symbol-name (second term)))
     (if (not (equal (second term) 1) ) ; (equal term '(quote 1))))
@@ -280,18 +258,18 @@
          ; named "1"
       )))
 
-(defthm p1cs-coefficient-returns-string
-  (implies (and (member fp (list (fp1) (fp2)))
-                (sparse-vector-elementp term))
-           (stringp (p1cs-coefficient fp term)))
-  :hints (("Goal" :in-theory (e/d (nums-to-strings)
-                                  (p1cs-negative assoc-equal)))))
+(local
+  (defthm stringp-of-p1cs-coefficient
+    (implies (and (member fp (list (fp1) (fp2)))
+                  (sparse-vector-elementp term))
+             (stringp (p1cs-coefficient fp term)))
+    :hints (("Goal" :in-theory (e/d (p1cs-coefficient nums-to-strings)
+                                    (assoc-equal)))))
+  )
 
 (defun p1cs-term (fp term)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
-                              (sparse-vector-elementp term))
-                  :guard-hints (("Goal" :in-theory (disable p1cs-coefficient
-                                                            p1cs-negative)))))
+                              (sparse-vector-elementp term))))
   (let ((coeff-string (p1cs-coefficient fp term))
         (var-or-empty (p1cs-var term)))
     (str::cat
@@ -347,11 +325,13 @@
     (cons (list (mod (first (first sv)) fp) (second (first sv)))
           (p1cs-normalize-sv fp (rest sv)))))
 
-(defthm sparse-vectorp-of-p1cs-normalize-sv
-  (implies (and (sparse-vectorp sv)
-                (integerp fp))
-           (sparse-vectorp (p1cs-normalize-sv fp sv)))
-  :hints (("Goal" :in-theory (enable sparse-vectorp mod))))
+(local
+  (defthm sparse-vectorp-of-p1cs-normalize-sv
+    (implies (and (sparse-vectorp sv)
+                  (integerp fp))
+             (sparse-vectorp (p1cs-normalize-sv fp sv)))
+    :hints (("Goal" :in-theory (enable sparse-vectorp mod))))
+  )
 
 (defun p1cs-normalize-constraint (fp constraint)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
@@ -438,10 +418,6 @@
           (first term)
         (lc-constant-term (cdr lc))))))
 
-(defthm lc-constant-term-result-is-integer
-  (implies (sparse-vectorp lc)
-           (integerp (lc-constant-term lc))))
-
 ;; This should be moved to the ACL2 community books
 ;; in acl2/books/kestrel/crypto/r1cs/sparse/r1cs.lisp
 (defund lc-termp (l)
@@ -462,18 +438,15 @@
           term
         (lc-first-var-term (rest lc))))))
 
-(defthm lc-first-var-term-result-is-term-or-nil
-  (b* ((term  (lc-first-var-term lc)))
-    (implies (and (sparse-vectorp lc)
-                  term)
-             (lc-termp term)))
-  :hints (("Goal" :in-theory (enable lc-first-var-term lc-termp)))
+(local
+  (defthmd true-listp-of-lc-first-var-term
+    (implies (sparse-vectorp lc)
+             (true-listp (lc-first-var-term lc))))
   )
 
-(defthmd true-listp-of-lc-first-var-term
-  (implies (sparse-vectorp lc)
-           (true-listp (lc-first-var-term lc)))
-  :hints (("Goal" :in-theory (enable lc-first-var-term lc-termp)))
+(local
+  (defthm symbolp-of-cadr-of-lc-first-var-term
+    (symbolp (cadr (lc-first-var-term lc))))
   )
 
 ; The following recognizers of parts of bit constraints expect the
@@ -525,13 +498,12 @@
 ; c=0 can be represented as a linear combination of zero terms,
 ; or as a single term with coefficient 0, such as 0*1.
 (defun zero-lc-p (lc)
-  (declare (xargs :guard (sparse-vectorp lc)
-                  :guard-hints (("Goal" :in-theory (enable sparse-vectorp)))))
+  (declare (xargs :guard (sparse-vectorp lc)))
   (or (null lc)
       (and (= 1 (len lc))
            (equal 0 (first (first lc))))))
 
-(defun bit-constraint-var (fp constraint)
+(defund bit-constraint-var (fp constraint)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (r1cs-constraintp constraint))))
   ;; If constraint is a bit constraint on a single var,
@@ -553,6 +525,10 @@
                           (equal var1 var2))
                      var1
                    nil))))))))
+
+(defthm symbolp-of-bit-constraint-var
+  (symbolp (bit-constraint-var fp constraint))
+  :hints (("Goal" :in-theory (enable bit-constraint-var))))
 
 ; In case we need a T/NIL predicate
 (defun bit-constraint-p (fp constraint)
@@ -587,10 +563,6 @@
         (cons var (vars-constrained-to-be-bits fp (cdr constraints)))))))
 
 ; Separates list of constraints into list of bit vars and list of non-bit constraints.
-; Will be:
-; (define bit-vars-and-non-bit-constraints ((constraints r1cs::r1cs-constraint-listp))
-;   :returns (mv (bit-vars symbol-listp) (constraints r1cs::r1cs-constraint-listp))
-; For now without guards or type checks.
 (defun bit-vars-and-non-bit-constraints (fp constraints)
   (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
                               (r1cs-constraint-listp constraints))))
@@ -603,6 +575,13 @@
     (if (null maybe-bit-var)
         (mv rest-bit-vars (cons first-constraint rest-non-bit-constraints))
       (mv (cons maybe-bit-var rest-bit-vars) rest-non-bit-constraints))))
+
+(defthm symbol-listp-of-mv-nth-0-of-bit-vars-and-non-bit-constraints
+  (symbol-listp (mv-nth 0 (bit-vars-and-non-bit-constraints fp constraints))))
+
+(defthm r1cs-constraint-listp-of-mv-nth-1-of-bit-vars-and-non-bit-constraints
+  (implies (r1cs-constraint-listp constraints)
+           (r1cs-constraint-listp (mv-nth 1 (bit-vars-and-non-bit-constraints fp constraints)))))
 
 ; Output all the constraints to the console, in order.
 (defun p1cs-all (fp constraints)
@@ -628,13 +607,15 @@
         next-pos
       (position-if-digit (cdr char-list) (+ next-pos 1)))))
 
-(defthm position-if-digit-bounds
-  (implies (position-if-digit char-list next-pos)
-           (<= (position-if-digit char-list next-pos)
-               (+ next-pos (len char-list))))
-  :rule-classes ((:linear :trigger-terms ((position-if-digit char-list next-pos)))))
+(local
+  (defthm position-if-digit-bounds
+    (implies (position-if-digit char-list next-pos)
+             (<= (position-if-digit char-list next-pos)
+                 (+ next-pos (len char-list))))
+    :rule-classes ((:linear :trigger-terms ((position-if-digit char-list next-pos)))))
+  )
 
-(defun bit-var-base-and-num (bit-var)
+(defund bit-var-base-and-num (bit-var)
   (declare (xargs :guard t))
   ;; If bit-var symbol name is of the form:  nondigit+ digits+
   ;; then return a list of the base string and the number.
@@ -651,7 +632,28 @@
                  (list (subseq base-name 0 first-digit-pos) num)
                nil))))))
 
-(defun bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
+(local
+  (defthm len-of-bit-var-base-and-num
+    (implies (bit-var-base-and-num bit-var)
+             (equal (len (bit-var-base-and-num bit-var)) 2))
+    :hints (("Goal" :in-theory (enable bit-var-base-and-num))))
+  )
+
+(local
+  (defthm stringp-of-car-of-bit-var-base-and-num
+    (implies (bit-var-base-and-num bit-var)
+             (stringp (car (bit-var-base-and-num bit-var))))
+    :hints (("Goal" :in-theory (enable bit-var-base-and-num))))
+  )
+
+(local
+  (defthm natp-of-cadr-of-bit-var-base-and-num
+    (implies (bit-var-base-and-num bit-var)
+             (natp (cadr (bit-var-base-and-num bit-var))))
+    :hints (("Goal" :in-theory (enable bit-var-base-and-num))))
+  )
+
+(defund bit-var-range-starting-with (starting-base-and-num last-num bit-vars)
   (declare (xargs :guard (and (true-listp starting-base-and-num)
                               (= (len starting-base-and-num) 2)
                               (stringp (first starting-base-and-num)) ;base is a string
@@ -675,44 +677,31 @@
           (mv (concatenate 'string base (str::nat-to-dec-string start-num) ".." base (str::nat-to-dec-string last-num)) bit-vars))))
     (bit-var-range-starting-with starting-base-and-num (+ last-num 1) (cdr bit-vars))))
 
-; TODO: move remaining code to logic mode
-;(program)
+(local
+  (defthm stringp-of-mv-nth-0-of-bit-var-range-starting-with
+    (implies (stringp (first starting-base-and-num))
+             (stringp (mv-nth 0 (bit-var-range-starting-with starting-base-and-num last-num bit-vars))))
+    :hints (("Goal" :in-theory (enable bit-var-range-starting-with))))
+  )
 
-;lemmas
-(defthm len-of-bit-var-range-starting-with
-  (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
-      (len bit-vars))
-  :rule-classes :linear)
+(local
+  (defthm len-of-mv-nth-1-of-bit-var-range-starting-with
+    (<= (len (mv-nth 1 (bit-var-range-starting-with x y bit-vars)))
+        (len bit-vars))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable bit-var-range-starting-with))))
+  )
 
-(defthm len-of-bit-var-base-and-num
-  (implies (bit-var-base-and-num bit-var)
-           (equal (len (bit-var-base-and-num bit-var)) 2)))
-
-(defthm car-of-bit-var-base-and-num-is-string
-  (implies (bit-var-base-and-num bit-var)
-           (stringp (car (bit-var-base-and-num bit-var)))))
-
-(defthm cadr-of-bit-var-base-and-num-is-natp
-  (implies (bit-var-base-and-num bit-var)
-           (natp (cadr (bit-var-base-and-num bit-var)))))
-
-(defthm mv-nth-1-of-bit-var-range-starting-with-is-true-listp
-  (implies (true-listp bit-vars)
-           (true-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
-
-(defthm mv-nth-1-of-bit-var-range-starting-with-is-symbol-listp
-  (implies (symbol-listp bit-vars)
-           (symbol-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars)))))
+(local
+  (defthm symbol-listp-of-mv-nth-1-of-bit-var-range-starting-with
+    (implies (symbol-listp bit-vars)
+             (symbol-listp (mv-nth 1 (bit-var-range-starting-with starting-base-and-num last-num bit-vars))))
+    :hints (("Goal" :in-theory (enable bit-var-range-starting-with))))
+  )
 
 (defun bit-var-ranges (bit-vars)
   (declare (xargs :guard (symbol-listp bit-vars)
-                  :measure (len bit-vars)
-                  :hints (("Goal" :in-theory (disable
-                                               bit-var-range-starting-with
-                                               bit-var-base-and-num)))
-                  :guard-hints (("Goal" :in-theory (disable
-                                                     bit-var-range-starting-with
-                                                     bit-var-base-and-num)))))
+                  :measure (len bit-vars)))
   (b* (((acl2::when (endp bit-vars)) nil)
        (base-and-num (bit-var-base-and-num (car bit-vars)))
        ((acl2::when (null base-and-num))
@@ -727,6 +716,11 @@
     (cons range-string
           (bit-var-ranges rest-bit-vars))))
 
+(local
+  (defthm string-listp-of-bit-var-ranges
+    (string-listp (bit-var-ranges bit-vars)))
+  )
+
 (defun concatenate-bit-var-ranges (ranges) ; each range is a string; can be a singleton var
   (declare (xargs :guard (string-listp ranges)))
   (cond ((null ranges) "")
@@ -734,6 +728,7 @@
         (t (concatenate 'string (car ranges) ", " (concatenate-bit-var-ranges (cdr ranges))))))
 
 (defun bit-vars-message (bit-vars)
+  (declare (xargs :guard (symbol-listp bit-vars)))
   (let* ((ranges (bit-var-ranges bit-vars))
          (comma-separated-ranges (concatenate-bit-var-ranges ranges)))
     (if (equal comma-separated-ranges "")
@@ -749,46 +744,11 @@
 ; Similarly, if you are using this for bls12-377 scalar field prime,
 ; do (p1cs (fp2) ...) and maybe define p1cs in your own package without the fp arg.
 (defun p1cs (fp constraints)
+  (declare (xargs :guard (and (member fp (list (fp1) (fp2)))
+                              (r1cs-constraint-listp constraints))))
   (b* ((- (cw "Total of ~s0 constraints.~%" (len constraints)))
        ((mv bit-vars non-bit-constraints)
         (bit-vars-and-non-bit-constraints fp constraints))
        (- (cw!+ "~s0~%" (bit-vars-message bit-vars)))
        (- (cw "Non-bit constraints:~%")))
     (p1cs-all fp non-bit-constraints)))
-
-;;Possible test cases
-
-;;(include-book "top")
-
-;; simple
-;; (p1cs (fp1) (list (make-selection-constraint 'b 'x 'y 'z)))
-
-;; 2^200
-;; (p1cs (fp1) (list (r1cs-constraint
-;;                            (list (list (expt 2 200) 'x))
-;;                            (list (list 1 'y))
-;;                            (list (list 1 'z)))))
-
-;; (1/2)^200
-;; (defun test-half-power-200-constraint ()
-;;   (let* ((fp (fp1))
-;;          (inv-2 (/ (+ fp 1) 2))
-;;          (half-200 (mod (expt inv-2 200) fp)))
-;;     (r1cs-constraint
-;;       (list (list half-200 'x))
-;;       (list (list 1 'y))
-;;       (list (list 1 'z)))))
-
-;; (p1cs (fp1) (list (test-half-power-200-constraint)))
-
-;; (-2)^199
-;; (defun test-neg-2-power-199-constraint ()
-;;   (let* ((fp (fp1))
-;;          (pos-power (mod (expt 2 199) fp))
-;;          (neg-power (mod (- fp pos-power) fp)))
-;;     (r1cs-constraint
-;;       (list (list neg-power 'x))
-;;       (list (list 1 'y))
-;;       (list (list 1 'z)))))
-
-;; (p1cs (fp1) (list (test-neg-2-power-199-constraint)))
