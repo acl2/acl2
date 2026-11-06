@@ -9,9 +9,9 @@
 (in-package "TREEBAG")
 
 (include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
 
-(include-book "../bag-defs")
-(include-book "../count-defs")
+(include-book "map-values-all-posp-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "subbag"))
