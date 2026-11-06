@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -14,10 +14,7 @@
 
 (include-book "std/util/defund-sk" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,13 +49,12 @@
     "The theorems for identifier expressions (i.e. variables) and constants
      are a bit different from the others,
      because those expressions have no sub-expressions.
-     However, the form is fairly similar, given that difference.
+     However, the form is fairly similar, considering that difference.
      The theorem for variables has an additional hypothesis about
      the variable being in the computation state with a certain type,
      which serves to establish the assertion about the type.")
    (xdoc::p
-    "The theorems make use of @(tsee b*) bindings
-     to keep them more readable.
+    "The theorems make use of @(tsee b*) bindings to keep them more readable.
      The theorems include additional hypotheses, in some cases,
      to ensure that the constructs in question are amenable to
      our formal dynamic semantics of C, which currently only covers a subset.")
@@ -169,8 +165,7 @@
              c::eval-const
              c::eval-iconst
              c::check-iconst
-             c::type-of-value)
-    :disable ((:e tau-system))) ; for speed
+             c::type-of-value))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -237,6 +232,7 @@
              c::exec-unary
              c::eval-unary
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-arithmeticp
              c::value-realp
              c::value-integerp
@@ -286,6 +282,7 @@
     :enable (c::exec-cast
              c::eval-cast
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -353,6 +350,7 @@
              c::exec-binary-strict-pure
              c::eval-binary-strict-pure
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -391,6 +389,7 @@
              (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -441,6 +440,7 @@
              (c::exec-expr (c::expr-binary '(:logand) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -479,6 +479,7 @@
              (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -529,6 +530,7 @@
              (c::exec-expr (c::expr-binary '(:logor) new-arg1 new-arg2)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -567,6 +569,7 @@
     :enable (c::exec-expr
              c::expr-purep
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp)
     :expand ((c::exec-expr
               (c::expr-binary '(:asg) (c::expr-ident var) old-arg)
@@ -623,6 +626,7 @@
              (c::exec-expr (c::expr-cond new-test new-then new-else)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -673,6 +677,7 @@
              (c::exec-expr (c::expr-cond new-test new-then new-else)
                            new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -708,6 +713,7 @@
              (c::exec-initer (c::initer-single new-expr)
                              new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::init-type-of-init-value))
 
@@ -793,6 +799,7 @@
     :expand ((c::exec-stmt (c::stmt-return old-expr) old-compst old-fenv limit)
              (c::exec-stmt (c::stmt-return new-expr) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::type-option-of-stmt-value
              c::type-of-value-option
@@ -860,6 +867,7 @@
              (c::exec-stmt
               (c::stmt-if new-test new-then) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -896,6 +904,7 @@
              (c::exec-stmt
               (c::stmt-if new-test new-then) new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -943,6 +952,7 @@
               (c::stmt-ifelse new-test new-then new-else)
               new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;
@@ -990,6 +1000,7 @@
               (c::stmt-ifelse new-test new-then new-else)
               new-compst new-fenv limit))
     :enable (c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1722,7 +1733,7 @@
                         new-compst
                         limit)
     (declare (xargs :measure (nfix limit)
-                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable nfix o< o-p o-finp)))))
     (b* (((when (zp limit)) nil)
          ((unless (equal old-compst new-compst)) nil)
          ((mv old-test-eval old-compst)
@@ -1838,6 +1849,7 @@
     :enable (while-induct
              c::exec-stmt-while
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              expr-compustate-vars-multi)
     :hints ('(:use ((:instance while-test-hyp-necc
@@ -1893,7 +1905,7 @@
                           new-compst
                           limit)
     (declare (xargs :measure (nfix limit)
-                    :hints (("Goal" :in-theory (enable nfix o< o-finp)))))
+                    :hints (("Goal" :in-theory (enable nfix o< o-p o-finp)))))
     (b* (((when (zp limit)) nil)
          ((unless (equal old-compst new-compst)) nil)
          (old-compst (c::enter-scope old-compst))
@@ -2013,6 +2025,7 @@
     :enable (dowhile-induct
              c::exec-stmt-dowhile
              c::apconvert-expr-value-when-not-array
+             c::not-errorp-when-expr-valuep
              c::value-kind-not-array-when-value-integerp
              c::compustate-has-vars-with-types-p-of-enter-scope
              c::compustate-has-vars-with-types-p-of-exit-exec-enter

@@ -87,7 +87,11 @@
         "Compound atoms serialize their parts in sequence: symbols as their
          package name and symbol name (each length-prefixed), rationals as
          numerator and denominator (self-delimiting LEB128 encodings), and
-         numbers as their real and imaginary parts."))
+         numbers as their real and imaginary parts.")
+      (xdoc::li
+        "Two kinds of symbols are exceptions: @('nil') is serialized as a
+         single tag byte of its own, and a keyword as its own tag byte followed
+         by its symbol name alone."))
     (xdoc::p
       "These functions are specifications. They are executable, but no attempt
        is made to execute them efficiently; a hash function is expected to fuse
@@ -125,6 +129,8 @@
 (defconst *tag-rational* #x75)
 (defconst *tag-complex* #x76)
 (defconst *tag-bad-atom* #x77)
+(defconst *tag-nil* #x78)
+(defconst *tag-keyword* #x79)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,7 +142,9 @@
         *tag-integer*
         *tag-rational*
         *tag-complex*
-        *tag-bad-atom*))
+        *tag-bad-atom*
+        *tag-nil*
+        *tag-keyword*))
 
 ;; Sanity check
 (rule
@@ -540,11 +548,23 @@
   (xdoc::topstring
     (xdoc::p
       "The package name followed by the symbol name, each length-prefixed. By
-       @('acl2::symbol-equality'), these two strings determine the symbol."))
+       @('acl2::symbol-equality'), these two strings determine the symbol.")
+    (xdoc::p
+      "There are two exceptions. First, @('nil') is serialized as a single tag
+       byte of its own. Since @('nil') terminates every true list, it is
+       typically the most common atom by far. Second, a keyword is serialized
+       as its own tag byte followed by its symbol name, omitting the package
+       name. Keywords are common as tags, e.g. of @(see fty::fty) sum
+       types."))
   :returns (bytes byte-listp)
-  (cons *tag-symbol*
-        (append (string-contents-to-bytes (symbol-package-name symbol))
-                (string-contents-to-bytes (symbol-name symbol)))))
+  (cond ((eq symbol nil)
+         (list *tag-nil*))
+        ((keywordp symbol)
+         (cons *tag-keyword*
+               (string-contents-to-bytes (symbol-name symbol))))
+        (t (cons *tag-symbol*
+                 (append (string-contents-to-bytes (symbol-package-name symbol))
+                         (string-contents-to-bytes (symbol-name symbol)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -807,8 +827,8 @@
 
 ;; Atoms. Two atoms of different types differ in their first byte, and within
 ;; each type the contents determine the atom. Symbols are determined by their
-;; package name and symbol name (@('acl2::symbol-equality')), and complex
-;; rationals by their real and imaginary parts.
+;; package name and symbol name (@('acl2::symbol-equality')), keywords by their
+;; symbol name alone, and complex rationals by their real and imaginary parts.
 
 (defrulel equal-of-symbol-names-when-equal-of-symbol-package-names
   (implies (and (symbolp s1)
@@ -819,6 +839,13 @@
   :use (:instance acl2::symbol-equality
                   (acl2::s1 s1)
                   (acl2::s2 s2)))
+
+(defrulel equal-of-symbol-names-when-keywordp
+  (implies (and (keywordp s1)
+                (keywordp s2))
+           (equal (equal (symbol-name s1) (symbol-name s2))
+                  (equal s1 s2)))
+  :enable keywordp)
 
 (defrulel equal-of-imagparts-when-equal-of-realparts
   (implies (and (acl2-numberp x)

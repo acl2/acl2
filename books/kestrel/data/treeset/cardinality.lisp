@@ -32,7 +32,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((set setp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (cardinality natp)
   :parents (treeset)
   :short "The number of elements in a @(see treeset)."

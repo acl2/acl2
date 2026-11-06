@@ -41,7 +41,7 @@
 (define heap<-all-l
   ((tree treep)
    x)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (tree)
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)

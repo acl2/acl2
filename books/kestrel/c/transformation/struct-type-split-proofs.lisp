@@ -16,13 +16,12 @@
 (include-book "proof-generation")
 
 (include-book "../atc/symbolic-execution-rules/flexible-array-member")
+(include-book "../language/dynamic-semantics")
 (include-book "../representation/shallow-deep-relation")
+(include-book "../syntax/abstract-syntax-formal-mapping-direct")
+(include-book "../syntax/types-formal-subset-and-mapping")
 
-(include-book "kestrel/c/language/dynamic-semantics" :dir :system)
-(include-book "kestrel/c/syntax/abstract-syntax-formal-mapping-direct" :dir :system)
-(include-book "kestrel/c/syntax/types-formal-subset-and-mapping" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
-
 (include-book "std/basic/symbol-lfix" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system))
@@ -134,7 +133,7 @@
        ((unless (code-ensemble-annop code))
         (retmsg$ "The code ensemble ~x0 ~
                   that is the value of the constant ~x1 ~
-                  must contains validation information, ~
+                  must contain validation information, ~
                   but it does not."
                  code const)))
     (retok code))
@@ -183,7 +182,7 @@
                  new-tag))
        ((unless (and (string-listp right-members)
                      (no-duplicatesp-equal right-members)))
-        (retmsg$ "The ;RIGHT-MEMBERS input must be ~
+        (retmsg$ "The :RIGHT-MEMBERS input must be ~
                   a list of strings without repetitions, ~
                   but it is ~x0 instead."
                  right-members)))
@@ -265,7 +264,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stsp-stage
-  :short "Fixtypes of code scanning stages."
+  :short "Fixtype of code scanning stages."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -316,7 +315,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The declaration must consists of a single struct type specifier
+    "The declaration must consist of a single struct type specifier
      with a tag and with members each of which consists of
      an identifier with type specifiers for an integer type
      (except for plain @('char'),
@@ -410,7 +409,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The declaration must consists of
+    "The declaration must consist of
      a single struct type specifier with a tag and without members
      followed by a single identifier declarator.
      If that is the case, we return the tag and name."))
@@ -1480,7 +1479,8 @@
               (:e set::insert)
               mv-nth
               (:e equal)))
-          (defruled block-item-list-cons-first-congruence-under-compustate-equivp
+          (defruled
+            block-item-list-cons-first-congruence-under-compustate-equivp
             (b* ((old (cons old-item old-items))
                  (new (cons new-item new-items))
                  ((mv old-item-sval old-item-compst)
@@ -1609,7 +1609,7 @@
                        ',cname (c::type-struct ',ctag) ,compst)
                       (equal expr (c::expr-ident ',cname))
                       (not (zp limit)))
-                 (equal (c::exec-expr expr ,compst old-fenv limit)
+                 (equal (c::exec-expr expr ,compst fenv limit)
                         (mv (c::expr-value
                              (c::read-object
                               (c::objdesign-of-var ',cname ,compst)
@@ -1665,10 +1665,7 @@
         (packn-pos (list 'value-struct-read-
                          (c::ident->name cmem)
                          '-when-struct-value-
-                         (if (member-equal (ident-fix mem)
-                                           (ident-list-fix lmems))
-                             'newlp
-                           'newrp))
+                         newp)
                    'struct-value-))
        (old-acc (packn-pos (list 'struct-value-old- (c::ident->name cmem))
                            'struct-value-))
@@ -1987,7 +1984,7 @@
      Then we advance the stage.")
    (xdoc::p
     "If we are in the @(':types') stage,
-     the declaration in the fold code must be that of the struct object.
+     the declaration in the old code must be that of the struct object.
      We must find, in the new code, two declarations,
      for the two struct objects into which the original one is split.
      We use a separate function to handle those three declarations.
@@ -2839,7 +2836,7 @@
                                   old-stmt.info
                                   mapping
                                   gin))
-      :otherwise (retmsg$ "The statments ~x0 and ~x1 do not match. ~
+      :otherwise (retmsg$ "The statements ~x0 and ~x1 do not match. ~
                            This suggests that STRUCT-TYPE-SPLIT-PROOFS ~
                            was not called on ~
                            the old and new code of STRUCT-TYPE-SPLIT."
@@ -2860,7 +2857,7 @@
               (stmt-annop stmt)
               (stmt-annop stmt-new))
   :returns (mv (erp maybe-msgp) (gout goutp))
-  :short "STS proof generation for a block items that is a statement."
+  :short "STS proof generation for a block item that is a statement."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3179,12 +3176,12 @@
                (old-thm-name symbolp)
                (newl-thm-name symbolp)
                (newr-thm-name symbolp)
-               (udpated-thm-index posp))
+               (updated-thm-index posp))
   :short "Generate theorems about the struct objects after pushing a frame."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in the generate proofs for function definitions.
+    "This is used in the generated proofs for function definitions.
      In that proof, among other things, we need to show that
      if the global struct objects are in the initial states
      (i.e. the states just before the function call),
@@ -3200,7 +3197,7 @@
      from the names of the struct objects.")
    (xdoc::p
     "The @('parargs') and @('arg-types') of this function are
-     the homomynous outputs of @(tsee gen-from-params)."))
+     the homonymous outputs of @(tsee gen-from-params)."))
   (b* (((stsp-mapping mapping) mapping)
        ((mv erp old-cname) (ldm-ident mapping.old-name))
        ((when erp) (raise "Internal error: ~@0" erp) (mv nil nil nil nil 1))
@@ -3311,10 +3308,7 @@
     "For now we require the two function definitions
      to be identical except for possibly the body,
      and also that both functions satisfy certain conditions
-     (currently stringent, but we plan to relax them).
-     If this and other checks fail,
-     it is not an error,
-     but we just do not generate a theorem for the function."))
+     (currently stringent, but we plan to relax them)."))
   (b* (((reterr) (irr-gout))
        ((gin gin))
        (gout-no-thm (gout-no-thm gin))

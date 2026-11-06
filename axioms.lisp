@@ -19266,13 +19266,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                        (open-input-channel-any-p1 channel state-state))))
   #-acl2-loop-only
   (cond ((live-state-p state-state)
-         (cond (*wormholep*
-                (wormhole-er 'close-input-channel (list channel))))
+         (when *wormholep*
+           (wormhole-er 'close-input-channel (list channel)))
          (return-from
           close-input-channel
           (progn
             (increment-file-clock-raw)
             (let ((stream (get channel *open-input-channel-key*)))
+              (when (eq stream *standard-input*)
+
+; This case might seem impossible because channel is expected to be
+; acl2-input-channel::standard-character-input-0, which violates the guard.
+; But if a :program mode function call leads to the present call of
+; close-input-channel, then the guard need not hold, so we make sure to cause
+; an error here.  We cause an error and check the stream (rather than the
+; channel) because the potential is there to get into an infinite loop if
+; *standard-input* is closed; indeed, this has happened with SBCL.
+
+                (error "It is illegal to close a channel corresponding to ~%~
+                        the Lisp *standard-input* stream."))
               (remprop channel *open-input-channel-key*)
               (remprop channel *open-input-channel-type-key*)
               (close stream))

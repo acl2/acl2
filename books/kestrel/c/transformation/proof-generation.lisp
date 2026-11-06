@@ -22,14 +22,13 @@
 
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 
+(acl2::controlled-configuration :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (local (in-theory (enable* c$::abstract-syntax-aidentp-rules)))
 (local (in-theory (enable* c$::abstract-syntax-unambp-rules)))
 (local (in-theory (enable* c$::abstract-syntax-annop-rules)))
-
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -351,6 +350,8 @@
                      :rule-classes nil
                      :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-expr-thm
     :args ((old exprp) (new exprp))))
@@ -421,6 +422,8 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-initer-single-thm
     :args ((old initerp) (new initerp))))
@@ -486,6 +489,8 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-stmt-thm
     :args ((old stmtp) (new stmtp))))
@@ -544,6 +549,8 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-declon-thm
     :args ((old declonp) (new declonp))))
@@ -610,6 +617,8 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-block-item-thm
     :args ((old block-itemp) (new block-itemp))))
@@ -682,6 +691,8 @@
            :rule-classes nil
            :hints ,hints)))
     (mv thm-event thm-name thm-index))
+  :no-function nil
+
   ///
   (fty::deffixequiv gen-block-item-list-thm
     :args ((old block-item-listp) (new block-item-listp))))
@@ -1204,7 +1215,6 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
-  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
   :hooks (:fix)
 
   ///
@@ -1416,6 +1426,8 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
+
+  :no-function nil
 
   ///
 
@@ -1879,6 +1891,8 @@
                    :thm-name thm-name
                    :vartys gin.vartys)))
 
+  :no-function nil
+
   ///
 
   (defret expr-unambp-of-xeq-expr-cond
@@ -2085,6 +2099,8 @@
                    :vartys gin.vartys)))
   :guard-hints (("Goal" :in-theory (enable ldm-expr-option)))
 
+  :no-function nil
+
   ///
 
   (defret stmt-unambp-of-xeq-stmt-expr
@@ -2192,6 +2208,8 @@
                    :thm-index thm-index
                    :thm-name thm-name
                    :vartys gin.vartys)))
+
+  :no-function nil
 
   ///
 
@@ -3020,6 +3038,8 @@
                                            declor-obj-block-formalp
                                            dirdeclor-obj-block-formalp)))
 
+  :no-function nil
+
   ///
 
   (defret declon-unambp-of-xeq-declon-declon
@@ -3679,9 +3699,10 @@
                    :thm-name thm-name
                    :vartys vartys-after-fundef)))
 
+  :no-function nil
+
   :prepwork
-  ((local (in-theory (disable (:e tau-system)))) ; for speed
-   (define xeq-fundef-loop ((thms symbol-listp) (fun stringp))
+  ((define xeq-fundef-loop ((thms symbol-listp) (fun stringp))
      :returns (lemma-instances true-listp)
      :parents nil
      (b* (((when (endp thms)) nil)

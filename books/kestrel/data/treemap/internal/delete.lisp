@@ -52,7 +52,7 @@
 (define tree-delete
   (key
    (tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "Remove a key/value pair from the tree."
   :long

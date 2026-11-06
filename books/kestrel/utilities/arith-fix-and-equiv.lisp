@@ -285,6 +285,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Type information from comparing a natural with 0 under nat-equiv.
+
+(defthm zp-when-nat-equiv-0
+  (implies (nat-equiv x 0)
+           (zp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable nat-equiv))))
+
+(defthm posp-when-not-nat-equiv-0
+  (implies (not (nat-equiv x 0))
+           (posp x))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable nat-equiv nfix posp))))
+
+(defthm nat-equiv-0-when-equal-nfix-0
+  (implies (equal (nfix x) 0)
+           (nat-equiv x 0))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable nat-equiv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrefinement number-equiv rational-equiv
   :hints (("Goal" :in-theory (enable number-equiv
                                      rational-equiv

@@ -58,7 +58,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-generic-count ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       0
@@ -141,7 +141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-generic-count ((set setp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (tree-generic-count (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))

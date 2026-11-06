@@ -39,7 +39,7 @@
 (define tree-intersect
   ((x treep)
    (y treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "Take the intersection of two treaps."
   :long

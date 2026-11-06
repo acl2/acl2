@@ -1,6 +1,6 @@
-; ABNF (Augmented Backus-Naur Form) Library
+; Error-Value Tuples
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,6 +11,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -26,9 +27,6 @@
   :long
 
   (xdoc::topstring
-
-   (xdoc::p
-    "These are experimental utilities for now.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -71,8 +69,8 @@
       and @('val1'), ..., @('valN') contain irrelevant values.")
 
     (xdoc::p
-     "There is no strict requirements on the type of @('erp'),
-      but it should be, or include, an optional "
+     "There is no strict requirement on the type of @('erp'),
+      but it could be, or include, an optional "
      (xdoc::seetopic "msg" "message")
      " that describes the error in human-readable terms;
       for instance, an error could be a @(tsee cons) pair
@@ -81,7 +79,7 @@
       When writing code in a statically strongly typed style,
       particularly using @(tsee define) with argument and result types
       (the latter in @(':returns')),
-      it may be better to leave @('erp') untyped for future extensibility,
+      @('erp') could be left untyped for future extensibility,
       while @('val1'), ..., @('valN') should have types
       that make sense when no error occurs.
       If a type for @('erp') is used, e.g. @(tsee maybe-msgp),
@@ -92,8 +90,7 @@
      "We provide utilities, described below,
       to facilitate the use of error-value tuples.
       More utilities may be added in the future,
-      particularly for richer forms of @('erp'),
-      which for now is assumed to be an optional message.")
+      particularly for richer forms of @('erp').")
 
     (xdoc::p
      "This is not a new idea, but just a variation of existing ideas.
@@ -132,34 +129,34 @@
        that defines the irrelevant values once,
        and that makes it possible for the rest of the code in the function
        to mention just @('erp') when returning an error.
-       The binder is used, generally at the beginning of a function, as"
-      (xdoc::codeblock
-       "((reterr) irr-val1 ... irr-valN)")
-      (xdoc::p
-       "where the symbol @('reterr') is in the @('ACL2') package,
-        but can be of course imported in the application package of interest,
-        and where @('irr-val1'), ..., @('irr-valN') are
-        irrelevant values of appropriate types,
-        to be returned along with a non-@('nil') @('erp').
-        If @('N') is 0, the binding is just @('((reterr))'),
-        but must still be provided."))
+       The binder is used, generally at the beginning of a function, as")
+     (xdoc::codeblock
+      "((reterr) irr-val1 ... irr-valN)")
+     (xdoc::p
+      "where the symbol @('reterr') is in the @('ACL2') package,
+       but can be of course imported in the application package of interest,
+       and where @('irr-val1'), ..., @('irr-valN') are
+       irrelevant values of appropriate types,
+       to be returned along with a non-@('nil') @('erp').
+       If @('N') is 0, the binding is just @('((reterr))'),
+       but must still be provided.")
 
      (xdoc::p
       "The binding expands to a local macro (in the @(tsee macrolet) sense),
        also named @('reterr') in the @('ACL2') package,
        that takes one argument @('erp')
        and extends it to an error-value tuple with the irrelevant values.
-       This way, code in the function can return an error as"
-      (xdoc::codeblock
-       "(reterr erp)")
-      (xdoc::p
-       "where @('erp') is the desired error, e.g. @('(msg ...)').
-        This not only makes the call more clear and compact,
-        by hiding the irrelevant values,
-        but also avoids repeating the irrelevant values
-        as many times as there are points in the code that return errors.
-        It makes it easier to change the code
-        if the numbers or types of the values change."))
+       This way, code in the function can return an error as")
+     (xdoc::codeblock
+      "(reterr erp)")
+     (xdoc::p
+      "where @('erp') is the desired error, e.g. @('(msg ...)').
+       This not only makes the call more clear and compact,
+       by hiding the irrelevant values,
+       but also avoids repeating the irrelevant values
+       as many times as there are points in the code that return errors.
+       It makes it easier to change the code
+       if the numbers or types of the values change.")
 
      (xdoc::p
       "The practice of causing "
@@ -211,12 +208,10 @@
      (xdoc::codeblock
       "(retok val1 ... valN)")
      (xdoc::p
-      "If @('N') is 0, it is writte as @('(retok)'),
-       which in a way may be more clear than @('nil')
-       in saying that things are okay, i.e. no error occurred.
-       It is also symmetric with @('reterr').
-       However, admittedly this does not provide huge advantages
-       over just @('(mv nil val1 .. valN)') or @('nil').")
+      "If @('N') is 0, it is written as @('(retok)'),
+       which is more clear than @('nil') in saying that things are okay,
+       i.e. no error occurred.
+       It is also symmetric with @('reterr').")
 
      (xdoc::p
       "Note that while @('reterr') is local to a function,
@@ -252,7 +247,7 @@
       "((erp val1 ... valN) (f ...))")
      (xdoc::p
       "where @('erp') is in the @('ACL2') package
-       (but can imported into the package of interest).
+       (but can be imported into the package of interest).
        If @('N') is 0, the binding is @('((erp) (f ...))').
        The @('val1'), ..., @('valN') may be @(tsee b*) patterns
        that can be used as components of the @(tsee patbind-mv) binder.")
@@ -282,15 +277,7 @@
       "or, if @('N') is 0, to")
      (xdoc::codeblock
       "(erp (f ...))"
-      "((when erp) (reterr erp1))")
-     (xdoc::p
-      "We expect that this option may be used less often than not.")
-
-     (xdoc::p
-      "Because on the restriction on stobj results with @('reterr'),
-       this binder cannot be currently used when
-       the values of error-value triples include stobjs.
-       In this case, errors must be checked and propagated explicitly."))
+      "((when erp) (reterr erp1))"))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +285,7 @@
      "Catching Errors"
 
      (xdoc::p
-      "To catch (i.e not propagate) an error from a called ACL2 function,
+      "To catch (i.e. not propagate) an error from a called ACL2 function,
        a caller ACL2 function can use an @('mv') binder for the call,
        check the @('erp') result,
        and continue its computation if an error occurs,
@@ -317,7 +304,59 @@
        Error-value tuples are intended for when execution
        runs into exceptional conditions,
        similarly to the situations in which languages with exceptions
-       would throw exceptions.")))
+       would throw exceptions."))
+
+;;;;;;;;;;;;;;;;;;;;
+
+    (xdoc::subsection
+     "Statically Excluding Errors"
+
+     (xdoc::p
+      "There are situations where an error-value tuple,
+       typically returned by a function call,
+       is known to not include an error, i.e. to have @('nil') as @('erp').
+       In these situations,
+       it is best to engender a proof obligation to that effect,
+       which could be manually done as")
+     (xdoc::codeblock
+      "((mv erp val1 ... valN) (f ...))"
+      "((when erp) (reterr (impossible)))")
+     (xdoc::p
+      "or, if @('N') is 0, as")
+     (xdoc::codeblock
+      "(erp (f ...))"
+      "((when erp) (reterr (impossible)))")
+     (xdoc::p
+      "where @(tsee impossible) logically returns @('nil')
+       and also engenders a guard obligation to show that @('nil') holds,
+       which is the case only when that code is provably unreachable.
+       The reason for wrapping it in @('reterr') is so that
+       the code returns one or more values of the appropriate types.
+       Although the @('nil') value of @(tsee impossible)
+       is at odds with @('reterr') because it normally indicates no error,
+       this is never actually executed,
+       because it must be provably unreachable under the guards.
+       The alternative @('(prog2$ (impossible) (reterr <not-nil>))')
+       is less robust because the code containing the snippet above
+       may be expected to return some specific type of error in @('erp'),
+       but @('nil') must be always a value of that type.")
+
+     (xdoc::p
+      "We provide a @(tsee b*) binder @(tsee patbind-noerp)
+       that expands to the code shown just above.
+       This is used as")
+     (xdoc::codeblock
+      "((noerp val1 ... valN) (f ...))")
+     (xdoc::p
+      "where @('noerp') is in the @('ACL2') package
+       (but can be imported into the package of interest).
+       If @('N') is 0, the binding is @('((noerp) (f ...))').
+       The @('val1'), ..., @('valN') may be @(tsee b*) patterns
+       that can be used as components of the @(tsee patbind-mv) binder.")
+
+     (xdoc::p
+      "This binder assumes that @('reterr') is a local macro
+       introduced by a preceding @('reterr') binder (described above).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -333,12 +372,14 @@
       "A "
       (xdoc::seetopic "er" "hard error")
       " is a bit like an exception.
-       When a hard error occurs,
-       it print a message to ACL2's error output,
-       and it stops execution.
+       A hard error normally prints a message to ACL2's error output
+       and aborts the current computation.
        A hard error is automatically propagated
        through the callers up the stack.
-       However, a hard error cannot be caught: it always stops execution.")
+       It cannot be caught by checking a returned value,
+       although evaluation facilities can catch it
+       (for example, @(tsee prove$) can turn hard errors from the prover
+       into ordinary proof failures).")
 
      (xdoc::p
       "Since logically a hard error returns @('nil'),
@@ -357,7 +398,8 @@
        Thus, all in all, using error-value tuples,
        with the utilities provided here,
        takes about the same amount of code as using hard errors,
-       with the advantage that errors can be potentially caught,
+       with the advantage that errors can be caught by callers
+       simply by checking return values,
        which is useful for using tools programmatically besides interactively.
        The only extra effort required for error-value tuples is that,
        if the error is not caught,
@@ -373,7 +415,7 @@
      (xdoc::p
       "A "
       (xdoc::seetopic "er" "soft error")
-      " print a message to ACL2's error output,
+      " prints a message to ACL2's error output,
        but does not stop execution.
        It causes the current function to return an "
       (xdoc::seetopic "error-triple" "error triple")
@@ -410,7 +452,7 @@
        must be accessed as elements of the list,
        which is not as direct
        (see @(tsee std::tuple) for a macro to facilitate
-       the declaration of multiple value reuslts
+       the declaration of multiple value results
        in @(tsee define) return specifiers).
        Another possible aggregation is a user-defined product type
        (e.g. @(tsee std::defaggregate) or @(tsee fty::defprod)),
@@ -449,7 +491,7 @@
        which makes context-message pairs
        slightly less convenient than hard and soft errors in this respect.
        However, an advantage is that state
-       does not need not be taken and returned.")
+       does not need to be taken and returned.")
 
      (xdoc::p
       "Note that,
@@ -465,14 +507,14 @@
        in which ideally every result of a function has a clear type.
        If the value may be a message,
        its type is the union of the ``real'' type and the type of messages,
-       which is a little more complicated than just using the ``real''type,
+       which is a little more complicated than just using the ``real'' type,
        and makes it necessary to create a type for the union.")
 
      (xdoc::p
       "Context-message pairs are thus quite similar to error-value tuples,
        and are sometimes used as context-message tuples
        (i.e. with more than one value).
-       The difference is that, in error-message pairs,
+       The difference is that, in error-value tuples,
        we put the message in the error,
        so that values have more uniform types.
        The error-value tuple utilities are also tailored to this."))
@@ -503,7 +545,7 @@
        of aggregations of multiple results.")
 
      (xdoc::p
-      "Result types may be more appropriate for development
+      "Result types may be more appropriate for developments
        in which ACL2 is used as a logical language,
        e.g. in a formalization,
        where clarity has paramount importance,
@@ -524,7 +566,7 @@
 
 (def-b*-binder reterr
   :parents (error-value-tuples)
-  :short "Binder to introduce a local function that returns
+  :short "Binder to introduce a local macro that returns
           an error-value tuple with certain irrelevant values."
   :long
   (xdoc::topstring
@@ -576,7 +618,7 @@
                                      (cw "~%~%**** ERROR ****~%~
                                           The ERP binder ~
                                           must be followed by ~
-                                          exactly one form,
+                                          exactly one form, ~
                                           optionally followed by ~
                                           :IFERR and a form, ~
                                           but instead this ERP binder ~
@@ -591,4 +633,31 @@
          ,(if (consp (cdr forms))
               `(reterr ,(caddr forms))
             '(reterr erp))
+       ,rest-expr)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-b*-binder noerp
+  :parents (error-value-tuples)
+  :short "Binder to statically check that an error-value tuple has no error."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see error-value-tuples) for details."))
+  :decls ((declare (xargs :guard (or (and (consp forms)
+                                          (null (cdr forms)))
+                                     (cw "~%~%**** ERROR ****~%~
+                                          The NOERP binder ~
+                                          must be followed by ~
+                                          exactly one form, ~
+                                          but instead this NOERP binder ~
+                                          is followed by the forms ~x0.~%~%"
+                                         forms)))))
+  :body
+  `(b* ((,(if (consp args)
+              `(mv erp ,@args)
+            'erp)
+         ,(car forms)))
+     (if erp
+         (reterr (impossible))
        ,rest-expr)))

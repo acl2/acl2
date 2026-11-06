@@ -42,7 +42,7 @@
 (define tree-diff
   ((x treep)
    (y treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "Take the difference of two treaps."
   :returns (tree treep)

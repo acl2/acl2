@@ -35,7 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define size ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (size natp)
   :parents (treemap)
   :short "The number of key/value pairs in a @(see treemap)."
