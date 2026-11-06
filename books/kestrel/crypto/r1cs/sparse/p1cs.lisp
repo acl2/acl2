@@ -11,16 +11,6 @@
 
 (include-book "kestrel/crypto/r1cs/sparse/r1cs" :dir :system)
 
-(include-book "std/util/add-io-pairs" :dir :system)
-
-(acl2::merge-io-pairs
-  dm::primep
-  (include-book "kestrel/crypto/primes/bn-254-group-prime" :dir :system))
-
-(acl2::merge-io-pairs
-  dm::primep
-  (include-book "projects/bls12-377-curves/primes/bls12-377-prime" :dir :system))
-
 (include-book "std/strings/decimal" :dir :system)
 
 ;; If you don't do this you get a program-mode-only str::pretty
@@ -42,8 +32,19 @@
              (true-listp (cdr l))))
   )
 
-(defmacro fp1 () '(primes::bn-254-group-prime))
-(defmacro fp2 () '(primes::bls12-377-scalar-field-prime))
+;; The supported primes: the BN-254 group order and the BLS12-377 scalar field
+;; prime.  They are written here rather than taken from the books that define
+;; them with defprime, because including those books would install I/O pairs
+;; for primep (see add-io-pairs), and an including book would then replace
+;; any I/O pairs added before it.  Printing does not depend on primality.
+;; p1cs-prime-tests.lisp checks that these are the primes from those books.
+(defconst *p1cs-fp1*
+  21888242871839275222246405745257275088548364400416034343698204186575808495617)
+(defconst *p1cs-fp2*
+  8444461749428370424248824938781546531375899335154063827935233455917409239041)
+
+(defmacro fp1 () '*p1cs-fp1*)
+(defmacro fp2 () '*p1cs-fp2*)
 
 ;; returns a list of pairs like (8 "2^3")
 ;; for all exponents from EXP-FROM up to but not including EXP-TO.
