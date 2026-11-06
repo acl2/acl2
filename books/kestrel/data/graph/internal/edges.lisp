@@ -189,6 +189,20 @@
            in-of-adjacency-edges
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
+;; The same fact read the other way: a label set under a source and target is
+;; exactly the labels of the edges between them.
+
+(defruled in-of-lookup-of-lookup-becomes-in-of-adj-list-edges
+  (equal (treeset::in label
+                      (treemap::lookup to
+                                       (treemap::lookup from
+                                                        adjl
+                                                        :default
+                                                        (treemap::empty))
+                                       :default (treeset::empty)))
+         (treeset::in (edge from to label) (adj-list-edges adjl)))
+  :enable in-of-adj-list-edges)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule edgep-when-in-of-labels-edges

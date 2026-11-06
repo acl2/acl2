@@ -215,6 +215,16 @@
            (treeset::setp (treemap::lookup k map :default (treeset::empty))))
   :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
 
+;; Since no key is bound to the empty set, a key is present exactly when its
+;; label set is nonempty, so the label sets alone determine the keys.
+
+(defruled in-of-keys-becomes-not-emptyp-of-lookup-when-map-values-all-nonempty-setp
+  (implies (map-values-all-nonempty-setp map)
+           (equal (treeset::in k (treemap::keys map))
+                  (not (treeset::emptyp
+                         (treemap::lookup k map :default (treeset::empty))))))
+  :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
+
 (defrule map-values-all-nonempty-setp-of-update
   (equal (map-values-all-nonempty-setp (treemap::update k v map))
          (and (treeset::setp v)
