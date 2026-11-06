@@ -22916,6 +22916,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     pc-single-step-primitive
     pc-single-step
     pc-top pc-main pc-main-loop pc-main1 install-initial-state-stack
+    state-from-instructions state-stack-from-instructions
     assign-event-name-and-rule-classes
     save-fn
     ))

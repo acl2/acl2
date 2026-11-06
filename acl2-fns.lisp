@@ -1028,8 +1028,7 @@ be SPECIAL.")
 (defun acl2-reader-error (string &rest args)
   (when (eq (qfuncall standard-oi *the-live-state*)
             (symbol-value '*standard-oi*))
-    (qfuncall clear-input (qfuncall get-input-stream-from-channel
-                                    (symbol-value '*standard-oi*))))
+    (clear-input (eval '(get-input-stream-from-channel *standard-oi*))))
   (let ((*hard-error-returns-nilp* nil))
     (declare (special *hard-error-returns-nilp*))
     (qfuncall hard-error
