@@ -339,7 +339,7 @@
 (define update-from-alist-rev
   ((alist alistp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   (if (endp alist)
       (fix map)
@@ -410,7 +410,7 @@
 (define update-from-alist
   ((alist alistp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an alist of key-value pairs to a @(see treemap)."
@@ -499,7 +499,7 @@
 
 (define from-alist
   ((alist alistp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treemap)
   :short "Create a map from an alist of key-value pairs."
   :long
@@ -559,7 +559,7 @@
 (define update-from-omap
   ((omap omap::mapp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an omap of key-value pairs to a @(see treemap)."
@@ -669,7 +669,7 @@
 
 (define from-omap
   ((omap omap::mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treemap)
   :short "Create a map from an omap."
   :long

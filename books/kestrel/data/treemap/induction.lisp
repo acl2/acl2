@@ -51,10 +51,9 @@
   (or (emptyp map)
       (head-delete-induction (delete (head-key map) map)))
   :measure (size map)
-  :verify-guards nil
+  :verify-guards nil)
 
-  ///
-  (in-theory (enable (:i head-delete-induction))))
+(in-theory (enable (:i head-delete-induction)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -65,10 +64,9 @@
       (head-delete-bi-induction (delete (head-key x) x)
                                 (delete (head-key y) y)))
   :measure (size x)
-  :verify-guards nil
+  :verify-guards nil)
 
-  ///
-  (in-theory (enable (:i head-delete-bi-induction))))
+(in-theory (enable (:i head-delete-bi-induction)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,10 +75,9 @@
   (or (emptyp map)
       (min-delete-induction (delete (min-key map) map)))
   :measure (size map)
-  :verify-guards nil
+  :verify-guards nil)
 
-  ///
-  (in-theory (enable (:i min-delete-induction))))
+(in-theory (enable (:i min-delete-induction)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -89,7 +86,6 @@
   (or (emptyp map)
       (max-delete-induction (delete (max-key map) map)))
   :measure (size map)
-  :verify-guards nil
+  :verify-guards nil)
 
-  ///
-  (in-theory (enable (:i max-delete-induction))))
+(in-theory (enable (:i max-delete-induction)))

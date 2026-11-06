@@ -77,7 +77,7 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc alistp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   (if (tree-empty-p tree)
       (mbe :logic (if (alistp acc) acc nil)
@@ -154,7 +154,7 @@
 
 (define tree-in-order
   ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   :parents (implementation)
   :short "Create an in-order alist of key-value pairs from a tree."

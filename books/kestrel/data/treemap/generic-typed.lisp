@@ -19,6 +19,8 @@
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 
 (include-book "internal/tree-defs")
+(include-book "internal/lookup-defs")
+(include-book "internal/split-defs")
 (include-book "map-defs")
 (include-book "keys-defs")
 (include-book "values-defs")
@@ -52,6 +54,9 @@
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
 (local (include-book "internal/values"))
+(local (include-book "internal/lookup"))
+(local (include-book "internal/rotate"))
+(local (include-book "internal/split"))
 (local (include-book "map"))
 (local (include-book "keys"))
 (local (include-book "values"))
@@ -371,6 +376,41 @@
                   (treeset::set-all-genericp (values map))))
   :enable (values
            tree-all-vals-genericp-becomes-set-all-genericp-of-tree-val-set))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-all-vals-genericp-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (tree-all-vals-genericp tree0)
+                  (tree-all-vals-genericp tree1)))
+  :rule-classes :congruence
+  :expand ((tree-all-vals-genericp tree0)
+           (tree-all-vals-genericp tree1)))
+
+;; A split only rearranges the tree's nodes, and a search returns the value of
+;; one of them, so neither escapes the value fold.
+
+(defrule tree-all-vals-genericp-of-tree-split.left-when-tree-all-vals-genericp
+  (implies (tree-all-vals-genericp tree)
+           (tree-all-vals-genericp (mv-nth 1 (tree-split key tree))))
+  :induct t
+  :enable (tree-split
+           tree-all-vals-genericp))
+
+(defrule tree-all-vals-genericp-of-tree-split.right-when-tree-all-vals-genericp
+  (implies (tree-all-vals-genericp tree)
+           (tree-all-vals-genericp (mv-nth 2 (tree-split key tree))))
+  :induct t
+  :enable (tree-split
+           tree-all-vals-genericp))
+
+(defrule genericp-of-cdr-of-tree-search-assoc-when-tree-all-vals-genericp
+  (implies (and (tree-all-vals-genericp tree)
+                (tree-search-assoc key tree))
+           (treeset::genericp (cdr (tree-search-assoc key tree))))
+  :induct t
+  :enable (tree-search-assoc
+           tree-all-vals-genericp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
