@@ -124,6 +124,7 @@
   :returns (yes/no booleanp)
   (mbe :logic (set-all-nonempty-setp (treemap::values map))
        :exec (tree-all-vals-nonempty-setp map))
+  :inline t
   :guard-hints
   (("Goal"
     :in-theory
@@ -319,6 +320,7 @@
   :returns (yes/no booleanp)
   (mbe :logic (set-all-adjacencyp (treemap::values map))
        :exec (tree-all-vals-adjacencyp map))
+  :inline t
   :guard-hints
   (("Goal"
     :in-theory

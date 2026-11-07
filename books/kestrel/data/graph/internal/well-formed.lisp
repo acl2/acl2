@@ -170,6 +170,7 @@
   :returns (yes/no booleanp)
   (mbe :logic (set-all-keys-subsetp (treemap::values map) nodes)
        :exec (tree-all-vals-keys-subsetp map nodes))
+  :inline t
   :guard-hints
   (("Goal"
     :in-theory
@@ -313,7 +314,8 @@
 (define well-formedp ((adjl adj-listp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (map-values-all-keys-subsetp adjl (treemap::keys adjl)))
+  (map-values-all-keys-subsetp adjl (treemap::keys adjl))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
