@@ -37,6 +37,8 @@
 (define edgep (x)
   :type-prescription :none
   :returns (yes/no booleanp)
+  :parents (graph)
+  :short "Recognizer for the edges of a @(see graph)."
   (and (consp x)
        (consp (cdr x)))
   :inline t)
@@ -76,6 +78,8 @@
 (define edge-fix ((edge edgep))
   :type-prescription :none
   :returns (edge$ edgep)
+  :parents (edgep)
+  :short "Fixer for edges."
   (mbe :logic (if (edgep edge) edge (irr-edge))
        :exec (the cons edge))
   :inline t
@@ -109,6 +113,8 @@
    (y edgep))
   :type-prescription :none
   :returns (yes/no booleanp)
+  :parents (edgep)
+  :short "Equivalence of edges up to @(tsee edge-fix)."
   (equal (edge-fix x)
          (edge-fix y))
   :inline t
@@ -137,6 +143,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->from ((edge edgep))
+  :parents (edgep)
+  :short "The source of an edge."
   (car (edge-fix edge))
   :inline t
   :guard-hints (("Goal" :in-theory (enable edgep))))
@@ -154,6 +162,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->to ((edge edgep))
+  :parents (edgep)
+  :short "The target of an edge."
   (cadr (edge-fix edge))
   :inline t
   :guard-hints (("Goal" :in-theory (enable edgep))))
@@ -171,6 +181,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->label ((edge edgep))
+  :parents (edgep)
+  :short "The label of an edge."
   (cddr (edge-fix edge))
   :inline t
   :guard-hints (("Goal" :in-theory (enable edgep))))
@@ -190,6 +202,8 @@
 (define edge (from to label)
   :type-prescription :none
   :returns (edge edgep :hints (("Goal" :in-theory (enable edgep))))
+  :parents (edgep)
+  :short "Construct an edge from its source, target, and label."
   (list* from to label)
   :inline t)
 
