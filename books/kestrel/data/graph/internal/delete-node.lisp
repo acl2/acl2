@@ -17,6 +17,7 @@
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/size-defs" :dir :system)
@@ -37,6 +38,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
+(local (include-book "kestrel/data/treeset/hash" :dir :system))
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
@@ -44,8 +46,14 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
 (local (include-book "kestrel/data/treeset/diff" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/bst" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/heap" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/size" :dir :system))
@@ -65,30 +73,154 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A tree element rebuilt from its own key and value is that element. TREEMAP
+;; states this only as an elimination rule; the hash argument is normalized to
+;; nil, which is the form it takes here.
+
+(defrulel tree-element-of-nil-and-tree-element->key-and-tree-element->val
+  (implies (treemap::tree-element-p elem)
+           (equal (treemap::tree-element nil
+                                         (treemap::tree-element->key elem)
+                                         (treemap::tree-element->val elem))
+                  elem))
+  :use treemap::tree-element-elim)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrulel mapp-of-tree-element->val-of-tree->head-when-tree-all-vals-adjacencyp
+  (implies (and (tree-all-vals-adjacencyp tree)
+                (not (treemap::tree-empty-p tree)))
+           (treemap::mapp
+             (treemap::tree-element->val (treemap::tree->head tree))))
+  :enable tree-all-vals-adjacencyp)
+
+;; The walk that executes removing a node as a target. It visits every node of
+;; the tree and keeps each node's key and hash, so the shape is untouched and
+;; both search-tree invariants carry over term for term. Only an adjacency
+;; which actually has the target is rebuilt, and a node is reused whenever
+;; nothing beneath it changed, so the allocation is only along the paths to
+;; the adjacencies that point at the node.
+;;
+;; Time complexity: @($O(n \\log(d))$), where @($d$) is the largest number of
+;; targets of a source.
+
+(define tree-delete-target (node (tree treemap::treep))
+  :guard (tree-all-vals-adjacencyp tree)
+  :returns (new-tree treemap::treep)
+  (if (treemap::tree-empty-p tree)
+      nil
+    (b* ((head (treemap::tree->head tree))
+         (adj (treemap::tree-element->val head)))
+      (treemap::tree-node-with-hint
+        (mbe :logic (treemap::tree-element
+                      (treemap::tree-element->hash head)
+                      (treemap::tree-element->key head)
+                      (treemap::delete node adj))
+             :exec (if (treemap::in node adj)
+                       (treemap::tree-element
+                         (treemap::tree-element->hash head)
+                         (treemap::tree-element->key head)
+                         (treemap::delete node adj))
+                     head))
+        (tree-delete-target node (treemap::tree->left tree))
+        (tree-delete-target node (treemap::tree->right tree))
+        tree)))
+  :guard-hints (("Goal" :in-theory (enable tree-all-vals-adjacencyp)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-delete-target-when-tree-equiv-of-arg2-congruence
+  (implies (treemap::tree-equiv tree0 tree1)
+           (equal (tree-delete-target node tree0)
+                  (tree-delete-target node tree1)))
+  :rule-classes :congruence
+  :induct t
+  :enable tree-delete-target)
+
+(defrulel tree-key-set-of-tree-delete-target
+  (equal (treemap::tree-key-set (tree-delete-target node tree))
+         (treemap::tree-key-set tree))
+  :induct t
+  :enable (tree-delete-target
+           treemap::tree-key-set))
+
+(defrulel <<-all-l-of-tree-delete-target
+  (equal (treemap::<<-all-l (tree-delete-target node tree) key)
+         (treemap::<<-all-l tree key))
+  :induct t
+  :enable (tree-delete-target
+           treemap::<<-all-l))
+
+(defrulel <<-all-r-of-tree-delete-target
+  (equal (treemap::<<-all-r key (tree-delete-target node tree))
+         (treemap::<<-all-r key tree))
+  :induct t
+  :enable (tree-delete-target
+           treemap::<<-all-r))
+
+(defrulel heap<-all-l-of-tree-delete-target
+  (equal (treemap::heap<-all-l (tree-delete-target node tree) key)
+         (treemap::heap<-all-l tree key))
+  :induct t
+  :enable (tree-delete-target
+           treemap::heap<-all-l))
+
+(defrulel bstp-of-tree-delete-target
+  (implies (treemap::bstp tree)
+           (treemap::bstp (tree-delete-target node tree)))
+  :induct t
+  :enable (tree-delete-target
+           treemap::bstp))
+
+(defrulel heapp-of-tree-delete-target
+  (implies (treemap::heapp tree)
+           (treemap::heapp (tree-delete-target node tree)))
+  :induct t
+  :enable (tree-delete-target
+           treemap::heapp))
+
+(defrulel mapp-of-tree-delete-target
+  (implies (treemap::mapp tree)
+           (treemap::mapp (tree-delete-target node tree)))
+  :enable treemap::mapp)
+
+(defrulel tree-lookup-of-tree-delete-target
+  (equal (treemap::tree-lookup key (tree-delete-target node tree))
+         (if (treeset::in key (treemap::tree-key-set tree))
+             (treemap::delete node (treemap::tree-lookup key tree))
+           (treemap::tree-lookup key tree)))
+  :induct t
+  :enable (tree-delete-target
+           treemap::tree-lookup
+           treemap::tree-key-set))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Remove a node as a target from every adjacency, which removes its incoming
 ;; edges. There is no index of a node's sources, so every adjacency is
 ;; visited.
 ;;
-;; This is the logical definition, a walk which takes the minimum source and
-;; deletes it, rebuilding the list with update. Faster executions can be put
-;; under an mbe without disturbing the laws below.
+;; The logical definition is a walk which takes the minimum source and deletes
+;; it, rebuilding the list with update. It executes as the tree walk above.
 ;;
-;; Time complexity: @($O(n (\\log(n) + \\log(d)))$), where @($d$) is the
-;; largest number of targets of a source.
+;; Time complexity: @($O(n \\log(d))$), as for @(tsee tree-delete-target).
 
 (define adj-list-delete-target (node (adjl adj-listp))
   :returns (new-adjl treemap::mapp)
-  (if (treemap::emptyp adjl)
-      (treemap::empty)
-    (b* ((from (treemap::min-key adjl)))
-      (treemap::update from
-                       (treemap::delete node (treemap::lookup from adjl))
-                       (adj-list-delete-target node
-                                               (treemap::delete from adjl)))))
+  (mbe :logic (if (treemap::emptyp adjl)
+                  (treemap::empty)
+                (b* ((from (treemap::min-key adjl)))
+                  (treemap::update
+                    from
+                    (treemap::delete node (treemap::lookup from adjl))
+                    (adj-list-delete-target node
+                                            (treemap::delete from adjl)))))
+       :exec (tree-delete-target node adjl))
   :measure (treemap::size adjl)
   :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
                                      treeset::in-of-min)))
-  :verify-guards :after-returns)
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -124,6 +256,23 @@
   :induct t
   :enable (adj-list-delete-target
            treeset::in-of-min))
+
+;; The logical walk and the tree walk agree, which is what lets the tree walk
+;; execute.
+
+(defruledl adj-list-delete-target-becomes-tree-delete-target
+  (implies (treemap::mapp adjl)
+           (equal (adj-list-delete-target node adjl)
+                  (tree-delete-target node adjl)))
+  :enable (treemap::extensionality-polar
+           treemap::lookup
+           treemap::keys))
+
+(verify-guards adj-list-delete-target
+  :hints (("Goal"
+           :in-theory (enable treemap::treep-when-mapp-forward-chaining)
+           :use adj-list-delete-target-becomes-tree-delete-target
+           :expand ((adj-list-delete-target node adjl)))))
 
 ;; If every adjacency leads into some node set, then once the node is removed
 ;; as a target, every adjacency leads into that set less the node.
@@ -167,8 +316,7 @@
 ;; Remove a node along with every edge into or out of it. Removing it as a
 ;; target drops its incoming edges; deleting its key drops its outgoing ones.
 ;;
-;; Time complexity: @($O(n (\\log(n) + \\log(d)))$), as for @(tsee
-;; adj-list-delete-target).
+;; Time complexity: @($O(n \\log(d))$), as for @(tsee adj-list-delete-target).
 
 (define adj-list-delete-node (node (adjl adj-listp))
   :returns (new-adjl treemap::mapp)

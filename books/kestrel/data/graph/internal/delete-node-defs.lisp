@@ -12,7 +12,9 @@
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/treemap/in-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/size-defs" :dir :system)
 (include-book "kestrel/data/treemap/min-max-defs" :dir :system)
@@ -28,6 +30,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (adj-list-delete-target
+  :names (tree-delete-target
+          adj-list-delete-target
           adj-list-delete-node
           ))
