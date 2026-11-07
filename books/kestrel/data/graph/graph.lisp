@@ -124,6 +124,30 @@
 
 (add-to-ruleset break-abstraction '(well-formedp-of-fix))
 
+;; The same facts for a term already known to be a graph, where the fix has
+;; been rewritten away.
+
+(defruled mapp-when-graphp
+  (implies (graphp graph)
+           (treemap::mapp graph))
+  :enable graphp)
+
+(add-to-ruleset break-abstraction '(mapp-when-graphp))
+
+(defruled map-values-all-adjacencyp-when-graphp
+  (implies (graphp graph)
+           (map-values-all-adjacencyp graph))
+  :enable graphp)
+
+(add-to-ruleset break-abstraction '(map-values-all-adjacencyp-when-graphp))
+
+(defruled well-formedp-when-graphp
+  (implies (graphp graph)
+           (well-formedp graph))
+  :enable graphp)
+
+(add-to-ruleset break-abstraction '(well-formedp-when-graphp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define equiv
