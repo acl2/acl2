@@ -8,7 +8,9 @@
 
 (in-package "GRAPH")
 
+(include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/treemap/in-defs" :dir :system)
 
 (include-book "graph-defs")
 
@@ -19,4 +21,5 @@
 
 (std::defredundant
   :names (nodes
+          node-in
           ))

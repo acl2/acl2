@@ -13,7 +13,9 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
+(include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/treemap/in-defs" :dir :system)
 
 (include-book "graph-defs")
 
@@ -23,6 +25,7 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
+(local (include-book "kestrel/data/treemap/in" :dir :system))
 
 (local (include-book "graph"))
 
@@ -73,3 +76,26 @@
   (equal (nodes (empty))
          (treeset::empty))
   :enable nodes-when-emptyp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define node-in (node (graph graphp))
+  :parents (graph)
+  :short "Check if a value is a node of a @(see graph)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
+       nodes.")
+    (xdoc::p
+      "This is a convenient abbreviation, not the logical normal form used by
+       this library. It is enabled, so @('(node-in node graph)') becomes
+       @('(treeset::in node (nodes graph))'). Unlike that form, it does not
+       construct the node set when executed, so it is the form to use in
+       guards."))
+  (mbe :logic (treeset::in node (nodes graph))
+       :exec (treemap::in node graph))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* nodes
+                                            break-abstraction))))

@@ -76,7 +76,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-edge! (from to label (graph graphp))
-  :guard (treeset::in to (nodes graph))
+  :guard (node-in to graph)
   :parents (add-edge)
   :short "Add a labeled edge to a @(see graph) whose target is already a
           node."
