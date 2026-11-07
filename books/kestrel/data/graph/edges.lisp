@@ -111,3 +111,16 @@
            nodes
            in-of-adj-list-edges
            break-abstraction))
+
+;; The same facts as they are usually needed: an end of an edge is never a
+;; value known not to be a node.
+
+(defrule equal-of-edge->from-when-in-of-edges-and-not-in-of-nodes
+  (implies (and (treeset::in edge (edges graph))
+                (not (treeset::in node (nodes graph))))
+           (not (equal (edge->from edge) node))))
+
+(defrule equal-of-edge->to-when-in-of-edges-and-not-in-of-nodes
+  (implies (and (treeset::in edge (edges graph))
+                (not (treeset::in node (nodes graph))))
+           (not (equal (edge->to edge) node))))

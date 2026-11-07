@@ -17,3 +17,4 @@
 (include-book "add-node")
 (include-book "add-edge")
 (include-book "delete-edge")
+(include-book "delete-node")

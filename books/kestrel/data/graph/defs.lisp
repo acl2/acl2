@@ -15,3 +15,4 @@
 (include-book "add-node-defs")
 (include-book "add-edge-defs")
 (include-book "delete-edge-defs")
+(include-book "delete-node-defs")
