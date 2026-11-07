@@ -16,6 +16,7 @@
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/diff-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/size-defs" :dir :system)
@@ -43,6 +44,7 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/treeset/diff" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
@@ -59,6 +61,7 @@
 (local (include-book "well-formed"))
 (local (include-book "edges"))
 (local (include-book "add-node"))
+(local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,18 +145,34 @@
   :enable (in-of-adj-list-edges
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
+(defrule adj-list-edges-of-adj-list-delete-target
+  (equal (adj-list-edges (adj-list-delete-target node adjl))
+         (treeset::diff (adj-list-edges adjl)
+                        (adj-list-edges-to node adjl)))
+  :enable (treeset::extensionality-no-backchain-limit-polar
+           in-of-adj-list-edges-of-adj-list-delete-target
+           in-of-adj-list-edges-to))
+
+;; So with no edges into the node there is nothing to remove.
+
+(defrule adj-list-delete-target-when-emptyp-of-adj-list-edges-to
+  (implies (and (adj-listp adjl)
+                (treeset::emptyp (adj-list-edges-to node adjl)))
+           (equal (adj-list-delete-target node adjl)
+                  adjl))
+  :enable adj-list-extensionality)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Remove a node along with every edge into or out of it. Deleting its key
-;; drops its outgoing edges; removing it as a target from the rest drops its
-;; incoming ones.
+;; Remove a node along with every edge into or out of it. Removing it as a
+;; target drops its incoming edges; deleting its key drops its outgoing ones.
 ;;
 ;; Time complexity: @($O(n (\\log(n) + \\log(d)))$), as for @(tsee
 ;; adj-list-delete-target).
 
 (define adj-list-delete-node (node (adjl adj-listp))
   :returns (new-adjl treemap::mapp)
-  (adj-list-delete-target node (treemap::delete node adjl)))
+  (treemap::delete node (adj-list-delete-target node adjl)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
