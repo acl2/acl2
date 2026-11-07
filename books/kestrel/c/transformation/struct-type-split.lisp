@@ -2031,6 +2031,19 @@
                                    :type left-type)
                  nil
                  st))
+        :convertvector
+        (b* (((erp left-vec right-vec? st)
+              (expr-sts-split expr.vec st))
+             ((erp splitp left-type ?right-type st)
+              (tyname-sts-split expr.type st))
+             ((when (or right-vec? splitp))
+              (retmsg$ "Split is not supported in either operand ~
+                        of a __builtin_convertvector call.~%~@0"
+                       (context-msg-expr expr (sts-split-state->dialect st)))))
+          (retok (make-expr-convertvector :vec left-vec
+                                          :type left-type)
+                 nil
+                 st))
         :extension
         (b* (((erp left-expr right-expr? st)
               (expr-sts-split expr.expr st)))

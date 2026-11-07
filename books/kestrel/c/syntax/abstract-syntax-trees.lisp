@@ -1738,7 +1738,13 @@
        because its second argument is a type name, not an expression.
        The first argument is an expression.")
      (xdoc::p
-      "As a GCC extesntion, we include
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_convertvector').
+       This is not a regular function,
+       because its second argument is a type name, not an expression.
+       The first argument is an expression.")
+     (xdoc::p
+      "As a GCC extension, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
     (:ident ((ident ident)
@@ -1813,6 +1819,8 @@
                 (member member-designor)))
     (:va-arg ((list expr)
               (type tyname)))
+    (:convertvector ((vec expr)
+                     (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
     :layout :fulltree

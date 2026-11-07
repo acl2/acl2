@@ -489,6 +489,16 @@
          (mv (make-expr-va-arg :list new-list
                                :type new-type)
              (gout-no-thm gin)))
+       :convertvector
+       (b* (((mv new-vec (gout gout-vec))
+             (simpadd0-expr expr.vec gin))
+            (gin (gin-update gin gout-vec))
+            ((mv new-type (gout gout-type))
+             (simpadd0-tyname expr.type gin))
+            (gin (gin-update gin gout-type)))
+         (mv (make-expr-convertvector :vec new-vec
+                                      :type new-type)
+             (gout-no-thm gin)))
        :extension
        (b* (((mv new-expr (gout gout-expr))
              (simpadd0-expr expr.expr gin))

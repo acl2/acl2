@@ -119,6 +119,7 @@
     make-expr-tycompat
     make-expr-offsetof
     make-expr-va-arg
+    make-expr-convertvector
     expr-extension
 
     expr-listp
