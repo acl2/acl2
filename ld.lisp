@@ -1401,7 +1401,12 @@
     (mv-let
      (eofp erp keyp form state)
      (let ((in-verify-flg (f-get-global 'in-verify-flg state)))
-       (cond (in-verify-flg
+       (cond ((natp in-verify-flg) ; (in-verify state)
+
+; The following code can get us back into the proof-builder by way of the use
+; of (invoke-restart 'continue) in our-abort, even when there is a raw Lisp
+; error, unless we are in a recursive LD.
+
               (pprogn (f-put-global 'in-verify-flg nil state)
                       (cond ((and (eql (f-get-global 'ld-level state) 1)
                                   (eql in-verify-flg 1)
@@ -2076,6 +2081,9 @@
       (er soft 'ld
           "It is illegal to call LD in this context.  See :DOC ~
            calling-ld-in-bad-contexts."))
+     ((f-get-global 'in-verify-flg state)
+      (er soft 'ld
+          "It is illegal to call LD when inside the proof-builder."))
      (t
       #-acl2-loop-only
       (cond (*load-compiled-stack*
@@ -3747,7 +3755,7 @@
           (value val))
          (t (mv t nil state)))))
 
-(defun ld-simple (forms state)
+(defun ld-simple (forms ctx state)
 
 ; This is a considerable simplification of ld-fn (and ld-fn0, ld-fn1,
 ; ld-fn-body, ld-loop, and especially ld-read-eval-print), which doesn't
@@ -3771,7 +3779,10 @@
                       (ld-query-control-alist
                        (cons '(:redef :y)
                              (ld-query-control-alist state))))
-                     (ld-loop-simple state)))
+                     (cond ((f-get-global 'in-verify-flg state)
+                            (er soft ctx
+                                "It is illegal to call LD in this context."))
+                           (t (ld-loop-simple state)))))
 
 (defun puff-fn1 (cd ctx state)
 
@@ -3858,7 +3869,7 @@
                     (er-progn
                      (state-global-let*
                       ((guard-checking-on t)) ; agree with include-book
-                      (ld-simple cmds state))
+                      (ld-simple cmds ctx state))
                      (value (cons i
                                   (- (absolute-to-relative-command-number
                                       (max-absolute-command-number (w state))

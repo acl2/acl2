@@ -605,7 +605,7 @@
        nil
        (pprogn
         (print-no-change "There are no unproved goals!")
-        (if (f-get-global 'in-verify-flg state)
+        (if (in-verify state)
             (fms0 "You may wish to exit.~%")
           state))))
 
@@ -687,7 +687,7 @@
                     (pprogn
                      (fms0 "~|*!*!*!*!*!*!* All goals have been proved! ~
                             *!*!*!*!*!*!*~%")
-                     (if (f-get-global 'in-verify-flg state)
+                     (if (in-verify state)
                          (fms0 "You may wish to exit.~%")
                        state)))))))))
 
@@ -1067,7 +1067,7 @@
             (pprogn (maybe-print-macroexpansion instr raw-instr state)
                     (pc-single-step-primitive instr state)))
            (meta
-            (cond ((and (not (f-get-global 'in-verify-flg state))
+            (cond ((and (not (in-verify state))
                         (not (getpropc (car instr) 'predefined nil (w state))))
                    (er soft 'proof-builder
                        "You may only invoke a user-defined proof-builder meta ~
@@ -1325,11 +1325,6 @@
                                      (member-eq 'exit quit-conditions))))
                        (and (null val)
                             (member-eq 'value quit-conditions)))
-
-; We set 'in-verify-flg back to nil when exiting explicitly from verify-fn and,
-; in case we never get that chance because of an interrupt or abort, in
-; ld-read-eval-print.
-
                    (mv signal val state))
                   (t (let ((new-last-value
 
@@ -1390,18 +1385,21 @@
                      quit-conditions pc-print-prompt-and-instr-flg
                      in-verify-flg state)
   (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
-          (cond (in-verify-flg
-                 (f-put-global 'in-verify-flg in-verify-flg state))
-                (t
+          (state-global-let*
+           ((in-verify-flg
+             (cond ((eq in-verify-flg :same)
 
-; It is tempting to assert (eq (f-get-global 'in-verify-flg state) nil).  But
-; we can get here by way of calling state-from-instructions, which is used to
-; replay proof-builder commands upon exit, and where in-verify-flg is already
-; true.
+; We use the value :same in state-from-instructions.  In that case, we are
+; already in the proof-builder and we don't want to mess with in-verify-flg
+; when we run the given instructions.
 
-                 state))
-          (pc-main1 instr-list quit-conditions pc-print-prompt-and-instr-flg
-                    state)))
+                    (f-get-global 'in-verify-flg state))
+                   (t
+                    (assert$
+                     (eq (f-get-global 'in-verify-flg state) nil)
+                     (or in-verify-flg t))))))
+           (pc-main1 instr-list quit-conditions pc-print-prompt-and-instr-flg
+                     state))))
 
 (defun pc-top (raw-term event-name rule-classes instr-list quit-conditions
                         in-verify-flg state)
@@ -1450,8 +1448,10 @@
   (cond
    ((f-get-global 'in-verify-flg state)
     (er soft 'verify
-        "You are apparently already inside the VERIFY interactive loop.  It ~
-         is illegal to enter such a loop recursively."))
+        "You are apparently already ~#0~[inside the VERIFY interactive ~
+         loop~/inside the proof-builder~].  It is illegal to enter the ~
+         proof-builder recursively."
+        (if (in-verify state) 0 1)))
    (t
     (let ((ld-level (f-get-global 'ld-level state)))
       (mv-let
@@ -1523,11 +1523,16 @@
                         (value (state-stack))))
     (value (state-stack))))
 
-(defun state-from-instructions
-  (raw-term event-name rule-classes instructions quit-conditions state)
+(defun state-from-instructions (raw-term event-name rule-classes instructions
+                                         quit-conditions state)
+
+; This function is called when replaying instructions from inside the
+; proof-builder, when exiting.
+
   (mv-let (erp val state)
-          (pc-top raw-term event-name rule-classes
-                  instructions quit-conditions nil state)
+          (pc-top raw-term event-name rule-classes instructions quit-conditions
+                  :same ; see pc-main
+                  state)
           (declare (ignore erp val))
           state))
 
@@ -1582,37 +1587,37 @@
                 (cons #\4 (access pc-state pc-state :tag-tree))))
             (fms0 "~%No state in CAR of state-stack.~|")))))
 
-(defun proof-builder
-  (event-name raw-term term rule-classes instructions wrld state)
+(defun proof-builder (event-name raw-term term rule-classes instructions wrld
+                                 state)
   (declare (ignore wrld))
-  (cond
-   ((and (not (f-get-global 'in-verify-flg state))
-         (ld-skip-proofsp state))
-    (value nil))
-   (t
-    (mv-let (erp state-stack state)
-            (state-stack-from-instructions
-             term raw-term event-name rule-classes instructions
-             (not (f-get-global 'in-verify-flg state))
-             '(signal value)
-             state)
-            (if erp
-                (pprogn
-                 (io? proof-builder nil state
-                      nil
-                      (fms0 "~%~%Replay of proof-builder instructions ~
-                             aborted.~%"))
-                        (if (f-get-global 'in-verify-flg state)
-                            (mv *pc-complete-signal* nil state)
-                          (silent-error state)))
-              (let ((goals (access pc-state (car state-stack) :goals)))
-                (if (null goals)
-                    (value (access pc-state (car state-stack) :tag-tree))
-                  (pprogn
-                   (print-unproved-goals-message goals state)
-                   (if (f-get-global 'in-verify-flg state)
-                       (mv *pc-complete-signal* nil state)
-                     (silent-error state))))))))))
+  (let ((in-verify (in-verify state)))
+    (cond
+     ((and (not in-verify)
+           (ld-skip-proofsp state))
+      (value nil))
+     (t
+      (mv-let (erp state-stack state)
+        (state-stack-from-instructions
+         term raw-term event-name rule-classes instructions
+         (not in-verify)
+         '(signal value)
+         state)
+        (if erp
+            (pprogn
+             (io? proof-builder nil state
+                  nil
+                  (fms0 "~%~%Replay of proof-builder instructions aborted.~%"))
+             (if in-verify
+                 (mv *pc-complete-signal* nil state)
+               (silent-error state)))
+          (let ((goals (access pc-state (car state-stack) :goals)))
+            (if (null goals)
+                (value (access pc-state (car state-stack) :tag-tree))
+              (pprogn
+               (print-unproved-goals-message goals state)
+               (if in-verify
+                   (mv *pc-complete-signal* nil state)
+                 (silent-error state)))))))))))
 
 (defmacro verify (&optional (raw-term 'nil raw-term-supplied-p)
                             &key

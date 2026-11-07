@@ -121,7 +121,7 @@
       (print-no-change2 "There are no hypotheses to drop!"))))
 
 (define-pc-meta lisp (form)
-  (cond ((not (f-get-global 'in-verify-flg state))
+  (cond ((not (in-verify state))
          (er soft 'acl2-pc::lisp
              "You may only invoke the proof-builder LISP command when ~
               you are inside the interactive loop."))
@@ -217,7 +217,7 @@
 ; We allow (exit .. nil ..) to indicate that information is to be picked up
 ; from the initial pc-state.
 
-  (if (not (f-get-global 'in-verify-flg state))
+  (if (not (in-verify state))
       (er soft 'acl2-pc::exit
           "You may not invoke the EXIT command unless inside the ~
            interactive loop.")
@@ -944,7 +944,7 @@
                                        (splitter-output)
                                        hints))
                    (clauses (list (list term))))
-               (if (f-get-global 'in-verify-flg state) ;interactive
+               (if (in-verify state) ;interactive
                    (state-global-let*
                     ((saved-output-p t)
                      (saved-output-token-lst :all))
@@ -953,7 +953,7 @@
                                                      state)
                             (prove-loop clauses pspv hints ens wrld ctx
                                         state)))
-                   (prove-loop clauses pspv hints ens wrld ctx state)))))
+                 (prove-loop clauses pspv hints ens wrld ctx state)))))
     (er-progn
      (chk-assumption-free-ttree ttree ctx state)
      (value ttree))))
@@ -3997,8 +3997,10 @@
     (cond
      ((f-get-global 'in-verify-flg state)
       (er soft 'retrieve
-          "You are apparently already inside the VERIFY interactive loop.  It is ~
-           illegal to enter such a loop recursively."))
+          "You are apparently already ~#0~[inside the VERIFY interactive ~
+           loop~/inside the proof-builder~].  It is illegal to enter the ~
+           proof-builder recursively."
+          (if (in-verify state) 0 1)))
      ((null ss-alist)
       (pprogn (io? proof-builder nil state
                    nil
