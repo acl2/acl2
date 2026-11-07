@@ -39,7 +39,6 @@
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
 (local (include-book "kestrel/data/treemap/update" :dir :system))
 (local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -126,8 +125,7 @@
                             (adj-list-add-edge from1 to1 label1 adjl))
          (adj-list-add-edge from1 to1 label1
                             (adj-list-add-edge from0 to0 label0 adjl)))
-  :enable (adj-list-add-edge
-           treemap::extensionality-polar))
+  :enable adj-list-add-edge)
 
 ;; Adding an edge already adds its source as a node, and adding a node moves
 ;; inward past adding an edge, so that a list is built by adding its nodes
@@ -137,12 +135,10 @@
   (equal (adj-list-add-edge from to label (adj-list-add-node from adjl))
          (adj-list-add-edge from to label adjl))
   :enable (adj-list-add-edge
-           adj-list-add-node
-           treemap::extensionality-polar))
+           adj-list-add-node))
 
 (defrule adj-list-add-node-of-adj-list-add-edge
   (equal (adj-list-add-node node (adj-list-add-edge from to label adjl))
          (adj-list-add-edge from to label (adj-list-add-node node adjl)))
   :enable (adj-list-add-edge
-           adj-list-add-node
-           treemap::extensionality-polar))
+           adj-list-add-node))

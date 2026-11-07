@@ -252,7 +252,6 @@
   :enable (adj-list-edges-to
            in-of-adj-list-edges
            in-of-labels-edges
-           treeset::in-of-min
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

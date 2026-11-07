@@ -76,7 +76,6 @@
            (equal (edges graph)
                   (treeset::empty)))
   :enable (edges
-           fix-when-emptyp
            empty))
 
 (defrule edges-when-emptyp-cheap
@@ -101,8 +100,7 @@
            (treeset::in (edge->from edge) (nodes graph)))
   :enable (edges
            nodes
-           in-of-adj-list-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           in-of-adj-list-edges))
 
 (defrule in-of-edge->to-and-nodes-when-in-of-edges
   (implies (treeset::in edge (edges graph))

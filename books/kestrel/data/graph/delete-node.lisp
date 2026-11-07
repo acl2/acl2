@@ -130,9 +130,7 @@
 
 (defrule delete-node-of-delete-node-same
   (equal (delete-node node (delete-node node graph))
-         (delete-node node graph))
-  :enable (extensionality
-           treeset::extensionality-no-backchain-limit-polar))
+         (delete-node node graph)))
 
 (defrule delete-node-of-delete-node-commutative
   (equal (delete-node node0 (delete-node node1 graph))

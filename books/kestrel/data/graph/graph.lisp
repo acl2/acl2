@@ -225,7 +225,6 @@
            (graphp graph))
   :rule-classes :forward-chaining
   :enable (emptyp
-           graphp
            empty))
 
 (defrule emptyp-when-not-graphp-forward-chaining

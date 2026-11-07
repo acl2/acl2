@@ -156,8 +156,7 @@
            (equal (edge->from edge0)
                   (edge->from edge1)))
   :rule-classes :congruence
-  :enable (edge->from
-           edge-equiv))
+  :enable edge->from)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,8 +174,7 @@
            (equal (edge->to edge0)
                   (edge->to edge1)))
   :rule-classes :congruence
-  :enable (edge->to
-           edge-equiv))
+  :enable edge->to)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,8 +192,7 @@
            (equal (edge->label edge0)
                   (edge->label edge1)))
   :rule-classes :congruence
-  :enable (edge->label
-           edge-equiv))
+  :enable edge->label)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -214,7 +211,6 @@
          from)
   :enable (edge
            edge->from
-           edge-fix
            edgep))
 
 (defrule edge->to-of-edge
@@ -222,7 +218,6 @@
          to)
   :enable (edge
            edge->to
-           edge-fix
            edgep))
 
 (defrule edge->label-of-edge
@@ -230,7 +225,6 @@
          label)
   :enable (edge
            edge->label
-           edge-fix
            edgep))
 
 (defrule edge-of-edge->from-and-edge->to-and-edge->label

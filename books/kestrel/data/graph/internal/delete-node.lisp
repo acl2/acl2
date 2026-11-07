@@ -142,43 +142,37 @@
   (equal (treemap::tree-key-set (tree-delete-target node tree))
          (treemap::tree-key-set tree))
   :induct t
-  :enable (tree-delete-target
-           treemap::tree-key-set))
+  :enable tree-delete-target)
 
 (defrulel <<-all-l-of-tree-delete-target
   (equal (treemap::<<-all-l (tree-delete-target node tree) key)
          (treemap::<<-all-l tree key))
   :induct t
-  :enable (tree-delete-target
-           treemap::<<-all-l))
+  :enable tree-delete-target)
 
 (defrulel <<-all-r-of-tree-delete-target
   (equal (treemap::<<-all-r key (tree-delete-target node tree))
          (treemap::<<-all-r key tree))
   :induct t
-  :enable (tree-delete-target
-           treemap::<<-all-r))
+  :enable tree-delete-target)
 
 (defrulel heap<-all-l-of-tree-delete-target
   (equal (treemap::heap<-all-l (tree-delete-target node tree) key)
          (treemap::heap<-all-l tree key))
   :induct t
-  :enable (tree-delete-target
-           treemap::heap<-all-l))
+  :enable tree-delete-target)
 
 (defrulel bstp-of-tree-delete-target
   (implies (treemap::bstp tree)
            (treemap::bstp (tree-delete-target node tree)))
   :induct t
-  :enable (tree-delete-target
-           treemap::bstp))
+  :enable tree-delete-target)
 
 (defrulel heapp-of-tree-delete-target
   (implies (treemap::heapp tree)
            (treemap::heapp (tree-delete-target node tree)))
   :induct t
-  :enable (tree-delete-target
-           treemap::heapp))
+  :enable tree-delete-target)
 
 (defrulel mapp-of-tree-delete-target
   (implies (treemap::mapp tree)
@@ -191,9 +185,7 @@
              (treemap::delete node (treemap::tree-lookup key tree))
            (treemap::tree-lookup key tree)))
   :induct t
-  :enable (tree-delete-target
-           treemap::tree-lookup
-           treemap::tree-key-set))
+  :enable tree-delete-target)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,8 +228,7 @@
   (equal (treemap::keys (adj-list-delete-target node adjl))
          (treemap::keys adjl))
   :induct t
-  :enable (adj-list-delete-target
-           treeset::in-of-min))
+  :enable adj-list-delete-target)
 
 (defrule lookup-of-adj-list-delete-target
   (equal (treemap::lookup key
@@ -247,15 +238,13 @@
              (treemap::delete node (treemap::lookup key adjl))
            default))
   :induct t
-  :enable (adj-list-delete-target
-           treeset::in-of-min))
+  :enable adj-list-delete-target)
 
 (defrule map-values-all-adjacencyp-of-adj-list-delete-target
   (implies (map-values-all-adjacencyp adjl)
            (map-values-all-adjacencyp (adj-list-delete-target node adjl)))
   :induct t
-  :enable (adj-list-delete-target
-           treeset::in-of-min))
+  :enable adj-list-delete-target)
 
 ;; The logical walk and the tree walk agree, which is what lets the tree walk
 ;; execute.
@@ -282,8 +271,7 @@
            (map-values-all-keys-subsetp (adj-list-delete-target node adjl)
                                         (treeset::delete node nodes)))
   :induct t
-  :enable (adj-list-delete-target
-           treeset::in-of-min))
+  :enable adj-list-delete-target)
 
 ;; The incoming edges are exactly the ones lost.
 
@@ -291,8 +279,7 @@
   (equal (treeset::in edge (adj-list-edges (adj-list-delete-target node adjl)))
          (and (treeset::in edge (adj-list-edges adjl))
               (not (equal (edge->to (double-rewrite edge)) node))))
-  :enable (in-of-adj-list-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+  :enable in-of-adj-list-edges)
 
 (defrule adj-list-edges-of-adj-list-delete-target
   (equal (adj-list-edges (adj-list-delete-target node adjl))
@@ -355,9 +342,7 @@
                        (not (equal (edge->from edge$) node))
                        (not (equal (edge->to edge$) node)))))
   :enable (adj-list-delete-node
-           in-of-adj-list-edges-of-adj-list-delete-target
-           in-of-adj-list-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           in-of-adj-list-edges))
 
 (defrule well-formedp-of-adj-list-delete-node
   (implies (well-formedp adjl)

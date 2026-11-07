@@ -197,8 +197,7 @@
          (treeset::delete (edge from to label) (adj-list-edges adjl)))
   :enable (adj-list-delete-edge
            treeset::extensionality-no-backchain-limit-polar
-           in-of-adj-list-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp)
+           in-of-adj-list-edges)
   :disable adj-list-edges-of-update)
 
 ;; Deleting an edge preserves well-formedness unconditionally: the node set is
@@ -223,8 +222,7 @@
                                (adj-list-delete-edge from1 to1 label1 adjl))
          (adj-list-delete-edge from1 to1 label1
                                (adj-list-delete-edge from0 to0 label0 adjl)))
-  :enable (adj-list-delete-edge
-           treemap::extensionality-polar))
+  :enable adj-list-delete-edge)
 
 ;; As with adding an edge, adding a node moves inward past deleting one.
 
