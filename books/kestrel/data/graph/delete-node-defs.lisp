@@ -8,7 +8,11 @@
 
 (in-package "GRAPH")
 
+(include-book "kestrel/data/treeset/set-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+
 (include-book "graph-defs")
+(include-book "edges-defs")
 (include-book "internal/delete-node-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
@@ -18,4 +22,5 @@
 
 (std::defredundant
   :names (delete-node
+          delete-node!
           ))

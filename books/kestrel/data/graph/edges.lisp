@@ -124,3 +124,76 @@
   (implies (and (treeset::in edge (edges graph))
                 (not (treeset::in node (nodes graph))))
            (not (equal (edge->to edge) node))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define edges-from (node (graph graphp))
+  :type-prescription :none
+  :returns (edges treeset::setp)
+  :parents (graph)
+  :short "The edges out of a node of a @(see graph)."
+  :long
+  (xdoc::topstring-p
+    "Time complexity: @($O(\\log(n) + k\\log(k))$), where @($n$) is the
+     number of nodes and @($k$) the number of edges out of the node.")
+  (adjacency-edges node
+                   (treemap::lookup node (fix graph) :default (treemap::empty)))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule edges-from-when-equiv-congruence
+  (implies (equiv graph0 graph1)
+           (equal (edges-from node graph0)
+                  (edges-from node graph1)))
+  :rule-classes :congruence
+  :enable edges-from)
+
+(defrule in-of-edges-from
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (edges-from node graph))
+                  (and (treeset::in edge (edges graph))
+                       (equal (edge->from edge$) node))))
+  :enable (edges-from
+           edges
+           in-of-adjacency-edges
+           in-of-adj-list-edges))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define edges-to (node (graph graphp))
+  :type-prescription :none
+  :returns (edges treeset::setp)
+  :parents (graph)
+  :short "The edges into a node of a @(see graph)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "A graph records only each node's outgoing edges, so finding the edges
+       into a node means visiting every node.")
+    (xdoc::p
+      "Time complexity: @($O(n (\\log(n) + \\log(d)) + k\\log(k))$), where
+       @($n$) is the number of nodes, @($d$) the largest number of targets of
+       a node, and @($k$) the number of edges into the node."))
+  (adj-list-edges-to node (fix graph))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule edges-to-when-equiv-congruence
+  (implies (equiv graph0 graph1)
+           (equal (edges-to node graph0)
+                  (edges-to node graph1)))
+  :rule-classes :congruence
+  :enable edges-to)
+
+(defrule in-of-edges-to
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (edges-to node graph))
+                  (and (treeset::in edge (edges graph))
+                       (equal (edge->to edge$) node))))
+  :enable (edges-to
+           edges
+           in-of-adj-list-edges-to))

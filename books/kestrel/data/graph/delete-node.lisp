@@ -14,6 +14,10 @@
 
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
+(include-book "kestrel/data/treeset/diff-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -29,6 +33,9 @@
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/treeset/intersect" :dir :system))
+(local (include-book "kestrel/data/treeset/diff" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 
 (local (include-book "edge"))
@@ -37,6 +44,7 @@
 (local (include-book "edges"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
+(local (include-book "internal/edges"))
 (local (include-book "internal/delete-node"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,8 +83,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The effect on the nodes and edges: the node is removed, and an edge survives
-;; exactly when neither of its ends is the node.
+;; The effect on the nodes and edges: the node is removed, and so is every edge
+;; out of or into it.
 
 (defrule nodes-of-delete-node
   (equal (nodes (delete-node node graph))
@@ -86,7 +94,7 @@
            graphp
            break-abstraction))
 
-(defrule in-of-edges-of-delete-node
+(defruled in-of-edges-of-delete-node
   (implies (edge-equiv edge$ (double-rewrite edge))
            (equal (treeset::in edge (edges (delete-node node graph)))
                   (and (treeset::in edge (edges graph))
@@ -97,6 +105,17 @@
            graphp
            break-abstraction
            in-of-adj-list-edges-of-adj-list-delete-node))
+
+;; The edges less those out of the node and those into it, in the normal form
+;; treeset gives a difference from a union.
+
+(defrule edges-of-delete-node
+  (equal (edges (delete-node node graph))
+         (treeset::intersect
+           (treeset::diff (edges graph) (edges-from node graph))
+           (treeset::diff (edges graph) (edges-to node graph))))
+  :enable (treeset::extensionality-no-backchain-limit-polar
+           in-of-edges-of-delete-node))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -127,3 +146,28 @@
          (delete-node node graph))
   :enable (extensionality
            treeset::extensionality-no-backchain-limit-polar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define delete-node! (node (graph graphp))
+  :guard (treeset::emptyp (edges-to node graph))
+  :parents (delete-node)
+  :short "Remove a node with no incoming edges from a @(see graph)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Logically this is @(tsee delete-node), to which it is rewritten. The
+       guard requires that no edge leads into the node, so removing the node's
+       own entry, with its outgoing edges, is all there is to do. Checking the
+       guard, however, visits every node.")
+    (xdoc::p
+      "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
+       nodes."))
+  (mbe :logic (delete-node node graph)
+       :exec (treemap::delete node graph))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* delete-node
+                                            adj-list-delete-node
+                                            edges-to
+                                            break-abstraction))))
