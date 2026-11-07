@@ -1,0 +1,37 @@
+Formalizing the Connectivity Theorem for the Matrix Multiplication Flip Graph in ACL2
+Quan Luu, Zeke Medley, Panagiotis Manolios (ACL2 Workshop 2026)
+
+Supporting materials for the paper: an ACL2 proof that the matrix multiplication
+flip graph over F2 is strongly connected under flip and plus transformations
+(flip-plus-connectivity in main.lisp), together with books relating schemes to
+bilinear matrix multiplication algorithms.
+
+Certification
+-------------
+
+  cert.pl -j 4 overview-proof.lisp overview-algo.lisp
+
+certifies every book in this directory, in about a minute.  Table 1 of the
+paper reports serial certification (cert.pl -j 1 main.lisp) of the connectivity
+books only.  For the books in
+experiments/, see experiments/README.  Certified with a development snapshot of
+ACL2 8.7 (git 98c07036d7) on SBCL 2.6.4, with no trust tags, skip-proofs or
+defaxiom.
+
+Overview books
+--------------
+
+overview-prelims.lisp   the objects and the statement of the main theorem
+overview-proof.lisp     how the main theorem is proved
+overview-algo.lisp      schemes and bilinear algorithms
+
+The three restate, with commentary, every definition and theorem the paper
+mentions, verbatim from the books in this directory.  Read overview-prelims.lisp
+first.
+
+Subfolders
+----------
+
+experiments/            the unassisted development and the ACL2s cross-check
+                        discussed in the paper's section on working with a
+                        language model
