@@ -631,11 +631,6 @@ X86ISA_BOOKS := $(filter projects/x86isa/%, $(OK_CERTS))
 SLOW_BOOKS += $(X86ISA_BOOKS)
 FILESYSTEM_BOOKS := $(filter projects/filesystems/%, $(OK_CERTS))
 SLOW_BOOKS += $(FILESYSTEM_BOOKS)
-# The experiments of this workshop paper take about 40 minutes (several books
-# take 5-10 minutes each); the paper's proof itself is not in experiments/.
-LUU_MEDLEY_MANOLIOS_EXPERIMENTS := \
-  $(filter workshops/2026/luu-medley-manolios/experiments/%, $(OK_CERTS))
-SLOW_BOOKS += $(LUU_MEDLEY_MANOLIOS_EXPERIMENTS)
 
 # We used to filter out the slow books here. As of mid-2020, we do it later, as
 # part of the `regression` target

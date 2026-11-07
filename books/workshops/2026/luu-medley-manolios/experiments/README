@@ -11,9 +11,6 @@ Certification
 
 certifies all 34 books, in about half an hour.
 
-These books are listed in SLOW_BOOKS in books/GNUmakefile, so `make
-regression` skips them; `make regression-everything` certifies them.
-
 Running the cross-check
 -----------------------
 
