@@ -110736,6 +110736,24 @@ it."
  @(see community-books) files @('system/tests/verify-fn-pc-macro-book.lsp') and
  @('system/tests/pc-macro-retrieve-fn-error-save.lsp').</p>
 
+ <p>An infinite loop was possible when the compiled lambda cache (see @(tsee
+ print-cl-cache)) is full.  This bug (which was in source function
+ @('invalidate-some-cl-cache-lines')) has been fixed.  See @(see
+ community-books) @('system/tests/cl-cache-full-ring-hang.lisp'),
+ @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
+ @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
+
+ <p>The termination analysis for some instances of @(tsee loop$-recursion) was
+ faulty as demonstrated in the @(see community-books)
+ @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
+ @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
+ @('system/tests/loop-recursion-plain-target-subst.lisp'), and
+ @('system/tests/loop-recursion-double-subst-do-guard.lisp'), due to the
+ inadvertent double application of substitutions intended to instantiate
+ locally bound variables.  This soundness bug has been fixed: corrected code is
+ in source function @('termination-machine-rec') with comments explaining the
+ mistake.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

@@ -107625,6 +107625,24 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/verify-fn-pc-macro-book.lsp[0m[0m and
   [30m[47msystem/tests/pc-macro-retrieve-fn-error-save.lsp[0m[0m.
 
+  An infinite loop was possible when the compiled lambda cache (see
+  [30m[47m[print-cl-cache][0m[0m) is full.  This bug (which was in source function
+  [30m[47minvalidate-some-cl-cache-lines[0m[0m) has been fixed.  See
+  [community-books] [30m[47msystem/tests/cl-cache-full-ring-hang.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-full-ring-hang-loop.lisp[0m[0m and
+  [30m[47msystem/tests/cl-cache-invalidation-semantics.lisp[0m[0m.
+
+  The termination analysis for some instances of [30m[47m[loop$-recursion][0m[0m was
+  faulty as demonstrated in the [community-books]
+  [30m[47msystem/tests/loop-in-let-double-subst-rejects-valid-defun.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-double-subst-clause-processor.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-plain-target-subst.lisp[0m[0m, and
+  [30m[47msystem/tests/loop-recursion-double-subst-do-guard.lisp[0m[0m, due to the
+  inadvertent double application of substitutions intended to
+  instantiate locally bound variables.  This soundness bug has been
+  fixed: corrected code is in source function [30m[47mtermination-machine-rec[0m[0m
+  with comments explaining the mistake.
+
 
 Other Bug Fixes
 
