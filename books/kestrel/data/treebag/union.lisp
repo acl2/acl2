@@ -16,6 +16,8 @@
 (include-book "bag-defs")
 (include-book "count-defs")
 (include-book "subbag-defs")
+(include-book "insert-defs")
+(include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -35,6 +37,8 @@
 (local (include-book "count"))
 (local (include-book "extensionality"))
 (local (include-book "subbag"))
+(local (include-book "insert"))
+(local (include-book "delete"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -125,6 +129,13 @@
 (defrule subbag-of-union1
   (equal (subbag (union a b) b)
          (subbag a b))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar))
+
+(defrule subbag-of-union
+  (equal (subbag (union a b) c)
+         (and (subbag a c)
+              (subbag b c)))
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar))
 
@@ -231,3 +242,100 @@
                   (fix a)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by union-when-subbag-arg2-arg1)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled union-of-insert
+  (equal (union (insert x a) b)
+         (if (< (count x a) (count x b))
+             (union a b)
+           (insert x (union a b))))
+  :enable (extensionality
+           count-of-insert
+           acl2::max))
+
+(defrule union-of-insert-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (union (insert x a) b)
+                  (union a b)))
+  :enable union-of-insert)
+
+(defrule union-of-insert-when-count-<=-count
+  (implies (<= (count x b) (count x a))
+           (equal (union (insert x a) b)
+                  (insert x (union a b))))
+  :enable union-of-insert)
+
+(defruled union-of-arg1-and-insert
+  (equal (union a (insert x b))
+         (if (< (count x b) (count x a))
+             (union a b)
+           (insert x (union a b))))
+  :enable (extensionality
+           count-of-insert
+           acl2::max))
+
+(defrule union-of-arg1-and-insert-when-count-<-count
+  (implies (< (count x b) (count x a))
+           (equal (union a (insert x b))
+                  (union a b)))
+  :enable union-of-arg1-and-insert)
+
+(defrule union-of-arg1-and-insert-when-count-<=-count
+  (implies (<= (count x a) (count x b))
+           (equal (union a (insert x b))
+                  (insert x (union a b))))
+  :enable union-of-arg1-and-insert)
+
+(defruled union-of-delete
+  (equal (union (delete x a) b)
+         (if (< (count x b) (count x a))
+             (delete x (union a b))
+           (union a b)))
+  :enable (extensionality
+           count-of-delete
+           acl2::max
+           nfix))
+
+(defrule union-of-delete-when-count-<-count
+  (implies (< (count x b) (count x a))
+           (equal (union (delete x a) b)
+                  (delete x (union a b))))
+  :enable union-of-delete)
+
+(defrule union-of-delete-when-count-<=-count
+  (implies (<= (count x a) (count x b))
+           (equal (union (delete x a) b)
+                  (union a b)))
+  :enable union-of-delete)
+
+(defruled union-of-arg1-and-delete
+  (equal (union a (delete x b))
+         (if (< (count x a) (count x b))
+             (delete x (union a b))
+           (union a b)))
+  :enable (extensionality
+           count-of-delete
+           acl2::max
+           nfix))
+
+(defrule union-of-arg1-and-delete-when-count-<-count
+  (implies (< (count x a) (count x b))
+           (equal (union a (delete x b))
+                  (delete x (union a b))))
+  :enable union-of-arg1-and-delete)
+
+(defrule union-of-arg1-and-delete-when-count-<=-count
+  (implies (<= (count x b) (count x a))
+           (equal (union a (delete x b))
+                  (union a b)))
+  :enable union-of-arg1-and-delete)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy union-extra-rules
+  '(union-of-insert
+    union-of-arg1-and-insert
+    union-of-delete
+    union-of-arg1-and-delete
+    ))

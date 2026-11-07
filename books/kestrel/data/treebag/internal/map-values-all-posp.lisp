@@ -21,6 +21,9 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 
 (include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/join-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/lookup-defs" :dir :system)
+(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/values-defs" :dir :system)
@@ -46,6 +49,8 @@
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 
 (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
+(local (include-book "kestrel/data/treemap/internal/join" :dir :system))
 (local (include-book "kestrel/data/treemap/internal/values" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
@@ -263,6 +268,86 @@
   :enable (set-all-posp
            tree-all-vals-posp))
 
+(defrule tree-all-vals-posp-of-tree-split.left-when-tree-all-vals-posp
+  (implies (tree-all-vals-posp tree)
+           (tree-all-vals-posp (mv-nth 1 (treemap::tree-split key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::tree-all-vals-genericp-of-tree-split.left-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule tree-all-vals-posp-of-tree-split.right-when-tree-all-vals-posp
+  (implies (tree-all-vals-posp tree)
+           (tree-all-vals-posp (mv-nth 2 (treemap::tree-split key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::tree-all-vals-genericp-of-tree-split.right-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule posp-of-cdr-of-tree-search-assoc-when-tree-all-vals-posp
+  (implies (and (tree-all-vals-posp tree)
+                (treemap::tree-search-assoc key tree))
+           (posp (cdr (treemap::tree-search-assoc key tree))))
+  :use (:instance
+         (:functional-instance
+           treemap::genericp-of-cdr-of-tree-search-assoc-when-tree-all-vals-genericp
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree tree)
+         (treemap::key key))
+  :enable tree-all-vals-posp)
+
+(defrule posp-of-tree-lookup-when-tree-all-vals-posp
+  (implies (and (tree-all-vals-posp tree)
+                (treeset::in key (treemap::tree-key-set (double-rewrite tree))))
+           (posp (treemap::tree-lookup key tree)))
+  :rule-classes
+  (:rewrite
+   (:linear :corollary
+            (implies (and (tree-all-vals-posp tree)
+                          (treeset::in key (treemap::tree-key-set
+                                             (double-rewrite tree))))
+                     (< 0 (treemap::tree-lookup key tree)))))
+  :induct t
+  :enable (treemap::tree-lookup
+           tree-all-vals-posp))
+
+(defrule tree-all-vals-posp-when-tree-equiv-congruence
+  (implies (treemap::tree-equiv tree0 tree1)
+           (equal (tree-all-vals-posp tree0)
+                  (tree-all-vals-posp tree1)))
+  :rule-classes :congruence
+  :use (:instance
+         (:functional-instance
+           treemap::tree-all-vals-genericp-when-tree-equiv-congruence
+           (treeset::genericp posp)
+           (treemap::tree-all-vals-genericp tree-all-vals-posp))
+         (treemap::tree0 tree0)
+         (treemap::tree1 tree1))
+  :enable tree-all-vals-posp)
+
+(defrule tree-all-vals-posp-of-tree-join
+  (implies (and (tree-all-vals-posp left)
+                (tree-all-vals-posp right))
+           (tree-all-vals-posp (treemap::tree-join left right)))
+  :induct (treemap::tree-join left right)
+  :enable (treemap::tree-join
+           tree-all-vals-posp))
+
+(defrule tree-all-vals-posp-of-tree-join-at
+  (implies (and (tree-all-vals-posp left)
+                (tree-all-vals-posp right))
+           (tree-all-vals-posp (treemap::tree-join-at split left right)))
+  :enable treemap::tree-join-at)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The recognizer itself: every value of the map is a positive integer. The
@@ -297,6 +382,13 @@
   (implies (and (treemap::mapp map)
                 (map-values-all-posp (double-rewrite map)))
            (tree-all-vals-posp map))
+  :enable (map-values-all-posp
+           tree-all-vals-posp-becomes-set-all-posp-of-values))
+
+(defruled map-values-all-posp-when-tree-all-vals-posp
+  (implies (and (treemap::mapp map)
+                (tree-all-vals-posp map))
+           (map-values-all-posp map))
   :enable (map-values-all-posp
            tree-all-vals-posp-becomes-set-all-posp-of-values))
 

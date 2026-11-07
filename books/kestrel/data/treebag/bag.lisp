@@ -116,6 +116,15 @@
 
 (add-to-ruleset break-abstraction '(bstp-of-fix))
 
+(defruled heapp-of-fix
+  (treemap::heapp (fix bag))
+  :enable (fix
+           bagp
+           empty
+           treemap::break-abstraction))
+
+(add-to-ruleset break-abstraction '(heapp-of-fix))
+
 (defruled map-values-all-posp-of-fix
   (map-values-all-posp (fix bag))
   :enable (fix

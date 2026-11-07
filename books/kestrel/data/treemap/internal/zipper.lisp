@@ -113,7 +113,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-zip-frame ()
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "An irrelevant path frame, used as the fixer's default."
@@ -130,7 +130,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-fix ((frame zip-frame-p))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (frame$ zip-frame-p)
   :short "Fixer for @(see zip-frame-p)s."
   (mbe :logic (if (zip-frame-p frame)
@@ -169,7 +169,7 @@
 (define zip-frame-equiv
   ((x zip-frame-p)
    (y zip-frame-p))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee zip-frame-fix)."
   (equal (zip-frame-fix x)
@@ -262,7 +262,7 @@
   ((from-left booleanp)
    (elem tree-element-p)
    (sibling treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "Constructor for @(see zip-frame-p)s."
@@ -390,7 +390,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-count-lefts ((path zip-frame-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   :short "Count the frames of a path whose focus lies in the left child."
   :long
@@ -408,7 +408,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-count-rights ((path zip-frame-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   :short "Count the frames of a path whose focus lies in the right child."
   :long
@@ -494,7 +494,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-zip ()
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (zip zipp
                 :hints (("Goal" :in-theory (enable zipp))))
   :short "An irrelevant @(see zipper), used as the fixer's default."
@@ -518,7 +518,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-fix ((zip zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (zip$ zipp)
   :short "Fixer for @(see zipper)s."
   (mbe :logic (if (zipp zip)
@@ -557,7 +557,7 @@
 (define zip-equiv
   ((x zipp)
    (y zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee zip-fix)."
   (equal (zip-fix x)
@@ -714,7 +714,7 @@
    (path zip-frame-listp)
    (nlefts natp)
    (nrights natp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :guard (and (not (tree-empty-p focus))
               (equal nlefts (zip-count-lefts path))
               (equal nrights (zip-count-rights path)))
@@ -1347,7 +1347,7 @@
 ;; ancestor precedes it.
 
 (define zip-at-first-p ((zip zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is focused on the first element."
   (and (tree-empty-p (tree->left (zip->focus zip)))
@@ -1357,7 +1357,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-at-last-p ((zip zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is focused on the last element."
   (and (tree-empty-p (tree->right (zip->focus zip)))
@@ -2128,7 +2128,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-before ((path zip-frame-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   :short "The entries which precede the focus subtree, in order."
   :long
@@ -2141,7 +2141,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-after ((path zip-frame-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   :short "The entries which follow the focus subtree, in order."
   :long
@@ -2299,7 +2299,7 @@
 ;; subtree.
 
 (define zip-before ((zip zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   :short "The entries which precede the cursor, in order."
   (tree-in-order (zip-path-tree-before (zip->path zip)
@@ -2309,7 +2309,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-after ((zip zipp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (alist alistp)
   :short "The entries which follow the cursor, in order."
   (tree-in-order (zip-path-tree-after (zip->path zip)
