@@ -181,6 +181,7 @@
     "__attribute"
     "__attribute__"
     "__auto_type"
+    "__builtin_convertvector"
     "__builtin_offsetof"
     "__builtin_types_compatible_p"
     "__builtin_va_arg"

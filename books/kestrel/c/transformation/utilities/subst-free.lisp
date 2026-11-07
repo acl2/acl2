@@ -233,6 +233,12 @@
                         subst bound-vars)
        (tyname-subst-free (c$::expr-va-arg->type expr)
                           subst bound-vars))
+     :convertvector
+     (c$::expr-convertvector
+      (expr-subst-free (c$::expr-convertvector->vec expr)
+                       subst bound-vars)
+      (tyname-subst-free (c$::expr-convertvector->type expr)
+                         subst bound-vars))
      :extension
      (expr-extension
        (expr-subst-free (c$::expr-extension->expr expr)

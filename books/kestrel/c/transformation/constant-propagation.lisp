@@ -829,6 +829,10 @@
                             (expr-fix expr))
                     nil
                     env)
+        :convertvector (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
+                                   (expr-fix expr))
+                           nil
+                           env)
         :extension (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
                                (expr-fix expr))
                        nil
