@@ -104,16 +104,6 @@
            in-of-adj-list-edges
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
-;; A key with a nonempty label set is present, since an absent key reads as
-;; the empty set.
-
-(defrulel in-of-keys-when-in-of-lookup-with-default-empty-forward-chaining
-  (implies (treeset::in label
-                        (treemap::lookup to map :default (treeset::empty)))
-           (treeset::in to (treemap::keys map)))
-  :rule-classes :forward-chaining
-  :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
-
 (defrule in-of-edge->to-and-nodes-when-in-of-edges
   (implies (treeset::in edge (edges graph))
            (treeset::in (edge->to edge) (nodes graph)))

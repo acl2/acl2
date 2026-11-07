@@ -226,6 +226,22 @@
                          (treemap::lookup k map :default (treeset::empty))))))
   :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
 
+;; One direction holds of any map: an absent key reads as the empty set, so a
+;; key with a nonempty label set is present.
+
+(defrule in-of-keys-when-not-emptyp-of-lookup-with-default-empty-forward-chaining
+  (implies (not (treeset::emptyp
+                  (treemap::lookup k map :default (treeset::empty))))
+           (treeset::in k (treemap::keys map)))
+  :rule-classes :forward-chaining
+  :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
+
+(defrule in-of-keys-when-in-of-lookup-with-default-empty-forward-chaining
+  (implies (treeset::in x (treemap::lookup k map :default (treeset::empty)))
+           (treeset::in k (treemap::keys map)))
+  :rule-classes :forward-chaining
+  :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
+
 (defrule map-values-all-nonempty-setp-of-update
   (equal (map-values-all-nonempty-setp (treemap::update k v map))
          (and (treeset::setp v)
