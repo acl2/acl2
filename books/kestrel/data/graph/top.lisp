@@ -18,3 +18,4 @@
 (include-book "add-edge")
 (include-book "delete-edge")
 (include-book "delete-node")
+(include-book "fty")
