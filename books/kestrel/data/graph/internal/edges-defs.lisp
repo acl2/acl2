@@ -34,4 +34,5 @@
   :names (labels-edges
           adjacency-edges
           adj-list-edges
+          adj-list-edges-to
           ))

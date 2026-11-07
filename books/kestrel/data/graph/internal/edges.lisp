@@ -208,6 +208,53 @@
          (treeset::in (edge from to label) (adj-list-edges adjl)))
   :enable in-of-adj-list-edges)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The edges into one node. There is no index of a node's sources, so this
+;; visits every source, collecting the edges from it to the node.
+;;
+;; Time complexity: @($O(n (\\log(n) + \\log(d)))$) plus the cost of collecting
+;; the edges, where @($d$) is the largest number of targets of a source.
+
+(define adj-list-edges-to (to (adjl adj-listp))
+  :returns (edges treeset::setp)
+  (if (treemap::emptyp adjl)
+      (treeset::empty)
+    (b* ((from (treemap::min-key adjl)))
+      (treeset::union
+        (labels-edges from
+                      to
+                      (treemap::lookup to
+                                       (treemap::lookup from adjl)
+                                       :default (treeset::empty)))
+        (adj-list-edges-to to (treemap::delete from adjl)))))
+  :measure (treemap::size adjl)
+  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
+                                     treeset::in-of-min)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule adj-list-edges-to-when-treemap-equiv-of-arg2-congruence
+  (implies (treemap::equiv adjl0 adjl1)
+           (equal (adj-list-edges-to to adjl0)
+                  (adj-list-edges-to to adjl1)))
+  :rule-classes :congruence
+  :expand ((adj-list-edges-to to adjl0)
+           (adj-list-edges-to to adjl1)))
+
+(defruled in-of-adj-list-edges-to
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (adj-list-edges-to to adjl))
+                  (and (treeset::in edge (adj-list-edges adjl))
+                       (equal (edge->to edge$) to))))
+  :induct (adj-list-edges-to to adjl)
+  :enable (adj-list-edges-to
+           in-of-adj-list-edges
+           in-of-labels-edges
+           treeset::in-of-min
+           treemap::lookup-with-default-becomes-lookup-syntaxp))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule edgep-when-in-of-labels-edges
