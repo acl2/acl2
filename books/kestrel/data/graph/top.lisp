@@ -16,3 +16,4 @@
 (include-book "extensionality")
 (include-book "add-node")
 (include-book "add-edge")
+(include-book "delete-edge")
