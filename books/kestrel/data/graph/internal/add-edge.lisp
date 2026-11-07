@@ -129,17 +129,20 @@
   :enable (adj-list-add-edge
            treemap::extensionality-polar))
 
-;; Adding an edge already adds its source as a node, and adding a node commutes
-;; with adding an edge.
+;; Adding an edge already adds its source as a node, and adding a node moves
+;; inward past adding an edge, so that a list is built by adding its nodes
+;; first. That is the order in which well-formedness is preserved step by step.
 
-(defrule adj-list-add-node-of-adj-list-add-edge-same
-  (equal (adj-list-add-node from (adj-list-add-edge from to label adjl))
+(defrule adj-list-add-edge-of-adj-list-add-node-same
+  (equal (adj-list-add-edge from to label (adj-list-add-node from adjl))
          (adj-list-add-edge from to label adjl))
-  :enable adj-list-add-node)
+  :enable (adj-list-add-edge
+           adj-list-add-node
+           treemap::extensionality-polar))
 
-(defrule adj-list-add-edge-of-adj-list-add-node
-  (equal (adj-list-add-edge from to label (adj-list-add-node node adjl))
-         (adj-list-add-node node (adj-list-add-edge from to label adjl)))
+(defrule adj-list-add-node-of-adj-list-add-edge
+  (equal (adj-list-add-node node (adj-list-add-edge from to label adjl))
+         (adj-list-add-edge from to label (adj-list-add-node node adjl)))
   :enable (adj-list-add-edge
            adj-list-add-node
            treemap::extensionality-polar))
