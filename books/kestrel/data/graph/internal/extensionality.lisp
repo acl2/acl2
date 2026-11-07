@@ -97,12 +97,14 @@
 
 (defruled adj-list-extensionality
   (implies (and (adj-listp x)
-                (adj-listp y))
+                (adj-listp y)
+                (treemap::equiv x$ (double-rewrite x))
+                (treemap::equiv y$ (double-rewrite y)))
            (equal (equal x y)
-                  (and (equal (treemap::keys (double-rewrite x))
-                              (treemap::keys (double-rewrite y)))
-                       (equal (adj-list-edges (double-rewrite x))
-                              (adj-list-edges (double-rewrite y))))))
+                  (and (equal (treemap::keys x$)
+                              (treemap::keys y$))
+                       (equal (adj-list-edges x$)
+                              (adj-list-edges y$)))))
   :enable (treemap::extensionality-polar
            treemap::lookup-with-default-becomes-lookup-syntaxp)
   :use (:instance lookup-when-equal-of-adj-list-edges

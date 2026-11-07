@@ -237,11 +237,12 @@
 ;; so equalities against a constructed edge are decided componentwise.
 
 (defrule equal-of-edge
-  (equal (equal (edge from to label) x)
-         (and (edgep x)
-              (equal (edge->from (double-rewrite x)) from)
-              (equal (edge->to (double-rewrite x)) to)
-              (equal (edge->label (double-rewrite x)) label)))
+  (implies (edge-equiv x$ (double-rewrite x))
+           (equal (equal (edge from to label) x)
+                  (and (edgep x)
+                       (equal (edge->from x$) from)
+                       (equal (edge->to x$) to)
+                       (equal (edge->label x$) label))))
   :enable (edge
            edge->from
            edge->to

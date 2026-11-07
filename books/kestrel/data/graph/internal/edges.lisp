@@ -98,11 +98,12 @@
            (labels-edges from to labels1)))
 
 (defruled in-of-labels-edges
-  (equal (treeset::in edge (labels-edges from to labels))
-         (and (edgep edge)
-              (equal (edge->from (double-rewrite edge)) from)
-              (equal (edge->to (double-rewrite edge)) to)
-              (treeset::in (edge->label (double-rewrite edge)) labels)))
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (labels-edges from to labels))
+                  (and (edgep edge)
+                       (equal (edge->from edge$) from)
+                       (equal (edge->to edge$) to)
+                       (treeset::in (edge->label edge$) labels))))
   :induct t
   :enable labels-edges)
 
@@ -135,13 +136,15 @@
            (adjacency-edges from adj1)))
 
 (defruled in-of-adjacency-edges
-  (equal (treeset::in edge (adjacency-edges from adj))
-         (and (edgep edge)
-              (equal (edge->from (double-rewrite edge)) from)
-              (treeset::in (edge->label (double-rewrite edge))
-                           (treemap::lookup (edge->to (double-rewrite edge))
-                                            adj
-                                            :default (treeset::empty)))))
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (adjacency-edges from adj))
+                  (and (edgep edge)
+                       (equal (edge->from edge$) from)
+                       (treeset::in (edge->label edge$)
+                                    (treemap::lookup
+                                      (edge->to edge$)
+                                      adj
+                                      :default (treeset::empty))))))
   :induct t
   :enable (adjacency-edges
            in-of-labels-edges
@@ -175,15 +178,17 @@
            (adj-list-edges adjl1)))
 
 (defruled in-of-adj-list-edges
-  (equal (treeset::in edge (adj-list-edges adjl))
-         (and (edgep edge)
-              (treeset::in (edge->label (double-rewrite edge))
-                           (treemap::lookup
-                             (edge->to (double-rewrite edge))
-                             (treemap::lookup (edge->from (double-rewrite edge))
-                                              adjl
-                                              :default (treemap::empty))
-                             :default (treeset::empty)))))
+  (implies (edge-equiv edge$ (double-rewrite edge))
+           (equal (treeset::in edge (adj-list-edges adjl))
+                  (and (edgep edge)
+                       (treeset::in (edge->label edge$)
+                                    (treemap::lookup
+                                      (edge->to edge$)
+                                      (treemap::lookup (edge->from edge$)
+                                                       adjl
+                                                       :default
+                                                       (treemap::empty))
+                                      :default (treeset::empty))))))
   :induct t
   :enable (adj-list-edges
            in-of-adjacency-edges
