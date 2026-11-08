@@ -110754,6 +110754,15 @@ it."
  in source function @('termination-machine-rec') with comments explaining the
  mistake.</p>
 
+ <p>Fixed a soundness bug caused by execution of the raw-Lisp stobj creator
+ during a proof about a @(see stobj-table).  See @(see community-book)
+ @('system/tests/star1-stobj-let-creator-non-live.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see provisional-certification) that could occur
+ when changing and recertifying a sub-book before the final certification takes
+ place.  For details see a comment in ACL2 source function
+ @('include-book-alist-uncertified-books').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

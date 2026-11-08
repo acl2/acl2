@@ -107643,6 +107643,15 @@ Bug Fixes From AI via Eric Smith
   fixed: corrected code is in source function [30m[47mtermination-machine-rec[0m[0m
   with comments explaining the mistake.
 
+  Fixed a soundness bug caused by execution of the raw-Lisp stobj
+  creator during a proof about a [stobj-table].  See [community-book]
+  [30m[47msystem/tests/star1-stobj-let-creator-non-live.lisp[0m[0m.
+
+  Fixed a soundness bug in [provisional-certification] that could occur
+  when changing and recertifying a sub-book before the final
+  certification takes place.  For details see a comment in ACL2
+  source function [30m[47minclude-book-alist-uncertified-books[0m[0m.
+
 
 Other Bug Fixes
 
