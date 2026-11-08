@@ -15,6 +15,7 @@
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
+(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
@@ -30,6 +31,7 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/treeset/min-max" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
@@ -113,58 +115,95 @@
 (theory-invariant (incompatible! (:definition successors$inline)
                                  (:rewrite keys-of-adjacency)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define labels (from to (graph graphp))
+  :type-prescription :none
+  :returns (labels treeset::setp
+                   :hints (("Goal" :in-theory (enable* adjacency
+                                                       break-abstraction))))
+  :parents (graph)
+  :short "The labels of the edges from one node of a @(see graph) to
+          another."
+  :long
+  (xdoc::topstring-p
+    "The set is empty when there is no such edge. Time complexity:
+     @($O(\\log(n) + \\log(d))$), where @($n$) is the number of nodes and
+     @($d$) the number of successors of @('from').")
+  (treemap::lookup to (adjacency from graph) :default (treeset::empty))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule labels-when-equiv-congruence
+  (implies (equiv graph0 graph1)
+           (equal (labels from to graph0)
+                  (labels from to graph1)))
+  :rule-classes :congruence
+  :enable labels)
+
+;; The value at a target of an adjacency is the set of labels of the edges to
+;; it, which is written as labels. An absent target may be read with either
+;; empty default, @('nil') or @('(treeset::empty)').
+
+(defrule lookup-of-adjacency
+  (implies (and (treeset::setp default)
+                (treeset::emptyp (double-rewrite default)))
+           (equal (treemap::lookup to (adjacency from graph) :default default)
+                  (labels from to graph)))
+  :enable (labels
+           treeset::emptyp-alt-definition))
+
+(theory-invariant (incompatible! (:definition labels$inline)
+                                 (:rewrite lookup-of-adjacency)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The labels at a target are the labels of the edges to it, and a target is
-;; present exactly when it is a successor. A lookup may give an absent target
-;; any empty default: treemap rewrites a default of @('(treeset::empty)') to
-;; @('nil') once the target is known to be present.
+;; The labels from one node to another are the labels of the edges between
+;; them, and there are some exactly when the second node is a successor of the
+;; first.
 
-(defrule in-of-lookup-of-adjacency
-  (implies (treeset::emptyp (double-rewrite default))
-           (equal (treeset::in label
-                               (treemap::lookup to
-                                                (adjacency from graph)
-                                                :default default))
-                  (treeset::in (edge from to label) (edges graph))))
-  :enable (adjacency
+(defrule in-of-labels
+  (equal (treeset::in label (labels from to graph))
+         (treeset::in (edge from to label) (edges graph)))
+  :enable (labels
+           adjacency
            edges
-           in-of-adj-list-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           in-of-adj-list-edges)
+  :disable lookup-of-adjacency)
 
-(defrule setp-of-lookup-of-adjacency
-  (implies (treeset::setp default)
-           (treeset::setp (treemap::lookup to
-                                           (adjacency from graph)
-                                           :default default)))
-  :enable (adjacency
-           break-abstraction
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
-
-(defrule emptyp-of-lookup-of-adjacency
-  (equal (treeset::emptyp (treemap::lookup to
-                                           (adjacency from graph)
-                                           :default default))
-         (and (not (treeset::in to (successors from graph)))
-              (treeset::emptyp (double-rewrite default))))
-  :enable (adjacency
+(defrule emptyp-of-labels
+  (equal (treeset::emptyp (labels from to graph))
+         (not (treeset::in to (successors from graph))))
+  :enable (labels
+           adjacency
            successors
-           break-abstraction)
-  :disable keys-of-adjacency)
+           break-abstraction
+           treemap::lookup-with-default-becomes-lookup-syntaxp)
+  :disable (lookup-of-adjacency
+            keys-of-adjacency))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; An edge leads to a successor of its source, and every successor is a node.
+;; So an edge leads to a successor of its source, and every successor has an
+;; edge to it, for instance with the least of the labels.
 
 (defrule in-of-successors-when-in-of-edges
   (implies (treeset::in (edge from to label) (edges graph))
            (treeset::in to (successors from graph)))
   :rule-classes (:rewrite :forward-chaining)
-  :use ((:instance in-of-lookup-of-adjacency (default nil))
-        (:instance treeset::not-emptyp-when-in
-                   (x label)
-                   (set (treemap::lookup to (adjacency from graph)))))
-  :disable in-of-lookup-of-adjacency)
+  :use (:instance treeset::not-emptyp-when-in
+                  (x label)
+                  (set (labels from to graph))))
+
+(defrule in-of-edge-of-min-of-labels-and-edges
+  (equal (treeset::in (edge from to (treeset::min (labels from to graph)))
+                      (edges graph))
+         (treeset::in to (successors from graph)))
+  :use (:instance in-of-labels
+                  (label (treeset::min (labels from to graph))))
+  :enable not
+  :disable in-of-labels)
+
+;; Every successor is a node.
 
 (defrule subset-of-successors-and-nodes
   (treeset::subset (successors node graph)
@@ -207,6 +246,21 @@
                   (treeset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by successors-when-not-in-of-nodes)
+
+(defruled labels-when-not-in-of-successors
+  (implies (not (treeset::in to (successors from graph)))
+           (equal (labels from to graph)
+                  (treeset::empty)))
+  :enable (labels
+           treemap::lookup-when-not-in-of-keys)
+  :disable lookup-of-adjacency)
+
+(defrule labels-when-not-in-of-successors-cheap
+  (implies (not (treeset::in to (successors from graph)))
+           (equal (labels from to graph)
+                  (treeset::empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by labels-when-not-in-of-successors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

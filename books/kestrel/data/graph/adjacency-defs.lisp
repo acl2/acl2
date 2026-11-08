@@ -23,4 +23,5 @@
   :names (adjacency
           adjacency!
           successors
+          labels
           ))

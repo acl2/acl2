@@ -209,19 +209,6 @@
 ;; A successor of a node is the end of a one-step walk from it, along the
 ;; least label of the edges to the successor.
 
-(defrulel in-of-edge-of-min-of-lookup-of-adjacency-and-edges
-  (implies (treeset::in to (successors from graph))
-           (treeset::in (edge from
-                              to
-                              (treeset::min
-                                (treemap::lookup to (adjacency from graph))))
-                        (edges graph)))
-  :use (:instance in-of-lookup-of-adjacency
-                  (label (treeset::min
-                           (treemap::lookup to (adjacency from graph))))
-                  (default nil))
-  :disable in-of-lookup-of-adjacency)
-
 (defrulel reachablep-sk-when-in-of-successors
   (implies (treeset::in to (successors from graph))
            (reachablep-sk from to graph))
@@ -229,9 +216,7 @@
                   (walk (walk from
                               (list (step to
                                           (treeset::min
-                                            (treemap::lookup
-                                              to
-                                              (adjacency from graph))))))))
+                                            (labels from to graph)))))))
   :enable (walk-in
            walk-end
            walk-edges
@@ -250,9 +235,7 @@
                                  (append (walk->steps walk)
                                          (list (step to
                                                      (treeset::min
-                                                       (treemap::lookup
-                                                         to
-                                                         (adjacency x graph))))))))))
+                                                       (labels x to graph)))))))))
         (:instance reachablep-sk (to x)))
   :enable (walk-in
            walk-end
