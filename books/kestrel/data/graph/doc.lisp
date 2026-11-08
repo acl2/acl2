@@ -113,7 +113,7 @@
        is a walk in a particular graph is @(tsee walk-in). Walks are extended
        a step at a time with @(tsee walk-cons) and @(tsee walk-snoc), and
        joined with @(tsee walk-append). Reachability is the existence of a
-       walk of at least one step (see @(tsee reachablep)).")
+       walk of at least one step (see @(tsee reachable+p)).")
     (xdoc::p
       "The operations are:")
     (xdoc::table_
@@ -130,7 +130,7 @@
         (xdoc::td "@(tsee walk-in)")
         (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)"))
       (xdoc::tr
-        (xdoc::td "@(tsee reachablep)")
+        (xdoc::td "@(tsee reachable+p)")
         (xdoc::td "@($O((n + m)\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of

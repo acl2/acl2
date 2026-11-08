@@ -70,13 +70,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk reachablep-sk (from to graph)
-  :parents (reachablep)
+(define-sk reachable+p-sk (from to graph)
+  :parents (reachable+p)
   :short "Check if there is a walk of at least one step from one node to
           another in a @(see graph)."
   :long
   (xdoc::topstring-p
-    "This is the specification of @(tsee reachablep), to which it is equal.
+    "This is the specification of @(tsee reachable+p), to which it is equal.
      It is not executable.")
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (exists (walk)
@@ -88,20 +88,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t reachablep-sk)))
+(in-theory (disable (:t reachable+p-sk)))
 
-(defrule reachablep-sk-when-equiv-congruence
+(defrule reachable+p-sk-when-equiv-congruence
   (implies (equiv graph0 graph1)
-           (equal (reachablep-sk from to graph0)
-                  (reachablep-sk from to graph1)))
+           (equal (reachable+p-sk from to graph0)
+                  (reachable+p-sk from to graph1)))
   :rule-classes :congruence
-  :use ((:instance reachablep-sk-suff
-                   (walk (reachablep-sk-witness from to graph0))
+  :use ((:instance reachable+p-sk-suff
+                   (walk (reachable+p-sk-witness from to graph0))
                    (graph graph1))
-        (:instance reachablep-sk-suff
-                   (walk (reachablep-sk-witness from to graph1))
+        (:instance reachable+p-sk-suff
+                   (walk (reachable+p-sk-witness from to graph1))
                    (graph graph0)))
-  :enable reachablep-sk)
+  :enable reachable+p-sk)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,13 +113,13 @@
 ;; drops a node from the frontier. A value which is not a node has no
 ;; successors, so expanding it also only shrinks the frontier.
 
-(define reachablep-search
+(define reachable+p-search
   (to
    (frontier treeset::setp)
    (expanded treeset::setp)
    (graph graphp))
   :returns (yes/no booleanp)
-  :parents (reachablep)
+  :parents (reachable+p)
   (b* (((when (treeset::emptyp frontier))
         nil)
        (node (treeset::min frontier))
@@ -127,15 +127,15 @@
         t)
        (frontier (treeset::delete node frontier))
        ((when (treeset::in node expanded))
-        (reachablep-search to frontier expanded graph))
+        (reachable+p-search to frontier expanded graph))
        (expanded (treeset::insert node expanded)))
-    (reachablep-search to
-                       (treeset::union
-                         frontier
-                         (treeset::diff (successors node graph)
-                                        expanded))
-                       expanded
-                       graph))
+    (reachable+p-search to
+                        (treeset::union
+                          frontier
+                          (treeset::diff (successors node graph)
+                                         expanded))
+                        expanded
+                        graph))
   :measure (acl2::two-nats-measure
              (treeset::cardinality (treeset::diff (nodes graph) expanded))
              (treeset::cardinality frontier))
@@ -146,33 +146,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule reachablep-search-when-equiv-of-arg2-congruence
+(defrule reachable+p-search-when-equiv-of-arg2-congruence
   (implies (treeset::equiv frontier0 frontier1)
-           (equal (reachablep-search to frontier0 expanded graph)
-                  (reachablep-search to frontier1 expanded graph)))
+           (equal (reachable+p-search to frontier0 expanded graph)
+                  (reachable+p-search to frontier1 expanded graph)))
   :rule-classes :congruence
-  :expand ((reachablep-search to frontier0 expanded graph)
-           (reachablep-search to frontier1 expanded graph)))
+  :expand ((reachable+p-search to frontier0 expanded graph)
+           (reachable+p-search to frontier1 expanded graph)))
 
-(defrule reachablep-search-when-equiv-of-arg3-congruence
+(defrule reachable+p-search-when-equiv-of-arg3-congruence
   (implies (treeset::equiv expanded0 expanded1)
-           (equal (reachablep-search to frontier expanded0 graph)
-                  (reachablep-search to frontier expanded1 graph)))
+           (equal (reachable+p-search to frontier expanded0 graph)
+                  (reachable+p-search to frontier expanded1 graph)))
   :rule-classes :congruence
   :induct t
-  :enable reachablep-search)
+  :enable reachable+p-search)
 
-(defrule reachablep-search-when-equiv-of-arg4-congruence
+(defrule reachable+p-search-when-equiv-of-arg4-congruence
   (implies (equiv graph0 graph1)
-           (equal (reachablep-search to frontier expanded graph0)
-                  (reachablep-search to frontier expanded graph1)))
+           (equal (reachable+p-search to frontier expanded graph0)
+                  (reachable+p-search to frontier expanded graph1)))
   :rule-classes :congruence
   :induct t
-  :enable reachablep-search)
+  :enable reachable+p-search)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define reachablep (from to (graph graphp))
+(define reachable+p (from to (graph graphp))
   :returns (yes/no booleanp)
   :parents (walks)
   :short "Check if there is a walk of at least one step from one node to
@@ -181,27 +181,28 @@
   (xdoc::topstring
     (xdoc::p
       "This is the transitive closure of the edge relation, without the
-       reflexive closure: a node reaches itself only if it is on a cycle.
-       Logically it equals @(tsee reachablep-sk), which states the existence
-       of the walk directly.")
+       reflexive closure: a node reaches itself only if it is on a cycle. The
+       @('+') in the name follows the usual notation @($R^+$) for the
+       transitive closure of a relation @($R$). Logically it equals @(tsee
+       reachable+p-sk), which states the existence of the walk directly.")
     (xdoc::p
       "The search expands each node at most once and stops when it finds the
        target. Time complexity: @($O((n + m)\\log(n))$) in the worst case,
        where @($n$) is the number of nodes and @($m$) the number of pairs of
        nodes joined by an edge."))
-  (reachablep-search to
-                     (successors from graph)
-                     (treeset::empty)
-                     graph))
+  (reachable+p-search to
+                      (successors from graph)
+                      (treeset::empty)
+                      graph))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule reachablep-when-equiv-congruence
+(defrule reachable+p-when-equiv-congruence
   (implies (equiv graph0 graph1)
-           (equal (reachablep from to graph0)
-                  (reachablep from to graph1)))
+           (equal (reachable+p from to graph0)
+                  (reachable+p from to graph1)))
   :rule-classes :congruence
-  :enable reachablep)
+  :enable reachable+p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,38 +211,38 @@
 ;; A successor of a node is the end of a one-step walk from it, along the
 ;; least label of the edges to the successor.
 
-(defrulel reachablep-sk-when-in-of-successors
+(defrulel reachable+p-sk-when-in-of-successors
   (implies (treeset::in to (successors from graph))
-           (reachablep-sk from to graph))
-  :use (:instance reachablep-sk-suff
+           (reachable+p-sk from to graph))
+  :use (:instance reachable+p-sk-suff
                   (walk (walk-snoc (walk from nil)
                                    to
                                    (treeset::min (labels from to graph))))))
 
 ;; A walk to a node extends to each of its successors.
 
-(defrulel reachablep-sk-when-reachablep-sk-and-in-of-successors
-  (implies (and (reachablep-sk from x graph)
+(defrulel reachable+p-sk-when-reachable+p-sk-and-in-of-successors
+  (implies (and (reachable+p-sk from x graph)
                 (treeset::in to (successors x graph)))
-           (reachablep-sk from to graph))
-  :use ((:instance reachablep-sk-suff
-                   (walk (walk-snoc (reachablep-sk-witness from x graph)
+           (reachable+p-sk from to graph))
+  :use ((:instance reachable+p-sk-suff
+                   (walk (walk-snoc (reachable+p-sk-witness from x graph)
                                     to
                                     (treeset::min (labels x to graph)))))
-        (:instance reachablep-sk (to x))))
+        (:instance reachable+p-sk (to x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Soundness: every node in the frontier is reachable, so the node found is.
 
 (local
-  (define set-all-reachablep-sk (from (set treeset::setp) graph)
+  (define set-all-reachable+p-sk (from (set treeset::setp) graph)
     :returns (yes/no booleanp)
     (or (treeset::emptyp set)
-        (and (reachablep-sk from (treeset::min set) graph)
-             (set-all-reachablep-sk from
-                                    (treeset::delete (treeset::min set) set)
-                                    graph)))
+        (and (reachable+p-sk from (treeset::min set) graph)
+             (set-all-reachable+p-sk from
+                                     (treeset::delete (treeset::min set) set)
+                                     graph)))
     :measure (treeset::cardinality set)
     :hints (("Goal" :in-theory (enable o-p
                                        o-finp
@@ -250,98 +251,98 @@
                                        treeset::in-of-min)))
     :verify-guards nil))
 
-(defrulel set-all-reachablep-sk-when-equiv-of-arg2-congruence
+(defrulel set-all-reachable+p-sk-when-equiv-of-arg2-congruence
   (implies (treeset::equiv set0 set1)
-           (equal (set-all-reachablep-sk from set0 graph)
-                  (set-all-reachablep-sk from set1 graph)))
+           (equal (set-all-reachable+p-sk from set0 graph)
+                  (set-all-reachable+p-sk from set1 graph)))
   :rule-classes :congruence
-  :expand ((set-all-reachablep-sk from set0 graph)
-           (set-all-reachablep-sk from set1 graph)))
+  :expand ((set-all-reachable+p-sk from set0 graph)
+           (set-all-reachable+p-sk from set1 graph)))
 
-(defrulel set-all-reachablep-sk-when-equiv-of-arg3-congruence
+(defrulel set-all-reachable+p-sk-when-equiv-of-arg3-congruence
   (implies (equiv graph0 graph1)
-           (equal (set-all-reachablep-sk from set graph0)
-                  (set-all-reachablep-sk from set graph1)))
+           (equal (set-all-reachable+p-sk from set graph0)
+                  (set-all-reachable+p-sk from set graph1)))
   :rule-classes :congruence
   :induct t
-  :enable set-all-reachablep-sk)
+  :enable set-all-reachable+p-sk)
 
-(defrulel reachablep-sk-when-set-all-reachablep-sk-and-in
-  (implies (and (set-all-reachablep-sk from set graph)
+(defrulel reachable+p-sk-when-set-all-reachable+p-sk-and-in
+  (implies (and (set-all-reachable+p-sk from set graph)
                 (treeset::in x set))
-           (reachablep-sk from x graph))
+           (reachable+p-sk from x graph))
   :use (:instance
          (:functional-instance
            treeset::genericp-when-set-all-genericp-and-in
-           (treeset::genericp (lambda (x) (reachablep-sk from x graph)))
+           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
            (treeset::set-all-genericp
-             (lambda (set) (set-all-reachablep-sk from set graph))))
+             (lambda (set) (set-all-reachable+p-sk from set graph))))
          (treeset::set set)
          (treeset::x x))
-  :enable set-all-reachablep-sk)
+  :enable set-all-reachable+p-sk)
 
-(defrulel set-all-reachablep-sk-of-delete
-  (implies (set-all-reachablep-sk from set graph)
-           (set-all-reachablep-sk from (treeset::delete x set) graph))
+(defrulel set-all-reachable+p-sk-of-delete
+  (implies (set-all-reachable+p-sk from set graph)
+           (set-all-reachable+p-sk from (treeset::delete x set) graph))
   :use (:instance
          (:functional-instance
            treeset::set-all-genericp-of-delete
-           (treeset::genericp (lambda (x) (reachablep-sk from x graph)))
+           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
            (treeset::set-all-genericp
-             (lambda (set) (set-all-reachablep-sk from set graph))))
+             (lambda (set) (set-all-reachable+p-sk from set graph))))
          (treeset::set set)
          (treeset::x x))
-  :enable set-all-reachablep-sk)
+  :enable set-all-reachable+p-sk)
 
-(defrulel set-all-reachablep-sk-of-union
-  (equal (set-all-reachablep-sk from (treeset::union x y) graph)
-         (and (set-all-reachablep-sk from x graph)
-              (set-all-reachablep-sk from y graph)))
+(defrulel set-all-reachable+p-sk-of-union
+  (equal (set-all-reachable+p-sk from (treeset::union x y) graph)
+         (and (set-all-reachable+p-sk from x graph)
+              (set-all-reachable+p-sk from y graph)))
   :use (:instance
          (:functional-instance
            treeset::set-all-genericp-of-union
-           (treeset::genericp (lambda (x) (reachablep-sk from x graph)))
+           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
            (treeset::set-all-genericp
-             (lambda (set) (set-all-reachablep-sk from set graph))))
+             (lambda (set) (set-all-reachable+p-sk from set graph))))
          (treeset::x x)
          (treeset::y y))
-  :enable set-all-reachablep-sk)
+  :enable set-all-reachable+p-sk)
 
 ;; The successors of the start, and of any reachable node, are reachable.
 
-(defrulel set-all-reachablep-sk-when-subset-of-successors-of-arg1
+(defrulel set-all-reachable+p-sk-when-subset-of-successors-of-arg1
   (implies (treeset::subset set (successors from graph))
-           (set-all-reachablep-sk from set graph))
+           (set-all-reachable+p-sk from set graph))
   :induct t
-  :enable set-all-reachablep-sk)
+  :enable set-all-reachable+p-sk)
 
-(defruledl set-all-reachablep-sk-when-subset-of-successors
-  (implies (and (reachablep-sk from x graph)
+(defruledl set-all-reachable+p-sk-when-subset-of-successors
+  (implies (and (reachable+p-sk from x graph)
                 (treeset::subset set (successors x graph)))
-           (set-all-reachablep-sk from set graph))
-  :induct (set-all-reachablep-sk from set graph)
-  :enable set-all-reachablep-sk)
+           (set-all-reachable+p-sk from set graph))
+  :induct (set-all-reachable+p-sk from set graph)
+  :enable set-all-reachable+p-sk)
 
-(defrulel set-all-reachablep-sk-of-diff-of-successors
-  (implies (reachablep-sk from x graph)
-           (set-all-reachablep-sk from
-                                  (treeset::diff
-                                    (successors x graph)
-                                    set)
-                                  graph))
-  :enable set-all-reachablep-sk-when-subset-of-successors)
+(defrulel set-all-reachable+p-sk-of-diff-of-successors
+  (implies (reachable+p-sk from x graph)
+           (set-all-reachable+p-sk from
+                                   (treeset::diff
+                                     (successors x graph)
+                                     set)
+                                   graph))
+  :enable set-all-reachable+p-sk-when-subset-of-successors)
 
-(defrulel reachablep-sk-when-reachablep-search
-  (implies (and (reachablep-search to frontier expanded graph)
-                (set-all-reachablep-sk from frontier graph))
-           (reachablep-sk from to graph))
+(defrulel reachable+p-sk-when-reachable+p-search
+  (implies (and (reachable+p-search to frontier expanded graph)
+                (set-all-reachable+p-sk from frontier graph))
+           (reachable+p-sk from to graph))
   :induct t
-  :enable reachablep-search)
+  :enable reachable+p-search)
 
-(defruledl reachablep-sk-when-reachablep
-  (implies (reachablep from to graph)
-           (reachablep-sk from to graph))
-  :enable reachablep)
+(defruledl reachable+p-sk-when-reachable+p
+  (implies (reachable+p from to graph)
+           (reachable+p-sk from to graph))
+  :enable reachable+p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -450,14 +451,14 @@
   :enable (steps-end
            steps-edges))
 
-(defrulel in-when-reachablep-sk-and-set-all-successors-subsetp
-  (implies (and (reachablep-sk from to graph)
+(defrulel in-when-reachable+p-sk-and-set-all-successors-subsetp
+  (implies (and (reachable+p-sk from to graph)
                 (treeset::subset (successors from graph) set)
                 (set-all-successors-subsetp set set graph))
            (treeset::in to set))
   :use (:instance in-of-steps-end-when-set-all-successors-subsetp
-                  (steps (walk->steps (reachablep-sk-witness from to graph))))
-  :enable (reachablep-sk
+                  (steps (walk->steps (reachable+p-sk-witness from to graph))))
+  :enable (reachable+p-sk
            walk-in
            walk-end
            walk-edges)
@@ -484,8 +485,8 @@
                                        (treeset::diff targets expanded)))))
   :enable treeset::pick-a-point-polar)
 
-(defrulel reachablep-search-when-reachablep-sk
-  (implies (and (reachablep-sk from to graph)
+(defrulel reachable+p-search-when-reachable+p-sk
+  (implies (and (reachable+p-sk from to graph)
                 (treeset::subset (successors from graph)
                                  (treeset::union expanded frontier))
                 (set-all-successors-subsetp
@@ -493,9 +494,9 @@
                   (treeset::union expanded frontier)
                   graph)
                 (not (treeset::in to expanded)))
-           (reachablep-search to frontier expanded graph))
+           (reachable+p-search to frontier expanded graph))
   :induct t
-  :enable (reachablep-search
+  :enable (reachable+p-search
            treeset::union-of-arg1-and-delete-when-in-arg1-cheap)
   :disable (treeset::union-of-insert
             treeset::commutativity-of-union
@@ -503,21 +504,21 @@
             treeset::union-of-arg1-and-diff
             treeset::union-of-arg1-and-delete-when-not-in-arg1-cheap))
 
-(defruledl reachablep-when-reachablep-sk
-  (implies (reachablep-sk from to graph)
-           (reachablep from to graph))
-  :enable (reachablep
+(defruledl reachable+p-when-reachable+p-sk
+  (implies (reachable+p-sk from to graph)
+           (reachable+p from to graph))
+  :enable (reachable+p
            set-all-successors-subsetp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled reachablep-becomes-reachablep-sk
-  (equal (reachablep from to graph)
-         (reachablep-sk from to graph))
-  :use (reachablep-sk-when-reachablep
-        reachablep-when-reachablep-sk))
+(defruled reachable+p-becomes-reachable+p-sk
+  (equal (reachable+p from to graph)
+         (reachable+p-sk from to graph))
+  :use (reachable+p-sk-when-reachable+p
+        reachable+p-when-reachable+p-sk))
 
-(defruled reachablep-sk-becomes-reachablep
-  (equal (reachablep-sk from to graph)
-         (reachablep from to graph))
-  :by reachablep-becomes-reachablep-sk)
+(defruled reachable+p-sk-becomes-reachable+p
+  (equal (reachable+p-sk from to graph)
+         (reachable+p from to graph))
+  :by reachable+p-becomes-reachable+p-sk)

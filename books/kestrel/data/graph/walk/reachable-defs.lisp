@@ -33,7 +33,7 @@
 ;; define-sk whose guards are verified separately, so the defun-sk and its
 ;; guard verification are given explicitly.
 
-(defun-sk reachablep-sk (from to graph)
+(defun-sk reachable+p-sk (from to graph)
   (declare (xargs :verify-guards nil))
   (declare (xargs :guard t))
   (exists (walk)
@@ -42,14 +42,14 @@
            (equal (walk->start walk) from)
            (equal (walk-end walk) to)
            (consp (walk->steps walk)))))
-  :skolem-name reachablep-sk-witness
-  :thm-name reachablep-sk-suff)
+  :skolem-name reachable+p-sk-witness
+  :thm-name reachable+p-sk-suff)
 
-(verify-guards reachablep-sk)
+(verify-guards reachable+p-sk)
 
 (std::defredundant
-  :names (reachablep-sk-witness
-          reachablep-sk
-          reachablep-search
-          reachablep
+  :names (reachable+p-sk-witness
+          reachable+p-sk
+          reachable+p-search
+          reachable+p
           ))
