@@ -107652,6 +107652,17 @@ Bug Fixes From AI via Eric Smith
   certification takes place.  For details see a comment in ACL2
   source function [30m[47minclude-book-alist-uncertified-books[0m[0m.
 
+  Fixed a soundness bug in [tau] related to properly encoding the
+  assumption that something is non-[30m[47mNIL[0m[0m when it is also assumed to be
+  not equal to one or more numeric constants.  See [community-books]
+  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first.lisp[0m[0m and
+  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp[0m[0m.
+
+  Fixed a soundness bug in [tau] related to failing to detect that
+  adding a new constraint to a tau produces a contradiction.  See
+  [community-books]
+  [30m[47msystem/tests/S-199-tau-bound-overwrites-pos-evg.lisp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -116661,6 +116672,9 @@ Subtopics
 
   [Tamep-lambdap]
       See [tame].
+
+  [Tau]
+      See [tau-system].
 
   [Thereis$]
       See [loop$].
@@ -150172,6 +150186,7 @@ Logical Definitions
  (TAMEP-FUNCTIONP (POINTERS)
                   "See [tame].")
  (TAMEP-LAMBDAP (POINTERS) "See [tame].")
+ (TAU (POINTERS) "See [tau-system].")
  (TAU-DATA
   (TAU-SYSTEM)
   "To see what tau knows about a function symbol

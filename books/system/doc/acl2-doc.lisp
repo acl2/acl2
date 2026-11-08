@@ -110763,6 +110763,17 @@ it."
  place.  For details see a comment in ACL2 source function
  @('include-book-alist-uncertified-books').</p>
 
+ <p>Fixed a soundness bug in @(see tau) related to properly encoding the
+ assumption that something is non-@('NIL') when it is also assumed to be not
+ equal to one or more numeric constants.  See @(see community-books)
+ @('system/tests/S-198-tau-neg-evgs-nil-first.lisp') and
+ @('system/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see tau) related to failing to detect that
+ adding a new constraint to a tau produces a contradiction.  See @(see
+ community-books)
+ @('system/tests/S-199-tau-bound-overwrites-pos-evg.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -176411,6 +176422,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer tamep tame)
 (defpointer tamep-functionp tame)
 (defpointer tamep-lambdap tame)
+(defpointer tau tau-system)
 (defpointer thereis$ loop$)
 (defpointer thereis$+ loop$)
 (defpointer time-limit with-prover-time-limit) ; referenced in :doc prove$
