@@ -53,6 +53,7 @@
 (local (include-book "walk"))
 (local (include-book "walk-in"))
 (local (include-book "walk-snoc"))
+(local (include-book "walk-append"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -206,7 +207,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Walks extended by one step
+;; Walks of one step, and joined walks
 
 ;; A successor of a node is the end of a one-step walk from it, along the
 ;; least label of the edges to the successor.
@@ -219,17 +220,17 @@
                                    to
                                    (treeset::min (labels from to graph))))))
 
-;; A walk to a node extends to each of its successors.
+;; A walk to a node and a walk from it join into one walk.
 
-(defrulel reachable+p-sk-when-reachable+p-sk-and-in-of-successors
+(defrulel reachable+p-sk-transitivity
   (implies (and (reachable+p-sk from x graph)
-                (treeset::in to (successors x graph)))
+                (reachable+p-sk x to graph))
            (reachable+p-sk from to graph))
   :use ((:instance reachable+p-sk-suff
-                   (walk (walk-snoc (reachable+p-sk-witness from x graph)
-                                    to
-                                    (treeset::min (labels x to graph)))))
-        (:instance reachable+p-sk (to x))))
+                   (walk (walk-append (reachable+p-sk-witness from x graph)
+                                      (reachable+p-sk-witness x to graph))))
+        (:instance reachable+p-sk (to x))
+        (:instance reachable+p-sk (from x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -522,3 +523,20 @@
   (equal (reachable+p-sk from to graph)
          (reachable+p from to graph))
   :by reachable+p-becomes-reachable+p-sk)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A successor is reachable, along an edge to it.
+
+(defrule reachable+p-when-in-of-successors
+  (implies (treeset::in to (successors from graph))
+           (reachable+p from to graph))
+  :enable reachable+p-becomes-reachable+p-sk)
+
+;; Reachability is transitive.
+
+(defrule reachable+p-transitivity
+  (implies (and (reachable+p from x graph)
+                (reachable+p x to graph))
+           (reachable+p from to graph))
+  :enable reachable+p-becomes-reachable+p-sk)
