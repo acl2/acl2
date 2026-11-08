@@ -13,6 +13,7 @@
 (include-book "graph")
 (include-book "nodes")
 (include-book "edges")
+(include-book "adjacency")
 (include-book "extensionality")
 (include-book "add-node")
 (include-book "add-edge")

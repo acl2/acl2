@@ -70,6 +70,9 @@
         (xdoc::td "@(tsee edges-to)")
         (xdoc::td "@($O(n(\\log(n) + \\log(d)) + k\\log(k))$)"))
       (xdoc::tr
+        (xdoc::td "@(tsee adjacency)")
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
         (xdoc::td "@(tsee add-node)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
