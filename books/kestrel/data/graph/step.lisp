@@ -365,3 +365,29 @@
   (equal (cdr (step-list-fix steps))
          (step-list-fix (cdr steps)))
   :expand ((step-list-fix steps)))
+
+(defrule step-listp-of-append
+  (implies (and (step-listp steps0)
+                (step-listp steps1))
+           (step-listp (append steps0 steps1)))
+  :induct t
+  :enable append)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The node a list of steps ends at, when taken from the given node.
+
+(define steps-end (from (steps step-listp))
+  :parents (step-listp)
+  (if (consp steps)
+      (steps-end (step->to (car steps)) (cdr steps))
+    from))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule steps-end-of-append
+  (equal (steps-end from (append steps0 steps1))
+         (steps-end (steps-end from steps0) steps1))
+  :induct t
+  :enable (steps-end
+           append))

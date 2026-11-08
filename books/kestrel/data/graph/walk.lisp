@@ -15,6 +15,7 @@
 
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/treeset/union-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "step-defs")
@@ -24,6 +25,7 @@
 
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "step"))
@@ -82,7 +84,7 @@
   :type-prescription :none
   :returns (walk walkp
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
-  (list nil))
+  (cons nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -256,16 +258,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The node a list of steps ends at, when taken from the given node.
-
-(define steps-end (from (steps step-listp))
-  :parents (walk-end)
-  (if (consp steps)
-      (steps-end (step->to (car steps)) (cdr steps))
-    from))
-
-;;;;;;;;;;;;;;;;;;;;
-
 (define walk-end ((walk walkp))
   :parents (walkp)
   :short "The node a walk ends at."
@@ -301,6 +293,17 @@
                        (steps-edges (step->to (car steps)) (cdr steps)))
     (treeset::empty))
   :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule steps-edges-of-append
+  (equal (steps-edges from (append steps0 steps1))
+         (treeset::union (steps-edges from steps0)
+                         (steps-edges (steps-end from steps0) steps1)))
+  :induct t
+  :enable (steps-edges
+           steps-end
+           append))
 
 ;;;;;;;;;;;;;;;;;;;;
 

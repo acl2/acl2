@@ -11,6 +11,7 @@
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
 (include-book "graph-defs")
+(include-book "nodes-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "adjacency"))
@@ -19,4 +20,5 @@
 
 (std::defredundant
   :names (adjacency
+          adjacency!
           ))

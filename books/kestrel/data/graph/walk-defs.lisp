@@ -10,6 +10,7 @@
 
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/treeset/union-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "step-defs")
@@ -27,7 +28,6 @@
           walk->start
           walk->steps
           walk
-          steps-end
           walk-end
           steps-edges
           walk-edges

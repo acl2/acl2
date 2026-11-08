@@ -106,11 +106,11 @@
            treemap::lookup-with-default-becomes-lookup-syntaxp))
 
 (defrule emptyp-of-lookup-of-adjacency
-  (implies (treeset::emptyp (double-rewrite default))
-           (equal (treeset::emptyp (treemap::lookup to
-                                                    (adjacency from graph)
-                                                    :default default))
-                  (not (treeset::in to (treemap::keys (adjacency from graph))))))
+  (equal (treeset::emptyp (treemap::lookup to
+                                           (adjacency from graph)
+                                           :default default))
+         (and (not (treeset::in to (treemap::keys (adjacency from graph))))
+              (treeset::emptyp (double-rewrite default))))
   :enable (adjacency
            break-abstraction
            treemap::lookup-with-default-becomes-lookup-syntaxp))
@@ -131,9 +131,39 @@
            (treeset::in to (nodes graph)))
   :rule-classes :forward-chaining)
 
-(defrule adjacency-when-not-in-of-nodes
+(defruled adjacency-when-not-in-of-nodes
   (implies (not (treeset::in node (nodes graph)))
            (equal (adjacency node graph)
                   (treemap::empty)))
   :enable (adjacency
            nodes))
+
+(defrule adjacency-when-not-in-of-nodes-cheap
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (adjacency node graph)
+                  (treemap::empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by adjacency-when-not-in-of-nodes)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define adjacency! (node (graph graphp))
+  :guard (node-in node graph)
+  :parents (adjacency)
+  :short "The targets of the edges out of a node of a @(see graph), with their
+          labels, for a node known to be in the graph."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Logically this is @(tsee adjacency), to which it is rewritten. The
+       guard lets it skip the check for a missing node.")
+    (xdoc::p
+      "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
+       nodes."))
+  (mbe :logic (adjacency node graph)
+       :exec (treemap::lookup! node graph))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* adjacency
+                                            nodes
+                                            break-abstraction))))

@@ -67,7 +67,7 @@
 (defrulel diff-of-arg1-and-insert
   (equal (treeset::diff x (treeset::insert a y))
          (treeset::delete a (treeset::diff x y)))
-  :enable treeset::extensionality-no-backchain-limit-polar)
+  :enable treeset::extensionality-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -155,21 +155,13 @@
   :expand ((reachablep-search to frontier0 expanded graph)
            (reachablep-search to frontier1 expanded graph)))
 
-(defruledl reachablep-search-of-fix-of-arg3
-  (equal (reachablep-search to frontier (treeset::fix expanded) graph)
-         (reachablep-search to frontier expanded graph))
-  :induct t
-  :enable reachablep-search
-  :expand ((reachablep-search to frontier (treeset::fix expanded) graph)))
-
 (defrule reachablep-search-when-equiv-of-arg3-congruence
   (implies (treeset::equiv expanded0 expanded1)
            (equal (reachablep-search to frontier expanded0 graph)
                   (reachablep-search to frontier expanded1 graph)))
   :rule-classes :congruence
-  :use ((:instance reachablep-search-of-fix-of-arg3 (expanded expanded0))
-        (:instance reachablep-search-of-fix-of-arg3 (expanded expanded1)))
-  :enable treeset::equiv)
+  :induct t
+  :enable reachablep-search)
 
 (defrule reachablep-search-when-equiv-of-arg4-congruence
   (implies (equiv graph0 graph1)
@@ -215,29 +207,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Walks extended by one step
-
-(defrulel step-listp-of-append
-  (implies (and (step-listp steps0)
-                (step-listp steps1))
-           (step-listp (append steps0 steps1)))
-  :induct t
-  :enable append)
-
-(defrulel steps-end-of-append
-  (equal (steps-end from (append steps0 steps1))
-         (steps-end (steps-end from steps0) steps1))
-  :induct t
-  :enable (steps-end
-           append))
-
-(defrulel steps-edges-of-append
-  (equal (steps-edges from (append steps0 steps1))
-         (treeset::union (steps-edges from steps0)
-                         (steps-edges (steps-end from steps0) steps1)))
-  :induct t
-  :enable (steps-edges
-           steps-end
-           append))
 
 ;; A target of a node is the end of a one-step walk from it, along the
 ;; least label of the edges to the target.

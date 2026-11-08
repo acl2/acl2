@@ -24,6 +24,7 @@
           step-listp
           step-list-fix
           step-list-equiv
+          steps-end
           ))
 
 (defequiv step-equiv)

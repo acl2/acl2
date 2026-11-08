@@ -32,13 +32,13 @@
        node, and a label (see @(tsee edgep)). Nodes and labels may be any
        values. Two nodes may be joined by several edges in the same
        direction, provided their labels differ. Edges from a node to itself
-       are allowed, as are nodes with no edges at all. An undirected graph can
-       be represented by a symmetric one, with an edge in each direction.")
+       are allowed, as are nodes with no edges at all.")
     (xdoc::p
       "A graph is determined by its @(tsee nodes) and its @(tsee edges) (see
        @(see extensionality)), and the properties of the operations are stated
        in terms of those two sets. They are the logical view of a graph, and
-       are not meant to be computed in execution.")
+       are not necessarily meant to be computed in execution. The edge set in
+       particular is expensive to build.")
     (xdoc::p
       "A graph is represented as an adjacency list: a "
       (xdoc::seetopic "acl2::treemap" "treemap")
@@ -47,7 +47,7 @@
       " of labels on the edges between them. Following the edges out of a node
        is therefore cheap, but finding the edges into a node means visiting
        every node. A program which needs a node's predecessors should maintain
-       a second graph with the edges reversed.")
+       the transpose of the graph as well.")
     (xdoc::p
       "The core operations are:")
     (xdoc::table_
@@ -70,7 +70,7 @@
         (xdoc::td "@(tsee edges-to)")
         (xdoc::td "@($O(n(\\log(n) + \\log(d)) + k\\log(k))$)"))
       (xdoc::tr
-        (xdoc::td "@(tsee adjacency)")
+        (xdoc::td "@(tsee adjacency), @(tsee adjacency!)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee add-node)")
