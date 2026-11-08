@@ -18,3 +18,5 @@
 (include-book "add-edge-defs")
 (include-book "delete-edge-defs")
 (include-book "delete-node-defs")
+(include-book "path-defs")
+(include-book "path-in-defs")

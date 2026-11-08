@@ -224,3 +224,144 @@
            step->to
            step->label
            stepp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define step-listp (x)
+  :returns (yes/no booleanp)
+  :parents (stepp)
+  :short "Recognizer for true lists of steps."
+  (if (consp x)
+      (and (stepp (car x))
+           (step-listp (cdr x)))
+    (null x)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule step-listp-of-cons
+  (equal (step-listp (cons step steps))
+         (and (stepp step)
+              (step-listp steps)))
+  :enable step-listp)
+
+(defrule step-listp-when-not-consp
+  (implies (not (consp steps))
+           (equal (step-listp steps)
+                  (equal steps nil)))
+  :enable step-listp)
+
+(defrule stepp-of-car-when-step-listp
+  (implies (and (step-listp steps)
+                (consp steps))
+           (stepp (car steps)))
+  :enable step-listp)
+
+(defrule step-listp-of-cdr-when-step-listp
+  (implies (step-listp steps)
+           (step-listp (cdr steps)))
+  :enable step-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define step-list-fix ((steps step-listp))
+  :returns (steps$ step-listp)
+  :parents (step-listp)
+  :short "Fixer for lists of steps."
+  (mbe :logic (if (consp steps)
+                  (cons (step-fix (car steps))
+                        (step-list-fix (cdr steps)))
+                nil)
+       :exec steps)
+  :verify-guards nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule step-list-fix-when-step-listp
+  (implies (step-listp steps)
+           (equal (step-list-fix steps)
+                  steps))
+  :induct t
+  :enable step-list-fix)
+
+(verify-guards step-list-fix)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define step-list-equiv
+  ((x step-listp)
+   (y step-listp))
+  :type-prescription :none
+  :returns (yes/no booleanp)
+  :parents (step-listp)
+  :short "Equivalence of lists of steps up to @(tsee step-list-fix)."
+  (equal (step-list-fix x)
+         (step-list-fix y))
+  :inline t
+
+  ///
+  (defequiv step-list-equiv))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule step-list-equiv-type-prescription
+  (booleanp (step-list-equiv x y))
+  :rule-classes ((:type-prescription :typed-term (step-list-equiv x y))))
+
+(defrule step-list-fix-when-step-list-equiv-congruence
+  (implies (step-list-equiv steps0 steps1)
+           (equal (step-list-fix steps0)
+                  (step-list-fix steps1)))
+  :rule-classes :congruence
+  :enable step-list-equiv)
+
+(defrule step-list-fix-under-step-list-equiv
+  (step-list-equiv (step-list-fix steps)
+                   steps)
+  :enable step-list-equiv)
+
+(defrule cons-when-step-equiv-of-arg1-congruence
+  (implies (step-equiv step0 step1)
+           (step-list-equiv (cons step0 steps)
+                            (cons step1 steps)))
+  :rule-classes :congruence
+  :enable (step-list-equiv
+           step-list-fix))
+
+(defrule cons-when-step-list-equiv-of-arg2-congruence
+  (implies (step-list-equiv steps0 steps1)
+           (step-list-equiv (cons step steps0)
+                            (cons step steps1)))
+  :rule-classes :congruence
+  :enable (step-list-equiv
+           step-list-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule step-list-fix-of-cons
+  (equal (step-list-fix (cons step steps))
+         (cons (step-fix step)
+               (step-list-fix steps)))
+  :enable step-list-fix)
+
+(defrule step-list-fix-when-not-consp
+  (implies (not (consp steps))
+           (equal (step-list-fix steps)
+                  nil))
+  :enable step-list-fix)
+
+(defrule consp-of-step-list-fix
+  (equal (consp (step-list-fix steps))
+         (consp steps))
+  :expand ((step-list-fix steps)))
+
+(defrule car-of-step-list-fix
+  (equal (car (step-list-fix steps))
+         (if (consp steps)
+             (step-fix (car steps))
+           nil))
+  :expand ((step-list-fix steps)))
+
+(defrule cdr-of-step-list-fix
+  (equal (cdr (step-list-fix steps))
+         (step-list-fix (cdr steps)))
+  :expand ((step-list-fix steps)))

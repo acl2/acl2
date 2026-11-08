@@ -21,6 +21,10 @@
           step->to
           step->label
           step
+          step-listp
+          step-list-fix
+          step-list-equiv
           ))
 
 (defequiv step-equiv)
+(defequiv step-list-equiv)
