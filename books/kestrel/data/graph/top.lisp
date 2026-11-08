@@ -10,6 +10,7 @@
 
 (include-book "defs")
 (include-book "edge")
+(include-book "step")
 (include-book "graph")
 (include-book "nodes")
 (include-book "edges")

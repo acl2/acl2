@@ -9,6 +9,7 @@
 (in-package "GRAPH")
 
 (include-book "edge-defs")
+(include-book "step-defs")
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
