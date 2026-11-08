@@ -24,9 +24,9 @@
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 
-(include-book "graph-defs")
-(include-book "nodes-defs")
-(include-book "adjacency-defs")
+(include-book "../graph-defs")
+(include-book "../nodes-defs")
+(include-book "../adjacency-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
 
@@ -46,12 +46,12 @@
 (local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 
-(local (include-book "edge"))
+(local (include-book "../edge"))
 (local (include-book "step"))
-(local (include-book "graph"))
-(local (include-book "nodes"))
-(local (include-book "edges"))
-(local (include-book "adjacency"))
+(local (include-book "../graph"))
+(local (include-book "../nodes"))
+(local (include-book "../edges"))
+(local (include-book "../adjacency"))
 (local (include-book "walk"))
 (local (include-book "walk-in"))
 
@@ -175,7 +175,7 @@
 
 (define reachablep (from to (graph graphp))
   :returns (yes/no booleanp)
-  :parents (graph)
+  :parents (walks)
   :short "Check if there is a walk of at least one step from one node to
           another in a @(see graph)."
   :long

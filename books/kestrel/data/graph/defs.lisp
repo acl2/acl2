@@ -9,7 +9,6 @@
 (in-package "GRAPH")
 
 (include-book "edge-defs")
-(include-book "step-defs")
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
@@ -18,6 +17,4 @@
 (include-book "add-edge-defs")
 (include-book "delete-edge-defs")
 (include-book "delete-node-defs")
-(include-book "walk-defs")
-(include-book "walk-in-defs")
-(include-book "reachable-defs")
+(include-book "walk/defs")

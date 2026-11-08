@@ -34,7 +34,7 @@
 (define stepp (x)
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (graph)
+  :parents (walks)
   :short "Recognizer for the steps of a walk in a @(see graph)."
   (consp x)
   :inline t)

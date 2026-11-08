@@ -11,10 +11,10 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
-(include-book "graph-defs")
-(include-book "nodes-defs")
-(include-book "edges-defs")
-(include-book "adjacency-defs")
+(include-book "../graph-defs")
+(include-book "../nodes-defs")
+(include-book "../edges-defs")
+(include-book "../adjacency-defs")
 (include-book "walk-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

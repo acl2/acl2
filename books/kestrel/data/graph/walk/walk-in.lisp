@@ -17,10 +17,10 @@
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
-(include-book "graph-defs")
-(include-book "nodes-defs")
-(include-book "edges-defs")
-(include-book "adjacency-defs")
+(include-book "../graph-defs")
+(include-book "../nodes-defs")
+(include-book "../edges-defs")
+(include-book "../adjacency-defs")
 (include-book "step-defs")
 (include-book "walk-defs")
 
@@ -32,10 +32,10 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 
-(local (include-book "graph"))
-(local (include-book "nodes"))
-(local (include-book "edges"))
-(local (include-book "adjacency"))
+(local (include-book "../graph"))
+(local (include-book "../nodes"))
+(local (include-book "../edges"))
+(local (include-book "../adjacency"))
 (local (include-book "step"))
 (local (include-book "walk"))
 
@@ -76,7 +76,7 @@
 
 (define walk-in ((walk walkp) (graph graphp))
   :returns (yes/no booleanp)
-  :parents (graph)
+  :parents (walks)
   :short "Check if a walk is a walk in a @(see graph)."
   :long
   (xdoc::topstring

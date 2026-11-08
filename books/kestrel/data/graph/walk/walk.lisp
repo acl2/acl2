@@ -17,7 +17,7 @@
 (include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 
-(include-book "edge-defs")
+(include-book "../edge-defs")
 (include-book "step-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -27,7 +27,7 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
 
-(local (include-book "edge"))
+(local (include-book "../edge"))
 (local (include-book "step"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -43,7 +43,7 @@
 (define walkp (x)
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (graph)
+  :parents (walks)
   :short "Recognizer for walks."
   :long
   (xdoc::topstring

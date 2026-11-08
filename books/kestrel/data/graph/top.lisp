@@ -10,7 +10,6 @@
 
 (include-book "defs")
 (include-book "edge")
-(include-book "step")
 (include-book "graph")
 (include-book "nodes")
 (include-book "edges")
@@ -20,7 +19,5 @@
 (include-book "add-edge")
 (include-book "delete-edge")
 (include-book "delete-node")
-(include-book "walk")
-(include-book "walk-in")
-(include-book "reachable")
+(include-book "walk/top")
 (include-book "fty")

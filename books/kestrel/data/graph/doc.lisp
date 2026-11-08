@@ -86,7 +86,34 @@
         (xdoc::td "@($O(n\\log(d))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee delete-node!)")
-        (xdoc::td "@($O(\\log(n))$)"))
+        (xdoc::td "@($O(\\log(n))$)")))
+    (xdoc::p
+      "(where @($n$) is the number of nodes, @($m$) the number of pairs of
+       nodes joined by an edge, @($d$) the number of targets of a node, or the
+       largest such number for @(tsee edges-to) and @(tsee delete-node),
+       @($l$) the number of labels on edges between two nodes, and @($k$) the
+       number of edges returned).")
+    (xdoc::p
+      "A function whose name ends in @('!') is logically the same as the
+       function without the @('!'), to which it is rewritten. It has a
+       stronger guard, which lets it skip work in execution."))
+  :order-subtopics t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ walks
+  :parents (graph)
+  :short "Walks in a @(see graph), and the properties defined by them."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "A @(see walkp) is a start node and a list of steps, each naming the
+       node it moves to and the label of the edge it follows. Whether a walk
+       is a walk in a particular graph is @(tsee walk-in). Reachability is the
+       existence of a walk of at least one step (see @(tsee reachablep)).")
+    (xdoc::p
+      "The operations are:")
+    (xdoc::table_
       (xdoc::tr
         (xdoc::td "@(tsee walk-in)")
         (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)"))
@@ -95,13 +122,7 @@
         (xdoc::td "@($O((n + m)\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
-       nodes joined by an edge, @($d$) the number of targets of a node, or the
-       largest such number for @(tsee edges-to), @(tsee delete-node), and
-       @(tsee walk-in), @($l$) the number of labels on edges between two
-       nodes, and @($k$) the number of edges returned, or the number of steps
-       of a walk).")
-    (xdoc::p
-      "A function whose name ends in @('!') is logically the same as the
-       function without the @('!'), to which it is rewritten. It has a
-       stronger guard, which lets it skip work in execution."))
+       nodes joined by an edge, @($d$) the largest number of targets of a
+       node, @($l$) the largest number of labels on edges between two nodes,
+       and @($k$) the number of steps of the walk)."))
   :order-subtopics t)
