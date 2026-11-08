@@ -88,15 +88,15 @@
         (xdoc::td "@(tsee delete-node!)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
-        (xdoc::td "@(tsee path-in)")
+        (xdoc::td "@(tsee walk-in)")
         (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
        nodes joined by an edge, @($d$) the number of targets of a node, or the
        largest such number for @(tsee edges-to), @(tsee delete-node), and
-       @(tsee path-in), @($l$) the number of labels on edges between two
+       @(tsee walk-in), @($l$) the number of labels on edges between two
        nodes, and @($k$) the number of edges returned, or the number of steps
-       of a path).")
+       of a walk).")
     (xdoc::p
       "A function whose name ends in @('!') is logically the same as the
        function without the @('!'), to which it is rewritten. It has a

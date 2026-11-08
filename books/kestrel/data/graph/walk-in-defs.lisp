@@ -15,14 +15,14 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
-(include-book "path-defs")
+(include-book "walk-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "path-in"))
+(local (include-book "walk-in"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
   :names (steps-in
-          path-in
+          walk-in
           ))

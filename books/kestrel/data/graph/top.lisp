@@ -20,6 +20,6 @@
 (include-book "add-edge")
 (include-book "delete-edge")
 (include-book "delete-node")
-(include-book "path")
-(include-book "path-in")
+(include-book "walk")
+(include-book "walk-in")
 (include-book "fty")

@@ -15,22 +15,22 @@
 (include-book "step-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "path"))
+(local (include-book "walk"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (pathp
-          irr-path
-          path-fix
-          path-equiv
-          path->start
-          path->steps
-          path
+  :names (walkp
+          irr-walk
+          walk-fix
+          walk-equiv
+          walk->start
+          walk->steps
+          walk
           steps-end
-          path-end
+          walk-end
           steps-edges
-          path-edges
+          walk-edges
           ))
 
-(defequiv path-equiv)
+(defequiv walk-equiv)

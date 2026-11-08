@@ -24,8 +24,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A step of a path is the target node of an edge together with its label: an
-;; edge without its source, which is the node the path is at before the step.
+;; A step of a walk is the target node of an edge together with its label: an
+;; edge without its source, which is the node the walk is at before the step.
 ;; Neither part is constrained, so this is just a cons.
 ;;
 ;; The slot order is that of the target and label in an edge, so the tail of
@@ -35,7 +35,7 @@
   :type-prescription :none
   :returns (yes/no booleanp)
   :parents (graph)
-  :short "Recognizer for the steps of a path in a @(see graph)."
+  :short "Recognizer for the steps of a walk in a @(see graph)."
   (consp x)
   :inline t)
 

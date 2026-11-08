@@ -22,7 +22,7 @@
 (include-book "edges-defs")
 (include-book "adjacency-defs")
 (include-book "step-defs")
-(include-book "path-defs")
+(include-book "walk-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -37,17 +37,17 @@
 (local (include-book "edges"))
 (local (include-book "adjacency"))
 (local (include-book "step"))
-(local (include-book "path"))
+(local (include-book "walk"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that each step, taken from the given node, follows an edge of the
 ;; graph, reading the step's label from the adjacency of the node it is taken
-;; from. This builds no edge set, so it is what path-in executes.
+;; from. This builds no edge set, so it is what walk-in executes.
 
 (define steps-in (from (steps step-listp) (graph graphp))
   :returns (yes/no booleanp)
-  :parents (path-in)
+  :parents (walk-in)
   (if (consp steps)
       (b* ((to (step->to (car steps))))
         (and (treeset::in (step->label (car steps))
@@ -74,14 +74,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define path-in ((path pathp) (graph graphp))
+(define walk-in ((walk walkp) (graph graphp))
   :returns (yes/no booleanp)
   :parents (graph)
-  :short "Check if a path is a path in a @(see graph)."
+  :short "Check if a walk is a walk in a @(see graph)."
   :long
   (xdoc::topstring
     (xdoc::p
-      "A path is in a graph when it starts at a node and every edge it follows
+      "A walk is in a graph when it starts at a node and every edge it follows
        is an edge of the graph. Its other nodes are then nodes too, as the
        ends of its edges.")
     (xdoc::p
@@ -89,25 +89,25 @@
        is the number of steps, @($n$) the number of nodes, @($d$) the largest
        number of targets of a node, and @($l$) the largest number of labels
        on edges between two nodes."))
-  (mbe :logic (and (treeset::in (path->start path) (nodes graph))
-                   (treeset::subset (path-edges path) (edges graph)))
-       :exec (and (node-in (path->start path) graph)
-                  (steps-in (path->start path) (path->steps path) graph)))
-  :guard-hints (("Goal" :in-theory (enable path-edges
+  (mbe :logic (and (treeset::in (walk->start walk) (nodes graph))
+                   (treeset::subset (walk-edges walk) (edges graph)))
+       :exec (and (node-in (walk->start walk) graph)
+                  (steps-in (walk->start walk) (walk->steps walk) graph)))
+  :guard-hints (("Goal" :in-theory (enable walk-edges
                                            steps-in-becomes-subset-of-steps-edges))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule path-in-when-path-equiv-congruence
-  (implies (path-equiv path0 path1)
-           (equal (path-in path0 graph)
-                  (path-in path1 graph)))
+(defrule walk-in-when-walk-equiv-congruence
+  (implies (walk-equiv walk0 walk1)
+           (equal (walk-in walk0 graph)
+                  (walk-in walk1 graph)))
   :rule-classes :congruence
-  :enable path-in)
+  :enable walk-in)
 
-(defrule path-in-when-equiv-congruence
+(defrule walk-in-when-equiv-congruence
   (implies (equiv graph0 graph1)
-           (equal (path-in path graph0)
-                  (path-in path graph1)))
+           (equal (walk-in walk graph0)
+                  (walk-in walk graph1)))
   :rule-classes :congruence
-  :enable path-in)
+  :enable walk-in)
