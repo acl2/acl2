@@ -77,12 +77,48 @@
   :rule-classes :congruence
   :enable adjacency)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define successors (node (graph graphp))
+  :type-prescription :none
+  :returns (successors treeset::setp)
+  :parents (graph)
+  :short "The successors of a node of a @(see graph): the nodes with an edge
+          from it."
+  :long
+  (xdoc::topstring-p
+    "A value which is not a node has no successors. Time complexity:
+     @($O(\\log(n) + d)$), where @($n$) is the number of nodes and @($d$) the
+     number of successors.")
+  (treemap::keys (adjacency node graph))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule successors-when-equiv-congruence
+  (implies (equiv graph0 graph1)
+           (equal (successors node graph0)
+                  (successors node graph1)))
+  :rule-classes :congruence
+  :enable successors)
+
+;; The successors of a node are the keys of its adjacency, which are written
+;; as successors.
+
+(defrule keys-of-adjacency
+  (equal (treemap::keys (adjacency node graph))
+         (successors node graph))
+  :enable successors)
+
+(theory-invariant (incompatible! (:definition successors$inline)
+                                 (:rewrite keys-of-adjacency)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The labels at a target are the labels of the edges to it, and a target is
-;; present exactly when there is at least one such edge. A lookup may give an
-;; absent target any empty default: treemap rewrites a default of
-;; @('(treeset::empty)') to @('nil') once the target is known to be present.
+;; present exactly when it is a successor. A lookup may give an absent target
+;; any empty default: treemap rewrites a default of @('(treeset::empty)') to
+;; @('nil') once the target is known to be present.
 
 (defrule in-of-lookup-of-adjacency
   (implies (treeset::emptyp (double-rewrite default))
@@ -109,25 +145,38 @@
   (equal (treeset::emptyp (treemap::lookup to
                                            (adjacency from graph)
                                            :default default))
-         (and (not (treeset::in to (treemap::keys (adjacency from graph))))
+         (and (not (treeset::in to (successors from graph)))
               (treeset::emptyp (double-rewrite default))))
   :enable (adjacency
-           break-abstraction
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           successors
+           break-abstraction)
+  :disable keys-of-adjacency)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Every target is a node.
+;; An edge leads to a successor of its source, and every successor is a node.
 
-(defrule subset-of-keys-of-adjacency-and-nodes
-  (treeset::subset (treemap::keys (adjacency node graph))
+(defrule in-of-successors-when-in-of-edges
+  (implies (treeset::in (edge from to label) (edges graph))
+           (treeset::in to (successors from graph)))
+  :rule-classes (:rewrite :forward-chaining)
+  :use ((:instance in-of-lookup-of-adjacency (default nil))
+        (:instance treeset::not-emptyp-when-in
+                   (x label)
+                   (set (treemap::lookup to (adjacency from graph)))))
+  :disable in-of-lookup-of-adjacency)
+
+(defrule subset-of-successors-and-nodes
+  (treeset::subset (successors node graph)
                    (nodes graph))
-  :enable (adjacency
+  :enable (successors
+           adjacency
            nodes
-           break-abstraction))
+           break-abstraction)
+  :disable keys-of-adjacency)
 
-(defrule in-of-nodes-when-in-of-keys-of-adjacency-forward-chaining
-  (implies (treeset::in to (treemap::keys (adjacency from graph)))
+(defrule in-of-nodes-when-in-of-successors-forward-chaining
+  (implies (treeset::in to (successors from graph))
            (treeset::in to (nodes graph)))
   :rule-classes :forward-chaining)
 
@@ -144,6 +193,20 @@
                   (treemap::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by adjacency-when-not-in-of-nodes)
+
+(defruled successors-when-not-in-of-nodes
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (successors node graph)
+                  (treeset::empty)))
+  :enable successors
+  :disable keys-of-adjacency)
+
+(defrule successors-when-not-in-of-nodes-cheap
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (successors node graph)
+                  (treeset::empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by successors-when-not-in-of-nodes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -42,7 +42,8 @@
     (xdoc::p
       "A graph is represented as an adjacency list: a "
       (xdoc::seetopic "acl2::treemap" "treemap")
-      " from each node to a treemap from each of its targets to the nonempty "
+      " from each node to a treemap from each of its successors to the
+       nonempty "
       (xdoc::seetopic "acl2::treeset" "treeset")
       " of labels on the edges between them. Following the edges out of a node
        is therefore cheap, but finding the edges into a node means visiting
@@ -89,8 +90,8 @@
         (xdoc::td "@($O(\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
-       nodes joined by an edge, @($d$) the number of targets of a node, or the
-       largest such number for @(tsee edges-to) and @(tsee delete-node),
+       nodes joined by an edge, @($d$) the number of successors of a node, or
+       the largest such number for @(tsee edges-to) and @(tsee delete-node),
        @($l$) the number of labels on edges between two nodes, and @($k$) the
        number of edges returned).")
     (xdoc::p
@@ -122,7 +123,7 @@
         (xdoc::td "@($O((n + m)\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
-       nodes joined by an edge, @($d$) the largest number of targets of a
+       nodes joined by an edge, @($d$) the largest number of successors of a
        node, @($l$) the largest number of labels on edges between two nodes,
        and @($k$) the number of steps of the walk)."))
   :order-subtopics t)

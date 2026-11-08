@@ -87,7 +87,7 @@
     (xdoc::p
       "Time complexity: @($O(k(\\log(n) + \\log(d) + \\log(l)))$), where @($k$)
        is the number of steps, @($n$) the number of nodes, @($d$) the largest
-       number of targets of a node, and @($l$) the largest number of labels
+       number of successors of a node, and @($l$) the largest number of labels
        on edges between two nodes."))
   (mbe :logic (and (treeset::in (walk->start walk) (nodes graph))
                    (treeset::subset (walk-edges walk) (edges graph)))

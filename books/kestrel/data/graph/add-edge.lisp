@@ -59,8 +59,9 @@
        node.")
     (xdoc::p
       "Time complexity: @($O(\\log(n) + \\log(d) + \\log(l))$), where @($n$)
-       is the number of nodes, @($d$) the number of targets of the source, and
-       @($l$) the number of labels on edges from the source to the target."))
+       is the number of nodes, @($d$) the number of successors of the source,
+       and @($l$) the number of labels on edges from the source to the
+       target."))
   (adj-list-add-edge from to label (adj-list-add-node to (fix graph)))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 

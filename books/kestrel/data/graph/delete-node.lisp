@@ -66,7 +66,7 @@
        graph records only each node's outgoing edges.")
     (xdoc::p
       "Time complexity: @($O(n \\log(d))$), where @($n$) is the number of
-       nodes and @($d$) the largest number of targets of a node."))
+       nodes and @($d$) the largest number of successors of a node."))
   (adj-list-delete-node node (fix graph))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

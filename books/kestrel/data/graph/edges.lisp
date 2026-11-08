@@ -172,7 +172,7 @@
        into a node means visiting every node.")
     (xdoc::p
       "Time complexity: @($O(n (\\log(n) + \\log(d)) + k\\log(k))$), where
-       @($n$) is the number of nodes, @($d$) the largest number of targets of
+       @($n$) is the number of nodes, @($d$) the largest number of successors of
        a node, and @($k$) the number of edges into the node."))
   (adj-list-edges-to node (fix graph))
   :inline t

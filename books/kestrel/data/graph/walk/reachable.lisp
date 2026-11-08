@@ -22,7 +22,6 @@
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -44,7 +43,6 @@
 (local (include-book "kestrel/data/treeset/cardinality" :dir :system))
 (local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "step"))
@@ -107,12 +105,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Search for a node, expanding nodes from a frontier. A node is expanded by
-;; adding its unexpanded targets to the frontier. The search succeeds when it
-;; takes the node it is looking for from the frontier.
+;; adding its unexpanded successors to the frontier. The search succeeds when
+;; it takes the node it is looking for from the frontier.
 ;;
 ;; Each step either expands a new node, of which a graph has finitely many, or
-;; drops a node from the frontier. A value which is not a node has no targets,
-;; so expanding it also only shrinks the frontier.
+;; drops a node from the frontier. A value which is not a node has no
+;; successors, so expanding it also only shrinks the frontier.
 
 (define reachablep-search
   (to
@@ -133,7 +131,7 @@
     (reachablep-search to
                        (treeset::union
                          frontier
-                         (treeset::diff (treemap::keys (adjacency node graph))
+                         (treeset::diff (successors node graph)
                                         expanded))
                        expanded
                        graph))
@@ -191,7 +189,7 @@
        where @($n$) is the number of nodes and @($m$) the number of pairs of
        nodes joined by an edge."))
   (reachablep-search to
-                     (treemap::keys (adjacency from graph))
+                     (successors from graph)
                      (treeset::empty)
                      graph))
 
@@ -208,16 +206,11 @@
 
 ;; Walks extended by one step
 
-;; A target of a node is the end of a one-step walk from it, along the
-;; least label of the edges to the target.
-
-(defrulel in-of-nodes-when-in-of-keys-of-adjacency
-  (implies (treeset::in to (treemap::keys (adjacency from graph)))
-           (treeset::in from (nodes graph)))
-  :enable adjacency-when-not-in-of-nodes)
+;; A successor of a node is the end of a one-step walk from it, along the
+;; least label of the edges to the successor.
 
 (defrulel in-of-edge-of-min-of-lookup-of-adjacency-and-edges
-  (implies (treeset::in to (treemap::keys (adjacency from graph)))
+  (implies (treeset::in to (successors from graph))
            (treeset::in (edge from
                               to
                               (treeset::min
@@ -229,8 +222,8 @@
                   (default nil))
   :disable in-of-lookup-of-adjacency)
 
-(defrulel reachablep-sk-when-in-of-keys-of-adjacency
-  (implies (treeset::in to (treemap::keys (adjacency from graph)))
+(defrulel reachablep-sk-when-in-of-successors
+  (implies (treeset::in to (successors from graph))
            (reachablep-sk from to graph))
   :use (:instance reachablep-sk-suff
                   (walk (walk from
@@ -245,11 +238,11 @@
            steps-end
            steps-edges))
 
-;; A walk to a node extends to each of its targets.
+;; A walk to a node extends to each of its successors.
 
-(defrulel reachablep-sk-when-reachablep-sk-and-in-of-keys-of-adjacency
+(defrulel reachablep-sk-when-reachablep-sk-and-in-of-successors
   (implies (and (reachablep-sk from x graph)
-                (treeset::in to (treemap::keys (adjacency x graph))))
+                (treeset::in to (successors x graph)))
            (reachablep-sk from to graph))
   :use ((:instance reachablep-sk-suff
                    (walk (b* ((walk (reachablep-sk-witness from x graph)))
@@ -344,29 +337,29 @@
          (treeset::y y))
   :enable set-all-reachablep-sk)
 
-;; The targets of the start, and of any reachable node, are reachable.
+;; The successors of the start, and of any reachable node, are reachable.
 
-(defrulel set-all-reachablep-sk-when-subset-of-keys-of-adjacency-of-arg1
-  (implies (treeset::subset set (treemap::keys (adjacency from graph)))
+(defrulel set-all-reachablep-sk-when-subset-of-successors-of-arg1
+  (implies (treeset::subset set (successors from graph))
            (set-all-reachablep-sk from set graph))
   :induct t
   :enable set-all-reachablep-sk)
 
-(defruledl set-all-reachablep-sk-when-subset-of-keys-of-adjacency
+(defruledl set-all-reachablep-sk-when-subset-of-successors
   (implies (and (reachablep-sk from x graph)
-                (treeset::subset set (treemap::keys (adjacency x graph))))
+                (treeset::subset set (successors x graph)))
            (set-all-reachablep-sk from set graph))
   :induct (set-all-reachablep-sk from set graph)
   :enable set-all-reachablep-sk)
 
-(defrulel set-all-reachablep-sk-of-diff-of-keys-of-adjacency
+(defrulel set-all-reachablep-sk-of-diff-of-successors
   (implies (reachablep-sk from x graph)
            (set-all-reachablep-sk from
                                   (treeset::diff
-                                    (treemap::keys (adjacency x graph))
+                                    (successors x graph)
                                     set)
                                   graph))
-  :enable set-all-reachablep-sk-when-subset-of-keys-of-adjacency)
+  :enable set-all-reachablep-sk-when-subset-of-successors)
 
 (defrulel reachablep-sk-when-reachablep-search
   (implies (and (reachablep-search to frontier expanded graph)
@@ -382,21 +375,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Completeness: a set containing the targets of the start and the targets of
-;; each of its own nodes contains every reachable node. The expanded nodes
+;; Completeness: a set containing the successors of the start and the
+;; successors of each of its own nodes contains every reachable node. The expanded nodes
 ;; and the frontier together form such a set when the frontier runs out, and
 ;; the node sought is never among the expanded nodes.
 
 (local
-  (define set-all-keys-of-adjacency-subsetp ((set treeset::setp)
+  (define set-all-successors-subsetp ((set treeset::setp)
                                              (nodes treeset::setp)
                                              (graph graphp))
     :returns (yes/no booleanp)
     (or (treeset::emptyp set)
-        (and (treeset::subset (treemap::keys
-                                (adjacency (treeset::min set) graph))
+        (and (treeset::subset (successors (treeset::min set) graph)
                               nodes)
-             (set-all-keys-of-adjacency-subsetp
+             (set-all-successors-subsetp
                (treeset::delete (treeset::min set) set)
                nodes
                graph)))
@@ -408,91 +400,79 @@
                                        treeset::in-of-min)))
     :verify-guards nil))
 
-(defrulel set-all-keys-of-adjacency-subsetp-when-equiv-of-arg1-congruence
+(defrulel set-all-successors-subsetp-when-equiv-of-arg1-congruence
   (implies (treeset::equiv set0 set1)
-           (equal (set-all-keys-of-adjacency-subsetp set0 nodes graph)
-                  (set-all-keys-of-adjacency-subsetp set1 nodes graph)))
+           (equal (set-all-successors-subsetp set0 nodes graph)
+                  (set-all-successors-subsetp set1 nodes graph)))
   :rule-classes :congruence
-  :expand ((set-all-keys-of-adjacency-subsetp set0 nodes graph)
-           (set-all-keys-of-adjacency-subsetp set1 nodes graph)))
+  :expand ((set-all-successors-subsetp set0 nodes graph)
+           (set-all-successors-subsetp set1 nodes graph)))
 
-(defrulel set-all-keys-of-adjacency-subsetp-when-equiv-of-arg2-congruence
+(defrulel set-all-successors-subsetp-when-equiv-of-arg2-congruence
   (implies (treeset::equiv nodes0 nodes1)
-           (equal (set-all-keys-of-adjacency-subsetp set nodes0 graph)
-                  (set-all-keys-of-adjacency-subsetp set nodes1 graph)))
+           (equal (set-all-successors-subsetp set nodes0 graph)
+                  (set-all-successors-subsetp set nodes1 graph)))
   :rule-classes :congruence
   :induct t
-  :enable set-all-keys-of-adjacency-subsetp)
+  :enable set-all-successors-subsetp)
 
-(defrulel set-all-keys-of-adjacency-subsetp-when-equiv-of-arg3-congruence
+(defrulel set-all-successors-subsetp-when-equiv-of-arg3-congruence
   (implies (equiv graph0 graph1)
-           (equal (set-all-keys-of-adjacency-subsetp set nodes graph0)
-                  (set-all-keys-of-adjacency-subsetp set nodes graph1)))
+           (equal (set-all-successors-subsetp set nodes graph0)
+                  (set-all-successors-subsetp set nodes graph1)))
   :rule-classes :congruence
   :induct t
-  :enable set-all-keys-of-adjacency-subsetp)
+  :enable set-all-successors-subsetp)
 
-(defrulel subset-of-keys-of-adjacency-when-set-all-keys-of-adjacency-subsetp-and-in
-  (implies (and (set-all-keys-of-adjacency-subsetp set nodes graph)
+(defrulel subset-of-successors-when-set-all-successors-subsetp-and-in
+  (implies (and (set-all-successors-subsetp set nodes graph)
                 (treeset::in x set))
-           (treeset::subset (treemap::keys (adjacency x graph)) nodes))
+           (treeset::subset (successors x graph) nodes))
   :use (:instance
          (:functional-instance
            treeset::genericp-when-set-all-genericp-and-in
            (treeset::genericp
              (lambda (x)
-               (treeset::subset (treemap::keys (adjacency x graph)) nodes)))
+               (treeset::subset (successors x graph) nodes)))
            (treeset::set-all-genericp
              (lambda (set)
-               (set-all-keys-of-adjacency-subsetp set nodes graph))))
+               (set-all-successors-subsetp set nodes graph))))
          (treeset::set set)
          (treeset::x x))
-  :enable set-all-keys-of-adjacency-subsetp)
+  :enable set-all-successors-subsetp)
 
-(defrulel set-all-keys-of-adjacency-subsetp-of-insert
-  (equal (set-all-keys-of-adjacency-subsetp (treeset::insert x set)
+(defrulel set-all-successors-subsetp-of-insert
+  (equal (set-all-successors-subsetp (treeset::insert x set)
                                             nodes
                                             graph)
-         (and (treeset::subset (treemap::keys (adjacency x graph)) nodes)
-              (set-all-keys-of-adjacency-subsetp set nodes graph)))
+         (and (treeset::subset (successors x graph) nodes)
+              (set-all-successors-subsetp set nodes graph)))
   :use (:instance
          (:functional-instance
            treeset::set-all-genericp-of-insert
            (treeset::genericp
              (lambda (x)
-               (treeset::subset (treemap::keys (adjacency x graph)) nodes)))
+               (treeset::subset (successors x graph) nodes)))
            (treeset::set-all-genericp
              (lambda (set)
-               (set-all-keys-of-adjacency-subsetp set nodes graph))))
+               (set-all-successors-subsetp set nodes graph))))
          (treeset::set set)
          (treeset::x x))
-  :enable set-all-keys-of-adjacency-subsetp)
+  :enable set-all-successors-subsetp)
 
-(defrulel set-all-keys-of-adjacency-subsetp-when-subset-of-arg2
-  (implies (and (set-all-keys-of-adjacency-subsetp set nodes0 graph)
+(defrulel set-all-successors-subsetp-when-subset-of-arg2
+  (implies (and (set-all-successors-subsetp set nodes0 graph)
                 (treeset::subset nodes0 nodes1))
-           (set-all-keys-of-adjacency-subsetp set nodes1 graph))
+           (set-all-successors-subsetp set nodes1 graph))
   :induct t
-  :enable set-all-keys-of-adjacency-subsetp)
+  :enable set-all-successors-subsetp)
 
-;; An edge leads to a target of its source.
-
-(defrulel in-of-keys-of-adjacency-when-in-of-edges
-  (implies (treeset::in (edge from to label) (edges graph))
-           (treeset::in to (treemap::keys (adjacency from graph))))
-  :rule-classes (:rewrite :forward-chaining)
-  :use ((:instance in-of-lookup-of-adjacency (default nil))
-        (:instance treeset::not-emptyp-when-in
-                   (x label)
-                   (set (treemap::lookup to (adjacency from graph)))))
-  :disable in-of-lookup-of-adjacency)
-
-;; At least one step from a node whose targets are in a closed set ends in
+;; At least one step from a node whose successors are in a closed set ends in
 ;; that set.
 
-(defrulel in-of-steps-end-when-set-all-keys-of-adjacency-subsetp
-  (implies (and (set-all-keys-of-adjacency-subsetp set set graph)
-                (treeset::subset (treemap::keys (adjacency from graph)) set)
+(defrulel in-of-steps-end-when-set-all-successors-subsetp
+  (implies (and (set-all-successors-subsetp set set graph)
+                (treeset::subset (successors from graph) set)
                 (consp steps)
                 (treeset::subset (steps-edges from steps) (edges graph)))
            (treeset::in (steps-end from steps) set))
@@ -500,21 +480,21 @@
   :enable (steps-end
            steps-edges))
 
-(defrulel in-when-reachablep-sk-and-set-all-keys-of-adjacency-subsetp
+(defrulel in-when-reachablep-sk-and-set-all-successors-subsetp
   (implies (and (reachablep-sk from to graph)
-                (treeset::subset (treemap::keys (adjacency from graph)) set)
-                (set-all-keys-of-adjacency-subsetp set set graph))
+                (treeset::subset (successors from graph) set)
+                (set-all-successors-subsetp set set graph))
            (treeset::in to set))
-  :use (:instance in-of-steps-end-when-set-all-keys-of-adjacency-subsetp
+  :use (:instance in-of-steps-end-when-set-all-successors-subsetp
                   (steps (walk->steps (reachablep-sk-witness from to graph))))
   :enable (reachablep-sk
            walk-in
            walk-end
            walk-edges)
-  :disable in-of-steps-end-when-set-all-keys-of-adjacency-subsetp)
+  :disable in-of-steps-end-when-set-all-successors-subsetp)
 
 ;; One search step keeps every expanded or frontier node, and puts the
-;; targets of the expanded node among them.
+;; successors of the expanded node among them.
 
 (defrulel subset-of-union-and-union-of-insert-and-union-of-delete
   (treeset::subset (treeset::union expanded frontier)
@@ -536,9 +516,9 @@
 
 (defrulel reachablep-search-when-reachablep-sk
   (implies (and (reachablep-sk from to graph)
-                (treeset::subset (treemap::keys (adjacency from graph))
+                (treeset::subset (successors from graph)
                                  (treeset::union expanded frontier))
-                (set-all-keys-of-adjacency-subsetp
+                (set-all-successors-subsetp
                   expanded
                   (treeset::union expanded frontier)
                   graph)
@@ -557,7 +537,7 @@
   (implies (reachablep-sk from to graph)
            (reachablep from to graph))
   :enable (reachablep
-           set-all-keys-of-adjacency-subsetp))
+           set-all-successors-subsetp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

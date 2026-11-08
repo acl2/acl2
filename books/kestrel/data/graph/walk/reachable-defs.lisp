@@ -17,7 +17,6 @@
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")

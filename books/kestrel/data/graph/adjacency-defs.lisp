@@ -8,6 +8,7 @@
 
 (in-package "GRAPH")
 
+(include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
 (include-book "graph-defs")
@@ -21,4 +22,5 @@
 (std::defredundant
   :names (adjacency
           adjacency!
+          successors
           ))
