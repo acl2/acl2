@@ -11,4 +11,7 @@
 (include-book "step-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
+(include-book "walk-cons-defs")
+(include-book "walk-snoc-defs")
+(include-book "walk-append-defs")
 (include-book "reachable-defs")

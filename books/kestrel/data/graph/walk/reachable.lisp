@@ -52,6 +52,7 @@
 (local (include-book "../adjacency"))
 (local (include-book "walk"))
 (local (include-book "walk-in"))
+(local (include-book "walk-snoc"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,15 +214,9 @@
   (implies (treeset::in to (successors from graph))
            (reachablep-sk from to graph))
   :use (:instance reachablep-sk-suff
-                  (walk (walk from
-                              (list (step to
-                                          (treeset::min
-                                            (labels from to graph)))))))
-  :enable (walk-in
-           walk-end
-           walk-edges
-           steps-end
-           steps-edges))
+                  (walk (walk-snoc (walk from nil)
+                                   to
+                                   (treeset::min (labels from to graph))))))
 
 ;; A walk to a node extends to each of its successors.
 
@@ -230,18 +225,10 @@
                 (treeset::in to (successors x graph)))
            (reachablep-sk from to graph))
   :use ((:instance reachablep-sk-suff
-                   (walk (b* ((walk (reachablep-sk-witness from x graph)))
-                           (walk (walk->start walk)
-                                 (append (walk->steps walk)
-                                         (list (step to
-                                                     (treeset::min
-                                                       (labels x to graph)))))))))
-        (:instance reachablep-sk (to x)))
-  :enable (walk-in
-           walk-end
-           walk-edges
-           steps-end
-           steps-edges))
+                   (walk (walk-snoc (reachablep-sk-witness from x graph)
+                                    to
+                                    (treeset::min (labels x to graph)))))
+        (:instance reachablep-sk (to x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

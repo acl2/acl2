@@ -261,6 +261,13 @@
            (step-listp (cdr steps)))
   :enable step-listp)
 
+(defrule true-listp-when-step-listp
+  (implies (step-listp steps)
+           (true-listp steps))
+  :rule-classes (:rewrite :compound-recognizer)
+  :induct t
+  :enable step-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-list-fix ((steps step-listp))

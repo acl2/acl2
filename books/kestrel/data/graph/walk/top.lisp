@@ -12,4 +12,7 @@
 (include-book "step")
 (include-book "walk")
 (include-book "walk-in")
+(include-book "walk-cons")
+(include-book "walk-snoc")
+(include-book "walk-append")
 (include-book "reachable")

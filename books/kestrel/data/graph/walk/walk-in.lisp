@@ -111,3 +111,33 @@
                   (walk-in walk graph1)))
   :rule-classes :congruence
   :enable walk-in)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk with no steps is in a graph exactly when its start is a node.
+
+(defrule walk-in-when-not-consp-of-walk->steps
+  (implies (not (consp (walk->steps walk)))
+           (equal (walk-in walk graph)
+                  (treeset::in (walk->start walk) (nodes graph))))
+  :enable walk-in)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk in a graph ends at a node: it starts at one, and each edge it follows
+;; leads to one.
+
+(defrulel in-of-steps-end-and-nodes
+  (implies (and (treeset::in from (nodes graph))
+                (treeset::subset (steps-edges from steps) (edges graph)))
+           (treeset::in (steps-end from steps) (nodes graph)))
+  :induct t
+  :enable (steps-end
+           steps-edges))
+
+(defrule in-of-walk-end-and-nodes-when-walk-in
+  (implies (walk-in walk graph)
+           (treeset::in (walk-end walk) (nodes graph)))
+  :enable (walk-in
+           walk-end
+           walk-edges))

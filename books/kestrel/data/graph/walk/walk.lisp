@@ -278,6 +278,15 @@
   :rule-classes :congruence
   :enable walk-end)
 
+;; A walk with no steps ends at its start.
+
+(defrule walk-end-when-not-consp-of-walk->steps
+  (implies (not (consp (walk->steps walk)))
+           (equal (walk-end walk)
+                  (walk->start walk)))
+  :enable (walk-end
+           steps-end))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The set of edges a list of steps follows, when taken from the given node.
@@ -329,3 +338,12 @@
                   (walk-edges walk1)))
   :rule-classes :congruence
   :enable walk-edges)
+
+;; A walk with no steps follows no edges.
+
+(defrule walk-edges-when-not-consp-of-walk->steps
+  (implies (not (consp (walk->steps walk)))
+           (equal (walk-edges walk)
+                  (treeset::empty)))
+  :enable (walk-edges
+           steps-edges))

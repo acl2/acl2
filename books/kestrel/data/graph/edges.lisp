@@ -123,6 +123,18 @@
                 (not (treeset::in node (nodes graph))))
            (not (equal (edge->to edge) node))))
 
+;; The same facts for an edge written out by its parts, as forward chaining.
+
+(defrule in-of-nodes-when-in-of-edge-and-edges-forward-chaining
+  (implies (treeset::in (edge from to label) (edges graph))
+           (and (treeset::in from (nodes graph))
+                (treeset::in to (nodes graph))))
+  :rule-classes :forward-chaining
+  :enable (edges
+           nodes
+           in-of-adj-list-edges
+           break-abstraction))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edges-from (node (graph graphp))

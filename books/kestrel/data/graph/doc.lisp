@@ -110,11 +110,22 @@
     (xdoc::p
       "A @(see walkp) is a start node and a list of steps, each naming the
        node it moves to and the label of the edge it follows. Whether a walk
-       is a walk in a particular graph is @(tsee walk-in). Reachability is the
-       existence of a walk of at least one step (see @(tsee reachablep)).")
+       is a walk in a particular graph is @(tsee walk-in). Walks are extended
+       a step at a time with @(tsee walk-cons) and @(tsee walk-snoc), and
+       joined with @(tsee walk-append). Reachability is the existence of a
+       walk of at least one step (see @(tsee reachablep)).")
     (xdoc::p
       "The operations are:")
     (xdoc::table_
+      (xdoc::tr
+        (xdoc::td "@(tsee walk-cons)")
+        (xdoc::td "@($O(1)$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee walk-snoc)")
+        (xdoc::td "@($O(k)$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee walk-append)")
+        (xdoc::td "@($O(k)$)"))
       (xdoc::tr
         (xdoc::td "@(tsee walk-in)")
         (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)"))
@@ -125,5 +136,6 @@
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
        nodes joined by an edge, @($d$) the largest number of successors of a
        node, @($l$) the largest number of labels on edges between two nodes,
-       and @($k$) the number of steps of the walk)."))
+       and @($k$) the number of steps of the walk, or of the first walk for
+       @(tsee walk-append))."))
   :order-subtopics t)
