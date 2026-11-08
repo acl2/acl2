@@ -89,7 +89,10 @@
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee walk-in)")
-        (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)")))
+        (xdoc::td "@($O(k(\\log(n) + \\log(d) + \\log(l)))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee reachablep)")
+        (xdoc::td "@($O((n + m)\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
        nodes joined by an edge, @($d$) the number of targets of a node, or the

@@ -22,4 +22,5 @@
 (include-book "delete-node")
 (include-book "walk")
 (include-book "walk-in")
+(include-book "reachable")
 (include-book "fty")

@@ -20,3 +20,4 @@
 (include-book "delete-node-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
+(include-book "reachable-defs")
