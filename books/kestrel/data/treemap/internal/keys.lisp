@@ -239,26 +239,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
   (implies (and (bstp tree)
                 (not (<< (tree-element->key (tree->head tree)) key)))
            (not (treeset::in key (tree-key-set (tree->right tree))))))
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< key (tree-element->key (tree->head tree))))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
   :enable data::<<-rules)
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head
   (implies (and (bstp tree)
                 (not (<< key (tree-element->key (tree->head tree)))))
            (not (treeset::in key (tree-key-set (tree->left tree))))))
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< (tree-element->key (tree->head tree)) key))
@@ -536,15 +532,6 @@
                       (treeset::tree-in key (tree-key-tree (tree->right tree))))))
   :use tree-in-of-tree-key-tree)
 
-(defrule tree-in-of-tree-key-tree-when-not-tree-empty-p-cheap
-  (implies (not (tree-empty-p tree))
-           (equal (treeset::tree-in key (tree-key-tree tree))
-                  (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->left tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->right tree))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-in-of-tree-key-tree-when-not-tree-empty-p)
-
 (defrule in-of-tree-key-tree
   (implies (and (bstp tree)
                 (heapp tree))
@@ -573,7 +560,8 @@
                          (treeset::union (tree-key-tree (tree->left tree))
                                          (tree-key-tree (tree->right tree)))))))
      :rule-classes :definition
-     :enable treeset::extensionality-no-backchain-limit)))
+     :enable (treeset::extensionality-no-backchain-limit
+              tree-in-of-tree-key-tree-when-not-tree-empty-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
