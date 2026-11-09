@@ -184,7 +184,8 @@
   (implies (not (in x set))
            (equal (delete x set)
                   (fix set)))
-  :enable extensionality)
+  :enable extensionality
+  :disable fix-when-setp)
 
 (defrule delete-when-not-in-cheap
   (implies (not (in x set))
