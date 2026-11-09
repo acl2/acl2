@@ -28,6 +28,7 @@
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
 (include-book "../adjacency-defs")
+(include-book "../successors-defs")
 (include-book "reachable-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -54,6 +55,7 @@
 (local (include-book "../graph"))
 (local (include-book "../nodes"))
 (local (include-book "../adjacency"))
+(local (include-book "../successors"))
 (local (include-book "reachable"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

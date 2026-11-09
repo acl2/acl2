@@ -22,7 +22,5 @@
 (std::defredundant
   :names (adjacency
           adjacency!
-          successors
           labels
-          successors-of-set
           ))

@@ -21,6 +21,7 @@
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
 (include-book "../adjacency-defs")
+(include-book "../successors-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
 

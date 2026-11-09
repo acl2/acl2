@@ -13,6 +13,8 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
+(include-book "successors-defs")
+(include-book "predecessors-defs")
 (include-book "add-node-defs")
 (include-book "add-edge-defs")
 (include-book "delete-edge-defs")

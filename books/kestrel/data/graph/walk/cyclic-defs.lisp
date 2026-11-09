@@ -23,6 +23,7 @@
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
 (include-book "../adjacency-defs")
+(include-book "../successors-defs")
 (include-book "reachable-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

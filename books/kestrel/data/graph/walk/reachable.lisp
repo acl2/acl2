@@ -26,6 +26,7 @@
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
 (include-book "../adjacency-defs")
+(include-book "../successors-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
 
@@ -52,6 +53,7 @@
 (local (include-book "../nodes"))
 (local (include-book "../edges"))
 (local (include-book "../adjacency"))
+(local (include-book "../successors"))
 (local (include-book "walk"))
 (local (include-book "walk-in"))
 (local (include-book "walk-snoc"))

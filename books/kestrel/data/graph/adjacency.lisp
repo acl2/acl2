@@ -14,13 +14,7 @@
 
 (include-book "kestrel/data/treeset/set-defs" :dir :system)
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
 (include-book "edge-defs")
@@ -31,15 +25,8 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/utilities/ordinals" :dir :system))
-
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
@@ -87,41 +74,19 @@
   :rule-classes :congruence
   :enable adjacency)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defruled adjacency-when-not-in-of-nodes
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (adjacency node graph)
+                  (treemap::empty)))
+  :enable (adjacency
+           nodes))
 
-(define successors (node (graph graphp))
-  :type-prescription :none
-  :returns (successors treeset::setp)
-  :parents (graph)
-  :short "The successors of a node of a @(see graph): the nodes with an edge
-          from it."
-  :long
-  (xdoc::topstring-p
-    "A value which is not a node has no successors. Time complexity:
-     @($O(\\log(n) + d)$), where @($n$) is the number of nodes and @($d$) the
-     number of successors.")
-  (treemap::keys (adjacency node graph))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule successors-when-equiv-congruence
-  (implies (equiv graph0 graph1)
-           (equal (successors node graph0)
-                  (successors node graph1)))
-  :rule-classes :congruence
-  :enable successors)
-
-;; The successors of a node are the keys of its adjacency, which are written
-;; as successors.
-
-(defrule keys-of-adjacency
-  (equal (treemap::keys (adjacency node graph))
-         (successors node graph))
-  :enable successors)
-
-(theory-invariant (incompatible! (:definition successors$inline)
-                                 (:rewrite keys-of-adjacency)))
+(defrule adjacency-when-not-in-of-nodes-cheap
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (adjacency node graph)
+                  (treemap::empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by adjacency-when-not-in-of-nodes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,11 +130,11 @@
 (theory-invariant (incompatible! (:definition labels$inline)
                                  (:rewrite lookup-of-adjacency)))
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The labels from one node to another are the labels of the edges between
-;; them, and there are some exactly when the second node is a successor of the
-;; first.
+;; them.
 
 (defrule in-of-labels
   (equal (treeset::in label (labels from to graph))
@@ -179,161 +144,6 @@
            edges
            in-of-adj-list-edges)
   :disable lookup-of-adjacency)
-
-(defrule emptyp-of-labels
-  (equal (treeset::emptyp (labels from to graph))
-         (not (treeset::in to (successors from graph))))
-  :enable (labels
-           adjacency
-           successors
-           break-abstraction
-           treemap::lookup-with-default-becomes-lookup-syntaxp)
-  :disable (lookup-of-adjacency
-            keys-of-adjacency))
-
-;; So an edge leads to a successor of its source, and every successor has an
-;; edge to it, for instance with the least of the labels.
-
-(defrule in-of-successors-when-in-of-edges
-  (implies (treeset::in (edge from to label) (edges graph))
-           (treeset::in to (successors from graph)))
-  :rule-classes (:rewrite :forward-chaining)
-  :use (:instance treeset::not-emptyp-when-in
-                  (x label)
-                  (set (labels from to graph))))
-
-(defrule in-of-edge-of-min-of-labels-and-edges
-  (equal (treeset::in (edge from to (treeset::min (labels from to graph)))
-                      (edges graph))
-         (treeset::in to (successors from graph)))
-  :use (:instance in-of-labels
-                  (label (treeset::min (labels from to graph))))
-  :enable not
-  :disable in-of-labels)
-
-;; Every successor is a node.
-
-(defrule subset-of-successors-and-nodes
-  (treeset::subset (successors node graph)
-                   (nodes graph))
-  :enable (successors
-           adjacency
-           nodes
-           break-abstraction)
-  :disable keys-of-adjacency)
-
-(defrule in-of-nodes-when-in-of-successors-forward-chaining
-  (implies (treeset::in to (successors from graph))
-           (treeset::in to (nodes graph)))
-  :rule-classes :forward-chaining)
-
-(defruled adjacency-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
-           (equal (adjacency node graph)
-                  (treemap::empty)))
-  :enable (adjacency
-           nodes))
-
-(defrule adjacency-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
-           (equal (adjacency node graph)
-                  (treemap::empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by adjacency-when-not-in-of-nodes)
-
-(defruled successors-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
-           (equal (successors node graph)
-                  (treeset::empty)))
-  :enable successors
-  :disable keys-of-adjacency)
-
-(defrule successors-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
-           (equal (successors node graph)
-                  (treeset::empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by successors-when-not-in-of-nodes)
-
-(defruled labels-when-not-in-of-successors
-  (implies (not (treeset::in to (successors from graph)))
-           (equal (labels from to graph)
-                  (treeset::empty)))
-  :enable (labels
-           treemap::lookup-when-not-in-of-keys)
-  :disable lookup-of-adjacency)
-
-(defrule labels-when-not-in-of-successors-cheap
-  (implies (not (treeset::in to (successors from graph)))
-           (equal (labels from to graph)
-                  (treeset::empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by labels-when-not-in-of-successors)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define successors-of-set ((set treeset::setp) (graph graphp))
-  :type-prescription :none
-  :returns (successors treeset::setp)
-  :parents (graph)
-  :short "The successors of the nodes in a set: the nodes with an edge from
-          some node in the set."
-  :long
-  (xdoc::topstring-p
-    "Values in the set which are not nodes have no successors. Time
-     complexity: @($O((k + m)\\log(n))$), where @($k$) is the size of the
-     set, @($m$) the number of pairs of nodes joined by an edge from a node in
-     the set, and @($n$) the number of nodes.")
-  (if (treeset::emptyp set)
-      (treeset::empty)
-    (treeset::union (successors (treeset::min set) graph)
-                    (successors-of-set (treeset::delete (treeset::min set) set)
-                                       graph)))
-  :measure (treeset::cardinality set)
-  :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule successors-of-set-when-equiv-of-arg1-congruence
-  (implies (treeset::equiv set0 set1)
-           (equal (successors-of-set set0 graph)
-                  (successors-of-set set1 graph)))
-  :rule-classes :congruence
-  :expand ((successors-of-set set0 graph)
-           (successors-of-set set1 graph)))
-
-(defrule successors-of-set-when-equiv-of-arg2-congruence
-  (implies (equiv graph0 graph1)
-           (equal (successors-of-set set graph0)
-                  (successors-of-set set graph1)))
-  :rule-classes :congruence
-  :induct t
-  :enable successors-of-set)
-
-;; The successors of each node in the set are among them, and every one of
-;; them is a node.
-
-(defrule subset-of-successors-and-successors-of-set-when-in
-  (implies (treeset::in node set)
-           (treeset::subset (successors node graph)
-                            (successors-of-set set graph)))
-  :induct (successors-of-set set graph)
-  :enable successors-of-set)
-
-(defrule subset-of-successors-of-set-and-nodes
-  (treeset::subset (successors-of-set set graph)
-                   (nodes graph))
-  :induct t
-  :enable (successors-of-set
-           treeset::pick-a-point-polar))
-
-(defrule monotonicity-of-successors-of-set
-  (implies (treeset::subset x y)
-           (treeset::subset (successors-of-set x graph)
-                            (successors-of-set y graph)))
-  :induct (successors-of-set x graph)
-  :enable (successors-of-set
-           treeset::pick-a-point-polar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -361,7 +171,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy adjacency-extra-rules
-  '(adjacency-when-not-in-of-nodes
-    successors-when-not-in-of-nodes
-    labels-when-not-in-of-successors
-    ))
+  '(adjacency-when-not-in-of-nodes))
