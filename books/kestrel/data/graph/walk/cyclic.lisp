@@ -24,6 +24,7 @@
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 (include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -51,11 +52,14 @@
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
 (local (include-book "kestrel/data/treemap/update" :dir :system))
+(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
 
 (local (include-book "../graph"))
 (local (include-book "../nodes"))
 (local (include-book "../adjacency"))
 (local (include-book "../successors"))
+(local (include-book "../predecessors"))
 (local (include-book "reachable"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,9 +145,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The efficient version keeps, for each node not yet removed, the number of
-;; nodes not yet removed with an edge to it, and the frontier: the nodes whose
-;; number is zero. Removing a node decrements the numbers of its successors.
+;; The efficient version keeps counters: for each node not yet removed with an
+;; edge into it from the nodes not yet removed, the number of such nodes. It
+;; also keeps the frontier: the nodes not yet removed without a counter.
+;; Removing a node decrements the counters of its successors, and a counter
+;; which reaches zero is deleted and its node added to the frontier.
 
 (define kahn-increment ((targets treeset::setp) (counters treemap::mapp))
   :type-prescription :none
@@ -232,9 +238,10 @@
             (treemap::fix counters)))
        (node (treeset::min targets))
        (count (nfix (treemap::lookup node counters :default 0)))
-       (frontier (if (eql count 1)
-                     (treeset::insert node frontier)
-                   frontier)))
+       ((when (eql count 1))
+        (kahn-decrement (treeset::delete node targets)
+                        (treeset::insert node frontier)
+                        (treemap::delete node counters))))
     (kahn-decrement (treeset::delete node targets)
                     frontier
                     (treemap::update node (- count 1) counters)))
@@ -335,50 +342,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The predecessors of a node among the nodes of a set. A node is a successor
-;; of the set exactly when it has one.
+;; The predecessors of a node among the nodes of a set are its predecessors
+;; intersected with the set. A node is a successor of the set exactly when it
+;; has one.
 
-(local
-  (define predecessors-in (node (set treeset::setp) graph)
-    :returns (predecessors treeset::setp)
-    (b* (((when (treeset::emptyp set))
-          (treeset::empty))
-         (pred (treeset::min set))
-         (preds (predecessors-in node (treeset::delete pred set) graph)))
-      (if (treeset::in node (successors pred graph))
-          (treeset::insert pred preds)
-        preds))
-    :measure (treeset::cardinality set)
-    :verify-guards nil))
-
-(defrulel predecessors-in-when-equiv-of-arg2-congruence
-  (implies (treeset::equiv set0 set1)
-           (equal (predecessors-in node set0 graph)
-                  (predecessors-in node set1 graph)))
-  :rule-classes :congruence
-  :expand ((predecessors-in node set0 graph)
-           (predecessors-in node set1 graph)))
-
-(defrulel in-of-predecessors-in
-  (equal (treeset::in pred (predecessors-in node set graph))
-         (and (treeset::in pred set)
-              (treeset::in node (successors pred graph))))
-  :induct t
-  :enable predecessors-in)
-
-(defrulel cardinality-of-predecessors-in-when-in-of-successors-linear
-  (implies (and (treeset::in pred set)
-                (treeset::in node (successors pred graph)))
-           (< 0 (treeset::cardinality (predecessors-in node set graph))))
-  :rule-classes :linear
+(defrulel emptyp-of-intersect-and-predecessors-when-in-of-successors
+  (implies (and (treeset::in node (successors pred graph))
+                (treeset::in pred set))
+           (not (treeset::emptyp
+                  (treeset::intersect set (predecessors node graph)))))
   :use (:instance treeset::not-emptyp-when-in
                   (x pred)
-                  (set (predecessors-in node set graph))))
+                  (set (treeset::intersect set (predecessors node graph)))))
 
-(defrulel predecessors-in-of-delete
-  (equal (predecessors-in node (treeset::delete pred set) graph)
-         (treeset::delete pred (predecessors-in node set graph)))
-  :enable treeset::extensionality-polar)
+(defrulel cardinality-of-intersect-and-predecessors-when-in-of-successors-linear
+  (implies (and (treeset::in node (successors pred graph))
+                (treeset::in pred set))
+           (< 0 (treeset::cardinality
+                  (treeset::intersect set (predecessors node graph)))))
+  :rule-classes :linear
+  :enable treeset::cardinality-when-not-emptyp-linear)
 
 ;; A set including its own successors includes the successors of its nodes.
 
@@ -398,20 +381,21 @@
                             (treeset::delete node set)))
   :enable treeset::pick-a-point-polar)
 
-(defruledl in-of-successors-of-set-becomes-not-emptyp-of-predecessors-in
+(defruledl in-of-successors-of-set-becomes-not-emptyp-of-intersect
   (equal (treeset::in node (successors-of-set set graph))
-         (not (treeset::emptyp (predecessors-in node set graph))))
+         (not (treeset::emptyp
+                (treeset::intersect set (predecessors node graph)))))
   :induct (successors-of-set set graph)
   :enable (successors-of-set
-           predecessors-in)
-  :disable predecessors-in-of-delete)
+           emptyp-of-delete-by-cardinality)
+  :disable treeset::emptyp-of-delete)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The efficient version leaves the same nodes. Its invariant: the remaining
-;; nodes include their own successors, each counter is the number of
-;; predecessors of its node among the remaining nodes, and the frontier is the
-;; remaining nodes that are not successors of remaining nodes.
+;; nodes include their own successors, the counters are those computed afresh
+;; for the remaining nodes, and the frontier is the remaining nodes that are
+;; not successors of remaining nodes.
 
 (defrulel lookup-of-kahn-increment
   (equal (treemap::lookup node
@@ -431,17 +415,21 @@
   :enable kahn-increment)
 
 (defrulel lookup-of-kahn-counters
-  (equal (nfix (treemap::lookup node
-                                (kahn-counters set counters graph)
-                                :default 0))
-         (+ (nfix (treemap::lookup node counters :default 0))
-            (treeset::cardinality (predecessors-in node set graph))))
+  (equal (treemap::lookup node
+                          (kahn-counters set counters graph)
+                          :default default)
+         (if (treeset::emptyp
+               (treeset::intersect set (predecessors node graph)))
+             (treemap::lookup node counters :default default)
+           (+ (nfix (treemap::lookup node counters :default 0))
+              (treeset::cardinality
+                (treeset::intersect set (predecessors node graph))))))
   :induct t
   :enable (kahn-counters
-           predecessors-in
+           emptyp-of-delete-by-cardinality
            nfix
            acl2::fix)
-  :disable predecessors-in-of-delete)
+  :disable treeset::emptyp-of-delete)
 
 (defrulel in-of-keys-of-kahn-counters
   (equal (treeset::in node
@@ -467,29 +455,14 @@
                           (mv-nth 1 (kahn-decrement targets frontier counters))
                           :default default)
          (if (treeset::in node targets)
-             (- (nfix (treemap::lookup node counters :default 0)) 1)
+             (if (equal (nfix (treemap::lookup node counters :default 0)) 1)
+                 default
+               (- (nfix (treemap::lookup node counters :default 0)) 1))
            (treemap::lookup node counters :default default)))
   :induct t
   :enable kahn-decrement)
 
-(local
-  (defun-sk kahn-counters-okp (remaining counters graph)
-    (declare (xargs :verify-guards nil))
-    (forall (node)
-      (implies (treeset::in node remaining)
-               (equal (nfix (treemap::lookup node counters :default 0))
-                      (treeset::cardinality
-                        (predecessors-in node remaining graph)))))
-    :rewrite :direct))
-
-(local (in-theory (disable kahn-counters-okp)))
-
 ;; The initial state
-
-(defrulel kahn-counters-okp-of-kahn-counters
-  (kahn-counters-okp set (kahn-counters set (treemap::empty) graph) graph)
-  :enable (kahn-counters-okp
-           acl2::fix))
 
 (defrulel diff-of-arg1-and-keys-of-kahn-counters
   (equal (treeset::diff set
@@ -500,27 +473,24 @@
 
 ;; A step
 
-(defrulel kahn-counters-okp-of-mv-nth-1-of-kahn-decrement
-  (implies (and (kahn-counters-okp remaining counters graph)
-                (treeset::in node remaining))
-           (kahn-counters-okp
-             (treeset::delete node remaining)
-             (mv-nth 1 (kahn-decrement (successors node graph)
-                                       frontier
-                                       counters))
-             graph))
-  :expand ((kahn-counters-okp
-             (treeset::delete node remaining)
-             (mv-nth 1 (kahn-decrement (successors node graph)
-                                       frontier
-                                       counters))
-             graph))
-  :enable nfix)
+(defrulel mv-nth-1-of-kahn-decrement-of-successors
+  (implies (treeset::in node remaining)
+           (equal (mv-nth 1 (kahn-decrement
+                              (successors node graph)
+                              frontier
+                              (kahn-counters remaining (treemap::empty) graph)))
+                  (kahn-counters (treeset::delete node remaining)
+                                 (treemap::empty)
+                                 graph)))
+  :enable (treemap::extensionality
+           emptyp-of-delete-by-cardinality
+           nfix
+           acl2::fix)
+  :disable treeset::emptyp-of-delete)
 
 (defrulel mv-nth-0-of-kahn-decrement-of-successors
   (implies (and (treeset::subset (successors-of-set remaining graph)
                                  remaining)
-                (kahn-counters-okp remaining counters graph)
                 (treeset::in node remaining)
                 (not (treeset::in node (successors-of-set remaining graph))))
            (equal (mv-nth 0 (kahn-decrement
@@ -530,14 +500,18 @@
                                 (treeset::diff
                                   remaining
                                   (successors-of-set remaining graph)))
-                              counters))
+                              (kahn-counters remaining
+                                             (treemap::empty)
+                                             graph)))
                   (treeset::diff (treeset::delete node remaining)
                                  (successors-of-set
                                    (treeset::delete node remaining)
                                    graph))))
   :enable (treeset::extensionality-polar
-           in-of-successors-of-set-becomes-not-emptyp-of-predecessors-in
-           emptyp-of-delete-by-cardinality)
+           in-of-successors-of-set-becomes-not-emptyp-of-intersect
+           emptyp-of-delete-by-cardinality
+           nfix
+           acl2::fix)
   :disable treeset::emptyp-of-delete)
 
 ;; So the loop leaves what the logical version leaves.
@@ -545,7 +519,8 @@
 (defrulel mv-nth-1-of-kahn-loop
   (implies (and (treeset::subset (successors-of-set remaining graph)
                                  remaining)
-                (kahn-counters-okp remaining counters graph)
+                (equal counters
+                       (kahn-counters remaining (treemap::empty) graph))
                 (equal frontier
                        (treeset::diff remaining
                                       (successors-of-set remaining graph))))
@@ -607,8 +582,7 @@
                 (treeset::in node set)
                 (not (treeset::in node (successors-of-set set graph))))
            (not (reachable+p node node graph)))
-  :enable (in-when-reachable+p-and-subset-of-successors-of-set
-           treeset::pick-a-point-polar))
+  :enable in-when-reachable+p-and-subset-of-successors-of-set)
 
 (defrulel reachable+p-when-not-in-of-kahn-remaining
   (implies (and (treeset::subset (successors-of-set remaining graph)
@@ -747,10 +721,11 @@
            (not (treeset::in (fewest-ancestors set set graph)
                              (successors-of-set set graph))))
   :use (:instance treeset::in-of-min
-                  (set (predecessors-in (fewest-ancestors set set graph)
-                                        set
-                                        graph)))
-  :enable in-of-successors-of-set-becomes-not-emptyp-of-predecessors-in)
+                  (set (treeset::intersect
+                         set
+                         (predecessors (fewest-ancestors set set graph)
+                                       graph))))
+  :enable in-of-successors-of-set-becomes-not-emptyp-of-intersect)
 
 (defrulel subset-of-arg1-and-successors-of-set-when-not-cyclicp-sk
   (implies (and (not (cyclicp-sk graph))

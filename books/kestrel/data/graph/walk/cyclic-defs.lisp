@@ -19,6 +19,7 @@
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 (include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
