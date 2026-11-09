@@ -343,8 +343,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The predecessors of a node among the nodes of a set are its predecessors
-;; intersected with the set. A node is a successor of the set exactly when it
-;; has one.
+;; intersected with the set, and a node with an edge to it is one of them.
 
 (defrulel emptyp-of-intersect-and-predecessors-when-in-of-successors
   (implies (and (treeset::in node (successors pred graph))
@@ -380,15 +379,6 @@
                                                graph)
                             (treeset::delete node set)))
   :enable treeset::pick-a-point-polar)
-
-(defruledl in-of-successors-of-set-becomes-not-emptyp-of-intersect
-  (equal (treeset::in node (successors-of-set set graph))
-         (not (treeset::emptyp
-                (treeset::intersect set (predecessors node graph)))))
-  :induct (successors-of-set set graph)
-  :enable (successors-of-set
-           emptyp-of-delete-by-cardinality)
-  :disable treeset::emptyp-of-delete)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,15 +583,6 @@
   :induct (kahn-remaining remaining graph)
   :enable kahn-remaining)
 
-;; A value which is not a node reaches nothing.
-
-(defrulel in-of-nodes-when-reachable+p
-  (implies (reachable+p from to graph)
-           (treeset::in from (nodes graph)))
-  :use (:instance in-when-reachable+p-and-subset-of-successors-of-set
-                  (set (treeset::empty)))
-  :enable successors-of-set)
-
 (defruledl not-emptyp-of-kahn-remaining-when-cyclicp-sk
   (implies (cyclicp-sk graph)
            (not (treeset::emptyp (kahn-remaining (nodes graph) graph))))
@@ -650,21 +631,6 @@
   :rule-classes :congruence
   :expand ((find-node-on-cycle set0 graph)
            (find-node-on-cycle set1 graph)))
-
-;; The predecessors of a node reaching another reach it too.
-
-(defrulel reachable+p-when-reachable+p-and-in-of-successors
-  (implies (and (reachable+p node to graph)
-                (treeset::in node (successors from graph)))
-           (reachable+p from to graph))
-  :use (:instance reachable+p-transitivity (x node))
-  :disable reachable+p-transitivity)
-
-(defrulel subset-of-predecessors-and-predecessors+-when-reachable+p
-  (implies (reachable+p node to graph)
-           (treeset::subset (predecessors node graph)
-                            (predecessors+ to graph)))
-  :enable treeset::pick-a-point-polar)
 
 ;; A node stays a successor of a set restricted to another which includes its
 ;; predecessors.

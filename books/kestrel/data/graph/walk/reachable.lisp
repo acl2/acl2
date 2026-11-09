@@ -442,13 +442,32 @@
            (reachable+p from to graph))
   :enable reachable+p-becomes-reachable+p-sk)
 
-;; Reachability is transitive.
+;; Reachability is transitive. The two rules differ in the order of their
+;; hypotheses, so one finds the middle node among the nodes known to be
+;; reachable from the start, and the other among those known to reach the end.
 
 (defrule reachable+p-transitivity
   (implies (and (reachable+p from x graph)
                 (reachable+p x to graph))
            (reachable+p from to graph))
   :enable reachable+p-becomes-reachable+p-sk)
+
+(defrule reachable+p-transitivity-2
+  (implies (and (reachable+p x to graph)
+                (reachable+p from x graph))
+           (reachable+p from to graph))
+  :enable reachable+p-becomes-reachable+p-sk)
+
+;; Both ends of a reachability are nodes.
+
+(defrule in-of-nodes-when-reachable+p-forward-chaining
+  (implies (reachable+p from to graph)
+           (and (treeset::in from (nodes graph))
+                (treeset::in to (nodes graph))))
+  :rule-classes :forward-chaining
+  :enable (reachable+p
+           successors+-when-not-in-of-nodes)
+  :disable in-of-successors+)
 
 ;; A set containing the successors of a node, and the successors of each of
 ;; its own nodes, contains every node reachable from it.
@@ -600,9 +619,7 @@
 (defruledl reachable+p-when-reachable+p-and-in-of-predecessors
   (implies (and (reachable+p x to graph)
                 (treeset::in from (predecessors x graph)))
-           (reachable+p from to graph))
-  :use (:instance reachable+p-transitivity (x x))
-  :disable reachable+p-transitivity)
+           (reachable+p from to graph)))
 
 (defrulel set-all-reachable+p-to-when-subset-of-predecessors-of-arg2
   (implies (treeset::subset set (predecessors to graph))
@@ -646,6 +663,34 @@
   :use (:instance in-when-reachable+p-and-subset-of-predecessors-of-set
                   (set (predecessors+ to graph)))
   :enable predecessors+)
+
+;; Whatever a node reaches, so do the nodes reaching it, and whatever reaches
+;; a node reaches the nodes it reaches. In particular this holds of its
+;; predecessors and successors.
+
+(defrule subset-of-successors+-and-successors+-when-reachable+p
+  (implies (reachable+p from node graph)
+           (treeset::subset (successors+ node graph)
+                            (successors+ from graph)))
+  :enable treeset::pick-a-point-polar)
+
+(defrule subset-of-predecessors+-and-predecessors+-when-reachable+p
+  (implies (reachable+p node to graph)
+           (treeset::subset (predecessors+ node graph)
+                            (predecessors+ to graph)))
+  :enable treeset::pick-a-point-polar)
+
+(defrule subset-of-successors-and-successors+-when-reachable+p
+  (implies (reachable+p from node graph)
+           (treeset::subset (successors node graph)
+                            (successors+ from graph)))
+  :enable treeset::pick-a-point-polar)
+
+(defrule subset-of-predecessors-and-predecessors+-when-reachable+p
+  (implies (reachable+p node to graph)
+           (treeset::subset (predecessors node graph)
+                            (predecessors+ to graph)))
+  :enable treeset::pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
