@@ -584,7 +584,7 @@
            (not (reachable+p node node graph)))
   :enable in-when-reachable+p-and-subset-of-successors-of-set)
 
-(defrulel reachable+p-when-not-in-of-kahn-remaining
+(defruledl reachable+p-when-not-in-of-kahn-remaining
   (implies (and (treeset::subset (successors-of-set remaining graph)
                                  remaining)
                 (treeset::in node remaining)
@@ -612,11 +612,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Soundness: when no node reaches itself, every nonempty set has a node which
-;; is not a successor of its nodes, so Kahn's algorithm removes every node.
-;; Reachability is then a strict order, and the node of the set with the fewest
-;; ancestors in the set is such a node: a predecessor in the set would have
-;; strictly fewer.
+;; Soundness: a nonempty set whose nodes are all successors of its nodes has a
+;; node on a cycle, so when there is no cycle, Kahn's algorithm removes every
+;; node.
+;;
+;; In such a set, the nodes of the set reaching any one of its nodes form
+;; another such set. If the least node is not on a cycle, the set formed for it
+;; leaves it out, so the search descends into a smaller set.
 
 (defrulel reachable+p-when-not-cyclicp-sk
   (implies (not (cyclicp-sk graph))
@@ -624,117 +626,96 @@
   :enable cyclicp-sk-suff)
 
 (local
-  (define ancestors-in (node (set treeset::setp) graph)
-    :returns (ancestors treeset::setp)
+  (define find-node-on-cycle ((set treeset::setp) graph)
     (b* (((when (treeset::emptyp set))
-          (treeset::empty))
-         (anc (treeset::min set))
-         (ancs (ancestors-in node (treeset::delete anc set) graph)))
-      (if (reachable+p anc node graph)
-          (treeset::insert anc ancs)
-        ancs))
+          nil)
+         (node (treeset::min set))
+         ((when (reachable+p node node graph))
+          node))
+      (find-node-on-cycle (treeset::intersect set (predecessors+ node graph))
+                          graph))
     :measure (treeset::cardinality set)
+    :hints (("Goal" :use (:instance treeset::in-of-min-when-subset
+                                    (treeset::set set)
+                                    (treeset::y (predecessors+
+                                                  (treeset::min set)
+                                                  graph)))
+                    :in-theory (disable treeset::in-of-min-when-subset)))
     :verify-guards nil))
 
-(defrulel ancestors-in-when-equiv-of-arg2-congruence
+(defrulel find-node-on-cycle-when-equiv-of-arg1-congruence
   (implies (treeset::equiv set0 set1)
-           (equal (ancestors-in node set0 graph)
-                  (ancestors-in node set1 graph)))
+           (equal (find-node-on-cycle set0 graph)
+                  (find-node-on-cycle set1 graph)))
   :rule-classes :congruence
-  :expand ((ancestors-in node set0 graph)
-           (ancestors-in node set1 graph)))
+  :expand ((find-node-on-cycle set0 graph)
+           (find-node-on-cycle set1 graph)))
 
-(defrulel in-of-ancestors-in
-  (equal (treeset::in anc (ancestors-in node set graph))
-         (and (treeset::in anc set)
-              (reachable+p anc node graph)))
-  :induct t
-  :enable ancestors-in)
+;; The predecessors of a node reaching another reach it too.
 
-(defrulel subset-of-ancestors-in-and-ancestors-in-when-in-of-successors
-  (implies (treeset::in node (successors pred graph))
-           (treeset::subset (ancestors-in pred set graph)
-                            (ancestors-in node set graph)))
+(defrulel reachable+p-when-reachable+p-and-in-of-successors
+  (implies (and (reachable+p node to graph)
+                (treeset::in node (successors from graph)))
+           (reachable+p from to graph))
+  :use (:instance reachable+p-transitivity (x node))
+  :disable reachable+p-transitivity)
+
+(defrulel subset-of-predecessors-and-predecessors+-when-reachable+p
+  (implies (reachable+p node to graph)
+           (treeset::subset (predecessors node graph)
+                            (predecessors+ to graph)))
   :enable treeset::pick-a-point-polar)
 
-(defrulel cardinality-of-ancestors-in-when-in-of-successors-linear
-  (implies (and (not (reachable+p pred pred graph))
-                (treeset::in pred set)
-                (treeset::in node (successors pred graph)))
-           (< (treeset::cardinality (ancestors-in pred set graph))
-              (treeset::cardinality (ancestors-in node set graph))))
-  :rule-classes :linear
-  :use ((:instance treeset::cardinality-when-proper-subset-linear
-                   (x (ancestors-in pred set graph))
-                   (y (ancestors-in node set graph)))
-        (:instance treeset::in-when-in-and-subset
-                   (a pred)
-                   (x (ancestors-in node set graph))
-                   (y (ancestors-in pred set graph)))))
+;; A node stays a successor of a set restricted to another which includes its
+;; predecessors.
 
-(local
-  (define fewest-ancestors ((candidates treeset::setp)
-                            (set treeset::setp)
-                            graph)
-    (b* (((when (treeset::emptyp candidates))
-          nil)
-         (node (treeset::min candidates))
-         (rest (treeset::delete node candidates))
-         ((when (treeset::emptyp rest))
-          node)
-         (other (fewest-ancestors rest set graph)))
-      (if (< (treeset::cardinality (ancestors-in other set graph))
-             (treeset::cardinality (ancestors-in node set graph)))
-          other
-        node))
-    :measure (treeset::cardinality candidates)
-    :verify-guards nil))
-
-(defrulel in-of-fewest-ancestors
-  (implies (not (treeset::emptyp candidates))
-           (treeset::in (fewest-ancestors candidates set graph) candidates))
-  :induct t
-  :enable fewest-ancestors)
-
-(defrulel cardinality-of-ancestors-in-of-fewest-ancestors-linear
-  (implies (treeset::in node candidates)
-           (<= (treeset::cardinality
-                 (ancestors-in (fewest-ancestors candidates set graph)
-                               set
-                               graph))
-               (treeset::cardinality (ancestors-in node set graph))))
-  :rule-classes :linear
-  :induct t
-  :enable fewest-ancestors)
-
-(defrulel in-of-fewest-ancestors-and-successors
-  (implies (and (not (cyclicp-sk graph))
-                (treeset::in pred set))
-           (not (treeset::in (fewest-ancestors set set graph)
-                             (successors pred graph))))
-  :use (:instance cardinality-of-ancestors-in-of-fewest-ancestors-linear
-                  (node pred)
-                  (candidates set)))
-
-(defrulel in-of-fewest-ancestors-and-successors-of-set
-  (implies (not (cyclicp-sk graph))
-           (not (treeset::in (fewest-ancestors set set graph)
-                             (successors-of-set set graph))))
-  :use (:instance treeset::in-of-min
-                  (set (treeset::intersect
-                         set
-                         (predecessors (fewest-ancestors set set graph)
-                                       graph))))
+(defrulel in-of-successors-of-set-of-intersect
+  (implies (and (treeset::subset (predecessors node graph) set2)
+                (treeset::in node (successors-of-set set graph)))
+           (treeset::in node
+                        (successors-of-set (treeset::intersect set set2)
+                                           graph)))
   :enable in-of-successors-of-set-becomes-not-emptyp-of-intersect)
 
-(defrulel subset-of-arg1-and-successors-of-set-when-not-cyclicp-sk
+;; So in a set whose nodes are all successors of its nodes, the nodes reaching
+;; a given node of it form a nonempty set whose nodes are all successors of its
+;; nodes.
+
+(defrulel emptyp-of-intersect-and-predecessors+
+  (implies (treeset::in node (successors-of-set set graph))
+           (not (treeset::emptyp
+                  (treeset::intersect set (predecessors+ node graph)))))
+  :use (:instance in-of-successors-of-set-of-intersect
+                  (set2 (predecessors+ node graph)))
+  :expand (successors-of-set (treeset::intersect set (predecessors+ node graph))
+                             graph)
+  :disable in-of-successors-of-set-of-intersect)
+
+(defrulel subset-of-intersect-and-successors-of-set-of-intersect
+  (implies (treeset::subset set (successors-of-set set graph))
+           (treeset::subset
+             (treeset::intersect set (predecessors+ node graph))
+             (successors-of-set
+               (treeset::intersect set (predecessors+ node graph))
+               graph)))
+  :enable treeset::pick-a-point-polar)
+
+(defrulel reachable+p-of-find-node-on-cycle
+  (implies (and (treeset::subset set (successors-of-set set graph))
+                (not (treeset::emptyp set)))
+           (reachable+p (find-node-on-cycle set graph)
+                        (find-node-on-cycle set graph)
+                        graph))
+  :induct t
+  :enable find-node-on-cycle)
+
+(defruledl subset-of-arg1-and-successors-of-set-when-not-cyclicp-sk
   (implies (and (not (cyclicp-sk graph))
                 (not (treeset::emptyp set)))
            (not (treeset::subset set (successors-of-set set graph))))
-  :use (:instance treeset::in-when-in-and-subset
-                  (a (fewest-ancestors set set graph))
-                  (x set)
-                  (y (successors-of-set set graph))))
+  :use (:instance reachable+p-when-not-cyclicp-sk
+                  (node (find-node-on-cycle set graph)))
+  :disable reachable+p-when-not-cyclicp-sk)
 
 ;; Kahn's algorithm stops only at a set whose nodes are all successors of its
 ;; nodes.
