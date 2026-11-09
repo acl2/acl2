@@ -38,7 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-omap ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treemap)
   :short "Build an omap from a @(see treemap)."
   :long

@@ -641,7 +641,7 @@
                (progn$ (cw "(DAG is:~%")
                        (cw "~X01" (dag2term-unguarded dag) nil)
                        (cw ")~%"))))
-       (- (cw "(Applying tactic prover:~%"))
+       (- (cw "~%~%(Now applying tactic prover:~%"))
        (type-assumptions-for-fields (type-assumptions-for-get-field-nodes dag (top-nodenum dag) nil))
        ;; Make the rule-alist:
        (rules (append extra-rules

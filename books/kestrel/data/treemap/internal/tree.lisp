@@ -43,7 +43,7 @@
 ;; TODO: rename tree-element-p to tree-element-p in treeset/internal?
 ;; TODO: swap hash and key.
 (define tree-element-p (x)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for a tree element."
   :long
@@ -69,7 +69,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-tree-element ()
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (elem tree-element-p)
   (list* (hash nil) nil nil))
 
@@ -84,7 +84,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element-fix ((elem tree-element-p))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (elem$ tree-element-p)
   :short "Fixer for @(see tree-element-p)s."
   (mbe :logic (if (tree-element-p elem) elem (irr-tree-element))
@@ -121,7 +121,7 @@
 (define tree-element-equiv
   ((x tree-element-p)
    (y tree-element-p))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :short "Equivalence up to @(tsee tree-element-fix)."
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (equal (tree-element-fix x)
@@ -200,7 +200,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->hash ((elem tree-element-p))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (hash (tree-element->key elem))
        :exec (car elem))
@@ -242,7 +242,7 @@
   ((hash (unsigned-byte-p 32 hash))
    key
    val)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   :returns (elem tree-element-p
@@ -349,7 +349,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-fix ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (tree$ treep)
   :short "Fixer for @(see tree)s."
   (mbe :logic (if (treep tree) tree nil)
@@ -482,7 +482,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->head ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :short "Get the root element of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -534,7 +534,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->left ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :short "Get the left subtree of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -611,7 +611,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->right ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (right treep
                   :hints (("Goal" :in-theory (enable tree-fix
                                                      treep))))
@@ -932,7 +932,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-list-fix ((trees tree-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (trees$ tree-listp)
   (mbe :logic (if (tree-listp trees)
                   trees

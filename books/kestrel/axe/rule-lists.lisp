@@ -1392,7 +1392,10 @@
      bvlt-of-bvcat-arg2-constant-arg2-arg3
      bvlt-of-bvcat-arg2-constant-arg4-arg3
      bvlt-of-bvcat-arg3-constant-arg2-arg2
-     bvlt-of-bvcat-arg3-constant-arg2-arg4)))
+     bvlt-of-bvcat-arg3-constant-arg2-arg4
+
+     bvplus-of-bvif-arg2-gen-safe
+     bvplus-of-bvif-arg3-gen-safe)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?

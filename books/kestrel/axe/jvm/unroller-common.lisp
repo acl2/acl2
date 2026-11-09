@@ -199,16 +199,30 @@
                                     ;; TODO: Error if abstract class or interface.
                                     (if assume-object-params-non-null
                                         `((addressp ,parameter-name)
+                                          (not (null-refp ,parameter-name)) ; yes, this follows from addressp, but we may need it (loops are possible if we try to use rules)
                                           (equal (get-field ,parameter-name ',(class-pair) ,heap-term) ',type)
                                           ;; special case for String:
                                           ,@(and (equal type "java.lang.String")
-                                                 `((set::in (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term) (rkeys ,heap-term))
-                                                   ;; todo: also specify the type of the backing array?
-                                                   (not (null-refp (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term)))
-                                                   )))
+                                                 (let ((array-ref `(get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term))
+                                                       (contents-var (pack-in-package-of-symbol parameter-name parameter-name ".CONTENTS")))
+                                                   `((set::in ,array-ref (rkeys ,heap-term)) ; drop?
+                                                     ;; todo: also specify the type of the backing array?
+                                                     (not (null-refp ,array-ref)) ; drop?
+                                                     ;; (equal (get-field (get-field ,parameter-name '("java.lang.String" "value" :array :char) ,heap-term)
+                                                     ;;                   '(:special-data . :class)
+                                                     ;;                   ,heap-term)
+                                                     ;;        (jvm::make-one-dim-array-type ':char))
+                                                     (array-refp ,array-ref
+                                                                 (cons (len ,contents-var)
+                                                                       'nil)
+                                                                 ':char
+                                                                 ,heap-term)
+                                                     (equal (get-field ,array-ref ',(array-contents-pair) ,heap-term)
+                                                            ,contents-var)
+                                                     (true-listp ,contents-var)
+                                                     (all-unsigned-byte-p '16 ,contents-var)))))
                                       `((address-or-nullp ,parameter-name)
-                                        (has-class-or-nullp ,parameter-name ',type ,heap-term)
-                                        )))
+                                        (has-class-or-nullp ,parameter-name ',type ,heap-term))))
                             (if (jvm::is-one-dim-array-typep type)
                                 ;; One-dimensional array (TODO: Consider if we get NULL -- should it be an option to assume non-null?):
                                 (let ((component-type (jvm::get-array-component-type type))

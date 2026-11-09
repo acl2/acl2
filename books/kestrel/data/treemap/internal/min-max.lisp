@@ -41,7 +41,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-leftmost ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
       (tree-element->key+val (tree->head tree))
@@ -126,7 +126,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
       (tree-element->key+val (tree->head tree))

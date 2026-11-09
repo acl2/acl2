@@ -107613,6 +107613,11 @@ Bug Fixes From AI via Eric Smith
   clauses subsumes another.  For more details see [community-book]
   [30m[47msystem/tests/clause-set-subsumes-1-test.lisp[0m[0m.
 
+  Cause an error when [30m[47m[close-input-channel][0m[0m attempts to close Lisp's
+  standard input stream.  This could happen in [30m[47m:[0m[0m[30m[47m[program][0m[0m-mode code,
+  causing an infinite loop in at least one Lisp implementation
+  (SBCL).
+
 
 Other Bug Fixes
 
