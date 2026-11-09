@@ -18,3 +18,4 @@
 (include-book "reachable")
 (include-book "kahn")
 (include-book "cyclic")
+(include-book "topological-sort")

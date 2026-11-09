@@ -106,6 +106,41 @@
   :induct t
   :enable kahn-remaining)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The nodes removed, in the order of removal.
+
+(define kahn-order ((remaining treeset::setp) (graph graphp))
+  :returns (order true-listp)
+  :parents (topological-sort)
+  (b* ((sources (treeset::diff remaining
+                               (successors-of-set remaining graph)))
+       ((when (treeset::emptyp sources))
+        nil)
+       (node (treeset::min sources)))
+    (cons node
+          (kahn-order (treeset::delete node remaining) graph)))
+  :measure (treeset::cardinality remaining)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule kahn-order-when-equiv-of-arg1-congruence
+  (implies (treeset::equiv remaining0 remaining1)
+           (equal (kahn-order remaining0 graph)
+                  (kahn-order remaining1 graph)))
+  :rule-classes :congruence
+  :expand ((kahn-order remaining0 graph)
+           (kahn-order remaining1 graph)))
+
+(defrule kahn-order-when-equiv-of-arg2-congruence
+  (implies (equiv graph0 graph1)
+           (equal (kahn-order remaining graph0)
+                  (kahn-order remaining graph1)))
+  :rule-classes :congruence
+  :induct t
+  :enable kahn-order)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The efficient version keeps counters: for each node not yet removed with an
@@ -455,7 +490,8 @@
            acl2::fix)
   :disable treeset::emptyp-of-delete)
 
-;; So the loop leaves what the logical version leaves.
+;; So the loop leaves what the logical version leaves, and removes the nodes in
+;; the same order, accumulating them most recent first.
 
 (defrule mv-nth-1-of-kahn-loop
   (implies (and (treeset::subset (successors-of-set remaining graph)
@@ -470,3 +506,18 @@
   :induct (kahn-loop remaining frontier counters order graph)
   :enable (kahn-loop
            kahn-remaining))
+
+(defrule mv-nth-0-of-kahn-loop
+  (implies (and (treeset::subset (successors-of-set remaining graph)
+                                 remaining)
+                (equal counters
+                       (kahn-counters remaining (treemap::empty) graph))
+                (equal frontier
+                       (treeset::diff remaining
+                                      (successors-of-set remaining graph))))
+           (equal (mv-nth 0 (kahn-loop remaining frontier counters order graph))
+                  (revappend (kahn-order remaining graph) order)))
+  :induct (kahn-loop remaining frontier counters order graph)
+  :enable (kahn-loop
+           kahn-order
+           revappend))

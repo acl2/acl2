@@ -17,3 +17,4 @@
 (include-book "reachable-defs")
 (include-book "kahn-defs")
 (include-book "cyclic-defs")
+(include-book "topological-sort-defs")

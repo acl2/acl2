@@ -28,6 +28,7 @@
 
 (std::defredundant
   :names (kahn-remaining
+          kahn-order
           kahn-increment
           kahn-counters
           kahn-decrement
