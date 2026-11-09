@@ -218,8 +218,13 @@
   :induct t
   :enable successors-of-set)
 
-;; The successors of each node in the set are among them, and every one of
-;; them is a node.
+;; The empty set has no successors. The successors of each node in a set are
+;; among the successors of the set, and every one of them is a node.
+
+(defrule successors-of-set-of-empty
+  (equal (successors-of-set (treeset::empty) graph)
+         (treeset::empty))
+  :enable successors-of-set)
 
 (defrule subset-of-successors-and-successors-of-set-when-in
   (implies (treeset::in node set)

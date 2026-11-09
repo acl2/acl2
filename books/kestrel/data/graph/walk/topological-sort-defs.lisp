@@ -16,6 +16,7 @@
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
+(include-book "../successors-defs")
 (include-book "../predecessors-defs")
 (include-book "kahn-defs")
 (include-book "cyclic-defs")
@@ -27,6 +28,7 @@
 
 (std::defredundant
   :names (reachable+p-sortedp
+          topological-orderp-loop
           topological-orderp
           topological-sort
           ))
