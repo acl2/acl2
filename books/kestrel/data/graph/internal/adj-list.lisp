@@ -477,3 +477,10 @@
   (and (treemap::mapp x)
        (map-values-all-adjacencyp x))
   :enabled t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy adj-list-extra-rules
+  '(map-values-all-nonempty-setp-when-emptyp
+    map-values-all-adjacencyp-when-emptyp
+    ))

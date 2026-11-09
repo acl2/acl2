@@ -32,6 +32,9 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
@@ -68,6 +71,12 @@
   (equal (treeset::diff x (treeset::insert a y))
          (treeset::delete a (treeset::diff x y)))
   :enable treeset::extensionality-polar)
+
+(defrulel subset-of-union
+  (equal (treeset::subset (treeset::union x y) z)
+         (and (treeset::subset x z)
+              (treeset::subset y z)))
+  :enable treeset::pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,11 +254,6 @@
                                      (treeset::delete (treeset::min set) set)
                                      graph)))
     :measure (treeset::cardinality set)
-    :hints (("Goal" :in-theory (enable o-p
-                                       o-finp
-                                       o<
-                                       treeset::cardinality-of-delete-when-in
-                                       treeset::in-of-min)))
     :verify-guards nil))
 
 (defrulel set-all-reachable+p-sk-when-equiv-of-arg2-congruence
@@ -365,11 +369,6 @@
                nodes
                graph)))
     :measure (treeset::cardinality set)
-    :hints (("Goal" :in-theory (enable o-p
-                                       o-finp
-                                       o<
-                                       treeset::cardinality-of-delete-when-in
-                                       treeset::in-of-min)))
     :verify-guards nil))
 
 (defrulel set-all-successors-subsetp-when-equiv-of-arg1-congruence
@@ -465,6 +464,15 @@
            walk-edges)
   :disable in-of-steps-end-when-set-all-successors-subsetp)
 
+;; The closed sets are those containing the successors of their own nodes.
+
+(defruledl set-all-successors-subsetp-becomes-subset-of-successors-of-set
+  (equal (set-all-successors-subsetp set nodes graph)
+         (treeset::subset (successors-of-set set graph) nodes))
+  :induct (successors-of-set set graph)
+  :enable (set-all-successors-subsetp
+           successors-of-set))
+
 ;; One search step keeps every expanded or frontier node, and puts the
 ;; successors of the expanded node among them.
 
@@ -540,3 +548,19 @@
                 (reachable+p x to graph))
            (reachable+p from to graph))
   :enable reachable+p-becomes-reachable+p-sk)
+
+;; A set containing the successors of a node, and the successors of each of
+;; its own nodes, contains every node reachable from it.
+
+(defruled in-when-reachable+p-and-subset-of-successors-of-set
+  (implies (and (reachable+p from to graph)
+                (treeset::subset (successors from graph) set)
+                (treeset::subset (successors-of-set set graph) set))
+           (treeset::in to set))
+  :enable (reachable+p-becomes-reachable+p-sk
+           set-all-successors-subsetp-becomes-subset-of-successors-of-set))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy reachable-extra-rules
+  '(in-when-reachable+p-and-subset-of-successors-of-set))

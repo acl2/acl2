@@ -348,3 +348,11 @@
   :enable (treeset::extensionality
            in-of-adj-list-edges
            in-of-adjacency-edges))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy adj-list-edges-extra-rules
+  '(labels-edges-when-emptyp
+    adjacency-edges-when-emptyp
+    adj-list-edges-when-emptyp
+    ))

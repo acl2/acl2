@@ -24,4 +24,5 @@
           adjacency!
           successors
           labels
+          successors-of-set
           ))

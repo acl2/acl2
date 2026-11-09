@@ -344,3 +344,8 @@
                                              :default (treemap::empty)))
                             (treemap::keys adjl)))
   :enable well-formedp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy well-formed-extra-rules
+  '(map-values-all-keys-subsetp-when-emptyp))

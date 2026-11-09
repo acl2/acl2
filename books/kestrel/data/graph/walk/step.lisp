@@ -398,3 +398,8 @@
   :induct t
   :enable (steps-end
            append))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy step-extra-rules
+  '(step-fix-when-not-stepp))

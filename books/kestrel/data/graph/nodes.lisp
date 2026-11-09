@@ -99,3 +99,8 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable* nodes
                                             break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy nodes-extra-rules
+  '(nodes-when-emptyp))

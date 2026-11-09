@@ -121,16 +121,24 @@
 ;; Removing a value which is not a node does nothing. No edge touches it,
 ;; since both ends of every edge are nodes.
 
-(defrule delete-node-when-not-in-of-nodes
+(defruled delete-node-when-not-in-of-nodes
   (implies (not (treeset::in node (nodes graph)))
            (equal (delete-node node graph)
                   (fix graph)))
   :enable (extensionality
            treeset::extensionality-no-backchain-limit-polar))
 
+(defrule delete-node-when-not-in-of-nodes-cheap
+  (implies (not (treeset::in node (nodes graph)))
+           (equal (delete-node node graph)
+                  (fix graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-node-when-not-in-of-nodes)
+
 (defrule delete-node-of-delete-node-same
   (equal (delete-node node (delete-node node graph))
-         (delete-node node graph)))
+         (delete-node node graph))
+  :enable delete-node-when-not-in-of-nodes)
 
 (defrule delete-node-of-delete-node-commutative
   (equal (delete-node node0 (delete-node node1 graph))
@@ -168,3 +176,8 @@
                                             adj-list-delete-node
                                             edges-to
                                             break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-node-extra-rules
+  '(delete-node-when-not-in-of-nodes))

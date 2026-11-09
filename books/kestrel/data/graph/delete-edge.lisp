@@ -94,11 +94,18 @@
 
 ;; Removing an edge which is not there does nothing.
 
-(defrule delete-edge-when-not-in-of-edges
+(defruled delete-edge-when-not-in-of-edges
   (implies (not (treeset::in (edge from to label) (edges graph)))
            (equal (delete-edge from to label graph)
                   (fix graph)))
   :enable extensionality)
+
+(defrule delete-edge-when-not-in-of-edges-cheap
+  (implies (not (treeset::in (edge from to label) (edges graph)))
+           (equal (delete-edge from to label graph)
+                  (fix graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-edge-when-not-in-of-edges)
 
 (defrule delete-edge-of-delete-edge-same
   (equal (delete-edge from to label (delete-edge from to label graph))
@@ -128,3 +135,8 @@
   (equal (add-edge from to label (delete-edge from to label graph))
          (add-edge from to label graph))
   :enable extensionality)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-edge-extra-rules
+  '(delete-edge-when-not-in-of-edges))

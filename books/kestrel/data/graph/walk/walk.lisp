@@ -347,3 +347,8 @@
                   (treeset::empty)))
   :enable (walk-edges
            steps-edges))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy walk-extra-rules
+  '(walk-fix-when-not-walkp))

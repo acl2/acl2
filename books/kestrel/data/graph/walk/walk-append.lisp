@@ -145,3 +145,8 @@
                 (walk-in y graph))
            (walk-in (walk-append x y) graph))
   :cases ((equal (walk-end x) (walk->start y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy walk-append-extra-rules
+  '(walk-append-when-not-equal-of-walk-end-and-walk->start))

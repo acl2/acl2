@@ -256,3 +256,8 @@
            edge->to
            edge->label
            edgep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy edge-extra-rules
+  '(edge-fix-when-not-edgep))

@@ -16,6 +16,9 @@
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
 (include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
@@ -28,10 +31,15 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/lookup" :dir :system))
@@ -264,6 +272,71 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define successors-of-set ((set treeset::setp) (graph graphp))
+  :type-prescription :none
+  :returns (successors treeset::setp)
+  :parents (graph)
+  :short "The successors of the nodes in a set: the nodes with an edge from
+          some node in the set."
+  :long
+  (xdoc::topstring-p
+    "Values in the set which are not nodes have no successors. Time
+     complexity: @($O((k + m)\\log(n))$), where @($k$) is the size of the
+     set, @($m$) the number of pairs of nodes joined by an edge from a node in
+     the set, and @($n$) the number of nodes.")
+  (if (treeset::emptyp set)
+      (treeset::empty)
+    (treeset::union (successors (treeset::min set) graph)
+                    (successors-of-set (treeset::delete (treeset::min set) set)
+                                       graph)))
+  :measure (treeset::cardinality set)
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule successors-of-set-when-equiv-of-arg1-congruence
+  (implies (treeset::equiv set0 set1)
+           (equal (successors-of-set set0 graph)
+                  (successors-of-set set1 graph)))
+  :rule-classes :congruence
+  :expand ((successors-of-set set0 graph)
+           (successors-of-set set1 graph)))
+
+(defrule successors-of-set-when-equiv-of-arg2-congruence
+  (implies (equiv graph0 graph1)
+           (equal (successors-of-set set graph0)
+                  (successors-of-set set graph1)))
+  :rule-classes :congruence
+  :induct t
+  :enable successors-of-set)
+
+;; The successors of each node in the set are among them, and every one of
+;; them is a node.
+
+(defrule subset-of-successors-and-successors-of-set-when-in
+  (implies (treeset::in node set)
+           (treeset::subset (successors node graph)
+                            (successors-of-set set graph)))
+  :induct (successors-of-set set graph)
+  :enable successors-of-set)
+
+(defrule subset-of-successors-of-set-and-nodes
+  (treeset::subset (successors-of-set set graph)
+                   (nodes graph))
+  :induct t
+  :enable (successors-of-set
+           treeset::pick-a-point-polar))
+
+(defrule monotonicity-of-successors-of-set
+  (implies (treeset::subset x y)
+           (treeset::subset (successors-of-set x graph)
+                            (successors-of-set y graph)))
+  :induct (successors-of-set x graph)
+  :enable (successors-of-set
+           treeset::pick-a-point-polar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define adjacency! (node (graph graphp))
   :guard (node-in node graph)
   :parents (adjacency)
@@ -284,3 +357,11 @@
   :guard-hints (("Goal" :in-theory (enable* adjacency
                                             nodes
                                             break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy adjacency-extra-rules
+  '(adjacency-when-not-in-of-nodes
+    successors-when-not-in-of-nodes
+    labels-when-not-in-of-successors
+    ))

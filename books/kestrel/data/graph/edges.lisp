@@ -207,3 +207,8 @@
   :enable (edges-to
            edges
            in-of-adj-list-edges-to))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy edges-extra-rules
+  '(edges-when-emptyp))
