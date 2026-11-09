@@ -23,8 +23,6 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
@@ -34,16 +32,6 @@
 (local (include-book "step"))
 (local (include-book "walk"))
 (local (include-book "walk-in"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Library extensions
-
-(defrulel subset-of-union
-  (equal (treeset::subset (treeset::union x y) z)
-         (and (treeset::subset x z)
-              (treeset::subset y z)))
-  :enable treeset::pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

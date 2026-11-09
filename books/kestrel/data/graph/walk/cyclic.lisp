@@ -41,6 +41,7 @@
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
 (local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/treeset/intersect" :dir :system))
 (local (include-book "kestrel/data/treeset/diff" :dir :system))
 (local (include-book "kestrel/data/treeset/subset" :dir :system))
 (local (include-book "kestrel/data/treeset/cardinality" :dir :system))
@@ -58,24 +59,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Library extensions
-
-(defrulel in-of-min-when-subset
-  (implies (and (treeset::subset set y)
-                (not (treeset::emptyp set)))
-           (treeset::in (treeset::min set) y)))
-
-(defrulel in-of-min-of-diff-and-arg2
-  (implies (not (treeset::subset x y))
-           (not (treeset::in (treeset::min (treeset::diff x y)) y)))
-  :use (:instance treeset::in-of-min
-                  (set (treeset::diff x y)))
-  :disable (treeset::in-of-min
-            in-of-min-when-subset))
-
-(defrulel cardinality-when-in-linear
-  (implies (treeset::in x set)
-           (< 0 (treeset::cardinality set)))
-  :rule-classes :linear)
 
 (defruledl emptyp-of-delete-by-cardinality
   (equal (treeset::emptyp (treeset::delete x set))
@@ -386,7 +369,7 @@
                 (treeset::in node (successors pred graph)))
            (< 0 (treeset::cardinality (predecessors-in node set graph))))
   :rule-classes :linear
-  :use (:instance cardinality-when-in-linear
+  :use (:instance treeset::not-emptyp-when-in
                   (x pred)
                   (set (predecessors-in node set graph))))
 

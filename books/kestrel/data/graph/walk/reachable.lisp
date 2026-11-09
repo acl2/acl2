@@ -33,7 +33,6 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
@@ -57,26 +56,6 @@
 (local (include-book "walk-in"))
 (local (include-book "walk-snoc"))
 (local (include-book "walk-append"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Library extensions
-
-(defrulel delete-of-arg1-and-empty
-  (equal (treeset::delete a (treeset::empty))
-         (treeset::empty))
-  :enable treeset::delete-when-not-in)
-
-(defrulel diff-of-arg1-and-insert
-  (equal (treeset::diff x (treeset::insert a y))
-         (treeset::delete a (treeset::diff x y)))
-  :enable treeset::extensionality-polar)
-
-(defrulel subset-of-union
-  (equal (treeset::subset (treeset::union x y) z)
-         (and (treeset::subset x z)
-              (treeset::subset y z)))
-  :enable treeset::pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -73,20 +73,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A tree element rebuilt from its own key and value is that element. TREEMAP
-;; states this only as an elimination rule; the hash argument is normalized to
-;; nil, which is the form it takes here.
-
-(defrulel tree-element-of-nil-and-tree-element->key-and-tree-element->val
-  (implies (treemap::tree-element-p elem)
-           (equal (treemap::tree-element nil
-                                         (treemap::tree-element->key elem)
-                                         (treemap::tree-element->val elem))
-                  elem))
-  :use treemap::tree-element-elim)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrulel mapp-of-tree-element->val-of-tree->head-when-tree-all-vals-adjacencyp
   (implies (and (tree-all-vals-adjacencyp tree)
                 (not (treemap::tree-empty-p tree)))
