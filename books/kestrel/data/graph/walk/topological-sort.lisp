@@ -62,29 +62,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Library extensions
-
-(defrulel from-list-when-not-consp
-  (implies (not (consp list))
-           (equal (treeset::from-list list)
-                  (treeset::empty)))
-  :enable treeset::extensionality-polar)
-
-(defrulel from-list-of-cons
-  (equal (treeset::from-list (cons x list))
-         (treeset::insert x (treeset::from-list list)))
-  :enable treeset::extensionality-polar)
-
-(defruledl from-list-when-consp
-  (implies (consp list)
-           (equal (treeset::from-list list)
-                  (treeset::insert (car list)
-                                   (treeset::from-list (cdr list)))))
-  :enable (treeset::extensionality-polar
-           member-equal))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; In a set containing the successors of its own nodes, the nodes reaching a
 ;; node which is not one of those successors are outside the set. A node which
 ;; is reached by no node of a set is not one of its successors.
@@ -256,36 +233,23 @@
                                                     graph))))
   :induct t
   :enable (topological-orderp-loop
-           from-list-when-consp
+           treeset::from-list-when-consp
            treeset::intersect-of-insert
            treeset::intersect-of-arg1-and-insert))
 
 ;; So the nodes of the list include their own successors, and the first is not
 ;; one of them. Hence the list is sorted.
 
-(defruledl subset-when-subset-of-union-and-emptyp-of-intersect
-  (implies (and (treeset::subset x (treeset::union y z))
-                (treeset::emptyp (treeset::intersect y x)))
-           (treeset::subset x z))
-  :use ((:instance treeset::in-when-in-and-subset
-                   (treeset::a (treeset::subset-sk-witness x z))
-                   (treeset::x x)
-                   (treeset::y (treeset::union y z)))
-        (:instance treeset::not-emptyp-when-in
-                   (x (treeset::subset-sk-witness x z))
-                   (set (treeset::intersect x y))))
-  :enable treeset::pick-a-point-polar
-  :disable treeset::in-when-in-and-subset)
-
 (defrulel subset-of-successors-of-set-of-from-list-when-topological-orderp-loop
   (implies (topological-orderp-loop order seen graph)
            (treeset::subset (successors-of-set (treeset::from-list order)
                                                graph)
                             (treeset::from-list order)))
-  :use (:instance subset-when-subset-of-union-and-emptyp-of-intersect
-                  (x (successors-of-set (treeset::from-list order) graph))
-                  (y seen)
-                  (z (treeset::from-list order))))
+  :use (:instance treeset::subset-of-arg1-and-union-when-emptyp-of-intersect0
+                  (treeset::x (successors-of-set (treeset::from-list order)
+                                                 graph))
+                  (treeset::y seen)
+                  (treeset::z (treeset::from-list order))))
 
 (defrulel subset-of-successors-when-topological-orderp-loop
   (implies (and (topological-orderp-loop rest
@@ -296,10 +260,10 @@
                                       (successors node graph))))
            (treeset::subset (successors node graph)
                             (treeset::from-list rest)))
-  :use ((:instance subset-when-subset-of-union-and-emptyp-of-intersect
-                   (x (successors node graph))
-                   (y (treeset::insert node seen))
-                   (z (treeset::from-list rest)))
+  :use ((:instance treeset::subset-of-arg1-and-union-when-emptyp-of-intersect0
+                   (treeset::x (successors node graph))
+                   (treeset::y (treeset::insert node seen))
+                   (treeset::z (treeset::from-list rest)))
         (:instance union-of-arg2-and-from-list-when-topological-orderp-loop
                    (order rest)
                    (seen (treeset::insert node seen))))
@@ -325,7 +289,7 @@
           emptyp-of-intersect-of-arg2-and-successors-of-set-when-topological-orderp-loop
           (order (cdr order))
           (seen (treeset::insert (car order) seen))))
-  :enable (from-list-when-consp
+  :enable (treeset::from-list-when-consp
            treeset::intersect-of-insert
            treeset::intersect-of-arg1-and-insert)
   :disable
@@ -359,7 +323,7 @@
   :enable (topological-orderp-loop
            reachable+p-sortedp
            no-duplicatesp-equal
-           from-list-when-consp
+           treeset::from-list-when-consp
            treeset::intersect-of-insert
            treeset::intersect-of-arg1-and-insert))
 
