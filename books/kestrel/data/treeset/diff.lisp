@@ -150,17 +150,21 @@
            (subset (diff x y) z))
   :enable pick-a-point-polar)
 
-;; TODO: clean up proof?
 (defrule subset-of-arg1-and-diff
-  (implies (subset x (diff x y))
-           (emptyp (intersect x y)))
-  :use (:instance in-when-in-and-subset
-                  (a (ext-equal-witness (intersect x y)
-                                        (empty)))
-                  (y (diff x y)))
-  :enable (emptyp-alt-definition
-           extensionality)
-  :disable in-when-in-and-subset)
+  (equal (subset z (diff x y))
+         (and (subset z x)
+              (emptyp (intersect z y))))
+  :use ((:instance in-when-in-and-subset
+                   (a (ext-equal-witness (intersect z y) (empty)))
+                   (x z)
+                   (y (diff x y)))
+        (:instance in-when-emptyp
+                   (x (subset-sk-witness z (diff x y)))
+                   (set (intersect z y))))
+  :enable (acl2::equal-of-booleans-cheap
+           pick-a-point-polar
+           emptyp-alt-definition
+           extensionality))
 
 ;; Monotonic on arg1, antitonic on arg2
 (defrule monotonicity-of-diff
@@ -271,6 +275,44 @@
   (equal (diff x (intersect y z))
          (union (diff x y) (diff x z)))
   :enable extensionality)
+
+;; A difference shares nothing with the set subtracted, nor with its subsets.
+
+(defruled intersect-of-diff-when-subset
+  (implies (subset z y)
+           (equal (intersect (diff x y) z)
+                  (empty)))
+  :enable extensionality)
+
+(defrule intersect-of-diff-when-subset-cheap
+  (implies (subset z y)
+           (equal (intersect (diff x y) z)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by intersect-of-diff-when-subset)
+
+(defruled intersect-of-arg1-and-diff-when-subset
+  (implies (subset z y)
+           (equal (intersect z (diff x y))
+                  (empty)))
+  :enable extensionality)
+
+(defrule intersect-of-arg1-and-diff-when-subset-cheap
+  (implies (subset z y)
+           (equal (intersect z (diff x y))
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by intersect-of-arg1-and-diff-when-subset)
+
+(defrule intersect-of-diff-and-arg2-of-diff
+  (equal (intersect (diff x y) y)
+         (empty))
+  :enable intersect-of-diff-when-subset)
+
+(defrule intersect-of-arg2-of-diff-and-diff
+  (equal (intersect y (diff x y))
+         (empty))
+  :enable intersect-of-arg1-and-diff-when-subset)
 
 (defruled diff-of-insert
   (equal (diff (insert a x) y)
@@ -505,3 +547,16 @@
                         (diff (from-iter iter) (after iter))))))
   :disable (<<-of-arg1-and-value-when-in-of-before
             in-of-value))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy diff-extra-rules
+  '(diff-when-emptyp-of-arg1
+    diff-when-emptyp-of-arg2
+    diff-of-insert-when-in-of-arg2
+    diff-of-insert-when-not-in-of-arg2
+    diff-of-arg1-and-delete-when-in-of-arg1
+    diff-of-arg1-and-delete-when-not-in-of-arg1
+    intersect-of-diff-when-subset
+    intersect-of-arg1-and-diff-when-subset
+    ))
