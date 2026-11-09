@@ -212,8 +212,6 @@
   ;; TODO: improve proof
   :induct t
   :enable (tree-restrict
-           tree-lookup
-           in-of-tree-key-set-when-not-tree-empty-p
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
