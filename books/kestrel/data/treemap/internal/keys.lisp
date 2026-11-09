@@ -343,7 +343,7 @@
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-tree->left-when-in-of-tree-key-set-tree->right)
 
-(defruled in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left
+(defruled in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left
   (implies (and (bstp tree)
                 (treeset::in key (tree-key-set (tree->left tree))))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
@@ -351,12 +351,12 @@
         in-of-tree-key-set-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
-(defrule in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left-forward-chaining
+(defrule in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left-forward-chaining
   (implies (and (treeset::in key (tree-key-set (tree->left tree)))
                 (bstp tree))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
   :rule-classes :forward-chaining
-  :by in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left)
+  :by in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left)
 
 ;;;;;;;;;;;;;;;;;;;;
 
