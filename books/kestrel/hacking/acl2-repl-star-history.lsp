@@ -34,7 +34,9 @@
 ; translate* walk the just-read form, replacing * ** *** in evaluation
 ; position with (repl-hist-val n state), and + ++ +++ with the literal,
 ; quoted previous original form.  Operator position (e.g. (* 2 3)) and
-; QUOTE / FUNCTION subforms (e.g. '*) are left untouched.
+; QUOTE / FUNCTION subforms (e.g. '*) are left untouched, as are subforms
+; that hold data rather than terms, such as the type spec (integer 0 *) and
+; the signature ((f *) => *); see repl-data-form-p.
 ;
 ; The hook fires ONLY at the interactive top level (ld-level 1) and ONLY when
 ; NOT in raw mode (in raw mode * legitimately denotes the CL special variable).
@@ -127,6 +129,29 @@
 ; defvar (not defparameter) so reloading this file preserves the stack.
 (defvar *repl-input-history* nil)
 
+; Names of heads of forms whose arguments are data, not terms: type specs such
+; as (integer 0 *), declarations, old-style signatures such as
+; (defstub f (x) (mv * *)), and macros that take an operator name as an
+; argument, such as (fty::deffold-reduce ... :combine +) and
+; (sv::svcall * a b).  We compare names, not symbols, so that a head matches
+; in any package, and so that packages such as FTY need not exist when this
+; file is loaded.
+(defparameter *repl-data-heads*
+  '("QUOTE" "FUNCTION" "DECLARE" "INTEGER" "RATIONAL" "REAL" "DEFSTUB"
+    "DEFFOLD-REDUCE" "SVCALL"))
+
+; True of a form whose subforms the walker leaves alone: one whose head is
+; named in *repl-data-heads*, or a signature, that is, a list containing =>,
+; such as ((f *) => *) or (defstub f (*) => *).  Like ACL2, we recognize =>
+; by name.  Leaving alone a form that holds terms is harmless: a * there gets
+; ACL2's usual error.
+(defun repl-data-form-p (form)
+  (or (and (symbolp (car form))
+           (member (symbol-name (car form)) *repl-data-heads* :test #'string=))
+      (loop for tail on form                ; stops at an improper tail
+            thereis (and (symbolp (car tail))
+                         (string= (symbol-name (car tail)) "=>")))))
+
 (defun repl-rewrite-stars-list (lst)
   (if (atom lst)                            ; handles nil and improper tails
       lst
@@ -142,7 +167,7 @@
                           (list 'quote (nth (cdr i) *repl-input-history*))
                           form))))))
         ((atom form) form)
-        ((member (car form) '(quote function) :test #'eq) form) ; don't descend
+        ((repl-data-form-p form) form)                          ; don't descend
         (t (cons (if (consp (car form))
                      (repl-rewrite-stars (car form))           ; ((lambda ...) ...)
                      (car form))                               ; operator: leave alone
