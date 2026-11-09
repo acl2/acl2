@@ -314,6 +314,39 @@
          (empty))
   :enable intersect-of-arg1-and-diff-when-subset)
 
+;; A set disjoint from one argument of a union is a subset of the union exactly
+;; when it is a subset of the other argument.
+
+(defruled subset-of-arg1-and-union-when-emptyp-of-intersect0
+  (implies (emptyp (intersect x y))
+           (equal (subset x (union y z))
+                  (subset x z)))
+  :use (:instance subset-of-arg1-and-diff
+                  (z x)
+                  (x (union y z))))
+
+(defrule subset-of-arg1-and-union-when-emptyp-of-intersect0-cheap
+  (implies (emptyp (intersect x y))
+           (equal (subset x (union y z))
+                  (subset x z)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by subset-of-arg1-and-union-when-emptyp-of-intersect0)
+
+(defruled subset-of-arg1-and-union-when-emptyp-of-intersect1
+  (implies (emptyp (intersect x y))
+           (equal (subset x (union z y))
+                  (subset x z)))
+  :use (:instance subset-of-arg1-and-diff
+                  (z x)
+                  (x (union z y))))
+
+(defrule subset-of-arg1-and-union-when-emptyp-of-intersect1-cheap
+  (implies (emptyp (intersect x y))
+           (equal (subset x (union z y))
+                  (subset x z)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by subset-of-arg1-and-union-when-emptyp-of-intersect1)
+
 (defruled diff-of-insert
   (equal (diff (insert a x) y)
          (if (in a y)
@@ -559,4 +592,6 @@
     diff-of-arg1-and-delete-when-not-in-of-arg1
     intersect-of-diff-when-subset
     intersect-of-arg1-and-diff-when-subset
+    subset-of-arg1-and-union-when-emptyp-of-intersect0
+    subset-of-arg1-and-union-when-emptyp-of-intersect1
     ))

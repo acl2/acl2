@@ -443,6 +443,32 @@
          (insert x (insert-all list set)))
   :enable extensionality)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled insert-all-when-not-consp
+  (implies (not (consp list))
+           (equal (insert-all list set)
+                  (fix set)))
+  :enable insert-all)
+
+(defrule insert-all-when-not-consp-cheap
+  (implies (not (consp list))
+           (equal (insert-all list set)
+                  (fix set)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by insert-all-when-not-consp)
+
+(defruled insert-all-when-consp
+  (implies (consp list)
+           (equal (insert-all list set)
+                  (insert (car list) (insert-all (cdr list) set))))
+  :enable insert-all)
+
+(defrule insert-all-of-cons
+  (equal (insert-all (cons x list) set)
+         (insert x (insert-all list set)))
+  :enable insert-all)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A list's elements can be sorted and the treap then built in one pass,
@@ -528,6 +554,33 @@
   :rule-classes :congruence
   :enable from-list
   :disable set-equiv)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled from-list-when-not-consp
+  (implies (not (consp list))
+           (equal (from-list list)
+                  (empty)))
+  :enable from-list)
+
+(defrule from-list-when-not-consp-cheap
+  (implies (not (consp list))
+           (equal (from-list list)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by from-list-when-not-consp)
+
+(defruled from-list-when-consp
+  (implies (consp list)
+           (equal (from-list list)
+                  (insert (car list) (from-list (cdr list)))))
+  :enable (from-list
+           insert-all-when-consp))
+
+(defrule from-list-of-cons
+  (equal (from-list (cons x list))
+         (insert x (from-list list)))
+  :enable from-list)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
