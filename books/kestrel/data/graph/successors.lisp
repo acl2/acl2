@@ -268,6 +268,17 @@
                                      (successors-of-set set graph))))
   :enable subset-of-successors-of-set-when-subset-of-insert)
 
+;; A set containing the successors of its own nodes still does after removing
+;; a node which is not one of them.
+
+(defrule subset-of-successors-of-set-of-delete-and-delete
+  (implies (and (treeset::subset (successors-of-set set graph) set)
+                (not (treeset::in node (successors-of-set set graph))))
+           (treeset::subset (successors-of-set (treeset::delete node set)
+                                               graph)
+                            (treeset::delete node set)))
+  :enable treeset::pick-a-point-polar)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Expand nodes from a frontier until it runs out, and return the expanded

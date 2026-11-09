@@ -480,6 +480,16 @@
   :enable (reachable+p-becomes-reachable+p-sk
            in-when-reachable+p-sk-and-subset-of-successors-of-set))
 
+;; So no node of a set containing the successors of its own nodes reaches a
+;; node which is not one of them.
+
+(defruled reachable+p-when-not-in-of-successors-of-set
+  (implies (and (treeset::subset (successors-of-set set graph) set)
+                (treeset::in from set)
+                (not (treeset::in to (successors-of-set set graph))))
+           (not (reachable+p from to graph)))
+  :enable in-when-reachable+p-and-subset-of-successors-of-set)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A set containing the predecessors of a node, and the predecessors of each
@@ -696,4 +706,5 @@
 
 (defthy reachable-extra-rules
   '(in-when-reachable+p-and-subset-of-successors-of-set
+    reachable+p-when-not-in-of-successors-of-set
     in-when-reachable+p-and-subset-of-predecessors-of-set))

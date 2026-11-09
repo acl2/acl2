@@ -16,4 +16,5 @@
 (include-book "walk-snoc")
 (include-book "walk-append")
 (include-book "reachable")
+(include-book "kahn")
 (include-book "cyclic")

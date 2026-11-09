@@ -10,21 +10,13 @@
 
 (include-book "std/util/define-sk" :dir :system)
 
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
-(include-book "../adjacency-defs")
-(include-book "../successors-defs")
+(include-book "kahn-defs")
 (include-book "reachable-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
@@ -48,10 +40,5 @@
 (std::defredundant
   :names (cyclicp-sk-witness
           cyclicp-sk
-          kahn-remaining
-          kahn-increment
-          kahn-counters
-          kahn-decrement
-          kahn-loop
           cyclicp
           ))

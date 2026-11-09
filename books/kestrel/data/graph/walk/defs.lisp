@@ -15,4 +15,5 @@
 (include-book "walk-snoc-defs")
 (include-book "walk-append-defs")
 (include-book "reachable-defs")
+(include-book "kahn-defs")
 (include-book "cyclic-defs")
