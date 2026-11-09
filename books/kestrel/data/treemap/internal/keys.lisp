@@ -140,15 +140,6 @@
                       (treeset::in key (tree-key-set (tree->right tree))))))
   :by in-of-tree-key-set)
 
-(defrule in-of-tree-key-set-when-not-tree-empty-p-cheap
-  (implies (not (tree-empty-p tree))
-           (equal (treeset::in key (tree-key-set tree))
-                  (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::in key (tree-key-set (tree->left tree)))
-                      (treeset::in key (tree-key-set (tree->right tree))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by in-of-tree-key-set-when-not-tree-empty-p)
-
 (defrule in-of-tree->head-and-tree-key-set
   (equal (treeset::in (tree-element->key (tree->head tree))
                       (tree-key-set tree))
@@ -273,6 +264,25 @@
                 (<< (tree-element->key (tree->head tree)) key))
            (not (treeset::in key (tree-key-set (tree->left tree)))))
   :enable data::<<-rules)
+
+;; In a binary search tree, a key on one side of the root is in the tree
+;; exactly when it is in the subtree on that side.
+
+(defrule in-of-tree-key-set-when->>-of-tree->head
+  (implies (and (bstp tree)
+                (<< key (tree-element->key (tree->head tree))))
+           (equal (treeset::in key (tree-key-set tree))
+                  (treeset::in key (tree-key-set (tree->left tree)))))
+  :enable (in-of-tree-key-set-when-not-tree-empty-p
+           data::<<-rules))
+
+(defrule in-of-tree-key-set-when-<<-of-tree->head
+  (implies (and (bstp tree)
+                (<< (tree-element->key (tree->head tree)) key))
+           (equal (treeset::in key (tree-key-set tree))
+                  (treeset::in key (tree-key-set (tree->right tree)))))
+  :enable (in-of-tree-key-set-when-not-tree-empty-p
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 
