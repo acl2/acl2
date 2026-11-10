@@ -202,18 +202,113 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod char-lit
+  :short "Fixtype of character and byte literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A character literal, or a byte literal (with the @('b') prefix),
+     consists of the text between the quotes, as written,
+     and a suffix, as written
+     (the empty string means no suffix).
+     Escapes are not processed:
+     as for integer literals,
+     the value of the literal is computed by later phases,
+     and keeping the text as written supports exact reprinting."))
+  ((byte bool)
+   (text string)
+   (suffix string))
+  :pred char-litp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-char-lit
+  :short "A character-literal witness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see rust::irr-edition) for
+     the purpose of these witnesses."))
+  :type char-litp
+  :body (make-char-lit :byte nil :text "" :suffix ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum str-kind
+  :short "Fixtype of kinds of string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Plain string literals, byte string literals (prefix @('b')),
+     and C string literals (prefix @('c'))."))
+  (:plain ())
+  (:byte ())
+  (:c ())
+  :pred str-kindp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-str-kind
+  :short "A string-literal-kind witness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see rust::irr-edition) for
+     the purpose of these witnesses."))
+  :type str-kindp
+  :body (str-kind-plain))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod str-lit
+  :short "Fixtype of string literals, of all kinds, raw or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A string literal consists of its kind,
+     whether it is raw,
+     the text between the double quotes, as written,
+     and a suffix, as written
+     (the empty string means no suffix).")
+   (xdoc::p
+    "The @('raw') component is @('nil') for a non-raw literal,
+     and for a raw literal the number of @('#') delimiting it,
+     e.g. 0 for @('r\"...\"') and 2 for @('r##\"...\"##').
+     The text of a non-raw literal is as written,
+     with escapes unprocessed;
+     the text of a raw literal has no escapes."))
+  ((kind str-kind)
+   (raw acl2::maybe-natp)
+   (text string)
+   (suffix string))
+  :pred str-litp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-str-lit
+  :short "A string-literal witness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see rust::irr-edition) for
+     the purpose of these witnesses."))
+  :type str-litp
+  :body (make-str-lit :kind (str-kind-plain) :raw nil :text "" :suffix ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum lit
   :short "Fixtype of literals."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model integer literals.
-     The other kinds
-     (float, character, string, raw string,
-     byte, byte string, raw byte string,
-     C string, raw C string)
-     will be added as the lexer grows to cover them."))
+    "Integer literals, character and byte literals,
+     and string literals of all kinds.
+     Float literals will be added
+     as the lexer grows to cover them."))
   (:int ((int int-lit)))
+  (:char ((char char-lit)))
+  (:str ((str str-lit)))
   :pred litp)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -264,7 +359,7 @@
     "A lifetime token stores its name
      without the leading @('\\''),
      and without the @('r#') prefix if raw
-     (raw lifetimes such as @('\\'r#fn') exist since rustc 1.84);
+     (raw lifetimes such as @('\\'r#fn') were added in rustc 1.83);
      the anonymous lifetime @('\\'_') has name @('\"_\"').")
    (xdoc::p
     "A punctuation token stores its text,

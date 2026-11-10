@@ -68,7 +68,8 @@
     "This is work in progress, at an early stage.
      At this time of writing,
      the syntax track lexes and tokenizes
-     a first slice of Rust's lexical structure
+     most of Rust's lexical structure,
+     float literals and non-ASCII identifiers being the main omissions
      (see @(see rust$::syntax-for-tools)),
      and the formalization track formalizes a subset of MIR,
      with an interpreter that runs
