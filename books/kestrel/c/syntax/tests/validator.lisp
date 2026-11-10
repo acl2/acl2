@@ -713,6 +713,23 @@ unsigned __int128_t z;
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "void g(void) {
+  int a[3];
+  typeof(({ a; })) p;
+  int **q = &p;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(void);
+void g(void) {
+  int x = sizeof(({ f; }));
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;

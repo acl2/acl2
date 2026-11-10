@@ -3108,7 +3108,10 @@
      (xdoc::p
       "For a statement expression, we push a new scope for the block
        and we validate the block items. We then pop the scope.
-       If a type is returned, that is the type of the expression.
+       If a type is returned,
+       the type of the expression is that type
+       after array-to-pointer and function-to-pointer conversion,
+       as done by GCC and Clang.
        Otherwise, the expression has type @('void'),
        as described in the GCC documentation of statement expressions.")
      (xdoc::p
@@ -3475,7 +3478,9 @@
                        vstate))
        :stmt (b* (((erp new-cstmt types type? vstate)
                    (valid-comp-stmt expr.stmt nil vstate))
-                  (type (or type? (type-void))))
+                  (type (if type?
+                            (type-fpconvert (type-apconvert type?))
+                          (type-void))))
                (retok (expr-stmt new-cstmt) type types vstate))
        :tycompat (b* (((erp new-type1 & types1 vstate)
                        (valid-tyname expr.type1 vstate))
