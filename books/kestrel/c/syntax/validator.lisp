@@ -7527,9 +7527,11 @@
      (xdoc::p
       "If validation is successful, we return,
        besides an updated validation table,
-       also two pieces of type information.")
+       also two pieces of type information:
+       @('return-types') and @('last-expr-type?').")
      (xdoc::p
-      "The first piece is the set of types returned by the statement,
+      "The @('return-types') result is the set of types
+       returned by the statement,
        via @('return') statements, with or without expressions.
        This is a set because a statement may contain
        multiple @('return') sub-statements.
@@ -7538,20 +7540,17 @@
        a @('return') statement without an expression
        contributes the type @('void') to the set.")
      (xdoc::p
-      "The second piece of information is as follows.
-       If the statement is either a (possibly labeled) expression statement,
-       or is a (possibly labeled) compound one
-       whose last block item is an expression statement,
-       the second piece of information is the type of that expression.
-       If the statement is not an expression or compound,
-       or it is compound but does not end in an expression statement
-       (including the case in which the compound statement has no block items),
-       the second piece of information is @('nil').
-       The reason for having this second piece of information
-       is to support the validation of GCC statement expressions"
+      "The @('last-expr-type?') result supports the validation of
+       GCC statement expressions "
       (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
                    "[GCCM:6.12.1]")
-      ".")
+      ". If the last statement of a statement expression
+       is an expression statement,
+       the statement expression has the type of that expression;
+       otherwise, it has type @('void').
+       Accordingly, if the statement is a statement expression,
+       @('last-expr-type?') is the type of the statement expression.
+       Otherwise, it is @('nil').")
      (xdoc::p
       "To validate a labeled statement,
        we validate its label, and then the enclosed statement.
@@ -7563,8 +7562,9 @@
       "To validate a compound statement,
        we push a new scope for the block,
        and we validate the list of block items.
-       We pop the scope and we return the same results
-       coming from the validation of the block items.")
+       We pop the scope and we return the return types
+       coming from the validation of the block items,
+       and @('nil') as the @('last-expr-type?') result.")
      (xdoc::p
       "To validate an expression statement,
        we validate the expression if present,
@@ -7616,9 +7616,9 @@
                 type?
                 vstate))
        :compound
-       (b* (((erp new-cstmt types type? vstate)
+       (b* (((erp new-cstmt types & vstate)
              (valid-comp-stmt stmt.stmt nil vstate)))
-         (retok (stmt-compound new-cstmt) types type? vstate))
+         (retok (stmt-compound new-cstmt) types nil vstate))
        :expr
        (b* (((erp new-expr? type? types vstate)
              (valid-expr-option stmt.expr? vstate)))
@@ -7873,13 +7873,9 @@
     (xdoc::topstring
      (xdoc::p
       "If validation is successful, we return the same kind of type results
-       as @(tsee valid-stmt) (see that function's documentation),
-       with the slight modification that
-       the @('last-expr-type?') result is a type exactly when
-       the block item is a compound statement
-       whose last block item is an expression statement,
-       in which case the @('last-expr-type?') result is
-       the type of that expression.")
+       as @(tsee valid-stmt) (see that function's documentation).
+       If the block item is a statement,
+       these are the results of validating the statement.")
      (xdoc::p
       "If the block item is a declaration,
        the @('last-expr-type?') result is @('nil'),
