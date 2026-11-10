@@ -54,6 +54,8 @@
 (test-reserved-prefix "foo" (list #x27) nil) ; foo'
 (test-reserved-prefix "foo" (list #x22) nil) ; foo"
 (test-reserved-prefix "fn" (list #x22) nil) ; keywords too
+(test-reserved-prefix "_a" (list #x23) nil) ; _a#
+(test-reserved-prefix "_1" (list #x22) nil) ; _1"
 (test-reserved-prefix "foo" (list #x20) t) ; foo followed by space
 (test-reserved-prefix "foo" nil t) ; foo at end of input
 (test-reserved-prefix "r#fn" (list #x23) t) ; raw identifiers exempt
@@ -172,3 +174,68 @@
 (test-lexeme-okp "r##\"a\"#b\"##")
 (test-lexeme-okp "'a")
 (test-lexeme-okp "'r#fn")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC13]: a string continuation takes all the whitespace after it.
+
+; The lexer's CSTs satisfy the condition,
+; for string, byte string, and C string literals,
+; also with a carriage return in the whitespace,
+; and with two string continuations in a row.
+
+(test-lexeme-okp "\"a\\
+  b\"")
+(test-lexeme-okp "b\"a\\
+  b\"")
+(test-lexeme-okp "c\"a\\
+
+  b\"")
+(test-lexeme-okp (acl2::implode (list #\" #\a #\\ (code-char 10)
+                                      #\Space (code-char 13) (code-char 9)
+                                      #\b #\")))
+(test-lexeme-okp "\"a\\
+\\
+b\"")
+
+; A CST for the six characters " \ LF space x "
+; in which the string continuation ends before the space,
+; so that the space is a character of the string.
+; It matches the grammar, but it violates [SC13];
+; the lexer's CST for the same characters is a different one, and valid.
+
+(defun body-item (tree)
+  (abnf::make-tree-nonleaf :rulename? nil
+                           :branches (list (list tree))))
+
+(defconst *short-continue-cst*
+  (b* (((mv dquote &) (lex-dquote (list #x22)))
+       ((mv cont &) (lex-string-continue (list #x5c #xa)))
+       ((mv sp &) (lex-string-literal-char (list #x20)))
+       ((mv x &) (lex-string-literal-char (list #x78)))
+       (no-suffix (abnf::make-tree-nonleaf :rulename? nil :branches nil))
+       (literal (abnf::make-tree-nonleaf
+                 :rulename? (abnf::rulename "string-literal")
+                 :branches (list (list dquote)
+                                 (list (body-item cont)
+                                       (body-item sp)
+                                       (body-item x))
+                                 (list dquote)
+                                 (list no-suffix))))
+       (token (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "token")
+               :branches (list (list literal)))))
+    (abnf::make-tree-nonleaf
+     :rulename? (abnf::rulename "lexeme")
+     :branches (list (list token)))))
+
+(assert-event (equal (abnf::tree->string *short-continue-cst*)
+                     (list #x22 #x5c #xa #x20 #x78 #x22)))
+(assert-event (lexeme-cst-p *short-continue-cst*))
+(assert-event (not (lexeme-cst-string-continues-okp *short-continue-cst*)))
+(assert-event (not (lexeme-cst-okp *short-continue-cst*)))
+(assert-event
+ (b* ((trees (lexemize-rust (list #x22 #x5c #xa #x20 #x78 #x22))))
+   (and (equal (len trees) 1)
+        (lexeme-cst-okp (car trees))
+        (not (equal (car trees) *short-continue-cst*)))))

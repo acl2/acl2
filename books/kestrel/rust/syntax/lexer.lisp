@@ -91,8 +91,10 @@
      and bounds the number of @('#') delimiting it;
      [SC11] rejects a character or string literal
      immediately followed by an underscore;
-     and [SC12] rejects a lifetime
-     immediately followed by a single quote.
+     [SC12] rejects a lifetime
+     immediately followed by a single quote;
+     and [SC13] holds because the whitespace of a string continuation
+     is lexed by a greedy repetition.
      Maximal munch [SC1] is implemented by
      greedy repetitions and longest-first dispatch.")
    (xdoc::p
@@ -1706,23 +1708,13 @@
                (rest-input nat-listp))
   :short "Lex a @('suffix-no-e')."
   (b* (((mv tree1 input1) (lex-ascii-letter-no-e input))
-       ((when (not (reserrp tree1)))
-        (b* (((mv trees2 input2) (lex-*-identifier-continue input1)))
-          (mv (abnf::make-tree-nonleaf
-               :rulename? (abnf::rulename "suffix-no-e")
-               :branches (list (list tree1) trees2))
-              input2)))
-       ((mv tree1 input1) (abnf::parse-ichars "_" input))
        ((when (reserrp tree1))
         (mv (reserrf-push tree1) (nat-list-fix input)))
-       ((mv tree2 input2) (lex-identifier-continue input1))
-       ((when (reserrp tree2))
-        (mv (reserrf-push tree2) (nat-list-fix input)))
-       ((mv trees3 input3) (lex-*-identifier-continue input2)))
+       ((mv trees2 input2) (lex-*-identifier-continue input1)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "suffix-no-e")
-         :branches (list (list tree1) (cons tree2 trees3)))
-        input3))
+         :branches (list (list tree1) trees2))
+        input2))
   ///
 
   (defret len-of-lex-suffix-no-e-<=
@@ -1738,8 +1730,7 @@
     (implies (not (reserrp tree))
              (equal (append (abnf::tree->string tree) rest-input)
                     (nat-list-fix input)))
-    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
-                                       abnf::tree->string
+    :hints (("Goal" :in-theory (enable abnf::tree->string
                                        abnf::tree-list->string
                                        abnf::tree-list-list->string))))
 
@@ -1753,10 +1744,7 @@
                      tree-match-element-p-when-cst-matchp$
                      tree-list-match-element-p-when-cst-list-elem-matchp$
                      tree-list-match-repetition-p-when-cst-list-rep-matchp$
-                     tree-match-of-parse-ichars-elem
-                     tree-terminatedp-of-parse-ichars
                      tree-terminatedp-of-lex-ascii-letter-no-e
-                     tree-terminatedp-of-lex-identifier-continue
                      abnf::tree-terminatedp
                      abnf::tree-list-terminatedp
                      abnf::tree-list-list-terminatedp
@@ -1889,6 +1877,12 @@
 
 (def-lex-char-class "lf"
   (eql nat #xa))
+
+(def-lex-char-class "skipped-whitespace-char"
+  (or (eql nat #x9) ; horizontal tab
+      (eql nat #xa) ; line feed
+      (eql nat #xd) ; carriage return
+      (eql nat #x20))) ; space
 
 (def-lex-char-class "char-literal-char"
   (or (<= nat #x8)
@@ -2160,20 +2154,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(def-lex-repetition lex-*-skipped-whitespace-char
+  lex-skipped-whitespace-char
+  "skipped-whitespace-char" "*skipped-whitespace-char")
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define lex-string-continue ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
                (rest-input nat-listp))
   :short "Lex a @('string-continue')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After the backslash and the line feed,
+     the continuation takes the whole run of
+     tabs, line feeds, carriage returns, and spaces that follows [SC13],
+     which rustc skips when it evaluates the literal.
+     This is the only place in a literal
+     where a carriage return may occur."))
   (b* (((mv tree1 input1) (abnf::parse-ichars "\\" input))
        ((when (reserrp tree1))
         (mv (reserrf-push tree1) (nat-list-fix input)))
        ((mv tree2 input2) (lex-lf input1))
        ((when (reserrp tree2))
-        (mv (reserrf-push tree2) (nat-list-fix input))))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv trees3 input3) (lex-*-skipped-whitespace-char input2)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "string-continue")
-         :branches (list (list tree1) (list tree2)))
-        input2))
+         :branches (list (list tree1) (list tree2) trees3))
+        input3))
   ///
 
   (defret len-of-lex-string-continue-<=
@@ -2202,6 +2212,8 @@
              (enable cst-matchp
                      tree-match-of-make-tree-nonleaf-elem
                      tree-match-element-p-when-cst-matchp$
+                     tree-list-match-element-p-when-cst-list-elem-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
                      tree-match-of-parse-ichars-elem
                      tree-terminatedp-of-parse-ichars
                      tree-terminatedp-of-lex-lf
@@ -4696,7 +4708,7 @@
      the reserved prefix side condition [SC8] applies:
      if the next character is @('#'), @('\\''), or @('\"'),
      the input is rejected
-     (e.g. @('foo#bar') and @('_#') do not lex
+     (e.g. @('foo#bar'), @('_x#'), and @('_#') do not lex
      in the supported editions).
      Genuine raw identifiers are not affected,
      because @('r#') followed by an identifier start
@@ -4806,9 +4818,10 @@
        ((when (or (and (<= #x41 nat) (<= nat #x5a)) ; letter
                   (and (<= #x61 nat) (<= nat #x7a))
                   (eql nat #x5f))) ; underscore
-        (b* (((mv tree input1) (lex-token-identifier-or-keyword input))
-             ((when (not (reserrp tree))) (mv tree input1))
-             ((unless (eql nat #x5f)) (mv tree input1))
+        (b* (((mv id-tree &) (lex-identifier-or-keyword input))
+             ((when (not (reserrp id-tree)))
+              ;; identifier or keyword, unless a reserved prefix [SC8]
+              (lex-token-identifier-or-keyword input))
              ;; lone underscore: punctuation, unless a reserved prefix [SC8]
              ((mv tree input1) (lex-punctuation input))
              ((when (reserrp tree)) (mv (reserrf-push tree) input))

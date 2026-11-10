@@ -96,6 +96,7 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex "0xF_Fu32" 1)
 (test-lex "1u8" 1)
 (test-lex "1px" 1) ; any identifier-shaped suffix lexes
+(test-lex "1_px" 1) ; an underscore after the digits belongs to the digits
 (test-lex "0usize" 1)
 (test-lex-fail "0b")
 (test-lex-fail "0b_")
@@ -205,9 +206,23 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex "\"two
 lines\"" 1)
 
-; A bare carriage return is not allowed in a string literal.
+; A bare carriage return is not allowed in a string literal,
+; except in the whitespace that a string continuation extends over
+; (as rustc 1.87.0 lexes it).
 
 (test-lex-fail (acl2::implode (list #\" (code-char 13) #\")))
+(test-lex (acl2::implode (list #\" #\\ (code-char 10) (code-char 13)
+                               #\x #\"))
+          1)
+(test-lex (acl2::implode (list #\b #\" #\\ (code-char 10) #\Space
+                               (code-char 13) (code-char 10) (code-char 9)
+                               #\x #\"))
+          1)
+(test-lex (acl2::implode (list #\c #\" #\\ (code-char 10) (code-char 13)
+                               #\"))
+          1)
+(test-lex-fail (acl2::implode (list #\" #\\ (code-char 10) #\x
+                                    (code-char 13) #\"))) ; after the run
 
 ; Raw strings end at the first double quote followed by as many "#" as
 ; opened them [SC10].
@@ -234,6 +249,15 @@ lines\"" 1)
 (test-lex-fail "b#x")
 (test-lex-fail "_#")
 (test-lex-fail "_\"x\"")
+
+; An identifier that starts with an underscore is a reserved prefix too,
+; not a lone underscore followed by other tokens.
+
+(test-lex-fail "_1#")
+(test-lex-fail "_r#a") ; not _ followed by the raw identifier r#a
+(test-lex-fail "_b\"x\"") ; not _ followed by a byte string
+(test-lex "_1 #" 3)
+(test-lex "_ #" 3)
 
 ; Lifetimes and labels, including raw lifetimes and keyword names
 ; (as rustc 1.87.0 lexes them).

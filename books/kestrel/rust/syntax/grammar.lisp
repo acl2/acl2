@@ -116,3 +116,134 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (abnf::deftreeops *lexical-grammar* :prefix cst)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This topic is the single list of the differences between
+; the Reference and rustc that affect the grammar:
+; a newly found difference should be added here,
+; and described only briefly at its place in the grammar.
+
+(defxdoc+ reference-vs-rustc
+  :parents (grammar)
+  :short "Where the Rust Reference and rustc differ on lexical structure."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our lexical grammar is synthesized from the Rust Reference
+     and from the behavior of rustc, both at version 1.87.0
+     (see @(see grammar)).
+     In the cases listed here, the two differ
+     on which inputs lex, or on how an input divides into tokens.
+     In each case we follow rustc,
+     since the lexer is meant to accept
+     exactly the inputs that rustc's lexer accepts.")
+   (xdoc::desc
+    "A lone underscore right after a character or string literal"
+    (xdoc::p
+     "In the Reference, a "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#suffixes"
+      "suffix")
+     " has the form of an identifier or keyword,
+      which a lone underscore is not;
+      so @('\"a\"_') would be a string literal
+      followed by the token @('_').
+      rustc reads the underscore as the suffix of the literal,
+      and rejects it.
+      We reject it, by the side condition [SC11]
+      (see @(tsee lexeme-cst-literal-underscore-okp))."))
+   (xdoc::desc
+    "The lifetime @('\\'r') immediately followed by @('#')"
+    (xdoc::p
+     "In the Reference, a non-raw lifetime immediately followed by @('#')
+      is a "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#reserved-prefixes"
+      "reserved prefix")
+     ", except for the lifetime @('\\'r');
+      so @('\\'r#1') would be the three tokens
+      @('\\'r'), @('#'), and @('1').
+      rustc rejects @('\\'r#') wherever no raw lifetime starts,
+      as in @('\\'r#1').
+      We reject it, by the part of the side condition [SC8]
+      about lifetimes
+      (see @(tsee lexeme-cst-reserved-prefix-okp))."))
+   (xdoc::desc
+    "An underscore at the start of the suffix of an integer literal"
+    (xdoc::p
+     "In the Reference, the suffix of an "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#integer-literals"
+      "integer literal")
+     " is any suffix that does not begin with @('e') or @('E'),
+      so it may begin with an underscore.
+      Since the digits of the literal may end with underscores,
+      @('1_a') can then be read in two ways,
+      and @('1_e') is the integer literal @('1') with suffix @('_e').
+      In rustc, the digits take every underscore that follows them,
+      so a suffix never begins with one;
+      rustc reads @('1_e') as a float literal
+      whose exponent has no digits, and rejects it.
+      Our rule @('suffix-no-e') does not begin with an underscore."))
+   (xdoc::desc
+    "A carriage return in a string continuation"
+    (xdoc::p
+     "The Reference's lexical rules for "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#string-literals"
+      "string literals")
+     " show a string continuation as a backslash before a line feed,
+      and exclude the carriage return from the characters of a string
+      (other than a carriage return before a line feed,
+      which is removed before lexing).
+      But the accompanying text allows a carriage return
+      as part of a string continuation,
+      and the Reference's definition of the "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/expressions/literal-expr.html#string-continuation-escapes"
+      "string continuation escape")
+     " includes all the tabs, line feeds, carriage returns, and spaces
+      that follow the line feed.
+      rustc accepts a carriage return there,
+      and skips that whole run of characters
+      when it evaluates the literal.
+      Our rule @('string-continue') includes the run,
+      and the side condition [SC13] says that it includes all of it
+      (see @(tsee lexeme-cst-string-continues-okp)).
+      The same holds for byte string literals and C string literals."))
+   (xdoc::desc
+    "Zero width joiners in identifiers"
+    (xdoc::p
+     "The Reference says that "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/identifiers.html"
+      "identifiers")
+     " must not contain
+      the zero width non-joiner (U+200C) or the zero width joiner (U+200D).
+      rustc accepts both after the first character of an identifier,
+      like every other character
+      with the Unicode property @('XID_Continue'),
+      and only warns about them
+      (with its lint @('uncommon_codepoints')).
+      Our identifiers are ASCII-only for now [SC4];
+      when they cover Unicode,
+      they will include these two characters, as in rustc."))
+   (xdoc::desc
+    "A lifetime immediately followed by a single quote"
+    (xdoc::p
+     "The Reference's rules for "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#lifetimes-and-loop-labels"
+      "lifetime tokens")
+     " carry the condition
+      &ldquo;not immediately followed by @('\\'')&rdquo;.
+      Read as a condition on which texts are lifetime tokens,
+      it would make @('\\'ab\\' \\'') lex as
+      the lifetime @('\\'a') followed by the byte literal @('b\\' \\''),
+      since lexing takes the longest token at each point.
+      rustc reads @('\\'ab\\'') as
+      a character literal with two characters,
+      and rejects the input.
+      We reject it, by the side condition [SC12]
+      (see @(tsee lexeme-cst-lifetime-quote-okp))."))))
