@@ -23,6 +23,7 @@
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
+(include-book "adjacency-defs")
 (include-book "add-node-defs")
 (include-book "internal/delete-node-defs")
 
@@ -42,6 +43,7 @@
 (local (include-book "graph"))
 (local (include-book "nodes"))
 (local (include-book "edges"))
+(local (include-book "adjacency"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "internal/edges"))
@@ -118,6 +120,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Every label from or to the node is gone, and no other label changes.
+
+(defruled labels-of-delete-node
+  (equal (labels x y (delete-node node graph))
+         (if (or (equal x node)
+                 (equal y node))
+             (treeset::empty)
+           (labels x y graph)))
+  :enable (treeset::extensionality-polar
+           in-of-edges-of-delete-node))
+
+(defrule labels-of-delete-node-same-from
+  (equal (labels node y (delete-node node graph))
+         (treeset::empty))
+  :enable labels-of-delete-node)
+
+(defrule labels-of-delete-node-same-to
+  (equal (labels x node (delete-node node graph))
+         (treeset::empty))
+  :enable labels-of-delete-node)
+
+(defrule labels-of-delete-node-diff-cheap
+  (implies (and (not (equal x node))
+                (not (equal y node)))
+           (equal (labels x y (delete-node node graph))
+                  (labels x y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :enable labels-of-delete-node)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Removing a value which is not a node does nothing. No edge touches it,
 ;; since both ends of every edge are nodes.
 
@@ -180,4 +213,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy delete-node-extra-rules
-  '(delete-node-when-not-in-of-nodes))
+  '(delete-node-when-not-in-of-nodes
+    labels-of-delete-node))

@@ -19,6 +19,7 @@
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
+(include-book "adjacency-defs")
 (include-book "add-node-defs")
 (include-book "internal/add-node-defs")
 (include-book "internal/add-edge-defs")
@@ -29,13 +30,16 @@
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/in" :dir :system))
 
+(local (include-book "edge"))
 (local (include-book "graph"))
 (local (include-book "nodes"))
 (local (include-book "edges"))
+(local (include-book "adjacency"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "internal/add-node"))
@@ -119,6 +123,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Only the labels from the source to the target change.
+
+(defruled labels-of-add-edge
+  (equal (labels x y (add-edge from to label graph))
+         (if (and (equal x from)
+                  (equal y to))
+             (treeset::insert label (labels x y graph))
+           (labels x y graph)))
+  :enable treeset::extensionality-polar)
+
+(defrule labels-of-add-edge-same
+  (equal (labels from to (add-edge from to label graph))
+         (treeset::insert label (labels from to graph)))
+  :enable labels-of-add-edge)
+
+(defrule labels-of-add-edge-diff-from-cheap
+  (implies (not (equal x from))
+           (equal (labels x y (add-edge from to label graph))
+                  (labels x y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable labels-of-add-edge)
+
+(defrule labels-of-add-edge-diff-to-cheap
+  (implies (not (equal y to))
+           (equal (labels x y (add-edge from to label graph))
+                  (labels x y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable labels-of-add-edge)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defrule add-edge-of-add-edge-same
   (equal (add-edge from to label (add-edge from to label graph))
          (add-edge from to label graph))
@@ -147,3 +182,8 @@
   (equal (add-node node (add-edge from to label graph))
          (add-edge from to label (add-node node graph)))
   :enable extensionality)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy add-edge-extra-rules
+  '(labels-of-add-edge))

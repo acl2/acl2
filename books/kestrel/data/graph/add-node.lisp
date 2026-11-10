@@ -17,6 +17,7 @@
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
+(include-book "adjacency-defs")
 (include-book "internal/add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -24,10 +25,12 @@
 
 (local (include-book "kestrel/data/treeset/set" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 
 (local (include-book "graph"))
 (local (include-book "nodes"))
 (local (include-book "edges"))
+(local (include-book "adjacency"))
 (local (include-book "extensionality"))
 (local (include-book "internal/add-node"))
 
@@ -78,6 +81,15 @@
            add-node
            graphp
            break-abstraction))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The new node has no edges, so no labels change.
+
+(defrule labels-of-add-node
+  (equal (labels x y (add-node node graph))
+         (labels x y graph))
+  :enable treeset::extensionality-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

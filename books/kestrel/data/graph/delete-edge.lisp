@@ -19,6 +19,7 @@
 (include-book "graph-defs")
 (include-book "nodes-defs")
 (include-book "edges-defs")
+(include-book "adjacency-defs")
 (include-book "add-node-defs")
 (include-book "add-edge-defs")
 (include-book "internal/delete-edge-defs")
@@ -30,10 +31,13 @@
 (local (include-book "kestrel/data/treeset/in" :dir :system))
 (local (include-book "kestrel/data/treeset/insert" :dir :system))
 (local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
 
+(local (include-book "edge"))
 (local (include-book "graph"))
 (local (include-book "nodes"))
 (local (include-book "edges"))
+(local (include-book "adjacency"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "add-edge"))
@@ -92,6 +96,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Only the labels from the source to the target change.
+
+(defruled labels-of-delete-edge
+  (equal (labels x y (delete-edge from to label graph))
+         (if (and (equal x from)
+                  (equal y to))
+             (treeset::delete label (labels x y graph))
+           (labels x y graph)))
+  :enable treeset::extensionality-polar)
+
+(defrule labels-of-delete-edge-same
+  (equal (labels from to (delete-edge from to label graph))
+         (treeset::delete label (labels from to graph)))
+  :enable labels-of-delete-edge)
+
+(defrule labels-of-delete-edge-diff-from-cheap
+  (implies (not (equal x from))
+           (equal (labels x y (delete-edge from to label graph))
+                  (labels x y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable labels-of-delete-edge)
+
+(defrule labels-of-delete-edge-diff-to-cheap
+  (implies (not (equal y to))
+           (equal (labels x y (delete-edge from to label graph))
+                  (labels x y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable labels-of-delete-edge)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Removing an edge which is not there does nothing.
 
 (defruled delete-edge-when-not-in-of-edges
@@ -139,4 +174,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy delete-edge-extra-rules
-  '(delete-edge-when-not-in-of-edges))
+  '(delete-edge-when-not-in-of-edges
+    labels-of-delete-edge))
