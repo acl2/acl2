@@ -51,8 +51,8 @@
        properties of the graph operations. It is not meant to be computed on
        large graphs.")
     (xdoc::p
-      "Time complexity: @($O((n + m)\\log(n + m))$), where @($n$) is the
-       number of nodes and @($m$) the number of edges."))
+      "Time complexity: @($O((n + k)\\log(n + k))$), where @($n$) is the
+       number of nodes and @($k$) the number of edges."))
   (adj-list-edges (fix graph))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

@@ -63,7 +63,8 @@
 ;;
 ;; These are logical characterizations, not meant to be run on large graphs.
 ;; Each step costs a minimum and a deletion, so the walk over the whole list
-;; is @($O((n + m) \\log(n + m))$). Since the edges come out in ascending
+;; is @($O((n + k) \\log(n + k))$), where @($n$) is the number of sources and
+;; @($k$) the number of edges. Since the edges come out in ascending
 ;; order, a linear-time construction through @(tsee treeset::from-oset) could
 ;; be added under an @(tsee mbe) without disturbing anything below.
 ;;
