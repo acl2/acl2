@@ -20,6 +20,7 @@
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
+(include-book "../transpose-defs")
 (include-book "kahn-defs")
 (include-book "reachable-defs")
 
@@ -44,6 +45,7 @@
 (local (include-book "../nodes"))
 (local (include-book "../successors"))
 (local (include-book "../predecessors"))
+(local (include-book "../transpose"))
 (local (include-book "kahn"))
 (local (include-book "reachable"))
 
@@ -271,6 +273,22 @@
            (not (reachable+p node node graph)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by reachable+p-of-arg1-and-arg1-when-not-cyclicp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reversing every edge keeps every node which reaches itself, so it keeps
+;; the cycles.
+
+(defrule cyclicp-of-transpose
+  (equal (cyclicp (transpose graph))
+         (cyclicp graph))
+  :use ((:instance cyclicp-sk-suff
+                   (node (cyclicp-sk-witness graph))
+                   (graph (transpose graph)))
+        (:instance cyclicp-sk-suff
+                   (node (cyclicp-sk-witness (transpose graph)))))
+  :enable (cyclicp-becomes-cyclicp-sk
+           cyclicp-sk))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
