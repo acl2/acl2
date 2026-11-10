@@ -20,6 +20,8 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
+(include-book "successors-defs")
+(include-book "predecessors-defs")
 (include-book "add-node-defs")
 (include-book "internal/add-node-defs")
 (include-book "internal/add-edge-defs")
@@ -40,6 +42,8 @@
 (local (include-book "nodes"))
 (local (include-book "edges"))
 (local (include-book "adjacency"))
+(local (include-book "successors"))
+(local (include-book "predecessors"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "internal/add-node"))
@@ -152,6 +156,54 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable labels-of-add-edge)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; Only the source gains a successor, and only the target a predecessor.
+
+(defruled successors-of-add-edge
+  (equal (successors x (add-edge from to label graph))
+         (if (equal x from)
+             (treeset::insert to (successors x graph))
+           (successors x graph)))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-add-edge)
+  :disable emptyp-of-labels)
+
+(defrule successors-of-add-edge-same
+  (equal (successors from (add-edge from to label graph))
+         (treeset::insert to (successors from graph)))
+  :enable successors-of-add-edge)
+
+(defrule successors-of-add-edge-diff-cheap
+  (implies (not (equal x from))
+           (equal (successors x (add-edge from to label graph))
+                  (successors x graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable successors-of-add-edge)
+
+(defruled predecessors-of-add-edge
+  (equal (predecessors y (add-edge from to label graph))
+         (if (equal y to)
+             (treeset::insert from (predecessors y graph))
+           (predecessors y graph)))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-add-edge)
+  :disable emptyp-of-labels)
+
+(defrule predecessors-of-add-edge-same
+  (equal (predecessors to (add-edge from to label graph))
+         (treeset::insert from (predecessors to graph)))
+  :enable predecessors-of-add-edge)
+
+(defrule predecessors-of-add-edge-diff-cheap
+  (implies (not (equal y to))
+           (equal (predecessors y (add-edge from to label graph))
+                  (predecessors y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable predecessors-of-add-edge)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule add-edge-of-add-edge-same
@@ -186,4 +238,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy add-edge-extra-rules
-  '(labels-of-add-edge))
+  '(labels-of-add-edge
+    successors-of-add-edge
+    predecessors-of-add-edge))

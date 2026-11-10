@@ -110,6 +110,17 @@
   :disable (lookup-of-adjacency
             keys-of-adjacency))
 
+;; The same fact read the other way.
+
+(defruled in-of-successors-becomes-not-emptyp-of-labels
+  (equal (treeset::in to (successors from graph))
+         (not (treeset::emptyp (labels from to graph))))
+  :enable not)
+
+(theory-invariant
+  (incompatible! (:rewrite emptyp-of-labels)
+                 (:rewrite in-of-successors-becomes-not-emptyp-of-labels)))
+
 ;; So an edge leads to a successor of its source, and every successor has an
 ;; edge to it, for instance with the least of the labels.
 

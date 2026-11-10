@@ -24,6 +24,8 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
+(include-book "successors-defs")
+(include-book "predecessors-defs")
 (include-book "add-node-defs")
 (include-book "internal/delete-node-defs")
 
@@ -44,6 +46,8 @@
 (local (include-book "nodes"))
 (local (include-book "edges"))
 (local (include-book "adjacency"))
+(local (include-book "successors"))
+(local (include-book "predecessors"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "internal/edges"))
@@ -149,6 +153,55 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
   :enable labels-of-delete-node)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; The node has no successors or predecessors left, and is no longer a
+;; successor or predecessor of any other node.
+
+(defruled successors-of-delete-node
+  (equal (successors x (delete-node node graph))
+         (if (equal x node)
+             (treeset::empty)
+           (treeset::delete node (successors x graph))))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-delete-node)
+  :disable emptyp-of-labels)
+
+(defrule successors-of-delete-node-same
+  (equal (successors node (delete-node node graph))
+         (treeset::empty))
+  :enable successors-of-delete-node)
+
+(defrule successors-of-delete-node-diff-cheap
+  (implies (not (equal x node))
+           (equal (successors x (delete-node node graph))
+                  (treeset::delete node (successors x graph))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable successors-of-delete-node)
+
+(defruled predecessors-of-delete-node
+  (equal (predecessors y (delete-node node graph))
+         (if (equal y node)
+             (treeset::empty)
+           (treeset::delete node (predecessors y graph))))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-delete-node)
+  :disable emptyp-of-labels)
+
+(defrule predecessors-of-delete-node-same
+  (equal (predecessors node (delete-node node graph))
+         (treeset::empty))
+  :enable predecessors-of-delete-node)
+
+(defrule predecessors-of-delete-node-diff-cheap
+  (implies (not (equal y node))
+           (equal (predecessors y (delete-node node graph))
+                  (treeset::delete node (predecessors y graph))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable predecessors-of-delete-node)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Removing a value which is not a node does nothing. No edge touches it,
@@ -214,4 +267,6 @@
 
 (defthy delete-node-extra-rules
   '(delete-node-when-not-in-of-nodes
-    labels-of-delete-node))
+    labels-of-delete-node
+    successors-of-delete-node
+    predecessors-of-delete-node))

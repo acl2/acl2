@@ -20,6 +20,8 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
+(include-book "successors-defs")
+(include-book "predecessors-defs")
 (include-book "add-node-defs")
 (include-book "add-edge-defs")
 (include-book "internal/delete-edge-defs")
@@ -38,6 +40,8 @@
 (local (include-book "nodes"))
 (local (include-book "edges"))
 (local (include-book "adjacency"))
+(local (include-book "successors"))
+(local (include-book "predecessors"))
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "add-edge"))
@@ -125,6 +129,49 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable labels-of-delete-edge)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; The target stops being a successor of the source only if the label was the
+;; only one from the source to the target.
+
+(defruled successors-of-delete-edge
+  (equal (successors x (delete-edge from to label graph))
+         (if (and (equal x from)
+                  (equal (labels from to graph)
+                         (treeset::insert label (treeset::empty))))
+             (treeset::delete to (successors x graph))
+           (successors x graph)))
+  :enable (treeset::extensionality
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-delete-edge)
+  :disable emptyp-of-labels)
+
+(defrule successors-of-delete-edge-diff-cheap
+  (implies (not (equal x from))
+           (equal (successors x (delete-edge from to label graph))
+                  (successors x graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable successors-of-delete-edge)
+
+(defruled predecessors-of-delete-edge
+  (equal (predecessors y (delete-edge from to label graph))
+         (if (and (equal y to)
+                  (equal (labels from to graph)
+                         (treeset::insert label (treeset::empty))))
+             (treeset::delete from (predecessors y graph))
+           (predecessors y graph)))
+  :enable (treeset::extensionality
+           in-of-successors-becomes-not-emptyp-of-labels
+           labels-of-delete-edge)
+  :disable emptyp-of-labels)
+
+(defrule predecessors-of-delete-edge-diff-cheap
+  (implies (not (equal y to))
+           (equal (predecessors y (delete-edge from to label graph))
+                  (predecessors y graph)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable predecessors-of-delete-edge)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Removing an edge which is not there does nothing.
@@ -175,4 +222,6 @@
 
 (defthy delete-edge-extra-rules
   '(delete-edge-when-not-in-of-edges
-    labels-of-delete-edge))
+    labels-of-delete-edge
+    successors-of-delete-edge
+    predecessors-of-delete-edge))

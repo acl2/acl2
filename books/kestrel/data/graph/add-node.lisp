@@ -18,6 +18,8 @@
 (include-book "nodes-defs")
 (include-book "edges-defs")
 (include-book "adjacency-defs")
+(include-book "successors-defs")
+(include-book "predecessors-defs")
 (include-book "internal/add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -31,6 +33,8 @@
 (local (include-book "nodes"))
 (local (include-book "edges"))
 (local (include-book "adjacency"))
+(local (include-book "successors"))
+(local (include-book "predecessors"))
 (local (include-book "extensionality"))
 (local (include-book "internal/add-node"))
 
@@ -84,12 +88,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The new node has no edges, so no labels change.
+;; The new node has no edges, so no labels, successors, or predecessors
+;; change.
 
 (defrule labels-of-add-node
   (equal (labels x y (add-node node graph))
          (labels x y graph))
   :enable treeset::extensionality-polar)
+
+(defrule successors-of-add-node
+  (equal (successors x (add-node node graph))
+         (successors x graph))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels)
+  :disable emptyp-of-labels)
+
+(defrule predecessors-of-add-node
+  (equal (predecessors y (add-node node graph))
+         (predecessors y graph))
+  :enable (treeset::extensionality-polar
+           in-of-successors-becomes-not-emptyp-of-labels)
+  :disable emptyp-of-labels)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
