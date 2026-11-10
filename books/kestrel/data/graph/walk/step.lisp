@@ -279,6 +279,7 @@
                         (step-list-fix (cdr steps)))
                 nil)
        :exec steps)
+  ;; Verified below
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;

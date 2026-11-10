@@ -176,6 +176,7 @@
   :measure (treemap::size adjl)
   :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
                                      treeset::in-of-min)))
+  ;; Verified below
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
