@@ -720,6 +720,72 @@ int bar (void);
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "int x;
+typeof(x) y;
+int y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+typeof(x) y;
+double y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof(a) b;
+int b[3];
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int a[3];
+typeof(a) b;
+int *b;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int **b);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int (*b)[3]);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(int *) p;
+int *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(int *) p;
+double *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(*1) x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(struct s { int m; }) x;
+int g(void) {
+  struct s y;
+  return y.m;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "_Thread_local int x;
 ")
 

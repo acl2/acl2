@@ -3874,8 +3874,15 @@
        This may be exactly what is needed for validation,
        but we will revisit this choice if needed.")
      (xdoc::p
+      "A @('typeof') specifier,
+       or its GCC variant @('__typeof') or @('__typeof__'),
+       determines the type of its expression or type name [C23:6.7.3.6/4].
+       The type returned by @(tsee valid-expr)
+       is the one before array-to-pointer and function-to-pointer conversion,
+       which @('typeof') does not perform [C23:6.3.2.1/3-4].")
+     (xdoc::p
       "For now, for simplicity, we regard
-       all the type specifiers that are GCC extensions
+       all the other type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
        which determines the structure type.
@@ -4266,20 +4273,28 @@
                               nil
                               nil
                               vstate))
-       :typeof-expr (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
-       :typeof-type (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
+       :typeof-expr (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-expr type types vstate)
+                          (valid-expr tyspec.expr vstate)))
+                      (retok (make-type-spec-typeof-expr
+                              :expr new-expr
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
+       :typeof-type (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-tyname type types vstate)
+                          (valid-tyname tyspec.type vstate)))
+                      (retok (make-type-spec-typeof-type
+                              :type new-tyname
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
        :auto-type (if (endp tyspecs)
                       (retok (type-spec-fix tyspec)
                              (type-unknown)
