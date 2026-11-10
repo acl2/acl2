@@ -15,6 +15,7 @@
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/in-defs" :dir :system)
+(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 (include-book "kestrel/data/treemap/update-defs" :dir :system)
 
 (include-book "adj-list-defs")
@@ -32,6 +33,7 @@
 (local (include-book "kestrel/data/treemap/map" :dir :system))
 (local (include-book "kestrel/data/treemap/keys" :dir :system))
 (local (include-book "kestrel/data/treemap/in" :dir :system))
+(local (include-book "kestrel/data/treemap/lookup" :dir :system))
 (local (include-book "kestrel/data/treemap/update" :dir :system))
 (local (include-book "kestrel/data/treemap/delete" :dir :system))
 (local (include-book "kestrel/data/treemap/extensionality" :dir :system))
@@ -79,6 +81,15 @@
 (defrule adj-list-edges-of-adj-list-add-node
   (equal (adj-list-edges (adj-list-add-node node adjl))
          (adj-list-edges adjl))
+  :enable adj-list-add-node)
+
+;; The added node has the empty adjacency, which is how an absent node reads.
+
+(defrule lookup-of-adj-list-add-node
+  (equal (treemap::lookup key
+                          (adj-list-add-node node adjl)
+                          :default (treemap::empty))
+         (treemap::lookup key adjl :default (treemap::empty)))
   :enable adj-list-add-node)
 
 ;; Adding a node only enlarges the node set and adds no targets, so it

@@ -48,7 +48,7 @@
       " of labels on the edges between them. Following the edges out of a node
        is therefore cheap, but finding the edges into a node means visiting
        every node. A program which needs a node's predecessors should maintain
-       the transpose of the graph as well.")
+       the @(tsee transpose) of the graph as well.")
     (xdoc::p
       "The core operations are:")
     (xdoc::table_
@@ -93,7 +93,10 @@
         (xdoc::td "@($O(n\\log(d))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee delete-node!)")
-        (xdoc::td "@($O(\\log(n))$)")))
+        (xdoc::td "@($O(\\log(n))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee transpose)")
+        (xdoc::td "@($O((n + m)\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
        nodes joined by an edge, @($d$) the number of successors of a node, or

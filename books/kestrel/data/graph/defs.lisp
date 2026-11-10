@@ -19,4 +19,5 @@
 (include-book "add-edge-defs")
 (include-book "delete-edge-defs")
 (include-book "delete-node-defs")
+(include-book "transpose-defs")
 (include-book "walk/defs")
