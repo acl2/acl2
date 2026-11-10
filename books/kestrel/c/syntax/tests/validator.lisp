@@ -24,6 +24,8 @@
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
+;; STRICT-MERGE is NIL to accept identifiers with external linkage
+;; declared with incompatible types in different units, else T (the default).
 ;; KEEP-GOING is T to continue past a failing unit, else NIL (the default).
 ;; Optional COND may be over variables AST.
 
@@ -34,6 +36,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :strict-merge
     :keep-going
     :cond))
 
@@ -44,6 +47,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :strict-merge
     :cond))
 
 (define make-dummy-filepath-filedata-map ((filepath-names string-listp) input)
@@ -84,6 +88,8 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (strict-merge (b* ((option (assoc-eq :strict-merge options)))
+                       (if option (cdr option) t)))
        (keep-going (cdr (assoc-eq :keep-going options)))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
@@ -106,7 +112,8 @@
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t ,keep-going))
             ((mv erp2 ast) (dimb-trans-ensemble ast ienv ,keep-going))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv ,keep-going)))
+            ((mv erp3 ?ast)
+             (valid-trans-ensemble ast ienv ,strict-merge ,keep-going)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -128,6 +135,8 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (strict-merge (b* ((option (assoc-eq :strict-merge options)))
+                       (if option (cdr option) t)))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
@@ -148,7 +157,8 @@
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
             ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
+            ((mv erp3 ?ast)
+             (valid-trans-ensemble ast ienv ,strict-merge nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -2712,6 +2722,33 @@ extern struct s x;
  "struct s { int (*p)[20]; };
 extern struct s x;
 ")
+
+;; Without a strict merge,
+;; incompatible types across translation units are accepted.
+(test-valid
+ "struct s { int a; int *p; };
+extern struct s x;
+"
+ "struct s { int a; float *p; };
+extern struct s x;
+"
+ :strict-merge nil)
+
+;; With a strict merge, they are rejected.
+(test-valid-fail
+ "struct s { int a; int *p; };
+extern struct s x;
+"
+ "struct s { int a; float *p; };
+extern struct s x;
+")
+
+;; Conflicts within a translation unit are still rejected.
+(test-valid-fail
+ "extern int a[10];
+extern int a[20];
+"
+ :strict-merge nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -110,6 +110,15 @@
      require running them or fetching their inputs.")
    (xdoc::ul
     (xdoc::li
+     "@('factorial') and @('factorial-run'): a hand-written MIR body
+      for an iterative factorial, and known-answer runs of it through
+      the interpreter.")
+    (xdoc::li
+     "@('aes-constructs') and @('std-shims'): interpreter probes for
+      individual MIR constructs (casts, slice indexing, downcasts,
+      the abort terminator, and so on) and for the standard-library
+      shims.")
+    (xdoc::li
      "@('aes-fixslice-program'): a large committed constant holding a
       real AES-128 crate imported to MIR (see @(see mir-import)),
       used as a fixture so the interpreter tests need neither the

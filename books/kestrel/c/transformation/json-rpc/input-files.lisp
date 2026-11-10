@@ -72,6 +72,12 @@
        and whose member values are arrays of strings
        denoting the extra arguments for the corresponding files."))
     (xdoc::desc
+     "@('\"strict-merge\"') &mdash; optional, default @('true')"
+     (xdoc::p
+      "A boolean saying whether to reject
+       an identifier with external linkage
+       declared with incompatible types in different files."))
+    (xdoc::desc
      "@('\"extensions\"') &mdash; optional, default @('\"gcc\"')"
      (xdoc::p
       "A string or boolean:
@@ -100,6 +106,7 @@
     "base-dir"
     "preprocess"
     "preprocess-args"
+    "strict-merge"
     "extensions"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -119,10 +126,12 @@
        ((erp base-dir) (param->base-dir obj))
        ((erp preprocess) (param->preprocess obj))
        ((erp preprocess-args) (param->preprocess-args obj))
+       ((erp strict-merge) (param->boolean "strict-merge" obj t))
        ((erp ienv) (param->ienv obj))
        ((mv erp code state)
         (c$::input-files-prog-fn t files base-dir preprocess preprocess-args
-                                 nil nil :validate nil nil nil ienv state))
+                                 nil nil :validate nil nil strict-merge nil
+                                 ienv state))
        ((when erp)
         (reterr
          (jsonrpc::make-internal-error

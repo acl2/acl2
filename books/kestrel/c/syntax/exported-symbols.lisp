@@ -560,6 +560,7 @@
     code-ensemblep
     code-ensemble->trans-units
     code-ensemble->ienv
+    code-ensemble->strict-merge
     make-code-ensemble
     change-code-ensemble
 

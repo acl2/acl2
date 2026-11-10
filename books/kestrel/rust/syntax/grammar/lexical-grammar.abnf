@@ -11,11 +11,10 @@
 ; This grammar covers the lexical structure of Rust
 ; [Reference; rustc 1.87.0] for a first slice:
 ; whitespace, comments (except block doc comments),
-; identifiers (ASCII-only for now), integer literals,
-; punctuation, and delimiters.
-; Not yet covered: block doc comments, lifetimes, float literals,
-; character/string/byte/C-string literals (of which the raw forms
-; will be a documented deviation, being inexpressible in ABNF),
+; identifiers (ASCII-only for now), lifetimes, integer literals,
+; character, byte, string, byte-string, and C-string literals
+; (including their raw forms), punctuation, and delimiters.
+; Not yet covered: block doc comments, float literals,
 ; and the shebang line.
 
 ; The input to this grammar is a sequence of Unicode scalar values,
@@ -46,16 +45,17 @@
 ;       [SC1] maximizes; without it, maximal munch would overshoot
 ;       to a later "*/".)
 ; [SC3] Bare carriage return: CR not immediately followed by LF
-;       must not occur in doc comments (and rustc normalizes CRLF
-;       and rejects bare CR more widely); not yet formalized.
+;       must not occur in doc comments; not yet formalized.
+;       (The literal rules below exclude it from literals too,
+;       except within a string continuation.)
 ; [SC4] Identifiers: the ASCII-only identifier rules below are
 ;       placeholders for Unicode XID_Start / XID_Continue
 ;       (Unicode 16.0.0) with NFC normalization.  The XID tables
 ;       now exist (unicode-xid.lisp); these rules will be replaced
 ;       once the grammar and lexer use them.
 ; [SC5] Raw identifiers: the identifier-or-keyword part of a
-;       raw-identifier must not be "crate", "self", "super",
-;       or "Self".
+;       raw-identifier or raw-lifetime must not be "crate",
+;       "self", "super", or "Self".
 ; [SC6] Keyword classification: an identifier-or-keyword token that
 ;       is a strict or reserved keyword of the current edition
 ;       (see keywords.lisp) is a keyword token, not an identifier.
@@ -65,12 +65,52 @@
 ;       "0b123" (decimal digits after a binary prefix)
 ;       [Reference; reserved forms similar to number literals].
 ; [SC8] Reserved prefixes: an identifier-or-keyword (not a raw
-;       identifier) immediately followed by "#", "'", or a
-;       double quote is a reserved prefix, which must be rejected
-;       [Reference; reserved prefixes] (Rust edition 2021 and
-;       later, so both supported editions).  Genuine raw-identifier
-;       forms like r#ident are not affected: they lex as single
-;       raw-identifier lexemes.
+;       identifier), or a lone "_", immediately followed by "#",
+;       "'", or a double quote is a reserved prefix, which must be
+;       rejected [Reference; reserved prefixes] in both supported
+;       editions, 2021 and 2024.  Genuine
+;       raw-identifier forms like r#ident are not affected: they
+;       lex as single raw-identifier lexemes.  Nor are literal
+;       prefixes like the "b" of b"..." or the "br" of br#"..."#:
+;       under [SC1] a valid literal lexes as a single lexeme, and
+;       when the literal is invalid, rustc rejects the input too.
+;       Likewise, a lifetime-token other than a raw-lifetime,
+;       immediately followed by "#", is a reserved lifetime prefix,
+;       which must be rejected.  [Reference; reserved prefixes]
+;       exempts 'r, but rustc rejects 'r# when no raw lifetime
+;       follows (e.g. 'r#1, and 'r#_ since a lone "_" is not an
+;       identifier); we follow rustc.
+; [SC9] Unicode escapes: the value of a unicode-escape, read as
+;       hexadecimal ignoring underscores, must be a Unicode scalar
+;       value (at most %x10FFFF, and outside %xD800-DFFF); in a
+;       c-string-literal it must also be nonzero.
+; [SC10] Raw string termination: the raw-*-content rules below
+;       overapproximate their bodies.  A raw literal with n "#"
+;       before its opening double quote ends at the first double
+;       quote followed by n "#", so the side condition is that its
+;       body contains no such sequence; also, n must be at most 255.
+; [SC11] Underscore after a literal: a character, byte, string,
+;       byte-string, or C-string literal (raw or not) immediately
+;       followed by "_" must be rejected.  rustc's lexer reads such
+;       a "_" as the literal's suffix and rejects it.  In
+;       [Reference; suffixes], a suffix has the form of an
+;       identifier, and a lone "_" is not an identifier, so the "_"
+;       would lex as a separate token; we follow rustc.  After an
+;       integer literal, maximal munch absorbs any "_" into the
+;       digits or the suffix.
+; [SC12] Lifetimes and character literals: a lifetime-token (raw
+;       or not) immediately followed by "'" must be rejected.
+;       rustc reads such text, e.g. 'ab', as a character literal
+;       with more than one character, and rejects it.
+; [SC13] String continuations: a string-continue takes the whole
+;       run of tabs, line feeds, carriage returns, and spaces after
+;       its line feed.  That is, in its literal it is not
+;       immediately followed by a tab, line feed, or space as a
+;       character of the literal, which the rules alone allow.
+;
+; Where [Reference] and rustc differ, this grammar follows rustc;
+; the xdoc topic reference-vs-rustc (in grammar.lisp) lists the
+; cases.
 
 ;-------------------------------------------------------------------------------
 ; Lexemes
@@ -80,6 +120,15 @@ lexeme = whitespace / comment / token ; [SC1]
 
 token = identifier-or-keyword ; [SC6]
       / raw-identifier
+      / lifetime-token
+      / char-literal
+      / byte-literal
+      / string-literal
+      / byte-string-literal
+      / c-string-literal
+      / raw-string-literal
+      / raw-byte-string-literal
+      / raw-c-string-literal
       / integer-literal
       / punctuation
       / delimiter
@@ -154,6 +203,23 @@ identifier-continue = ascii-letter / dec-digit / "_" ; [SC4]
 raw-identifier = %s"r#" identifier-or-keyword ; [SC5]
 
 ;-------------------------------------------------------------------------------
+; Lifetimes
+;-------------------------------------------------------------------------------
+
+; A lifetime or loop label is a single quote followed by an
+; identifier or keyword (keywords are allowed, e.g. 'static), by a
+; lone "_" (the placeholder lifetime), or by "r#" and an identifier
+; or keyword (a raw lifetime).  When a single quote, one character,
+; and another single quote form a character literal, the character
+; literal is the longer lexeme, so it wins under [SC1].
+
+lifetime-token = "'" identifier-or-keyword ; [SC8] [SC12]
+               / "'_" ; [SC8] [SC12]
+               / raw-lifetime ; [SC12]
+
+raw-lifetime = %s"'r#" identifier-or-keyword ; [SC5]
+
+;-------------------------------------------------------------------------------
 ; Integer literals
 ;-------------------------------------------------------------------------------
 
@@ -175,10 +241,120 @@ hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
 ; any such suffix lexes [Reference; suffixes], with validity
 ; checked in later phases.  On integer literals the suffix must not
 ; start with "e" or "E" (which would be a float exponent), hence
-; this rule.
+; this rule.  Nor does it start with "_": the digit rules above
+; take every "_" that follows the digits, as rustc's lexer does.
+; ([Reference; suffixes] also lets a suffix start with "_", which
+; makes e.g. 1_a ambiguous, and 1_e the integer 1 with suffix _e,
+; which rustc rejects.)
 
 suffix-no-e = ascii-letter-no-e *identifier-continue
-            / "_" 1*identifier-continue
+
+;-------------------------------------------------------------------------------
+; Character and string literals
+;-------------------------------------------------------------------------------
+
+; Any literal may carry a suffix [Reference; suffixes]; its validity
+; is checked in later phases.  As for integer literals, a suffix is
+; identifier-shaped text immediately after the literal.
+
+suffix = identifier-or-keyword ; [SC11]
+
+; A character literal holds one character or one escape.  Tab, line
+; feed, and carriage return must be escaped; so must the quote
+; character itself and the backslash.
+
+char-literal = "'" ( char-literal-char
+                   / quote-escape
+                   / ascii-escape
+                   / unicode-escape )
+               "'" [ suffix ]
+
+; A byte literal is like a character literal, restricted to ASCII,
+; with byte escapes instead of ASCII and unicode escapes.
+
+byte-literal = %s"b'" ( ascii-for-char / byte-escape ) "'" [ suffix ]
+
+; String literals may span lines.  A backslash immediately before a
+; line feed starts a string continuation, which extends over the
+; tabs, line feeds, carriage returns, and spaces that follow.
+; A carriage return must not occur anywhere else in a literal:
+; the CR LF pairs of the source have been normalized to LF
+; before lexing, and any other CR is rejected there.
+
+string-literal = dquote *( string-literal-char
+                       / quote-escape
+                       / ascii-escape
+                       / unicode-escape
+                       / string-continue )
+                 dquote [ suffix ]
+
+byte-string-literal = %s"b" dquote *( ascii-for-string
+                                  / byte-escape
+                                  / string-continue )
+                      dquote [ suffix ]
+
+; C string literals (stabilized in Rust 1.77, for editions 2021 and
+; 2024) denote NUL-terminated strings, so they must not contain NUL,
+; whether written directly or as an escape [SC9].
+
+c-string-literal = %s"c" dquote *( c-string-literal-char
+                               / c-byte-escape
+                               / unicode-escape ; [SC9]
+                               / string-continue )
+                   dquote [ suffix ]
+
+; The raw forms have no escapes.  The recursion puts the same
+; number n of "#" before the opening double quote and after the
+; closing one; e.g. n = 2 in r##"a"#b"##, whose body is a"#b.
+; The body rule overapproximates: in a valid raw literal, the body
+; contains no double quote followed by n "#", because the literal
+; ends at the first such sequence.  See [SC10].
+
+raw-string-literal = %s"r" raw-string-content [ suffix ]
+
+raw-string-content = dquote *raw-string-char dquote ; [SC10]
+                   / "#" raw-string-content "#"
+
+raw-byte-string-literal = %s"br" raw-byte-string-content [ suffix ]
+
+raw-byte-string-content = dquote *ascii-for-raw dquote ; [SC10]
+                        / "#" raw-byte-string-content "#"
+
+raw-c-string-literal = %s"cr" raw-c-string-content [ suffix ]
+
+raw-c-string-content = dquote *raw-c-string-char dquote ; [SC10]
+                     / "#" raw-c-string-content "#"
+
+; Escapes.  An ASCII escape "\x" takes at most %x7F; a byte escape
+; "\x" takes any byte.  A unicode escape has one to six hexadecimal
+; digits, each optionally followed by underscores [SC9].
+
+quote-escape = "\'" / "\" dquote
+
+ascii-escape = %s"\x" oct-digit hex-digit
+             / %s"\n" / %s"\r" / %s"\t" / "\\" / "\0"
+
+byte-escape = %s"\x" hex-digit hex-digit
+            / %s"\n" / %s"\r" / %s"\t" / "\\" / "\0"
+            / "\'" / "\" dquote
+
+; In C strings, "\0" and "\x00" are excluded.
+
+c-byte-escape = %s"\x" ( nonzero-hex-digit hex-digit
+                       / "0" nonzero-hex-digit )
+              / %s"\n" / %s"\r" / %s"\t" / "\\"
+              / "\'" / "\" dquote
+
+unicode-escape = %s"\u{" 1*6( hex-digit *"_" ) "}" ; [SC9]
+
+; A string continuation takes the whole run of whitespace after the
+; line feed; rustc skips that run when it evaluates the literal.
+; The characters of the run other than CR are also string
+; characters, so the rules alone also allow a shorter continuation
+; followed by whitespace characters of the string; [SC13] excludes
+; that.
+
+string-continue = "\" lf *skipped-whitespace-char ; [SC13]
 
 ;-------------------------------------------------------------------------------
 ; Punctuation and delimiters
@@ -225,3 +401,51 @@ not-slash-bang-lf = %x0-9 / %xB-20 / %x22-2E / %x30-D7FF / %xE000-10FFFF
 not-slash-lf = %x0-9 / %xB-2E / %x30-D7FF / %xE000-10FFFF
 
 not-star-slash = %x0-29 / %x2B-2E / %x30-D7FF / %xE000-10FFFF
+
+nonzero-hex-digit = %x31-39 / %x41-46 / %x61-66
+
+dquote = %x22 ; double quote
+
+lf = %xA ; line feed
+
+; The whitespace that a string continuation extends over:
+
+skipped-whitespace-char = %x9 ; horizontal tab
+                        / %xA ; line feed
+                        / %xD ; carriage return
+                        / %x20 ; space
+
+; Any character except tab, LF, CR, single quote, and backslash:
+
+char-literal-char = %x0-8 / %xB-C / %xE-26 / %x28-5B / %x5D-D7FF
+                  / %xE000-10FFFF
+
+; Any character except CR, double quote, and backslash:
+
+string-literal-char = %x0-C / %xE-21 / %x23-5B / %x5D-D7FF
+                    / %xE000-10FFFF
+
+; Any character except NUL, CR, double quote, and backslash:
+
+c-string-literal-char = %x1-C / %xE-21 / %x23-5B / %x5D-D7FF
+                      / %xE000-10FFFF
+
+; Any character except CR:
+
+raw-string-char = %x0-C / %xE-D7FF / %xE000-10FFFF
+
+; Any character except NUL and CR:
+
+raw-c-string-char = %x1-C / %xE-D7FF / %xE000-10FFFF
+
+; ASCII except tab, LF, CR, single quote, and backslash:
+
+ascii-for-char = %x0-8 / %xB-C / %xE-26 / %x28-5B / %x5D-7F
+
+; ASCII except CR, double quote, and backslash:
+
+ascii-for-string = %x0-C / %xE-21 / %x23-5B / %x5D-7F
+
+; ASCII except CR:
+
+ascii-for-raw = %x0-C / %xE-7F
