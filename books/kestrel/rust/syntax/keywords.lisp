@@ -76,7 +76,7 @@
    (xdoc::p
     "These are the 35 strict keywords of the 2015 edition
      plus @('async'), @('await'), and @('dyn'),
-     which are strict in edition 2018 and later.
+     which are strict in the 2018, 2021, and 2024 editions.
      The 2024 edition additionally has @('gen');
      see @(tsee strict-keywords)."))
   (list "as"
@@ -130,7 +130,8 @@
   (xdoc::topstring
    (xdoc::p
     "These are the 12 reserved keywords of the 2015 edition
-     plus @('try'), which is reserved in edition 2018 and later."))
+     plus @('try'), which is reserved
+     in the 2018, 2021, and 2024 editions."))
   (list "abstract"
         "become"
         "box"

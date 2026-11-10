@@ -79,8 +79,26 @@
      "[SC7] Reserved numeric forms: not yet formalized
       (the executable lexer rejects them).")
     (xdoc::li
-     "[SC8] Reserved prefixes: formalized here,
+     "[SC8] Reserved prefixes
+      (an identifier or keyword, or a lone underscore,
+      immediately followed by @('#'), a single quote, or a double quote):
+      formalized here,
       as @(tsee lexeme-cst-reserved-prefix-okp),
+      incorporated into @(tsee lexing-okp).")
+    (xdoc::li
+     "[SC9] Unicode escape values: not yet formalized
+      (the executable lexer rejects values that are not
+      Unicode scalar values, and zero values in C strings).")
+    (xdoc::li
+     "[SC10] Raw string termination, and at most 255 @('#')
+      before the opening double quote:
+      not yet formalized
+      (the executable lexer ends a raw literal at its first terminator
+      and rejects more than 255 @('#')).")
+    (xdoc::li
+     "[SC11] Underscore after a character or string literal:
+      formalized here,
+      as @(tsee lexeme-cst-literal-underscore-okp),
       incorporated into @(tsee lexing-okp)."))
    (xdoc::p
     "An important structural point:
@@ -222,6 +240,21 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define underscore-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding a lone underscore."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lone underscore is a punctuation token,
+     also subject to the reserved-prefix side condition [SC8].
+     No other lexeme consists of just an underscore
+     (an identifier starting with an underscore has more characters),
+     so it suffices to check the string of the tree."))
+  (equal (abnf::tree->string tree) (list #x5f)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lexeme-cst-reserved-prefix-okp ((tree abnf::treep)
                                         (rest-input nat-listp))
   :returns (yes/no booleanp)
@@ -231,11 +264,13 @@ multi-line */")))
   (xdoc::topstring
    (xdoc::p
     "An identifier-or-keyword lexeme
-     (see @(tsee identifier-or-keyword-lexeme-cst-p))
+     (see @(tsee identifier-or-keyword-lexeme-cst-p)),
+     or a lone underscore
+     (see @(tsee underscore-lexeme-cst-p)),
      must not be immediately followed by
      @('#') (U+0023), @('\\'') (U+0027), or @('\"') (U+0022):
      such forms are reserved prefixes
-     in both supported editions (Rust 2021 and later).")
+     in both supported editions, 2021 and 2024.")
    (xdoc::p
     "Note that this condition rejects the whole lexing
      rather than steering maximal munch to a shorter lexeme:
@@ -249,10 +284,78 @@ multi-line */")))
      (also, it could not be, since it depends on
      the input that follows the lexeme)."))
   (b* ((rest-input (nat-list-fix rest-input)))
-    (implies (identifier-or-keyword-lexeme-cst-p tree)
+    (implies (or (identifier-or-keyword-lexeme-cst-p tree)
+                 (underscore-lexeme-cst-p tree))
              (and (not (prefixp (list #x23) rest-input)) ; #
                   (not (prefixp (list #x27) rest-input)) ; '
                   (not (prefixp (list #x22) rest-input)))))) ; "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC11] Underscore after a literal.
+
+(define char-or-string-literal-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding
+          a character, byte, or string literal token,
+          of any kind, raw or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the lexemes subject to
+     the side condition [SC11]:
+     CSTs of the form @('lexeme -> token -> R')
+     where @('R') is one of the eight rules
+     for character, byte, string, byte string, and C string literals
+     and their raw forms."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) nil)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) nil)
+       (rulename? (abnf::check-tree-nonleaf? sub2)))
+    (and (member-equal rulename?
+                       '("char-literal"
+                         "byte-literal"
+                         "string-literal"
+                         "byte-string-literal"
+                         "c-string-literal"
+                         "raw-string-literal"
+                         "raw-byte-string-literal"
+                         "raw-c-string-literal"))
+         t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-literal-underscore-okp ((tree abnf::treep)
+                                           (rest-input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST holding a character or string literal
+          is not immediately followed by an underscore [SC11]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A character, byte, or string literal lexeme
+     (see @(tsee char-or-string-literal-lexeme-cst-p))
+     must not be immediately followed by @('_') (U+005F).
+     rustc's lexer reads such an underscore as the suffix of the literal,
+     and rejects it (\"underscore literal suffix is not allowed\").
+     In the grammar, a suffix is an identifier or keyword,
+     which excludes a lone underscore, as in the Reference;
+     so the grammar alone would lex the underscore as a separate token.
+     We follow rustc.
+     Since suffixes are lexed greedily,
+     an underscore right after a literal
+     is never followed by an identifier-continue character.")
+   (xdoc::p
+    "Integer literals need no such condition:
+     after one, maximal munch absorbs an underscore
+     into the digits or the suffix.")
+   (xdoc::p
+    "Like [SC8], this condition rejects the whole lexing,
+     so it is a conjunct of @(tsee lexing-okp)
+     rather than part of the candidate set @(tsee lexeme-cst-okp)."))
+  (implies (char-or-string-literal-lexeme-cst-p tree)
+           (not (prefixp (list #x5f) (nat-list-fix rest-input))))) ; _
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,9 +398,10 @@ multi-line */")))
      each covers a nonempty prefix of the remaining input
      and is maximal against what follows
      (see @(tsee lexeme-cst-maximal-p));
-     no identifier-or-keyword lexeme forms a reserved prefix
-     with what follows
+     no lexeme forms a reserved prefix with what follows
      (see @(tsee lexeme-cst-reserved-prefix-okp));
+     no character or string literal lexeme is followed by an underscore
+     (see @(tsee lexeme-cst-literal-underscore-okp));
      and together they cover the input exactly.")
    (xdoc::p
     "The lexer book defines the executable lexer;
@@ -314,6 +418,8 @@ multi-line */")))
          (prefixp string input)
          (lexeme-cst-maximal-p tree (nthcdr (len string) input))
          (lexeme-cst-reserved-prefix-okp tree (nthcdr (len string) input))
+         (lexeme-cst-literal-underscore-okp tree
+                                            (nthcdr (len string) input))
          (lexing-okp (cdr trees) (nthcdr (len string) input))))
 
   ///

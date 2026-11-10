@@ -58,6 +58,49 @@
 (test-reserved-prefix "foo" nil t) ; foo at end of input
 (test-reserved-prefix "r#fn" (list #x23) t) ; raw identifiers exempt
 (test-reserved-prefix "123" (list #x23) t) ; non-identifiers exempt
+(test-reserved-prefix "_" (list #x23) nil) ; _#
+(test-reserved-prefix "_" (list #x27) nil) ; _'
+(test-reserved-prefix "_" (list #x22) nil) ; _"
+(test-reserved-prefix "_" (list #x20) t) ; _ followed by space
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC11]: which lexemes are subject to the underscore condition.
+
+(defmacro test-literal-lexeme (string yes/no)
+  `(assert-event
+    (equal (char-or-string-literal-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-literal-lexeme "'a'" t)
+(test-literal-lexeme "b'a'" t)
+(test-literal-lexeme "\"s\"" t)
+(test-literal-lexeme "b\"s\"" t)
+(test-literal-lexeme "c\"s\"" t)
+(test-literal-lexeme "r\"s\"" t)
+(test-literal-lexeme "br#\"s\"#" t)
+(test-literal-lexeme "cr\"s\"" t)
+(test-literal-lexeme "\"s\"suffix" t)
+(test-literal-lexeme "123" nil) ; integer literals are not covered
+(test-literal-lexeme "foo" nil)
+(test-literal-lexeme "_" nil)
+
+; [SC11]: the adjacency condition against the remaining input.
+
+(defmacro test-literal-underscore (string rest-nats yes/no)
+  `(assert-event
+    (equal (lexeme-cst-literal-underscore-okp
+            (car (lexemize-rust-from-string ,string))
+            ,rest-nats)
+           ,yes/no)))
+
+(test-literal-underscore "\"Foo\"" (list #x5f) nil) ; "Foo"_
+(test-literal-underscore "'a'" (list #x5f) nil) ; 'a'_
+(test-literal-underscore "br#\"x\"#" (list #x5f) nil) ; br#"x"#_
+(test-literal-underscore "\"Foo\"" (list #x20 #x5f) t) ; "Foo" _
+(test-literal-underscore "\"Foo\"" nil t) ; at end of input
+(test-literal-underscore "foo" (list #x5f) t) ; non-literals exempt
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,3 +115,5 @@
 (test-lexeme-okp "foo")
 (test-lexeme-okp "0xF_Fu32")
 (test-lexeme-okp " ")
+(test-lexeme-okp "\"a\\\"b\"")
+(test-lexeme-okp "r##\"a\"#b\"##")
