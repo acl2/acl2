@@ -346,3 +346,24 @@
 (acl2::assert-equal
  (trans-ensemble-paths (code-ensemble->trans-units *keep-going-missing*))
  (set::mergesort (list (filepath "simple.c"))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Programmatic interface.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The :ienv input is evaluated, as in input-files.
+(defconst *gcc-ienv*
+  (ienv-default :dialect (c::make-dialect :std (c::standard-c17) :gcc t)))
+
+(make-event
+ (b* (((mv erp code state)
+       (input-files-prog :files '("simple.c" "stdbool.c" "stdint.c")
+                         :preprocess :auto
+                         :ienv *gcc-ienv*))
+      ((when erp) (er soft 'input-files-prog "~@0" erp)))
+   (acl2::value `(defconst *prog-valid-simple/stdbool/stdint* ',code))))
+
+(acl2::assert-equal *prog-valid-simple/stdbool/stdint*
+                    *valid-simple/stdbool/stdint*)
