@@ -217,7 +217,7 @@
 ;; A node is a successor of a set exactly when one of its predecessors is in
 ;; the set, and a predecessor of a set exactly when one of its successors is.
 
-(defrulel emptyp-of-intersect-and-predecessors-when-in-of-successors
+(defrule emptyp-of-intersect-and-predecessors-when-in-of-successors
   (implies (and (treeset::in node (successors pred graph))
                 (treeset::in pred set))
            (not (treeset::emptyp

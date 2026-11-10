@@ -354,15 +354,6 @@
 ;; The predecessors of a node among the nodes of a set are its predecessors
 ;; intersected with the set, and a node with an edge to it is one of them.
 
-(defrulel emptyp-of-intersect-and-predecessors-when-in-of-successors
-  (implies (and (treeset::in node (successors pred graph))
-                (treeset::in pred set))
-           (not (treeset::emptyp
-                  (treeset::intersect set (predecessors node graph)))))
-  :use (:instance treeset::not-emptyp-when-in
-                  (x pred)
-                  (set (treeset::intersect set (predecessors node graph)))))
-
 (defrulel cardinality-of-intersect-and-predecessors-when-in-of-successors-linear
   (implies (and (treeset::in node (successors pred graph))
                 (treeset::in pred set))
