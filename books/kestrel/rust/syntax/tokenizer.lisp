@@ -205,8 +205,10 @@
      every other code point advances the column by one.
      (Like rustc, we do not treat
      a carriage return as a line terminator:
-     rustc normalizes CRLF to LF before lexing
-     and rejects bare CR in source.)"))
+     rustc normalizes CRLF to LF before lexing,
+     and any other carriage return is
+     a whitespace character like a space or a tab,
+     not a line break.)"))
   (if (eql (lnfix nat) #x0a)
       (position-inc-line 1 pos)
     (position-inc-column 1 pos)))

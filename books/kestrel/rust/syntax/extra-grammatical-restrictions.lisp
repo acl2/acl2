@@ -25,9 +25,11 @@
 (acl2::controlled-configuration)
 
 ; The results of the abnf::check-tree-... utilities are values of
-; fty::defresult types; this (disabled by default) rule bridges
+; fty::defresult types; these (disabled by default) rules bridge
 ; "not an error" to the value type, as in lexer.lisp.
-(local (in-theory (enable abnf::treep-when-result-not-error)))
+(local (in-theory (enable abnf::treep-when-result-not-error
+                          abnf::tree-list-tuple4p-when-result-not-error
+                          abnf::tree-list-tuple5p-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,7 +99,9 @@
       before the opening double quote:
       not yet formalized
       (the executable lexer ends a raw literal at its first terminator
-      and rejects more than 255 @('#')).")
+      and rejects more than 255 @('#')).
+      Like [SC2], this condition must constrain the valid lexeme trees;
+      see @(tsee lexeme-cst-okp) for what its absence means.")
     (xdoc::li
      "[SC11] Underscore after a character or string literal:
       formalized here,
@@ -107,7 +111,18 @@
      "[SC12] Single quote after a lifetime:
       formalized here,
       as @(tsee lexeme-cst-lifetime-quote-okp),
-      incorporated into @(tsee lexing-okp)."))
+      incorporated into @(tsee lexing-okp).")
+    (xdoc::li
+     "[SC13] String continuations take all the whitespace after them:
+      formalized here,
+      as @(tsee lexeme-cst-string-continues-okp),
+      incorporated into lexeme validity
+      via @(tsee lexeme-cst-okp)."))
+   (xdoc::p
+    "Some of these side conditions are there
+     because rustc and the Rust Reference differ,
+     and we follow rustc;
+     see @(see reference-vs-rustc).")
    (xdoc::p
     "An important structural point:
      the side conditions constrain the set of valid lexeme trees
@@ -197,7 +212,114 @@ multi-line */")))
     (implies yes/no
              (abnf::tree-terminatedp tree))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC13] String continuations.
+
+(define string-continue-item-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is an item of the body of a string literal
+          that holds a string continuation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The body of a string, byte string, or C string literal
+     is a repetition of a group of alternatives.
+     So each item of the body is a CST without a rule name
+     that has a single subtree;
+     here that subtree is a @('string-continue')."))
+  (b* ((sub (abnf::check-tree-nonleaf-1-1 tree nil))
+       ((when (reserrp sub)) nil))
+    (not (reserrp (abnf::check-tree-nonleaf sub "string-continue")))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define string-continues-maximal-p ((items abnf::tree-listp))
+  :returns (yes/no booleanp)
+  :short "Check that, among the items of the body of a string literal,
+          no string continuation is immediately followed by
+          whitespace that it could have taken."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The item after a string continuation must not start with
+     a tab, a line feed, a carriage return, or a space,
+     which are the characters of @('skipped-whitespace-char').
+     An item that starts with one of them
+     consists of just that character,
+     as a character of the literal;
+     so the string continuation before it would not have taken
+     the whole run of whitespace after its line feed.
+     (No item actually starts with a carriage return,
+     which the grammar excludes from the characters of these literals;
+     we include it here to match the rule.)"))
+  :measure (len items)
+  (b* ((items (abnf::tree-list-fix items))
+       ((when (endp items)) t)
+       ((when (endp (cdr items))) t)
+       (next (abnf::tree->string (cadr items)))
+       ((when (and (string-continue-item-cst-p (car items))
+                   (or (prefixp (list #x9) next) ; tab
+                       (prefixp (list #xA) next) ; line feed
+                       (prefixp (list #xD) next) ; carriage return
+                       (prefixp (list #x20) next)))) ; space
+        nil))
+    (string-continues-maximal-p (cdr items))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-string-continues-okp ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check that the string continuations in a lexeme CST
+          take all the whitespace that follows them [SC13]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is about CSTs of the form @('lexeme -> token -> R')
+     where @('R') is one of the rules for
+     string, byte string, and C string literals,
+     which are the rules that have string continuations:
+     the items of the body of the literal must satisfy
+     @(tsee string-continues-maximal-p).
+     Every other lexeme CST satisfies this condition.")
+   (xdoc::p
+    "A string continuation consists of a backslash, a line feed,
+     and the run of tabs, line feeds, carriage returns, and spaces
+     that follows.
+     That whole run is skipped when the literal is evaluated.
+     Since tabs, line feeds, and spaces
+     are also characters of these literals,
+     the grammar alone has several CSTs for a literal with such a run,
+     which differ in where the string continuation ends.
+     This condition leaves only the CST
+     in which the string continuation takes the whole run,
+     so that the @('string-continue') subtrees of a valid CST
+     cover exactly the text that is skipped.")
+   (xdoc::p
+    "Unlike [SC2], this condition does not change
+     which strings have valid lexeme CSTs:
+     a literal with a CST that violates it
+     also has a CST that satisfies it.
+     So it has no effect on maximal munch [SC1]."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) t)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) t)
+       (branches (abnf::check-tree-nonleaf-4 sub2 "string-literal"))
+       ((when (not (reserrp branches)))
+        (string-continues-maximal-p
+         (abnf::tree-list-tuple4->2nd branches)))
+       (branches (abnf::check-tree-nonleaf-5 sub2 "byte-string-literal"))
+       ((when (not (reserrp branches)))
+        (string-continues-maximal-p
+         (abnf::tree-list-tuple5->3rd branches)))
+       (branches (abnf::check-tree-nonleaf-5 sub2 "c-string-literal"))
+       ((when (not (reserrp branches)))
+        (string-continues-maximal-p
+         (abnf::tree-list-tuple5->3rd branches))))
+    t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lexeme-cst-okp ((tree abnf::treep))
   :returns (yes/no booleanp)
@@ -207,17 +329,33 @@ multi-line */")))
   (xdoc::topstring
    (xdoc::p
     "Currently this conjoins the grammar match
-     with [SC2] (block comment closing):
-     if the lexeme's string starts with @('/*'),
+     with [SC2] (block comment closing)
+     and [SC13] (string continuations).
+     For [SC2], if the lexeme's string starts with @('/*'),
      the lexeme can only be a block comment
      (no other lexeme's string starts that way),
      and its string must be exactly one complete block comment.
+     For [SC13], see @(tsee lexeme-cst-string-continues-okp).
      Further side conditions will be added as conjuncts
-     as they are formalized."))
+     as they are formalized.")
+   (xdoc::p
+    "One of them is needed for this predicate to be right:
+     [SC10], raw string termination.
+     The raw string rules of the grammar, like the block comment rule,
+     overapproximate:
+     for the input @('r\"a\" \"b\"'),
+     not only @('r\"a\"') but also the whole input
+     matches the rule for raw string literals.
+     So until [SC10] is a conjunct here,
+     the lexeme @('r\"a\"') of that input does not satisfy
+     @(tsee lexeme-cst-maximal-p),
+     and the correct lexing of such an input
+     does not satisfy @(tsee lexing-okp)."))
   (and (lexeme-cst-p tree)
        (b* ((string (abnf::tree->string tree)))
          (implies (prefixp (list #x2F #x2A) string) ; starts with /*
-                  (block-comment-string-p string)))))
+                  (block-comment-string-p string)))
+       (lexeme-cst-string-continues-okp tree)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -496,6 +634,12 @@ multi-line */")))
      no lifetime lexeme is followed by a single quote
      (see @(tsee lexeme-cst-lifetime-quote-okp));
      and together they cover the input exactly.")
+   (xdoc::p
+    "This specification is not final:
+     side conditions that are not yet formalized are missing from it,
+     which makes it too weak for the inputs that they reject,
+     and, in the case of [SC10], too strong for some inputs
+     with raw string literals (see @(tsee lexeme-cst-okp)).")
    (xdoc::p
     "The lexer book defines the executable lexer;
      proving that it satisfies this specification

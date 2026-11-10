@@ -45,8 +45,9 @@
 ;       [SC1] maximizes; without it, maximal munch would overshoot
 ;       to a later "*/".)
 ; [SC3] Bare carriage return: CR not immediately followed by LF
-;       must not occur in doc comments (and rustc normalizes CRLF
-;       and rejects bare CR more widely); not yet formalized.
+;       must not occur in doc comments; not yet formalized.
+;       (The literal rules below exclude it from literals too,
+;       except within a string continuation.)
 ; [SC4] Identifiers: the ASCII-only identifier rules below are
 ;       placeholders for Unicode XID_Start / XID_Continue
 ;       (Unicode 16.0.0) with NFC normalization.  The XID tables
@@ -101,6 +102,15 @@
 ;       or not) immediately followed by "'" must be rejected.
 ;       rustc reads such text, e.g. 'ab', as a character literal
 ;       with more than one character, and rejects it.
+; [SC13] String continuations: a string-continue takes the whole
+;       run of tabs, line feeds, carriage returns, and spaces after
+;       its line feed.  That is, in its literal it is not
+;       immediately followed by a tab, line feed, or space as a
+;       character of the literal, which the rules alone allow.
+;
+; Where [Reference] and rustc differ, this grammar follows rustc;
+; the xdoc topic reference-vs-rustc (in grammar.lisp) lists the
+; cases.
 
 ;-------------------------------------------------------------------------------
 ; Lexemes
@@ -231,10 +241,13 @@ hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
 ; any such suffix lexes [Reference; suffixes], with validity
 ; checked in later phases.  On integer literals the suffix must not
 ; start with "e" or "E" (which would be a float exponent), hence
-; this rule.
+; this rule.  Nor does it start with "_": the digit rules above
+; take every "_" that follows the digits, as rustc's lexer does.
+; ([Reference; suffixes] also lets a suffix start with "_", which
+; makes e.g. 1_a ambiguous, and 1_e the integer 1 with suffix _e,
+; which rustc rejects.)
 
 suffix-no-e = ascii-letter-no-e *identifier-continue
-            / "_" 1*identifier-continue
 
 ;-------------------------------------------------------------------------------
 ; Character and string literals
@@ -262,9 +275,11 @@ char-literal = "'" ( char-literal-char
 byte-literal = %s"b'" ( ascii-for-char / byte-escape ) "'" [ suffix ]
 
 ; String literals may span lines.  A backslash immediately before a
-; line feed is a string continuation.  A carriage return must not
-; occur: the CR LF pairs of the source have been normalized to LF
-; before lexing, and any other CR is rejected inside literals.
+; line feed starts a string continuation, which extends over the
+; tabs, line feeds, carriage returns, and spaces that follow.
+; A carriage return must not occur anywhere else in a literal:
+; the CR LF pairs of the source have been normalized to LF
+; before lexing, and any other CR is rejected there.
 
 string-literal = dquote *( string-literal-char
                        / quote-escape
@@ -332,7 +347,14 @@ c-byte-escape = %s"\x" ( nonzero-hex-digit hex-digit
 
 unicode-escape = %s"\u{" 1*6( hex-digit *"_" ) "}" ; [SC9]
 
-string-continue = "\" lf
+; A string continuation takes the whole run of whitespace after the
+; line feed; rustc skips that run when it evaluates the literal.
+; The characters of the run other than CR are also string
+; characters, so the rules alone also allow a shorter continuation
+; followed by whitespace characters of the string; [SC13] excludes
+; that.
+
+string-continue = "\" lf *skipped-whitespace-char ; [SC13]
 
 ;-------------------------------------------------------------------------------
 ; Punctuation and delimiters
@@ -385,6 +407,13 @@ nonzero-hex-digit = %x31-39 / %x41-46 / %x61-66
 dquote = %x22 ; double quote
 
 lf = %xA ; line feed
+
+; The whitespace that a string continuation extends over:
+
+skipped-whitespace-char = %x9 ; horizontal tab
+                        / %xA ; line feed
+                        / %xD ; carriage return
+                        / %x20 ; space
 
 ; Any character except tab, LF, CR, single quote, and backslash:
 
