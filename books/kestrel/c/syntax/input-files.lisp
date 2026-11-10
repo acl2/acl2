@@ -348,6 +348,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define input-files-process-strict-merge (strict-merge)
+  :returns (mv erp (new-strict-merge booleanp))
+  :short "Process the @(':strict-merge') input."
+  (b* (((reterr) nil)
+       ((unless (booleanp strict-merge))
+        (reterr (msg "The :STRICT-MERGE input must be a boolean ~
+                      but it is ~x0 instead."
+                     strict-merge))))
+    (retok strict-merge)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-process-keep-going (keep-going)
   :returns (mv erp (new-keep-going booleanp))
   :short "Process the @(':keep-going') input."
@@ -384,6 +396,7 @@
                                     process
                                     (const-presentp booleanp)
                                     const
+                                    strict-merge
                                     keep-going
                                     ienv
                                     (progp booleanp)
@@ -399,6 +412,7 @@
                (new-include-dirs string-listp)
                (new-process input-files-process-inputp)
                (new-const symbolp)
+               (strict-merge booleanp)
                (keep-going booleanp)
                (ienv ienvp))
   :short "Process the inputs."
@@ -412,7 +426,8 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil "" nil nil (irr-ppoptions) nil :parse nil nil (irr-ienv))
+  (b* (((reterr)
+        nil "" nil nil (irr-ppoptions) nil :parse nil nil nil (irr-ienv))
        ;; Process the inputs.
        ((erp files) (input-files-process-files files-presentp files))
        ((erp base-dir) (input-files-process-base-dir base-dir))
@@ -428,6 +443,7 @@
         (input-files-process-include-dirs preprocessor include-dirs))
        ((erp process) (input-files-process-process process))
        ((erp const) (input-files-process-const const-presentp const progp))
+       ((erp strict-merge) (input-files-process-strict-merge strict-merge))
        ((erp keep-going) (input-files-process-keep-going keep-going))
        ((erp ienv) (input-files-process-ienv ienv)))
     (retok files
@@ -438,6 +454,7 @@
            include-dirs
            process
            const
+           strict-merge
            keep-going
            ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
@@ -667,6 +684,7 @@
                                          preprocess-extra-args)
                                         (string-listp preprocess-extra-args)))
                                    (process input-files-process-inputp)
+                                   (strict-merge booleanp)
                                    (keep-going booleanp)
                                    (ienv ienvp)
                                    (tumap filepath-trans-unit-mapp)
@@ -705,7 +723,8 @@
              ((unless (eq process :validate))
               (mv nil (valid-merge-state-fix mstate)))
              ((mv erp new-mstate)
-              (valid-merge-trans-unit externals completions mstate ienv))
+              (valid-merge-trans-unit
+                externals completions mstate ienv strict-merge))
              ((when erp)
               (mv (msg "Error in translation unit ~x0: ~@1"
                        (filepath->string path)
@@ -720,6 +739,7 @@
                                                preprocessor
                                                preprocess-extra-args
                                                process
+                                               strict-merge
                                                keep-going
                                                ienv
                                                tumap
@@ -732,6 +752,7 @@
                                preprocessor
                                preprocess-extra-args
                                process
+                               strict-merge
                                keep-going
                                ienv
                                tumap
@@ -771,6 +792,7 @@
                                     preprocess-extra-args)
                                    (string-listp preprocess-extra-args)))
                               (process input-files-process-inputp)
+                              (strict-merge booleanp)
                               (keep-going booleanp)
                               (ienv ienvp)
                               state)
@@ -803,6 +825,7 @@
                                    preprocessor
                                    preprocess-extra-args
                                    process
+                                   strict-merge
                                    keep-going
                                    ienv
                                    nil
@@ -852,6 +875,7 @@
                                (options ppoptionsp)
                                (include-dirs string-listp)
                                (process input-files-process-inputp)
+                               (strict-merge booleanp)
                                (keep-going booleanp)
                                (ienv ienvp)
                                state)
@@ -908,7 +932,8 @@
        ;; If no validation is required, we are done.
        ((when (eq process :disambiguate)) (retok tunits state))
        ;; Validation is required, if we get here.
-       ((erp tunits) (valid-trans-ensemble tunits ienv keep-going)))
+       ((erp tunits)
+        (valid-trans-ensemble tunits ienv strict-merge keep-going)))
     (retok tunits state))
 
   ///
@@ -931,6 +956,7 @@
                                 (include-dirs string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
+                                (strict-merge booleanp)
                                 (keep-going booleanp)
                                 (ienv ienvp)
                                 (progp booleanp)
@@ -948,7 +974,8 @@
      otherwise, we do that one file at a time, which uses less memory.
      Besides the events, we also return the code ensemble
      resulting from processing the (possibly preprocessed) files,
-     together with the implementation environment.
+     together with the implementation environment
+     and the @(':strict-merge') flag.
      If the programmatic interface is being used,
      no events are actually generated."))
   (b* (((reterr) nil (irr-code-ensemble) state)
@@ -961,6 +988,7 @@
                                    options
                                    include-dirs
                                    process
+                                   strict-merge
                                    keep-going
                                    ienv
                                    state)
@@ -969,10 +997,13 @@
                                 preprocessor
                                 preprocess-extra-args
                                 process
+                                strict-merge
                                 keep-going
                                 ienv
                                 state)))
-       (code (make-code-ensemble :trans-units tunits :ienv ienv))
+       (code (make-code-ensemble :trans-units tunits
+                                 :ienv ienv
+                                 :strict-merge strict-merge))
        ;; Generate :CONST constant with the code ensemble.
        (events (if progp nil (list `(defconst ,const ',code)))))
     (retok events code state))
@@ -1002,6 +1033,7 @@
                                                    process
                                                    (const-presentp booleanp)
                                                    const
+                                                   strict-merge
                                                    keep-going
                                                    ienv
                                                    (progp booleanp)
@@ -1027,6 +1059,7 @@
              include-dirs
              process
              const
+             strict-merge
              keep-going
              ienv)
         (input-files-process-inputs files-presentp
@@ -1039,6 +1072,7 @@
                                     process
                                     const-presentp
                                     const
+                                    strict-merge
                                     keep-going
                                     ienv
                                     progp
@@ -1052,6 +1086,7 @@
                                 include-dirs
                                 process
                                 const
+                                strict-merge
                                 keep-going
                                 ienv
                                 progp
@@ -1080,6 +1115,7 @@
                         process
                         (const-presentp booleanp)
                         const
+                        strict-merge
                         keep-going
                         ienv
                         (ctx ctxp)
@@ -1102,6 +1138,7 @@
                                                    process
                                                    const-presentp
                                                    const
+                                                   strict-merge
                                                    keep-going
                                                    ienv
                                                    nil
@@ -1121,6 +1158,7 @@
                               (include-dirs 'nil)
                               (process ':validate)
                               (const 'nil const-presentp)
+                              (strict-merge 't)
                               (keep-going 'nil)
                               (ienv 'nil))
     `(make-event-terse
@@ -1134,6 +1172,7 @@
                        ',process
                        ',const-presentp
                        ',const
+                       ',strict-merge
                        ',keep-going
                        ,ienv
                        'input-files
@@ -1158,6 +1197,7 @@
     "                  :preprocess-options ...  ; default nil"
     "                  :include-dirs       ...  ; default nil"
     "                  :process            ...  ; default :validate"
+    "                  :strict-merge       ...  ; default t"
     "                  :keep-going         ...  ; default nil"
     "                  :ienv               ...  ; default (ienv-default)"
     "  )")
@@ -1201,6 +1241,7 @@
                              process
                              (const-presentp booleanp)
                              const
+                             strict-merge
                              keep-going
                              ienv
                              state)
@@ -1224,6 +1265,7 @@
                                                    process
                                                    const-presentp
                                                    const
+                                                   strict-merge
                                                    keep-going
                                                    ienv
                                                    t
@@ -1250,6 +1292,7 @@
                                    (include-dirs 'nil)
                                    (process ':validate)
                                    (const 'nil const-presentp)
+                                   (strict-merge 't)
                                    (keep-going 'nil)
                                    (ienv 'nil))
     `(input-files-prog-fn ',files-presentp
@@ -1262,6 +1305,7 @@
                           ',process
                           ',const-presentp
                           ',const
+                          ',strict-merge
                           ',keep-going
                           ',ienv
                           state)))
