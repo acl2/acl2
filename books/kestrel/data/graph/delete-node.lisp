@@ -245,7 +245,7 @@
 
 (define delete-node! (node (graph graphp))
   :guard (treeset::subset (predecessors node graph)
-                          (treeset::insert node (treeset::empty)))
+                          (treeset::set node))
   :parents (delete-node)
   :short "Remove a node from a @(see graph) when no other node has an edge to
           it."
