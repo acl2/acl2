@@ -34,11 +34,11 @@
      "Strict keywords: always keywords;
       they cannot be used as (non-raw) identifiers.
       Note that, unlike C, the boolean literals
-      @('true') and @('false') are keywords.
-      The 2024 edition adds @('gen') to this category.")
+      @('true') and @('false') are keywords.")
     (xdoc::li
      "Reserved keywords: not currently used by the language,
-      but withheld from identifier use for future compatibility.")
+      but withheld from identifier use for future compatibility.
+      The 2024 edition adds @('gen') to this category.")
     (xdoc::li
      "Weak keywords: contextual;
       they have special meaning only in certain positions
@@ -76,9 +76,7 @@
    (xdoc::p
     "These are the 35 strict keywords of the 2015 edition
      plus @('async'), @('await'), and @('dyn'),
-     which are strict in the 2018, 2021, and 2024 editions.
-     The 2024 edition additionally has @('gen');
-     see @(tsee strict-keywords)."))
+     which are strict in the 2018, 2021, and 2024 editions."))
   (list "as"
         "async"
         "await"
@@ -131,7 +129,9 @@
    (xdoc::p
     "These are the 12 reserved keywords of the 2015 edition
      plus @('try'), which is reserved
-     in the 2018, 2021, and 2024 editions."))
+     in the 2018, 2021, and 2024 editions.
+     The 2024 edition additionally has @('gen');
+     see @(tsee reserved-keywords)."))
   (list "abstract"
         "become"
         "box"
@@ -174,42 +174,45 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The categories are pairwise disjoint, in both editions
-; (i.e. even with the 2024 addition of "gen" to the strict keywords).
+; (i.e. even with the 2024 addition of "gen" to the reserved keywords).
 
 (assert-event (not (intersection-equal *strict-keywords-common*
                                        *reserved-keywords-common*)))
-(assert-event (not (intersection-equal (cons "gen" *strict-keywords-common*)
-                                       *reserved-keywords-common*)))
+(assert-event (not (intersection-equal *strict-keywords-common*
+                                       (cons "gen" *reserved-keywords-common*))))
 (assert-event (not (intersection-equal *weak-keywords*
-                                       (append (cons "gen"
-                                                     *strict-keywords-common*)
-                                               *reserved-keywords-common*))))
+                                       (append *strict-keywords-common*
+                                               (cons "gen"
+                                                     *reserved-keywords-common*)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define strict-keywords ((edition rust::editionp))
   :returns (keywords string-listp)
   :short "Strict keywords of an edition."
-  (rust::edition-case edition
-                      :2021 *strict-keywords-common*
-                      :2024 (cons "gen" *strict-keywords-common*)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are currently the same in the 2021 and 2024 editions,
+     but we keep the edition parameter
+     for uniformity with @(tsee reserved-keywords)."))
+  (declare (ignore edition))
+  *strict-keywords-common*)
 
 (assert-event (equal (len (strict-keywords (rust::edition-2021))) 38))
-(assert-event (equal (len (strict-keywords (rust::edition-2024))) 39))
+(assert-event (equal (len (strict-keywords (rust::edition-2024))) 38))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reserved-keywords ((edition rust::editionp))
   :returns (keywords string-listp)
   :short "Reserved keywords of an edition."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are currently the same in the 2021 and 2024 editions,
-     but we keep the edition parameter
-     for uniformity with @(tsee strict-keywords)."))
-  (declare (ignore edition))
-  *reserved-keywords-common*)
+  (rust::edition-case edition
+                      :2021 *reserved-keywords-common*
+                      :2024 (cons "gen" *reserved-keywords-common*)))
+
+(assert-event (equal (len (reserved-keywords (rust::edition-2021))) 13))
+(assert-event (equal (len (reserved-keywords (rust::edition-2024))) 14))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,8 +252,11 @@
 
 ; Spot checks of the edition-dependent classification.
 
-(assert-event (strict-keyword-p "gen" (rust::edition-2024)))
-(assert-event (not (strict-keyword-p "gen" (rust::edition-2021))))
+(assert-event (reserved-keyword-p "gen" (rust::edition-2024)))
+(assert-event (not (reserved-keyword-p "gen" (rust::edition-2021))))
+(assert-event (not (strict-keyword-p "gen" (rust::edition-2024))))
+(assert-event (keyword-p "gen" (rust::edition-2024)))
+(assert-event (not (keyword-p "gen" (rust::edition-2021))))
 (assert-event (strict-keyword-p "dyn" (rust::edition-2021)))
 (assert-event (strict-keyword-p "Self" (rust::edition-2021)))
 (assert-event (not (strict-keyword-p "SELF" (rust::edition-2021))))
