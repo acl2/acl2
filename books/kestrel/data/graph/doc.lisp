@@ -80,6 +80,9 @@
         (xdoc::td "@(tsee adjacency), @(tsee adjacency!)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
+        (xdoc::td "@(tsee successors)")
+        (xdoc::td "@($O(\\log(n) + d)$)"))
+      (xdoc::tr
         (xdoc::td "@(tsee add-node)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
@@ -93,10 +96,7 @@
         (xdoc::td "@($O(n\\log(d))$)"))
       (xdoc::tr
         (xdoc::td "@(tsee delete-node!)")
-        (xdoc::td "@($O(\\log(n))$)"))
-      (xdoc::tr
-        (xdoc::td "@(tsee transpose)")
-        (xdoc::td "@($O((n + m)\\log(n))$)")))
+        (xdoc::td "@($O(\\log(n))$)")))
     (xdoc::p
       "(where @($n$) is the number of nodes, @($m$) the number of pairs of
        nodes joined by an edge, @($d$) the number of successors of a node, or
