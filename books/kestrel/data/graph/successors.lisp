@@ -463,8 +463,7 @@
       "The search expands each node at most once. Time complexity:
        @($O((n + m)\\log(n))$), where @($n$) is the number of nodes and @($m$)
        the number of pairs of nodes joined by an edge."))
-  (successors+-search (successors node graph) (treeset::empty) graph)
-  :inline t)
+  (successors+-search (successors node graph) (treeset::empty) graph))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -451,8 +451,7 @@
        with @(tsee predecessors). Time complexity: @($O(n^2\\log(n))$), where
        @($n$) is the number of nodes. This is not optimal, since each
        expansion visits every node."))
-  (predecessors+-search (predecessors node graph) (treeset::empty) graph)
-  :inline t)
+  (predecessors+-search (predecessors node graph) (treeset::empty) graph))
 
 ;;;;;;;;;;;;;;;;;;;;
 

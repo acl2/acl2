@@ -363,7 +363,8 @@
   (mbe :logic (and (no-duplicatesp-equal order)
                    (equal (treeset::from-list order) (nodes graph))
                    (reachable+p-sortedp order graph))
-       :exec (topological-orderp-loop order (treeset::empty) graph)))
+       :exec (topological-orderp-loop order (treeset::empty) graph))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
