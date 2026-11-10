@@ -65,6 +65,12 @@
         (xdoc::td "@(tsee node-in)")
         (xdoc::td "@($O(\\log(n))$)"))
       (xdoc::tr
+        (xdoc::td "@(tsee edge-in)")
+        (xdoc::td "@($O(\\log(n) + \\log(d) + \\log(l))$)"))
+      (xdoc::tr
+        (xdoc::td "@(tsee adjacentp)")
+        (xdoc::td "@($O(\\log(n) + \\log(d))$)"))
+      (xdoc::tr
         (xdoc::td "@(tsee edges-from)")
         (xdoc::td "@($O(\\log(n) + k\\log(k))$)"))
       (xdoc::tr

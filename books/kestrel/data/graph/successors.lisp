@@ -24,6 +24,7 @@
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/map-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/treemap/in-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -188,6 +189,27 @@
            (and (treeset::in from (nodes graph))
                 (treeset::in to (nodes graph))))
   :rule-classes :forward-chaining)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define adjacentp (from to (graph graphp))
+  :parents (graph)
+  :short "Check if there is an edge from one node of a @(see graph) to
+          another."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(\\log(n) + \\log(d))$), where @($n$) is the
+       number of nodes and @($d$) the number of successors of @('from').")
+    (xdoc::p
+      "This is a convenient abbreviation, not the logical normal form used by
+       this library. It is enabled, so @('(adjacentp from to graph)') becomes
+       @('(treeset::in to (successors from graph))'). Unlike that form, it
+       does not construct the set of successors when executed."))
+  (mbe :logic (treeset::in to (successors from graph))
+       :exec (treemap::in to (adjacency from graph)))
+  :enabled t
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

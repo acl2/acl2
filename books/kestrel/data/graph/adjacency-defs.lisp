@@ -11,8 +11,10 @@
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
 (include-book "kestrel/data/treemap/lookup-defs" :dir :system)
 
+(include-book "edge-defs")
 (include-book "graph-defs")
 (include-book "nodes-defs")
+(include-book "edges-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "adjacency"))
@@ -23,4 +25,5 @@
   :names (adjacency
           adjacency!
           labels
+          edge-in
           ))

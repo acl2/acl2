@@ -147,6 +147,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define edge-in (from to label (graph graphp))
+  :parents (graph)
+  :short "Check if a labeled edge is an edge of a @(see graph)."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(\\log(n) + \\log(d) + \\log(l))$), where @($n$)
+       is the number of nodes, @($d$) the number of successors of
+       @('from'), and @($l$) the number of labels on edges from @('from') to
+       @('to').")
+    (xdoc::p
+      "This is a convenient abbreviation, not the logical normal form used by
+       this library. It is enabled, so @('(edge-in from to label graph)')
+       becomes @('(treeset::in (edge from to label) (edges graph))'). Unlike
+       that form, it does not construct the edge set when executed."))
+  (mbe :logic (treeset::in (edge from to label) (edges graph))
+       :exec (treeset::in label (labels from to graph)))
+  :enabled t
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define adjacency! (node (graph graphp))
   :guard (node-in node graph)
   :parents (adjacency)

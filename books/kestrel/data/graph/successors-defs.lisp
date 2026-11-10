@@ -17,6 +17,7 @@
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
 (include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/treemap/in-defs" :dir :system)
 
 (include-book "graph-defs")
 (include-book "nodes-defs")
@@ -29,6 +30,7 @@
 
 (std::defredundant
   :names (successors
+          adjacentp
           successors-of-set
           successors+-search
           successors+
