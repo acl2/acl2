@@ -17,19 +17,22 @@
 ; from the files named in the comments below.
 ;
 ; Only the cases within the current grammar slice are transcribed
-; (no floats, lifetimes, block doc comments, or non-ASCII identifiers),
+; (no floats, block doc comments, or non-ASCII identifiers),
 ; plus the documented slice-boundary artifacts at the end.
 ; The transcription respects rustc's STAGING:
 ; cases rustc rejects in its lexer
 ; (invalid digits in a based literal, no valid digits,
 ; reserved prefixes, malformed or unterminated literals,
-; invalid escapes, an underscore suffix)
-; must fail here [SC7] [SC8] [SC9] [SC10] [SC11],
+; invalid escapes, an underscore suffix,
+; a lifetime followed by a single quote)
+; must fail here [SC7] [SC8] [SC9] [SC10] [SC11] [SC12],
 ; while cases rustc rejects only in later phases
 ; (float suffixes on based literals, out-of-range values,
 ; suffixes on character and string literals,
-; extra "#" after a raw string)
+; extra "#" after a raw string, keywords as lifetime names)
 ; must LEX here, since our lexer models only the lexing phase.
+; Cases that the tokenizer rejects ([SC5] for raw lifetimes)
+; are in the tokenizer tests.
 ; Inputs with non-ASCII characters are given as lists of code points.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -340,6 +343,65 @@
 (test-lex-fail (acl2::implode (list #\c #\" (code-char 0) #\")))
 (test-lex-fail "c\"\\x00\"")
 (test-lex-fail (acl2::implode (list #\c #\r #\" (code-char 0) #\")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; tests/ui/lifetimes/raw/{simple,static-lt,prim-lt,macro-lt,lifetimes-eq}.rs,
+; tests/ui/rust-2024/raw-gen-lt.rs:
+; raw lifetimes, which may have keyword names.
+; (tests/ui/lifetimes/raw/three-tokens.rs is about edition 2015.)
+
+(test-lex "'r#struct" 1)
+(test-lex "'r#static" 1)
+(test-lex "'r#i32" 1)
+(test-lex "'r#gen" 1)
+(test-lex "'r#struct: loop { break 'r#struct; }" 13)
+(test-lex "fn test<'r#a>(x: &'a ()) {}" 19)
+
+; tests/ui/lifetimes/raw/multiple-prefixes.rs:
+; the raw lifetime 'r#r, then #, then r
+; (rejected only by rustc's parser).
+
+(test-lex "'r#r#r" 3)
+
+; tests/ui/lifetimes/raw/immediately-followed-by-lt.rs (lexer-stage):
+; a raw lifetime followed by a single quote [SC12].
+
+(test-lex-fail "'r#long'id")
+
+; tests/ui/lifetimes/raw/raw-lt-invalid-raw-id.rs (lexer-stage):
+; 'r#_ is not a raw lifetime, since a lone underscore is not an
+; identifier, so it is the lifetime 'r followed by "#" [SC8].
+; The other cases of this test ('r#self etc.) lex here,
+; and the tokenizer rejects them [SC5].
+
+(test-lex-fail "'r#_")
+
+; tests/ui/lexer/prefixed-lifetime.rs,
+; tests/ui/lexer/dont-ice-on-invalid-lifetime-in-macro-definition.rs
+; (lexer-stage): reserved prefixes [SC8].
+
+(test-lex-fail "'foo#lifetime")
+(test-lex-fail "e::<f'g>")
+
+; tests/ui/parser/numeric-lifetime.rs (lexer-stage):
+; no lifetime starts with a digit.
+
+(test-lex-fail "struct S<'1> { s: &'1 usize }")
+
+; tests/ui/parser/label-is-actually-char.rs,
+; tests/ui/parser/cfg-keyword-lifetime.rs,
+; tests/ui/lifetimes/raw/gen-lt.rs:
+; lifetimes that only rustc's parser rejects
+; (a label without a loop, a keyword name).
+
+(test-lex "'a;" 2)
+(test-lex "'abc;" 2)
+(test-lex "'a'..='b" 3)
+(test-lex "'c'..='def" 3)
+(test-lex "['a, 'b, 'cde]" 9)
+(test-lex "'ref" 1)
+(test-lex "'gen" 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

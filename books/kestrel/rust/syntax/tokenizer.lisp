@@ -109,7 +109,7 @@
      according to the edition's keyword tables
      (see @(see keywords)).
      Tokenization also enforces [SC5]:
-     a raw identifier must not be
+     a raw identifier or raw lifetime must not be
      @('crate'), @('self'), @('super'), or @('Self').")
    (xdoc::p
     "Since Rust source is Unicode,
@@ -354,6 +354,32 @@
        ((when (member-equal name (list "crate" "self" "super" "Self")))
         (reserrf (list :disallowed-raw-identifier name)))) ; [SC5]
     (token-ident name t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-lifetime-token ((tree abnf::treep))
+  :returns (token token-resultp)
+  :short "Abstract a @('lifetime-token') CST to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The name of the lifetime token is the text
+     after the single quote,
+     or after @('\\'r#') for a raw lifetime,
+     whose text is the only kind that starts with @('\\'r#').
+     The placeholder lifetime @('\\'_') has name @('\"_\"').
+     The side condition [SC5] is enforced here for raw lifetimes:
+     the name must not be
+     @('crate'), @('self'), @('super'), or @('Self')."))
+  (b* (((fty::okf &) (abnf::check-tree-nonleaf tree "lifetime-token"))
+       (nats (abs-symbols-to-nats (abnf::tree->string tree)))
+       (raw (prefixp (list #x27 #x72 #x23) nats)) ; 'r#
+       ((fty::okf name)
+        (code-points-to-utf-8-string (nthcdr (if raw 3 1) nats)))
+       ((when (and raw
+                   (member-equal name (list "crate" "self" "super" "Self"))))
+        (reserrf (list :disallowed-raw-lifetime name)))) ; [SC5]
+    (token-lifetime name raw)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -628,6 +654,8 @@
            (abs-identifier-or-keyword sub edition))
           ((equal rulename? "raw-identifier")
            (abs-raw-identifier sub))
+          ((equal rulename? "lifetime-token")
+           (abs-lifetime-token sub))
           ((equal rulename? "integer-literal")
            (abs-integer-literal sub))
           ((equal rulename? "char-literal")
