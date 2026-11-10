@@ -26,6 +26,7 @@
 (include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "../graph-defs")
+(include-book "../nodes-defs")
 (include-book "../successors-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -52,6 +53,7 @@
 (local (include-book "kestrel/data/treemap/extensionality" :dir :system))
 
 (local (include-book "../graph"))
+(local (include-book "../nodes"))
 (local (include-book "../successors"))
 (local (include-book "../predecessors"))
 
@@ -442,7 +444,7 @@
 
 ;; The initial state
 
-(defrule keys-of-kahn-counters-of-empty
+(defrulel keys-of-kahn-counters-of-empty
   (equal (treemap::keys (kahn-counters set (treemap::empty) graph))
          (successors-of-set set graph))
   :enable treeset::extensionality-polar)
@@ -493,7 +495,7 @@
 ;; So the loop leaves what the logical version leaves, and removes the nodes in
 ;; the same order, accumulating them most recent first.
 
-(defrule mv-nth-1-of-kahn-loop
+(defrulel mv-nth-1-of-kahn-loop
   (implies (and (treeset::subset (successors-of-set remaining graph)
                                  remaining)
                 (equal counters
@@ -507,7 +509,7 @@
   :enable (kahn-loop
            kahn-remaining))
 
-(defrule mv-nth-0-of-kahn-loop
+(defrulel mv-nth-0-of-kahn-loop
   (implies (and (treeset::subset (successors-of-set remaining graph)
                                  remaining)
                 (equal counters
@@ -521,3 +523,40 @@
   :enable (kahn-loop
            kahn-order
            revappend))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Run the efficient version on a whole graph, from the counters and frontier
+;; computed afresh for its nodes. This is what cyclicp and topological-sort
+;; execute.
+
+(define kahn ((graph graphp))
+  :returns (mv (order true-listp)
+               (remaining treeset::setp))
+  :parents (cyclicp)
+  (b* ((nodes (nodes graph))
+       (counters (kahn-counters nodes (treemap::empty) graph)))
+    (kahn-loop nodes
+               (treeset::diff nodes (treemap::keys counters))
+               counters
+               nil
+               graph)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule kahn-when-equiv-congruence
+  (implies (equiv graph0 graph1)
+           (equal (kahn graph0)
+                  (kahn graph1)))
+  :rule-classes :congruence
+  :enable kahn)
+
+(defrule mv-nth-0-of-kahn
+  (equal (mv-nth 0 (kahn graph))
+         (revappend (kahn-order (nodes graph) graph) nil))
+  :enable kahn)
+
+(defrule mv-nth-1-of-kahn
+  (equal (mv-nth 1 (kahn graph))
+         (kahn-remaining (nodes graph) graph))
+  :enable kahn)

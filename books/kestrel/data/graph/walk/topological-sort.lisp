@@ -448,14 +448,7 @@
        nodes and @($m$) the number of pairs of nodes joined by an edge."))
   (mbe :logic (mv (cyclicp graph)
                   (kahn-order (nodes graph) graph))
-       :exec (b* ((nodes (nodes graph))
-                  (counters (kahn-counters nodes (treemap::empty) graph))
-                  ((mv order remaining)
-                   (kahn-loop nodes
-                              (treeset::diff nodes (treemap::keys counters))
-                              counters
-                              nil
-                              graph)))
+       :exec (b* (((mv order remaining) (kahn graph)))
                (mv (not (treeset::emptyp remaining))
                    (revappend order nil))))
   :guard-hints (("Goal" :in-theory (enable cyclicp))))

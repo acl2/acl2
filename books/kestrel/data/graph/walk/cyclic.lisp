@@ -98,14 +98,7 @@
       "Time complexity: @($O((n + m)\\log(n))$), where @($n$) is the number of
        nodes and @($m$) the number of pairs of nodes joined by an edge."))
   (mbe :logic (not (treeset::emptyp (kahn-remaining (nodes graph) graph)))
-       :exec (b* ((nodes (nodes graph))
-                  (counters (kahn-counters nodes (treemap::empty) graph))
-                  ((mv - remaining)
-                   (kahn-loop nodes
-                              (treeset::diff nodes (treemap::keys counters))
-                              counters
-                              nil
-                              graph)))
+       :exec (b* (((mv - remaining) (kahn graph)))
                (not (treeset::emptyp remaining)))))
 
 ;;;;;;;;;;;;;;;;;;;;

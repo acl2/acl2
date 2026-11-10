@@ -19,6 +19,7 @@
 (include-book "kestrel/data/treemap/delete-defs" :dir :system)
 
 (include-book "../graph-defs")
+(include-book "../nodes-defs")
 (include-book "../successors-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
@@ -33,4 +34,5 @@
           kahn-counters
           kahn-decrement
           kahn-loop
+          kahn
           ))
