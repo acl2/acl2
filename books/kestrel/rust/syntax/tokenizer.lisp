@@ -67,6 +67,9 @@
                           abnf::tree-listp-when-result-not-error
                           abnf::tree-list-listp-when-result-not-error
                           abnf::tree-list-tuple2p-when-result-not-error
+                          abnf::tree-list-tuple3p-when-result-not-error
+                          abnf::tree-list-tuple4p-when-result-not-error
+                          abnf::tree-list-tuple5p-when-result-not-error
                           acl2::stringp-when-result-not-error
                           lexemep-when-result-not-error
                           tokenp-when-result-not-error
@@ -438,6 +441,151 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define abs-literal-suffix ((tree abnf::treep))
+  :returns (suffix acl2::string-resultp)
+  :short "Abstract the optional-suffix CST
+          of a character or string literal
+          to the suffix as a string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The CST is the tree for @('[ suffix ]'),
+     whose branches are empty if the suffix is absent;
+     as for integer literals,
+     an absent suffix abstracts to the empty string."))
+  (b* (((fty::okf branches) (abnf::check-tree-nonleaf tree nil))
+       ((when (endp branches)) "")
+       ((fty::okf trees) (abnf::check-tree-list-list-1 branches))
+       ((fty::okf sub) (abnf::check-tree-list-1 trees))
+       ((fty::okf &) (abnf::check-tree-nonleaf sub "suffix")))
+    (code-points-to-utf-8-string
+     (abs-symbols-to-nats (abnf::tree->string sub)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-char-literal ((tree abnf::treep) (rulename stringp) (byte booleanp))
+  :returns (token token-resultp)
+  :short "Abstract a @('char-literal') or @('byte-literal') CST to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both rules have four branches:
+     the opening quote (with the @('b') prefix for a byte literal),
+     the character or escape, the closing quote, and the optional suffix.
+     The text of the token is that of the second branch."))
+  (b* ((rulename (str-fix rulename))
+       ((fty::okf sub) (abnf::check-tree-nonleaf-4 tree rulename))
+       ((fty::okf text)
+        (code-points-to-utf-8-string
+         (abs-symbols-to-nats
+          (abnf::tree-list->string (abnf::tree-list-tuple4->2nd sub)))))
+       ((fty::okf opt-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple4->4th sub)))
+       ((fty::okf suffix) (abs-literal-suffix opt-tree)))
+    (token-lit (lit-char (make-char-lit :byte byte
+                                        :text text
+                                        :suffix suffix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-string-literal ((tree abnf::treep))
+  :returns (token token-resultp)
+  :short "Abstract a @('string-literal') CST to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The rule has four branches:
+     the opening double quote, the body items,
+     the closing double quote, and the optional suffix."))
+  (b* (((fty::okf sub) (abnf::check-tree-nonleaf-4 tree "string-literal"))
+       ((fty::okf text)
+        (code-points-to-utf-8-string
+         (abs-symbols-to-nats
+          (abnf::tree-list->string (abnf::tree-list-tuple4->2nd sub)))))
+       ((fty::okf opt-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple4->4th sub)))
+       ((fty::okf suffix) (abs-literal-suffix opt-tree)))
+    (token-lit (lit-str (make-str-lit :kind (str-kind-plain)
+                                      :raw nil
+                                      :text text
+                                      :suffix suffix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-prefixed-string-literal ((tree abnf::treep)
+                                     (rulename stringp)
+                                     (kind str-kindp))
+  :returns (token token-resultp)
+  :short "Abstract a @('byte-string-literal') or @('c-string-literal') CST
+          to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Both rules have five branches:
+     the prefix, the opening double quote, the body items,
+     the closing double quote, and the optional suffix."))
+  (b* ((rulename (str-fix rulename))
+       ((fty::okf sub) (abnf::check-tree-nonleaf-5 tree rulename))
+       ((fty::okf text)
+        (code-points-to-utf-8-string
+         (abs-symbols-to-nats
+          (abnf::tree-list->string (abnf::tree-list-tuple5->3rd sub)))))
+       ((fty::okf opt-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple5->5th sub)))
+       ((fty::okf suffix) (abs-literal-suffix opt-tree)))
+    (token-lit (lit-str (make-str-lit :kind kind
+                                      :raw nil
+                                      :text text
+                                      :suffix suffix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-raw-content-nats ((nats nat-listp))
+  :returns (mv (hashes natp)
+               (text-nats nat-listp))
+  :short "Split the code points of a raw literal's content
+          into its number of @('#') and its body."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The content consists of some number @('n') of @('#'),
+     a double quote, the body, a double quote,
+     and @('n') @('#') again (see the @('raw-*-content') rules)."))
+  (b* ((nats (nat-list-fix nats))
+       (n (count-leading-hashes nats)))
+    (mv n (butlast (nthcdr (1+ n) nats) (1+ n)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-raw-string-literal ((tree abnf::treep)
+                                (rulename stringp)
+                                (kind str-kindp))
+  :returns (token token-resultp)
+  :short "Abstract a @('raw-string-literal'), @('raw-byte-string-literal'),
+          or @('raw-c-string-literal') CST to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "All three rules have three branches:
+     the prefix, the content, and the optional suffix."))
+  (b* ((rulename (str-fix rulename))
+       ((fty::okf sub) (abnf::check-tree-nonleaf-3 tree rulename))
+       ((fty::okf content-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple3->2nd sub)))
+       ((mv hashes text-nats)
+        (abs-raw-content-nats
+         (abs-symbols-to-nats (abnf::tree->string content-tree))))
+       ((fty::okf text) (code-points-to-utf-8-string text-nats))
+       ((fty::okf opt-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple3->3rd sub)))
+       ((fty::okf suffix) (abs-literal-suffix opt-tree)))
+    (token-lit (lit-str (make-str-lit :kind kind
+                                      :raw hashes
+                                      :text text
+                                      :suffix suffix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abs-punctuation ((tree abnf::treep))
   :returns (token token-resultp)
   :short "Abstract a @('punctuation') CST to a token."
@@ -482,6 +630,27 @@
            (abs-raw-identifier sub))
           ((equal rulename? "integer-literal")
            (abs-integer-literal sub))
+          ((equal rulename? "char-literal")
+           (abs-char-literal sub "char-literal" nil))
+          ((equal rulename? "byte-literal")
+           (abs-char-literal sub "byte-literal" t))
+          ((equal rulename? "string-literal")
+           (abs-string-literal sub))
+          ((equal rulename? "byte-string-literal")
+           (abs-prefixed-string-literal sub "byte-string-literal"
+                                        (str-kind-byte)))
+          ((equal rulename? "c-string-literal")
+           (abs-prefixed-string-literal sub "c-string-literal"
+                                        (str-kind-c)))
+          ((equal rulename? "raw-string-literal")
+           (abs-raw-string-literal sub "raw-string-literal"
+                                   (str-kind-plain)))
+          ((equal rulename? "raw-byte-string-literal")
+           (abs-raw-string-literal sub "raw-byte-string-literal"
+                                   (str-kind-byte)))
+          ((equal rulename? "raw-c-string-literal")
+           (abs-raw-string-literal sub "raw-c-string-literal"
+                                   (str-kind-c)))
           ((equal rulename? "punctuation")
            (abs-punctuation sub))
           ((equal rulename? "delimiter")

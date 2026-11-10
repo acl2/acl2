@@ -69,6 +69,8 @@
     "The first slice covers whitespace, comments
      (except block doc comments),
      ASCII identifiers, integer literals,
+     character, byte, string, byte-string, and C-string literals
+     (including their raw forms),
      punctuation, and delimiters;
      see the comments in @('grammar/lexical-grammar.abnf')
      for the precise scope and the side condition index.")

@@ -34,7 +34,8 @@
 ; for guard verification and return type theorems.
 (local (in-theory (enable acl2::natp-when-result-not-error
                           acl2::nat-listp-when-result-not-error
-                          abnf::treep-when-result-not-error)))
+                          abnf::treep-when-result-not-error
+                          abnf::tree-listp-when-result-not-error)))
 
 ; These trivial bridges let arithmetic guard obligations
 ; (rationalp, acl2-numberp, integerp)
@@ -81,10 +82,14 @@
      the recursive structure of the block comment lexing functions;
      [SC7] makes integer literal lexing commit to
      a radix after @('0b'), @('0o'), or @('0x');
-     and [SC8] rejects an identifier immediately followed by @('#')
-     (the other reserved-prefix characters @('\\'') and @('\"')
-     cannot start any lexeme in the current grammar slice,
-     so no input containing them survives lexing anyway).
+     [SC8] rejects an identifier, or a lone underscore,
+     immediately followed by @('#'), a single quote, or a double quote;
+     [SC9] rejects unicode escapes that do not denote
+     Unicode scalar values (or that denote NUL, in C strings);
+     [SC10] ends a raw literal at its first terminator
+     and bounds the number of @('#') delimiting it;
+     and [SC11] rejects a character or string literal
+     immediately followed by an underscore.
      Maximal munch [SC1] is implemented by
      greedy repetitions and longest-first dispatch.")
    (xdoc::p
@@ -1712,6 +1717,2006 @@
                     :in-theory (enable cst-matchp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Character and string literals.
+;
+; The character classes, suffixes, escapes, and literal rules below follow
+; the grammar's "Character and string literals" section.  [SC9] (unicode
+; escape values) is checked where unicode escapes are lexed, and [SC10] (raw
+; string termination) in the raw literal bodies and their hash count.
+
+(def-lex-char-class "nonzero-hex-digit"
+  (or (and (<= #x31 nat) (<= nat #x39))
+      (and (<= #x41 nat) (<= nat #x46))
+      (and (<= #x61 nat) (<= nat #x66))))
+
+(def-lex-char-class "dquote"
+  (eql nat #x22))
+
+(def-lex-char-class "lf"
+  (eql nat #xa))
+
+(def-lex-char-class "char-literal-char"
+  (or (<= nat #x8)
+      (and (<= #xb nat) (<= nat #xc))
+      (and (<= #xe nat) (<= nat #x26))
+      (and (<= #x28 nat) (<= nat #x5b))
+      (and (<= #x5d nat) (<= nat #xd7ff))
+      (and (<= #xe000 nat) (<= nat #x10ffff))))
+
+(def-lex-char-class "string-literal-char"
+  (or (<= nat #xc)
+      (and (<= #xe nat) (<= nat #x21))
+      (and (<= #x23 nat) (<= nat #x5b))
+      (and (<= #x5d nat) (<= nat #xd7ff))
+      (and (<= #xe000 nat) (<= nat #x10ffff))))
+
+(def-lex-char-class "c-string-literal-char"
+  (or (and (<= #x1 nat) (<= nat #xc))
+      (and (<= #xe nat) (<= nat #x21))
+      (and (<= #x23 nat) (<= nat #x5b))
+      (and (<= #x5d nat) (<= nat #xd7ff))
+      (and (<= #xe000 nat) (<= nat #x10ffff))))
+
+(def-lex-char-class "raw-string-char"
+  (or (<= nat #xc)
+      (and (<= #xe nat) (<= nat #xd7ff))
+      (and (<= #xe000 nat) (<= nat #x10ffff))))
+
+(def-lex-char-class "raw-c-string-char"
+  (or (and (<= #x1 nat) (<= nat #xc))
+      (and (<= #xe nat) (<= nat #xd7ff))
+      (and (<= #xe000 nat) (<= nat #x10ffff))))
+
+(def-lex-char-class "ascii-for-char"
+  (or (<= nat #x8)
+      (and (<= #xb nat) (<= nat #xc))
+      (and (<= #xe nat) (<= nat #x26))
+      (and (<= #x28 nat) (<= nat #x5b))
+      (and (<= #x5d nat) (<= nat #x7f))))
+
+(def-lex-char-class "ascii-for-string"
+  (or (<= nat #xc)
+      (and (<= #xe nat) (<= nat #x21))
+      (and (<= #x23 nat) (<= nat #x5b))
+      (and (<= #x5d nat) (<= nat #x7f))))
+
+(def-lex-char-class "ascii-for-raw"
+  (or (<= nat #xc)
+      (and (<= #xe nat) (<= nat #x7f))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-suffix ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('suffix')."
+  (b* (((mv tree1 input1) (lex-identifier-or-keyword input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "suffix")
+         :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-suffix-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-suffix-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-suffix
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-suffix
+    (implies (not (reserrp tree))
+             (cst-matchp tree "suffix"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-identifier-or-keyword
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p))))
+
+  (defret tree-terminatedp-of-lex-suffix
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-suffix
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-option-suffix ((input nat-listp))
+  :returns (mv (tree abnf::treep)
+               (rest-input nat-listp))
+  :short "Lex a @('[ suffix ]')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This never fails:
+     if no suffix-shaped text follows,
+     the option is empty."))
+  (b* (((mv tree1 input1) (lex-suffix input))
+       ((when (reserrp tree1))
+        (mv (abnf::make-tree-nonleaf :rulename? nil :branches nil)
+            (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-option-suffix-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-option-suffix
+    (equal (append (abnf::tree->string tree) rest-input)
+           (nat-list-fix input))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-option-suffix
+    (cst-matchp tree "[ suffix ]")
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-option-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-option-suffix
+    (abnf::tree-terminatedp tree)
+    :hints (("Goal" :use cst-matchp-of-lex-option-suffix
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-underscore ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('\"_\"') element."
+  (b* (((mv tree input1) (abnf::parse-ichars "_" input))
+       ((when (reserrp tree))
+        (mv (reserrf-push tree) (nat-list-fix input))))
+    (mv tree input1))
+  ///
+
+  (defret len-of-lex-underscore-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-underscore-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-underscore
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars))))
+
+  (defret cst-matchp-of-lex-underscore
+    (implies (not (reserrp tree))
+             (cst-matchp tree "\"_\""))
+    :hints (("Goal" :in-theory (enable cst-matchp
+                                       tree-match-of-parse-ichars-elem
+                                       tree-terminatedp-of-parse-ichars))))
+
+  (defret tree-terminatedp-of-lex-underscore
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-underscore
+                    :in-theory (enable cst-matchp)))))
+
+(def-lex-repetition lex-*-underscore
+  lex-underscore "\"_\"" "*\"_\"")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-quote-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('quote-escape')."
+  (b* (((mv tree1 input1) (abnf::parse-ichars "\\'" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "quote-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-dquote input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "quote-escape")
+         :branches (list (list tree1) (list tree2)))
+        input2))
+  ///
+
+  (defret len-of-lex-quote-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-quote-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-quote-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-quote-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "quote-escape"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-lex-dquote
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-quote-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-quote-escape
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-string-continue ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('string-continue')."
+  (b* (((mv tree1 input1) (abnf::parse-ichars "\\" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-lf input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "string-continue")
+         :branches (list (list tree1) (list tree2)))
+        input2))
+  ///
+
+  (defret len-of-lex-string-continue-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-string-continue-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-string-continue
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-string-continue
+    (implies (not (reserrp tree))
+             (cst-matchp tree "string-continue"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-lex-lf
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-string-continue
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-string-continue
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-ascii-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex an @('ascii-escape')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "\\x" input))
+       ((when (not (reserrp tree1)))
+        (b* (((mv tree2 input2) (lex-oct-digit input1))
+             ((when (reserrp tree2))
+              (mv (reserrf-push tree2) (nat-list-fix input)))
+             ((mv tree3 input3) (lex-hex-digit input2))
+             ((when (reserrp tree3))
+              (mv (reserrf-push tree3) (nat-list-fix input))))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "ascii-escape")
+               :branches (list (list tree1) (list tree2) (list tree3)))
+              input3)))
+       ((mv tree1 input1) (abnf::parse-schars "\\n" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "ascii-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\r" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "ascii-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\t" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "ascii-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\\\" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "ascii-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\0" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "ascii-escape")
+         :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-ascii-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-ascii-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-ascii-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-ascii-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "ascii-escape"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-oct-digit
+                     tree-terminatedp-of-lex-hex-digit
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-ascii-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-ascii-escape
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-byte-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('byte-escape')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "\\x" input))
+       ((when (not (reserrp tree1)))
+        (b* (((mv tree2 input2) (lex-hex-digit input1))
+             ((when (reserrp tree2))
+              (mv (reserrf-push tree2) (nat-list-fix input)))
+             ((mv tree3 input3) (lex-hex-digit input2))
+             ((when (reserrp tree3))
+              (mv (reserrf-push tree3) (nat-list-fix input))))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "byte-escape")
+               :branches (list (list tree1) (list tree2) (list tree3)))
+              input3)))
+       ((mv tree1 input1) (abnf::parse-schars "\\n" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\r" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\t" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\\\" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\0" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\'" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-dquote input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "byte-escape")
+         :branches (list (list tree1) (list tree2)))
+        input2))
+  ///
+
+  (defret len-of-lex-byte-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-byte-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-byte-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-byte-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "byte-escape"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-hex-digit
+                     tree-terminatedp-of-lex-dquote
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-byte-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-byte-escape
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-c-byte-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('c-byte-escape')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This excludes @('\\\\0') and @('\\\\x00'),
+     which would put a NUL inside a C string."))
+  (b* (((mv tree1 input1) (abnf::parse-schars "\\x" input))
+       ((when (not (reserrp tree1)))
+        (b* (((mv tree2 input2) (lex-nonzero-hex-digit input1))
+             ((when (not (reserrp tree2)))
+              (b* (((mv tree3 input3) (lex-hex-digit input2))
+                   ((when (reserrp tree3))
+                    (mv (reserrf-push tree3) (nat-list-fix input))))
+                (mv (abnf::make-tree-nonleaf
+                     :rulename? (abnf::rulename "c-byte-escape")
+                     :branches (list (list tree1)
+                                     (list (abnf::make-tree-nonleaf
+                                            :rulename? nil
+                                            :branches (list (list tree2)
+                                                            (list tree3))))))
+                    input3)))
+             ((mv tree2 input2) (abnf::parse-ichars "0" input1))
+             ((when (reserrp tree2))
+              (mv (reserrf-push tree2) (nat-list-fix input)))
+             ((mv tree3 input3) (lex-nonzero-hex-digit input2))
+             ((when (reserrp tree3))
+              (mv (reserrf-push tree3) (nat-list-fix input))))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "c-byte-escape")
+               :branches (list (list tree1)
+                               (list (abnf::make-tree-nonleaf
+                                      :rulename? nil
+                                      :branches (list (list tree2)
+                                                      (list tree3))))))
+              input3)))
+       ((mv tree1 input1) (abnf::parse-schars "\\n" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "c-byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\r" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "c-byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "\\t" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "c-byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\\\" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "c-byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\'" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "c-byte-escape")
+             :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "\\" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-dquote input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "c-byte-escape")
+         :branches (list (list tree1) (list tree2)))
+        input2))
+  ///
+
+  (defret len-of-lex-c-byte-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-c-byte-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-c-byte-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-c-byte-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "c-byte-escape"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-hex-digit
+                     tree-terminatedp-of-lex-nonzero-hex-digit
+                     tree-terminatedp-of-lex-dquote
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-c-byte-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-c-byte-escape
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-hex-digit-underscores ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('( hex-digit *\"_\" )') group."
+  (b* (((mv tree1 input1) (lex-hex-digit input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv trees2 input2) (lex-*-underscore input1)))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1) trees2))
+        input2))
+  ///
+
+  (defret len-of-lex-hex-digit-underscores-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-hex-digit-underscores-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-hex-digit-underscores
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-hex-digit-underscores
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( hex-digit *\"_\" )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-terminatedp-of-lex-hex-digit
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-hex-digit-underscores
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-hex-digit-underscores
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-unicode-escape-groups ((n natp) (input nat-listp))
+  :returns (mv (trees abnf::tree-listp)
+               (rest-input nat-listp))
+  :short "Lex at most @('n') @('( hex-digit *\"_\" )') groups,
+          as many as possible."
+  :measure (nfix n)
+  :hooks nil
+  (b* (((when (zp n)) (mv nil (nat-list-fix input)))
+       ((mv tree input1) (lex-hex-digit-underscores input))
+       ((when (reserrp tree)) (mv nil (nat-list-fix input)))
+       ((mv trees input2) (lex-unicode-escape-groups (1- n) input1)))
+    (mv (cons tree trees) input2))
+  ///
+
+  (defret len-of-lex-unicode-escape-groups-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret len-of-lex-unicode-escape-groups.trees
+    (<= (len trees) (nfix n))
+    :rule-classes :linear
+    :hints (("Goal" :induct t)))
+
+  (defret input-decomposition-of-lex-unicode-escape-groups
+    (equal (append (abnf::tree-list->string trees) rest-input)
+           (nat-list-fix input))
+    :hints (("Goal" :induct t
+                    :in-theory (enable abnf::tree-list->string))))
+
+  (defret tree-list-terminatedp-of-lex-unicode-escape-groups
+    (abnf::tree-list-terminatedp trees)
+    :hints (("Goal" :induct t
+                    :in-theory (enable abnf::tree-list-terminatedp))))
+
+  (defret cst-list-elem-matchp-of-lex-unicode-escape-groups
+    (cst-list-elem-matchp trees "( hex-digit *\"_\" )")
+    :hints (("Goal"
+             :induct t
+             :in-theory
+             (enable cst-list-elem-matchp
+                     tree-match-element-p-when-cst-matchp$
+                     abnf::tree-list-match-element-p
+                     abnf::tree-list-terminatedp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hex-digits-value ((nats nat-listp) (acc natp))
+  :returns (value natp
+                  :hints (("Goal" :induct t
+                                  :in-theory (enable natp))))
+  :short "Value of the hexadecimal digits in a list of characters,
+          ignoring the other characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Applied to the characters of a @('unicode-escape'),
+     this yields the escaped value:
+     the other characters are
+     @('\\\\'), @('u'), @('{'), @('_'), and @('}'),
+     none of which is a hexadecimal digit."))
+  (b* (((when (endp nats)) (lnfix acc))
+       (c (lnfix (car nats)))
+       (acc (lnfix acc))
+       (acc (cond ((and (<= #x30 c) (<= c #x39)) (+ (* 16 acc) (- c #x30)))
+                  ((and (<= #x41 c) (<= c #x46)) (+ (* 16 acc) (- c #x37)))
+                  ((and (<= #x61 c) (<= c #x66)) (+ (* 16 acc) (- c #x57)))
+                  (t acc))))
+    (hex-digits-value (cdr nats) acc))
+  :guard-hints (("Goal" :in-theory (enable natp)))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-unicode-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('unicode-escape')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After one required group,
+     at most five more are lexed,
+     so that a seventh digit makes
+     the closing brace fail to lex.
+     The escaped value must be a Unicode scalar value [SC9]."))
+  (b* (((mv tree1 input1) (abnf::parse-schars "\\u{" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-hex-digit-underscores input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv trees3 input3) (lex-unicode-escape-groups 5 input2))
+       ((mv tree4 input4) (abnf::parse-ichars "}" input3))
+       ((when (reserrp tree4))
+        (mv (reserrf-push tree4) (nat-list-fix input)))
+       (value (hex-digits-value
+               (abnf::tree-list->string (cons tree2 trees3)) 0))
+       ((unless (and (<= value #x10ffff)
+                     (not (and (<= #xd800 value) (<= value #xdfff)))))
+        (mv (reserrf (list :invalid-unicode-escape value)) ; [SC9]
+            (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "unicode-escape")
+         :branches (list (list tree1) (cons tree2 trees3) (list tree4)))
+        input4))
+  ///
+
+  (defret len-of-lex-unicode-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-unicode-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-unicode-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-unicode-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "unicode-escape"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-element-p-when-cst-list-elem-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-hex-digit-underscores
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-unicode-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-unicode-escape
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-c-unicode-escape ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('unicode-escape') in a C string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In a C string the escaped value must also be nonzero [SC9]."))
+  (b* (((mv tree input1) (lex-unicode-escape input))
+       ((when (reserrp tree))
+        (mv (reserrf-push tree) (nat-list-fix input)))
+       ((when (eql (hex-digits-value (abnf::tree->string tree) 0) 0))
+        (mv (reserrf (list :nul-in-c-string-escape)) ; [SC9]
+            (nat-list-fix input))))
+    (mv tree input1))
+  ///
+
+  (defret len-of-lex-c-unicode-escape-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-c-unicode-escape-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-c-unicode-escape
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input))))
+
+  (defret cst-matchp-of-lex-c-unicode-escape
+    (implies (not (reserrp tree))
+             (cst-matchp tree "unicode-escape")))
+
+  (defret tree-terminatedp-of-lex-c-unicode-escape
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-char-literal-item ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a
+          @('( char-literal-char / quote-escape
+               / ascii-escape / unicode-escape )')."
+  (b* (((mv tree1 input1) (lex-char-literal-char input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-quote-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-ascii-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-unicode-escape input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-char-literal-item-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-char-literal-item-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-char-literal-item
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-char-literal-item
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( char-literal-char / quote-escape / ascii-escape / unicode-escape )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-char-literal-char
+                     tree-terminatedp-of-lex-quote-escape
+                     tree-terminatedp-of-lex-ascii-escape
+                     tree-terminatedp-of-lex-unicode-escape
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-char-literal-item
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-char-literal-item
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-byte-literal-item ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('( ascii-for-char / byte-escape )')."
+  (b* (((mv tree1 input1) (lex-ascii-for-char input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-byte-escape input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-byte-literal-item-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-byte-literal-item-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-byte-literal-item
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-byte-literal-item
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( ascii-for-char / byte-escape )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-ascii-for-char
+                     tree-terminatedp-of-lex-byte-escape
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-byte-literal-item
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-byte-literal-item
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-string-literal-item ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a
+          @('( string-literal-char / quote-escape / ascii-escape
+               / unicode-escape / string-continue )')."
+  (b* (((mv tree1 input1) (lex-string-literal-char input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-quote-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-ascii-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-unicode-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-string-continue input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-string-literal-item-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-string-literal-item-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-string-literal-item
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-string-literal-item
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( string-literal-char / quote-escape / ascii-escape / unicode-escape / string-continue )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-string-literal-char
+                     tree-terminatedp-of-lex-quote-escape
+                     tree-terminatedp-of-lex-ascii-escape
+                     tree-terminatedp-of-lex-unicode-escape
+                     tree-terminatedp-of-lex-string-continue
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-string-literal-item
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-string-literal-item
+                    :in-theory (enable cst-matchp)))))
+
+(def-lex-repetition lex-*-string-literal-item
+  lex-string-literal-item
+  "( string-literal-char / quote-escape / ascii-escape / unicode-escape / string-continue )"
+  "*( string-literal-char / quote-escape / ascii-escape / unicode-escape / string-continue )")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-byte-string-literal-item ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('( ascii-for-string / byte-escape / string-continue )')."
+  (b* (((mv tree1 input1) (lex-ascii-for-string input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-byte-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-string-continue input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-byte-string-literal-item-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-byte-string-literal-item-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-byte-string-literal-item
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-byte-string-literal-item
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( ascii-for-string / byte-escape / string-continue )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-ascii-for-string
+                     tree-terminatedp-of-lex-byte-escape
+                     tree-terminatedp-of-lex-string-continue
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-byte-string-literal-item
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-byte-string-literal-item
+                    :in-theory (enable cst-matchp)))))
+
+(def-lex-repetition lex-*-byte-string-literal-item
+  lex-byte-string-literal-item
+  "( ascii-for-string / byte-escape / string-continue )"
+  "*( ascii-for-string / byte-escape / string-continue )")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-c-string-literal-item ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a
+          @('( c-string-literal-char / c-byte-escape
+               / unicode-escape / string-continue )')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unicode escapes are lexed by @(tsee lex-c-unicode-escape),
+     which also rejects a zero value [SC9]."))
+  (b* (((mv tree1 input1) (lex-c-string-literal-char input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-c-byte-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-c-unicode-escape input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (lex-string-continue input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-c-string-literal-item-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-c-string-literal-item-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-c-string-literal-item
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-c-string-literal-item
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( c-string-literal-char / c-byte-escape / unicode-escape / string-continue )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-terminatedp-of-lex-c-string-literal-char
+                     tree-terminatedp-of-lex-c-byte-escape
+                     tree-terminatedp-of-lex-c-unicode-escape
+                     tree-terminatedp-of-lex-string-continue
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-c-string-literal-item
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-c-string-literal-item
+                    :in-theory (enable cst-matchp)))))
+
+(def-lex-repetition lex-*-c-string-literal-item
+  lex-c-string-literal-item
+  "( c-string-literal-char / c-byte-escape / unicode-escape / string-continue )"
+  "*( c-string-literal-char / c-byte-escape / unicode-escape / string-continue )")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-char-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('char-literal')."
+  (b* (((mv tree1 input1) (abnf::parse-ichars "'" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-char-literal-item input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv tree3 input3) (abnf::parse-ichars "'" input2))
+       ((when (reserrp tree3))
+        (mv (reserrf-push tree3) (nat-list-fix input)))
+       ((mv tree4 input4) (lex-option-suffix input3)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "char-literal")
+         :branches (list (list tree1) (list tree2) (list tree3) (list tree4)))
+        input4))
+  ///
+
+  (defret len-of-lex-char-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-char-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-char-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-char-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "char-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-lex-char-literal-item
+                     tree-terminatedp-of-lex-option-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-char-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-char-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-byte-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('byte-literal')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "b'" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-byte-literal-item input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv tree3 input3) (abnf::parse-ichars "'" input2))
+       ((when (reserrp tree3))
+        (mv (reserrf-push tree3) (nat-list-fix input)))
+       ((mv tree4 input4) (lex-option-suffix input3)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "byte-literal")
+         :branches (list (list tree1) (list tree2) (list tree3) (list tree4)))
+        input4))
+  ///
+
+  (defret len-of-lex-byte-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-byte-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-byte-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-byte-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "byte-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-byte-literal-item
+                     tree-terminatedp-of-lex-option-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-byte-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-byte-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-string-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('string-literal')."
+  (b* (((mv tree1 input1) (lex-dquote input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv trees2 input2) (lex-*-string-literal-item input1))
+       ((mv tree3 input3) (lex-dquote input2))
+       ((when (reserrp tree3))
+        (mv (reserrf-push tree3) (nat-list-fix input)))
+       ((mv tree4 input4) (lex-option-suffix input3)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "string-literal")
+         :branches (list (list tree1) trees2 (list tree3) (list tree4)))
+        input4))
+  ///
+
+  (defret len-of-lex-string-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-string-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-string-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-string-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "string-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-terminatedp-of-lex-dquote
+                     tree-terminatedp-of-lex-option-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-string-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-string-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-byte-string-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('byte-string-literal')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "b" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-dquote input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv trees3 input3) (lex-*-byte-string-literal-item input2))
+       ((mv tree4 input4) (lex-dquote input3))
+       ((when (reserrp tree4))
+        (mv (reserrf-push tree4) (nat-list-fix input)))
+       ((mv tree5 input5) (lex-option-suffix input4)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "byte-string-literal")
+         :branches (list (list tree1) (list tree2) trees3
+                         (list tree4) (list tree5)))
+        input5))
+  ///
+
+  (defret len-of-lex-byte-string-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-byte-string-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-byte-string-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-byte-string-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "byte-string-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-dquote
+                     tree-terminatedp-of-lex-option-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-byte-string-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-byte-string-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-c-string-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('c-string-literal')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "c" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-dquote input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input)))
+       ((mv trees3 input3) (lex-*-c-string-literal-item input2))
+       ((mv tree4 input4) (lex-dquote input3))
+       ((when (reserrp tree4))
+        (mv (reserrf-push tree4) (nat-list-fix input)))
+       ((mv tree5 input5) (lex-option-suffix input4)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "c-string-literal")
+         :branches (list (list tree1) (list tree2) trees3
+                         (list tree4) (list tree5)))
+        input5))
+  ///
+
+  (defret len-of-lex-c-string-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-c-string-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-c-string-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-c-string-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "c-string-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-dquote
+                     tree-terminatedp-of-lex-option-suffix
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-c-string-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-c-string-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define count-leading-hashes ((input nat-listp))
+  :returns (n natp)
+  :short "Number of @('#') characters at the start of the input."
+  (if (and (consp input)
+           (eql (lnfix (car input)) #x23))
+      (1+ (count-leading-hashes (cdr input)))
+    0)
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define raw-terminator-p ((n natp) (input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the input starts with a double quote
+          followed by @('n') @('#') characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is where a raw literal with @('n') @('#') characters
+     before its opening double quote ends [SC10]."))
+  (b* ((input (nat-list-fix input)))
+    (and (consp input)
+         (eql (car input) #x22)
+         (prefixp (acl2::repeat (lnfix n) #x23) (cdr input))
+         t))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-lex-raw-content
+  :short "Event macro to define the lexing functions for
+          the body and content of a raw literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each of the rules
+     @('raw-string-content'), @('raw-byte-string-content'),
+     and @('raw-c-string-content')
+     has the form
+     @('dquote *<char> dquote / \"#\" <content> \"#\"').
+     For each, this macro generates
+     a function that lexes the body,
+     stopping at the first double quote
+     followed by the given number @('n') of @('#') [SC10],
+     and a function that lexes the content
+     with @('k') @('#') still to be consumed at each end,
+     mirroring the recursion in the rule."))
+
+  (defmacro def-lex-raw-content (prefix content-rule char-fn char-rule)
+    (b* ((body-fn (acl2::packn-pos (list 'lex- prefix '-body) 'lex-dquote))
+         (content-fn (acl2::packn-pos (list 'lex- prefix '-content)
+                                      'lex-dquote))
+         (char-term-thm (acl2::packn-pos (list 'tree-terminatedp-of- char-fn)
+                                         'lex-dquote))
+         (char-match-thm (acl2::packn-pos (list 'cst-matchp-of- char-fn)
+                                          'lex-dquote))
+         (rep-string (acl2::concatenate 'acl2::string "*" char-rule))
+         (body-len-thm (acl2::packn-pos (list 'len-of- body-fn) 'lex-dquote))
+         (body-decomp-thm (acl2::packn-pos (list 'input-decomposition-of-
+                                                 body-fn)
+                                           'lex-dquote))
+         (body-term-thm (acl2::packn-pos (list 'tree-list-terminatedp-of-
+                                               body-fn)
+                                         'lex-dquote))
+         (body-elem-thm (acl2::packn-pos (list 'cst-list-elem-matchp-of-
+                                               body-fn)
+                                         'lex-dquote))
+         (body-rep-thm (acl2::packn-pos (list 'cst-list-rep-matchp-of-
+                                              body-fn)
+                                        'lex-dquote))
+         (content-len<=-thm (acl2::packn-pos (list 'len-of- content-fn '-<=)
+                                             'lex-dquote))
+         (content-len<-thm (acl2::packn-pos (list 'len-of- content-fn '-<)
+                                            'lex-dquote))
+         (content-decomp-thm (acl2::packn-pos (list 'input-decomposition-of-
+                                                    content-fn)
+                                              'lex-dquote))
+         (content-match-thm (acl2::packn-pos (list 'cst-matchp-of- content-fn)
+                                             'lex-dquote))
+         (content-term-thm (acl2::packn-pos (list 'tree-terminatedp-of-
+                                                  content-fn)
+                                            'lex-dquote)))
+      `(progn
+
+         (define ,body-fn ((n natp) (input nat-listp))
+           :returns (mv (trees abnf::tree-list-resultp)
+                        (rest-input nat-listp))
+           :short ,(acl2::concatenate 'acl2::string
+                                      "Lex the body of a @('" content-rule
+                                      "'), up to its terminator [SC10].")
+           :measure (len input)
+           :hooks nil
+           (b* ((input (nat-list-fix input))
+                ((when (raw-terminator-p n input)) (mv nil input))
+                ((mv tree input1) (,char-fn input))
+                ((when (reserrp tree)) (mv (reserrf-push tree) input))
+                ((mv trees input2) (,body-fn n input1))
+                ((when (reserrp trees)) (mv (reserrf-push trees) input)))
+             (mv (cons tree trees) input2))
+           ///
+           (defret ,body-len-thm
+             (<= (len rest-input) (len input))
+             :rule-classes :linear
+             :hints (("Goal" :induct t)))
+           (defret ,body-decomp-thm
+             (implies (not (reserrp trees))
+                      (equal (append (abnf::tree-list->string trees)
+                                     rest-input)
+                             (nat-list-fix input)))
+             :hints (("Goal" :induct t
+                             :in-theory (enable abnf::tree-list->string))))
+           (defret ,body-term-thm
+             (implies (not (reserrp trees))
+                      (abnf::tree-list-terminatedp trees))
+             :hints (("Goal" :induct t
+                             :in-theory (enable abnf::tree-list-terminatedp
+                                                ,char-term-thm))))
+           (defret ,body-elem-thm
+             (implies (not (reserrp trees))
+                      (cst-list-elem-matchp trees ,char-rule))
+             :hints (("Goal"
+                      :induct t
+                      :in-theory
+                      (enable cst-list-elem-matchp
+                              tree-match-element-p-when-cst-matchp$
+                              ,char-match-thm
+                              ,char-term-thm
+                              abnf::tree-list-match-element-p
+                              abnf::tree-list-terminatedp))))
+           (defret ,body-rep-thm
+             (implies (not (reserrp trees))
+                      (cst-list-rep-matchp trees ,rep-string))
+             :hints (("Goal"
+                      :in-theory
+                      (enable cst-list-rep-matchp
+                              tree-list-match-element-p-when-cst-list-elem-matchp$
+                              abnf::tree-list-match-repetition-p
+                              abnf::numrep-match-repeat-range-p)))))
+
+         (define ,content-fn ((k natp) (n natp) (input nat-listp))
+           :returns (mv (tree abnf::tree-resultp)
+                        (rest-input nat-listp))
+           :short ,(acl2::concatenate 'acl2::string
+                                      "Lex a @('" content-rule
+                                      "') with @('k') @('#') at each end,
+                                       in a literal delimited by
+                                       @('n') @('#').")
+           :measure (nfix k)
+           :hooks nil
+           :verify-guards :after-returns
+           (b* (((when (zp k))
+                 (b* (((mv tree1 input1) (lex-dquote input))
+                      ((when (reserrp tree1))
+                       (mv (reserrf-push tree1) (nat-list-fix input)))
+                      ((mv trees2 input2) (,body-fn n input1))
+                      ((when (reserrp trees2))
+                       (mv (reserrf-push trees2) (nat-list-fix input)))
+                      ((mv tree3 input3) (lex-dquote input2))
+                      ((when (reserrp tree3))
+                       (mv (reserrf-push tree3) (nat-list-fix input))))
+                   (mv (abnf::make-tree-nonleaf
+                        :rulename? (abnf::rulename ,content-rule)
+                        :branches (list (list tree1) trees2 (list tree3)))
+                       input3)))
+                ((mv tree1 input1) (abnf::parse-ichars "#" input))
+                ((when (reserrp tree1))
+                 (mv (reserrf-push tree1) (nat-list-fix input)))
+                ((mv tree2 input2) (,content-fn (1- k) n input1))
+                ((when (reserrp tree2))
+                 (mv (reserrf-push tree2) (nat-list-fix input)))
+                ((mv tree3 input3) (abnf::parse-ichars "#" input2))
+                ((when (reserrp tree3))
+                 (mv (reserrf-push tree3) (nat-list-fix input))))
+             (mv (abnf::make-tree-nonleaf
+                  :rulename? (abnf::rulename ,content-rule)
+                  :branches (list (list tree1) (list tree2) (list tree3)))
+                 input3))
+           ///
+           (defret ,content-len<=-thm
+             (<= (len rest-input) (len input))
+             :rule-classes :linear
+             :hints (("Goal" :induct t)))
+           (defret ,content-len<-thm
+             (implies (not (reserrp tree))
+                      (< (len rest-input) (len input)))
+             :rule-classes :linear
+             :hints (("Goal" :induct t)))
+           (defret ,content-decomp-thm
+             (implies (not (reserrp tree))
+                      (equal (append (abnf::tree->string tree) rest-input)
+                             (nat-list-fix input)))
+             :hints (("Goal"
+                      :induct t
+                      :in-theory (enable input-decomposition-of-parse-ichars
+                                         abnf::tree->string
+                                         abnf::tree-list->string
+                                         abnf::tree-list-list->string))))
+           (defret ,content-match-thm
+             (implies (not (reserrp tree))
+                      (cst-matchp tree ,content-rule))
+             :hints (("Goal"
+                      :induct t
+                      :in-theory
+                      (enable cst-matchp
+                              tree-match-of-make-tree-nonleaf-elem
+                              tree-match-element-p-when-cst-matchp$
+                              tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                              tree-match-of-parse-ichars-elem
+                              tree-terminatedp-of-parse-ichars
+                              tree-terminatedp-of-lex-dquote
+                              abnf::tree-terminatedp
+                              abnf::tree-list-terminatedp
+                              abnf::tree-list-list-terminatedp
+                              abnf::tree-list-list-match-alternation-p
+                              abnf::tree-list-list-match-concatenation-p
+                              abnf::tree-list-match-repetition-p
+                              abnf::tree-list-match-element-p
+                              abnf::numrep-match-repeat-range-p))))
+           (defret ,content-term-thm
+             (implies (not (reserrp tree))
+                      (abnf::tree-terminatedp tree))
+             :hints (("Goal" :use ,content-match-thm
+                             :in-theory (enable cst-matchp)))))))))
+
+(def-lex-raw-content raw-string "raw-string-content"
+  lex-raw-string-char "raw-string-char")
+
+(def-lex-raw-content raw-byte-string "raw-byte-string-content"
+  lex-ascii-for-raw "ascii-for-raw")
+
+(def-lex-raw-content raw-c-string "raw-c-string-content"
+  lex-raw-c-string-char "raw-c-string-char")
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection def-lex-raw-literal
+  :short "Event macro to define the lexing function for a raw literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each of the rules
+     @('raw-string-literal'), @('raw-byte-string-literal'),
+     and @('raw-c-string-literal')
+     consists of a prefix, a content, and an optional suffix.
+     The number of @('#') before the opening double quote
+     is counted up front, and must not exceed 255 [SC10]."))
+
+  (defmacro def-lex-raw-literal (fn-name rule prefix content-fn)
+    (b* ((len<=-thm (acl2::packn-pos (list 'len-of- fn-name '-<=) fn-name))
+         (len<-thm (acl2::packn-pos (list 'len-of- fn-name '-<) fn-name))
+         (decomp-thm (acl2::packn-pos (list 'input-decomposition-of- fn-name)
+                                      fn-name))
+         (match-thm (acl2::packn-pos (list 'cst-matchp-of- fn-name) fn-name))
+         (term-thm (acl2::packn-pos (list 'tree-terminatedp-of- fn-name)
+                                    fn-name))
+         (content-term-thm (acl2::packn-pos (list 'tree-terminatedp-of-
+                                                  content-fn)
+                                            fn-name)))
+      `(define ,fn-name ((input nat-listp))
+         :returns (mv (tree abnf::tree-resultp)
+                      (rest-input nat-listp))
+         :short ,(acl2::concatenate 'acl2::string "Lex a @('" rule "').")
+         (b* (((mv tree1 input1) (abnf::parse-schars ,prefix input))
+              ((when (reserrp tree1))
+               (mv (reserrf-push tree1) (nat-list-fix input)))
+              (n (count-leading-hashes input1))
+              ((when (> n 255))
+               (mv (reserrf (list :too-many-raw-string-hashes n)) ; [SC10]
+                   (nat-list-fix input)))
+              ((mv tree2 input2) (,content-fn n n input1))
+              ((when (reserrp tree2))
+               (mv (reserrf-push tree2) (nat-list-fix input)))
+              ((mv tree3 input3) (lex-option-suffix input2)))
+           (mv (abnf::make-tree-nonleaf
+                :rulename? (abnf::rulename ,rule)
+                :branches (list (list tree1) (list tree2) (list tree3)))
+               input3))
+         ///
+         (defret ,len<=-thm
+           (<= (len rest-input) (len input))
+           :rule-classes :linear)
+         (defret ,len<-thm
+           (implies (not (reserrp tree))
+                    (< (len rest-input) (len input)))
+           :rule-classes :linear)
+         (defret ,decomp-thm
+           (implies (not (reserrp tree))
+                    (equal (append (abnf::tree->string tree) rest-input)
+                           (nat-list-fix input)))
+           :hints (("Goal" :in-theory (enable input-decomposition-of-parse-schars
+                                              abnf::tree->string
+                                              abnf::tree-list->string
+                                              abnf::tree-list-list->string))))
+         (defret ,match-thm
+           (implies (not (reserrp tree))
+                    (cst-matchp tree ,rule))
+           :hints (("Goal"
+                    :in-theory
+                    (enable cst-matchp
+                            tree-match-of-make-tree-nonleaf-elem
+                            tree-match-element-p-when-cst-matchp$
+                            tree-match-of-parse-schars-elem
+                            tree-terminatedp-of-parse-schars
+                            ,content-term-thm
+                            tree-terminatedp-of-lex-option-suffix
+                            abnf::tree-terminatedp
+                            abnf::tree-list-terminatedp
+                            abnf::tree-list-list-terminatedp
+                            abnf::tree-list-list-match-alternation-p
+                            abnf::tree-list-list-match-concatenation-p
+                            abnf::tree-list-match-repetition-p
+                            abnf::tree-list-match-element-p
+                            abnf::numrep-match-repeat-range-p))))
+         (defret ,term-thm
+           (implies (not (reserrp tree))
+                    (abnf::tree-terminatedp tree))
+           :hints (("Goal" :use ,match-thm
+                           :in-theory (enable cst-matchp))))))))
+
+(def-lex-raw-literal lex-raw-string-literal
+  "raw-string-literal" "r" lex-raw-string-content)
+
+(def-lex-raw-literal lex-raw-byte-string-literal
+  "raw-byte-string-literal" "br" lex-raw-byte-string-content)
+
+(def-lex-raw-literal lex-raw-c-string-literal
+  "raw-c-string-literal" "cr" lex-raw-c-string-content)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define lex-punctuation-string ((chars stringp) (input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
@@ -2508,9 +4513,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The alternative is chosen by lookahead at the first character
-     (and the second one for @('r#')):
-     @('r#') attempts a raw identifier,
+    "The alternative is chosen by lookahead at the first characters:
+     a single quote starts a character literal,
+     and a double quote a string literal;
+     the literal prefixes
+     @('b') followed by a quote,
+     @('br') or @('cr') followed by a double quote or @('#'),
+     @('c') followed by a double quote,
+     and @('r') followed by a double quote or @('#')
+     attempt the corresponding literal first;
+     then @('r#') attempts a raw identifier,
      falling back to an identifier
      (which for e.g. @('r#1') lexes @('r')
      and then fails via [SC8] below,
@@ -2524,18 +4536,84 @@
      anything else is attempted as punctuation.")
    (xdoc::p
     "After lexing a (non-raw) identifier or keyword,
+     or a lone underscore,
      the reserved prefix side condition [SC8] applies:
      if the next character is @('#'), @('\\''), or @('\"'),
      the input is rejected
-     (e.g. @('foo#bar') does not lex in the supported editions).
+     (e.g. @('foo#bar') and @('_#') do not lex
+     in the supported editions).
      Genuine raw identifiers are not affected,
      because @('r#') followed by an identifier start
-     lexes as a raw identifier."))
+     lexes as a raw identifier;
+     nor are valid literals with prefixes,
+     which lex as single literals.
+     A literal with a prefix that fails to lex
+     (e.g. a byte string containing a unicode escape)
+     falls back to the identifier,
+     which [SC8] then rejects.")
+   (xdoc::p
+    "After lexing a character, byte, or string literal (of any kind),
+     the side condition [SC11] applies:
+     if the next character is @('_'), the input is rejected
+     (e.g. @('\"Foo\"_') does not lex,
+     while @('\"Foo\"__') lexes as a literal with suffix @('__')).
+     A suffix has already been lexed greedily,
+     so such an underscore is not followed by
+     an identifier-continue character."))
   (b* ((input (nat-list-fix input))
        ((mv nat? &) (abnf::parse-next input))
        ((when (reserrp nat?))
         (mv (reserrf-push nat?) input))
        (nat (lnfix nat?))
+       ((when (eql nat #x27)) ; '
+        (b* (((mv tree input1) (lex-char-literal input))
+             ((when (reserrp tree)) (mv (reserrf-push tree) input))
+             ((when (prefixp (list #x5f) input1)) ; _ [SC11]
+              (mv (reserrf (list :underscore-literal-suffix
+                                 (abnf::tree->string tree)))
+                  input)))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "token")
+               :branches (list (list tree)))
+              input1)))
+       ((when (eql nat #x22)) ; "
+        (b* (((mv tree input1) (lex-string-literal input))
+             ((when (reserrp tree)) (mv (reserrf-push tree) input))
+             ((when (prefixp (list #x5f) input1)) ; _ [SC11]
+              (mv (reserrf (list :underscore-literal-suffix
+                                 (abnf::tree->string tree)))
+                  input)))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "token")
+               :branches (list (list tree)))
+              input1)))
+       ((mv tree input1)
+        (cond ((prefixp (list #x62 #x27) input) ; b'
+               (lex-byte-literal input))
+              ((prefixp (list #x62 #x22) input) ; b"
+               (lex-byte-string-literal input))
+              ((or (prefixp (list #x62 #x72 #x22) input) ; br"
+                   (prefixp (list #x62 #x72 #x23) input)) ; br#
+               (lex-raw-byte-string-literal input))
+              ((prefixp (list #x63 #x22) input) ; c"
+               (lex-c-string-literal input))
+              ((or (prefixp (list #x63 #x72 #x22) input) ; cr"
+                   (prefixp (list #x63 #x72 #x23) input)) ; cr#
+               (lex-raw-c-string-literal input))
+              ((or (prefixp (list #x72 #x22) input) ; r"
+                   (prefixp (list #x72 #x23) input)) ; r#
+               (lex-raw-string-literal input))
+              (t (mv (reserrf :no-prefixed-literal) input))))
+       ((when (and (not (reserrp tree))
+                   (prefixp (list #x5f) input1))) ; _ [SC11]
+        (mv (reserrf (list :underscore-literal-suffix
+                           (abnf::tree->string tree)))
+            input))
+       ((when (not (reserrp tree)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "token")
+             :branches (list (list tree)))
+            input1))
        ((when (prefixp (list #x72 #x23) input)) ; r#
         (b* (((mv tree input1) (lex-raw-identifier input))
              ((when (not (reserrp tree)))
@@ -2550,9 +4628,13 @@
         (b* (((mv tree input1) (lex-token-identifier-or-keyword input))
              ((when (not (reserrp tree))) (mv tree input1))
              ((unless (eql nat #x5f)) (mv tree input1))
-             ;; lone underscore: punctuation
+             ;; lone underscore: punctuation, unless a reserved prefix [SC8]
              ((mv tree input1) (lex-punctuation input))
-             ((when (reserrp tree)) (mv (reserrf-push tree) input)))
+             ((when (reserrp tree)) (mv (reserrf-push tree) input))
+             ((when (or (prefixp (list #x23) input1) ; # [SC8]
+                        (prefixp (list #x27) input1) ; ' [SC8]
+                        (prefixp (list #x22) input1))) ; " [SC8]
+              (mv (reserrf (list :reserved-prefix (list #x5f))) input)))
           (mv (abnf::make-tree-nonleaf
                :rulename? (abnf::rulename "token")
                :branches (list (list tree)))
@@ -2640,12 +4722,14 @@
 
   (defret len-of-lex-token-<=
     (<= (len rest-input) (len input))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable abnf::parse-next))))
 
   (defret len-of-lex-token-<
     (implies (not (reserrp tree))
              (< (len rest-input) (len input)))
-    :rule-classes :linear)
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable abnf::parse-next))))
 
   (defret input-decomposition-of-lex-token
     (implies (not (reserrp tree))
@@ -2664,6 +4748,14 @@
                      tree-match-of-make-tree-nonleaf-elem
                      tree-match-element-p-when-cst-matchp$
                      tree-terminatedp-of-lex-raw-identifier
+                     tree-terminatedp-of-lex-char-literal
+                     tree-terminatedp-of-lex-byte-literal
+                     tree-terminatedp-of-lex-string-literal
+                     tree-terminatedp-of-lex-byte-string-literal
+                     tree-terminatedp-of-lex-c-string-literal
+                     tree-terminatedp-of-lex-raw-string-literal
+                     tree-terminatedp-of-lex-raw-byte-string-literal
+                     tree-terminatedp-of-lex-raw-c-string-literal
                      tree-terminatedp-of-lex-integer-literal
                      tree-terminatedp-of-lex-punctuation
                      tree-terminatedp-of-lex-delimiter
@@ -2824,9 +4916,9 @@
    (xdoc::p
     "The string's character codes become the input;
      since ACL2 characters have codes below 256,
-     this covers all ASCII inputs
-     (the current grammar slice is ASCII-only anyway,
-     except that non-ASCII whitespace and comment content
-     would need Unicode input,
-     which comes with the UTF-8 layer)."))
+     this covers all ASCII inputs.
+     Non-ASCII whitespace, comment content, and literal content
+     need Unicode input, i.e. a call of @(tsee lexemize-rust)
+     on code points, until the UTF-8 layer is in place
+     (identifiers are ASCII-only for now)."))
   (lexemize-rust (acl2::string=>nats (str-fix string))))

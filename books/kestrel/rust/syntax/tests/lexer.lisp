@@ -136,8 +136,105 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex "fn main() {}" 8)
 (test-lex "fn add(x: u32, y: u32) -> u32 { x + y }" 29)
 
-; Not yet covered by the grammar slice: strings, chars, lifetimes.
+; Character, byte, string, byte-string, and C-string literals,
+; and their raw forms.
 
-(test-lex-fail "\"hello\"")
-(test-lex-fail "'a'")
+(test-lex "\"hello\"" 1)
+(test-lex "'a'" 1)
+(test-lex "b'x'" 1)
+(test-lex "b\"x\"" 1)
+(test-lex "c\"x\"" 1)
+(test-lex "r\"x\"" 1)
+(test-lex "br\"x\"" 1)
+(test-lex "cr\"x\"" 1)
+(test-lex "\"x\" \"y\"" 3)
+(test-lex "println!(\"{}\", x);" 9)
+
+; Suffixes on any literal.
+
+(test-lex "\"a\"b" 1)
+(test-lex "'a'_x" 1)
+(test-lex "r#\"a\"#suffix" 1)
+
+; A suffix is lexed greedily, before any reserved-prefix check:
+; "a"foo"b" is a literal with suffix foo, then another literal
+; (as rustc 1.87.0 lexes it).
+
+(test-lex "\"a\"foo\"b\"" 2)
+(test-lex "'a'b'c'" 2)
+(test-lex "\"a\"r#b" 3) ; suffix r, then #, then b
+
+; A lone underscore after a character or string literal
+; is rejected [SC11]; a longer suffix starting with an underscore
+; is fine, and integer digits absorb underscores.
+
+(test-lex-fail "'a'_")
+(test-lex-fail "b'a'_")
+(test-lex-fail "\"Foo\"_")
+(test-lex-fail "b\"x\"_")
+(test-lex-fail "c\"x\"_")
+(test-lex-fail "r\"x\"_")
+(test-lex-fail "br#\"x\"#_")
+(test-lex-fail "cr\"x\"_")
+(test-lex "\"Foo\"__" 1)
+(test-lex "\"Foo\" _" 3)
+(test-lex "1_" 1)
+
+; Escapes.
+
+(test-lex "\"\\n\\r\\t\\\\\\0\\'\\\"\"" 1)
+(test-lex "'\\x7F'" 1)
+(test-lex-fail "'\\x80'") ; ASCII escapes go up to \x7F
+(test-lex "b'\\x80'" 1) ; byte escapes take any byte
+(test-lex "'\\u{10FFFF}'" 1)
+(test-lex "'\\u{1_F6_00}'" 1)
+(test-lex-fail "'\\u{D800}'") ; surrogate [SC9]
+(test-lex-fail "'\\u{110000}'") ; beyond the Unicode range [SC9]
+(test-lex-fail "'\\u{1234567}'") ; more than six digits
+(test-lex-fail "\"\\q\"") ; unknown escape
+(test-lex-fail "b'\\u{41}'") ; no unicode escapes in byte literals
+(test-lex-fail "c\"\\0\"") ; no NUL in C strings
+(test-lex-fail "c\"\\x00\"")
+(test-lex-fail "c\"\\u{0}\"") ; [SC9]
+
+; A string continuation (backslash before a line feed) and a multi-line
+; string.
+
+(test-lex "\"line\\
+  more\"" 1)
+(test-lex "\"two
+lines\"" 1)
+
+; A bare carriage return is not allowed in a string literal.
+
+(test-lex-fail (acl2::implode (list #\" (code-char 13) #\")))
+
+; Raw strings end at the first double quote followed by as many "#" as
+; opened them [SC10].
+
+(test-lex "r#\"a\"b\"#" 1)
+(test-lex "r##\"a\"#b\"##" 1)
+(test-lex "r\"a\\nb\"" 1) ; no escapes in raw strings
+(test-lex-fail "r#\"x\"") ; missing closing "#"
+(test-lex-fail (acl2::implode (append (list #\r)
+                                      (acl2::repeat 256 #\#)
+                                      (list #\" #\")
+                                      (acl2::repeat 256 #\#))))
+
+; Malformed literals.
+
+(test-lex-fail "\"unterminated")
+(test-lex-fail "'ab'")
+(test-lex-fail "''")
+
+; Reserved prefixes [SC8], including a lone underscore.
+
+(test-lex-fail "foo\"x\"")
+(test-lex-fail "foo'x'")
+(test-lex-fail "b#x")
+(test-lex-fail "_#")
+(test-lex-fail "_\"x\"")
+
+; Not yet covered by the grammar slice: lifetimes.
+
 (test-lex-fail "&'a str")
