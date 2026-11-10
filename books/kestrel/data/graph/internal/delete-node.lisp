@@ -32,6 +32,7 @@
 (include-book "well-formed-defs")
 (include-book "edges-defs")
 (include-book "add-node-defs")
+(include-book "predecessors-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -69,6 +70,7 @@
 (local (include-book "well-formed"))
 (local (include-book "edges"))
 (local (include-book "add-node"))
+(local (include-book "predecessors"))
 (local (include-book "extensionality"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -275,15 +277,6 @@
            in-of-adj-list-edges-of-adj-list-delete-target
            in-of-adj-list-edges-to))
 
-;; So with no edges into the node there is nothing to remove.
-
-(defrule adj-list-delete-target-when-emptyp-of-adj-list-edges-to
-  (implies (and (adj-listp adjl)
-                (treeset::emptyp (adj-list-edges-to node adjl)))
-           (equal (adj-list-delete-target node adjl)
-                  adjl))
-  :enable adj-list-extensionality)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Remove a node along with every edge into or out of it. Removing it as a
@@ -335,6 +328,32 @@
            (well-formedp (adj-list-delete-node node adjl)))
   :enable (adj-list-delete-node
            well-formedp))
+
+;; If no node other than the node itself has an edge into it, removing it as a
+;; target changes only its own adjacency, which deleting its key discards
+;; anyway.
+
+(defrulel in-of-keys-of-lookup-when-subset-of-adj-list-predecessors
+  (implies (and (treeset::subset (adj-list-predecessors node adjl)
+                                 (treeset::insert node (treeset::empty)))
+                (not (equal key node)))
+           (not (treeset::in node (treemap::keys (treemap::lookup key adjl)))))
+  :use (:instance treeset::in-when-in-and-subset
+                  (treeset::a key)
+                  (treeset::x (adj-list-predecessors node adjl))
+                  (treeset::y (treeset::insert node (treeset::empty))))
+  :enable (in-of-adj-list-predecessors
+           treemap::lookup-with-default-becomes-lookup-syntaxp)
+  :disable treeset::in-when-in-and-subset)
+
+(defruled adj-list-delete-node-when-subset-of-adj-list-predecessors
+  (implies (and (map-values-all-adjacencyp adjl)
+                (treeset::subset (adj-list-predecessors node adjl)
+                                 (treeset::insert node (treeset::empty))))
+           (equal (adj-list-delete-node node adjl)
+                  (treemap::delete node adjl)))
+  :enable (adj-list-delete-node
+           treemap::extensionality-polar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

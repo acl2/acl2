@@ -13,7 +13,9 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/treeset/insert-defs" :dir :system)
 (include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/subset-defs" :dir :system)
 (include-book "kestrel/data/treeset/union-defs" :dir :system)
 (include-book "kestrel/data/treeset/intersect-defs" :dir :system)
 (include-book "kestrel/data/treeset/diff-defs" :dir :system)
@@ -51,6 +53,7 @@
 (local (include-book "extensionality"))
 (local (include-book "add-node"))
 (local (include-book "internal/edges"))
+(local (include-book "internal/predecessors"))
 (local (include-book "internal/delete-node"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,16 +244,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-node! (node (graph graphp))
-  :guard (treeset::emptyp (edges-to node graph))
+  :guard (treeset::subset (predecessors node graph)
+                          (treeset::insert node (treeset::empty)))
   :parents (delete-node)
-  :short "Remove a node with no incoming edges from a @(see graph)."
+  :short "Remove a node from a @(see graph) when no other node has an edge to
+          it."
   :long
   (xdoc::topstring
     (xdoc::p
       "Logically this is @(tsee delete-node), to which it is rewritten. The
-       guard requires that no edge leads into the node, so removing the node's
-       own entry, with its outgoing edges, is all there is to do. Checking the
-       guard, however, visits every node.")
+       guard requires that no edge leads into the node from another node, so
+       removing the node's own entry, with its outgoing edges and any edges to
+       itself, is all there is to do. Checking the guard, however, visits
+       every node.")
     (xdoc::p
       "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
        nodes."))
@@ -258,10 +264,13 @@
        :exec (treemap::delete node graph))
   :enabled t
   :inline t
-  :guard-hints (("Goal" :in-theory (enable* delete-node
-                                            adj-list-delete-node
-                                            edges-to
-                                            break-abstraction))))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable* delete-node
+             predecessors
+             adj-list-delete-node-when-subset-of-adj-list-predecessors
+             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
