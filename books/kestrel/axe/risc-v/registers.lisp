@@ -146,6 +146,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; register aliases (we plan to keep these enabled):
+;; register x0 is a hard-wired zero.
 (defund x1 (stat) (declare (xargs :guard (stat32p stat))) (reg 1 stat))
 (defund x2 (stat) (declare (xargs :guard (stat32p stat))) (reg 2 stat))
 (defund x3 (stat) (declare (xargs :guard (stat32p stat))) (reg 3 stat))
@@ -190,8 +191,8 @@
 (defun t1 (stat) (declare (xargs :guard (stat32p stat))) (x6 stat))
 (defun t2 (stat) (declare (xargs :guard (stat32p stat))) (x7 stat))
 
-(defun s0 (stat) (declare (xargs :guard (stat32p stat))) (x8 stat)) ; 2 aliases for x8
-(defun fp (stat) (declare (xargs :guard (stat32p stat))) (x8 stat))
+(defun s0 (stat) (declare (xargs :guard (stat32p stat))) (x8 stat)) ; first alias for x8
+(defun fp (stat) (declare (xargs :guard (stat32p stat))) (x8 stat)) ; second alias for x8
 (defun s1 (stat) (declare (xargs :guard (stat32p stat))) (x9 stat))
 
 (defun a0 (stat) (declare (xargs :guard (stat32p stat))) (x10 stat))
