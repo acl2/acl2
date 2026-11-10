@@ -21,5 +21,6 @@
 
 (std::defredundant
   :names (nodes
+          emptyp
           node-in
           ))

@@ -23,7 +23,6 @@
           empty
           fix
           equiv
-          emptyp
           ))
 
 (defequiv equiv)

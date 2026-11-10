@@ -52,30 +52,63 @@
   :rule-classes :congruence
   :enable nodes)
 
-(defrule emptyp-of-nodes
-  (equal (treeset::emptyp (nodes graph))
-         (emptyp graph))
-  :enable (nodes
-           emptyp))
-
-(defruled nodes-when-emptyp
-  (implies (emptyp graph)
-           (equal (nodes graph)
-                  (treeset::empty)))
-  :enable (nodes
-           emptyp))
-
-(defrule nodes-when-emptyp-cheap
-  (implies (emptyp graph)
-           (equal (nodes graph)
-                  (treeset::empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by nodes-when-emptyp)
-
 (defrule nodes-of-empty
   (equal (nodes (empty))
          (treeset::empty))
-  :enable nodes-when-emptyp)
+  :enable (nodes
+           fix
+           empty))
+
+;; A graph with no nodes is the empty graph.
+
+(defruled fix-when-emptyp-of-nodes
+  (implies (treeset::emptyp (nodes graph))
+           (equal (fix graph)
+                  (empty)))
+  :enable (nodes
+           empty
+           mapp-of-fix
+           treemap::emptyp-alt-definition))
+
+(defrule fix-when-emptyp-of-nodes-cheap
+  (implies (treeset::emptyp (nodes graph))
+           (equal (fix graph)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by fix-when-emptyp-of-nodes)
+
+(defrule graphp-when-not-emptyp-of-nodes-forward-chaining
+  (implies (not (treeset::emptyp (nodes graph)))
+           (graphp graph))
+  :rule-classes :forward-chaining
+  :enable (nodes
+           empty))
+
+(defrule emptyp-of-nodes-when-not-graphp-forward-chaining
+  (implies (not (graphp graph))
+           (treeset::emptyp (nodes graph)))
+  :rule-classes :forward-chaining)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define emptyp ((graph graphp))
+  :parents (graph)
+  :short "Check if a @(see graph) has no nodes."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(1)$).")
+    (xdoc::p
+      "This is a convenient abbreviation, not the logical normal form used by
+       this library. It is enabled, so @('(emptyp graph)') becomes
+       @('(treeset::emptyp (nodes graph))'). Unlike that form, it does not
+       construct the node set when executed."))
+  (mbe :logic (treeset::emptyp (nodes graph))
+       :exec (treemap::emptyp graph))
+  :enabled t
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* nodes
+                                            break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,4 +136,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy nodes-extra-rules
-  '(nodes-when-emptyp))
+  '(fix-when-emptyp-of-nodes))

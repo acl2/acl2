@@ -180,68 +180,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define emptyp ((graph graphp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :parents (graph)
-  :short "Check if a @(see graph) has no nodes."
-  (treemap::emptyp (fix graph))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule emptyp-when-equiv-congruence
-  (implies (equiv graph0 graph1)
-           (equal (emptyp graph0)
-                  (emptyp graph1)))
-  :rule-classes :congruence
-  :enable emptyp)
-
-(defrule emptyp-of-empty
-  (emptyp (empty))
-  :enable (empty
-           emptyp
-           fix))
-
-(defruled fix-when-emptyp
-  (implies (emptyp graph)
-           (equal (fix graph)
-                  (empty)))
-  :enable (emptyp
-           empty
-           mapp-of-fix
-           treemap::emptyp-alt-definition))
-
-(defrule fix-when-emptyp-cheap
-  (implies (emptyp graph)
-           (equal (fix graph)
-                  (empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable fix-when-emptyp)
-
-(defrule graphp-when-not-emptyp-forward-chaining
-  (implies (not (emptyp graph))
-           (graphp graph))
-  :rule-classes :forward-chaining
-  :enable (emptyp
-           empty))
-
-(defrule emptyp-when-not-graphp-forward-chaining
-  (implies (not (graphp graph))
-           (emptyp graph))
-  :rule-classes :forward-chaining)
-
-;; This definition is useful for proving emptiness by extensionality.
-
-(defruled emptyp-alt-definition
-  (equal (emptyp graph)
-         (equal (fix graph) (empty)))
-  :rule-classes :definition)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthy graph-extra-rules
   '(fix-when-not-graphp
-    fix-when-emptyp
     ))

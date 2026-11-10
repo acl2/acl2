@@ -71,24 +71,24 @@
            (edgep edge))
   :enable edges)
 
-(defruled edges-when-emptyp
-  (implies (emptyp graph)
+(defruled edges-when-emptyp-of-nodes
+  (implies (treeset::emptyp (nodes graph))
            (equal (edges graph)
                   (treeset::empty)))
   :enable (edges
            empty))
 
-(defrule edges-when-emptyp-cheap
-  (implies (emptyp graph)
+(defrule edges-when-emptyp-of-nodes-cheap
+  (implies (treeset::emptyp (nodes graph))
            (equal (edges graph)
                   (treeset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by edges-when-emptyp)
+  :by edges-when-emptyp-of-nodes)
 
 (defrule edges-of-empty
   (equal (edges (empty))
          (treeset::empty))
-  :enable edges-when-emptyp)
+  :enable edges-when-emptyp-of-nodes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,4 +211,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy edges-extra-rules
-  '(edges-when-emptyp))
+  '(edges-when-emptyp-of-nodes))
