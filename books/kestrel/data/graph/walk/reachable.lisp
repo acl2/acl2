@@ -435,6 +435,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; A walk of at least one step in the graph reaches its end from its start.
+
+(defrule reachable+p-when-walk-in
+  (implies (and (walk-in walk graph)
+                (consp (walk->steps walk)))
+           (reachable+p (walk->start walk) (walk-end walk) graph))
+  :enable (reachable+p-becomes-reachable+p-sk
+           reachable+p-sk-suff))
+
 ;; A successor is reachable, along an edge to it.
 
 (defrule reachable+p-when-in-of-successors
