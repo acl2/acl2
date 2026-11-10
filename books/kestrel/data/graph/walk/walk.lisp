@@ -295,6 +295,7 @@
   :type-prescription :none
   :returns (edges treeset::setp)
   :parents (walk-edges)
+  :short "The set of edges a list of steps follows, when taken from a node."
   (if (consp steps)
       (treeset::insert (edge from
                              (step->to (car steps))

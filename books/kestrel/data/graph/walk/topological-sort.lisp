@@ -169,6 +169,7 @@
    (graph graphp))
   :returns (yes/no booleanp)
   :parents (topological-orderp)
+  :short "Check a list in one pass, keeping the set of nodes seen."
   (b* (((when (endp order))
         (equal (treeset::fix seen) (nodes graph)))
        (node (first order))

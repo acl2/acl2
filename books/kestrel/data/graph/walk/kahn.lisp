@@ -81,6 +81,8 @@
   :type-prescription :none
   :returns (remaining$ treeset::setp)
   :parents (cyclicp)
+  :short "The nodes Kahn's algorithm cannot remove, which are those reachable
+          from a cycle."
   (b* ((sources (treeset::diff remaining
                                (successors-of-set remaining graph)))
        ((when (treeset::emptyp sources))
@@ -115,6 +117,7 @@
 (define kahn-order ((remaining treeset::setp) (graph graphp))
   :returns (order true-listp)
   :parents (topological-sort)
+  :short "The nodes Kahn's algorithm removes, in the order of removal."
   (b* ((sources (treeset::diff remaining
                                (successors-of-set remaining graph)))
        ((when (treeset::emptyp sources))
@@ -155,6 +158,7 @@
   :type-prescription :none
   :returns (counters$ treemap::mapp)
   :parents (cyclicp)
+  :short "Increment the counter of each node in a set."
   (b* (((when (treeset::emptyp targets))
         (treemap::fix counters))
        (node (treeset::min targets))
@@ -190,6 +194,7 @@
   :type-prescription :none
   :returns (counters$ treemap::mapp)
   :parents (cyclicp)
+  :short "Count, for each node, the nodes of a set with an edge to it."
   (b* (((when (treeset::emptyp set))
         (treemap::fix counters))
        (node (treeset::min set)))
@@ -233,6 +238,8 @@
   :returns (mv (frontier$ treeset::setp)
                (counters$ treemap::mapp))
   :parents (cyclicp)
+  :short "Decrement the counter of each node in a set, moving each node whose
+          counter reaches zero to the frontier."
   (b* (((when (treeset::emptyp targets))
         (mv (treeset::fix frontier)
             (treemap::fix counters)))
@@ -290,6 +297,8 @@
                        :hyp (true-listp order))
                (remaining$ treeset::setp))
   :parents (cyclicp)
+  :short "Kahn's algorithm with counters and a frontier, accumulating the order
+          of removal."
   (b* (((when (treeset::emptyp frontier))
         (mv order (treeset::fix remaining)))
        (node (treeset::min frontier))
@@ -534,6 +543,8 @@
   :returns (mv (order true-listp)
                (remaining treeset::setp))
   :parents (cyclicp)
+  :short "Run Kahn's algorithm on a @(see graph), returning the order of removal
+          and the nodes left."
   (b* ((nodes (nodes graph))
        (counters (kahn-counters nodes (treemap::empty) graph)))
     (kahn-loop nodes

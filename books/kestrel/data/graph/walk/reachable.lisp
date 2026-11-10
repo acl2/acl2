@@ -109,6 +109,7 @@
    (graph graphp))
   :returns (yes/no booleanp)
   :parents (reachable+p)
+  :short "Search from a frontier for a node, stopping when it is found."
   (b* (((when (treeset::emptyp frontier))
         nil)
        (node (treeset::min frontier))

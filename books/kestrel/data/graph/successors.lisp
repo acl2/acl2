@@ -333,6 +333,8 @@
    (graph graphp))
   :returns (closure treeset::setp)
   :parents (successors+)
+  :short "Expand nodes from a frontier, each at most once, and return the
+          expanded nodes."
   (b* (((when (treeset::emptyp frontier))
         (treeset::fix expanded))
        (node (treeset::min frontier))

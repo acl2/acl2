@@ -48,6 +48,8 @@
 (define steps-in (from (steps step-listp) (graph graphp))
   :returns (yes/no booleanp)
   :parents (walk-in)
+  :short "Check that each of a list of steps, taken from a node, follows an edge
+          of a @(see graph)."
   (if (consp steps)
       (b* ((to (step->to (car steps))))
         (and (treeset::in (step->label (car steps))

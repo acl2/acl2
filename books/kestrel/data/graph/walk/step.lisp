@@ -387,6 +387,7 @@
 
 (define steps-end (from (steps step-listp))
   :parents (step-listp)
+  :short "The node a list of steps ends at, when taken from a node."
   (if (consp steps)
       (steps-end (step->to (car steps)) (cdr steps))
     from))
