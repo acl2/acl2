@@ -3102,7 +3102,9 @@
      (xdoc::p
       "For the comma operator, we validate both sub-expressions,
        and the resulting type is the one of the second sub-expression
-       [C17:6.5.17/2].")
+       [C17:6.5.17/2],
+       after array-to-pointer and function-to-pointer conversion
+       [C17:6.3.2.1/3-4].")
      (xdoc::p
       "For a statement expression, we push a new scope for the block
        and we validate the block items. We then pop the scope.
@@ -3468,7 +3470,7 @@
                    ((erp new-next type types2 vstate)
                     (valid-expr expr.next vstate)))
                 (retok (make-expr-comma :first new-first :next new-next)
-                       type
+                       (type-fpconvert (type-apconvert type))
                        (set::union types1 types2)
                        vstate))
        :stmt (b* (((erp new-cstmt types type? vstate)

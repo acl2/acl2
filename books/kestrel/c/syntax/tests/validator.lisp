@@ -509,6 +509,13 @@ void g(void) {
 ")
 
 (test-valid
+ "int f (void);
+  int foo () {
+  int x = sizeof((0, f));
+  }
+")
+
+(test-valid
  "int foo (int *a, int *b) {
  return (char *) (a) - b;
 }
@@ -782,6 +789,13 @@ int g(void) {
   struct s y;
   return y.m;
 }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof((0, a)) p;
+int *p;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
