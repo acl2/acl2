@@ -5480,7 +5480,8 @@
        ((unless (c$::trans-ensemble-unambp new-trans-units))
         (retmsg$ "Internal error: the transformed code is ambiguous."))
        ((erp new-trans-units)
-        (c$::valid-trans-ensemble new-trans-units code.ienv nil))
+        (c$::valid-trans-ensemble
+          new-trans-units code.ienv code.strict-merge nil))
        ;; TODO: remove once it is proved that validation produces
        ;; an annotated term.
        ((unless (c$::trans-ensemble-annop new-trans-units))

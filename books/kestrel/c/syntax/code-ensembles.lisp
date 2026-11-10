@@ -30,7 +30,9 @@
     (xdoc::seetopic "trans-ensemble" "translation ensemble")
     " and an "
     (xdoc::seetopic "implementation-environments" "implementation environment")
-    ". The latter provides information for interpreting the former."))
+    ". The latter provides information for interpreting the former.
+     A code ensemble also includes a flag
+     about how the translation ensemble is validated."))
   :order-subtopics t
   :default-parent t)
 
@@ -38,8 +40,16 @@
 
 (fty::defprod code-ensemble
   :short "Fixtype of code ensembles."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('strict-merge') flag says whether the validation of the code
+     rejects identifiers with external linkage
+     declared with incompatible types in different translation units
+     (see @(tsee valid-merge-externals-loop))."))
   ((trans-units trans-ensemble)
-   (ienv ienv))
+   (ienv ienv)
+   (strict-merge bool :default t))
   :pred code-ensemblep)
 
 ;;;;;;;;;;;;;;;;;;;;

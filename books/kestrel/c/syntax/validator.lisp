@@ -8736,7 +8736,8 @@
 
 (define valid-merge-externals-loop ((iter treemap::iterp)
                                     (mstate valid-merge-statep)
-                                    (ienv ienvp))
+                                    (ienv ienvp)
+                                    (strict-merge booleanp))
   :guard (and (not (treemap::before-firstp iter))
               (valid-externalsp (treemap::from-iter iter)))
   :returns (mv (erp maybe-msgp)
@@ -8762,6 +8763,22 @@
      avoids a number of checks quadratic in
      the number of translation units that declare the identifier.")
    (xdoc::p
+    "Declarations of an identifier with external linkage
+     with incompatible types in different translation units
+     make the behavior undefined [C17:6.2.7/2],
+     but they do not violate any constraint,
+     and they occur in practical code,
+     which compilers and linkers accept.
+     If @('strict-merge') is @('t'), we reject them.
+     Otherwise, we keep the type merged so far,
+     ignoring the incompatible type in the translation unit.
+     Thus, the merged type is the composite of
+     the types of the first declaration
+     and of the later ones compatible with it,
+     in the order in which the translation units are merged,
+     and it is not necessarily compatible with
+     the types of the other declarations.")
+   (xdoc::p
     "The composite types do not belong to any translation unit,
      so the structure types that they may need
      are allocated local @(see UID)s without translation unit,
@@ -8783,7 +8800,8 @@
          (change-valid-merge-state
           mstate
           :externals (treemap::update ident info mstate.externals))
-         ienv))
+         ienv
+         strict-merge))
        ((valid-ext-info prev) prev?)
        ((mv compatible compatible-pairs)
         (type-compatible-3p-exec prev.type
@@ -8792,10 +8810,16 @@
                                  mstate.compatible-pairs
                                  ienv))
        ((unless (3possibly compatible))
-        (retmsg$ "The identifier ~x0 with external linkage has type ~x1, ~
-                  which is incompatible with its type ~x2 ~
-                  in the translation units validated before."
-                 ident info.type prev.type))
+        (if strict-merge
+            (retmsg$ "The identifier ~x0 with external linkage has type ~x1, ~
+                      which is incompatible with its type ~x2 ~
+                      in the translation units validated before."
+                     ident info.type prev.type)
+          (valid-merge-externals-loop
+           (treemap::next iter)
+           (change-valid-merge-state mstate :compatible-pairs compatible-pairs)
+           ienv
+           strict-merge)))
        ((mv type completions composites composite-inputs next-uid-num)
         (type-composite prev.type
                         info.type
@@ -8818,7 +8842,8 @@
       :composite-inputs composite-inputs
       :composites composites
       :next-uid-num next-uid-num)
-     ienv))
+     ienv
+     strict-merge))
   :measure (treemap::nexts iter))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -8826,7 +8851,8 @@
 (define valid-merge-trans-unit ((tu-externals valid-externalsp)
                                 (tu-completions type-completions-p)
                                 (mstate valid-merge-statep)
-                                (ienv ienvp))
+                                (ienv ienvp)
+                                (strict-merge booleanp))
   :returns (mv (erp maybe-msgp)
                (new-mstate valid-merge-statep))
   :short "Merge the information about identifiers with external linkage
@@ -8850,12 +8876,14 @@
     (valid-merge-externals-loop
      (treemap::iter-min (valid-externals-fix tu-externals))
      mstate
-     ienv)))
+     ienv
+     strict-merge)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                        (ienv ienvp)
+                                       (strict-merge booleanp)
                                        (keep-going booleanp))
   :guard (filepath-trans-unit-map-unambp tumap)
   :returns (mv (erp maybe-msgp)
@@ -8872,12 +8900,15 @@
      into those of the translation units validated so far,
      in the order of their file paths,
      starting from the initial merge state.
+     The @('strict-merge') flag is described in
+     @(tsee valid-merge-externals-loop).
      We return the merged information."))
   (b* (((mv erp new-tumap mstate)
         (valid-filepath-trans-unit-map-loop
          (omap::keys (filepath-trans-unit-map-fix tumap))
          tumap
          ienv
+         strict-merge
          keep-going
          (init-valid-merge-state)))
        ((valid-merge-state mstate) mstate))
@@ -8888,6 +8919,7 @@
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
       (ienv ienvp)
+      (strict-merge booleanp)
       (keep-going booleanp)
       (mstate valid-merge-statep))
      :guard (and (set::subset paths (omap::keys tumap))
@@ -8907,7 +8939,8 @@
           ((mv erp new-mstate)
            (if erp
                (mv erp (irr-valid-merge-state))
-             (valid-merge-trans-unit tu-externals tu-completions mstate ienv)))
+             (valid-merge-trans-unit
+               tu-externals tu-completions mstate ienv strict-merge)))
           ;; On error, continue with the merge state as it was
           ;; before the translation unit.
           ((when erp)
@@ -8918,6 +8951,7 @@
                        (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                            tumap
                                                            ienv
+                                                           strict-merge
                                                            keep-going
                                                            mstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
@@ -8927,6 +8961,7 @@
            (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                tumap
                                                ienv
+                                               strict-merge
                                                keep-going
                                                new-mstate)))
        (retok (omap::update path new-tunit new-tumap) mstate))
@@ -8960,6 +8995,7 @@
 
 (define valid-trans-ensemble ((tuens trans-ensemblep)
                               (ienv ienvp)
+                              (strict-merge booleanp)
                               (keep-going booleanp))
   :guard (trans-ensemble-unambp tuens)
   :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
@@ -8972,14 +9008,16 @@
      and we merge the information that concerns
      multiple translation units
      (identifiers with external linkage and type completions),
-     checking that it is consistent across translation units.
+     checking that it is consistent across translation units,
+     according to the @('strict-merge') flag
+     (see @(tsee valid-merge-externals-loop)).
      The merged information is
      the @(tsee trans-ensemble-vinfo) annotation
      on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
        ((erp new-tumap externals completions)
-        (valid-filepath-trans-unit-map tumap ienv keep-going))
+        (valid-filepath-trans-unit-map tumap ienv strict-merge keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))
