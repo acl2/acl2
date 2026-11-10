@@ -130,3 +130,29 @@
          (fix graph))
   :enable (extensionality
            treeset::extensionality-polar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The search for the nodes reaching a node steps as the search for the nodes
+;; reachable from it in the transpose does. So the nodes reachable from a node
+;; in the transpose are those reaching it in the graph, and the other way
+;; around.
+
+(defrulel predecessors+-search-becomes-successors+-search-of-transpose
+  (equal (predecessors+-search frontier expanded graph)
+         (successors+-search frontier expanded (transpose graph)))
+  :induct t
+  :enable (predecessors+-search
+           successors+-search))
+
+(defrule successors+-of-transpose
+  (equal (successors+ node (transpose graph))
+         (predecessors+ node graph))
+  :enable (successors+
+           predecessors+))
+
+(defrule predecessors+-of-transpose
+  (equal (predecessors+ node (transpose graph))
+         (successors+ node graph))
+  :enable (successors+
+           predecessors+))

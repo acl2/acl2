@@ -28,6 +28,7 @@
 (include-book "../adjacency-defs")
 (include-book "../successors-defs")
 (include-book "../predecessors-defs")
+(include-book "../transpose-defs")
 (include-book "walk-defs")
 (include-book "walk-in-defs")
 
@@ -56,6 +57,7 @@
 (local (include-book "../adjacency"))
 (local (include-book "../successors"))
 (local (include-book "../predecessors"))
+(local (include-book "../transpose"))
 (local (include-book "walk"))
 (local (include-book "walk-in"))
 (local (include-book "walk-snoc"))
@@ -711,6 +713,16 @@
            (treeset::subset (predecessors node graph)
                             (predecessors+ to graph)))
   :enable treeset::pick-a-point-polar)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reversing every edge reverses reachability.
+
+(defrule reachable+p-of-transpose
+  (equal (reachable+p from to (transpose graph))
+         (reachable+p to from graph))
+  :enable reachable+p
+  :disable in-of-successors+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
