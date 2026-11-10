@@ -11,10 +11,10 @@
 ; This grammar covers the lexical structure of Rust
 ; [Reference; rustc 1.87.0] for a first slice:
 ; whitespace, comments (except block doc comments),
-; identifiers (ASCII-only for now), integer literals,
+; identifiers (ASCII-only for now), lifetimes, integer literals,
 ; character, byte, string, byte-string, and C-string literals
 ; (including their raw forms), punctuation, and delimiters.
-; Not yet covered: block doc comments, lifetimes, float literals,
+; Not yet covered: block doc comments, float literals,
 ; and the shebang line.
 
 ; The input to this grammar is a sequence of Unicode scalar values,
@@ -53,8 +53,8 @@
 ;       now exist (unicode-xid.lisp); these rules will be replaced
 ;       once the grammar and lexer use them.
 ; [SC5] Raw identifiers: the identifier-or-keyword part of a
-;       raw-identifier must not be "crate", "self", "super",
-;       or "Self".
+;       raw-identifier or raw-lifetime must not be "crate",
+;       "self", "super", or "Self".
 ; [SC6] Keyword classification: an identifier-or-keyword token that
 ;       is a strict or reserved keyword of the current edition
 ;       (see keywords.lisp) is a keyword token, not an identifier.
@@ -73,6 +73,12 @@
 ;       prefixes like the "b" of b"..." or the "br" of br#"..."#:
 ;       under [SC1] a valid literal lexes as a single lexeme, and
 ;       when the literal is invalid, rustc rejects the input too.
+;       Likewise, a lifetime-token other than a raw-lifetime,
+;       immediately followed by "#", is a reserved lifetime prefix,
+;       which must be rejected.  [Reference; reserved prefixes]
+;       exempts 'r, but rustc rejects 'r# when no raw lifetime
+;       follows (e.g. 'r#1, and 'r#_ since a lone "_" is not an
+;       identifier); we follow rustc.
 ; [SC9] Unicode escapes: the value of a unicode-escape, read as
 ;       hexadecimal ignoring underscores, must be a Unicode scalar
 ;       value (at most %x10FFFF, and outside %xD800-DFFF); in a
@@ -91,6 +97,10 @@
 ;       would lex as a separate token; we follow rustc.  After an
 ;       integer literal, maximal munch absorbs any "_" into the
 ;       digits or the suffix.
+; [SC12] Lifetimes and character literals: a lifetime-token (raw
+;       or not) immediately followed by "'" must be rejected.
+;       rustc reads such text, e.g. 'ab', as a character literal
+;       with more than one character, and rejects it.
 
 ;-------------------------------------------------------------------------------
 ; Lexemes
@@ -100,6 +110,7 @@ lexeme = whitespace / comment / token ; [SC1]
 
 token = identifier-or-keyword ; [SC6]
       / raw-identifier
+      / lifetime-token
       / char-literal
       / byte-literal
       / string-literal
@@ -180,6 +191,23 @@ identifier-start = ascii-letter ; [SC4]
 identifier-continue = ascii-letter / dec-digit / "_" ; [SC4]
 
 raw-identifier = %s"r#" identifier-or-keyword ; [SC5]
+
+;-------------------------------------------------------------------------------
+; Lifetimes
+;-------------------------------------------------------------------------------
+
+; A lifetime or loop label is a single quote followed by an
+; identifier or keyword (keywords are allowed, e.g. 'static), by a
+; lone "_" (the placeholder lifetime), or by "r#" and an identifier
+; or keyword (a raw lifetime).  When a single quote, one character,
+; and another single quote form a character literal, the character
+; literal is the longer lexeme, so it wins under [SC1].
+
+lifetime-token = "'" identifier-or-keyword ; [SC8] [SC12]
+               / "'_" ; [SC8] [SC12]
+               / raw-lifetime ; [SC12]
+
+raw-lifetime = %s"'r#" identifier-or-keyword ; [SC5]
 
 ;-------------------------------------------------------------------------------
 ; Integer literals

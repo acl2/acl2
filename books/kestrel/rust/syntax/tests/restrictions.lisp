@@ -63,6 +63,28 @@
 (test-reserved-prefix "_" (list #x22) nil) ; _"
 (test-reserved-prefix "_" (list #x20) t) ; _ followed by space
 
+; [SC8], lifetimes: which lifetime lexemes are subject to the "#" condition.
+
+(defmacro test-non-raw-lifetime-lexeme (string yes/no)
+  `(assert-event
+    (equal (non-raw-lifetime-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-non-raw-lifetime-lexeme "'a" t)
+(test-non-raw-lifetime-lexeme "'_" t)
+(test-non-raw-lifetime-lexeme "'r" t)
+(test-non-raw-lifetime-lexeme "'r#a" nil) ; raw lifetime
+(test-non-raw-lifetime-lexeme "'a'" nil) ; character literal
+(test-non-raw-lifetime-lexeme "foo" nil)
+
+(test-reserved-prefix "'a" (list #x23) nil) ; 'a#
+(test-reserved-prefix "'_" (list #x23) nil) ; '_#
+(test-reserved-prefix "'r" (list #x23 #x31) nil) ; 'r#1
+(test-reserved-prefix "'r#a" (list #x23) t) ; raw lifetimes exempt
+(test-reserved-prefix "'a" (list #x20 #x23) t) ; 'a #
+(test-reserved-prefix "'a" (list #x22) t) ; only # for lifetimes
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; [SC11]: which lexemes are subject to the underscore condition.
@@ -104,6 +126,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; [SC12]: which lexemes are subject to the single quote condition.
+
+(defmacro test-lifetime-lexeme (string yes/no)
+  `(assert-event
+    (equal (lifetime-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-lifetime-lexeme "'a" t)
+(test-lifetime-lexeme "'_" t)
+(test-lifetime-lexeme "'r#a" t)
+(test-lifetime-lexeme "'a'" nil) ; character literal
+(test-lifetime-lexeme "a" nil)
+
+; [SC12]: the adjacency condition against the remaining input.
+
+(defmacro test-lifetime-quote (string rest-nats yes/no)
+  `(assert-event
+    (equal (lexeme-cst-lifetime-quote-okp
+            (car (lexemize-rust-from-string ,string))
+            ,rest-nats)
+           ,yes/no)))
+
+(test-lifetime-quote "'ab" (list #x27) nil) ; 'ab'
+(test-lifetime-quote "'r#a" (list #x27) nil) ; 'r#a'
+(test-lifetime-quote "'a" (list #x20 #x27) t) ; 'a '
+(test-lifetime-quote "'a" nil t) ; at end of input
+(test-lifetime-quote "'a'" (list #x27) t) ; character literals exempt
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; [SC2] and lexeme validity on lexer output.
 
 (defmacro test-lexeme-okp (string)
@@ -117,3 +170,5 @@
 (test-lexeme-okp " ")
 (test-lexeme-okp "\"a\\\"b\"")
 (test-lexeme-okp "r##\"a\"#b\"##")
+(test-lexeme-okp "'a")
+(test-lexeme-okp "'r#fn")

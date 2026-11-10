@@ -83,13 +83,16 @@
      [SC7] makes integer literal lexing commit to
      a radix after @('0b'), @('0o'), or @('0x');
      [SC8] rejects an identifier, or a lone underscore,
-     immediately followed by @('#'), a single quote, or a double quote;
+     immediately followed by @('#'), a single quote, or a double quote,
+     and a lifetime other than a raw one immediately followed by @('#');
      [SC9] rejects unicode escapes that do not denote
      Unicode scalar values (or that denote NUL, in C strings);
      [SC10] ends a raw literal at its first terminator
      and bounds the number of @('#') delimiting it;
-     and [SC11] rejects a character or string literal
-     immediately followed by an underscore.
+     [SC11] rejects a character or string literal
+     immediately followed by an underscore;
+     and [SC12] rejects a lifetime
+     immediately followed by a single quote.
      Maximal munch [SC1] is implemented by
      greedy repetitions and longest-first dispatch.")
    (xdoc::p
@@ -1141,6 +1144,157 @@
     (implies (not (reserrp tree))
              (abnf::tree-terminatedp tree))
     :hints (("Goal" :use cst-matchp-of-lex-raw-identifier
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-raw-lifetime ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('raw-lifetime')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As for raw identifiers,
+     the [SC5] exclusions are enforced in the tokenizer."))
+  (b* (((mv tree1 input1) (abnf::parse-schars "'r#" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv tree2 input2) (lex-identifier-or-keyword input1))
+       ((when (reserrp tree2))
+        (mv (reserrf-push tree2) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "raw-lifetime")
+         :branches (list (list tree1) (list tree2)))
+        input2))
+  ///
+
+  (defret len-of-lex-raw-lifetime-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-raw-lifetime-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-raw-lifetime
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-raw-lifetime
+    (implies (not (reserrp tree))
+             (cst-matchp tree "raw-lifetime"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-schars
+                     tree-terminatedp-of-lex-identifier-or-keyword
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-raw-lifetime
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-raw-lifetime
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-lifetime-token ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('lifetime-token')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A raw lifetime is attempted first,
+     since its @('r') would otherwise lex
+     as the identifier of a shorter lifetime;
+     then a single quote followed by an identifier or keyword;
+     then the placeholder lifetime @('\\'_').
+     The side conditions [SC8] and [SC12] on what may follow
+     are checked by @(tsee lex-token)."))
+  (b* ((input (nat-list-fix input))
+       ((mv tree input1) (lex-raw-lifetime input))
+       ((when (not (reserrp tree)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "lifetime-token")
+             :branches (list (list tree)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "'" input))
+       ((when (reserrp tree1)) (mv (reserrf-push tree1) input))
+       ((mv tree2 input2) (lex-identifier-or-keyword input1))
+       ((when (not (reserrp tree2)))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "lifetime-token")
+             :branches (list (list tree1) (list tree2)))
+            input2))
+       ((mv tree input1) (abnf::parse-ichars "'_" input))
+       ((when (reserrp tree)) (mv (reserrf-push tree) input)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "lifetime-token")
+         :branches (list (list tree)))
+        input1))
+  ///
+
+  (defret len-of-lex-lifetime-token-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-lifetime-token-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-lifetime-token
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-lifetime-token
+    (implies (not (reserrp tree))
+             (cst-matchp tree "lifetime-token"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-lex-identifier-or-keyword
+                     tree-terminatedp-of-lex-raw-lifetime
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-lifetime-token
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-lifetime-token
                     :in-theory (enable cst-matchp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4514,8 +4668,10 @@
   (xdoc::topstring
    (xdoc::p
     "The alternative is chosen by lookahead at the first characters:
-     a single quote starts a character literal,
-     and a double quote a string literal;
+     a single quote starts a character literal or, failing that,
+     a lifetime (a character literal that lexes is always longer
+     than a lifetime starting at the same quote);
+     a double quote starts a string literal;
      the literal prefixes
      @('b') followed by a quote,
      @('br') or @('cr') followed by a double quote or @('#'),
@@ -4559,19 +4715,44 @@
      while @('\"Foo\"__') lexes as a literal with suffix @('__')).
      A suffix has already been lexed greedily,
      so such an underscore is not followed by
-     an identifier-continue character."))
+     an identifier-continue character.")
+   (xdoc::p
+    "After lexing a lifetime,
+     the side condition [SC12] applies:
+     if the next character is a single quote, the input is rejected
+     (e.g. @('\\'ab\\''), which rustc reads as
+     a character literal with two characters).
+     So does the lifetime case of [SC8]:
+     if the lifetime is not raw and the next character is @('#'),
+     the input is rejected (e.g. @('\\'a#'), and also @('\\'r#1'),
+     which is the lifetime @('\\'r') followed by @('#')).
+     The text of a raw lifetime starts with @('\\'r#'),
+     which the text of no other lifetime does."))
   (b* ((input (nat-list-fix input))
        ((mv nat? &) (abnf::parse-next input))
        ((when (reserrp nat?))
         (mv (reserrf-push nat?) input))
        (nat (lnfix nat?))
        ((when (eql nat #x27)) ; '
-        (b* (((mv tree input1) (lex-char-literal input))
-             ((when (reserrp tree)) (mv (reserrf-push tree) input))
-             ((when (prefixp (list #x5f) input1)) ; _ [SC11]
-              (mv (reserrf (list :underscore-literal-suffix
-                                 (abnf::tree->string tree)))
-                  input)))
+        (b* (((mv char-tree input1) (lex-char-literal input))
+             ((when (not (reserrp char-tree)))
+              (if (prefixp (list #x5f) input1) ; _ [SC11]
+                  (mv (reserrf (list :underscore-literal-suffix
+                                     (abnf::tree->string char-tree)))
+                      input)
+                (mv (abnf::make-tree-nonleaf
+                     :rulename? (abnf::rulename "token")
+                     :branches (list (list char-tree)))
+                    input1)))
+             ((mv tree input1) (lex-lifetime-token input))
+             ((when (reserrp tree)) (mv (reserrf-push char-tree) input))
+             (string (abnf::tree->string tree))
+             ((when (prefixp (list #x27) input1)) ; ' [SC12]
+              (mv (reserrf (list :lifetime-followed-by-quote string))
+                  input))
+             ((when (and (prefixp (list #x23) input1) ; # [SC8]
+                         (not (prefixp (list #x27 #x72 #x23) string))))
+              (mv (reserrf (list :reserved-prefix string)) input)))
           (mv (abnf::make-tree-nonleaf
                :rulename? (abnf::rulename "token")
                :branches (list (list tree)))
@@ -4748,6 +4929,7 @@
                      tree-match-of-make-tree-nonleaf-elem
                      tree-match-element-p-when-cst-matchp$
                      tree-terminatedp-of-lex-raw-identifier
+                     tree-terminatedp-of-lex-lifetime-token
                      tree-terminatedp-of-lex-char-literal
                      tree-terminatedp-of-lex-byte-literal
                      tree-terminatedp-of-lex-string-literal

@@ -83,6 +83,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Lifetimes: the name without the quote, and without r# if raw.
+
+(test-tokens "'a" (list (token-lifetime "a" nil)))
+(test-tokens "'_" (list (token-lifetime "_" nil)))
+(test-tokens "'static" (list (token-lifetime "static" nil)))
+(test-tokens "'r" (list (token-lifetime "r" nil)))
+(test-tokens "'r#fn" (list (token-lifetime "fn" t)))
+(test-tokens "'r#_a" (list (token-lifetime "_a" t)))
+(test-tokens-2021 "'r#gen" (list (token-lifetime "gen" t)))
+(test-tokens "&'a str"
+             (list (token-punct "&")
+                   (token-lifetime "a" nil)
+                   (token-ident "str" nil)))
+
+; Raw lifetimes with the [SC5] exclusions, as in rustc's
+; tests/ui/lifetimes/raw/raw-lt-invalid-raw-id.rs ('r#_ is rejected
+; by the lexer; see the lexer tests).
+
+(test-tokenize-fail "'r#crate")
+(test-tokenize-fail "'r#self")
+(test-tokenize-fail "'r#super")
+(test-tokenize-fail "'r#Self")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Doc comments become tokens; other comments do not (see above).
 
 (test-tokens "///doc"
@@ -218,14 +243,15 @@ x += 2;"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexing failures propagate ([SC7] to [SC11], not-in-slice forms).
+; Lexing failures propagate ([SC7] to [SC12]).
 
 (test-tokenize-fail "foo#bar") ; [SC8]
 (test-tokenize-fail "0b12") ; [SC7]
 (test-tokenize-fail "'\\u{D800}'") ; [SC9]
 (test-tokenize-fail "r#\"x\"") ; [SC10]
 (test-tokenize-fail "\"Foo\"_") ; [SC11]
-(test-tokenize-fail "&'a str") ; lifetimes not in slice yet
+(test-tokenize-fail "'ab'") ; [SC12]
+(test-tokenize-fail "'a#") ; [SC8]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

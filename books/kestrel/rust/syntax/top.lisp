@@ -46,12 +46,13 @@
      At this time of writing,
      the lexical grammar, lexer, and tokenizer cover
      whitespace, comments (except block doc comments),
-     identifiers (ASCII-only for now), keywords, integer literals,
+     identifiers (ASCII-only for now), keywords, lifetimes,
+     integer literals,
      character, byte, and string literals of all kinds
      (including raw strings and C strings),
      punctuation, and delimiters.
      Still to come are
-     lifetimes, float literals, block doc comments,
+     float literals, block doc comments,
      Unicode identifiers and their normalization,
      the edition 2024 reserved forms,
      and the processing of the input file

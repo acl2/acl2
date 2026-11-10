@@ -68,9 +68,10 @@
       but the grammar and lexer do not use them yet,
       so identifiers are ASCII-only meanwhile.")
     (xdoc::li
-     "[SC5] Raw identifier exclusions
+     "[SC5] Raw identifier and raw lifetime exclusions
       (@('crate'), @('self'), @('super'), @('Self')):
-      not yet formalized.")
+      not yet formalized
+      (the tokenizer rejects them).")
     (xdoc::li
      "[SC6] Edition-dependent keyword classification:
       the tables and classification functions are in @(see keywords);
@@ -81,7 +82,9 @@
     (xdoc::li
      "[SC8] Reserved prefixes
       (an identifier or keyword, or a lone underscore,
-      immediately followed by @('#'), a single quote, or a double quote):
+      immediately followed by @('#'), a single quote, or a double quote;
+      and a lifetime other than a raw one
+      immediately followed by @('#')):
       formalized here,
       as @(tsee lexeme-cst-reserved-prefix-okp),
       incorporated into @(tsee lexing-okp).")
@@ -99,6 +102,11 @@
      "[SC11] Underscore after a character or string literal:
       formalized here,
       as @(tsee lexeme-cst-literal-underscore-okp),
+      incorporated into @(tsee lexing-okp).")
+    (xdoc::li
+     "[SC12] Single quote after a lifetime:
+      formalized here,
+      as @(tsee lexeme-cst-lifetime-quote-okp),
       incorporated into @(tsee lexing-okp)."))
    (xdoc::p
     "An important structural point:
@@ -255,6 +263,30 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define non-raw-lifetime-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding
+          a lifetime token that is not a raw lifetime."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the lifetime lexemes subject to
+     the reserved-prefix side condition [SC8]:
+     CSTs of the form @('lexeme -> token -> lifetime-token')
+     whose @('lifetime-token') does not consist of
+     a single @('raw-lifetime') subtree."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) nil)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) nil)
+       ((when (reserrp (abnf::check-tree-nonleaf sub2 "lifetime-token")))
+        nil)
+       (sub3 (abnf::check-tree-nonleaf-1-1 sub2 "lifetime-token")))
+    (or (reserrp sub3)
+        (not (equal (abnf::check-tree-nonleaf? sub3) "raw-lifetime")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lexeme-cst-reserved-prefix-okp ((tree abnf::treep)
                                         (rest-input nat-listp))
   :returns (yes/no booleanp)
@@ -270,7 +302,15 @@ multi-line */")))
      must not be immediately followed by
      @('#') (U+0023), @('\\'') (U+0027), or @('\"') (U+0022):
      such forms are reserved prefixes
-     in both supported editions, 2021 and 2024.")
+     in both supported editions, 2021 and 2024.
+     Likewise, a lifetime lexeme that is not a raw lifetime
+     (see @(tsee non-raw-lifetime-lexeme-cst-p))
+     must not be immediately followed by @('#'):
+     such forms are reserved lifetime prefixes.
+     The Reference exempts @('\\'r'),
+     but rustc rejects @('\\'r#') when no raw lifetime follows,
+     and so does this condition:
+     when a raw lifetime follows, maximal munch makes it the lexeme.")
    (xdoc::p
     "Note that this condition rejects the whole lexing
      rather than steering maximal munch to a shorter lexeme:
@@ -284,11 +324,13 @@ multi-line */")))
      (also, it could not be, since it depends on
      the input that follows the lexeme)."))
   (b* ((rest-input (nat-list-fix rest-input)))
-    (implies (or (identifier-or-keyword-lexeme-cst-p tree)
-                 (underscore-lexeme-cst-p tree))
-             (and (not (prefixp (list #x23) rest-input)) ; #
-                  (not (prefixp (list #x27) rest-input)) ; '
-                  (not (prefixp (list #x22) rest-input)))))) ; "
+    (and (implies (or (identifier-or-keyword-lexeme-cst-p tree)
+                      (underscore-lexeme-cst-p tree))
+                  (and (not (prefixp (list #x23) rest-input)) ; #
+                       (not (prefixp (list #x27) rest-input)) ; '
+                       (not (prefixp (list #x22) rest-input)))) ; "
+         (implies (non-raw-lifetime-lexeme-cst-p tree)
+                  (not (prefixp (list #x23) rest-input)))))) ; #
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -359,6 +401,55 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; [SC12] Single quote after a lifetime.
+
+(define lifetime-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding a lifetime token,
+          raw or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the lexemes subject to
+     the side condition [SC12]:
+     CSTs of the form @('lexeme -> token -> lifetime-token')."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) nil)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) nil))
+    (not (reserrp (abnf::check-tree-nonleaf sub2 "lifetime-token")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-lifetime-quote-okp ((tree abnf::treep)
+                                       (rest-input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST holding a lifetime
+          is not immediately followed by a single quote [SC12]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lifetime lexeme (see @(tsee lifetime-lexeme-cst-p)),
+     raw or not,
+     must not be immediately followed by @('\\'') (U+0027).
+     rustc reads such text, e.g. @('\\'ab\\''),
+     as a character literal with more than one character,
+     and rejects it.")
+   (xdoc::p
+    "Like [SC8] and [SC11], this condition rejects the whole lexing,
+     so it is a conjunct of @(tsee lexing-okp).
+     The Reference states it inside the lifetime token rule
+     (\"not immediately followed by '\");
+     read as a restriction on the candidate lexemes,
+     it would let maximal munch pick a shorter lifetime instead:
+     @('\\'ab\\' \\'') would lex as
+     the lifetime @('\\'a') followed by the byte literal @('b\\' \\''),
+     which rustc rejects."))
+  (implies (lifetime-lexeme-cst-p tree)
+           (not (prefixp (list #x27) (nat-list-fix rest-input))))) ; '
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; [SC1] Maximal munch.
 
 (define-sk lexeme-cst-maximal-p ((tree abnf::treep) (rest-input nat-listp))
@@ -402,6 +493,8 @@ multi-line */")))
      (see @(tsee lexeme-cst-reserved-prefix-okp));
      no character or string literal lexeme is followed by an underscore
      (see @(tsee lexeme-cst-literal-underscore-okp));
+     no lifetime lexeme is followed by a single quote
+     (see @(tsee lexeme-cst-lifetime-quote-okp));
      and together they cover the input exactly.")
    (xdoc::p
     "The lexer book defines the executable lexer;
@@ -420,6 +513,7 @@ multi-line */")))
          (lexeme-cst-reserved-prefix-okp tree (nthcdr (len string) input))
          (lexeme-cst-literal-underscore-okp tree
                                             (nthcdr (len string) input))
+         (lexeme-cst-lifetime-quote-okp tree (nthcdr (len string) input))
          (lexing-okp (cdr trees) (nthcdr (len string) input))))
 
   ///

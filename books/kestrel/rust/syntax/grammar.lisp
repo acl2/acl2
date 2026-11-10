@@ -68,7 +68,7 @@
    (xdoc::p
     "The first slice covers whitespace, comments
      (except block doc comments),
-     ASCII identifiers, integer literals,
+     ASCII identifiers, lifetimes, integer literals,
      character, byte, string, byte-string, and C-string literals
      (including their raw forms),
      punctuation, and delimiters;

@@ -235,6 +235,48 @@ lines\"" 1)
 (test-lex-fail "_#")
 (test-lex-fail "_\"x\"")
 
-; Not yet covered by the grammar slice: lifetimes.
+; Lifetimes and labels, including raw lifetimes and keyword names
+; (as rustc 1.87.0 lexes them).
 
-(test-lex-fail "&'a str")
+(test-lex "'a" 1)
+(test-lex "'_" 1)
+(test-lex "'static" 1)
+(test-lex "'fn" 1)
+(test-lex "'_a" 1)
+(test-lex "'__" 1)
+(test-lex "'r" 1)
+(test-lex "'r#a" 1)
+(test-lex "'r#fn" 1)
+(test-lex "'r#_a" 1)
+(test-lex "'r#crate" 1) ; [SC5] is checked by the tokenizer
+(test-lex "&'a str" 4)
+(test-lex "'a: loop {}" 7)
+(test-lex "'a #" 3)
+(test-lex "'r#a#" 2) ; raw lifetimes are not reserved prefixes
+
+; Where a character literal lexes, it is the longer lexeme.
+
+(test-lex "'a'" 1)
+(test-lex "'_'" 1)
+(test-lex "'a'b'c'" 2) ; 'a' with suffix b, then 'c'
+
+; A lifetime followed by a single quote is rejected [SC12].
+
+(test-lex-fail "'ab'")
+(test-lex-fail "'ab' '") ; not 'a followed by b' '
+(test-lex-fail "'_a'")
+(test-lex-fail "'r#a'")
+
+; A lifetime other than a raw one followed by "#" is a reserved
+; lifetime prefix [SC8], including 'r when no raw lifetime follows.
+
+(test-lex-fail "'a#")
+(test-lex-fail "'_#")
+(test-lex-fail "'r#")
+(test-lex-fail "'r#1")
+(test-lex-fail "'r#_")
+
+; No lifetime starts with a digit.
+
+(test-lex-fail "'1")
+(test-lex-fail "'1a")
