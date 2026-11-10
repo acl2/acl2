@@ -30,7 +30,8 @@
 
 ;; Rules which expose the representation of a graph as a well-formed adjacency
 ;; list. These are disabled; enable this ruleset to reason about the
-;; representation directly. The ruleset is shared with the edge type.
+;; representation directly. The ruleset is shared by the edge, graph, step, and
+;; walk types, so enabling it exposes all four representations.
 
 (def-ruleset! break-abstraction ())
 

@@ -19,6 +19,8 @@
 
 ;; Rules which expose the fact that an edge is a pair of conses. These are
 ;; disabled; enable this ruleset to reason about the representation directly.
+;; The ruleset is shared by the edge, graph, step, and walk types, so enabling
+;; it exposes all four representations.
 
 (def-ruleset! break-abstraction ())
 
