@@ -182,7 +182,6 @@
                     (tree-lookup x tree))))
   :induct (tree-update y val tree)
   :enable (tree-update
-           tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

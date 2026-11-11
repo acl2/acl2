@@ -318,6 +318,7 @@
                      (< 0 (treemap::tree-lookup key tree)))))
   :induct t
   :enable (treemap::tree-lookup
+           treemap::in-of-tree-key-set-when-not-tree-empty-p
            tree-all-vals-posp))
 
 (defrule tree-all-vals-posp-when-tree-equiv-congruence

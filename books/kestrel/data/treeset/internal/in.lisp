@@ -198,35 +198,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel tree-in-tree->right-when-not-<<-of-tree->head
+(defrule tree-in-of-tree->right-when-not-<<-of-tree->head
   (implies (and (bstp tree)
-                (not (tree-empty-p tree))
                 (not (<< (tree-element->val (tree->head tree)) x)))
            (not (tree-in x (tree->right tree))))
   :enable tree-in-when-<<-all-r)
 
-(defrulel tree-in-tree->right-when-not-<<-of-tree->head-weak
+(defrule tree-in-of-tree->right-when-not-<<-of-tree->head-weak
   (implies (and (bstp tree)
-                (not (tree-empty-p tree))
                 (<< x (tree-element->val (tree->head tree))))
            (not (tree-in x (tree->right tree))))
   :enable data::<<-rules)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel tree-in-tree->left-when-not->>-of-tree->head
+(defrule tree-in-of-tree->left-when-not->>-of-tree->head
   (implies (and (bstp tree)
-                (not (tree-empty-p tree))
                 (not (<< x (tree-element->val (tree->head tree)))))
            (not (tree-in x (tree->left tree))))
   :enable tree-in-when-<<-all-l)
 
-(defrulel tree-in-tree->left-when-not->>-of-tree->head-weak
+(defrule tree-in-of-tree->left-when-not->>-of-tree->head-weak
   (implies (and (bstp tree)
-                (not (tree-empty-p tree))
                 (<< (tree-element->val (tree->head tree)) x))
            (not (tree-in x (tree->left tree))))
   :enable data::<<-rules)
+
+;; In a binary search tree, a value on one side of the root is in the tree
+;; exactly when it is in the subtree on that side.
+
+(defrule tree-in-when->>-of-tree->head
+  (implies (and (bstp tree)
+                (<< x (tree-element->val (tree->head tree))))
+           (equal (tree-in x tree)
+                  (tree-in x (tree->left tree))))
+  :enable (tree-in
+           data::<<-rules))
+
+(defrule tree-in-when-<<-of-tree->head
+  (implies (and (bstp tree)
+                (<< (tree-element->val (tree->head tree)) x))
+           (equal (tree-in x tree)
+                  (tree-in x (tree->right tree))))
+  :enable (tree-in
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,8 +280,8 @@
   (implies (and (bstp tree)
                 (tree-in x (tree->right tree)))
            (not (tree-in x (tree->left tree))))
-  :use (tree-in-tree->right-when-not-<<-of-tree->head
-        tree-in-tree->left-when-not->>-of-tree->head)
+  :use (tree-in-of-tree->right-when-not-<<-of-tree->head
+        tree-in-of-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
 (defrule tree-in-of-tree->left-when-tree-in-of-tree->right-forward-chaining
@@ -282,8 +295,8 @@
   (implies (and (bstp tree)
                 (tree-in x (tree->left tree)))
            (not (tree-in x (tree->right tree))))
-  :use (tree-in-tree->right-when-not-<<-of-tree->head
-        tree-in-tree->left-when-not->>-of-tree->head)
+  :use (tree-in-of-tree->right-when-not-<<-of-tree->head
+        tree-in-of-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
 (defrule tree-in-of-tree->right-when-tree-in-of-tree->left-forward-chaining

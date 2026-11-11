@@ -509,6 +509,13 @@ void g(void) {
 ")
 
 (test-valid
+ "int f (void);
+  int foo () {
+  int x = sizeof((0, f));
+  }
+")
+
+(test-valid
  "int foo (int *a, int *b) {
  return (char *) (a) - b;
 }
@@ -706,6 +713,44 @@ unsigned __int128_t z;
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "void g(void) {
+  int a[3];
+  typeof(({ a; })) p;
+  int **q = &p;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(void);
+void g(void) {
+  int x = sizeof(({ f; }));
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void g(void) {
+  int x = ({ { 1; } });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void g(void) {
+  int x = ({ 1; ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void g(void) {
+  int x = ({ 1; L: ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;
@@ -716,6 +761,79 @@ typeof(bar) foo;
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int x;
+typeof(x) y;
+int y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+typeof(x) y;
+double y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof(a) b;
+int b[3];
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int a[3];
+typeof(a) b;
+int *b;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int **b);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int (*b)[3]);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(int *) p;
+int *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(int *) p;
+double *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(*1) x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(struct s { int m; }) x;
+int g(void) {
+  struct s y;
+  return y.m;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof((0, a)) p;
+int *p;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 

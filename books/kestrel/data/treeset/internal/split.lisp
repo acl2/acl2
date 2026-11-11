@@ -171,8 +171,6 @@
                   (tree-in x tree)))
   :induct t
   :enable (tree-split
-           tree-in
-           bstp
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -223,7 +223,6 @@
                     (tree-lookup a y))))
   :induct t
   :enable (tree-generic-union
-           tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
