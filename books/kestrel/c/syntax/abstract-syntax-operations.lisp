@@ -1560,6 +1560,17 @@
   (trans-item-case x :line-comment)
   :elementp-of-nil nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-null-stmt-p ((item block-itemp))
+  :returns (yes/no booleanp)
+  :short "Check if a block item is a null statement,
+          i.e. an expression statement without expression [C17:6.8.3/3]."
+  (block-item-case item
+                   :stmt (and (stmt-case item.stmt :expr)
+                              (not (stmt-expr->expr? item.stmt)))
+                   :otherwise nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define trans-unit-emptyp ((tunit trans-unitp))

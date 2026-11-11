@@ -3102,11 +3102,16 @@
      (xdoc::p
       "For the comma operator, we validate both sub-expressions,
        and the resulting type is the one of the second sub-expression
-       [C17:6.5.17/2].")
+       [C17:6.5.17/2],
+       after array-to-pointer and function-to-pointer conversion
+       [C17:6.3.2.1/3-4].")
      (xdoc::p
       "For a statement expression, we push a new scope for the block
        and we validate the block items. We then pop the scope.
-       If a type is returned, that is the type of the expression.
+       If a type is returned,
+       the type of the expression is that type
+       after array-to-pointer and function-to-pointer conversion,
+       as done by GCC and Clang.
        Otherwise, the expression has type @('void'),
        as described in the GCC documentation of statement expressions.")
      (xdoc::p
@@ -3468,12 +3473,14 @@
                    ((erp new-next type types2 vstate)
                     (valid-expr expr.next vstate)))
                 (retok (make-expr-comma :first new-first :next new-next)
-                       type
+                       (type-fpconvert (type-apconvert type))
                        (set::union types1 types2)
                        vstate))
        :stmt (b* (((erp new-cstmt types type? vstate)
                    (valid-comp-stmt expr.stmt nil vstate))
-                  (type (or type? (type-void))))
+                  (type (if type?
+                            (type-fpconvert (type-apconvert type?))
+                          (type-void))))
                (retok (expr-stmt new-cstmt) type types vstate))
        :tycompat (b* (((erp new-type1 & types1 vstate)
                        (valid-tyname expr.type1 vstate))
@@ -3874,8 +3881,15 @@
        This may be exactly what is needed for validation,
        but we will revisit this choice if needed.")
      (xdoc::p
+      "A @('typeof') specifier,
+       or its GCC variant @('__typeof') or @('__typeof__'),
+       determines the type of its expression or type name [C23:6.7.3.6/4].
+       The type returned by @(tsee valid-expr)
+       is the one before array-to-pointer and function-to-pointer conversion,
+       which @('typeof') does not perform [C23:6.3.2.1/3-4].")
+     (xdoc::p
       "For now, for simplicity, we regard
-       all the type specifiers that are GCC extensions
+       all the other type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
        which determines the structure type.
@@ -4266,20 +4280,28 @@
                               nil
                               nil
                               vstate))
-       :typeof-expr (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
-       :typeof-type (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
+       :typeof-expr (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-expr type types vstate)
+                          (valid-expr tyspec.expr vstate)))
+                      (retok (make-type-spec-typeof-expr
+                              :expr new-expr
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
+       :typeof-type (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-tyname type types vstate)
+                          (valid-tyname tyspec.type vstate)))
+                      (retok (make-type-spec-typeof-type
+                              :type new-tyname
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
        :auto-type (if (endp tyspecs)
                       (retok (type-spec-fix tyspec)
                              (type-unknown)
@@ -7505,9 +7527,11 @@
      (xdoc::p
       "If validation is successful, we return,
        besides an updated validation table,
-       also two pieces of type information.")
+       also two pieces of type information:
+       @('return-types') and @('last-expr-type?').")
      (xdoc::p
-      "The first piece is the set of types returned by the statement,
+      "The @('return-types') result is the set of types
+       returned by the statement,
        via @('return') statements, with or without expressions.
        This is a set because a statement may contain
        multiple @('return') sub-statements.
@@ -7516,20 +7540,17 @@
        a @('return') statement without an expression
        contributes the type @('void') to the set.")
      (xdoc::p
-      "The second piece of information is as follows.
-       If the statement is either a (possibly labeled) expression statement,
-       or is a (possibly labeled) compound one
-       whose last block item is an expression statement,
-       the second piece of information is the type of that expression.
-       If the statement is not an expression or compound,
-       or it is compound but does not end in an expression statement
-       (including the case in which the compound statement has no block items),
-       the second piece of information is @('nil').
-       The reason for having this second piece of information
-       is to support the validation of GCC statement expressions"
+      "The @('last-expr-type?') result supports the validation of
+       GCC statement expressions "
       (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
                    "[GCCM:6.12.1]")
-      ".")
+      ". If the last statement of a statement expression
+       is an expression statement,
+       the statement expression has the type of that expression;
+       otherwise, it has type @('void').
+       Accordingly, if the statement is a statement expression,
+       @('last-expr-type?') is the type of the statement expression.
+       Otherwise, it is @('nil').")
      (xdoc::p
       "To validate a labeled statement,
        we validate its label, and then the enclosed statement.
@@ -7541,8 +7562,9 @@
       "To validate a compound statement,
        we push a new scope for the block,
        and we validate the list of block items.
-       We pop the scope and we return the same results
-       coming from the validation of the block items.")
+       We pop the scope and we return the return types
+       coming from the validation of the block items,
+       and @('nil') as the @('last-expr-type?') result.")
      (xdoc::p
       "To validate an expression statement,
        we validate the expression if present,
@@ -7594,9 +7616,9 @@
                 type?
                 vstate))
        :compound
-       (b* (((erp new-cstmt types type? vstate)
+       (b* (((erp new-cstmt types & vstate)
              (valid-comp-stmt stmt.stmt nil vstate)))
-         (retok (stmt-compound new-cstmt) types type? vstate))
+         (retok (stmt-compound new-cstmt) types nil vstate))
        :expr
        (b* (((erp new-expr? type? types vstate)
              (valid-expr-option stmt.expr? vstate)))
@@ -7811,10 +7833,9 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result.")
+       the @('last-expr-type?') result is the one
+       from the validation of the list of block items
+       (see @(tsee valid-block-item-list)).")
      (xdoc::p
       "The @('fundefp') flag says whether the compound statement
        is the body of a function definition.
@@ -7826,7 +7847,7 @@
     (b* (((reterr) (irr-comp-stmt) nil nil (irr-vstate))
          ((comp-stmt cstmt) cstmt)
          (vstate (if fundefp vstate (vstate-push-scope vstate)))
-         ((erp new-items types last-expr-type? vstate)
+         ((erp new-items types last-expr-type? & vstate)
           (valid-block-item-list cstmt.items vstate))
          (vstate (if fundefp vstate (vstate-pop-scope vstate))))
       (retok (make-comp-stmt :labels cstmt.labels :items new-items)
@@ -7851,13 +7872,9 @@
     (xdoc::topstring
      (xdoc::p
       "If validation is successful, we return the same kind of type results
-       as @(tsee valid-stmt) (see that function's documentation),
-       with the slight modification that
-       the @('last-expr-type?') result is a type exactly when
-       the block item is a compound statement
-       whose last block item is an expression statement,
-       in which case the @('last-expr-type?') result is
-       the type of that expression.")
+       as @(tsee valid-stmt) (see that function's documentation).
+       If the block item is a statement,
+       these are the results of validating the statement.")
      (xdoc::p
       "If the block item is a declaration,
        the @('last-expr-type?') result is @('nil'),
@@ -7890,6 +7907,7 @@
                  (new-items block-item-listp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
+                 (null-stmts-p booleanp)
                  (new-vstate vstatep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of block items."
@@ -7899,21 +7917,30 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result."))
-    (b* (((reterr) nil nil nil (irr-vstate))
-         ((when (endp items)) (retok nil nil nil (vstate-fix vstate)))
-         ((erp new-item types last-expr-type? vstate)
+       the @('last-expr-type?') result is the one
+       from the validation of the last block item
+       that is not a null statement,
+       or @('nil') if there is no such block item.
+       That is, we skip trailing null statements,
+       as GCC and Clang do when determining
+       the last statement of a statement expression;
+       labeled or attributed null statements are not skipped.")
+     (xdoc::p
+      "We also return a flag @('null-stmts-p') saying whether
+       all the block items are null statements,
+       which is the case when there are no block items.
+       If the block items after the first one are all null statements,
+       the @('last-expr-type?') result is the one of the first block item."))
+    (b* (((reterr) nil nil nil nil (irr-vstate))
+         ((when (endp items)) (retok nil nil nil t (vstate-fix vstate)))
+         ((erp new-item types item-last-expr-type? vstate)
           (valid-block-item (car items) vstate))
-         ((when (endp (cdr items)))
-          (retok (list new-item) types last-expr-type? vstate))
-         ((erp new-items more-types last-expr-type? vstate)
+         ((erp new-items more-types last-expr-type? null-stmts-p vstate)
           (valid-block-item-list (cdr items) vstate)))
       (retok (cons new-item new-items)
              (set::union types more-types)
-             last-expr-type?
+             (if null-stmts-p item-last-expr-type? last-expr-type?)
+             (and (block-item-null-stmt-p (car items)) null-stmts-p)
              vstate))
     :measure (acl2::two-nats-measure (block-item-list-count items) 0))
 

@@ -34,6 +34,7 @@
           from-omap
           map-macro-loop
           map-macro-fn
+          map
           update-=
           update-eq
           update-eql

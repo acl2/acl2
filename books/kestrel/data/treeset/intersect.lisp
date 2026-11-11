@@ -21,6 +21,7 @@
 (include-book "set-defs")
 (include-book "to-oset-defs")
 (include-book "cardinality-defs")
+(include-book "min-max-defs")
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "delete-defs")
@@ -48,6 +49,7 @@
 (local (include-book "to-oset"))
 (local (include-book "in"))
 (local (include-book "cardinality"))
+(local (include-book "min-max"))
 (local (include-book "subset"))
 (local (include-book "extensionality"))
 (local (include-book "insert"))
@@ -211,15 +213,10 @@
            (subset (intersect x y) z))
   :enable pick-a-point-polar)
 
-(defrule subset-of-arg1-and-intersect0
-  (equal (subset x (intersect x y))
-         (subset x y))
-  :enable (acl2::equal-of-booleans-cheap
-           pick-a-point-polar))
-
-(defrule subset-of-arg1-and-intersect1
-  (equal (subset x (intersect y x))
-         (subset x y))
+(defrule subset-of-arg1-and-intersect
+  (equal (subset z (intersect x y))
+         (and (subset z x)
+              (subset z y)))
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar))
 
@@ -229,6 +226,26 @@
            (subset (intersect x0 y0)
                    (intersect x1 y1)))
   :enable pick-a-point)
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; The least and greatest elements of a set are not in a set disjoint from it.
+
+(defrule in-of-min-when-emptyp-of-intersect
+  (implies (and (not (emptyp set))
+                (emptyp (intersect set y)))
+           (not (in (min set) y)))
+  :use (:instance in-when-emptyp
+                  (x (min set))
+                  (set (intersect set y))))
+
+(defrule in-of-max-when-emptyp-of-intersect
+  (implies (and (not (emptyp set))
+                (emptyp (intersect set y)))
+           (not (in (max set) y)))
+  :use (:instance in-when-emptyp
+                  (x (max set))
+                  (set (intersect set y))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -408,7 +425,8 @@
   (implies (subset y x)
            (equal (intersect x y)
                   (fix y)))
-  :enable extensionality)
+  :enable extensionality
+  :disable not-emptyp-when-in-forward-chaining)
 
 (defrule intersect-when-subset-arg2-arg1-cheap
   (implies (subset y x)

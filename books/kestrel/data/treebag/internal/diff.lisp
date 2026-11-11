@@ -195,7 +195,6 @@
                         (t nil))))
   :induct t
   :enable (tree-diff
-           treemap::tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
