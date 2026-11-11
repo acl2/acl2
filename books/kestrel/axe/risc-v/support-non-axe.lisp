@@ -18,6 +18,7 @@
 (include-book "write-over-write-rules")
 (include-book "assumptions")
 (include-book "run-until-return")
+(include-book "alt-defs")
 
 ;; Set up the theory for code proofs:
 (in-theory (e/d (step32n-base-1
@@ -27,15 +28,57 @@
                  ;; step32 ; causes loops
 
                  ;; instructions:
-                 exec32-op-imm
-                 exec32-op
-                 exec32-add
-                 exec32-addi
-                 exec32-store
-                 exec32-sw
-                 exec32-load
-                 exec32-lw
-                 exec32-jalr
+
+                 exec32-addi-alt-def
+                 exec32-slti-alt-def
+                 exec32-sltiu-alt-def
+                 exec32-andi-alt-def
+                 exec32-ori-alt-def
+                 exec32-xori-alt-def
+                 exec32-slli-alt-def
+                 exec32-srli-alt-def
+                 exec32-srai-alt-def
+                 exec32-lui-alt-def
+                 exec32-auipc-alt-def
+                 exec32-add-alt-def
+                 exec32-sub-alt-def
+                 exec32-slt-alt-def
+                 exec32-sltu-alt-def
+                 exec32-and-alt-def
+                 exec32-or-alt-def
+                 exec32-xor-alt-def
+                 exec32-sll-alt-def
+                 exec32-srl-alt-def
+                 exec32-sra-alt-def
+                 exec32-mul-alt-def
+                 exec32-mulh-alt-def
+                 exec32-mulhu-alt-def
+                 exec32-mulhsu-alt-def
+                 exec32-div-alt-def
+                 exec32-divu-alt-def
+                 exec32-rem-alt-def
+                 exec32-remu-alt-def
+                 exec32-jal-alt-def
+                 exec32-jalr-alt-def
+                 exec32-beq-alt-def
+                 exec32-bne-alt-def
+                 exec32-blt-alt-def
+                 exec32-bltu-alt-def
+                 exec32-bge-alt-def
+                 exec32-bgeu-alt-def
+                 exec32-lb-alt-def
+                 exec32-lbu-alt-def
+                 exec32-lh-alt-def
+                 exec32-lhu-alt-def
+                 exec32-lw-alt-def
+                 exec32-sb-alt-def
+                 exec32-sh-alt-def
+                 exec32-sw-alt-def
+
+                 exec32-op-imm ; dispatch function
+                 exec32-op ; dispatch function
+                 exec32-store ; dispatch function
+                 exec32-load ; dispatch function
 
                  inc32-pc ; todo: alt-def
                  exec32-instr-base ; todo: improve name in defopeners call
