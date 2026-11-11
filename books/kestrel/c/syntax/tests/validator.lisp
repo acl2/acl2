@@ -737,6 +737,20 @@ void g(void) {
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "void g(void) {
+  int x = ({ 1; ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void g(void) {
+  int x = ({ 1; L: ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;

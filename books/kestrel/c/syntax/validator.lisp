@@ -7833,10 +7833,9 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result.")
+       the @('last-expr-type?') result is the one
+       from the validation of the list of block items
+       (see @(tsee valid-block-item-list)).")
      (xdoc::p
       "The @('fundefp') flag says whether the compound statement
        is the body of a function definition.
@@ -7848,7 +7847,7 @@
     (b* (((reterr) (irr-comp-stmt) nil nil (irr-vstate))
          ((comp-stmt cstmt) cstmt)
          (vstate (if fundefp vstate (vstate-push-scope vstate)))
-         ((erp new-items types last-expr-type? vstate)
+         ((erp new-items types last-expr-type? & vstate)
           (valid-block-item-list cstmt.items vstate))
          (vstate (if fundefp vstate (vstate-pop-scope vstate))))
       (retok (make-comp-stmt :labels cstmt.labels :items new-items)
@@ -7908,6 +7907,7 @@
                  (new-items block-item-listp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
+                 (null-stmts-p booleanp)
                  (new-vstate vstatep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of block items."
@@ -7917,21 +7917,30 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result."))
-    (b* (((reterr) nil nil nil (irr-vstate))
-         ((when (endp items)) (retok nil nil nil (vstate-fix vstate)))
-         ((erp new-item types last-expr-type? vstate)
+       the @('last-expr-type?') result is the one
+       from the validation of the last block item
+       that is not a null statement,
+       or @('nil') if there is no such block item.
+       That is, we skip trailing null statements,
+       as GCC and Clang do when determining
+       the last statement of a statement expression;
+       labeled or attributed null statements are not skipped.")
+     (xdoc::p
+      "We also return a flag @('null-stmts-p') saying whether
+       all the block items are null statements,
+       which is the case when there are no block items.
+       If the block items after the first one are all null statements,
+       the @('last-expr-type?') result is the one of the first block item."))
+    (b* (((reterr) nil nil nil nil (irr-vstate))
+         ((when (endp items)) (retok nil nil nil t (vstate-fix vstate)))
+         ((erp new-item types item-last-expr-type? vstate)
           (valid-block-item (car items) vstate))
-         ((when (endp (cdr items)))
-          (retok (list new-item) types last-expr-type? vstate))
-         ((erp new-items more-types last-expr-type? vstate)
+         ((erp new-items more-types last-expr-type? null-stmts-p vstate)
           (valid-block-item-list (cdr items) vstate)))
       (retok (cons new-item new-items)
              (set::union types more-types)
-             last-expr-type?
+             (if null-stmts-p item-last-expr-type? last-expr-type?)
+             (and (block-item-null-stmt-p (car items)) null-stmts-p)
              vstate))
     :measure (acl2::two-nats-measure (block-item-list-count items) 0))
 
