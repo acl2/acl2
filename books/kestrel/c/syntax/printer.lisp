@@ -2443,7 +2443,8 @@
             pstate)
      :sub (b* ((pstate (print-member-designor memdes.member pstate))
                (pstate (print-astring "[" pstate))
-               (pstate (print-expr memdes.index (expr-priority-expr) pstate)))
+               (pstate (print-expr memdes.index (expr-priority-expr) pstate))
+               (pstate (print-astring "]" pstate)))
             pstate))
     :measure (member-designor-count memdes))
 

@@ -121,3 +121,16 @@
   (make-expr-unary :op (unop-postinc)
                    :arg (expr-extension *printer-test-ident*)))
  "(__extension__ x)++")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The index of an array member designator is followed by a closing bracket.
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (make-expr-offsetof
+   :type (make-tyname :specquals (list (spec/qual-typespec (type-spec-int))))
+   :member (make-member-designor-sub
+            :member (make-member-designor-ident :ident (ident "a"))
+            :index *printer-test-ident*)))
+ "__builtin_offsetof(int, a[x])")
