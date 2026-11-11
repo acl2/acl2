@@ -107663,6 +107663,30 @@ Bug Fixes From AI via Eric Smith
   [community-books]
   [30m[47msystem/tests/S-199-tau-bound-overwrites-pos-evg.lisp[0m[0m.
 
+  Fixed a [tau] bug leading to a hard error, manifested when a tau that
+  asserts its subject is a particular constant is extended to include
+  an interval that does not contain the constant.  This should have
+  caused a contradiction but instead returned a tau that was
+  contradictory but not the canonical tau contradiction.  See
+  [community-book] [30m[47msystem/tests/tau-combine-hard-error.lisp[0m[0m.
+
+  Fixed a [tau] soundness bug related to the application of signature
+  rules.  When we apply a signature rule we have to check that the
+  tau of the instance of each variable implies the tau of the
+  hypothesis about that variable.  But these two taus may be computed
+  under different enabled structures and that can affect which tau
+  predicates are known to be true or false for explicit constants.
+  See [community-books] [30m[47msystem/tests/tau-implies-disabled-exec.lisp[0m[0m,
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-interval.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-recognizers.lisp[0m[0m.
+
+  The [tau] system represents the ``universal interval'' by [30m[47mnil[0m[0m.  But
+  sometimes it has to add a restriction to that interval's domain.
+  However, that creates an ill-formed interval that could be
+  exploited to prove [30m[47mnil[0m[0m.  This was fixed by changing
+  [30m[47mcollect-bounder-args[0m[0m.  See [community-books]
+  [30m[47msystem/tests/tau-bounder-nil-interval.lisp[0m[0m.
+
 
 Other Bug Fixes
 

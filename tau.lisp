@@ -1341,21 +1341,26 @@
 
 ; Note that the universal tau-interval (where all components are nil)
 
-; (make tau-interval
-;       :recog  nil  ; not known to be a number
-;       :lo     nil  ; negative infinity
-;       :lo-rel nil  ; <=
-;       :hi-rel nil  ; <=
-;       :hi     nil  ; positive infinity
-;       )
+(defconst *tau-universal-interval*
+  (make tau-interval
+        :domain  nil ; not known to be a number
+        :lo      nil  ; negative infinity
+        :lo-rel  nil  ; <=
+        :hi-rel  nil  ; <=
+        :hi      nil  ; positive infinity
+        ))
 
-; makes absolutely no restriction on the subject.  We use nil to represent this
-; tau-interval (and the variants with strict relations) rather than create and
-; subsequently test against (nil (nil . nil) . (nil . nil)).  However, we
-; exploit the fact that (access tau-interval nil :hi-rel), for example,
-; computes to nil.  (Tests show that it is faster to execute (access
+; makes absolutely no restriction on the subject.  We generally use nil to
+; represent this tau-interval (and the variants with strict relations) rather
+; than create and subsequently test against (nil (nil . nil) . (nil . nil)).
+; However, we exploit the fact that (access tau-interval nil :hi-rel), for
+; example, computes to nil.  (Tests show that it is faster to execute (access
 ; tau-interval x :hi-rel) than (if x (access tau-interval x :hi-rel) nil) even
-; when x is nil.)
+; when x is nil.)  However, we have occasion to use the consed up version of
+; the universal interval as a starting point for populating fields of an
+; unrestrained interval.  Claude noticed that if we're treating nil as the
+; universal interval and we do (change tau-interval nil :domain dom) we
+; get an ill-formed interval!
 
 ; If an interval's domain is the integers, we narrow the bounds to integers and
 ; weaken the relation.  For example, instead of creating
@@ -3770,9 +3775,50 @@
    ((eq tau1 *tau-contradiction*) t)
    ((eq tau2 *tau-contradiction*) nil)
    ((access tau tau2 :pos-evg)
+
+; If tau2 asserts that its subject is an explicit constant, then so must
+; tau1.  But in Version 8.7, we stopped there and returned t indicating that
+; M[tau1] --> M[tau2].  But Claude constructed a series of examples showing
+; that that is inadequate if the two taus were constructed under different
+; enabled structures.  For example, suppose we're trying to apply a signature
+; rule derived from the theorem
+
+; (IMPLIES (AND (EQUAL X 'D) (NOT (P X)))
+;          (INTEGERP (F X)))
+
+; But suppose that formula is valid because (p 'D) is true, so the hyp of the
+; signature rule is inconsistent.  Now if (:e p) is enabled when the signature
+; theorem is being processed by tau, we'd discover the inconsistency and not
+; store a rule.  But if (:e p) is disabled, we store the rule with the tau
+; (((D)) NIL NIL (286 . P)) as the hypothesis, which is just (and (equal x 'D)
+; (not (p x))).  Now later, when trying to prove (integerp (f 'd)) the
+; signature rule is tried and we need to show that the tau (((D)) NIL NIL
+; . NIL) (the tau of the instance of the variable X) implies the tau of the
+; signature.  And they both claim x='D.  But note that we don't know (not (p
+; d)).  In the Version 8.7 we reported that the signature is ok to fire because
+; the :pos-evgs agree.  But in fact, the hyp of the signature is contradictory
+; and we didn't notice.  So now, we check the other fields of the two taus to
+; make sure that everything in the signature's hyp is satisfied by the actuals.
+
+; The example just described is
+; books/system/tests/S-200-tau-implies-disabled-exec.lisp.  Related examples by
+; Claude on the same directory are
+; S-200-tau-implies-pos-evg-ignores-interval.lisp
+; S-200-tau-implies-pos-evg-ignores-recognizers.lisp
+
     (if (access tau tau1 :pos-evg)
-        (equal (access tau tau2 :pos-evg)
-               (access tau tau1 :pos-evg))
+        (and (equal (access tau tau2 :pos-evg)
+                    (access tau tau1 :pos-evg))
+             (not (member-neg-evgs (access tau tau1 :pos-evg)
+                                   (access tau tau2 :neg-evgs)))
+             (all-eval-valp t (access tau tau2 :pos-pairs)
+                            (access tau tau1 :pos-evg)
+                            ens wrld)
+             (all-eval-valp nil (access tau tau2 :neg-pairs)
+                            (access tau tau1 :pos-evg)
+                            ens wrld)
+             (eval-tau-interval (access tau tau2 :interval)
+                                (car (access tau tau1 :pos-evg))))
         nil))
    ((access tau tau1 :pos-evg)
 
@@ -4664,12 +4710,25 @@
             (if sign
                 (mv nil t)
               (mv t   nil)))
-          (tighten-bound tau
-                         nil ; new domain = ``no change''
-                         upper-boundp
-                         rel
-                         k
-                         ens wrld))))
+          (let ((tau1 (tighten-bound tau
+                                 nil ; new domain = ``no change''
+                                 upper-boundp
+                                 rel
+                                 k
+                                 ens wrld)))
+
+; The original tau now has a (possibly new) :interval in it.  If the tau has a
+; :pos-evg, we make sure that evg is in the interval.  If not, we signal a
+; contradiction.  In ACL2 Version 8.7 we failed to make this check.  Claude
+; pointed it out in books/system/tests/S-199-tau-combine-hard-error.lisp.
+
+            (cond
+             ((or (eq tau1 *tau-contradiction*)
+		  (and (access tau tau1 :pos-evg)
+                       (not (eval-tau-interval (access tau tau1 :interval)
+                                               (car (access tau tau1 :pos-evg))))))
+              *tau-contradiction*)
+             (t tau1))))))
 
 ; That completes the code for adding a signed :lessp-x-k or :lessp-k-x.
 
@@ -10882,14 +10941,16 @@
                                      :interval))
                  (acceptable-doms (nth (car bounder-args) doms-lst)))
              (mv-let (flg dom)
-                     (find-first-acceptable-domain
-                      (access tau-interval actual-int :domain)
-                      acceptable-doms)
-                     (declare (ignore flg))
-                     (cons (change tau-interval actual-int :domain dom)
-                           (collect-bounder-args actual-tau-lst
-                                                 doms-lst
-                                                 (cdr bounder-args))))))))
+               (find-first-acceptable-domain
+                (access tau-interval actual-int :domain)
+                acceptable-doms)
+               (declare (ignore flg))
+               (cons (change tau-interval (or actual-int
+                                              *tau-universal-interval*)
+                             :domain dom)
+                     (collect-bounder-args actual-tau-lst
+                                           doms-lst
+                                           (cdr bounder-args))))))))
 
 (defun bounding-interval (bc actual-tau-lst wrld)
 

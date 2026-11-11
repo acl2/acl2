@@ -110774,6 +110774,29 @@ it."
  community-books)
  @('system/tests/S-199-tau-bound-overwrites-pos-evg.lisp').</p>
 
+ <p>Fixed a @(see tau) bug leading to a hard error, manifested when a tau that
+ asserts its subject is a particular constant is extended to include an
+ interval that does not contain the constant.  This should have caused a
+ contradiction but instead returned a tau that was contradictory but not the
+ canonical tau contradiction.  See @(see community-book)
+ @('system/tests/tau-combine-hard-error.lisp').</p>
+
+ <p>Fixed a @(see tau) soundness bug related to the application of signature
+ rules.  When we apply a signature rule we have to check that the tau of the
+ instance of each variable implies the tau of the hypothesis about that
+ variable.  But these two taus may be computed under different enabled
+ structures and that can affect which tau predicates are known to be true or
+ false for explicit constants.  See @(see community-books)
+ @('system/tests/tau-implies-disabled-exec.lisp'),
+ @('system/tests/tau-implies-pos-evg-ignores-interval.lisp'), and
+ @('system/tests/tau-implies-pos-evg-ignores-recognizers.lisp').</p>
+
+ <p>The @(see tau) system represents the ``universal interval'' by @('nil').
+ But sometimes it has to add a restriction to that interval's domain.  However,
+ that creates an ill-formed interval that could be exploited to prove @('nil').
+ This was fixed by changing @('collect-bounder-args').  See @(see
+ community-books) @('system/tests/tau-bounder-nil-interval.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
