@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -72,8 +72,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc insert
-  :parents (treeset)
-  :short "Add a value (or multiples values) to a @(see treeset)."
+  :parents (tset)
+  :short "Add a value (or multiples values) to a @(see tset)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -495,7 +495,7 @@
 (define from-list
   ((list true-listp))
   :type-prescription :none
-  :parents (treeset)
+  :parents (tset)
   :short "Create a set from a list of values."
   :long
   (xdoc::topstring
@@ -585,8 +585,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc set
-  :parents (treeset)
-  :short "Build a @(see treeset)."
+  :parents (tset)
+  :short "Build a @(see tset)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -643,7 +643,7 @@
 (define from-oset ((oset set::setp))
   :type-prescription :none
   :parents (insert)
-  :short "Build a @(see treeset) from an oset."
+  :short "Build a @(see tset) from an oset."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -691,9 +691,9 @@
 (add-to-ruleset from-oset-theory '(oset-emptyp-becomes-emptyp))
 
 (defrule from-oset-of-nil
-  (equal (treeset::from-oset nil)
-         (treeset::empty))
-  :enable ((:e treeset::empty)))
+  (equal (tset::from-oset nil)
+         (tset::empty))
+  :enable ((:e tset::empty)))
 
 (add-to-ruleset from-oset-theory '(from-oset-of-nil))
 

@@ -10,9 +10,9 @@
 
 (include-book "centaur/fty/portcullis" :dir :system)
 
-; The TREESET package, so the generator functions can build event forms that
-; mention treeset symbols.  This is a defpkg-only dependency: the book itself
-; deliberately includes no treeset books.
-(include-book "kestrel/data/treeset/portcullis" :dir :system)
+; The TSET package, so the generator functions can build event forms that
+; mention tset symbols.  This is a defpkg-only dependency: the book itself
+; deliberately includes no tset books.
+(include-book "kestrel/data/tset/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags ()

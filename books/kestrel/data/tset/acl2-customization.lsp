@@ -11,4 +11,4 @@
 
 (reset-prehistory)
 
-(in-package "TREESET")
+(in-package "TSET")

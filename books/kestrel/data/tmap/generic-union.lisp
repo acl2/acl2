@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "internal/tree-defs")
 (include-book "internal/bst-defs")
@@ -29,13 +29,13 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -56,10 +56,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A union of two treemaps which combines the values of a key bound in both.
+;; A union of two tmaps which combines the values of a key bound in both.
 ;; The combining function sees the key and the two values, the first map's
 ;; value first. Its one constraint is that it preserves the generic value
-;; predicate of @(see treeset::generic-typed), so that a union of typed maps
+;; predicate of @(see tset::generic-typed), so that a union of typed maps
 ;; is typed. A use with no value type instantiates that predicate to accept
 ;; everything, which discharges the constraint trivially.
 
@@ -72,9 +72,9 @@
       y))
 
   (defrule genericp-of-generic-combine
-    (implies (and (treeset::genericp x)
-                  (treeset::genericp y))
-             (treeset::genericp (generic-combine key x y)))
+    (implies (and (tset::genericp x)
+                  (tset::genericp y))
+             (tset::genericp (generic-combine key x y)))
     :hints (("Goal" :in-theory (enable generic-combine)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -163,9 +163,9 @@
 (defruled in-of-tree-key-set-of-tree-generic-union
   (implies (and (bstp x)
                 (bstp y))
-           (equal (treeset::in a (tree-key-set (tree-generic-union x y)))
-                  (treeset::in a (treeset::union (tree-key-set x)
-                                                 (tree-key-set y)))))
+           (equal (tset::in a (tree-key-set (tree-generic-union x y)))
+                  (tset::in a (tset::union (tree-key-set x)
+                                           (tree-key-set y)))))
   :induct t
   :enable (tree-generic-union
            data::<<-rules))
@@ -174,9 +174,9 @@
   (implies (and (bstp x)
                 (bstp y))
            (equal (tree-key-set (tree-generic-union x y))
-                  (treeset::union (tree-key-set x)
-                                  (tree-key-set y))))
-  :enable (treeset::extensionality
+                  (tset::union (tree-key-set x)
+                               (tree-key-set y))))
+  :enable (tset::extensionality
            in-of-tree-key-set-of-tree-generic-union))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -214,8 +214,8 @@
   (implies (and (bstp x)
                 (bstp y))
            (equal (tree-lookup a (tree-generic-union x y))
-                  (if (treeset::in a (tree-key-set x))
-                      (if (treeset::in a (tree-key-set y))
+                  (if (tset::in a (tree-key-set x))
+                      (if (tset::in a (tree-key-set y))
                           (generic-combine a
                                            (tree-lookup a x)
                                            (tree-lookup a y))
@@ -310,8 +310,8 @@
 
 (defrule keys-of-generic-union
   (equal (keys (generic-union x y))
-         (treeset::union (keys x)
-                         (keys y)))
+         (tset::union (keys x)
+                      (keys y)))
   :enable (generic-union
            keys
            mapp
@@ -319,8 +319,8 @@
 
 (defrule lookup-of-generic-union
   (equal (lookup key (generic-union x y) :default default)
-         (if (treeset::in key (keys x))
-             (if (treeset::in key (keys y))
+         (if (tset::in key (keys x))
+             (if (tset::in key (keys y))
                  (generic-combine key
                                   (lookup key x)
                                   (lookup key y))
@@ -381,14 +381,14 @@
 
 ;; The value check over a map's own tree is the check over its value set.
 (defruledl set-all-genericp-of-tree-val-set-becomes-tree-all-vals-genericp
-  (equal (treeset::set-all-genericp (tree-val-set tree))
+  (equal (tset::set-all-genericp (tree-val-set tree))
          (tree-all-vals-genericp tree))
   :enable tree-all-vals-genericp-becomes-set-all-genericp-of-tree-val-set)
 
 (defrule set-all-genericp-of-values-of-generic-union
-  (implies (and (treeset::set-all-genericp (values x))
-                (treeset::set-all-genericp (values y)))
-           (treeset::set-all-genericp (values (generic-union x y))))
+  (implies (and (tset::set-all-genericp (values x))
+                (tset::set-all-genericp (values y)))
+           (tset::set-all-genericp (values (generic-union x y))))
   :enable (generic-union
            values
            mapp

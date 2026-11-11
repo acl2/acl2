@@ -6,10 +6,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/split-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "join-defs")

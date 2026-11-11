@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "internal/cardinality-defs")
 (include-book "bag-defs")
@@ -23,13 +23,13 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/cardinality"))
@@ -42,8 +42,8 @@
   :type-prescription :none
   :returns (cardinality natp
                         :rule-classes ((:rewrite) (:type-prescription)))
-  :parents (treebag)
-  :short "The number of occurrences of all values in a @(see treebag)."
+  :parents (tbag)
+  :short "The number of occurrences of all values in a @(see tbag)."
   :long
   (xdoc::topstring-p
     "Time complexity: @($O(m)$), where @($m$) is the number of distinct
@@ -51,7 +51,7 @@
   (tree-cardinality (fix bag))
   :inline t
   :guard-hints (("Goal" :in-theory (enable bagp
-                                           treemap::treep-when-mapp-forward-chaining))))
+                                           tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +70,7 @@
            emptyp
            break-abstraction
            equal-of-tree-cardinality-and-0-when-tree-all-vals-posp
-           treemap::emptyp))
+           tmap::emptyp))
 
 ;; The reverse direction, for proving emptiness from the cardinality.
 
@@ -112,50 +112,50 @@
   :enable (count
            cardinality
            break-abstraction
-           treemap::lookup
-           treemap::keys))
+           tmap::lookup
+           tmap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; Reading the cardinality after binding an element to a positive value, or
-;; removing it, in the underlying treemap. The treemap operation must stay
+;; removing it, in the underlying tmap. The tmap operation must stay
 ;; closed until the bag fixer around it is gone, so these lemmas open it only
 ;; beneath the tree walk.
 
-(defruledl tree-cardinality-of-treemap-update
-  (equal (tree-cardinality (treemap::update x v map))
+(defruledl tree-cardinality-of-tmap-update
+  (equal (tree-cardinality (tmap::update x v map))
          (tree-cardinality
-           (treemap::tree-update x v (treemap::fix map))))
-  :enable treemap::update)
+           (tmap::tree-update x v (tmap::fix map))))
+  :enable tmap::update)
 
-(defruledl tree-cardinality-of-treemap-delete
-  (equal (tree-cardinality (treemap::delete x map))
-         (tree-cardinality (treemap::tree-delete x (treemap::fix map))))
-  :enable treemap::delete)
+(defruledl tree-cardinality-of-tmap-delete
+  (equal (tree-cardinality (tmap::delete x map))
+         (tree-cardinality (tmap::tree-delete x (tmap::fix map))))
+  :enable tmap::delete)
 
-(defruled cardinality-of-treemap-update
+(defruled cardinality-of-tmap-update
   (implies (posp v)
-           (equal (cardinality (treemap::update x v (fix bag)))
+           (equal (cardinality (tmap::update x v (fix bag)))
                   (+ v (- (cardinality bag) (count x bag)))))
   :enable (cardinality
            count
            break-abstraction
-           tree-cardinality-of-treemap-update
-           treemap::lookup
-           treemap::keys
+           tree-cardinality-of-tmap-update
+           tmap::lookup
+           tmap::keys
            nfix))
 
-(add-to-ruleset break-abstraction '(cardinality-of-treemap-update))
+(add-to-ruleset break-abstraction '(cardinality-of-tmap-update))
 
-(defruled cardinality-of-treemap-delete
-  (equal (cardinality (treemap::delete x (fix bag)))
+(defruled cardinality-of-tmap-delete
+  (equal (cardinality (tmap::delete x (fix bag)))
          (- (cardinality bag) (count x bag)))
   :enable (cardinality
            count
            break-abstraction
-           tree-cardinality-of-treemap-delete
-           treemap::lookup
-           treemap::keys
+           tree-cardinality-of-tmap-delete
+           tmap::lookup
+           tmap::keys
            nfix))
 
-(add-to-ruleset break-abstraction '(cardinality-of-treemap-delete))
+(add-to-ruleset break-abstraction '(cardinality-of-tmap-delete))

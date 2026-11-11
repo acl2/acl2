@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -24,12 +24,12 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -151,8 +151,8 @@
 
 (defrule tree-key-set-of-tree-join
   (equal (tree-key-set (tree-join left right))
-         (treeset::union (tree-key-set left)
-                         (tree-key-set right)))
+         (tset::union (tree-key-set left)
+                      (tree-key-set right)))
   :induct t
   :enable (tree-join
            tree-key-set))
@@ -300,8 +300,8 @@
 
 (defrule tree-key-set-of-tree-join-at
   (equal (tree-key-set (tree-join-at split left right))
-         (treeset::union (tree-key-set left)
-                         (tree-key-set right)))
+         (tset::union (tree-key-set left)
+                      (tree-key-set right)))
   :enable tree-join-at)
 
 (defrule tree-lookup-of-tree-join-at-when-disjoint
@@ -421,7 +421,7 @@
     :induct t
     :enable (tree-join
              heap<-all-l-weaken
-             treeset::heap<-expensive-rules)))
+             tset::heap<-expensive-rules)))
 
 (defrule heapp-of-tree-join-at
   (implies (and (<<-all-l left split)

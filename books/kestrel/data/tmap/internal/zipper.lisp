@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -29,9 +29,9 @@
 
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
@@ -75,7 +75,7 @@
       "Costs below are given as @($O(d)$), where @($d$) is a depth within the
        tree. That is the honest bound here, since a zipper is over an arbitrary
        @(see tree) and nothing at this level constrains its shape. Over a
-       @(see treemap), which is practically balanced, @($d$) is
+       @(see tmap), which is practically balanced, @($d$) is
        @($O(\\log(n))$)."))
   :order-subtopics t
   :default-parent t)
@@ -473,7 +473,7 @@
       empty tree, where there is only one gap to be found.")
    (xdoc::p
      "This recognizer is structural only. Whether the tree recovered from a
-      zipper satisfies the @(see treemap) invariants is a separate question."))
+      zipper satisfies the @(see tmap) invariants is a separate question."))
   (and (consp x)
        (consp (cdr x))
        (consp (cddr x))
@@ -927,7 +927,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treemap)."))
+      so @($O(\\log(n))$) over a @(see tmap)."))
   (zip-path-plug (zip->path zip)
                  (zip->focus zip))
   :inline t)
@@ -1206,7 +1206,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treemap)."))
+      @($O(\\log(n))$) over a @(see tmap)."))
   (if (tree-empty-p (tree->left (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-leftmost (zip-descend-left zip)))
@@ -1239,7 +1239,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treemap)."))
+      @($O(\\log(n))$) over a @(see tmap)."))
   (if (tree-empty-p (tree->right (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-rightmost (zip-descend-right zip)))
@@ -1277,7 +1277,7 @@
       and we ascend all the way to the root.")
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth ascended, and so
-      @($O(\\log(n))$) over a @(see treemap)."))
+      @($O(\\log(n))$) over a @(see tmap)."))
   (cond ((endp (zip->path zip))
          (zip-fix zip))
         ((zip-frame->from-left (car (zip->path zip)))
@@ -1396,7 +1396,7 @@
       position past the end.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treemap) -- but @($O(1)$) amortized over a traversal, since each
+      @(see tmap) -- but @($O(1)$) amortized over a traversal, since each
       edge of the tree is crossed twice."))
   ;; Logically the move saturates at the last element, which is what @(tsee
   ;; zip-next-identity-iff-zip-at-last-p) reports. The guard rules that case
@@ -2037,7 +2037,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treemap). One node is built per
+      so @($O(\\log(n))$) over a @(see tmap). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-before (zip->path zip)
@@ -2052,7 +2052,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treemap). One node is built per
+      so @($O(\\log(n))$) over a @(see tmap). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-after (zip->path zip)
@@ -2521,7 +2521,7 @@
   :disable tree-in-order-of-zip-path-tree-after)
 
 ;; Each omap is empty exactly when its alist is. Unlike the oset case in
-;; TREESET, which argues through the head, this reads straight off the side
+;; TSET, which argues through the head, this reads straight off the side
 ;; tree: the fold is empty exactly when that tree is.
 
 (defrule omap-emptyp-of-zip-omap-before
@@ -2583,7 +2583,7 @@
 ;; the order of the map, and every ordering law downstream is a consequence.
 
 (defruled in-of-tree-key-set-of-zip-plug-split
-  (iff (treeset::in key (tree-key-set (zip-plug zip)))
+  (iff (tset::in key (tree-key-set (zip-plug zip)))
        (or (assoc-equal key (zip-before zip))
            (equal key (zip-key zip))
            (assoc-equal key (zip-after zip))))
@@ -2597,7 +2597,7 @@
 (defrule assoc-of-zip-omap-before-when-bstp
   (implies (bstp (zip-plug zip))
            (iff (omap::assoc key (zip-omap-before zip))
-                (and (treeset::in key (tree-key-set (zip-plug zip)))
+                (and (tset::in key (tree-key-set (zip-plug zip)))
                      (<< key (zip-key zip)))))
   :enable (in-of-tree-key-set-of-zip-plug-split
            tree-in-order-of-zip-plug-split-at-cursor
@@ -2620,7 +2620,7 @@
 (defrule assoc-of-zip-omap-after-when-bstp
   (implies (bstp (zip-plug zip))
            (iff (omap::assoc key (zip-omap-after zip))
-                (and (treeset::in key (tree-key-set (zip-plug zip)))
+                (and (tset::in key (tree-key-set (zip-plug zip)))
                      (<< (zip-key zip) key))))
   :enable (in-of-tree-key-set-of-zip-plug-split
            tree-in-order-of-zip-plug-split-at-cursor
@@ -2912,9 +2912,9 @@
 ;; The built trees hold exactly the entries of the omap sides.
 
 (defrule in-of-tree-key-set-of-zip-path-tree-before
-  (iff (treeset::in key (tree-key-set (zip-path-tree-before path acc)))
+  (iff (tset::in key (tree-key-set (zip-path-tree-before path acc)))
        (or (omap::assoc key (zip-path-omap-before path))
-           (treeset::in key (tree-key-set acc))))
+           (tset::in key (tree-key-set acc))))
   :use ((:instance assoc-equal-of-tree-in-order-under-iff
                    (x key)
                    (tree (zip-path-tree-before path acc)))
@@ -2927,9 +2927,9 @@
   :disable assoc-equal-of-tree-in-order-under-iff)
 
 (defrule in-of-tree-key-set-of-zip-path-tree-after
-  (iff (treeset::in key (tree-key-set (zip-path-tree-after path acc)))
+  (iff (tset::in key (tree-key-set (zip-path-tree-after path acc)))
        (or (omap::assoc key (zip-path-omap-after path))
-           (treeset::in key (tree-key-set acc))))
+           (tset::in key (tree-key-set acc))))
   :use ((:instance assoc-equal-of-tree-in-order-under-iff
                    (x key)
                    (tree (zip-path-tree-after path acc)))
@@ -2942,7 +2942,7 @@
   :disable assoc-equal-of-tree-in-order-under-iff)
 
 (defrule in-of-tree-key-set-of-zip-tree-before
-  (iff (treeset::in key (tree-key-set (zip-tree-before zip)))
+  (iff (tset::in key (tree-key-set (zip-tree-before zip)))
        (omap::assoc key (zip-omap-before zip)))
   :enable (zip-tree-before
            zip-omap-before
@@ -2950,7 +2950,7 @@
            assoc-equal-of-tree-in-order-under-iff))
 
 (defrule in-of-tree-key-set-of-zip-tree-after
-  (iff (treeset::in key (tree-key-set (zip-tree-after zip)))
+  (iff (tset::in key (tree-key-set (zip-tree-after zip)))
        (omap::assoc key (zip-omap-after zip)))
   :enable (zip-tree-after
            zip-omap-after
@@ -3034,7 +3034,7 @@
 ;; The accumulator stays a submap as both it and the reference subtree are
 ;; wrapped under the same frame.
 
-;; Unlike the TREESET original, these need the wrapping node to be a search
+;; Unlike the TSET original, these need the wrapping node to be a search
 ;; tree. `tree-subset-p' is pure membership, so wrapping preserves it
 ;; unconditionally; `tree-submap-p' also demands the values agree under
 ;; `tree-lookup', which descends by key order, so it is only preserved when
@@ -3244,7 +3244,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Over a search tree the omap and alist sides are not merely equivalent but
-;; the same object. Unlike the oset versions in TREESET, which double
+;; the same object. Unlike the oset versions in TSET, which double
 ;; containment settles from membership alone, omap extensionality compares the
 ;; values too, so these rest on the side tree being a search tree itself.
 
@@ -3270,9 +3270,9 @@
 ;; given key at most one way. The key therefore fixes the tail, and the tail
 ;; already fixes the zipper.
 ;;
-;; TREESET reaches the corresponding fact through its oset flank by double
+;; TSET reaches the corresponding fact through its oset flank by double
 ;; containment, but that route settles only the keys; here the values must
-;; agree too, so the treemap route goes through the uniqueness of the split
+;; agree too, so the tmap route goes through the uniqueness of the split
 ;; instead.
 
 ;; An entry list without repeated keys splits around a given key in only one

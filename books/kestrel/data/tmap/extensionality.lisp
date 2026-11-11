@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -32,12 +32,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc extensionality
-  :parents (treemap)
-  :short "Extensional equality of @(see treemap)s."
+  :parents (tmap)
+  :short "Extensional equality of @(see tmap)s."
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see treemap) equality. It is often
+      "This definition is equivalent to @(see tmap) equality. It is often
        useful to prove equality by rewriting to this quantifier-based form.
        To do so, just enable the @('extensionality') rule.")))
 

@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -14,8 +14,8 @@
 
 (include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "bag-defs")
 (include-book "count-defs")
@@ -43,9 +43,9 @@
   :returns (bag$ bagp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      posp))))
-  :parents (treebag)
+  :parents (tbag)
   :short "Remove some number of occurrences of a value from a @(see
-          treebag)."
+          tbag)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -57,8 +57,8 @@
   (let ((c (count x bag))
         (n (lnfix n)))
     (if (<= c n)
-        (treemap::delete x (fix bag))
-      (treemap::update x (- c n) (fix bag))))
+        (tmap::delete x (fix bag))
+      (tmap::update x (- c n) (fix bag))))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -257,8 +257,8 @@
 (define delete (x (bag bagp))
   :type-prescription :none
   :returns (bag$ bagp)
-  :parents (treebag)
-  :short "Remove an occurrence of a value from a @(see treebag)."
+  :parents (tbag)
+  :short "Remove an occurrence of a value from a @(see tbag)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -269,8 +269,8 @@
   (mbe :logic (delete-many x 1 bag)
        :exec (let ((c (count x bag)))
                (if (<= c 1)
-                   (treemap::delete x (fix bag))
-                 (treemap::update x (- c 1) (fix bag)))))
+                   (tmap::delete x (fix bag))
+                 (tmap::update x (- c 1) (fix bag)))))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* delete-many
                                             break-abstraction))))

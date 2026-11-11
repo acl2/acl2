@@ -12,8 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -29,11 +29,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -92,7 +92,7 @@
 
 (defrule edges-of-delete-edge
   (equal (edges (delete-edge from to label graph))
-         (treeset::delete (edge from to label) (edges graph)))
+         (tset::delete (edge from to label) (edges graph)))
   :enable (edges
            delete-edge
            graphp
@@ -106,13 +106,13 @@
   (equal (labels x y (delete-edge from to label graph))
          (if (and (equal x from)
                   (equal y to))
-             (treeset::delete label (labels x y graph))
+             (tset::delete label (labels x y graph))
            (labels x y graph)))
-  :enable treeset::extensionality-polar)
+  :enable tset::extensionality-polar)
 
 (defrule labels-of-delete-edge-same
   (equal (labels from to (delete-edge from to label graph))
-         (treeset::delete label (labels from to graph)))
+         (tset::delete label (labels from to graph)))
   :enable labels-of-delete-edge)
 
 (defrule labels-of-delete-edge-diff-from-cheap
@@ -138,10 +138,10 @@
   (equal (successors x (delete-edge from to label graph))
          (if (and (equal x from)
                   (equal (labels from to graph)
-                         (treeset::insert label (treeset::empty))))
-             (treeset::delete to (successors x graph))
+                         (tset::insert label (tset::empty))))
+             (tset::delete to (successors x graph))
            (successors x graph)))
-  :enable (treeset::extensionality
+  :enable (tset::extensionality
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-delete-edge)
   :disable emptyp-of-labels)
@@ -157,10 +157,10 @@
   (equal (predecessors y (delete-edge from to label graph))
          (if (and (equal y to)
                   (equal (labels from to graph)
-                         (treeset::insert label (treeset::empty))))
-             (treeset::delete from (predecessors y graph))
+                         (tset::insert label (tset::empty))))
+             (tset::delete from (predecessors y graph))
            (predecessors y graph)))
-  :enable (treeset::extensionality
+  :enable (tset::extensionality
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-delete-edge)
   :disable emptyp-of-labels)
@@ -177,13 +177,13 @@
 ;; Removing an edge which is not there does nothing.
 
 (defruled delete-edge-when-not-in-of-edges
-  (implies (not (treeset::in (edge from to label) (edges graph)))
+  (implies (not (tset::in (edge from to label) (edges graph)))
            (equal (delete-edge from to label graph)
                   (fix graph)))
   :enable extensionality)
 
 (defrule delete-edge-when-not-in-of-edges-cheap
-  (implies (not (treeset::in (edge from to label) (edges graph)))
+  (implies (not (tset::in (edge from to label) (edges graph)))
            (equal (delete-edge from to label graph)
                   (fix graph)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))

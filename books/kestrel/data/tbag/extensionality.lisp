@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -22,10 +22,10 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "bag"))
@@ -34,12 +34,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc extensionality
-  :parents (treebag)
-  :short "Extensional equality of @(see treebag)s."
+  :parents (tbag)
+  :short "Extensional equality of @(see tbag)s."
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see treebag) equality. It is often
+      "This definition is equivalent to @(see tbag) equality. It is often
        useful to prove equality by rewriting to this quantifier-based form.
        To do so, just enable the @('extensionality') rule.")
     (xdoc::p
@@ -49,21 +49,21 @@
        reads zero for an absent element and no element is bound to zero. This
        is the one place the representation invariant is visible from outside,
        and it is what lets a single quantifier do the work that @(see
-       treemap::extensionality) needs two for.")))
+       tmap::extensionality) needs two for.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A lookup in the underlying treemap, read through count. An element is bound
+;; A lookup in the underlying tmap, read through count. An element is bound
 ;; exactly when its count is positive, since no element is bound to zero.
 
 (defruledl lookup-of-fix-becomes-count
-  (equal (treemap::lookup k (fix bag) :default d)
+  (equal (tmap::lookup k (fix bag) :default d)
          (if (posp (count k bag))
              (count k bag)
            d))
   :enable (count
            break-abstraction
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           tmap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,7 +159,7 @@
   :rule-classes :refinement
   :enable (equiv
            break-abstraction
-           treemap::extensionality
+           tmap::extensionality
            lookup-of-fix-becomes-count))
 
 (defruled ext-equal-becomes-equiv

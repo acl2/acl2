@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/tree-defs")
@@ -28,8 +28,8 @@
 
 (local (include-book "std/omaps/core" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -42,8 +42,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc lookup
-  :parents (treemap)
-  :short "Lookup the value associated with a key under a @(see treemap)."
+  :parents (tmap)
+  :short "Lookup the value associated with a key under a @(see tmap)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -55,7 +55,7 @@
       (xdoc::desc
         "@(':default') &mdash; optional"
         (xdoc::p
-          "The default value when the key is not @(see in) the @(see treemap).
+          "The default value when the key is not @(see in) the @(see tmap).
            If no value is provided, the default is @('nil')."))
       (xdoc::desc
         "@(':test') &mdash; optional"
@@ -105,7 +105,7 @@
   (key
    (map mapp)
    default)
-  (mbe :logic (if (treeset::in key (keys map))
+  (mbe :logic (if (tset::in key (keys map))
                   (tree-lookup key (fix map))
                 default)
        :exec (let ((assoc (tree-search-assoc key map)))
@@ -129,7 +129,7 @@
 
 (defruled lookup-with-default-becomes-lookup
   (equal (lookup key map :default default)
-         (if (treeset::in key (keys map))
+         (if (tset::in key (keys map))
              (lookup key map)
            default))
   :enable (lookup
@@ -140,7 +140,7 @@
 (defruled lookup-with-default-becomes-lookup-syntaxp
   (implies (syntaxp (not (equal default ''nil)))
            (equal (lookup key map :default default)
-                  (if (treeset::in key (keys map))
+                  (if (tset::in key (keys map))
                       (lookup key map)
                     default)))
   :by lookup-with-default-becomes-lookup)
@@ -148,19 +148,19 @@
 ;; TODO: should this be a cheap rule?
 (defrule lookup-with-default-becomes-lookup-when-in-of-keys-syntaxp
   (implies (and (syntaxp (not (equal default ''nil)))
-                (treeset::in key (keys map)))
+                (tset::in key (keys map)))
            (equal (lookup key map :default default)
                   (lookup key map)))
   :by lookup-with-default-becomes-lookup)
 
 (defruled lookup-when-not-in-of-keys
-  (implies (not (treeset::in key (keys map)))
+  (implies (not (tset::in key (keys map)))
            (equal (lookup key map :default default)
                   default))
   :by lookup-with-default-becomes-lookup)
 
 (defrule lookup-when-not-in-of-keys-cheap
-  (implies (not (treeset::in key (keys map)))
+  (implies (not (tset::in key (keys map)))
            (equal (lookup key map :default default)
                   default))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -187,19 +187,19 @@
 
 (defruled in-of-keys-when-lookup-not-default
   (implies (not (equal (lookup key map :default default) default))
-           (treeset::in key (keys map)))
+           (tset::in key (keys map)))
   :enable (lookup
            keys))
 
 (defrule in-of-keys-when-lookup-not-default-forward-chaining
   (implies (not (equal (lookup key map :default default) default))
-           (treeset::in key (keys map)))
+           (tset::in key (keys map)))
   :rule-classes :forward-chaining
   :by in-of-keys-when-lookup-not-default)
 
 (defrule in-of-keys-when-lookup-forward-chaining
   (implies (lookup key map)
-           (treeset::in key (keys map)))
+           (tset::in key (keys map)))
   :rule-classes :forward-chaining
   :use (:instance in-of-keys-when-lookup-not-default
                   (default nil)))
@@ -208,7 +208,7 @@
 
 (defrule assoc-of-to-omap
   (equal (omap::assoc key (to-omap map))
-         (if (treeset::in key (keys map))
+         (if (tset::in key (keys map))
              (cons key (lookup key map))
            nil))
   :enable (to-omap
@@ -230,8 +230,8 @@
 
 (define head-val ((map mapp))
   :guard (not (emptyp map))
-  :parents (treemap)
-  :short "Get a value from the nonempty @(see treemap)."
+  :parents (tmap)
+  :short "Get a value from the nonempty @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -253,8 +253,8 @@
 (define head ((map mapp))
   :guard (not (emptyp map))
   :returns (mv key value)
-  :parents (treemap)
-  :short "Get an element of the nonempty @(see treemap)."
+  :parents (tmap)
+  :short "Get an element of the nonempty @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -278,7 +278,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc lookup?
-  :parents (treemap)
+  :parents (tmap)
   :short "Get the results of @(tsee in) and @(tsee lookup) simultaneously."
   :long
   (xdoc::topstring
@@ -287,7 +287,7 @@
        functions independently.")
     (xdoc::p
       "Logically, a call of @('(lookup? key map)') rewrites to
-       @('(mv (treeset::in key (keys map)) (lookup key map))').")
+       @('(mv (tset::in key (keys map)) (lookup key map))').")
     (xdoc::section
       "General form"
       (xdoc::codeblock
@@ -316,7 +316,7 @@
 (define lookup?$inline
   (key
    (map mapp))
-  (mbe :logic (mv (treeset::in key (keys map))
+  (mbe :logic (mv (tset::in key (keys map))
                   (lookup key map))
        :exec (let ((assoc (tree-search-assoc key map)))
                (mv (consp (the (or cons null) assoc))
@@ -332,7 +332,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc lookup!
-  :parents (treemap)
+  :parents (tmap)
   :short "Variant of @(tsee lookup) with a stronger guard."
   :long
   (xdoc::topstring

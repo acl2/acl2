@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -35,7 +35,7 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This captures the structure of @(see treeset)s, without the
+      "This captures the structure of @(see tset)s, without the
        invariants."))
   :order-subtopics t
   :default-parent t)
@@ -450,7 +450,7 @@
    (xdoc::p
      "For empty trees, this is logically @(tsee irr-tree-element).")
    (xdoc::p
-     "For a tree recognized by @(tsee heapp) (including @(see treeset)s), this
+     "For a tree recognized by @(tsee heapp) (including @(see tset)s), this
       is the largest element with respect to the @(tsee heap<) ordering. More
       precisely, it is the pair of the element along with its hash.
       @(tsee head) will project out just the element."))

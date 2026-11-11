@@ -8,10 +8,10 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "adj-list-defs")
 

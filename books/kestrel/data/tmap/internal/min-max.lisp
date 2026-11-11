@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
 (include-book "tree-defs")
@@ -24,11 +24,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -78,7 +78,7 @@
   :by tree-leftmost-when-tree-empty-p)
 
 (defrule in-of-tree-leftmost-when-not-tree-empty-p
-  (equal (treeset::in (car (tree-leftmost tree)) (tree-key-set tree))
+  (equal (tset::in (car (tree-leftmost tree)) (tree-key-set tree))
          (not (tree-empty-p tree)))
   :induct t
   :enable tree-leftmost)
@@ -109,7 +109,7 @@
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (car (tree-leftmost tree))
-                  (treeset::min (tree-key-set tree))))
+                  (tset::min (tree-key-set tree))))
   :induct t
   :enable (tree-leftmost
            irr-tree-element))
@@ -118,8 +118,8 @@
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (tree-leftmost tree)
-                  (cons (treeset::min (tree-key-set tree))
-                        (tree-lookup (treeset::min (tree-key-set tree)) tree))))
+                  (cons (tset::min (tree-key-set tree))
+                        (tree-lookup (tset::min (tree-key-set tree)) tree))))
   :enable (car-of-tree-leftmost-becomes-min
            cdr-of-tree-leftmost))
 
@@ -163,7 +163,7 @@
   :by tree-rightmost-when-tree-empty-p)
 
 (defrule in-of-tree-rightmost-when-not-tree-empty-p
-  (equal (treeset::in (car (tree-rightmost tree)) (tree-key-set tree))
+  (equal (tset::in (car (tree-rightmost tree)) (tree-key-set tree))
          (not (tree-empty-p tree)))
   :induct t
   :enable tree-rightmost)
@@ -194,7 +194,7 @@
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (car (tree-rightmost tree))
-                  (treeset::max (tree-key-set tree))))
+                  (tset::max (tree-key-set tree))))
   :induct t
   :enable (tree-rightmost
            irr-tree-element))
@@ -203,7 +203,7 @@
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (tree-rightmost tree)
-                  (cons (treeset::max (tree-key-set tree))
-                        (tree-lookup (treeset::max (tree-key-set tree)) tree))))
+                  (cons (tset::max (tree-key-set tree))
+                        (tree-lookup (tset::max (tree-key-set tree)) tree))))
   :enable (car-of-tree-rightmost-becomes-max
            cdr-of-tree-rightmost))

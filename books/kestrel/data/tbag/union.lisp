@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -27,9 +27,9 @@
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/union"))
@@ -57,8 +57,8 @@
   :returns (bag bagp
                 :hints (("Goal" :in-theory (enable* bagp
                                                     break-abstraction))))
-  :parents (treebag)
-  :short "Take the union of two @(see treebag)s."
+  :parents (tbag)
+  :short "Take the union of two @(see tbag)s."
   :long
   (xdoc::topstring
     (xdoc::p

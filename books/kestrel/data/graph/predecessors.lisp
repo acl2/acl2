@@ -13,16 +13,16 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 
 (include-book "graph-defs")
 (include-book "nodes-defs")
@@ -34,20 +34,20 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
 
 (local (include-book "graph"))
 (local (include-book "nodes"))
@@ -60,7 +60,7 @@
 
 (define predecessors (node (graph graphp))
   :type-prescription :none
-  :returns (predecessors treeset::setp)
+  :returns (predecessors tset::setp)
   :parents (graph)
   :short "The predecessors of a node of a @(see graph): the nodes with an edge
           to it."
@@ -93,8 +93,8 @@
 ;; successors.
 
 (defrule in-of-predecessors
-  (equal (treeset::in from (predecessors to graph))
-         (treeset::in to (successors from graph)))
+  (equal (tset::in from (predecessors to graph))
+         (tset::in to (successors from graph)))
   :enable (predecessors
            successors
            adjacency
@@ -104,28 +104,28 @@
 ;; Every predecessor is a node, and a value which is not a node has none.
 
 (defrule subset-of-predecessors-and-nodes
-  (treeset::subset (predecessors node graph)
-                   (nodes graph))
-  :enable treeset::pick-a-point-polar)
+  (tset::subset (predecessors node graph)
+                (nodes graph))
+  :enable tset::pick-a-point-polar)
 
 (defruled predecessors-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (predecessors node graph)
-                  (treeset::empty)))
-  :enable treeset::extensionality-polar)
+                  (tset::empty)))
+  :enable tset::extensionality-polar)
 
 (defrule predecessors-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (predecessors node graph)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by predecessors-when-not-in-of-nodes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define predecessors-of-set ((set treeset::setp) (graph graphp))
+(define predecessors-of-set ((set tset::setp) (graph graphp))
   :type-prescription :none
-  :returns (predecessors treeset::setp)
+  :returns (predecessors tset::setp)
   :parents (graph)
   :short "The predecessors of the nodes in a set: the nodes with an edge to
           some node in the set."
@@ -137,19 +137,19 @@
      largest number of successors of a node, and @($m$) the number of pairs
      of nodes joined by an edge to a node in the set. Like @(tsee
      predecessors), this is not optimal.")
-  (if (treeset::emptyp set)
-      (treeset::empty)
-    (treeset::union (predecessors (treeset::min set) graph)
-                    (predecessors-of-set (treeset::delete (treeset::min set)
-                                                          set)
-                                         graph)))
-  :measure (treeset::cardinality set)
+  (if (tset::emptyp set)
+      (tset::empty)
+    (tset::union (predecessors (tset::min set) graph)
+                 (predecessors-of-set (tset::delete (tset::min set)
+                                                    set)
+                                      graph)))
+  :measure (tset::cardinality set)
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule predecessors-of-set-when-equiv-of-arg1-congruence
-  (implies (treeset::equiv set0 set1)
+  (implies (tset::equiv set0 set1)
            (equal (predecessors-of-set set0 graph)
                   (predecessors-of-set set1 graph)))
   :rule-classes :congruence
@@ -168,136 +168,136 @@
 ;; them is a node.
 
 (defrule subset-of-predecessors-and-predecessors-of-set-when-in
-  (implies (treeset::in node set)
-           (treeset::subset (predecessors node graph)
-                            (predecessors-of-set set graph)))
+  (implies (tset::in node set)
+           (tset::subset (predecessors node graph)
+                         (predecessors-of-set set graph)))
   :induct (predecessors-of-set set graph)
   :enable predecessors-of-set)
 
 (defrule subset-of-predecessors-of-set-and-nodes
-  (treeset::subset (predecessors-of-set set graph)
-                   (nodes graph))
+  (tset::subset (predecessors-of-set set graph)
+                (nodes graph))
   :induct t
   :enable predecessors-of-set)
 
 (defrule monotonicity-of-predecessors-of-set
-  (implies (treeset::subset x y)
-           (treeset::subset (predecessors-of-set x graph)
-                            (predecessors-of-set y graph)))
+  (implies (tset::subset x y)
+           (tset::subset (predecessors-of-set x graph)
+                         (predecessors-of-set y graph)))
   :induct (predecessors-of-set x graph)
   :enable predecessors-of-set)
 
 ;; Inserting a node into a set adds its predecessors.
 
 (defrulel subset-of-predecessors-when-in-of-insert
-  (implies (treeset::in x (treeset::insert node set))
-           (treeset::subset (predecessors x graph)
-                            (treeset::union (predecessors node graph)
-                                            (predecessors-of-set set graph)))))
+  (implies (tset::in x (tset::insert node set))
+           (tset::subset (predecessors x graph)
+                         (tset::union (predecessors node graph)
+                                      (predecessors-of-set set graph)))))
 
 (defruledl subset-of-predecessors-of-set-when-subset-of-insert
-  (implies (treeset::subset x (treeset::insert node set))
-           (treeset::subset (predecessors-of-set x graph)
-                            (treeset::union (predecessors node graph)
-                                            (predecessors-of-set set graph))))
+  (implies (tset::subset x (tset::insert node set))
+           (tset::subset (predecessors-of-set x graph)
+                         (tset::union (predecessors node graph)
+                                      (predecessors-of-set set graph))))
   :induct (predecessors-of-set x graph)
   :enable predecessors-of-set
-  :disable treeset::in-of-insert)
+  :disable tset::in-of-insert)
 
 (defrule predecessors-of-set-of-insert
-  (equal (predecessors-of-set (treeset::insert node set) graph)
-         (treeset::union (predecessors node graph)
-                         (predecessors-of-set set graph)))
-  :use (:instance treeset::subset-antisymmetry
-                  (x (predecessors-of-set (treeset::insert node set) graph))
-                  (y (treeset::union (predecessors node graph)
-                                     (predecessors-of-set set graph))))
+  (equal (predecessors-of-set (tset::insert node set) graph)
+         (tset::union (predecessors node graph)
+                      (predecessors-of-set set graph)))
+  :use (:instance tset::subset-antisymmetry
+                  (x (predecessors-of-set (tset::insert node set) graph))
+                  (y (tset::union (predecessors node graph)
+                                  (predecessors-of-set set graph))))
   :enable subset-of-predecessors-of-set-when-subset-of-insert)
 
 ;; A node is a successor of a set exactly when one of its predecessors is in
 ;; the set, and a predecessor of a set exactly when one of its successors is.
 
 (defrule emptyp-of-intersect-and-predecessors-when-in-of-successors
-  (implies (and (treeset::in node (successors pred graph))
-                (treeset::in pred set))
-           (not (treeset::emptyp
-                  (treeset::intersect set (predecessors node graph)))))
-  :use (:instance treeset::not-emptyp-when-in
-                  (treeset::x pred)
-                  (treeset::set (treeset::intersect
-                                  set
-                                  (predecessors node graph)))))
+  (implies (and (tset::in node (successors pred graph))
+                (tset::in pred set))
+           (not (tset::emptyp
+                  (tset::intersect set (predecessors node graph)))))
+  :use (:instance tset::not-emptyp-when-in
+                  (tset::x pred)
+                  (tset::set (tset::intersect
+                               set
+                               (predecessors node graph)))))
 
 (defruledl not-emptyp-of-intersect-and-predecessors-when-in-of-successors-of-set
-  (implies (treeset::in node (successors-of-set set graph))
-           (not (treeset::emptyp
-                  (treeset::intersect set (predecessors node graph)))))
+  (implies (tset::in node (successors-of-set set graph))
+           (not (tset::emptyp
+                  (tset::intersect set (predecessors node graph)))))
   :induct (successors-of-set set graph)
   :enable successors-of-set)
 
 (defruledl in-of-successors-of-set-when-in-of-predecessors
-  (implies (and (treeset::in pred (predecessors node graph))
-                (treeset::in pred set))
-           (treeset::in node (successors-of-set set graph))))
+  (implies (and (tset::in pred (predecessors node graph))
+                (tset::in pred set))
+           (tset::in node (successors-of-set set graph))))
 
 (defruledl in-of-successors-of-set-when-not-emptyp-of-intersect
-  (implies (not (treeset::emptyp
-                  (treeset::intersect set (predecessors node graph))))
-           (treeset::in node (successors-of-set set graph)))
+  (implies (not (tset::emptyp
+                  (tset::intersect set (predecessors node graph))))
+           (tset::in node (successors-of-set set graph)))
   :use (:instance in-of-successors-of-set-when-in-of-predecessors
-                  (pred (treeset::min (treeset::intersect
-                                        set
-                                        (predecessors node graph)))))
+                  (pred (tset::min (tset::intersect
+                                     set
+                                     (predecessors node graph)))))
   :disable in-of-predecessors)
 
 (defruled in-of-successors-of-set-becomes-not-emptyp-of-intersect
-  (equal (treeset::in node (successors-of-set set graph))
-         (not (treeset::emptyp
-                (treeset::intersect set (predecessors node graph)))))
+  (equal (tset::in node (successors-of-set set graph))
+         (not (tset::emptyp
+                (tset::intersect set (predecessors node graph)))))
   :use (not-emptyp-of-intersect-and-predecessors-when-in-of-successors-of-set
         in-of-successors-of-set-when-not-emptyp-of-intersect))
 
 (defrulel emptyp-of-intersect-and-successors-when-in-of-successors
-  (implies (and (treeset::in succ (successors node graph))
-                (treeset::in succ set))
-           (not (treeset::emptyp
-                  (treeset::intersect set (successors node graph)))))
-  :use (:instance treeset::not-emptyp-when-in
-                  (treeset::x succ)
-                  (treeset::set (treeset::intersect
-                                  set
-                                  (successors node graph)))))
+  (implies (and (tset::in succ (successors node graph))
+                (tset::in succ set))
+           (not (tset::emptyp
+                  (tset::intersect set (successors node graph)))))
+  :use (:instance tset::not-emptyp-when-in
+                  (tset::x succ)
+                  (tset::set (tset::intersect
+                               set
+                               (successors node graph)))))
 
 (defruledl not-emptyp-of-intersect-and-successors-when-in-of-predecessors-of-set
-  (implies (treeset::in node (predecessors-of-set set graph))
-           (not (treeset::emptyp
-                  (treeset::intersect set (successors node graph)))))
+  (implies (tset::in node (predecessors-of-set set graph))
+           (not (tset::emptyp
+                  (tset::intersect set (successors node graph)))))
   :induct (predecessors-of-set set graph)
   :enable predecessors-of-set)
 
 (defruledl in-of-predecessors-of-set-when-in-of-successors
-  (implies (and (treeset::in succ (successors node graph))
-                (treeset::in succ set))
-           (treeset::in node (predecessors-of-set set graph)))
-  :use (:instance treeset::in-when-in-and-subset
-                  (treeset::a node)
-                  (treeset::x (predecessors succ graph))
-                  (treeset::y (predecessors-of-set set graph)))
-  :disable treeset::in-when-in-and-subset)
+  (implies (and (tset::in succ (successors node graph))
+                (tset::in succ set))
+           (tset::in node (predecessors-of-set set graph)))
+  :use (:instance tset::in-when-in-and-subset
+                  (tset::a node)
+                  (tset::x (predecessors succ graph))
+                  (tset::y (predecessors-of-set set graph)))
+  :disable tset::in-when-in-and-subset)
 
 (defruledl in-of-predecessors-of-set-when-not-emptyp-of-intersect
-  (implies (not (treeset::emptyp
-                  (treeset::intersect set (successors node graph))))
-           (treeset::in node (predecessors-of-set set graph)))
+  (implies (not (tset::emptyp
+                  (tset::intersect set (successors node graph))))
+           (tset::in node (predecessors-of-set set graph)))
   :use (:instance in-of-predecessors-of-set-when-in-of-successors
-                  (succ (treeset::min (treeset::intersect
-                                        set
-                                        (successors node graph))))))
+                  (succ (tset::min (tset::intersect
+                                     set
+                                     (successors node graph))))))
 
 (defruled in-of-predecessors-of-set-becomes-not-emptyp-of-intersect
-  (equal (treeset::in node (predecessors-of-set set graph))
-         (not (treeset::emptyp
-                (treeset::intersect set (successors node graph)))))
+  (equal (tset::in node (predecessors-of-set set graph))
+         (not (tset::emptyp
+                (tset::intersect set (successors node graph)))))
   :use (not-emptyp-of-intersect-and-successors-when-in-of-predecessors-of-set
         in-of-predecessors-of-set-when-not-emptyp-of-intersect))
 
@@ -312,39 +312,39 @@
 ;; predecessors, so expanding it also only shrinks the frontier.
 
 (define predecessors+-search
-  ((frontier treeset::setp)
-   (expanded treeset::setp)
+  ((frontier tset::setp)
+   (expanded tset::setp)
    (graph graphp))
-  :returns (closure treeset::setp)
+  :returns (closure tset::setp)
   :parents (predecessors+)
   :short "Expand nodes from a frontier, each at most once, adding a node's
           predecessors, and return the expanded nodes."
-  (b* (((when (treeset::emptyp frontier))
-        (treeset::fix expanded))
-       (node (treeset::min frontier))
-       (frontier (treeset::delete node frontier))
-       ((when (treeset::in node expanded))
+  (b* (((when (tset::emptyp frontier))
+        (tset::fix expanded))
+       (node (tset::min frontier))
+       (frontier (tset::delete node frontier))
+       ((when (tset::in node expanded))
         (predecessors+-search frontier expanded graph))
-       (expanded (treeset::insert node expanded)))
-    (predecessors+-search (treeset::union
+       (expanded (tset::insert node expanded)))
+    (predecessors+-search (tset::union
                             frontier
-                            (treeset::diff (predecessors node graph)
-                                           expanded))
+                            (tset::diff (predecessors node graph)
+                                        expanded))
                           expanded
                           graph))
   :measure (acl2::two-nats-measure
-             (treeset::cardinality (treeset::diff (nodes graph) expanded))
-             (treeset::cardinality frontier))
+             (tset::cardinality (tset::diff (nodes graph) expanded))
+             (tset::cardinality frontier))
   :hints (("Goal" :in-theory (e/d (nfix
                                    acl2::fix
-                                   treeset::cardinality-of-delete
-                                   treeset::equal-of-cardinality-and-0-becomes-emptyp)
-                                  (treeset::cardinality-of-diff)))))
+                                   tset::cardinality-of-delete
+                                   tset::equal-of-cardinality-and-0-becomes-emptyp)
+                                  (tset::cardinality-of-diff)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule predecessors+-search-when-equiv-of-arg1-congruence
-  (implies (treeset::equiv frontier0 frontier1)
+  (implies (tset::equiv frontier0 frontier1)
            (equal (predecessors+-search frontier0 expanded graph)
                   (predecessors+-search frontier1 expanded graph)))
   :rule-classes :congruence
@@ -352,7 +352,7 @@
            (predecessors+-search frontier1 expanded graph)))
 
 (defrule predecessors+-search-when-equiv-of-arg2-congruence
-  (implies (treeset::equiv expanded0 expanded1)
+  (implies (tset::equiv expanded0 expanded1)
            (equal (predecessors+-search frontier expanded0 graph)
                   (predecessors+-search frontier expanded1 graph)))
   :rule-classes :congruence
@@ -370,14 +370,14 @@
 ;; The frontier and the expanded nodes are all eventually expanded.
 
 (defrule in-of-predecessors+-search-when-in-of-arg2
-  (implies (treeset::in x expanded)
-           (treeset::in x (predecessors+-search frontier expanded graph)))
+  (implies (tset::in x expanded)
+           (tset::in x (predecessors+-search frontier expanded graph)))
   :induct t
   :enable predecessors+-search)
 
 (defrule in-of-predecessors+-search-when-in-of-arg1
-  (implies (treeset::in x frontier)
-           (treeset::in x (predecessors+-search frontier expanded graph)))
+  (implies (tset::in x frontier)
+           (tset::in x (predecessors+-search frontier expanded graph)))
   :induct t
   :enable predecessors+-search)
 
@@ -385,51 +385,51 @@
 ;; predecessors of the expanded node among them.
 
 (defrulel subset-of-union-and-union-of-insert-and-union-of-delete
-  (treeset::subset (treeset::union expanded frontier)
-                   (treeset::union (treeset::insert node expanded)
-                                   (treeset::union
-                                     (treeset::delete node frontier)
-                                     new)))
-  :enable treeset::pick-a-point-polar)
+  (tset::subset (tset::union expanded frontier)
+                (tset::union (tset::insert node expanded)
+                             (tset::union
+                               (tset::delete node frontier)
+                               new)))
+  :enable tset::pick-a-point-polar)
 
 (defrulel subset-of-arg1-and-union-of-insert-and-union-of-delete-of-diff
-  (treeset::subset targets
-                   (treeset::union (treeset::insert node expanded)
-                                   (treeset::union
-                                     frontier
-                                     (treeset::delete
-                                       node
-                                       (treeset::diff targets expanded)))))
-  :enable treeset::pick-a-point-polar)
+  (tset::subset targets
+                (tset::union (tset::insert node expanded)
+                             (tset::union
+                               frontier
+                               (tset::delete
+                                 node
+                                 (tset::diff targets expanded)))))
+  :enable tset::pick-a-point-polar)
 
 ;; So if the predecessors of the expanded nodes are expanded or in the
 ;; frontier, the search ends with a set containing the predecessors of its own
 ;; nodes.
 
 (defrulel subset-of-predecessors-of-set-of-predecessors+-search
-  (implies (treeset::subset (predecessors-of-set expanded graph)
-                            (treeset::union expanded frontier))
-           (treeset::subset
+  (implies (tset::subset (predecessors-of-set expanded graph)
+                         (tset::union expanded frontier))
+           (tset::subset
              (predecessors-of-set
                (predecessors+-search frontier expanded graph)
                graph)
              (predecessors+-search frontier expanded graph)))
   :induct t
   :enable (predecessors+-search
-           treeset::union-of-arg1-and-delete-when-in-arg1-cheap)
-  :disable (treeset::union-of-insert
-            treeset::commutativity-of-union
-            treeset::commutativity-2-of-union
-            treeset::union-of-arg1-and-diff
-            treeset::union-of-arg1-and-delete-when-not-in-arg1-cheap))
+           tset::union-of-arg1-and-delete-when-in-arg1-cheap)
+  :disable (tset::union-of-insert
+            tset::commutativity-of-union
+            tset::commutativity-2-of-union
+            tset::union-of-arg1-and-diff
+            tset::union-of-arg1-and-delete-when-not-in-arg1-cheap))
 
 ;; If the frontier and the expanded nodes are nodes, so is the result.
 
 (defrulel subset-of-predecessors+-search-and-nodes
-  (implies (and (treeset::subset frontier (nodes graph))
-                (treeset::subset expanded (nodes graph)))
-           (treeset::subset (predecessors+-search frontier expanded graph)
-                            (nodes graph)))
+  (implies (and (tset::subset frontier (nodes graph))
+                (tset::subset expanded (nodes graph)))
+           (tset::subset (predecessors+-search frontier expanded graph)
+                         (nodes graph)))
   :induct t
   :enable predecessors+-search)
 
@@ -437,7 +437,7 @@
 
 (define predecessors+ (node (graph graphp))
   :type-prescription :none
-  :returns (predecessors+ treeset::setp)
+  :returns (predecessors+ tset::setp)
   :parents (graph)
   :short "The nodes from which a node of a @(see graph) is reachable by a walk
           of at least one step."
@@ -453,7 +453,7 @@
        with @(tsee predecessors). Time complexity: @($O(n^2\\log(n))$), where
        @($n$) is the number of nodes. This is not optimal, since each
        expansion visits every node."))
-  (predecessors+-search (predecessors node graph) (treeset::empty) graph))
+  (predecessors+-search (predecessors node graph) (tset::empty) graph))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -468,14 +468,14 @@
 ;; predecessors of each of those.
 
 (defrule subset-of-predecessors-and-predecessors+
-  (treeset::subset (predecessors node graph)
-                   (predecessors+ node graph))
+  (tset::subset (predecessors node graph)
+                (predecessors+ node graph))
   :enable (predecessors+
-           treeset::pick-a-point-polar))
+           tset::pick-a-point-polar))
 
 (defrule subset-of-predecessors-of-set-of-predecessors+-and-predecessors+
-  (treeset::subset (predecessors-of-set (predecessors+ node graph) graph)
-                   (predecessors+ node graph))
+  (tset::subset (predecessors-of-set (predecessors+ node graph) graph)
+                (predecessors+ node graph))
   :enable (predecessors+
            predecessors-of-set))
 
@@ -483,21 +483,21 @@
 ;; reached by none.
 
 (defrule subset-of-predecessors+-and-nodes
-  (treeset::subset (predecessors+ node graph)
-                   (nodes graph))
+  (tset::subset (predecessors+ node graph)
+                (nodes graph))
   :enable predecessors+)
 
 (defruled predecessors+-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (predecessors+ node graph)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable (predecessors+
            predecessors+-search))
 
 (defrule predecessors+-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (predecessors+ node graph)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by predecessors+-when-not-in-of-nodes)
 

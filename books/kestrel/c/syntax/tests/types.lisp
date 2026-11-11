@@ -213,13 +213,13 @@
     (make-type-struct :uid (uid-local 43 (filepath "bar.c"))
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (treemap::update
+    (tmap::update
       (uid-local 42 (filepath "foo.c"))
       (list (make-type-struni-member :name? (ident "x")
                                      :type (type-char))
             (make-type-struni-member :name? (ident "y")
                                      :type (type-ulong)))
-      (treemap::update
+      (tmap::update
         (uid-local 43 (filepath "bar.c"))
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
@@ -237,13 +237,13 @@
     (make-type-struct :uid (uid-local 43 (filepath "foo.c"))
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (treemap::update
+    (tmap::update
       (uid-local 42 (filepath "foo.c"))
       (list (make-type-struni-member :name? (ident "x")
                                      :type (type-char))
             (make-type-struni-member :name? (ident "y")
                                      :type (type-ulong)))
-      (treemap::update
+      (tmap::update
         (uid-local 43 (filepath "foo.c"))
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
@@ -261,13 +261,13 @@
     (make-type-struct :uid (uid-local 42 (filepath "foo.c"))
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (treemap::update
+    (tmap::update
       (uid-local 42 (filepath "foo.c"))
       (list (make-type-struni-member :name? (ident "x")
                                      :type (type-char))
             (make-type-struni-member :name? (ident "y")
                                      :type (type-ulong)))
-      (treemap::update
+      (tmap::update
         (uid-local 43 (filepath "foo.c"))
         (list (make-type-struni-member :name? (ident "x")
                                        :type (type-char))
@@ -322,10 +322,10 @@
     (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (treemap::update (uid-local 1 (filepath "foo.c"))
-                     (list (make-type-struni-member :name? (ident "x")
-                                                    :type (type-sint)))
-                     nil)
+    (tmap::update (uid-local 1 (filepath "foo.c"))
+                  (list (make-type-struni-member :name? (ident "x")
+                                                 :type (type-sint)))
+                  nil)
     (irr-ienv))
   t)
 
@@ -338,14 +338,14 @@
     (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
                       :tag/members (type-struni-tag/members-tagged
                                      (ident "my_struct")))
-    (treemap::update (uid-local 1 (filepath "foo.c"))
-                     (list (make-type-struni-member :name? (ident "x")
-                                                    :type (type-sint)))
-                     (treemap::update (uid-local 2 (filepath "bar.c"))
-                                      (list (make-type-struni-member
-                                              :name? (ident "x")
-                                              :type (type-unknown)))
-                                      nil))
+    (tmap::update (uid-local 1 (filepath "foo.c"))
+                  (list (make-type-struni-member :name? (ident "x")
+                                                 :type (type-sint)))
+                  (tmap::update (uid-local 2 (filepath "bar.c"))
+                                (list (make-type-struni-member
+                                        :name? (ident "x")
+                                        :type (type-unknown)))
+                                nil))
     (irr-ienv))
   :unknown)
 
@@ -362,15 +362,15 @@
        (baz (make-type-struct :uid (uid-local 3 (filepath "baz.c"))
                               :tag/members tag/members))
        (completions
-        (treemap::update
+        (tmap::update
           (uid-local 1 (filepath "foo.c"))
           (list (make-type-struni-member :name? (ident "p")
                                          :type (make-type-pointer :to foo)))
-          (treemap::update
+          (tmap::update
             (uid-local 2 (filepath "bar.c"))
             (list (make-type-struni-member :name? (ident "p")
                                            :type (make-type-pointer :to baz)))
-            (treemap::update
+            (tmap::update
               (uid-local 3 (filepath "baz.c"))
               (list (make-type-struni-member :name? (ident "p")
                                              :type (make-type-pointer :to bar)))
@@ -393,15 +393,15 @@
        (bar-block (make-type-struct :uid (uid-local 3 (filepath "bar.c"))
                                     :tag/members tag/members))
        (completions
-        (treemap::update
+        (tmap::update
           (uid-local 1 (filepath "foo.c"))
           (list (make-type-struni-member :name? (ident "p")
                                          :type (make-type-pointer :to foo)))
-          (treemap::update
+          (tmap::update
             (uid-local 2 (filepath "bar.c"))
             (list (make-type-struni-member :name? (ident "x")
                                            :type (type-sint)))
-            (treemap::update
+            (tmap::update
               (uid-local 3 (filepath "bar.c"))
               (list (make-type-struni-member
                       :name? (ident "p")
@@ -421,14 +421,14 @@
     (make-type-union :uid (uid-local 2 (filepath "bar.c"))
                      :tag/members (type-struni-tag/members-tagged
                                     (ident "my_union")))
-    (treemap::update (uid-local 1 (filepath "foo.c"))
-                     (list (make-type-struni-member :name? (ident "x")
-                                                    :type (type-sint)))
-                     (treemap::update (uid-local 2 (filepath "bar.c"))
-                                      (list (make-type-struni-member
-                                              :name? (ident "x")
-                                              :type (type-sint)))
-                                      nil))
+    (tmap::update (uid-local 1 (filepath "foo.c"))
+                  (list (make-type-struni-member :name? (ident "x")
+                                                 :type (type-sint)))
+                  (tmap::update (uid-local 2 (filepath "bar.c"))
+                                (list (make-type-struni-member
+                                        :name? (ident "x")
+                                        :type (type-sint)))
+                                nil))
     (irr-ienv))
   :unknown)
 
@@ -583,18 +583,18 @@
                                   :kind (make-type-array-kind-const-len
                                           :len 10)))))
        (completions
-        (treemap::update (uid-local 1 (filepath "foo.c"))
-                         (list member-inc)
-                         (treemap::update (uid-local 2 (filepath "bar.c"))
-                                          (list member-10)
-                                          nil))))
+        (tmap::update (uid-local 1 (filepath "foo.c"))
+                      (list member-inc)
+                      (tmap::update (uid-local 2 (filepath "bar.c"))
+                                    (list member-10)
+                                    nil))))
     (list (type-composite-3p
             foo bar composite
-            (treemap::update (uid-local 3 nil) (list member-10) completions)
+            (tmap::update (uid-local 3 nil) (list member-10) completions)
             (irr-ienv))
           (type-composite-3p
             foo bar composite
-            (treemap::update (uid-local 3 nil) (list member-inc) completions)
+            (tmap::update (uid-local 3 nil) (list member-inc) completions)
             (irr-ienv))
           (type-composite-3p foo bar composite completions (irr-ienv))
           ;; The second input already satisfies the conditions.
@@ -616,17 +616,17 @@
                                                :type (type-sint)))))
     (list (type-composite-3p
             foo bar composite
-            (treemap::update (uid-local 1 (filepath "foo.c")) members
-                             (treemap::update (uid-local 3 nil) members nil))
+            (tmap::update (uid-local 1 (filepath "foo.c")) members
+                          (tmap::update (uid-local 3 nil) members nil))
             (irr-ienv))
           (type-composite-3p
             foo bar composite
-            (treemap::update (uid-local 1 (filepath "foo.c")) members nil)
+            (tmap::update (uid-local 1 (filepath "foo.c")) members nil)
             (irr-ienv))
           (type-composite-3p foo bar composite nil (irr-ienv))
           (type-composite-3p
             foo bar composite
-            (treemap::update (uid-local 3 nil) members nil)
+            (tmap::update (uid-local 3 nil) members nil)
             (irr-ienv))))
   (list t nil t nil))
 
@@ -641,15 +641,15 @@
        (composite (make-type-struct :uid (uid-local 3 nil)
                                     :tag/members tag/members))
        (completions
-        (treemap::update
+        (tmap::update
           (uid-local 1 (filepath "foo.c"))
           (list (make-type-struni-member :name? (ident "p")
                                          :type (make-type-pointer :to foo)))
-          (treemap::update
+          (tmap::update
             (uid-local 2 (filepath "bar.c"))
             (list (make-type-struni-member :name? (ident "p")
                                            :type (make-type-pointer :to bar)))
-            (treemap::update
+            (tmap::update
               (uid-local 3 nil)
               (list (make-type-struni-member
                       :name? (ident "p")
@@ -670,11 +670,11 @@
        (members (list (make-type-struni-member :name? (ident "x")
                                                :type (type-sint))))
        (completions
-        (treemap::update (uid-local 1 (filepath "foo.c"))
-                         members
-                         (treemap::update (uid-local 2 (filepath "bar.c"))
-                                          members
-                                          nil)))
+        (tmap::update (uid-local 1 (filepath "foo.c"))
+                      members
+                      (tmap::update (uid-local 2 (filepath "bar.c"))
+                                    members
+                                    nil)))
        (c23 (change-ienv (irr-ienv)
                          :dialect (c::make-dialect
                                     :std (c::standard-c23)))))
@@ -695,13 +695,13 @@
                                                :type (type-sint)))))
     (type-composite-3p
       foo bar composite
-      (treemap::update
+      (tmap::update
         (uid-local 1 (filepath "foo.c"))
         members
-        (treemap::update
+        (tmap::update
           (uid-local 2 (filepath "bar.c"))
           members
-          (treemap::update (uid-local 3 nil) members nil)))
+          (tmap::update (uid-local 3 nil) members nil)))
       (irr-ienv)))
   :unknown)
 
@@ -767,7 +767,7 @@
 ;; along with the composite relation on it.
 (define type-composite-and-relation ((x typep) (y typep) (ienv ienvp))
   (b* (((mv composite completions & & &)
-        (type-composite x y nil (treemap::empty) (treeset::empty) nil 1)))
+        (type-composite x y nil (tmap::empty) (tset::empty) nil 1)))
     (list composite
           (type-composite-3p x y composite completions ienv))))
 
@@ -983,24 +983,24 @@
                          :of (type-sint)
                          :kind (make-type-array-kind-const-len :len 10))))
        (completions
-        (treemap::update
+        (tmap::update
           (uid-local 1 (filepath "foo.c"))
           (list (make-type-struni-member :name? (ident "p") :type array-inc)
                 (make-type-struni-member :name? (ident "q") :type array-10))
-          (treemap::update
+          (tmap::update
             (uid-local 2 (filepath "bar.c"))
             (list (make-type-struni-member :name? (ident "p") :type array-10)
                   (make-type-struni-member :name? (ident "q") :type array-inc))
             nil)))
        ((mv composite completions composites & next-uid-num)
         (type-composite foo bar completions
-                        (treemap::empty) (treeset::empty) nil 3)))
+                        (tmap::empty) (tset::empty) nil 3)))
     (list composite
-          (treemap::lookup (uid-local 3 nil) completions)
-          (treemap::lookup (make-uid-pair
-                             :first (uid-local 1 (filepath "foo.c"))
-                             :second (uid-local 2 (filepath "bar.c")))
-                           composites)
+          (tmap::lookup (uid-local 3 nil) completions)
+          (tmap::lookup (make-uid-pair
+                          :first (uid-local 1 (filepath "foo.c"))
+                          :second (uid-local 2 (filepath "bar.c")))
+                        composites)
           next-uid-num
           (type-composite-3p foo bar composite completions (irr-ienv))))
   (b* ((array-10 (make-type-pointer
@@ -1038,17 +1038,17 @@
                                   :kind (make-type-array-kind-const-len
                                           :len 10)))))
        (completions
-        (treemap::update (uid-local 1 (filepath "foo.c"))
-                         (list member-inc)
-                         (treemap::update (uid-local 2 (filepath "bar.c"))
-                                          (list member-10)
-                                          nil)))
+        (tmap::update (uid-local 1 (filepath "foo.c"))
+                      (list member-inc)
+                      (tmap::update (uid-local 2 (filepath "bar.c"))
+                                    (list member-10)
+                                    nil)))
        ((mv composite1 & & & next-uid-num1)
         (type-composite foo bar completions
-                        (treemap::empty) (treeset::empty) nil 3))
+                        (tmap::empty) (tset::empty) nil 3))
        ((mv composite2 & & & next-uid-num2)
         (type-composite bar foo completions
-                        (treemap::empty) (treeset::empty) nil 3)))
+                        (tmap::empty) (tset::empty) nil 3)))
     (list composite1 next-uid-num1 composite2 next-uid-num2))
   (let ((bar (make-type-struct :uid (uid-local 2 (filepath "bar.c"))
                                :tag/members (type-struni-tag/members-tagged
@@ -1064,13 +1064,13 @@
                               :tag/members tag/members))
        (member (make-type-struni-member :name? (ident "x") :type (type-sint)))
        (completions
-        (treemap::update (uid-local 1 (filepath "foo.c")) (list member) nil))
+        (tmap::update (uid-local 1 (filepath "foo.c")) (list member) nil))
        ((mv composite1 & & & &)
         (type-composite foo bar completions
-                        (treemap::empty) (treeset::empty) nil 3))
+                        (tmap::empty) (tset::empty) nil 3))
        ((mv composite2 & & & &)
         (type-composite bar foo completions
-                        (treemap::empty) (treeset::empty) nil 3)))
+                        (tmap::empty) (tset::empty) nil 3)))
     (list composite1 composite2))
   (let ((foo (make-type-struct :uid (uid-local 1 (filepath "foo.c"))
                                :tag/members (type-struni-tag/members-tagged
@@ -1096,7 +1096,7 @@
                          :of (type-sint)
                          :kind (make-type-array-kind-const-len :len 10))))
        (completions
-        (treemap::update
+        (tmap::update
           (uid-local 1 (filepath "foo.c"))
           (list (make-type-struni-member :name? (ident "prev")
                                          :type (make-type-pointer :to foo))
@@ -1104,7 +1104,7 @@
                                          :type (make-type-pointer :to foo))
                 (make-type-struni-member :name? (ident "p") :type array-inc)
                 (make-type-struni-member :name? (ident "q") :type array-10))
-          (treemap::update
+          (tmap::update
             (uid-local 2 (filepath "bar.c"))
             (list (make-type-struni-member :name? (ident "prev")
                                            :type (make-type-pointer :to bar))
@@ -1115,8 +1115,8 @@
             nil)))
        ((mv composite completions & & next-uid-num)
         (type-composite foo bar completions
-                        (treemap::empty) (treeset::empty) nil 3)))
-    (list (treemap::lookup (uid-local 3 nil) completions)
+                        (tmap::empty) (tset::empty) nil 3)))
+    (list (tmap::lookup (uid-local 3 nil) completions)
           next-uid-num
           (type-composite-3p foo bar composite completions (irr-ienv))))
   (b* ((composite (make-type-struct :uid (uid-local 3 nil)
@@ -1167,7 +1167,7 @@
                       (make-type-struni-member :name? (ident "q")
                                                :type array-inc)))))
        ((mv composite completions & & next-uid-num)
-        (type-composite foo bar nil (treemap::empty) (treeset::empty) nil 3)))
+        (type-composite foo bar nil (tmap::empty) (tset::empty) nil 3)))
     (list composite
           completions
           next-uid-num
@@ -1210,22 +1210,22 @@
                                   :kind (make-type-array-kind-const-len
                                           :len 10)))))
        (completions
-        (treemap::update (uid-local 1 (filepath "foo.c"))
-                         (list member-inc)
-                         (treemap::update (uid-local 2 (filepath "bar.c"))
-                                          (list member-10)
-                                          nil)))
+        (tmap::update (uid-local 1 (filepath "foo.c"))
+                      (list member-inc)
+                      (tmap::update (uid-local 2 (filepath "bar.c"))
+                                    (list member-10)
+                                    nil)))
        ((mv composite1 & & & &)
         (type-composite foo bar completions
-                        (treemap::empty) (treeset::empty) nil 3))
+                        (tmap::empty) (tset::empty) nil 3))
        ((mv composite2 & & & &)
         (type-composite foo
                         bar
-                        (treemap::update (uid-local 2 (filepath "bar.c"))
-                                         (list member-10)
-                                         nil)
-                        (treemap::empty)
-                        (treeset::empty)
+                        (tmap::update (uid-local 2 (filepath "bar.c"))
+                                      (list member-10)
+                                      nil)
+                        (tmap::empty)
+                        (tset::empty)
                         nil
                         3)))
     (list composite1
@@ -1266,9 +1266,9 @@
                            :kind (type-array-kind-incomplete))
           (make-type-array :of (type-sint)
                            :kind (make-type-array-kind-const-len :len 10))
-          nil (treemap::empty) (treeset::empty) nil 1)))
+          nil (tmap::empty) (tset::empty) nil 1)))
     (list composites next-uid-num))
-  (list (treemap::empty) 1))
+  (list (tmap::empty) 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

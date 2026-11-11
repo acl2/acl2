@@ -6,10 +6,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/hash-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)

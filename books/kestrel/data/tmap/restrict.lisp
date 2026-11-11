@@ -6,19 +6,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
 
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
@@ -36,16 +36,16 @@
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 
-(local (include-book "kestrel/data/treeset/internal/in" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/to-oset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/internal/in" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -72,8 +72,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc restrict
-  :parents (treemap)
-  :short "A restriction of a @(see treemap) to a key set."
+  :parents (tmap)
+  :short "A restriction of a @(see tmap) to a key set."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -105,14 +105,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict$inline
-  ((keys treeset::setp)
+  ((keys tset::setp)
    (map mapp))
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* mapp
-                                                     treeset::break-abstraction
+                                                     tset::break-abstraction
                                                      break-abstraction))))
-  (tree-restrict (treeset::fix keys) (fix map))
-  :guard-hints (("Goal" :in-theory (enable* treeset::break-abstraction
+  (tree-restrict (tset::fix keys) (fix map))
+  :guard-hints (("Goal" :in-theory (enable* tset::break-abstraction
                                             break-abstraction)))
 
   ///
@@ -131,7 +131,7 @@
 (add-to-ruleset break-abstraction '(restrict-type-prescription))
 
 (defrule restrict-when-set-equiv-of-arg1-congruence
-  (implies (treeset::equiv keys0 keys1)
+  (implies (tset::equiv keys0 keys1)
            (equal (restrict keys0 map)
                   (restrict keys1 map)))
   :rule-classes :congruence
@@ -147,9 +147,9 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule emptyp-of-restrict-when-emptyp-of-arg1
-  (implies (treeset::emptyp keys)
+  (implies (tset::emptyp keys)
            (emptyp (restrict keys map)))
-  :enable (treeset::emptyp
+  :enable (tset::emptyp
            restrict))
 
 (defrule emptyp-of-restrict-when-emptyp-of-arg2
@@ -159,22 +159,22 @@
            restrict))
 
 (defruled restrict-when-emptyp-of-arg1
-  (implies (treeset::emptyp keys)
+  (implies (tset::emptyp keys)
            (equal (restrict keys map)
                   (empty)))
-  :enable (treeset::emptyp
+  :enable (tset::emptyp
            restrict
            empty))
 
 (defrule restrict-when-emptyp-of-arg1-cheap
-  (implies (treeset::emptyp keys)
+  (implies (tset::emptyp keys)
            (equal (restrict keys map)
                   (empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by restrict-when-emptyp-of-arg1)
 
 (defrule restrict-of-empty
-  (equal (restrict (treeset::empty) map)
+  (equal (restrict (tset::empty) map)
          (empty))
   :enable restrict-when-emptyp-of-arg1)
 
@@ -182,7 +182,7 @@
   (implies (emptyp map)
            (equal (restrict keys map)
                   (empty)))
-  :enable (treeset::emptyp
+  :enable (tset::emptyp
            restrict
            empty))
 
@@ -202,39 +202,39 @@
 
 (defrule keys-of-restrict
   (equal (keys (restrict keys map))
-         (treeset::intersect keys (keys map)))
-  :enable treeset::extensionality
+         (tset::intersect keys (keys map)))
+  :enable tset::extensionality
   :prep-lemmas
   ((defrule in-of-keys-of-restrict
-     (equal (treeset::in key (keys (restrict keys map)))
-            (and (treeset::in key keys)
-                 (treeset::in key (keys map))))
+     (equal (tset::in key (keys (restrict keys map)))
+            (and (tset::in key keys)
+                 (tset::in key (keys map))))
      ;; TODO: improve proof
      :use (:instance in-of-tree-key-set-of-tree-restrict
                      (a key)
                      (tree map))
      :enable (restrict
               keys
-              treeset::in
-              treeset::fix
+              tset::in
+              tset::fix
               fix
-              treeset::setp
+              tset::setp
               mapp
-              treeset::empty
+              tset::empty
               empty)
      :disable in-of-tree-key-set-of-tree-restrict)))
 
 (defrule lookup-of-restrict
   (equal (lookup key (restrict keys map) :default default)
-         (if (treeset::in key keys)
+         (if (tset::in key keys)
              (lookup key map :default default)
            default))
   :enable (restrict
            lookup
-           treeset::in
+           tset::in
            mapp
            keys
-           treeset::break-abstraction
+           tset::break-abstraction
            break-abstraction))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -246,24 +246,24 @@
 (defrule submap-of-arg1-and-restrict
   (equal (submap x (restrict keys map))
          (and (submap x map)
-              (treeset::subset (keys x) keys)))
+              (tset::subset (keys x) keys)))
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar)
   :prep-lemmas
   ((defrule lemma
      (implies (submap x (restrict keys map))
-              (treeset::subset (keys x) keys))
+              (tset::subset (keys x) keys))
      ;; TODO: why isn't this inferred by forward-chaining?
      :use (:instance subset-of-keys
                      (y (restrict keys map)))
-     :enable treeset::pick-a-point-polar
+     :enable tset::pick-a-point-polar
      :disable subset-of-keys)
    (defrule lemma2
      (implies (submap x (restrict keys map))
               (submap x map)))))
 
 (defrule monotonicity-of-restrict
-  (implies (and (treeset::subset keys0 keys1)
+  (implies (and (tset::subset keys0 keys1)
                 (submap map0 map1))
            (submap (restrict keys0 map0)
                    (restrict keys1 map1)))
@@ -273,11 +273,11 @@
 
 (defrule restrict-of-restrict
   (equal (restrict x (restrict y map))
-         (restrict (treeset::intersect x y) map))
+         (restrict (tset::intersect x y) map))
   :enable extensionality)
 
 (defrule restrict-when-superset-of-keys
-  (implies (treeset::subset (keys map) keys)
+  (implies (tset::subset (keys map) keys)
            (equal (restrict keys map)
                   (fix map)))
   :enable extensionality)
@@ -286,39 +286,39 @@
 
 (defruled restrict-of-update
   (equal (restrict keys (update key val map))
-         (if (treeset::in key keys)
+         (if (tset::in key keys)
              (update key val (restrict keys map))
            (restrict keys map)))
   :enable extensionality)
 
 (defruled restrict-of-update-when-in
-  (implies (treeset::in key keys)
+  (implies (tset::in key keys)
            (equal (restrict keys (update key val map))
                   (update key val (restrict keys map))))
   :by restrict-of-update)
 
 (defrule restrict-of-update-when-in-cheap
-  (implies (treeset::in key keys)
+  (implies (tset::in key keys)
            (equal (restrict keys (update key val map))
                   (update key val (restrict keys map))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by restrict-of-update-when-in)
 
 (defruled restrict-of-update-when-not-in
-  (implies (not (treeset::in key keys))
+  (implies (not (tset::in key keys))
            (equal (restrict keys (update key val map))
                   (restrict keys map)))
   :by restrict-of-update)
 
 (defrule restrict-of-update-when-not-in-cheap
-  (implies (not (treeset::in key keys))
+  (implies (not (tset::in key keys))
            (equal (restrict keys (update key val map))
                   (restrict keys map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by restrict-of-update-when-not-in)
 
 (defrule restrict-of-delete
-  (equal (restrict (treeset::delete key keys) map)
+  (equal (restrict (tset::delete key keys) map)
          (delete key (restrict keys map)))
   :enable extensionality)
 
@@ -330,14 +330,14 @@
 ;; TODO: is there any sensible rule for (update* (restrict keys x) y)?
 (defruled update*-of-arg1-and-restrict
   (equal (update* x (restrict keys y))
-         (restrict (treeset::union (keys x) keys) (update* x y)))
+         (restrict (tset::union (keys x) keys) (update* x y)))
   :enable extensionality)
 
 ;; NOTE: this goes the opposite direction then the corresponding operations on
 ;; sets (update* -> union, restrict -> intersect).
 (defrule update*-of-restrict-restrict-1
   (equal (update* (restrict x map) (restrict y map))
-         (restrict (treeset::union x y) map))
+         (restrict (tset::union x y) map))
   :enable extensionality)
 
 (defrule update*-of-restrict-restrict-2
@@ -349,7 +349,7 @@
 
 (defruled lookup-when-equal-of-restrict
   (implies (and (equal (restrict keys x) (restrict keys y))
-                (treeset::in key keys))
+                (tset::in key keys))
            (equal (lookup key x :default default)
                   (lookup key y :default default)))
   :use ((:instance lookup-of-restrict
@@ -360,7 +360,7 @@
 
 (defrule lookup-when-equal-of-restrict-forward-chaining
   (implies (and (equal (restrict keys x) (restrict keys y))
-                (treeset::in key keys))
+                (tset::in key keys))
            (equal (lookup key x :default default)
                   (lookup key y :default default)))
   :rule-classes
@@ -369,7 +369,7 @@
 
 (defrule lookup-default-nil-when-equal-of-restrict-forward-chaining
   (implies (and (equal (restrict keys x) (restrict keys y))
-                (treeset::in key keys))
+                (tset::in key keys))
            (equal (lookup key x)
                   (lookup key y)))
   :rule-classes :forward-chaining
@@ -379,20 +379,20 @@
 
 (defrule to-omap-of-restrict
   (equal (to-omap (restrict keys map))
-         (omap::restrict (treeset::to-oset keys)
+         (omap::restrict (tset::to-oset keys)
                          (to-omap map)))
   :enable (to-omap
-           treeset::to-oset
+           tset::to-oset
            restrict
            mapp
-           treeset::break-abstraction
+           tset::break-abstraction
            break-abstraction))
 
 (add-to-ruleset to-omap-theory '(to-omap-of-restrict))
 
 (defrule from-omap-of-restrict
   (equal (from-omap (omap::restrict keys map))
-         (restrict (treeset::from-oset keys)
+         (restrict (tset::from-oset keys)
                    (from-omap map)))
   :enable (extensionality
            omap::assoc-of-restrict))
@@ -401,14 +401,14 @@
 
 (defruled restrict-becomes-omap-restrict
   (equal (restrict keys map)
-         (from-omap (omap::restrict (treeset::to-oset keys)
+         (from-omap (omap::restrict (tset::to-oset keys)
                                     (to-omap map)))))
 
 (add-to-ruleset to-omap-theory '(restrict-becomes-omap-restrict))
 
 (defruled omap-restrict-becomes-restrict
   (equal (omap::restrict keys map)
-         (to-omap (restrict (treeset::from-oset keys)
+         (to-omap (restrict (tset::from-oset keys)
                             (from-omap map)))))
 
 (add-to-ruleset from-omap-theory '(omap-restrict-becomes-restrict))
@@ -416,75 +416,75 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule commutativity-of-update*-when-compatiblep
-  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
-                  (restrict (treeset::intersect (keys x) (keys y)) y))
+  (implies (equal (restrict (tset::intersect (keys x) (keys y)) x)
+                  (restrict (tset::intersect (keys x) (keys y)) y))
            (equal (update* y x)
                   (update* x y)))
   :use ((:instance lookup-when-equal-of-restrict
-                   (keys (treeset::intersect (keys x) (keys y)))
+                   (keys (tset::intersect (keys x) (keys y)))
                    (key (mv-nth 0 (ext-equal-witness (update* y x)
                                                      (update* x y))))
                    (default nil)))
   :enable extensionality-polar)
 
 (defrule commutativity-2-of-update*-when-compatiblep
-  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
-                  (restrict (treeset::intersect (keys x) (keys y)) y))
+  (implies (equal (restrict (tset::intersect (keys x) (keys y)) x)
+                  (restrict (tset::intersect (keys x) (keys y)) y))
            (equal (update* y x z)
                   (update* x y z)))
   :use ((:instance lookup-when-equal-of-restrict
-                   (keys (treeset::intersect (keys x) (keys y)))
+                   (keys (tset::intersect (keys x) (keys y)))
                    (key (mv-nth 0 (ext-equal-witness (update* y x z)
                                                      (update* x y z))))
                    (default nil)))
   :enable extensionality-polar)
 
 (defrule submap-of-arg1-and-update*-of-arg2-when-compatiblep
-  (implies (equal (restrict (treeset::intersect (keys x) (keys y)) x)
-                  (restrict (treeset::intersect (keys x) (keys y)) y))
+  (implies (equal (restrict (tset::intersect (keys x) (keys y)) x)
+                  (restrict (tset::intersect (keys x) (keys y)) y))
            (submap x (update* y x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-=
-  ((keys treeset::acl2-number-setp)
+  ((keys tset::acl2-number-setp)
    (map acl2-number-mapp))
   (mbe :logic (restrict keys map)
        :exec (acl2-number-tree-restrict keys map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
-                                            treeset::set-all-acl2-numberp
+                                            tset::set-all-acl2-numberp
                                             keys
-                                            treeset::break-abstraction
+                                            tset::break-abstraction
                                             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-eq
-  ((keys treeset::symbol-setp)
+  ((keys tset::symbol-setp)
    (map symbol-mapp))
   (mbe :logic (restrict keys map)
        :exec (symbol-tree-restrict keys map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
-                                            treeset::set-all-symbolp
+                                            tset::set-all-symbolp
                                             keys
-                                            treeset::break-abstraction
+                                            tset::break-abstraction
                                             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define restrict-eql
-  ((keys treeset::eqlable-setp)
+  ((keys tset::eqlable-setp)
    (map eqlable-mapp))
   (mbe :logic (restrict keys map)
        :exec (eqlable-tree-restrict keys map))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* restrict
-                                            treeset::set-all-eqlablep
+                                            tset::set-all-eqlablep
                                             keys
-                                            treeset::break-abstraction
+                                            tset::break-abstraction
                                             break-abstraction))))

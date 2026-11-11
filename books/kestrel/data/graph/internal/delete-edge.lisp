@@ -11,14 +11,14 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -30,20 +30,20 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -62,21 +62,21 @@
 ;; emptiness, which is what lets compositions of deletions be compared by
 ;; rewriting.
 
-(define adjacency-delete-label (to label (adj treemap::mapp))
+(define adjacency-delete-label (to label (adj tmap::mapp))
   :guard (map-values-all-nonempty-setp adj)
-  :returns (new-adj treemap::mapp)
-  (b* ((labels (treeset::delete
+  :returns (new-adj tmap::mapp)
+  (b* ((labels (tset::delete
                  label
-                 (treemap::lookup to adj :default (treeset::empty)))))
-    (if (treeset::emptyp labels)
-        (treemap::delete to adj)
-      (treemap::update to labels adj)))
+                 (tmap::lookup to adj :default (tset::empty)))))
+    (if (tset::emptyp labels)
+        (tmap::delete to adj)
+      (tmap::update to labels adj)))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adjacency-delete-label-when-treemap-equiv-of-arg3-congruence
-  (implies (treemap::equiv adj0 adj1)
+(defrule adjacency-delete-label-when-tmap-equiv-of-arg3-congruence
+  (implies (tmap::equiv adj0 adj1)
            (equal (adjacency-delete-label to label adj0)
                   (adjacency-delete-label to label adj1)))
   :rule-classes :congruence
@@ -89,62 +89,62 @@
   :enable adjacency-delete-label)
 
 (defrule keys-of-adjacency-delete-label
-  (equal (treemap::keys (adjacency-delete-label to label adj))
-         (if (treeset::emptyp
-               (treeset::delete
+  (equal (tmap::keys (adjacency-delete-label to label adj))
+         (if (tset::emptyp
+               (tset::delete
                  label
-                 (treemap::lookup to adj :default (treeset::empty))))
-             (treeset::delete to (treemap::keys adj))
-           (treeset::insert to (treemap::keys adj))))
+                 (tmap::lookup to adj :default (tset::empty))))
+             (tset::delete to (tmap::keys adj))
+           (tset::insert to (tmap::keys adj))))
   :enable adjacency-delete-label)
 
 (defrule lookup-of-adjacency-delete-label
-  (equal (treemap::lookup key
-                          (adjacency-delete-label to label adj)
-                          :default default)
+  (equal (tmap::lookup key
+                       (adjacency-delete-label to label adj)
+                       :default default)
          (if (equal key to)
-             (if (treeset::emptyp
-                   (treeset::delete
+             (if (tset::emptyp
+                   (tset::delete
                      label
-                     (treemap::lookup to adj :default (treeset::empty))))
+                     (tmap::lookup to adj :default (tset::empty))))
                  default
-               (treeset::delete
+               (tset::delete
                  label
-                 (treemap::lookup to adj :default (treeset::empty))))
-           (treemap::lookup key adj :default default)))
+                 (tmap::lookup to adj :default (tset::empty))))
+           (tmap::lookup key adj :default default)))
   :enable adjacency-delete-label)
 
 ;; Read with the empty set as the default, the target's labels are simply the
 ;; remaining ones, whether or not any remain.
 
 (defrule lookup-with-default-empty-of-adjacency-delete-label
-  (equal (treemap::lookup key
-                          (adjacency-delete-label to label adj)
-                          :default (treeset::empty))
+  (equal (tmap::lookup key
+                       (adjacency-delete-label to label adj)
+                       :default (tset::empty))
          (if (equal key to)
-             (treeset::delete
+             (tset::delete
                label
-               (treemap::lookup to adj :default (treeset::empty)))
-           (treemap::lookup key adj :default (treeset::empty))))
-  :use (:instance treeset::fix-when-emptyp
-                  (treeset::set
-                    (treeset::delete
+               (tmap::lookup to adj :default (tset::empty)))
+           (tmap::lookup key adj :default (tset::empty))))
+  :use (:instance tset::fix-when-emptyp
+                  (tset::set
+                    (tset::delete
                       label
-                      (treemap::lookup to adj :default (treeset::empty))))))
+                      (tmap::lookup to adj :default (tset::empty))))))
 
 (defrule adjacency-delete-label-of-adjacency-delete-label-same
   (equal (adjacency-delete-label to label
                                  (adjacency-delete-label to label adj))
          (adjacency-delete-label to label adj))
-  :enable treemap::extensionality-polar)
+  :enable tmap::extensionality-polar)
 
 (defrule adjacency-delete-label-of-adjacency-delete-label-commutative
   (equal (adjacency-delete-label to0 label0
                                  (adjacency-delete-label to1 label1 adj))
          (adjacency-delete-label to1 label1
                                  (adjacency-delete-label to0 label0 adj)))
-  :enable treemap::extensionality-polar
-  :disable treeset::emptyp-of-delete)
+  :enable tmap::extensionality-polar
+  :disable tset::emptyp-of-delete)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,19 +158,19 @@
 ;; source to the target.
 
 (define adj-list-delete-edge (from to label (adjl adj-listp))
-  :returns (new-adjl treemap::mapp)
-  (if (treemap::in from adjl)
-      (treemap::update from
-                       (adjacency-delete-label to
-                                               label
-                                               (treemap::lookup from adjl))
-                       adjl)
-    (treemap::fix adjl)))
+  :returns (new-adjl tmap::mapp)
+  (if (tmap::in from adjl)
+      (tmap::update from
+                    (adjacency-delete-label to
+                                            label
+                                            (tmap::lookup from adjl))
+                    adjl)
+    (tmap::fix adjl)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-delete-edge-when-treemap-equiv-of-arg4-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-delete-edge-when-tmap-equiv-of-arg4-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-delete-edge from to label adjl0)
                   (adj-list-delete-edge from to label adjl1)))
   :rule-classes :congruence
@@ -188,15 +188,15 @@
 ;; the one edge is removed.
 
 (defrule keys-of-adj-list-delete-edge
-  (equal (treemap::keys (adj-list-delete-edge from to label adjl))
-         (treemap::keys adjl))
+  (equal (tmap::keys (adj-list-delete-edge from to label adjl))
+         (tmap::keys adjl))
   :enable adj-list-delete-edge)
 
 (defrule adj-list-edges-of-adj-list-delete-edge
   (equal (adj-list-edges (adj-list-delete-edge from to label adjl))
-         (treeset::delete (edge from to label) (adj-list-edges adjl)))
+         (tset::delete (edge from to label) (adj-list-edges adjl)))
   :enable (adj-list-delete-edge
-           treeset::extensionality-no-backchain-limit-polar
+           tset::extensionality-no-backchain-limit-polar
            in-of-adj-list-edges)
   :disable adj-list-edges-of-update)
 
@@ -231,7 +231,7 @@
          (adj-list-delete-edge from to label (adj-list-add-node node adjl)))
   :enable (adj-list-delete-edge
            adj-list-add-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))
 
 ;; Adding an edge and then deleting it leaves the source behind as a node.
 
@@ -242,7 +242,7 @@
   :enable (adj-list-delete-edge
            adj-list-add-edge
            adj-list-add-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))
 
 (defrule adj-list-add-edge-of-adj-list-delete-edge-same
   (equal (adj-list-add-edge from to label
@@ -250,4 +250,4 @@
          (adj-list-add-edge from to label adjl))
   :enable (adj-list-delete-edge
            adj-list-add-edge
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))

@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/hash-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
@@ -29,13 +29,13 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
@@ -58,7 +58,7 @@
    val
    (tree treep))
   :type-prescription :none
-  ;; TODO: treeset definition should have guards/returns first like this.
+  ;; TODO: tset definition should have guards/returns first like this.
   :returns (tree$ treep)
   :parents (implementation)
   :short "Add a key/value pair to the tree."
@@ -81,7 +81,7 @@
     (let* ((head (tree->head tree))
            (head-key (tree-element->key head)))
       ;; TODO: Should the << check come first? Most of the time, key and
-      ;; head-key are not equal. If so, make the same change to treesets.
+      ;; head-key are not equal. If so, make the same change to tsets.
       ;; - Actually, we probably want a function that returns :lt, :eq, or :gt.
       ;;   Need better tests first though.
       (mv-let (equalp ltp)
@@ -141,7 +141,7 @@
 
 (defrule tree-key-set-of-tree-update
   (equal (tree-key-set (tree-update key val tree))
-         (treeset::insert key (tree-key-set tree)))
+         (tset::insert key (tree-key-set tree)))
   :induct t
   :enable (tree-update
            tree-key-set))
@@ -241,7 +241,7 @@
 ;;                     (tree->head tree))))
 ;;   :induct t
 ;;   :enable (tree-update
-;;            treeset::heap<-expensive-rules))
+;;            tset::heap<-expensive-rules))
 
 ;; TODO
 ;; (defrule equal-of-tree-element->key-tree->head-of-tree-update-and-key
@@ -260,7 +260,7 @@
 (defrule tree-nodes-count-of-tree-update
   (implies (bstp tree)
            (equal (tree-nodes-count (tree-update key val tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (tree-nodes-count tree)
                     (+ 1 (tree-nodes-count tree)))))
   :induct t

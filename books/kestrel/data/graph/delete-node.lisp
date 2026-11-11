@@ -12,14 +12,14 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -34,14 +34,14 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -96,7 +96,7 @@
 
 (defrule nodes-of-delete-node
   (equal (nodes (delete-node node graph))
-         (treeset::delete node (nodes graph)))
+         (tset::delete node (nodes graph)))
   :enable (nodes
            delete-node
            graphp
@@ -104,8 +104,8 @@
 
 (defruled in-of-edges-of-delete-node
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (edges (delete-node node graph)))
-                  (and (treeset::in edge (edges graph))
+           (equal (tset::in edge (edges (delete-node node graph)))
+                  (and (tset::in edge (edges graph))
                        (not (equal (edge->from edge$) node))
                        (not (equal (edge->to edge$) node)))))
   :enable (edges
@@ -115,14 +115,14 @@
            in-of-adj-list-edges-of-adj-list-delete-node))
 
 ;; The edges less those out of the node and those into it, in the normal form
-;; treeset gives a difference from a union.
+;; tset gives a difference from a union.
 
 (defrule edges-of-delete-node
   (equal (edges (delete-node node graph))
-         (treeset::intersect
-           (treeset::diff (edges graph) (edges-from node graph))
-           (treeset::diff (edges graph) (edges-to node graph))))
-  :enable (treeset::extensionality-no-backchain-limit-polar
+         (tset::intersect
+           (tset::diff (edges graph) (edges-from node graph))
+           (tset::diff (edges graph) (edges-to node graph))))
+  :enable (tset::extensionality-no-backchain-limit-polar
            in-of-edges-of-delete-node))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,19 +133,19 @@
   (equal (labels x y (delete-node node graph))
          (if (or (equal x node)
                  (equal y node))
-             (treeset::empty)
+             (tset::empty)
            (labels x y graph)))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-edges-of-delete-node))
 
 (defrule labels-of-delete-node-same-from
   (equal (labels node y (delete-node node graph))
-         (treeset::empty))
+         (tset::empty))
   :enable labels-of-delete-node)
 
 (defrule labels-of-delete-node-same-to
   (equal (labels x node (delete-node node graph))
-         (treeset::empty))
+         (tset::empty))
   :enable labels-of-delete-node)
 
 (defrule labels-of-delete-node-diff-cheap
@@ -164,44 +164,44 @@
 (defruled successors-of-delete-node
   (equal (successors x (delete-node node graph))
          (if (equal x node)
-             (treeset::empty)
-           (treeset::delete node (successors x graph))))
-  :enable (treeset::extensionality-polar
+             (tset::empty)
+           (tset::delete node (successors x graph))))
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-delete-node)
   :disable emptyp-of-labels)
 
 (defrule successors-of-delete-node-same
   (equal (successors node (delete-node node graph))
-         (treeset::empty))
+         (tset::empty))
   :enable successors-of-delete-node)
 
 (defrule successors-of-delete-node-diff-cheap
   (implies (not (equal x node))
            (equal (successors x (delete-node node graph))
-                  (treeset::delete node (successors x graph))))
+                  (tset::delete node (successors x graph))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable successors-of-delete-node)
 
 (defruled predecessors-of-delete-node
   (equal (predecessors y (delete-node node graph))
          (if (equal y node)
-             (treeset::empty)
-           (treeset::delete node (predecessors y graph))))
-  :enable (treeset::extensionality-polar
+             (tset::empty)
+           (tset::delete node (predecessors y graph))))
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-delete-node)
   :disable emptyp-of-labels)
 
 (defrule predecessors-of-delete-node-same
   (equal (predecessors node (delete-node node graph))
-         (treeset::empty))
+         (tset::empty))
   :enable predecessors-of-delete-node)
 
 (defrule predecessors-of-delete-node-diff-cheap
   (implies (not (equal y node))
            (equal (predecessors y (delete-node node graph))
-                  (treeset::delete node (predecessors y graph))))
+                  (tset::delete node (predecessors y graph))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :enable predecessors-of-delete-node)
 
@@ -211,14 +211,14 @@
 ;; since both ends of every edge are nodes.
 
 (defruled delete-node-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (delete-node node graph)
                   (fix graph)))
   :enable (extensionality
-           treeset::extensionality-no-backchain-limit-polar))
+           tset::extensionality-no-backchain-limit-polar))
 
 (defrule delete-node-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (delete-node node graph)
                   (fix graph)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -233,19 +233,19 @@
   (equal (delete-node node0 (delete-node node1 graph))
          (delete-node node1 (delete-node node0 graph)))
   :enable (extensionality
-           treeset::extensionality-no-backchain-limit-polar))
+           tset::extensionality-no-backchain-limit-polar))
 
 (defrule delete-node-of-add-node-same
   (equal (delete-node node (add-node node graph))
          (delete-node node graph))
   :enable (extensionality
-           treeset::extensionality-no-backchain-limit-polar))
+           tset::extensionality-no-backchain-limit-polar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-node! (node (graph graphp))
-  :guard (treeset::subset (predecessors node graph)
-                          (treeset::set node))
+  :guard (tset::subset (predecessors node graph)
+                       (tset::set node))
   :parents (delete-node)
   :short "Remove a node from a @(see graph) when no other node has an edge to
           it."
@@ -261,7 +261,7 @@
       "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
        nodes."))
   (mbe :logic (delete-node node graph)
-       :exec (treemap::delete node graph))
+       :exec (tmap::delete node graph))
   :enabled t
   :inline t
   :guard-hints

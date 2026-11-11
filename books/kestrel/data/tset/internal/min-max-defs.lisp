@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)

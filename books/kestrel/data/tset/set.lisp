@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -35,8 +35,8 @@
 (define setp (x)
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treeset)
-  :short "Recognizer for @(see treeset)s."
+  :parents (tset)
+  :short "Recognizer for @(see tset)s."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -105,8 +105,8 @@
 
 (define empty ()
   :returns (set setp)
-  :parents (treeset)
-  :short "The empty @(see treeset)."
+  :parents (tset)
+  :short "The empty @(see tset)."
   nil
   :inline t)
 
@@ -139,8 +139,8 @@
 (define fix ((set setp))
   :type-prescription :none
   :returns (set$ setp)
-  :parents (treeset)
-  :short "Fixer for @(see treeset)s."
+  :parents (tset)
+  :short "Fixer for @(see tset)s."
   (mbe :logic (if (setp set)
                   set
                 (empty))
@@ -207,7 +207,7 @@
    (y setp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treeset)
+  :parents (tset)
   :short "Equivalence up to @(tsee fix)."
   (equal (fix x)
          (fix y))
@@ -251,8 +251,8 @@
 (define emptyp ((set setp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treeset)
-  :short "Check if a @(see treeset) is empty."
+  :parents (tset)
+  :short "Check if a @(see tset) is empty."
   (tree-empty-p (fix set))
   :inline t
   :guard-hints (("Goal" :in-theory (enable setp))))
@@ -323,8 +323,8 @@
 
 (define head ((set setp))
   :guard (not (emptyp set))
-  :parents (treeset)
-  :short "Get an element of the nonempty @(see treeset)."
+  :parents (tset)
+  :short "Get an element of the nonempty @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p

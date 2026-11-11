@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/internal/in-order-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/bst-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/in-order-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/bst-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
@@ -38,13 +38,13 @@
 (local (include-book "std/omaps/extensionality" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
 
-(local (include-book "kestrel/data/treeset/internal/in-order" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treeset/to-oset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/in-order" :dir :system))
+(local (include-book "kestrel/data/tset/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
@@ -250,7 +250,7 @@
 
 (defruled assoc-equal-of-tree-in-order-under-iff
   (iff (assoc-equal x (tree-in-order tree))
-       (treeset::in x (tree-key-set tree)))
+       (tset::in x (tree-key-set tree)))
   :induct t
   :enable tree-in-order)
 
@@ -270,7 +270,7 @@
 (defrule assoc-equal-of-tree-in-order-when-bstp
   (implies (bstp tree)
            (equal (assoc-equal key (tree-in-order tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (cons key (tree-lookup key tree))
                     nil)))
   :induct t
@@ -290,7 +290,7 @@
 (defrule assoc-of-tree-in-order-when-bstp
   (implies (bstp tree)
            (equal (omap::assoc key (tree-in-order tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (cons key (tree-lookup key tree))
                     nil)))
   :enable data::omap-assoc-becomes-assoc-equal)
@@ -306,20 +306,20 @@
 (defrule keys-of-tree-in-order
   (implies (bstp tree)
            (equal (omap::keys (tree-in-order tree))
-                  (treeset::to-oset (tree-key-set tree))))
+                  (tset::to-oset (tree-key-set tree))))
   :enable (set::expensive-rules
            omap::in-of-keys-to-assoc))
 
 (defrule values-of-tree-in-order
   (implies (bstp tree)
            (equal (omap::values (tree-in-order tree))
-                  (treeset::to-oset (tree-val-set tree))))
+                  (tset::to-oset (tree-val-set tree))))
   :enable (set::expensive-rules
            data::omap-values-becomes-strip-cdrs)
   :prep-lemmas
   ((defrule member-equal-of-strip-cdrs-tree-in-order-under-iff
      (iff (member-equal val (strip-cdrs (tree-in-order tree)))
-          (treeset::in val (tree-val-set tree)))
+          (tset::in val (tree-val-set tree)))
      :induct t
      :enable (tree-val-set
               tree-in-order
@@ -328,7 +328,7 @@
 (defrule rlookup-of-tree-in-order
   (implies (bstp tree)
            (equal (omap::rlookup val (tree-in-order tree))
-                  (treeset::to-oset (tree-rlookup val tree))))
+                  (tset::to-oset (tree-rlookup val tree))))
   :enable set::expensive-rules)
 
 (defrule tree-in-order-of-tree-update
@@ -355,10 +355,10 @@
            omap::ext-equal))
 
 (defrule tree-in-order-of-tree-restrict
-  (implies (and (treeset::bstp keys)
+  (implies (and (tset::bstp keys)
                 (bstp tree))
            (equal (tree-in-order (tree-restrict keys tree))
-                  (omap::restrict (treeset::tree-in-order keys)
+                  (omap::restrict (tset::tree-in-order keys)
                                   (tree-in-order tree))))
   :enable (omap::equal-becomes-ext-equal-when-mapp
            omap::ext-equal
@@ -408,17 +408,17 @@
 
 ;; A key is bound exactly when it is a key of the tree, with no hypothesis:
 ;; the fold binds exactly the keys of the tree, ordered or not. This is the
-;; mirror of `in-of-tree-oset' in TREESET, and holds for the same reason --
+;; mirror of `in-of-tree-oset' in TSET, and holds for the same reason --
 ;; both folds put the head over the two subtrees.
 ;;
 ;; The two sides live in different set representations: `omap::keys' yields an
-;; oset, while `tree-key-set' is a treeset. So the fact is stated as
+;; oset, while `tree-key-set' is a tset. So the fact is stated as
 ;; membership rather than as an equality of sets, which is also the form
 ;; `in-of-tree-oset' takes.
 
 (defrule assoc-of-tree-omap-under-iff
   (iff (omap::assoc key (tree-omap tree))
-       (treeset::in key (tree-key-set tree)))
+       (tset::in key (tree-key-set tree)))
   :induct t
   :enable tree-omap)
 
@@ -436,7 +436,7 @@
 (defrule assoc-of-tree-omap-when-bstp
   (implies (bstp tree)
            (equal (omap::assoc key (tree-omap tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (cons key (tree-lookup key tree))
                     nil)))
   :induct t

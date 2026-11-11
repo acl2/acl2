@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The fixer of a typed set, with genericp standing for the type of the whole
-;; set. @('deftreeset') instantiates its laws for each fixer it generates.
+;; set. @('deftset') instantiates its laws for each fixer it generates.
 
 (define generic-fix (set)
   (if (genericp set)
@@ -342,7 +342,7 @@
 ;; caller needs in order to conclude that a walk succeeds. It is also what a
 ;; typed loop needs at @(tsee value): an iterator carries no element type, so
 ;; the guard there is discharged from the type of the set being walked.
-;; @('deftreeset') instantiates this rule for that purpose.
+;; @('deftset') instantiates this rule for that purpose.
 
 (defrule genericp-of-value-when-set-all-genericp
   (implies (and (set-all-genericp (from-iter iter))

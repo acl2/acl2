@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -63,7 +63,7 @@
       "Costs below are given as @($O(d)$), where @($d$) is a depth within the
        tree. That is the honest bound here, since a zipper is over an arbitrary
        @(see tree) and nothing at this level constrains its shape. Over a
-       @(see treeset), which is practically balanced, @($d$) is
+       @(see tset), which is practically balanced, @($d$) is
        @($O(\\log(n))$)."))
   :order-subtopics t
   :default-parent t)
@@ -461,7 +461,7 @@
       empty tree, where there is only one gap to be found.")
    (xdoc::p
      "This recognizer is structural only. Whether the tree recovered from a
-      zipper satisfies the @(see treeset) invariants is a separate question."))
+      zipper satisfies the @(see tset) invariants is a separate question."))
   (and (consp x)
        (consp (cdr x))
        (consp (cddr x))
@@ -915,7 +915,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset)."))
+      so @($O(\\log(n))$) over a @(see tset)."))
   (zip-path-plug (zip->path zip)
                  (zip->focus zip))
   :inline t)
@@ -1194,7 +1194,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see tset)."))
   (if (tree-empty-p (tree->left (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-leftmost (zip-descend-left zip)))
@@ -1227,7 +1227,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see tset)."))
   (if (tree-empty-p (tree->right (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-rightmost (zip-descend-right zip)))
@@ -1265,7 +1265,7 @@
       and we ascend all the way to the root.")
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth ascended, and so
-      @($O(\\log(n))$) over a @(see treeset)."))
+      @($O(\\log(n))$) over a @(see tset)."))
   (cond ((endp (zip->path zip))
          (zip-fix zip))
         ((zip-frame->from-left (car (zip->path zip)))
@@ -1384,7 +1384,7 @@
       position past the end.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treeset) -- but @($O(1)$) amortized over a traversal, since each
+      @(see tset) -- but @($O(1)$) amortized over a traversal, since each
       edge of the tree is crossed twice."))
   ;; Logically the move saturates at the last element, which is what @(tsee
   ;; zip-next-identity-iff-zip-at-last-p) reports. The guard rules that case
@@ -1977,7 +1977,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      so @($O(\\log(n))$) over a @(see tset). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-before (zip->path zip)
@@ -1992,7 +1992,7 @@
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth of the focus, and
-      so @($O(\\log(n))$) over a @(see treeset). One node is built per
+      so @($O(\\log(n))$) over a @(see tset). One node is built per
       contributing frame; every subtree hangs off the original tree
       unchanged."))
   (zip-path-tree-after (zip->path zip)

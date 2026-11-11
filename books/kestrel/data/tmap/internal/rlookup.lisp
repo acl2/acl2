@@ -6,17 +6,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -28,15 +28,15 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))
@@ -55,15 +55,15 @@
 (define tree-rlookup
   (val
    (tree treep))
-  :returns (keys treeset::setp)
+  :returns (keys tset::setp)
   :parents (implementation)
   :short "Lookup all keys in the tree mapping to a value."
   (if (tree-empty-p tree)
-      (treeset::empty)
-    (let ((keys (treeset::union (tree-rlookup val (tree->left tree))
-                                (tree-rlookup val (tree->right tree)))))
+      (tset::empty)
+    (let ((keys (tset::union (tree-rlookup val (tree->left tree))
+                             (tree-rlookup val (tree->right tree)))))
       (if (equal val (tree-element->val (tree->head tree)))
-          (treeset::insert (tree-element->key (tree->head tree)) keys)
+          (tset::insert (tree-element->key (tree->head tree)) keys)
         keys)))
   :verify-guards :after-returns)
 
@@ -84,82 +84,82 @@
 (defrule tree-rlookup-of-tree-node
   (equal (tree-rlookup val (tree-node head left right))
          (if (equal val (tree-element->val head))
-             (treeset::insert (tree-element->key head)
-                              (treeset::union (tree-rlookup val left)
-                                              (tree-rlookup val right)))
-           (treeset::union (tree-rlookup val left)
-                           (tree-rlookup val right))))
+             (tset::insert (tree-element->key head)
+                           (tset::union (tree-rlookup val left)
+                                        (tree-rlookup val right)))
+           (tset::union (tree-rlookup val left)
+                        (tree-rlookup val right))))
   :enable tree-rlookup)
 
 (defruled tree-rlookup-when-tree-empty-p
   (implies (tree-empty-p tree)
            (equal (tree-rlookup val tree)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable tree-rlookup)
 
 (defrule tree-rlookup-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
            (equal (tree-rlookup val tree)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by tree-rlookup-when-tree-empty-p)
 
 (defrule tree-rlookup-of-arg1-and-nil
   (equal (tree-rlookup val nil)
-         (treeset::empty))
+         (tset::empty))
   :enable tree-rlookup-when-tree-empty-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-rlookup-when-in-of-tree-rlookup-tree->left
-  (implies (treeset::in key (tree-rlookup val (tree->left tree)))
-           (treeset::in key (tree-rlookup val tree)))
+  (implies (tset::in key (tree-rlookup val (tree->left tree)))
+           (tset::in key (tree-rlookup val tree)))
   :enable tree-rlookup)
 
 (defrule subset-of-tree-rlookup-tree->left
-  (treeset::subset (tree-rlookup val (tree->left tree))
-                   (tree-rlookup val tree))
-  :enable treeset::pick-a-point)
+  (tset::subset (tree-rlookup val (tree->left tree))
+                (tree-rlookup val tree))
+  :enable tset::pick-a-point)
 
 (defrule in-of-tree-rlookup-when-in-of-tree-rlookup-tree->right
-  (implies (treeset::in key (tree-rlookup val (tree->right tree)))
-           (treeset::in key (tree-rlookup val tree)))
+  (implies (tset::in key (tree-rlookup val (tree->right tree)))
+           (tset::in key (tree-rlookup val tree)))
   :enable tree-rlookup)
 
 (defrule subset-of-tree-rlookup-tree->right
-  (treeset::subset (tree-rlookup val (tree->right tree))
-                   (tree-rlookup val tree))
-  :enable treeset::pick-a-point)
+  (tset::subset (tree-rlookup val (tree->right tree))
+                (tree-rlookup val tree))
+  :enable tset::pick-a-point)
 
 (defruled in-of-tree-key-set-when-in-of-tree-rlookup
-  (implies (treeset::in key (tree-rlookup val tree))
-           (treeset::in key (tree-key-set tree)))
+  (implies (tset::in key (tree-rlookup val tree))
+           (tset::in key (tree-key-set tree)))
   :induct t
   :enable tree-rlookup)
 
 (defrule in-of-tree-key-set-when-in-of-tree-rlookup-forward-chaining
-  (implies (treeset::in key (tree-rlookup val tree))
-           (treeset::in key (tree-key-set tree)))
+  (implies (tset::in key (tree-rlookup val tree))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-when-in-of-tree-rlookup)
 
 (defrule subset-of-tree-rlookup-tree-and-tree-key-set
-  (treeset::subset (tree-rlookup val tree)
-                   (tree-key-set tree))
-  :enable treeset::pick-a-point)
+  (tset::subset (tree-rlookup val tree)
+                (tree-key-set tree))
+  :enable tset::pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-rlookup
   (implies (bstp tree)
-           (equal (treeset::in key (tree-rlookup val tree))
-                  (and (treeset::in key (tree-key-set tree))
+           (equal (tset::in key (tree-rlookup val tree))
+                  (and (tset::in key (tree-key-set tree))
                        (equal (tree-lookup key tree) val))))
   :induct t
   :enable tree-rlookup)
 
 (defrule emptyp-of-tree-rlookup
-  (equal (treeset::emptyp (tree-rlookup val tree))
-         (not (treeset::in val (tree-val-set tree))))
+  (equal (tset::emptyp (tree-rlookup val tree))
+         (not (tset::in val (tree-val-set tree))))
   :induct t
   :enable tree-rlookup)

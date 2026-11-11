@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
 
 (include-book "internal/restrict-defs")
 (include-book "map-defs")

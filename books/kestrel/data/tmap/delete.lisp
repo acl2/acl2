@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "internal/join-defs")
 (include-book "internal/delete-defs")
@@ -36,10 +36,10 @@
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -68,8 +68,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc delete
-  :parents (treemap)
-  :short "Remove a key (or multiple keys) from a @(see treemap)."
+  :parents (tmap)
+  :short "Remove a key (or multiple keys) from a @(see tmap)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -170,7 +170,7 @@
 
 (defrule keys-of-delete
   (equal (keys (delete key map))
-         (treeset::delete key (keys map)))
+         (tset::delete key (keys map)))
   :enable (delete
            keys
            mapp
@@ -198,13 +198,13 @@
   :enable extensionality)
 
 (defruled delete-when-not-in-of-keys
-  (implies (not (treeset::in key (keys map)))
+  (implies (not (tset::in key (keys map)))
            (equal (delete key map)
                   (fix map)))
   :enable extensionality)
 
 (defrule delete-when-not-in-of-keys-cheap
-  (implies (not (treeset::in key (keys map)))
+  (implies (not (tset::in key (keys map)))
            (equal (delete key map)
                   (fix map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -231,7 +231,7 @@
 (defrule equal-of-delete-and-arg2
   (equal (equal (delete key map) map)
          (and (mapp map)
-              (not (treeset::in key (keys map))))))
+              (not (tset::in key (keys map))))))
 
 ;; TODO: add to expensive-rules
 (defruled delete-of-update
@@ -287,7 +287,7 @@
 
 (defrule submap-of-arg1-and-delete
   (equal (submap map (delete key map))
-         (not (treeset::in key (keys map))))
+         (not (tset::in key (keys map))))
   :use ((:instance subset-of-keys
                    (x map)
                    (y (delete key map))))
@@ -303,7 +303,7 @@
 (defrule submap-of-update
   (equal (submap (update key val map) map2)
          (and (submap (delete key map) map2)
-              (treeset::in key (keys map2))
+              (tset::in key (keys map2))
               (equal (lookup key map2) val)))
   :cases ((submap (delete key map) map2))
   :use ((:instance update-of-delete-same)
@@ -353,7 +353,7 @@
 
 (defruled values-of-update
   (equal (values (update key val map))
-         (treeset::insert val (values (delete key map))))
+         (tset::insert val (values (delete key map))))
   :enable (to-omap-theory
            omap::values-of-update)
   :disable from-omap-theory)
@@ -403,7 +403,7 @@
   ((map mapp))
   :guard (not (emptyp map))
   :parents (delete)
-  :short "Remove the @(see head) from a nonempty @(see treemap)."
+  :short "Remove the @(see head) from a nonempty @(see tmap)."
   :long
   (xdoc::topstring-p
    "This is slightly faster than calling @(tsee delete) on the head.")

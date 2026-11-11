@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -21,7 +21,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ treeset
+(defxdoc+ tset
   :parents (data::data-lib)
   :short "A tree-based implementation of ordered finite sets."
   :long
@@ -76,7 +76,7 @@
         "The other major difference is in how one iterates over the elements of
          a set. In @(see set::std/osets), one uses @(tsee set::head) and
          @(tsee set::tail). While there are corresponding functions on
-         @(see treeset)s (@(tsee min) and @(tsee tail)), it would be
+         @(see tset)s (@(tsee min) and @(tsee tail)), it would be
          inefficient to use them for iteration. Instead, one should use an
          @(see iterator). This requires an initial step to create the
          @(see iterator) (via @(tsee iter-min)), but once one has an iterator, one
@@ -90,8 +90,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ implementation
-  :parents (treeset)
-  :short "Implementation details of @(see treeset)s."
+  :parents (tset)
+  :short "Implementation details of @(see tset)s."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -99,7 +99,7 @@
        library should not depend on these details, opting instead to use the
        \"primitive\" operators abstractly. If you require a theorem which is
        not yet provided, it is recommended to take a proof over
-       @(csee set::std/osets) and apply it to @(see treeset)s via the
+       @(csee set::std/osets) and apply it to @(see tset)s via the
        isomorphism.")
     (xdoc::p
       "Sets are represented internally as treaps (= \"tree\" + \"heap\").

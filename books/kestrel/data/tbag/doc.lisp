@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -20,16 +20,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ treebag
+(defxdoc+ tbag
   :parents (data::data-lib)
   :short "A tree-based implementation of finite multisets."
   :long
   (xdoc::topstring
     (xdoc::p
-      "A @(see treebag) is a finite multiset, or bag: a collection of values
+      "A @(see tbag) is a finite multiset, or bag: a collection of values
        in which a value may occur any number of times. It is represented as
        a "
-      (xdoc::seetopic "acl2::treemap" "treemap")
+      (xdoc::seetopic "acl2::tmap" "tmap")
       " from each value occurring in the bag to its number of occurrences,
        which is always positive.")
     (xdoc::p

@@ -11,4 +11,4 @@
 
 (reset-prehistory)
 
-(in-package "TREEBAG")
+(in-package "TBAG")

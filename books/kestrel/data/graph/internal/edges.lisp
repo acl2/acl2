@@ -11,21 +11,21 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/size-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/min-max-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -35,22 +35,22 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/size" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/size" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -65,33 +65,33 @@
 ;; Each step costs a minimum and a deletion, so the walk over the whole list
 ;; is @($O((n + k) \\log(n + k))$), where @($n$) is the number of sources and
 ;; @($k$) the number of edges. Since the edges come out in ascending
-;; order, a linear-time construction through @(tsee treeset::from-oset) could
+;; order, a linear-time construction through @(tsee tset::from-oset) could
 ;; be added under an @(tsee mbe) without disturbing anything below.
 ;;
 ;; Each walk is characterized by its membership, and the laws that follow are
-;; derived from those characterizations by @(see treeset::extensionality)
+;; derived from those characterizations by @(see tset::extensionality)
 ;; rather than by further induction.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The edges from one source to one target, one for each label.
 
-(define labels-edges (from to (labels treeset::setp))
-  :returns (edges treeset::setp)
-  (if (treeset::emptyp labels)
-      (treeset::empty)
-    (treeset::insert
-      (edge from to (treeset::min labels))
-      (labels-edges from to (treeset::delete (treeset::min labels) labels))))
-  :measure (treeset::cardinality labels)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+(define labels-edges (from to (labels tset::setp))
+  :returns (edges tset::setp)
+  (if (tset::emptyp labels)
+      (tset::empty)
+    (tset::insert
+      (edge from to (tset::min labels))
+      (labels-edges from to (tset::delete (tset::min labels) labels))))
+  :measure (tset::cardinality labels)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule labels-edges-when-treeset-equiv-of-arg3-congruence
-  (implies (treeset::equiv labels0 labels1)
+(defrule labels-edges-when-tset-equiv-of-arg3-congruence
+  (implies (tset::equiv labels0 labels1)
            (equal (labels-edges from to labels0)
                   (labels-edges from to labels1)))
   :rule-classes :congruence
@@ -100,11 +100,11 @@
 
 (defruled in-of-labels-edges
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (labels-edges from to labels))
+           (equal (tset::in edge (labels-edges from to labels))
                   (and (edgep edge)
                        (equal (edge->from edge$) from)
                        (equal (edge->to edge$) to)
-                       (treeset::in (edge->label edge$) labels))))
+                       (tset::in (edge->label edge$) labels))))
   :induct t
   :enable labels-edges)
 
@@ -112,24 +112,24 @@
 
 ;; The edges out of one source, as recorded by its adjacency.
 
-(define adjacency-edges (from (adj treemap::mapp))
+(define adjacency-edges (from (adj tmap::mapp))
   :guard (map-values-all-nonempty-setp adj)
-  :returns (edges treeset::setp)
-  (if (treemap::emptyp adj)
-      (treeset::empty)
-    (b* ((to (treemap::min-key adj)))
-      (treeset::union
-        (labels-edges from to (treemap::lookup to adj))
-        (adjacency-edges from (treemap::delete to adj)))))
-  :measure (treemap::size adj)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+  :returns (edges tset::setp)
+  (if (tmap::emptyp adj)
+      (tset::empty)
+    (b* ((to (tmap::min-key adj)))
+      (tset::union
+        (labels-edges from to (tmap::lookup to adj))
+        (adjacency-edges from (tmap::delete to adj)))))
+  :measure (tmap::size adj)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adjacency-edges-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adj0 adj1)
+(defrule adjacency-edges-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adj0 adj1)
            (equal (adjacency-edges from adj0)
                   (adjacency-edges from adj1)))
   :rule-classes :congruence
@@ -138,40 +138,40 @@
 
 (defruled in-of-adjacency-edges
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (adjacency-edges from adj))
+           (equal (tset::in edge (adjacency-edges from adj))
                   (and (edgep edge)
                        (equal (edge->from edge$) from)
-                       (treeset::in (edge->label edge$)
-                                    (treemap::lookup
-                                      (edge->to edge$)
-                                      adj
-                                      :default (treeset::empty))))))
+                       (tset::in (edge->label edge$)
+                                 (tmap::lookup
+                                   (edge->to edge$)
+                                   adj
+                                   :default (tset::empty))))))
   :induct t
   :enable (adjacency-edges
            in-of-labels-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           tmap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The edges of the whole list.
 
 (define adj-list-edges ((adjl adj-listp))
-  :returns (edges treeset::setp)
-  (if (treemap::emptyp adjl)
-      (treeset::empty)
-    (b* ((from (treemap::min-key adjl)))
-      (treeset::union
-        (adjacency-edges from (treemap::lookup from adjl))
-        (adj-list-edges (treemap::delete from adjl)))))
-  :measure (treemap::size adjl)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+  :returns (edges tset::setp)
+  (if (tmap::emptyp adjl)
+      (tset::empty)
+    (b* ((from (tmap::min-key adjl)))
+      (tset::union
+        (adjacency-edges from (tmap::lookup from adjl))
+        (adj-list-edges (tmap::delete from adjl)))))
+  :measure (tmap::size adjl)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-edges-when-treemap-equiv-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-edges-when-tmap-equiv-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-edges adjl0)
                   (adj-list-edges adjl1)))
   :rule-classes :congruence
@@ -180,33 +180,33 @@
 
 (defruled in-of-adj-list-edges
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (adj-list-edges adjl))
+           (equal (tset::in edge (adj-list-edges adjl))
                   (and (edgep edge)
-                       (treeset::in (edge->label edge$)
-                                    (treemap::lookup
-                                      (edge->to edge$)
-                                      (treemap::lookup (edge->from edge$)
-                                                       adjl
-                                                       :default
-                                                       (treemap::empty))
-                                      :default (treeset::empty))))))
+                       (tset::in (edge->label edge$)
+                                 (tmap::lookup
+                                   (edge->to edge$)
+                                   (tmap::lookup (edge->from edge$)
+                                                 adjl
+                                                 :default
+                                                 (tmap::empty))
+                                   :default (tset::empty))))))
   :induct t
   :enable (adj-list-edges
            in-of-adjacency-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           tmap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;; The same fact read the other way: a label set under a source and target is
 ;; exactly the labels of the edges between them.
 
 (defruled in-of-lookup-of-lookup-becomes-in-of-adj-list-edges
-  (equal (treeset::in label
-                      (treemap::lookup to
-                                       (treemap::lookup from
-                                                        adjl
-                                                        :default
-                                                        (treemap::empty))
-                                       :default (treeset::empty)))
-         (treeset::in (edge from to label) (adj-list-edges adjl)))
+  (equal (tset::in label
+                   (tmap::lookup to
+                                 (tmap::lookup from
+                                               adjl
+                                               :default
+                                               (tmap::empty))
+                                 :default (tset::empty)))
+         (tset::in (edge from to label) (adj-list-edges adjl)))
   :enable in-of-adj-list-edges)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -218,26 +218,26 @@
 ;; the edges, where @($d$) is the largest number of targets of a source.
 
 (define adj-list-edges-to (to (adjl adj-listp))
-  :returns (edges treeset::setp)
-  (if (treemap::emptyp adjl)
-      (treeset::empty)
-    (b* ((from (treemap::min-key adjl)))
-      (treeset::union
+  :returns (edges tset::setp)
+  (if (tmap::emptyp adjl)
+      (tset::empty)
+    (b* ((from (tmap::min-key adjl)))
+      (tset::union
         (labels-edges from
                       to
-                      (treemap::lookup to
-                                       (treemap::lookup from adjl)
-                                       :default (treeset::empty)))
-        (adj-list-edges-to to (treemap::delete from adjl)))))
-  :measure (treemap::size adjl)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+                      (tmap::lookup to
+                                    (tmap::lookup from adjl)
+                                    :default (tset::empty)))
+        (adj-list-edges-to to (tmap::delete from adjl)))))
+  :measure (tmap::size adjl)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-edges-to-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-edges-to-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-edges-to to adjl0)
                   (adj-list-edges-to to adjl1)))
   :rule-classes :congruence
@@ -246,86 +246,86 @@
 
 (defruled in-of-adj-list-edges-to
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (adj-list-edges-to to adjl))
-                  (and (treeset::in edge (adj-list-edges adjl))
+           (equal (tset::in edge (adj-list-edges-to to adjl))
+                  (and (tset::in edge (adj-list-edges adjl))
                        (equal (edge->to edge$) to))))
   :induct (adj-list-edges-to to adjl)
   :enable (adj-list-edges-to
            in-of-adj-list-edges
            in-of-labels-edges
-           treemap::lookup-with-default-becomes-lookup-syntaxp))
+           tmap::lookup-with-default-becomes-lookup-syntaxp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule edgep-when-in-of-labels-edges
-  (implies (treeset::in edge (labels-edges from to labels))
+  (implies (tset::in edge (labels-edges from to labels))
            (edgep edge))
   :enable in-of-labels-edges)
 
 (defrule edgep-when-in-of-adjacency-edges
-  (implies (treeset::in edge (adjacency-edges from adj))
+  (implies (tset::in edge (adjacency-edges from adj))
            (edgep edge))
   :enable in-of-adjacency-edges)
 
 (defrule edgep-when-in-of-adj-list-edges
-  (implies (treeset::in edge (adj-list-edges adjl))
+  (implies (tset::in edge (adj-list-edges adjl))
            (edgep edge))
   :enable in-of-adj-list-edges)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled labels-edges-when-emptyp
-  (implies (treeset::emptyp labels)
+  (implies (tset::emptyp labels)
            (equal (labels-edges from to labels)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable labels-edges)
 
 (defrule labels-edges-when-emptyp-cheap
-  (implies (treeset::emptyp labels)
+  (implies (tset::emptyp labels)
            (equal (labels-edges from to labels)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by labels-edges-when-emptyp)
 
 (defrule labels-edges-of-empty
-  (equal (labels-edges from to (treeset::empty))
-         (treeset::empty))
+  (equal (labels-edges from to (tset::empty))
+         (tset::empty))
   :enable labels-edges-when-emptyp)
 
 (defruled adjacency-edges-when-emptyp
-  (implies (treemap::emptyp adj)
+  (implies (tmap::emptyp adj)
            (equal (adjacency-edges from adj)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable adjacency-edges)
 
 (defrule adjacency-edges-when-emptyp-cheap
-  (implies (treemap::emptyp adj)
+  (implies (tmap::emptyp adj)
            (equal (adjacency-edges from adj)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by adjacency-edges-when-emptyp)
 
 (defrule adjacency-edges-of-empty
-  (equal (adjacency-edges from (treemap::empty))
-         (treeset::empty))
+  (equal (adjacency-edges from (tmap::empty))
+         (tset::empty))
   :enable adjacency-edges-when-emptyp)
 
 (defruled adj-list-edges-when-emptyp
-  (implies (treemap::emptyp adjl)
+  (implies (tmap::emptyp adjl)
            (equal (adj-list-edges adjl)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable adj-list-edges)
 
 (defrule adj-list-edges-when-emptyp-cheap
-  (implies (treemap::emptyp adjl)
+  (implies (tmap::emptyp adjl)
            (equal (adj-list-edges adjl)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by adj-list-edges-when-emptyp)
 
 (defrule adj-list-edges-of-empty
-  (equal (adj-list-edges (treemap::empty))
-         (treeset::empty))
+  (equal (adj-list-edges (tmap::empty))
+         (tset::empty))
   :enable adj-list-edges-when-emptyp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -333,20 +333,20 @@
 ;; Updating one entry replaces that entry's edges and leaves the rest alone.
 
 (defrule adjacency-edges-of-update
-  (equal (adjacency-edges from (treemap::update to labels adj))
-         (treeset::union
+  (equal (adjacency-edges from (tmap::update to labels adj))
+         (tset::union
            (labels-edges from to (double-rewrite labels))
-           (adjacency-edges from (treemap::delete to adj))))
-  :enable (treeset::extensionality
+           (adjacency-edges from (tmap::delete to adj))))
+  :enable (tset::extensionality
            in-of-adjacency-edges
            in-of-labels-edges))
 
 (defrule adj-list-edges-of-update
-  (equal (adj-list-edges (treemap::update from adj adjl))
-         (treeset::union
+  (equal (adj-list-edges (tmap::update from adj adjl))
+         (tset::union
            (adjacency-edges from (double-rewrite adj))
-           (adj-list-edges (treemap::delete from adjl))))
-  :enable (treeset::extensionality
+           (adj-list-edges (tmap::delete from adjl))))
+  :enable (tset::extensionality
            in-of-adj-list-edges
            in-of-adjacency-edges))
 

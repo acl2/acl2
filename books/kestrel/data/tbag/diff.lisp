@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -34,9 +34,9 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/diff"))
@@ -56,7 +56,7 @@
 (defruledl bagp-of-tree-diff-of-fix-and-fix
   (bagp (tree-diff (fix a) (fix b)))
   :enable (bagp
-           treemap::mapp
+           tmap::mapp
            map-values-all-posp-when-tree-all-vals-posp
            break-abstraction))
 
@@ -68,8 +68,8 @@
   :returns (bag bagp
                 :hints (("Goal" :in-theory
                          (enable bagp-of-tree-diff-of-fix-and-fix))))
-  :parents (treebag)
-  :short "Take the difference of two @(see treebag)s."
+  :parents (tbag)
+  :short "Take the difference of two @(see tbag)s."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -82,7 +82,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable bagp
                                            tree-all-vals-posp-of-fix
-                                           treemap::treep-when-mapp-forward-chaining))))
+                                           tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -106,9 +106,9 @@
                   (count x b))))
   :enable (diff
            count
-           treemap::lookup
-           treemap::keys
-           treemap::mapp
+           tmap::lookup
+           tmap::keys
+           tmap::mapp
            break-abstraction
            bagp-of-tree-diff-of-fix-and-fix
            nfix

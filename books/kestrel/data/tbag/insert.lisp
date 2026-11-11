@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -14,7 +14,7 @@
 
 (include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "bag-defs")
 (include-book "count-defs")
@@ -27,7 +27,7 @@
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (include-book "kestrel/data/treemap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
 
 (local (include-book "bag"))
 (local (include-book "count"))
@@ -42,15 +42,15 @@
   :returns (bag$ bagp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      nat-equiv))))
-  :parents (treebag)
-  :short "Add some number of occurrences of a value to a @(see treebag)."
+  :parents (tbag)
+  :short "Add some number of occurrences of a value to a @(see tbag)."
   :long
   (xdoc::topstring-p
     "Time complexity: @($O(\\log(m))$), where @($m$) is the number of distinct
      elements of the bag.")
   (if (fast-nat-equiv n 0)
       (fix bag)
-    (treemap::update x (+ (lnfix n) (count x bag)) (fix bag)))
+    (tmap::update x (+ (lnfix n) (count x bag)) (fix bag)))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -157,14 +157,14 @@
 (define insert (x (bag bagp))
   :type-prescription :none
   :returns (bag$ bagp)
-  :parents (treebag)
-  :short "Add an occurrence of a value to a @(see treebag)."
+  :parents (tbag)
+  :short "Add an occurrence of a value to a @(see tbag)."
   :long
   (xdoc::topstring-p
     "Time complexity: @($O(\\log(m))$), where @($m$) is the number of distinct
      elements of the bag.")
   (mbe :logic (insert-many x 1 bag)
-       :exec (treemap::update x (+ 1 (count x bag)) (fix bag)))
+       :exec (tmap::update x (+ 1 (count x bag)) (fix bag)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* insert-many
                                             break-abstraction))))

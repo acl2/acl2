@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -32,9 +32,9 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
@@ -614,7 +614,7 @@
       leaves the elements behind.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treemap) -- but @($O(1)$) amortized over a traversal."))
+      @(see tmap) -- but @($O(1)$) amortized over a traversal."))
   ;; Logically the move saturates at the far end, which is what @(tsee
   ;; next-identity-iff-after-lastp) reports. The guard rules that case out for
   ;; execution only, so the executable form need not test for it: one keyword
@@ -903,7 +903,7 @@
 
 ;; The extrema of a side tree are the ends of its sequence.
 
-;; Unlike the TREESET originals, these carry a non-empty hypothesis. TREEMAP's
+;; Unlike the TSET originals, these carry a non-empty hypothesis. TMAP's
 ;; `car-of-tree-in-order' splits on the empty tree, because `tree-leftmost' of
 ;; the empty tree is an irrelevant pair rather than nil, so the unconditional
 ;; forms would be false at the empty side.
@@ -1080,7 +1080,7 @@
 
 (defruled in-of-tree-key-set-of-tree-iter-plug-split
   (implies (tree-iter-has-value-p iter)
-           (iff (treeset::in key (tree-key-set (tree-iter-plug iter)))
+           (iff (tset::in key (tree-key-set (tree-iter-plug iter)))
                 (or (assoc-equal key (tree-iter-before iter))
                     (equal key (tree-iter-key iter))
                     (assoc-equal key (tree-iter-after iter)))))
@@ -1438,7 +1438,7 @@
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
            (iff (omap::assoc key (tree-iter-omap-before iter))
-                (and (treeset::in key (tree-key-set (tree-iter-plug iter)))
+                (and (tset::in key (tree-key-set (tree-iter-plug iter)))
                      (<< key (tree-iter-key iter)))))
   :enable (tree-iter-omap-before
            tree-iter-tree-before
@@ -1448,7 +1448,7 @@
   (implies (and (bstp (tree-iter-plug iter))
                 (tree-iter-has-value-p iter))
            (iff (omap::assoc key (tree-iter-omap-after iter))
-                (and (treeset::in key (tree-key-set (tree-iter-plug iter)))
+                (and (tset::in key (tree-key-set (tree-iter-plug iter)))
                      (<< (tree-iter-key iter) key))))
   :enable (tree-iter-omap-after
            tree-iter-tree-after
@@ -1595,7 +1595,7 @@
            tree-iter-prev
            tree-iter-key+val))
 
-;; The projections of the same fact. TREEMAP splits what TREESET reads as a
+;; The projections of the same fact. TMAP splits what TSET reads as a
 ;; single value, and the public `min-key'/`min-val' pairs need each half on
 ;; its own.
 
@@ -1639,8 +1639,8 @@
 
 (defrule in-of-tree-key-set-of-tree-iter-key
   (implies (tree-iter-has-value-p iter)
-           (treeset::in (tree-iter-key iter)
-                        (tree-key-set (tree-iter-plug iter))))
+           (tset::in (tree-iter-key iter)
+                     (tree-key-set (tree-iter-plug iter))))
   :enable (tree-iter-key
            in-of-tree-key-set-of-zip-plug-split))
 
@@ -1711,17 +1711,17 @@
 ;; The built trees hold exactly the entries of the omap sides.
 
 (defrule in-of-tree-key-set-of-tree-iter-tree-before
-  (iff (treeset::in key (tree-key-set (tree-iter-tree-before iter)))
+  (iff (tset::in key (tree-key-set (tree-iter-tree-before iter)))
        (omap::assoc key (tree-iter-omap-before iter)))
   :enable tree-iter-omap-before)
 
 (defrule in-of-tree-key-set-of-tree-iter-tree-after
-  (iff (treeset::in key (tree-key-set (tree-iter-tree-after iter)))
+  (iff (tset::in key (tree-key-set (tree-iter-tree-after iter)))
        (omap::assoc key (tree-iter-omap-after iter)))
   :enable tree-iter-omap-after)
 
 ;; Both invariants pass from the plug, so over a search tree the built sides
-;; are proper treemaps.
+;; are proper tmaps.
 
 (defrule bstp-of-tree-iter-tree-before-when-bstp
   (implies (bstp (tree-iter-plug iter))

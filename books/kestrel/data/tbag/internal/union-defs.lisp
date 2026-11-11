@@ -6,12 +6,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/heap-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/heap-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "union"))

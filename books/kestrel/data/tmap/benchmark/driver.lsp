@@ -6,12 +6,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The raw-Lisp part of the treemap benchmarks. Loaded by benchmark.lsp;
+; The raw-Lisp part of the tmap benchmarks. Loaded by benchmark.lsp;
 ; see the usage comment there. This file is read by the Common Lisp
 ; reader (via cl:load), not by ld, so it may define and enter its own
 ; package.
 
-(defpackage "TREEMAP-BENCH"
+(defpackage "TMAP-BENCH"
   (:use "COMMON-LISP" "BENCH")
   (:export "RUN-QUICK"
            "RUN-FULL"
@@ -21,7 +21,7 @@
            "TEST-VARIANT-REPORT"
            "SERIALIZED-SIZE"))
 
-(in-package "TREEMAP-BENCH")
+(in-package "TMAP-BENCH")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -66,7 +66,7 @@
               (finish-output)
               (list :keys keys
                     :alist alist
-                    :treemap (treemap::from-alist alist)
+                    :tmap (tmap::from-alist alist)
                     :omap (omap::from-alist alist)
                     ;; The fast alist is for lookup benchmarks only;
                     ;; repeatedly re-extending one alist would break the
@@ -107,15 +107,15 @@
 
 (defun lookup-specs (n hit-prob)
   (let* ((c (containers n))
-         (tmap (getf c :treemap))
+         (tmap (getf c :tmap))
          (omap (getf c :omap))
          (fal (getf c :fal))
          (ht (getf c :ht))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob))))
     (list
-      (spec "treemap-lookup" class n setup
-            (lambda (x) (treemap::lookup x tmap :test =)))
+      (spec "tmap-lookup" class n setup
+            (lambda (x) (tmap::lookup x tmap :test =)))
       (spec "omap-lookup" class n setup
             (lambda (x) (omap::lookup x omap)))
       (spec "fast-alist-get" class n setup
@@ -130,14 +130,14 @@
   ;; overwritten thereafter, so its steady state measures
   ;; mostly-overwrite puts.
   (let* ((c (containers n))
-         (tmap (getf c :treemap))
+         (tmap (getf c :tmap))
          (omap (getf c :omap))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob)))
          (ht-copy nil))
     (list
-      (spec "treemap-update" class n setup
-            (lambda (x) (treemap::update x (1+ x) tmap :test =)))
+      (spec "tmap-update" class n setup
+            (lambda (x) (tmap::update x (1+ x) tmap :test =)))
       (spec "omap-update" class n setup
             (lambda (x) (omap::update x (1+ x) omap)))
       (spec "hash-table-put" class n
@@ -151,13 +151,13 @@
 
 (defun delete-specs (n hit-prob)
   (let* ((c (containers n))
-         (tmap (getf c :treemap))
+         (tmap (getf c :tmap))
          (omap (getf c :omap))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob))))
     (list
-      (spec "treemap-delete" class n setup
-            (lambda (x) (treemap::delete x tmap :test =)))
+      (spec "tmap-delete" class n setup
+            (lambda (x) (tmap::delete x tmap :test =)))
       (spec "omap-delete" class n setup
             (lambda (x) (omap::delete x omap))))))
 
@@ -200,8 +200,8 @@
            (memo-setup
              (lambda ()
                (map 'vector
-                    (lambda (p) (cons (treemap::from-alist (car p))
-                                      (treemap::from-alist (cdr p))))
+                    (lambda (p) (cons (tmap::from-alist (car p))
+                                      (tmap::from-alist (cdr p))))
                     pairs))))
          (setup-omap
            (memo-setup
@@ -212,8 +212,8 @@
                     pairs)))))
     (append
       (list
-        (spec "treemap-update*" class n setup-tree
-              (lambda (p) (treemap::update* (car p) (cdr p) :test =))))
+        (spec "tmap-update*" class n setup-tree
+              (lambda (p) (tmap::update* (car p) (cdr p) :test =))))
       (and (<= n *omap-quadratic-max*)
            (list
              (spec "omap-update*" class n setup-omap
@@ -224,26 +224,26 @@
   (let ((setup-alist
           (lambda () (vector (keys-alist (keys-vector n)))))
         (setup-map
-          (lambda () (vector (getf (containers n) :treemap)))))
+          (lambda () (vector (getf (containers n) :tmap)))))
     (append
       (list
-        (spec "treemap-from-alist" "u60" n setup-alist
-              (lambda (al) (treemap::from-alist al))))
+        (spec "tmap-from-alist" "u60" n setup-alist
+              (lambda (al) (tmap::from-alist al))))
       (and (<= n *omap-quadratic-max*)
            (list
              (spec "omap-from-alist" "u60" n setup-alist
                    (lambda (al) (omap::from-alist al)))))
       (list
-        (spec "treemap-to-omap" "u60" n setup-map
-              (lambda (m) (treemap::to-omap m)))
+        (spec "tmap-to-omap" "u60" n setup-map
+              (lambda (m) (tmap::to-omap m)))
         ;; The linear treap-from-omap path, against from-alist above, which
         ;; pays hashing plus O(log n) path copying per entry.
-        (spec "treemap-from-omap" "u60" n
+        (spec "tmap-from-omap" "u60" n
               (memo-setup
                 (lambda ()
-                  (vector (treemap::to-omap
-                            (getf (containers n) :treemap)))))
-              (lambda (m) (treemap::from-omap m)))))))
+                  (vector (tmap::to-omap
+                            (getf (containers n) :tmap)))))
+              (lambda (m) (tmap::from-omap m)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -275,7 +275,7 @@
   ;; Interned in this package rather than ACL2, to avoid filling the
   ;; ACL2 package with junk. Note the package name is part of a symbol's
   ;; encoding, so it contributes a fixed overhead to the serialized size.
-  (intern (random-string nchars) "TREEMAP-BENCH"))
+  (intern (random-string nchars) "TMAP-BENCH"))
 
 (defun random-character ()
   (code-char (random 256)))
@@ -368,11 +368,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Containers and probes for a key class. Only treemaps and omaps are
+;; Containers and probes for a key class. Only tmaps and omaps are
 ;; built: the fast alist and hash table rows exist to place the two
 ;; libraries on a scale, which one cardinality already does, and an eql
 ;; hash table would not even accept the non-atomic classes. The omap is
-;; extracted from the treemap by to-omap, which is linear, rather than
+;; extracted from the tmap by to-omap, which is linear, rather than
 ;; built by omap::from-alist, which is quadratic; with every value 0 the
 ;; two constructions agree even on classes with duplicate keys.
 
@@ -386,13 +386,13 @@
                                            (getf kc :name) n)
                                    n (getf kc :gen)))
                      (alist (map 'list (lambda (k) (cons k 0)) keys))
-                     (tmap (treemap::from-alist alist)))
+                     (tmap (tmap::from-alist alist)))
                 (format t "; building ~A cardinality-~:D containers~%"
                         (getf kc :name) n)
                 (finish-output)
                 (list :keys keys
-                      :treemap tmap
-                      :omap (treemap::to-omap tmap)))))))
+                      :tmap tmap
+                      :omap (tmap::to-omap tmap)))))))
 
 (defun class-probes-vector (kc n hit-prob)
   (let ((keys (getf (class-containers kc n) :keys))
@@ -409,17 +409,17 @@
   ;; lookup and update only: they are the operations whose cost is
   ;; dominated by the key, and update is the only one that hashes.
   (let* ((c (class-containers kc n))
-         (tmap (getf c :treemap))
+         (tmap (getf c :tmap))
          (omap (getf c :omap))
          (class (getf kc :name))
          (setup (lambda () (class-probes-vector kc n hit-prob))))
     (list
-      (spec "treemap-lookup" class n setup
-            (lambda (x) (treemap::lookup x tmap)))
+      (spec "tmap-lookup" class n setup
+            (lambda (x) (tmap::lookup x tmap)))
       (spec "omap-lookup" class n setup
             (lambda (x) (omap::lookup x omap)))
-      (spec "treemap-update" class n setup
-            (lambda (x) (treemap::update x 0 tmap)))
+      (spec "tmap-update" class n setup
+            (lambda (x) (tmap::update x 0 tmap)))
       (spec "omap-update" class n setup
             (lambda (x) (omap::update x 0 omap))))))
 
@@ -427,32 +427,32 @@
   ;; :test is a macro keyword and must be literal, so each variant is
   ;; its own lambda rather than a parameter.
   (ecase test
-    (equal (lambda (x) (treemap::lookup x tmap)))
-    (=     (lambda (x) (treemap::lookup x tmap :test =)))
-    (eq    (lambda (x) (treemap::lookup x tmap :test eq)))
-    (eql   (lambda (x) (treemap::lookup x tmap :test eql)))))
+    (equal (lambda (x) (tmap::lookup x tmap)))
+    (=     (lambda (x) (tmap::lookup x tmap :test =)))
+    (eq    (lambda (x) (tmap::lookup x tmap :test eq)))
+    (eql   (lambda (x) (tmap::lookup x tmap :test eql)))))
 
 (defun test-update-op (test tmap)
   (ecase test
-    (equal (lambda (x) (treemap::update x 0 tmap)))
-    (=     (lambda (x) (treemap::update x 0 tmap :test =)))
-    (eq    (lambda (x) (treemap::update x 0 tmap :test eq)))
-    (eql   (lambda (x) (treemap::update x 0 tmap :test eql)))))
+    (equal (lambda (x) (tmap::update x 0 tmap)))
+    (=     (lambda (x) (tmap::update x 0 tmap :test =)))
+    (eq    (lambda (x) (tmap::update x 0 tmap :test eq)))
+    (eql   (lambda (x) (tmap::update x 0 tmap :test eql)))))
 
 (defun test-specs (kc n hit-prob)
   "lookup and update under each :test the class admits, so the cost of
    the specialized guards and hashes can be read off against the
    default."
   (let* ((c (class-containers kc n))
-         (tmap (getf c :treemap))
+         (tmap (getf c :tmap))
          (class (getf kc :name))
          (setup (lambda () (class-probes-vector kc n hit-prob))))
     (loop for test in (getf kc :tests)
           append
           (list
-            (spec (format nil "treemap-lookup-~(~A~)" test) class n setup
+            (spec (format nil "tmap-lookup-~(~A~)" test) class n setup
                   (test-lookup-op test tmap))
-            (spec (format nil "treemap-update-~(~A~)" test) class n setup
+            (spec (format nil "tmap-update-~(~A~)" test) class n setup
                   (test-update-op test tmap))))))
 
 (defparameter *size-report-sample* 1000)
@@ -477,7 +477,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Treap shape statistics (untimed). The raw treemap representation is
+;; Treap shape statistics (untimed). The raw tmap representation is
 ;; nil for the empty tree and (head . (left . right)) otherwise; the
 ;; walkers traverse the conses directly. Depth is O(log n) with high
 ;; probability, so recursion is safe.
@@ -563,9 +563,9 @@
   (format t "  ~10@A ~12A ~10A ~10A~%" "n" "keys" "avg" "height")
   (dolist (n cardinalities)
     (dolist (entry
-              (list (cons "random" (getf (containers n) :treemap))
+              (list (cons "random" (getf (containers n) :tmap))
                     (cons "sequential"
-                          (treemap::from-alist
+                          (tmap::from-alist
                             (loop for i below n collect (cons i i))))))
       (multiple-value-bind (sum count) (tree-depth-sum (cdr entry) 1)
         (format t "  ~10:D ~12A ~10,2F ~10,2F~%"
@@ -601,17 +601,17 @@
 
 (defun hash-share-report (&key (cardinalities '(1000 10000 100000 1000000))
                                (hit-prob 1/2))
-  ;; treeset::hash (= hash::jenkins, benchmarked in the hash library's
+  ;; tset::hash (= hash::jenkins, benchmarked in the hash library's
   ;; own suite) is measured inline rather than as a spec row: its cost
   ;; is independent of cardinality, and only the ratio matters here.
   (let* ((class (probe-class hit-prob))
          (n0 (car (last cardinalities)))
-         (h (median-ns-of-op (lambda (x) (treeset::hash x))
+         (h (median-ns-of-op (lambda (x) (tset::hash x))
                              (probes-vector n0 hit-prob))))
-    (format t "~&Hash share of treemap-update (p=~A, hash ~,1Fns):~%"
+    (format t "~&Hash share of tmap-update (p=~A, hash ~,1Fns):~%"
             hit-prob h)
     (dolist (n cardinalities)
-      (let ((i (median-of "treemap-update" class n)))
+      (let ((i (median-of "tmap-update" class n)))
         (when (and i (plusp i))
           (format t "  n=~10:D: update ~8,1Fns -> hash share ~5,1F%~%"
                   n i (* 100 (/ h i))))))))
@@ -628,11 +628,11 @@
     (let ((class (getf kc :name)))
       (when (cdr (getf kc :tests))
         (dolist (op '("lookup" "update"))
-          (let ((base (median-of (format nil "treemap-~A-equal" op)
+          (let ((base (median-of (format nil "tmap-~A-equal" op)
                                  class n)))
             (when (and base (plusp base))
               (dolist (test (getf kc :tests))
-                (let ((v (median-of (format nil "treemap-~A-~(~A~)" op test)
+                (let ((v (median-of (format nil "tmap-~A-~(~A~)" op test)
                                     class n)))
                   (when v
                     (format t "  ~12A ~8A ~8A ~12,1F ~9,1F%~%"
@@ -742,12 +742,12 @@
   (let ((stamp (substitute #\- #\: (bench::timestamp))))
     (run-suite :key-classes (default-key-classes)
                :test-variants t
-               :out (format nil "results/treemap-bench-~A.csv" stamp)
+               :out (format nil "results/tmap-bench-~A.csv" stamp)
                :samples-out
-               (format nil "results/treemap-bench-~A-samples.csv" stamp))))
+               (format nil "results/tmap-bench-~A-samples.csv" stamp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(format t "~&; Running quick smoke suite; use (treemap-bench::run-full) ~
+(format t "~&; Running quick smoke suite; use (tmap-bench::run-full) ~
            for the real thing.~%")
 (run-quick)

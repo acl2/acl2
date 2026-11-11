@@ -30,7 +30,7 @@
 ;; the three is constrained, so this is just a pair of conses; the type exists
 ;; to name the slots, not to restrict them.
 ;;
-;; The slot order matters. Edges are collected into treesets, which order their
+;; The slot order matters. Edges are collected into tsets, which order their
 ;; elements by <<, and << compares conses by their cars first. Source first,
 ;; then target, then label is therefore the order in which an in-order walk of
 ;; an adjacency list visits the edges, so the edge set of an adjacency list

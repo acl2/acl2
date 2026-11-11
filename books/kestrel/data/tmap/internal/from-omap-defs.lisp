@@ -6,10 +6,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-order-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "heap-defs")

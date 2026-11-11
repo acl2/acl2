@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -60,8 +60,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc delete
-  :parents (treeset)
-  :short "Remove a value (or multiple values) from a @(see treeset)."
+  :parents (tset)
+  :short "Remove a value (or multiple values) from a @(see tset)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -427,13 +427,13 @@
 (define tail
   ((set setp))
   :parents (delete)
-  :short "Remove the @(see head) from a nonempty @(see treeset)."
+  :short "Remove the @(see head) from a nonempty @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
      "This is slightly faster than calling @(tsee delete) on the head.")
    (xdoc::p
-     "Note: it is <emph>not</emph> recommended to iterate over a @(see treeset)
+     "Note: it is <emph>not</emph> recommended to iterate over a @(see tset)
       using @(tsee tail) (unless you need to maintain a set of the remaining
       elements)."))
   :guard (not (emptyp set))

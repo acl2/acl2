@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -29,24 +29,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This theory aggressively rewrites from treemaps to oamps.
+;; This theory aggressively rewrites from tmaps to oamps.
 (def-ruleset! to-omap-theory ())
 
-;; This theory aggressively rewrites from omaps to treemaps.
+;; This theory aggressively rewrites from omaps to tmaps.
 (def-ruleset! from-omap-theory ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-omap ((map mapp))
   :type-prescription :none
-  :parents (treemap)
-  :short "Build an omap from a @(see treemap)."
+  :parents (tmap)
+  :short "Build an omap from a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(n)$).")
    (xdoc::p
-     "@(see Treemap)s are isomorphic to "
+     "@(see Tmap)s are isomorphic to "
      (xdoc::seetopic "omap::omaps" "omaps")
      ". This function may be used in combination with @(tsee from-omap) to go
       back and forth between the two representations. There are rules relating
@@ -54,8 +54,8 @@
       @(tsee update), etc.).")
    (xdoc::p
      "We provide a @(see acl2::ruleset), @('to-omap-theory'), to aggressively
-      rewrite @(see treemap)s into @(see omap::omaps). To rewrite in the
-      other direction (i.e., from @(see omap::omaps) to @(see treemap)s), we
+      rewrite @(see tmap)s into @(see omap::omaps). To rewrite in the
+      other direction (i.e., from @(see omap::omaps) to @(see tmap)s), we
       provide the @('from-omap-theory') ruleset. To use one ruleset, the other
       must be explicitly disabled. If the other ruleset is not disabled, expect
       rewrite loops."))

@@ -6,20 +6,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/bst-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/heap-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/join-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/bst-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/heap-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/join-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/split-defs" :dir :system)
 
 (include-book "map-values-all-posp-defs")
 
@@ -31,18 +31,18 @@
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/heap" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/join" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/split" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/heap" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/join" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/split" :dir :system))
 
 (local (include-book "map-values-all-posp"))
 
@@ -51,20 +51,20 @@
 ;; Library extensions
 
 (defruledl tree-element-of-tree-element->key-and-tree-element->val
-  (implies (treemap::tree-element-p elem)
-           (equal (treemap::tree-element hash
-                                         (treemap::tree-element->key elem)
-                                         (treemap::tree-element->val elem))
+  (implies (tmap::tree-element-p elem)
+           (equal (tmap::tree-element hash
+                                      (tmap::tree-element->key elem)
+                                      (tmap::tree-element->val elem))
                   elem))
-  :use treemap::tree-element-elim)
+  :use tmap::tree-element-elim)
 
 (defruledl cons-of-hash-and-tree-search-assoc
-  (implies (treemap::tree-search-assoc key tree)
-           (equal (cons (treeset::hash key)
-                        (treemap::tree-search-assoc key tree))
-                  (treemap::tree-element
-                    hash key (cdr (treemap::tree-search-assoc key tree)))))
-  :enable treemap::tree-element)
+  (implies (tmap::tree-search-assoc key tree)
+           (equal (cons (tset::hash key)
+                        (tmap::tree-search-assoc key tree))
+                  (tmap::tree-element
+                    hash key (cdr (tmap::tree-search-assoc key tree)))))
+  :enable tmap::tree-element)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,85 +74,85 @@
 ;; intersected with the head's subtrees. When the head already holds the
 ;; lesser value, its node is reused.
 
-(define tree-intersect ((x treemap::treep)
-                        (y treemap::treep))
+(define tree-intersect ((x tmap::treep)
+                        (y tmap::treep))
   :guard (and (tree-all-vals-posp x)
               (tree-all-vals-posp y))
-  :returns (tree treemap::treep)
-  (cond ((or (treemap::tree-empty-p x)
-             (treemap::tree-empty-p y))
+  :returns (tree tmap::treep)
+  (cond ((or (tmap::tree-empty-p x)
+             (tmap::tree-empty-p y))
          nil)
-        ((treemap::heap<-with-tree-element (treemap::tree->head x)
-                                           (treemap::tree->head y))
+        ((tmap::heap<-with-tree-element (tmap::tree->head x)
+                                        (tmap::tree->head y))
          (mv-let (assoc left right)
-                 (treemap::tree-split
-                   (treemap::tree-element->key (treemap::tree->head y))
+                 (tmap::tree-split
+                   (tmap::tree-element->key (tmap::tree->head y))
                    x)
-           (let ((left (tree-intersect left (treemap::tree->left y)))
-                 (right (tree-intersect right (treemap::tree->right y))))
+           (let ((left (tree-intersect left (tmap::tree->left y)))
+                 (right (tree-intersect right (tmap::tree->right y))))
              (if assoc
                  (mbe :logic
-                      (treemap::tree-node
-                        (treemap::tree-element
-                          (treemap::tree-element->hash (treemap::tree->head y))
-                          (treemap::tree-element->key (treemap::tree->head y))
+                      (tmap::tree-node
+                        (tmap::tree-element
+                          (tmap::tree-element->hash (tmap::tree->head y))
+                          (tmap::tree-element->key (tmap::tree->head y))
                           (acl2::min (cdr assoc)
-                                     (treemap::tree-element->val
-                                       (treemap::tree->head y))))
+                                     (tmap::tree-element->val
+                                       (tmap::tree->head y))))
                         left
                         right)
                       :exec
-                      (if (<= (treemap::tree-element->val
-                                (treemap::tree->head y))
+                      (if (<= (tmap::tree-element->val
+                                (tmap::tree->head y))
                               (cdr assoc))
-                          (treemap::tree-node-with-hint
-                            (treemap::tree->head y) left right y)
-                        (treemap::tree-node
-                          (cons (treemap::tree-element->hash
-                                  (treemap::tree->head y))
+                          (tmap::tree-node-with-hint
+                            (tmap::tree->head y) left right y)
+                        (tmap::tree-node
+                          (cons (tmap::tree-element->hash
+                                  (tmap::tree->head y))
                                 assoc)
                           left
                           right)))
-               (mbe :logic (treemap::tree-join-at
-                             (treemap::tree-element->key (treemap::tree->head y))
+               (mbe :logic (tmap::tree-join-at
+                             (tmap::tree-element->key (tmap::tree->head y))
                              left
                              right)
-                    :exec (treemap::tree-join left right))))))
+                    :exec (tmap::tree-join left right))))))
         (t
          (mv-let (assoc left right)
-                 (treemap::tree-split
-                   (treemap::tree-element->key (treemap::tree->head x))
+                 (tmap::tree-split
+                   (tmap::tree-element->key (tmap::tree->head x))
                    y)
-           (let ((left (tree-intersect (treemap::tree->left x) left))
-                 (right (tree-intersect (treemap::tree->right x) right)))
+           (let ((left (tree-intersect (tmap::tree->left x) left))
+                 (right (tree-intersect (tmap::tree->right x) right)))
              (if assoc
                  (mbe :logic
-                      (treemap::tree-node
-                        (treemap::tree-element
-                          (treemap::tree-element->hash (treemap::tree->head x))
-                          (treemap::tree-element->key (treemap::tree->head x))
-                          (acl2::min (treemap::tree-element->val
-                                       (treemap::tree->head x))
+                      (tmap::tree-node
+                        (tmap::tree-element
+                          (tmap::tree-element->hash (tmap::tree->head x))
+                          (tmap::tree-element->key (tmap::tree->head x))
+                          (acl2::min (tmap::tree-element->val
+                                       (tmap::tree->head x))
                                      (cdr assoc)))
                         left
                         right)
                       :exec
-                      (if (<= (treemap::tree-element->val
-                                (treemap::tree->head x))
+                      (if (<= (tmap::tree-element->val
+                                (tmap::tree->head x))
                               (cdr assoc))
-                          (treemap::tree-node-with-hint
-                            (treemap::tree->head x) left right x)
-                        (treemap::tree-node
-                          (cons (treemap::tree-element->hash
-                                  (treemap::tree->head x))
+                          (tmap::tree-node-with-hint
+                            (tmap::tree->head x) left right x)
+                        (tmap::tree-node
+                          (cons (tmap::tree-element->hash
+                                  (tmap::tree->head x))
                                 assoc)
                           left
                           right)))
-               (mbe :logic (treemap::tree-join-at
-                             (treemap::tree-element->key (treemap::tree->head x))
+               (mbe :logic (tmap::tree-join-at
+                             (tmap::tree-element->key (tmap::tree->head x))
                              left
                              right)
-                    :exec (treemap::tree-join left right)))))))
+                    :exec (tmap::tree-join left right)))))))
   :measure (+ (acl2-count x)
               (acl2-count y))
   :verify-guards :after-returns
@@ -160,14 +160,14 @@
                                            acl2::rationalp-when-posp
                                            acl2::min-when-<=-1
                                            acl2::min-when-<=-2
-                                           treemap::tree-join-at
+                                           tmap::tree-join-at
                                            tree-element-of-tree-element->key-and-tree-element->val
                                            cons-of-hash-and-tree-search-assoc))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-intersect-when-tree-equiv-of-arg1-congruence
-  (implies (treemap::tree-equiv x0 x1)
+  (implies (tmap::tree-equiv x0 x1)
            (equal (tree-intersect x0 y)
                   (tree-intersect x1 y)))
   :rule-classes :congruence
@@ -175,7 +175,7 @@
   :enable tree-intersect)
 
 (defrule tree-intersect-when-tree-equiv-of-arg2-congruence
-  (implies (treemap::tree-equiv y0 y1)
+  (implies (tmap::tree-equiv y0 y1)
            (equal (tree-intersect x y0)
                   (tree-intersect x y1)))
   :rule-classes :congruence
@@ -185,11 +185,11 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-key-set-of-tree-intersect
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y))
-           (equal (treeset::in key (treemap::tree-key-set (tree-intersect x y)))
-                  (and (treeset::in key (treemap::tree-key-set x))
-                       (treeset::in key (treemap::tree-key-set y)))))
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y))
+           (equal (tset::in key (tmap::tree-key-set (tree-intersect x y)))
+                  (and (tset::in key (tmap::tree-key-set x))
+                       (tset::in key (tmap::tree-key-set y)))))
   :induct t
   :enable (tree-intersect
            data::<<-rules))
@@ -197,36 +197,36 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule <<-all-l-of-tree-intersect
-  (implies (and (treemap::<<-all-l x z)
-                (treemap::<<-all-l y z))
-           (treemap::<<-all-l (tree-intersect x y) z))
+  (implies (and (tmap::<<-all-l x z)
+                (tmap::<<-all-l y z))
+           (tmap::<<-all-l (tree-intersect x y) z))
   :induct t
   :enable tree-intersect)
 
 (defrule <<-all-r-of-arg1-and-tree-intersect
-  (implies (and (treemap::<<-all-r z x)
-                (treemap::<<-all-r z y))
-           (treemap::<<-all-r z (tree-intersect x y)))
+  (implies (and (tmap::<<-all-r z x)
+                (tmap::<<-all-r z y))
+           (tmap::<<-all-r z (tree-intersect x y)))
   :induct t
   :enable tree-intersect)
 
 (defrule bstp-of-tree-intersect-when-bstp
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y))
-           (treemap::bstp (tree-intersect x y)))
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y))
+           (tmap::bstp (tree-intersect x y)))
   :induct t
   :enable tree-intersect)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-lookup-of-tree-intersect
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y))
-           (equal (treemap::tree-lookup key (tree-intersect x y))
-                  (if (and (treeset::in key (treemap::tree-key-set x))
-                           (treeset::in key (treemap::tree-key-set y)))
-                      (acl2::min (treemap::tree-lookup key x)
-                                 (treemap::tree-lookup key y))
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y))
+           (equal (tmap::tree-lookup key (tree-intersect x y))
+                  (if (and (tset::in key (tmap::tree-key-set x))
+                           (tset::in key (tmap::tree-key-set y)))
+                      (acl2::min (tmap::tree-lookup key x)
+                                 (tmap::tree-lookup key y))
                     nil)))
   :induct t
   :enable (tree-intersect
@@ -235,25 +235,25 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule heap<-all-l-of-tree-intersect
-  (implies (and (treemap::heap<-all-l x z)
-                (treemap::heap<-all-l y z))
-           (treemap::heap<-all-l (tree-intersect x y) z))
+  (implies (and (tmap::heap<-all-l x z)
+                (tmap::heap<-all-l y z))
+           (tmap::heap<-all-l (tree-intersect x y) z))
   :induct t
   :enable tree-intersect)
 
 (defrule heapp-of-tree-intersect-when-bstp-and-heapp
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y)
-                (treemap::heapp x)
-                (treemap::heapp y))
-           (treemap::heapp (tree-intersect x y)))
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y)
+                (tmap::heapp x)
+                (tmap::heapp y))
+           (tmap::heapp (tree-intersect x y)))
   :induct t
-  :hints ('(:cases ((equal (treemap::tree-element->key (treemap::tree->head x))
-                           (treemap::tree-element->key (treemap::tree->head y))))))
+  :hints ('(:cases ((equal (tmap::tree-element->key (tmap::tree->head x))
+                           (tmap::tree-element->key (tmap::tree->head y))))))
   :enable (tree-intersect
-           treemap::heap<-all-l-extra-rules
-           treemap::tree-split-extra-rules
-           treemap::heap<-rules))
+           tmap::heap<-all-l-extra-rules
+           tmap::tree-split-extra-rules
+           tmap::heap<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 

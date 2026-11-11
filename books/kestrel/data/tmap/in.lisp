@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "internal/tree-defs")
 (include-book "internal/keys-defs")
@@ -24,8 +24,8 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -38,8 +38,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc in
-  :parents (treemap)
-  :short "Determine if a key is bound under a @(see treemap)."
+  :parents (tmap)
+  :short "Determine if a key is bound under a @(see tmap)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -47,7 +47,7 @@
     (xdoc::p
       "This is <i>not</i> the logical normal form used by this library.
        Instead, we rewrite @('(in key map)') to
-       @('(treeset::in key (keys map))').")
+       @('(tset::in key (keys map))').")
     (xdoc::section
       "General form"
       (xdoc::codeblock
@@ -76,7 +76,7 @@
 (define in$inline
   (key
    (map mapp))
-  (mbe :logic (treeset::in key (keys map))
+  (mbe :logic (tset::in key (keys map))
        :exec (consp (the (or cons null) (tree-search-assoc key map))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable* keys

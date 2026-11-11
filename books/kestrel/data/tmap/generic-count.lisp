@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
 (include-book "internal/tree-defs")
 (include-book "internal/keys-defs")
@@ -33,9 +33,9 @@
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -53,9 +53,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The count of a treemap is structural: one per entry, walking the map's own
-;; tree. It cannot be composed from counts of the key and value treesets,
-;; since the value treeset collapses values shared by distinct keys.
+;; The count of a tmap is structural: one per entry, walking the map's own
+;; tree. It cannot be composed from counts of the key and value tsets,
+;; since the value tset collapses values shared by distinct keys.
 
 (encapsulate
   (((generic-count * *) => *))
@@ -140,12 +140,12 @@
            tree-join-at))
 
 ;; The induction is tree-delete's own. The default merged scheme also draws
-;; on tree-lookup, whose recursion is guided by key treeset membership rather
+;; on tree-lookup, whose recursion is guided by key tset membership rather
 ;; than <<, and the merge misshapes the inductive hypotheses.
 (defrule tree-generic-count-of-tree-delete
   (implies (bstp tree)
            (equal (tree-generic-count (tree-delete key tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (- (tree-generic-count tree)
                          (+ 1 (generic-count key (tree-lookup key tree))))
                     (tree-generic-count tree))))
@@ -182,7 +182,7 @@
 
 (defruled map-generic-count-of-delete
   (equal (map-generic-count (delete key map))
-         (if (treeset::in key (keys map))
+         (if (tset::in key (keys map))
              (- (map-generic-count map)
                 (+ 1 (generic-count key (lookup key map))))
            (map-generic-count map)))
@@ -194,7 +194,7 @@
            break-abstraction))
 
 (defrule map-generic-count-of-delete-when-in
-  (implies (treeset::in key (keys map))
+  (implies (tset::in key (keys map))
            (equal (map-generic-count (delete key map))
                   (- (map-generic-count map)
                      (+ 1 (generic-count key (lookup key map))))))
@@ -212,7 +212,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule generic-count-<-map-generic-count-when-in
-  (implies (treeset::in key (keys map))
+  (implies (tset::in key (keys map))
            (< (generic-count key (lookup key map))
               (map-generic-count map)))
   :rule-classes :linear
@@ -220,7 +220,7 @@
   :disable map-generic-count-of-delete-when-in)
 
 (defrule map-generic-count-of-delete-<-map-generic-count-when-in
-  (implies (treeset::in key (keys map))
+  (implies (tset::in key (keys map))
            (< (map-generic-count (delete key map))
               (map-generic-count map)))
   :rule-classes :linear
@@ -229,17 +229,17 @@
 
 (defrule generic-count-of-min-<-map-generic-count
   (implies (not (emptyp map))
-           (< (generic-count (treeset::min (keys map))
-                             (lookup (treeset::min (keys map)) map))
+           (< (generic-count (tset::min (keys map))
+                             (lookup (tset::min (keys map)) map))
               (map-generic-count map)))
   :rule-classes :linear
   :use (:instance generic-count-<-map-generic-count-when-in
-                  (key (treeset::min (keys map))))
+                  (key (tset::min (keys map))))
   :disable generic-count-<-map-generic-count-when-in)
 
 (defrule map-generic-count-of-delete-min-<-map-generic-count
   (implies (not (emptyp map))
-           (< (map-generic-count (delete (treeset::min (keys map)) map))
+           (< (map-generic-count (delete (tset::min (keys map)) map))
               (map-generic-count map)))
   :rule-classes :linear
   :disable map-generic-count-of-delete-<-map-generic-count-when-in)

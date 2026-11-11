@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "internal/submap-defs")
 (include-book "map-defs")
@@ -30,14 +30,14 @@
   (FORALL
    (KEY DEFAULT)
    (NON-EXEC
-    (IMPLIES (TREESET::IN KEY (KEYS X))
+    (IMPLIES (TSET::IN KEY (KEYS X))
              (EQUAL (LOOKUP KEY X :DEFAULT DEFAULT)
                     (LOOKUP KEY Y :DEFAULT DEFAULT)))))
   :REWRITE
   (IMPLIES
    (SUBMAP-SK X Y)
    (NON-EXEC
-    (IMPLIES (TREESET::IN KEY (KEYS X))
+    (IMPLIES (TSET::IN KEY (KEYS X))
              (EQUAL (LOOKUP KEY X :DEFAULT DEFAULT)
                     (LOOKUP KEY Y :DEFAULT DEFAULT)))))
   :SKOLEM-NAME SUBMAP-SK-WITNESS

@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
@@ -27,14 +27,14 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -119,11 +119,11 @@
 (defrule tree-key-set-of-tree-delete
   (implies (bstp tree)
            (equal (tree-key-set (tree-delete key tree))
-                  (treeset::delete key (tree-key-set tree))))
+                  (tset::delete key (tree-key-set tree))))
   :induct t
   :enable (tree-delete
            tree-key-set
-           treeset::union-of-arg1-and-delete-when-not-in-arg1))
+           tset::union-of-arg1-and-delete-when-not-in-arg1))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -203,7 +203,7 @@
 (defrule tree-nodes-count-of-tree-delete
   (implies (bstp tree)
            (equal (tree-nodes-count (tree-delete key tree))
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (- (tree-nodes-count tree) 1)
                     (tree-nodes-count tree))))
   :induct t

@@ -6,18 +6,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/bst-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/bst-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/split-defs" :dir :system)
 
 (include-book "map-values-all-posp-defs")
 
@@ -27,13 +27,13 @@
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
 
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/split" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/split" :dir :system))
 
 (local (include-book "map-values-all-posp"))
 
@@ -44,21 +44,21 @@
 ;; and each half is compared against the subtree of the first holding the same
 ;; keys.
 
-(define tree-subbag-p ((x treemap::treep)
-                       (y treemap::treep))
+(define tree-subbag-p ((x tmap::treep)
+                       (y tmap::treep))
   :guard (and (tree-all-vals-posp x)
               (tree-all-vals-posp y))
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  (or (treemap::tree-empty-p x)
+  (or (tmap::tree-empty-p x)
       (mv-let (assoc left right)
-              (treemap::tree-split
-                (treemap::tree-element->key (treemap::tree->head x))
+              (tmap::tree-split
+                (tmap::tree-element->key (tmap::tree->head x))
                 y)
         (and assoc
-             (<= (treemap::tree-element->val (treemap::tree->head x))
+             (<= (tmap::tree-element->val (tmap::tree->head x))
                  (cdr assoc))
-             (tree-subbag-p (treemap::tree->left x) left)
-             (tree-subbag-p (treemap::tree->right x) right))))
+             (tree-subbag-p (tmap::tree->left x) left)
+             (tree-subbag-p (tmap::tree->right x) right))))
   :measure (acl2-count x)
   :guard-hints (("Goal" :in-theory (enable tree-all-vals-posp
                                            acl2::rationalp-when-posp))))
@@ -67,69 +67,69 @@
 
 (defruled in-of-tree-key-set-when-tree-subbag-p
   (implies (and (tree-subbag-p x y)
-                (treeset::in key (treemap::tree-key-set x))
-                (treemap::bstp x)
-                (treemap::bstp y))
-           (treeset::in key (treemap::tree-key-set y)))
+                (tset::in key (tmap::tree-key-set x))
+                (tmap::bstp x)
+                (tmap::bstp y))
+           (tset::in key (tmap::tree-key-set y)))
   :induct t
   :enable (tree-subbag-p
-           treemap::in-of-tree-key-set-when-not-tree-empty-p))
+           tmap::in-of-tree-key-set-when-not-tree-empty-p))
 
 (defruled tree-lookup-<=-tree-lookup-when-tree-subbag-p
   (implies (and (tree-subbag-p x y)
-                (treeset::in key (treemap::tree-key-set x))
-                (treemap::bstp x)
-                (treemap::bstp y))
-           (<= (treemap::tree-lookup key x)
-               (treemap::tree-lookup key y)))
+                (tset::in key (tmap::tree-key-set x))
+                (tmap::bstp x)
+                (tmap::bstp y))
+           (<= (tmap::tree-lookup key x)
+               (tmap::tree-lookup key y)))
   :induct t
   :enable (tree-subbag-p
-           treemap::in-of-tree-key-set-when-not-tree-empty-p))
+           tmap::in-of-tree-key-set-when-not-tree-empty-p))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; A key at which the check fails, when it fails.
 
-(define tree-subbag-p-witness ((x treemap::treep)
-                               (y treemap::treep))
-  (if (treemap::tree-empty-p x)
+(define tree-subbag-p-witness ((x tmap::treep)
+                               (y tmap::treep))
+  (if (tmap::tree-empty-p x)
       nil
     (mv-let (assoc left right)
-            (treemap::tree-split
-              (treemap::tree-element->key (treemap::tree->head x))
+            (tmap::tree-split
+              (tmap::tree-element->key (tmap::tree->head x))
               y)
       (cond ((not (and assoc
-                       (<= (treemap::tree-element->val (treemap::tree->head x))
+                       (<= (tmap::tree-element->val (tmap::tree->head x))
                            (cdr assoc))))
-             (treemap::tree-element->key (treemap::tree->head x)))
-            ((not (tree-subbag-p (treemap::tree->left x) left))
-             (tree-subbag-p-witness (treemap::tree->left x) left))
-            (t (tree-subbag-p-witness (treemap::tree->right x) right)))))
+             (tmap::tree-element->key (tmap::tree->head x)))
+            ((not (tree-subbag-p (tmap::tree->left x) left))
+             (tree-subbag-p-witness (tmap::tree->left x) left))
+            (t (tree-subbag-p-witness (tmap::tree->right x) right)))))
   :measure (acl2-count x)
   :verify-guards nil)
 
 (defruledl tree-subbag-p-when-holds-at-witness
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y)
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y)
                 (let ((key (tree-subbag-p-witness x y)))
-                  (implies (treeset::in key (treemap::tree-key-set x))
-                           (and (treeset::in key (treemap::tree-key-set y))
-                                (<= (treemap::tree-lookup key x)
-                                    (treemap::tree-lookup key y))))))
+                  (implies (tset::in key (tmap::tree-key-set x))
+                           (and (tset::in key (tmap::tree-key-set y))
+                                (<= (tmap::tree-lookup key x)
+                                    (tmap::tree-lookup key y))))))
            (tree-subbag-p x y))
   :induct (tree-subbag-p-witness x y)
   :enable (tree-subbag-p
            tree-subbag-p-witness))
 
 (defruled tree-subbag-p-pick-a-point
-  (implies (and (treemap::bstp x)
-                (treemap::bstp y))
+  (implies (and (tmap::bstp x)
+                (tmap::bstp y))
            (equal (tree-subbag-p x y)
                   (let ((key (tree-subbag-p-witness x y)))
-                    (implies (treeset::in key (treemap::tree-key-set x))
-                             (and (treeset::in key (treemap::tree-key-set y))
-                                  (<= (treemap::tree-lookup key x)
-                                      (treemap::tree-lookup key y)))))))
+                    (implies (tset::in key (tmap::tree-key-set x))
+                             (and (tset::in key (tmap::tree-key-set y))
+                                  (<= (tmap::tree-lookup key x)
+                                      (tmap::tree-lookup key y)))))))
   :cases ((tree-subbag-p x y))
   :enable (in-of-tree-key-set-when-tree-subbag-p
            tree-lookup-<=-tree-lookup-when-tree-subbag-p

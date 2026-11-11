@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "keys-defs")
@@ -23,14 +23,14 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -133,9 +133,9 @@
 (defruled in-of-tree-key-set-of-tree-update*
   (implies (and (bstp x)
                 (bstp y))
-           (equal (treeset::in a (tree-key-set (tree-update* x y)))
-                  (treeset::in a (treeset::union (tree-key-set x)
-                                                 (tree-key-set y)))))
+           (equal (tset::in a (tree-key-set (tree-update* x y)))
+                  (tset::in a (tset::union (tree-key-set x)
+                                           (tree-key-set y)))))
   :induct t
   :enable (tree-update*
            data::<<-rules))
@@ -144,9 +144,9 @@
   (implies (and (bstp x)
                 (bstp y))
            (equal (tree-key-set (tree-update* x y))
-                  (treeset::union (tree-key-set x)
-                                  (tree-key-set y))))
-  :enable (treeset::extensionality
+                  (tset::union (tree-key-set x)
+                               (tree-key-set y))))
+  :enable (tset::extensionality
            in-of-tree-key-set-of-tree-update*))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -184,7 +184,7 @@
   (implies (and (bstp x)
                 (bstp y))
            (equal (tree-lookup a (tree-update* x y))
-                  (if (treeset::in a (tree-key-set x))
+                  (if (tset::in a (tree-key-set x))
                       (tree-lookup a x)
                     (tree-lookup a y))))
   :induct t

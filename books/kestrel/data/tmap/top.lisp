@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "defs")
 (include-book "map")
@@ -33,6 +33,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For ordinary use of treemaps, it is recommend that you include the "defs"
+;; For ordinary use of tmaps, it is recommend that you include the "defs"
 ;; books (or some subset of the books it includes), and then this book (or some
 ;; subset of its includes) *locally*.

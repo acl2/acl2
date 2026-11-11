@@ -6,11 +6,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
 (include-book "internal/min-max-defs")
 (include-book "map-defs")
@@ -20,8 +20,8 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -34,7 +34,7 @@
 
 (define min-key ((map mapp))
   :parents (min)
-  :short "The minimum key of a @(see treemap) (with respect to @(tsee <<))."
+  :short "The minimum key of a @(see tmap) (with respect to @(tsee <<))."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -42,7 +42,7 @@
    (xdoc::p
      "This function is enabled by default."))
   :guard (not (emptyp map))
-  (mbe :logic (treeset::min (keys map))
+  (mbe :logic (tset::min (keys map))
        :exec (car (tree-leftmost map)))
   :enabled t
   :inline t
@@ -54,7 +54,7 @@
 (define min-val ((map mapp))
   :parents (min)
   :short "The value associated with the @(tsee min-key) under a
-          @(see treemap)."
+          @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -62,7 +62,7 @@
    (xdoc::p
      "This function is enabled by default."))
   :guard (not (emptyp map))
-  (mbe :logic (lookup (treeset::min (keys map)) map)
+  (mbe :logic (lookup (tset::min (keys map)) map)
        :exec (cdr (tree-leftmost map)))
   :enabled t
   :inline t
@@ -73,7 +73,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min ((map mapp))
-  :parents (treemap)
+  :parents (tmap)
   :short "The @(tsee min-key) and @(tsee min-val)."
   :long
   (xdoc::topstring
@@ -96,7 +96,7 @@
 
 (define max-key ((map mapp))
   :parents (max)
-  :short "The maximum key of a @(see treemap) (with respect to @(tsee <<))."
+  :short "The maximum key of a @(see tmap) (with respect to @(tsee <<))."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -104,7 +104,7 @@
    (xdoc::p
      "This function is enabled by default."))
   :guard (not (emptyp map))
-  (mbe :logic (treeset::max (keys map))
+  (mbe :logic (tset::max (keys map))
        :exec (car (tree-rightmost map)))
   :enabled t
   :inline t
@@ -116,7 +116,7 @@
 (define max-val ((map mapp))
   :parents (max)
   :short "The value associated with the @(tsee max-key) under a
-          @(see treemap)."
+          @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -124,7 +124,7 @@
    (xdoc::p
      "This function is enabled by default."))
   :guard (not (emptyp map))
-  (mbe :logic (lookup (treeset::max (keys map)) map)
+  (mbe :logic (lookup (tset::max (keys map)) map)
        :exec (cdr (tree-rightmost map)))
   :enabled t
   :inline t
@@ -135,7 +135,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max ((map mapp))
-  :parents (treemap)
+  :parents (tmap)
   :short "The @(tsee max-key) and @(tsee max-val)."
   :long
   (xdoc::topstring

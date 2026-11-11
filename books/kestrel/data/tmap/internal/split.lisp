@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
@@ -24,13 +24,13 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -355,16 +355,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled in-of-tree-key-set-when-in-of-tree-key-set-tree-split.left
-  (implies (treeset::in x (tree-key-set (mv-nth 1 (tree-split y tree))))
-           (treeset::in x (tree-key-set tree)))
+  (implies (tset::in x (tree-key-set (mv-nth 1 (tree-split y tree))))
+           (tset::in x (tree-key-set tree)))
   :induct t
   :enable (tree-split
            tree-key-set))
 
 (defruled subset-of-tree-key-set-and-tree-key-set-tree-split.left
-  (treeset::subset (tree-key-set (mv-nth 1 (tree-split y tree)))
-                   (tree-key-set tree))
-  :enable (treeset::pick-a-point
+  (tset::subset (tree-key-set (mv-nth 1 (tree-split y tree)))
+                (tree-key-set tree))
+  :enable (tset::pick-a-point
            in-of-tree-key-set-when-in-of-tree-key-set-tree-split.left))
 
 ;; (defrule tree-in-when-tree-in-of-tree-split.left-forward-chaining
@@ -374,24 +374,24 @@
 ;;   :enable tree-in-when-tree-in-of-tree-split.left)
 
 (defrule subset-of-tree-key-set-and-tree-key-set-tree-split.left-forward-chaining
-  (treeset::subset (tree-key-set (mv-nth 1 (tree-split y tree)))
-                   (tree-key-set tree))
+  (tset::subset (tree-key-set (mv-nth 1 (tree-split y tree)))
+                (tree-key-set tree))
   :rule-classes ((:forward-chaining :trigger-terms ((tree-split y tree))))
   :by subset-of-tree-key-set-and-tree-key-set-tree-split.left)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled in-of-tree-key-set-when-in-of-tree-key-set-tree-split.right
-  (implies (treeset::in x (tree-key-set (mv-nth 2 (tree-split y tree))))
-           (treeset::in x (tree-key-set tree)))
+  (implies (tset::in x (tree-key-set (mv-nth 2 (tree-split y tree))))
+           (tset::in x (tree-key-set tree)))
   :induct t
   :enable (tree-split
            tree-key-set))
 
 (defruled subset-of-tree-key-set-and-tree-key-set-tree-split.right
-  (treeset::subset (tree-key-set (mv-nth 2 (tree-split y tree)))
-                   (tree-key-set tree))
-  :enable (treeset::pick-a-point
+  (tset::subset (tree-key-set (mv-nth 2 (tree-split y tree)))
+                (tree-key-set tree))
+  :enable (tset::pick-a-point
            in-of-tree-key-set-when-in-of-tree-key-set-tree-split.right))
 
 ;; (defrule tree-in-when-tree-in-of-tree-split.right-forward-chaining
@@ -401,8 +401,8 @@
 ;;   :enable tree-in-when-tree-in-of-tree-split.right)
 
 (defrule subset-of-tree-key-set-and-tree-key-set-tree-split.right-forward-chaining
-  (treeset::subset (tree-key-set (mv-nth 2 (tree-split y tree)))
-                   (tree-key-set tree))
+  (tset::subset (tree-key-set (mv-nth 2 (tree-split y tree)))
+                (tree-key-set tree))
   :rule-classes ((:forward-chaining :trigger-terms ((tree-split y tree))))
   :by subset-of-tree-key-set-and-tree-key-set-tree-split.right)
 
@@ -410,8 +410,8 @@
 
 (defrule in-of-tree-key-set-tree-split.left
   (implies (bstp tree)
-           (equal (treeset::in x (tree-key-set (mv-nth 1 (tree-split y tree))))
-                  (and (treeset::in x (tree-key-set tree))
+           (equal (tset::in x (tree-key-set (mv-nth 1 (tree-split y tree))))
+                  (and (tset::in x (tree-key-set tree))
                        (<< x y))))
   :induct t
   :enable (tree-split
@@ -421,8 +421,8 @@
 
 (defrule in-of-tree-key-set-tree-split.right
   (implies (bstp tree)
-           (equal (treeset::in x (tree-key-set (mv-nth 2 (tree-split y tree))))
-                  (and (treeset::in x (tree-key-set tree))
+           (equal (tset::in x (tree-key-set (mv-nth 2 (tree-split y tree))))
+                  (and (tset::in x (tree-key-set tree))
                        (<< y x))))
   :induct t
   :enable (tree-split

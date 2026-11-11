@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -14,18 +14,18 @@
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
-(include-book "kestrel/data/treeset/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/bst-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/heap-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/generic-typed-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/bst-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/generic-typed-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/max-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
@@ -40,23 +40,23 @@
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/in" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tset/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap" :dir :system))
+(local (include-book "kestrel/data/tset/internal/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/internal/in" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
@@ -68,14 +68,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-set ((tree treep))
-  :returns (set treeset::setp)
+  :returns (set tset::setp)
   (if (tree-empty-p tree)
-      (treeset::empty)
-    (treeset::insert-with-hash
+      (tset::empty)
+    (tset::insert-with-hash
       (tree-element->key (tree->head tree))
       (tree-element->hash (tree->head tree))
-      (treeset::union (tree-key-set (tree->left tree))
-                      (tree-key-set (tree->right tree)))))
+      (tset::union (tree-key-set (tree->left tree))
+                   (tree-key-set (tree->right tree)))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -93,117 +93,117 @@
            (tree-key-set tree1)))
 
 (defrule bstp-of-tree-key-set
-  (treeset::bstp (tree-key-set tree))
+  (tset::bstp (tree-key-set tree))
   :use setp-of-tree-key-set
-  :enable treeset::break-abstraction
+  :enable tset::break-abstraction
   :disable setp-of-tree-key-set)
 
 (defrule emptyp-of-tree-key-set
-  (equal (treeset::emptyp (tree-key-set tree))
+  (equal (tset::emptyp (tree-key-set tree))
          (tree-empty-p tree))
   :expand ((tree-key-set tree)))
 
 (defruled tree-key-set-when-tree-empty-p
   (implies (tree-empty-p tree)
            (equal (tree-key-set tree)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable tree-key-set)
 
 (defrule tree-key-set-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
            (equal (tree-key-set tree)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by tree-key-set-when-tree-empty-p)
 
 (defrule tree-key-set-of-tree-node
   (equal (tree-key-set (tree-node head left right))
-         (treeset::insert
+         (tset::insert
            (tree-element->key head)
-           (treeset::union (tree-key-set left)
-                           (tree-key-set right))))
+           (tset::union (tree-key-set left)
+                        (tree-key-set right))))
   :enable tree-key-set)
 
 (defruled in-of-tree-key-set
-  (equal (treeset::in key (tree-key-set tree))
+  (equal (tset::in key (tree-key-set tree))
          (and (not (tree-empty-p tree))
               (or (equal key (tree-element->key (tree->head tree)))
-                  (treeset::in key (tree-key-set (tree->left tree)))
-                  (treeset::in key (tree-key-set (tree->right tree))))))
+                  (tset::in key (tree-key-set (tree->left tree)))
+                  (tset::in key (tree-key-set (tree->right tree))))))
   :enable tree-key-set)
 
 (defruled in-of-tree-key-set-when-not-tree-empty-p
   (implies (not (tree-empty-p tree))
-           (equal (treeset::in key (tree-key-set tree))
+           (equal (tset::in key (tree-key-set tree))
                   (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::in key (tree-key-set (tree->left tree)))
-                      (treeset::in key (tree-key-set (tree->right tree))))))
+                      (tset::in key (tree-key-set (tree->left tree)))
+                      (tset::in key (tree-key-set (tree->right tree))))))
   :by in-of-tree-key-set)
 
 (defrule in-of-tree->head-and-tree-key-set
-  (equal (treeset::in (tree-element->key (tree->head tree))
-                      (tree-key-set tree))
+  (equal (tset::in (tree-element->key (tree->head tree))
+                   (tree-key-set tree))
          (not (tree-empty-p tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-tree-key-set-tree->left-and-tree-key-set
-  (treeset::subset (tree-key-set (tree->left tree))
-                   (tree-key-set tree))
+  (tset::subset (tree-key-set (tree->left tree))
+                (tree-key-set tree))
   :expand ((tree-key-set tree))
-  :enable treeset::pick-a-point-polar)
+  :enable tset::pick-a-point-polar)
 
 (defrule in-of-tree-key-set-when-in-of-tree-key-set-tree->left-forward-chaining
-  (implies (treeset::in key (tree-key-set (tree->left tree)))
-           (treeset::in key (tree-key-set tree)))
+  (implies (tset::in key (tree-key-set (tree->left tree)))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :forward-chaining)
 
 (defrule in-of-tree-key-set-tree->left-when-not-in-of-tree-key-set-cheap
-  (implies (not (treeset::in key (tree-key-set tree)))
-           (not (treeset::in key (tree-key-set (tree->left tree)))))
+  (implies (not (tset::in key (tree-key-set tree)))
+           (not (tset::in key (tree-key-set (tree->left tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 (defrule subset-of-tree-key-set-tree->right-and-tree-key-set
-  (treeset::subset (tree-key-set (tree->right tree))
-                   (tree-key-set tree))
+  (tset::subset (tree-key-set (tree->right tree))
+                (tree-key-set tree))
   :expand ((tree-key-set tree))
-  :enable treeset::pick-a-point-polar)
+  :enable tset::pick-a-point-polar)
 
 (defrule in-of-tree-key-set-when-in-of-tree-key-set-tree->right-forward-chaining
-  (implies (treeset::in key (tree-key-set (tree->right tree)))
-           (treeset::in key (tree-key-set tree)))
+  (implies (tset::in key (tree-key-set (tree->right tree)))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :forward-chaining)
 
 (defrule in-of-tree-key-set-tree->right-when-not-in-of-tree-key-set-cheap
-  (implies (not (treeset::in key (tree-key-set tree)))
-           (not (treeset::in key (tree-key-set (tree->right tree)))))
+  (implies (not (tset::in key (tree-key-set tree)))
+           (not (tset::in key (tree-key-set (tree->right tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled in-of-tree-key-set-when-<<-all-r
   (implies (<<-all-r key tree)
-           (not (treeset::in key (tree-key-set tree))))
+           (not (tset::in key (tree-key-set tree))))
   :induct t
   :enable (tree-key-set
            data::<<-rules))
 
 (defrule in-of-tree-key-set-when-<<-all-r-forward-chaining
   (implies (<<-all-r key tree)
-           (not (treeset::in key (tree-key-set tree))))
+           (not (tset::in key (tree-key-set tree))))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-when-<<-all-r)
 
 (defruled in-of-tree-key-set-when-<<-all-l
   (implies (<<-all-l tree key)
-           (not (treeset::in key (tree-key-set tree))))
+           (not (tset::in key (tree-key-set tree))))
   :induct t
   :enable (tree-key-set
            data::<<-rules))
 
 (defrule in-of-tree-key-set-when-<<-all-l-forward-chaining
   (implies (<<-all-l tree key)
-           (not (treeset::in key (tree-key-set tree))))
+           (not (tset::in key (tree-key-set tree))))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-when-<<-all-l)
 
@@ -211,28 +211,28 @@
 
 (defruled <<-when-<<-all-r-and-in-of-tree-key-set
   (implies (and (<<-all-r x tree)
-                (treeset::in y (tree-key-set tree)))
+                (tset::in y (tree-key-set tree)))
            (<< x y))
   :induct t
   :enable tree-key-set)
 
 (defrule <<-when-<<-all-r-and-in-of-tree-key-set-forward-chaining
   (implies (and (<<-all-r x tree)
-                (treeset::in y (tree-key-set tree)))
+                (tset::in y (tree-key-set tree)))
            (<< x y))
   :rule-classes :forward-chaining
   :by <<-when-<<-all-r-and-in-of-tree-key-set)
 
 (defruled <<-when-<<-all-l-and-in-of-tree-key-set
   (implies (and (<<-all-l tree y)
-                (treeset::in x (tree-key-set tree)))
+                (tset::in x (tree-key-set tree)))
            (<< x y))
   :induct t
   :enable tree-key-set)
 
 (defrule <<-when-<<-all-l-and-in-of-tree-key-set-forward-chaining
   (implies (and (<<-all-l tree y)
-                (treeset::in x (tree-key-set tree)))
+                (tset::in x (tree-key-set tree)))
            (<< x y))
   :rule-classes :forward-chaining
   :by <<-when-<<-all-l-and-in-of-tree-key-set)
@@ -242,23 +242,23 @@
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
   (implies (and (bstp tree)
                 (not (<< (tree-element->key (tree->head tree)) key)))
-           (not (treeset::in key (tree-key-set (tree->right tree))))))
+           (not (tset::in key (tree-key-set (tree->right tree))))))
 
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< key (tree-element->key (tree->head tree))))
-           (not (treeset::in key (tree-key-set (tree->right tree)))))
+           (not (tset::in key (tree-key-set (tree->right tree)))))
   :enable data::<<-rules)
 
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head
   (implies (and (bstp tree)
                 (not (<< key (tree-element->key (tree->head tree)))))
-           (not (treeset::in key (tree-key-set (tree->left tree))))))
+           (not (tset::in key (tree-key-set (tree->left tree))))))
 
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< (tree-element->key (tree->head tree)) key))
-           (not (treeset::in key (tree-key-set (tree->left tree)))))
+           (not (tset::in key (tree-key-set (tree->left tree)))))
   :enable data::<<-rules)
 
 ;; In a binary search tree, a key on one side of the root is in the tree
@@ -267,16 +267,16 @@
 (defrule in-of-tree-key-set-when->>-of-tree->head
   (implies (and (bstp tree)
                 (<< key (tree-element->key (tree->head tree))))
-           (equal (treeset::in key (tree-key-set tree))
-                  (treeset::in key (tree-key-set (tree->left tree)))))
+           (equal (tset::in key (tree-key-set tree))
+                  (tset::in key (tree-key-set (tree->left tree)))))
   :enable (in-of-tree-key-set-when-not-tree-empty-p
            data::<<-rules))
 
 (defrule in-of-tree-key-set-when-<<-of-tree->head
   (implies (and (bstp tree)
                 (<< (tree-element->key (tree->head tree)) key))
-           (equal (treeset::in key (tree-key-set tree))
-                  (treeset::in key (tree-key-set (tree->right tree)))))
+           (equal (tset::in key (tree-key-set tree))
+                  (tset::in key (tree-key-set (tree->right tree)))))
   :enable (in-of-tree-key-set-when-not-tree-empty-p
            data::<<-rules))
 
@@ -284,14 +284,14 @@
 
 (defrule heap<-when-heap<-all-l-and-in-of-tree-key-set
   (implies (and (heap<-all-l tree x)
-                (treeset::in key (tree-key-set tree)))
+                (tset::in key (tree-key-set tree)))
            (heap< key x))
   :induct t
   :enable (tree-key-set
            heap<-rules))
 
 (defrule heap<-when-in-of-tree-key-set-and-heap<-all-l
-  (implies (and (treeset::in key (tree-key-set tree))
+  (implies (and (tset::in key (tree-key-set tree))
                 (heap<-all-l tree x))
            (heap< key x))
   :by heap<-when-heap<-all-l-and-in-of-tree-key-set)
@@ -300,7 +300,7 @@
 
 (defrule heap<-of-tree->head-and-arg2-when-in-arg2-of-tree-key-set
   (implies (and (heapp tree)
-                (treeset::in key (tree-key-set tree)))
+                (tset::in key (tree-key-set tree)))
            (not (heap< (tree-element->key (tree->head tree)) key)))
   :induct t
   :enable (tree-key-set
@@ -308,7 +308,7 @@
 
 (defrule heap<-of-arg1-and-tree->head-when-in-arg1-of-tree-key-set
   (implies (and (heapp tree)
-                (treeset::in key (tree-key-set tree)))
+                (tset::in key (tree-key-set tree)))
            (equal (heap< key (tree-element->key (tree->head tree)))
                   (not (equal key (tree-element->key (tree->head tree))))))
   :use heap<-of-tree->head-and-arg2-when-in-arg2-of-tree-key-set
@@ -318,43 +318,43 @@
 
 (defrule in-of-tree->head-and-tree-key-set-tree->left
   (implies (bstp tree)
-           (not (treeset::in (tree-element->key (tree->head tree))
-                             (tree-key-set (tree->left tree))))))
+           (not (tset::in (tree-element->key (tree->head tree))
+                          (tree-key-set (tree->left tree))))))
 
 (defrule in-of-tree->head-and-tree-key-set-tree->right
   (implies (bstp tree)
-           (not (treeset::in (tree-element->key (tree->head tree))
-                             (tree-key-set (tree->right tree))))))
+           (not (tset::in (tree-element->key (tree->head tree))
+                          (tree-key-set (tree->right tree))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled in-of-tree-key-set-tree->left-when-in-of-tree-key-set-tree->right
   (implies (and (bstp tree)
-                (treeset::in key (tree-key-set (tree->right tree))))
-           (not (treeset::in key (tree-key-set (tree->left tree)))))
+                (tset::in key (tree-key-set (tree->right tree))))
+           (not (tset::in key (tree-key-set (tree->left tree)))))
   :use (in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
         in-of-tree-key-set-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
 (defrule in-of-tree-key-set-tree->left-when-in-of-tree-key-set-tree->right-forward-chaining
-  (implies (and (treeset::in key (tree-key-set (tree->right tree)))
+  (implies (and (tset::in key (tree-key-set (tree->right tree)))
                 (bstp tree))
-           (not (treeset::in key (tree-key-set (tree->left tree)))))
+           (not (tset::in key (tree-key-set (tree->left tree)))))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-tree->left-when-in-of-tree-key-set-tree->right)
 
 (defruled in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left
   (implies (and (bstp tree)
-                (treeset::in key (tree-key-set (tree->left tree))))
-           (not (treeset::in key (tree-key-set (tree->right tree)))))
+                (tset::in key (tree-key-set (tree->left tree))))
+           (not (tset::in key (tree-key-set (tree->right tree)))))
   :use (in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
         in-of-tree-key-set-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
 (defrule in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left-forward-chaining
-  (implies (and (treeset::in key (tree-key-set (tree->left tree)))
+  (implies (and (tset::in key (tree-key-set (tree->left tree)))
                 (bstp tree))
-           (not (treeset::in key (tree-key-set (tree->right tree)))))
+           (not (tset::in key (tree-key-set (tree->right tree)))))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left)
 
@@ -364,10 +364,10 @@
 (defruled tree->head-when-heapp-and-in-of-tree->head
   (implies (and (heapp x)
                 (heapp y)
-                (treeset::in (tree-element->key (tree->head x))
-                             (tree-key-set y))
-                (treeset::in (tree-element->key (tree->head y))
-                             (tree-key-set x)))
+                (tset::in (tree-element->key (tree->head x))
+                          (tree-key-set y))
+                (tset::in (tree-element->key (tree->head y))
+                          (tree-key-set x)))
            (equal (tree-element->key (tree->head x))
                   (tree-element->key (tree->head y))))
   :use ((:instance heap<-of-arg1-and-tree->head-when-in-arg1-of-tree-key-set
@@ -378,13 +378,13 @@
 
 ;; TODO: unused?
 (defruled tree->head-when-heapp-and-in-of-tree->head-syntaxp
-  (implies (and (treeset::in (tree-element->key (tree->head x))
-                             (tree-key-set y))
+  (implies (and (tset::in (tree-element->key (tree->head x))
+                          (tree-key-set y))
                 (syntaxp (<< y x))
                 (heapp x)
                 (heapp y)
-                (treeset::in (tree-element->key (tree->head y))
-                             (tree-key-set x)))
+                (tset::in (tree-element->key (tree->head y))
+                          (tree-key-set x)))
            (equal (tree-element->key (tree->head x))
                   (tree-element->key (tree->head y))))
   :by tree->head-when-heapp-and-in-of-tree->head)
@@ -394,8 +394,8 @@
 (defruled in-of-tree-key-set-right-when-disjoint-and-in-of-tree-key-set-left
   (implies (and (<<-all-l left x)
                 (<<-all-r x right)
-                (treeset::in y (tree-key-set left)))
-           (not (treeset::in y (tree-key-set right))))
+                (tset::in y (tree-key-set left)))
+           (not (tset::in y (tree-key-set right))))
   :induct t
   :enable (tree-key-set
            data::<<-rules))
@@ -403,16 +403,16 @@
 (defrule in-of-tree-key-set-right-when-disjoint-and-in-of-tree-key-set-left-forward-chaining
   (implies (and (<<-all-l left x)
                 (<<-all-r x right)
-                (treeset::in y (tree-key-set left)))
-           (not (treeset::in y (tree-key-set right))))
+                (tset::in y (tree-key-set left)))
+           (not (tset::in y (tree-key-set right))))
   :rule-classes :forward-chaining
   :enable in-of-tree-key-set-right-when-disjoint-and-in-of-tree-key-set-left)
 
 (defruled in-of-tree-key-set-left-when-disjoint-and-in-of-tree-key-set-right
   (implies (and (<<-all-l left x)
                 (<<-all-r x right)
-                (treeset::in y (tree-key-set right)))
-           (not (treeset::in y (tree-key-set left))))
+                (tset::in y (tree-key-set right)))
+           (not (tset::in y (tree-key-set left))))
   :induct t
   :enable (tree-key-set
            data::<<-rules))
@@ -420,8 +420,8 @@
 (defrule in-of-tree-key-set-left-when-disjoint-and-in-of-tree-key-set-right-forward-chaining
   (implies (and (<<-all-l left x)
                 (<<-all-r x right)
-                (treeset::in y (tree-key-set right)))
-           (not (treeset::in y (tree-key-set left))))
+                (tset::in y (tree-key-set right)))
+           (not (tset::in y (tree-key-set left))))
   :rule-classes :forward-chaining
   :enable in-of-tree-key-set-left-when-disjoint-and-in-of-tree-key-set-right)
 
@@ -429,23 +429,23 @@
 
 (defrule intersect-of-tree-key-set-left-and-right
   (implies (bstp tree)
-           (equal (treeset::intersect (tree-key-set (tree->left tree))
-                                      (tree-key-set (tree->right tree)))
-                  (treeset::empty)))
-  :enable treeset::extensionality)
+           (equal (tset::intersect (tree-key-set (tree->left tree))
+                                   (tree-key-set (tree->right tree)))
+                  (tset::empty)))
+  :enable tset::extensionality)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-tree ((tree treep))
   :type-prescription :none
-  :returns (key-tree treeset::treep)
+  :returns (key-tree tset::treep)
   (if (tree-empty-p tree)
       nil
-    (treeset::tree-node (treeset::tree-element
-                          (tree-element->hash (tree->head tree))
-                          (tree-element->key (tree->head tree)))
-                        (tree-key-tree (tree->left tree))
-                        (tree-key-tree (tree->right tree))))
+    (tset::tree-node (tset::tree-element
+                       (tree-element->hash (tree->head tree))
+                       (tree-element->key (tree->head tree)))
+                     (tree-key-tree (tree->left tree))
+                     (tree-key-tree (tree->right tree))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -465,79 +465,79 @@
            (tree-key-tree tree1)))
 
 (defrule tree-empty-p-of-tree-key-tree
-  (equal (treeset::tree-empty-p (tree-key-tree tree))
+  (equal (tset::tree-empty-p (tree-key-tree tree))
          (tree-empty-p tree))
   :expand ((tree-key-tree tree)))
 
 (defrule <<-all-l-of-tree-key-tree-when-<<-all-l
   (implies (<<-all-l tree x)
-           (treeset::<<-all-l (tree-key-tree tree) x))
+           (tset::<<-all-l (tree-key-tree tree) x))
   :induct t
   :enable tree-key-tree)
 
 (defrule <<-all-r-of-tree-key-tree-when-<<-all-r
   (implies (<<-all-r x tree)
-           (treeset::<<-all-r x (tree-key-tree tree)))
+           (tset::<<-all-r x (tree-key-tree tree)))
   :induct t
   :enable tree-key-tree)
 
 (defrule bstp-of-tree-key-tree-when-bstp
   (implies (bstp tree)
-           (treeset::bstp (tree-key-tree tree)))
+           (tset::bstp (tree-key-tree tree)))
   :induct t
   :enable tree-key-tree)
 
 (defrule heap<-all-l-of-tree-key-tree-when-heap<-all-l
   (implies (heap<-all-l tree x)
-           (treeset::heap<-all-l (tree-key-tree tree) x))
+           (tset::heap<-all-l (tree-key-tree tree) x))
   :induct t
   :enable tree-key-tree)
 
 (defrule heapp-of-tree-key-tree-when-heapp
   (implies (heapp tree)
-           (treeset::heapp (tree-key-tree tree)))
+           (tset::heapp (tree-key-tree tree)))
   :induct t
   :enable tree-key-tree)
 
 (defrule setp-of-tree-key-tree
   (implies (and (bstp tree)
                 (heapp tree))
-           (treeset::setp (tree-key-tree tree)))
-  :enable treeset::setp)
+           (tset::setp (tree-key-tree tree)))
+  :enable tset::setp)
 
 (defruled tree-in-of-tree-key-tree
-  (equal (treeset::tree-in key (tree-key-tree tree))
+  (equal (tset::tree-in key (tree-key-tree tree))
          (and (not (tree-empty-p tree))
               (or (equal key (tree-element->key (tree->head tree)))
-                  (treeset::tree-in key (tree-key-tree (tree->left tree)))
-                  (treeset::tree-in key (tree-key-tree (tree->right tree))))))
+                  (tset::tree-in key (tree-key-tree (tree->left tree)))
+                  (tset::tree-in key (tree-key-tree (tree->right tree))))))
   :enable tree-key-tree)
 
 (defruled tree-in-of-tree-key-tree-when-tree-empty-p
   (implies (tree-empty-p tree)
-           (not (treeset::tree-in key (tree-key-tree tree))))
+           (not (tset::tree-in key (tree-key-tree tree))))
   :use tree-in-of-tree-key-tree)
 
 (defrule tree-in-of-tree-key-tree-when-tree-empty-p-cheap
   (implies (tree-empty-p tree)
-           (not (treeset::tree-in key (tree-key-tree tree))))
+           (not (tset::tree-in key (tree-key-tree tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by tree-in-of-tree-key-tree-when-tree-empty-p)
 
 (defruled tree-in-of-tree-key-tree-when-not-tree-empty-p
   (implies (not (tree-empty-p tree))
-           (equal (treeset::tree-in key (tree-key-tree tree))
+           (equal (tset::tree-in key (tree-key-tree tree))
                   (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->left tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->right tree))))))
+                      (tset::tree-in key (tree-key-tree (tree->left tree)))
+                      (tset::tree-in key (tree-key-tree (tree->right tree))))))
   :use tree-in-of-tree-key-tree)
 
 (defrule in-of-tree-key-tree
   (implies (and (bstp tree)
                 (heapp tree))
-           (equal (treeset::in key (tree-key-tree tree))
-                  (treeset::tree-in key (tree-key-tree tree))))
-  :enable treeset::in)
+           (equal (tset::in key (tree-key-tree tree))
+                  (tset::tree-in key (tree-key-tree tree))))
+  :enable tset::in)
 
 (defrule tree-key-tree-becomes-tree-key-set
   (implies (and (bstp tree)
@@ -553,42 +553,42 @@
                    (heapp tree))
               (equal (tree-key-tree tree)
                      (if (tree-empty-p tree)
-                         (treeset::empty)
-                       (treeset::insert-with-hash
+                         (tset::empty)
+                       (tset::insert-with-hash
                          (tree-element->key (tree->head tree))
                          (tree-element->hash (tree->head tree))
-                         (treeset::union (tree-key-tree (tree->left tree))
-                                         (tree-key-tree (tree->right tree)))))))
+                         (tset::union (tree-key-tree (tree->left tree))
+                                      (tree-key-tree (tree->right tree)))))))
      :rule-classes :definition
-     :enable (treeset::extensionality-no-backchain-limit
+     :enable (tset::extensionality-no-backchain-limit
               tree-in-of-tree-key-tree-when-not-tree-empty-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled tree-leftmost-of-tree-key-tree
-  (equal (treeset::tree-leftmost (tree-key-tree tree))
+  (equal (tset::tree-leftmost (tree-key-tree tree))
          (if (tree-empty-p (tree->left tree))
              (tree-element->key (tree->head tree))
-           (treeset::tree-leftmost (tree-key-tree (tree->left tree)))))
-  :enable (treeset::tree-leftmost
+           (tset::tree-leftmost (tree-key-tree (tree->left tree)))))
+  :enable (tset::tree-leftmost
            tree-key-tree
            irr-tree-element
-           treeset::empty))
+           tset::empty))
 
 (defruled tree-min-of-tree-key-set-when-tree-empty-p-tree->left
   (implies (and (tree-empty-p (tree->left tree))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::min (tree-key-set tree))
+           (equal (tset::min (tree-key-set tree))
                   (tree-element->key (tree->head tree))))
   :use tree-leftmost-of-tree-key-tree
-  :enable treeset::min)
+  :enable tset::min)
 
 (defrule tree-min-of-tree-key-set--when-tree-empty-p-tree->left-cheap
   (implies (and (tree-empty-p (tree->left tree))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::min (tree-key-set tree))
+           (equal (tset::min (tree-key-set tree))
                   (tree-element->key (tree->head tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :by tree-min-of-tree-key-set-when-tree-empty-p-tree->left)
@@ -597,46 +597,46 @@
   (implies (and (not (tree-empty-p (tree->left tree)))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::min (tree-key-set tree))
-                  (treeset::min (tree-key-set (tree->left tree)))))
+           (equal (tset::min (tree-key-set tree))
+                  (tset::min (tree-key-set (tree->left tree)))))
   :use tree-leftmost-of-tree-key-tree
-  :enable treeset::min)
+  :enable tset::min)
 
 (defrule tree-min-of-tree-key-set-when-not-tree-empty-p-tree->left-cheap
   (implies (and (not (tree-empty-p (tree->left tree)))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::min (tree-key-set tree))
-                  (treeset::min (tree-key-set (tree->left tree)))))
+           (equal (tset::min (tree-key-set tree))
+                  (tset::min (tree-key-set (tree->left tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :by tree-min-of-tree-key-set-when-not-tree-empty-p-tree->left)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled tree-rightmost-of-tree-key-tree
-  (equal (treeset::tree-rightmost (tree-key-tree tree))
+  (equal (tset::tree-rightmost (tree-key-tree tree))
          (if (tree-empty-p (tree->right tree))
              (tree-element->key (tree->head tree))
-           (treeset::tree-rightmost (tree-key-tree (tree->right tree)))))
-  :enable (treeset::tree-rightmost
+           (tset::tree-rightmost (tree-key-tree (tree->right tree)))))
+  :enable (tset::tree-rightmost
            tree-key-tree
            irr-tree-element
-           treeset::empty))
+           tset::empty))
 
 (defruled tree-max-of-tree-key-set-when-tree-empty-p-tree->right
   (implies (and (tree-empty-p (tree->right tree))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::max (tree-key-set tree))
+           (equal (tset::max (tree-key-set tree))
                   (tree-element->key (tree->head tree))))
   :use tree-rightmost-of-tree-key-tree
-  :enable treeset::max)
+  :enable tset::max)
 
 (defrule tree-max-of-tree-key-set--when-tree-empty-p-tree->right-cheap
   (implies (and (tree-empty-p (tree->right tree))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::max (tree-key-set tree))
+           (equal (tset::max (tree-key-set tree))
                   (tree-element->key (tree->head tree))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :by tree-max-of-tree-key-set-when-tree-empty-p-tree->right)
@@ -645,17 +645,17 @@
   (implies (and (not (tree-empty-p (tree->right tree)))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::max (tree-key-set tree))
-                  (treeset::max (tree-key-set (tree->right tree)))))
+           (equal (tset::max (tree-key-set tree))
+                  (tset::max (tree-key-set (tree->right tree)))))
   :use tree-rightmost-of-tree-key-tree
-  :enable treeset::max)
+  :enable tset::max)
 
 (defrule tree-max-of-tree-key-set-when-not-tree-empty-p-tree->right-cheap
   (implies (and (not (tree-empty-p (tree->right tree)))
                 (bstp tree)
                 (heapp tree))
-           (equal (treeset::max (tree-key-set tree))
-                  (treeset::max (tree-key-set (tree->right tree)))))
+           (equal (tset::max (tree-key-set tree))
+                  (tset::max (tree-key-set (tree->right tree)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil)))
   :by tree-max-of-tree-key-set-when-not-tree-empty-p-tree->right)
 
@@ -664,7 +664,7 @@
 (define tree-keys-acl2-numberp ((tree treep))
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  (mbe :logic (treeset::set-all-acl2-numberp (tree-key-set tree))
+  (mbe :logic (tset::set-all-acl2-numberp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
                  (and (acl2-numberp (tree-element->key (tree->head tree)))
                       (tree-keys-acl2-numberp (tree->left tree))
@@ -685,7 +685,7 @@
 (define tree-keys-symbolp ((tree treep))
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  (mbe :logic (treeset::set-all-symbolp (tree-key-set tree))
+  (mbe :logic (tset::set-all-symbolp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
                  (and (symbolp (tree-element->key (tree->head tree)))
                       (tree-keys-symbolp (tree->left tree))
@@ -706,7 +706,7 @@
 (define tree-keys-eqlablep ((tree treep))
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  (mbe :logic (treeset::set-all-eqlablep (tree-key-set tree))
+  (mbe :logic (tset::set-all-eqlablep (tree-key-set tree))
        :exec (or (tree-empty-p tree)
                  (and (eqlablep (tree-element->key (tree->head tree)))
                       (tree-keys-eqlablep (tree->left tree))
@@ -725,39 +725,39 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule genericp-of-tree->head-when-set-all-genericp
-  (implies (and (treeset::set-all-genericp (tree-key-set tree))
+  (implies (and (tset::set-all-genericp (tree-key-set tree))
                 (not (tree-empty-p tree)))
-           (treeset::genericp (tree-element->key (tree->head tree)))))
+           (tset::genericp (tree-element->key (tree->head tree)))))
 
 (defrule acl2-numberp-of-tree->head-when-set-all-acl2-numberp
-  (implies (and (treeset::set-all-acl2-numberp (tree-key-set tree))
+  (implies (and (tset::set-all-acl2-numberp (tree-key-set tree))
                 (not (tree-empty-p tree)))
            (acl2-numberp (tree-element->key (tree->head tree))))
   :use (:functional-instance
          genericp-of-tree->head-when-set-all-genericp
-         (treeset::genericp acl2-numberp)
-         (treeset::set-all-genericp treeset::set-all-acl2-numberp))
-  :enable treeset::set-all-acl2-numberp-alt-definition)
+         (tset::genericp acl2-numberp)
+         (tset::set-all-genericp tset::set-all-acl2-numberp))
+  :enable tset::set-all-acl2-numberp-alt-definition)
 
 (defrule symbolp-of-tree->head-when-set-all-symbolp
-  (implies (and (treeset::set-all-symbolp (tree-key-set tree))
+  (implies (and (tset::set-all-symbolp (tree-key-set tree))
                 (not (tree-empty-p tree)))
            (symbolp (tree-element->key (tree->head tree))))
   :use (:functional-instance
          genericp-of-tree->head-when-set-all-genericp
-         (treeset::genericp symbolp)
-         (treeset::set-all-genericp treeset::set-all-symbolp))
-  :enable treeset::set-all-symbolp-alt-definition)
+         (tset::genericp symbolp)
+         (tset::set-all-genericp tset::set-all-symbolp))
+  :enable tset::set-all-symbolp-alt-definition)
 
 (defrule eqlablep-of-tree->head-when-set-all-eqlablep
-  (implies (and (treeset::set-all-eqlablep (tree-key-set tree))
+  (implies (and (tset::set-all-eqlablep (tree-key-set tree))
                 (not (tree-empty-p tree)))
            (eqlablep (tree-element->key (tree->head tree))))
   :use (:functional-instance
          genericp-of-tree->head-when-set-all-genericp
-         (treeset::genericp eqlablep)
-         (treeset::set-all-genericp treeset::set-all-eqlablep))
-  :enable treeset::set-all-eqlablep-alt-definition)
+         (tset::genericp eqlablep)
+         (tset::set-all-genericp tset::set-all-eqlablep))
+  :enable tset::set-all-eqlablep-alt-definition)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

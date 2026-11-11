@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)

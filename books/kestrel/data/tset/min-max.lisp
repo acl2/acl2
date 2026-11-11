@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -38,8 +38,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min ((set setp))
-  :parents (treeset)
-  :short "The minimum element of a @(see treeset) (with respect to
+  :parents (tset)
+  :short "The minimum element of a @(see tset) (with respect to
           @(tsee <<))."
   :long
   (xdoc::topstring
@@ -166,8 +166,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max ((set setp))
-  :parents (treeset)
-  :short "The maximum element of a @(see treeset) (with respect to
+  :parents (tset)
+  :short "The maximum element of a @(see tset) (with respect to
           @(tsee <<))."
   :long
   (xdoc::topstring

@@ -13,9 +13,9 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "step-defs")
@@ -23,9 +23,9 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "step"))
@@ -294,23 +294,23 @@
 
 (define steps-edges (from (steps step-listp))
   :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (walk-edges)
   :short "The set of edges a list of steps follows, when taken from a node."
   (if (consp steps)
-      (treeset::insert (edge from
-                             (step->to (car steps))
-                             (step->label (car steps)))
-                       (steps-edges (step->to (car steps)) (cdr steps)))
-    (treeset::empty))
+      (tset::insert (edge from
+                          (step->to (car steps))
+                          (step->label (car steps)))
+                    (steps-edges (step->to (car steps)) (cdr steps)))
+    (tset::empty))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule steps-edges-of-append
   (equal (steps-edges from (append steps0 steps1))
-         (treeset::union (steps-edges from steps0)
-                         (steps-edges (steps-end from steps0) steps1)))
+         (tset::union (steps-edges from steps0)
+                      (steps-edges (steps-end from steps0) steps1)))
   :induct t
   :enable (steps-edges
            steps-end
@@ -320,7 +320,7 @@
 
 (define walk-edges ((walk walkp))
   :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (walkp)
   :short "The set of edges a walk follows."
   :long
@@ -346,7 +346,7 @@
 (defrule walk-edges-when-not-consp-of-walk->steps
   (implies (not (consp (walk->steps walk)))
            (equal (walk-edges walk)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable (walk-edges
            steps-edges))
 

@@ -13,7 +13,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "TREESET"
+(defpkg "TSET"
   (union-eq '(data::max-<<
               data::min-<<
               define-sk
@@ -21,7 +21,7 @@
               defxdoc+
               enable*
               lnfix
-              treeset
+              tset
               )
             (set-difference-eq *std-pkg-symbols*
                                #!STD

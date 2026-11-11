@@ -12,8 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "step-defs")
@@ -23,10 +23,10 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "../edges"))
 (local (include-book "step"))
@@ -115,7 +115,7 @@
 (defrule walk-edges-of-walk-append
   (implies (equal (walk-end x) (walk->start y))
            (equal (walk-edges (walk-append x y))
-                  (treeset::union (walk-edges x) (walk-edges y))))
+                  (tset::union (walk-edges x) (walk-edges y))))
   :enable (walk-end
            walk-edges))
 

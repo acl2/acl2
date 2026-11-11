@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "tree-defs")
 (include-book "keys-defs")
@@ -27,15 +27,15 @@
   (DECLARE (XARGS :GUARD T))
   (FORALL
    (KEY)
-   (NON-EXEC (IMPLIES (TREESET::IN KEY (TREE-KEY-SET X))
-                      (AND (TREESET::IN KEY (TREE-KEY-SET Y))
+   (NON-EXEC (IMPLIES (TSET::IN KEY (TREE-KEY-SET X))
+                      (AND (TSET::IN KEY (TREE-KEY-SET Y))
                            (EQUAL (TREE-LOOKUP KEY X)
                                   (TREE-LOOKUP KEY Y))))))
   :REWRITE
   (IMPLIES
    (TREE-SUBMAP-P-SK X Y)
-   (NON-EXEC (IMPLIES (TREESET::IN KEY (TREE-KEY-SET X))
-                      (AND (TREESET::IN KEY (TREE-KEY-SET Y))
+   (NON-EXEC (IMPLIES (TSET::IN KEY (TREE-KEY-SET X))
+                      (AND (TSET::IN KEY (TREE-KEY-SET Y))
                            (EQUAL (TREE-LOOKUP KEY X)
                                   (TREE-LOOKUP KEY Y))))))
   :SKOLEM-NAME TREE-SUBMAP-P-SK-WITNESS

@@ -12,14 +12,14 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -37,17 +37,17 @@
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
 
 (local (include-book "../nodes"))
 (local (include-book "../successors"))
@@ -67,29 +67,29 @@
 ;; is reached by no node of a set is not one of its successors.
 
 (defrulel emptyp-of-intersect-of-predecessors+-when-not-in-of-successors-of-set
-  (implies (and (treeset::subset (successors-of-set set graph) set)
-                (not (treeset::in node (successors-of-set set graph)))
-                (treeset::subset set2 set))
-           (treeset::emptyp
-             (treeset::intersect (predecessors+ node graph) set2)))
-  :use (:instance treeset::in-of-min
-                  (set (treeset::intersect (predecessors+ node graph) set2)))
+  (implies (and (tset::subset (successors-of-set set graph) set)
+                (not (tset::in node (successors-of-set set graph)))
+                (tset::subset set2 set))
+           (tset::emptyp
+             (tset::intersect (predecessors+ node graph) set2)))
+  :use (:instance tset::in-of-min
+                  (set (tset::intersect (predecessors+ node graph) set2)))
   :enable reachable+p-when-not-in-of-successors-of-set
-  :disable treeset::in-of-min)
+  :disable tset::in-of-min)
 
 (defrulel in-of-successors-of-set-when-emptyp-of-intersect-of-predecessors+
-  (implies (treeset::emptyp
-             (treeset::intersect (predecessors+ node graph) set))
-           (not (treeset::in node (successors-of-set set graph))))
-  :use ((:instance treeset::in-of-min
-                   (set (treeset::intersect set (predecessors node graph))))
-        (:instance treeset::not-emptyp-when-in
-                   (x (treeset::min
-                        (treeset::intersect set (predecessors node graph))))
-                   (set (treeset::intersect set
-                                            (predecessors+ node graph)))))
+  (implies (tset::emptyp
+             (tset::intersect (predecessors+ node graph) set))
+           (not (tset::in node (successors-of-set set graph))))
+  :use ((:instance tset::in-of-min
+                   (set (tset::intersect set (predecessors node graph))))
+        (:instance tset::not-emptyp-when-in
+                   (x (tset::min
+                        (tset::intersect set (predecessors node graph))))
+                   (set (tset::intersect set
+                                         (predecessors+ node graph)))))
   :enable in-of-successors-of-set-becomes-not-emptyp-of-intersect
-  :disable treeset::in-of-min)
+  :disable tset::in-of-min)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,9 +103,9 @@
     "That is, a node does not reach any node at or before it in the list (see
      @(tsee reachable+p)). The list need not contain every node.")
   (or (endp list)
-      (and (treeset::emptyp
-             (treeset::intersect (predecessors+ (first list) graph)
-                                 (treeset::from-list list)))
+      (and (tset::emptyp
+             (tset::intersect (predecessors+ (first list) graph)
+                              (tset::from-list list)))
            (reachable+p-sortedp (rest list) graph))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -126,10 +126,10 @@
   (implies (and (reachable+p-sortedp list graph)
                 (member-equal from list))
            (not (reachable+p from (car list) graph)))
-  :use (:instance treeset::not-emptyp-when-in
+  :use (:instance tset::not-emptyp-when-in
                   (x from)
-                  (set (treeset::intersect (predecessors+ (car list) graph)
-                                           (treeset::from-list list))))
+                  (set (tset::intersect (predecessors+ (car list) graph)
+                                        (tset::from-list list))))
   :enable reachable+p-sortedp)
 
 ;; So a node does not reach any node at or before it, and in particular not
@@ -165,25 +165,25 @@
 
 (define topological-orderp-loop
   ((order true-listp)
-   (seen treeset::setp)
+   (seen tset::setp)
    (graph graphp))
   :returns (yes/no booleanp)
   :parents (topological-orderp)
   :short "Check a list in one pass, keeping the set of nodes seen."
   (b* (((when (endp order))
-        (equal (treeset::fix seen) (nodes graph)))
+        (equal (tset::fix seen) (nodes graph)))
        (node (first order))
-       ((when (treeset::in node seen))
+       ((when (tset::in node seen))
         nil)
-       (seen (treeset::insert node seen)))
-    (and (treeset::emptyp
-           (treeset::intersect (successors node graph) seen))
+       (seen (tset::insert node seen)))
+    (and (tset::emptyp
+           (tset::intersect (successors node graph) seen))
          (topological-orderp-loop (rest order) seen graph))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule topological-orderp-loop-when-equiv-of-arg2-congruence
-  (implies (treeset::equiv seen0 seen1)
+  (implies (tset::equiv seen0 seen1)
            (equal (topological-orderp-loop order seen0 graph)
                   (topological-orderp-loop order seen1 graph)))
   :rule-classes :congruence
@@ -206,14 +206,14 @@
 
 (defrulel union-of-arg2-and-from-list-when-topological-orderp-loop
   (implies (topological-orderp-loop order seen graph)
-           (equal (treeset::union seen (treeset::from-list order))
+           (equal (tset::union seen (tset::from-list order))
                   (nodes graph)))
   :induct t
   :enable topological-orderp-loop)
 
 (defrulel member-equal-when-topological-orderp-loop
   (implies (and (topological-orderp-loop order seen graph)
-                (treeset::in node seen))
+                (tset::in node seen))
            (not (member-equal node order)))
   :induct t
   :enable (topological-orderp-loop
@@ -228,71 +228,71 @@
 
 (defrulel emptyp-of-intersect-of-arg2-and-successors-of-set-when-topological-orderp-loop
   (implies (topological-orderp-loop order seen graph)
-           (treeset::emptyp
-             (treeset::intersect seen
-                                 (successors-of-set (treeset::from-list order)
-                                                    graph))))
+           (tset::emptyp
+             (tset::intersect seen
+                              (successors-of-set (tset::from-list order)
+                                                 graph))))
   :induct t
   :enable (topological-orderp-loop
-           treeset::from-list-when-consp
-           treeset::intersect-of-insert
-           treeset::intersect-of-arg1-and-insert))
+           tset::from-list-when-consp
+           tset::intersect-of-insert
+           tset::intersect-of-arg1-and-insert))
 
 ;; So the nodes of the list include their own successors, and the first is not
 ;; one of them. Hence the list is sorted.
 
 (defrulel subset-of-successors-of-set-of-from-list-when-topological-orderp-loop
   (implies (topological-orderp-loop order seen graph)
-           (treeset::subset (successors-of-set (treeset::from-list order)
-                                               graph)
-                            (treeset::from-list order)))
-  :use (:instance treeset::subset-of-arg1-and-union-when-emptyp-of-intersect0
-                  (treeset::x (successors-of-set (treeset::from-list order)
-                                                 graph))
-                  (treeset::y seen)
-                  (treeset::z (treeset::from-list order))))
+           (tset::subset (successors-of-set (tset::from-list order)
+                                            graph)
+                         (tset::from-list order)))
+  :use (:instance tset::subset-of-arg1-and-union-when-emptyp-of-intersect0
+                  (tset::x (successors-of-set (tset::from-list order)
+                                              graph))
+                  (tset::y seen)
+                  (tset::z (tset::from-list order))))
 
 (defrulel subset-of-successors-when-topological-orderp-loop
   (implies (and (topological-orderp-loop rest
-                                         (treeset::insert node seen)
+                                         (tset::insert node seen)
                                          graph)
-                (treeset::emptyp
-                  (treeset::intersect (treeset::insert node seen)
-                                      (successors node graph))))
-           (treeset::subset (successors node graph)
-                            (treeset::from-list rest)))
-  :use ((:instance treeset::subset-of-arg1-and-union-when-emptyp-of-intersect0
-                   (treeset::x (successors node graph))
-                   (treeset::y (treeset::insert node seen))
-                   (treeset::z (treeset::from-list rest)))
+                (tset::emptyp
+                  (tset::intersect (tset::insert node seen)
+                                   (successors node graph))))
+           (tset::subset (successors node graph)
+                         (tset::from-list rest)))
+  :use ((:instance tset::subset-of-arg1-and-union-when-emptyp-of-intersect0
+                   (tset::x (successors node graph))
+                   (tset::y (tset::insert node seen))
+                   (tset::z (tset::from-list rest)))
         (:instance union-of-arg2-and-from-list-when-topological-orderp-loop
                    (order rest)
-                   (seen (treeset::insert node seen))))
+                   (seen (tset::insert node seen))))
   :disable union-of-arg2-and-from-list-when-topological-orderp-loop)
 
 (defrulel emptyp-of-intersect-of-from-list-and-predecessors+-of-car-when-topological-orderp-loop
   (implies (and (topological-orderp-loop (cdr order)
-                                         (treeset::insert (car order) seen)
+                                         (tset::insert (car order) seen)
                                          graph)
                 (consp order)
-                (treeset::emptyp
-                  (treeset::intersect (treeset::insert (car order) seen)
-                                      (successors (car order) graph))))
-           (treeset::emptyp
-             (treeset::intersect (treeset::from-list order)
-                                 (predecessors+ (car order) graph))))
+                (tset::emptyp
+                  (tset::intersect (tset::insert (car order) seen)
+                                   (successors (car order) graph))))
+           (tset::emptyp
+             (tset::intersect (tset::from-list order)
+                              (predecessors+ (car order) graph))))
   :use ((:instance
           emptyp-of-intersect-of-predecessors+-when-not-in-of-successors-of-set
           (node (car order))
-          (set (treeset::from-list order))
-          (set2 (treeset::from-list order)))
+          (set (tset::from-list order))
+          (set2 (tset::from-list order)))
         (:instance
           emptyp-of-intersect-of-arg2-and-successors-of-set-when-topological-orderp-loop
           (order (cdr order))
-          (seen (treeset::insert (car order) seen))))
-  :enable (treeset::from-list-when-consp
-           treeset::intersect-of-insert
-           treeset::intersect-of-arg1-and-insert)
+          (seen (tset::insert (car order) seen))))
+  :enable (tset::from-list-when-consp
+           tset::intersect-of-insert
+           tset::intersect-of-arg1-and-insert)
   :disable
   (emptyp-of-intersect-of-predecessors+-when-not-in-of-successors-of-set
    emptyp-of-intersect-of-arg2-and-successors-of-set-when-topological-orderp-loop))
@@ -310,33 +310,33 @@
 
 (defrulel topological-orderp-loop-when-reachable+p-sortedp
   (implies (and (no-duplicatesp-equal order)
-                (treeset::emptyp
-                  (treeset::intersect seen (treeset::from-list order)))
-                (equal (treeset::union seen (treeset::from-list order))
+                (tset::emptyp
+                  (tset::intersect seen (tset::from-list order)))
+                (equal (tset::union seen (tset::from-list order))
                        (nodes graph))
                 (reachable+p-sortedp order graph)
-                (treeset::emptyp
-                  (treeset::intersect
+                (tset::emptyp
+                  (tset::intersect
                     seen
-                    (successors-of-set (treeset::from-list order) graph))))
+                    (successors-of-set (tset::from-list order) graph))))
            (topological-orderp-loop order seen graph))
   :induct (topological-orderp-loop order seen graph)
   :enable (topological-orderp-loop
            reachable+p-sortedp
            no-duplicatesp-equal
-           treeset::from-list-when-consp
-           treeset::intersect-of-insert
-           treeset::intersect-of-arg1-and-insert))
+           tset::from-list-when-consp
+           tset::intersect-of-insert
+           tset::intersect-of-arg1-and-insert))
 
 (defrulel topological-orderp-loop-of-empty
-  (equal (topological-orderp-loop order (treeset::empty) graph)
+  (equal (topological-orderp-loop order (tset::empty) graph)
          (and (no-duplicatesp-equal order)
-              (equal (treeset::from-list order) (nodes graph))
+              (equal (tset::from-list order) (nodes graph))
               (reachable+p-sortedp order graph)))
   :use ((:instance topological-orderp-loop-when-reachable+p-sortedp
-                   (seen (treeset::empty)))
+                   (seen (tset::empty)))
         (:instance union-of-arg2-and-from-list-when-topological-orderp-loop
-                   (seen (treeset::empty))))
+                   (seen (tset::empty))))
   :disable (topological-orderp-loop-when-reachable+p-sortedp
             union-of-arg2-and-from-list-when-topological-orderp-loop))
 
@@ -362,9 +362,9 @@
       "Time complexity: @($O((n + m)\\log(n))$), where @($n$) is the number of
        nodes and @($m$) the number of pairs of nodes joined by an edge."))
   (mbe :logic (and (no-duplicatesp-equal order)
-                   (equal (treeset::from-list order) (nodes graph))
+                   (equal (tset::from-list order) (nodes graph))
                    (reachable+p-sortedp order graph))
-       :exec (topological-orderp-loop order (treeset::empty) graph))
+       :exec (topological-orderp-loop order (tset::empty) graph))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -383,7 +383,7 @@
 (defrule member-equal-when-topological-orderp
   (implies (topological-orderp order graph)
            (iff (member-equal node order)
-                (treeset::in node (nodes graph))))
+                (tset::in node (nodes graph))))
   :enable topological-orderp)
 
 (defrule no-duplicatesp-equal-when-topological-orderp
@@ -450,7 +450,7 @@
   (mbe :logic (mv (cyclicp graph)
                   (kahn-order (nodes graph) graph))
        :exec (b* (((mv order remaining) (kahn graph)))
-               (mv (not (treeset::emptyp remaining))
+               (mv (not (tset::emptyp remaining))
                    (revappend order nil))))
   :guard-hints (("Goal" :in-theory (enable cyclicp))))
 
@@ -469,15 +469,15 @@
 ;; it removes: those not left over.
 
 (defrulel in-of-kahn-remaining-when-not-in
-  (implies (not (treeset::in node remaining))
-           (not (treeset::in node (kahn-remaining remaining graph))))
+  (implies (not (tset::in node remaining))
+           (not (tset::in node (kahn-remaining remaining graph))))
   :induct t
   :enable kahn-remaining)
 
 (defrulel member-equal-of-kahn-order
   (iff (member-equal node (kahn-order remaining graph))
-       (and (treeset::in node remaining)
-            (not (treeset::in node (kahn-remaining remaining graph)))))
+       (and (tset::in node remaining)
+            (not (tset::in node (kahn-remaining remaining graph)))))
   :induct (kahn-order remaining graph)
   :enable (kahn-order
            kahn-remaining))
@@ -489,16 +489,16 @@
            no-duplicatesp-equal))
 
 (defrulel from-list-of-kahn-order
-  (equal (treeset::from-list (kahn-order remaining graph))
-         (treeset::diff remaining (kahn-remaining remaining graph)))
-  :enable treeset::extensionality-polar)
+  (equal (tset::from-list (kahn-order remaining graph))
+         (tset::diff remaining (kahn-remaining remaining graph)))
+  :enable tset::extensionality-polar)
 
 ;; The remaining nodes include their own successors, so no remaining node
 ;; reaches the node removed, which is not one of their successors.
 
 (defrulel reachable+p-sortedp-of-kahn-order
-  (implies (treeset::subset (successors-of-set remaining graph)
-                            remaining)
+  (implies (tset::subset (successors-of-set remaining graph)
+                         remaining)
            (reachable+p-sortedp (kahn-order remaining graph) graph))
   :induct (kahn-order remaining graph)
   :enable (kahn-order
@@ -523,8 +523,8 @@
   :enable topological-sort)
 
 (defrule subset-of-from-list-of-mv-nth-1-of-topological-sort-and-nodes
-  (treeset::subset (treeset::from-list (mv-nth 1 (topological-sort graph)))
-                   (nodes graph))
+  (tset::subset (tset::from-list (mv-nth 1 (topological-sort graph)))
+                (nodes graph))
   :enable topological-sort)
 
 ;; It is a topological order exactly when the graph has no cycle: when there is

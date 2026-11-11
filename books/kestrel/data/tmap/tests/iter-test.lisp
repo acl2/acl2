@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 
@@ -31,29 +31,29 @@
 (local (include-book "../min-max"))
 (local (include-book "../iter"))
 
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Deleting a key which is there makes the map smaller. TREEMAP has no size
-;; law for delete, so read it off the key set, where TREESET has one.
+;; Deleting a key which is there makes the map smaller. TMAP has no size
+;; law for delete, so read it off the key set, where TSET has one.
 
 (defrulel in-of-keys-of-min-key-when-not-emptyp
   (implies (not (emptyp map))
-           (treeset::in (min-key map) (keys map)))
+           (tset::in (min-key map) (keys map)))
   :enable (min-key$inline
-           treeset::in-of-min
+           tset::in-of-min
            emptyp-of-keys))
 
 (defrulel size-of-delete-when-in-of-keys
-  (implies (treeset::in key (keys map))
+  (implies (tset::in key (keys map))
            (< (size (delete key map))
               (size map)))
   :rule-classes :linear
   :enable (size$inline
-           treeset::cardinality-of-delete))
+           tset::cardinality-of-delete))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

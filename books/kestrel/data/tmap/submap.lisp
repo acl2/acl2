@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 
@@ -31,10 +31,10 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -57,8 +57,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc submap
-  :parents (treemap)
-  :short "Check if one @(see treemap) is a submap of the other."
+  :parents (tmap)
+  :short "Check if one @(see tmap) is a submap of the other."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -137,24 +137,24 @@
 
 (defrule subset-of-keys
   (implies (submap x y)
-           (treeset::subset (keys x) (keys y)))
+           (tset::subset (keys x) (keys y)))
   :enable (submap
            keys))
 
 ;; TODO: too aggressive?
 (defrule subset-of-keys-forward-chaining
   (implies (submap x y)
-           (treeset::subset (keys x) (keys y)))
+           (tset::subset (keys x) (keys y)))
   :rule-classes :forward-chaining)
 
 ;; Free from subset-of-keys-forward-chaining
 ;; (defrule in-of-keys-when-in-of-keys-and-submap
-;;   (implies (and (treeset::in key (keys x))
+;;   (implies (and (tset::in key (keys x))
 ;;                 (submap x y))
-;;            (treeset::in key (keys y))))
+;;            (tset::in key (keys y))))
 
 (defruled lookup-when-in-of-keys-and-submap
-  (implies (and (treeset::in key (keys x))
+  (implies (and (tset::in key (keys x))
                 (submap x y))
            (equal (lookup key y :default default)
                   (lookup key x :default default)))
@@ -164,7 +164,7 @@
 
 ;; TODO: disable by default?
 (defrule lookup-when-in-of-keys-and-proper-submap
-  (implies (and (treeset::in key (keys x))
+  (implies (and (tset::in key (keys x))
                 (submap x y)
                 ;; This hypothesis is not necessary logically (see
                 ;; lookup-when-in-of-keys-and-submap). It is used to establish
@@ -177,12 +177,12 @@
 ;; Free from subset-of-keys-forward-chaining
 ;; (defrule in-of-keys-when-submap-and-in-of-keys
 ;;   (implies (and (submap x y)
-;;                 (treeset::in key (keys x)))
-;;            (treeset::in key (keys y))))
+;;                 (tset::in key (keys x)))
+;;            (tset::in key (keys y))))
 
 (defruled lookup-when-submap-and-in-of-keys
   (implies (and (submap x y)
-                (treeset::in key (keys x)))
+                (tset::in key (keys x)))
            (equal (lookup key y :default default)
                   (lookup key x :default default)))
   :by lookup-when-in-of-keys-and-submap)
@@ -190,7 +190,7 @@
 ;; TODO: disable by default?
 (defrule lookup-when-proper-submap-and-in-of-keys
   (implies (and (submap x y)
-                (treeset::in key (keys x))
+                (tset::in key (keys x))
                 ;; This hypothesis is not necessary logically (see
                 ;; lookup-when-submap-and-in-of-keys). It is used to establish
                 ;; that (not (equiv x y)), and thus avoid rewriting loops.
@@ -200,7 +200,7 @@
   :by lookup-when-submap-and-in-of-keys)
 
 (defrule lookup-when-in-of-keys-and-submap-forward-chaining
-  (implies (and (treeset::in key (keys x))
+  (implies (and (tset::in key (keys x))
                 (submap x y))
            (equal (lookup key y :default default)
                   (lookup key x :default default)))
@@ -210,12 +210,12 @@
   :by lookup-when-in-of-keys-and-submap)
 
 (defrule lookup-no-default-when-in-of-keys-and-submap-forward-chaining
-  (implies (and (treeset::in key (keys x))
+  (implies (and (tset::in key (keys x))
                 (submap x y))
            (equal (lookup key y)
                   (lookup key x)))
   :rule-classes
-  ((:forward-chaining :trigger-terms ((treeset::in key (keys x)))))
+  ((:forward-chaining :trigger-terms ((tset::in key (keys x)))))
   :by lookup-when-in-of-keys-and-submap)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -262,11 +262,11 @@
 
 (defruled submap-when-not-in-of-head-key
   (implies (and (not (emptyp x))
-                (not (treeset::in (head-key x) (keys y))))
+                (not (tset::in (head-key x) (keys y))))
            (not (submap x y))))
 
 (defrule submap-when-not-in-of-head-key-cheap
-  (implies (and (not (treeset::in (head-key x) (keys y)))
+  (implies (and (not (tset::in (head-key x) (keys y)))
                 (not (emptyp x)))
            (not (submap x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
@@ -275,7 +275,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection double-containment
-  :parents (treemap)
+  :parents (tmap)
   :short "Prove map equalities via @(see submap) antisymmetry."
   :long
   (xdoc::topstring
@@ -307,8 +307,8 @@
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (key default)
     (non-exec
-      (implies (treeset::in key (keys x))
-               ;; Note:: we don't need to assert (treeset::in key (keys y)).
+      (implies (tset::in key (keys x))
+               ;; Note:: we don't need to assert (tset::in key (keys y)).
                ;; This is implied by the quantification over default.
                ;; (If the key was not in y, we could construct a default value
                ;; which is not equal to the lookup of x. The equality would
@@ -395,7 +395,7 @@
 (defrule subset-of-keys-when-proper-submap
   (implies (and (submap x y)
                 (not (submap y x)))
-           (not (treeset::subset (keys y) (keys x))))
+           (not (tset::subset (keys y) (keys x))))
   :use ((:instance lookup-when-in-of-keys-and-submap
                    (key (mv-nth 0 (submap-sk-witness y x)))
                    (default nil)))
@@ -404,7 +404,7 @@
 (defrule subset-of-keys-when-proper-submap-forward-chaining
   (implies (and (submap x y)
                 (not (submap y x)))
-           (not (treeset::subset (keys y) (keys x))))
+           (not (tset::subset (keys y) (keys x))))
   :rule-classes ((:forward-chaining :trigger-terms ((submap x y)
                                                     (submap y x))))
   :by subset-of-keys-when-proper-submap)
@@ -443,14 +443,14 @@
 
 (defrule subset-of-values
   (implies (submap x y)
-           (treeset::subset (values x) (values y)))
+           (tset::subset (values x) (values y)))
   :enable to-omap-theory
   :disable from-omap-theory)
 
 (defrule subset-of-rlookup
   (implies (submap x y)
-           (treeset::subset (rlookup val x) (rlookup val y)))
-  :enable treeset::pick-a-point)
+           (tset::subset (rlookup val x) (rlookup val y)))
+  :enable tset::pick-a-point)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -459,15 +459,15 @@
 
 (defrule cardinality-when-submap-linear
   (implies (submap x y)
-           (<= (treeset::cardinality (keys x))
-               (treeset::cardinality (keys y))))
+           (<= (tset::cardinality (keys x))
+               (tset::cardinality (keys y))))
   :rule-classes :linear)
 
 (defrule cardinality-when-proper-submap-linear
   (implies (and (submap x y)
                 (not (submap y x)))
-           (< (treeset::cardinality (keys x))
-              (treeset::cardinality (keys y))))
+           (< (tset::cardinality (keys x))
+              (tset::cardinality (keys y))))
   :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

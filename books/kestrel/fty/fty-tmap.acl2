@@ -10,10 +10,10 @@
 
 (include-book "centaur/fty/portcullis" :dir :system)
 
-; The TREEMAP and TREESET packages, so the generator functions can build event
-; forms that mention treemap and treeset symbols.  These are defpkg-only
-; dependencies: the book itself deliberately includes no treemap books.
-(include-book "kestrel/data/treemap/portcullis" :dir :system)
-(include-book "kestrel/data/treeset/portcullis" :dir :system)
+; The TMAP and TSET packages, so the generator functions can build event
+; forms that mention tmap and tset symbols.  These are defpkg-only
+; dependencies: the book itself deliberately includes no tmap books.
+(include-book "kestrel/data/tmap/portcullis" :dir :system)
+(include-book "kestrel/data/tset/portcullis" :dir :system)
 
 ; cert-flags: ? t :ttags ()

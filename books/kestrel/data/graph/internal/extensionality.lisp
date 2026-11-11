@@ -10,7 +10,7 @@
 
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
 
 (include-book "adj-list-defs")
 (include-book "edges-defs")
@@ -18,14 +18,14 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -48,31 +48,31 @@
   (implies (and (equal (adj-list-edges x) (adj-list-edges y))
                 (adj-listp x)
                 (adj-listp y))
-           (equal (treemap::lookup to
-                                   (treemap::lookup from
-                                                    x
-                                                    :default (treemap::empty))
-                                   :default (treeset::empty))
-                  (treemap::lookup to
-                                   (treemap::lookup from
-                                                    y
-                                                    :default (treemap::empty))
-                                   :default (treeset::empty))))
-  :enable (treeset::extensionality-no-backchain-limit-polar
+           (equal (tmap::lookup to
+                                (tmap::lookup from
+                                              x
+                                              :default (tmap::empty))
+                                :default (tset::empty))
+                  (tmap::lookup to
+                                (tmap::lookup from
+                                              y
+                                              :default (tmap::empty))
+                                :default (tset::empty))))
+  :enable (tset::extensionality-no-backchain-limit-polar
            in-of-lookup-of-lookup-becomes-in-of-adj-list-edges))
 
 ;; A lookup at any default, read through the label set: a target is bound
 ;; exactly when its label set is nonempty.
 
 (defruledl lookup-becomes-lookup-with-default-empty
-  (implies (and (syntaxp (not (equal default '(treeset::empty$inline))))
+  (implies (and (syntaxp (not (equal default '(tset::empty$inline))))
                 (map-values-all-nonempty-setp map))
-           (equal (treemap::lookup k map :default default)
-                  (if (treeset::emptyp
-                        (treemap::lookup k map :default (treeset::empty)))
+           (equal (tmap::lookup k map :default default)
+                  (if (tset::emptyp
+                        (tmap::lookup k map :default (tset::empty)))
                       default
-                    (treemap::lookup k map :default (treeset::empty)))))
-  :enable treemap::lookup-with-default-becomes-lookup-syntaxp
+                    (tmap::lookup k map :default (tset::empty)))))
+  :enable tmap::lookup-with-default-becomes-lookup-syntaxp
   :use in-of-keys-becomes-not-emptyp-of-lookup-when-map-values-all-nonempty-setp)
 
 ;; Hence an adjacency is determined by the edge set as well.
@@ -81,15 +81,15 @@
   (implies (and (equal (adj-list-edges x) (adj-list-edges y))
                 (adj-listp x)
                 (adj-listp y))
-           (equal (treemap::lookup from x :default (treemap::empty))
-                  (treemap::lookup from y :default (treemap::empty))))
-  :enable (treemap::extensionality
+           (equal (tmap::lookup from x :default (tmap::empty))
+                  (tmap::lookup from y :default (tmap::empty))))
+  :enable (tmap::extensionality
            lookup-becomes-lookup-with-default-empty)
   :use (:instance
          lookup-of-lookup-when-equal-of-adj-list-edges
-         (to (mv-nth 0 (treemap::ext-equal-witness
-                         (treemap::lookup from x :default (treemap::empty))
-                         (treemap::lookup from y :default (treemap::empty)))))))
+         (to (mv-nth 0 (tmap::ext-equal-witness
+                         (tmap::lookup from x :default (tmap::empty))
+                         (tmap::lookup from y :default (tmap::empty)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -98,14 +98,14 @@
 (defruled adj-list-extensionality
   (implies (and (adj-listp x)
                 (adj-listp y)
-                (treemap::equiv x$ (double-rewrite x))
-                (treemap::equiv y$ (double-rewrite y)))
+                (tmap::equiv x$ (double-rewrite x))
+                (tmap::equiv y$ (double-rewrite y)))
            (equal (equal x y)
-                  (and (equal (treemap::keys x$)
-                              (treemap::keys y$))
+                  (and (equal (tmap::keys x$)
+                              (tmap::keys y$))
                        (equal (adj-list-edges x$)
                               (adj-list-edges y$)))))
-  :enable (treemap::extensionality-polar
-           treemap::lookup-with-default-becomes-lookup-syntaxp)
+  :enable (tmap::extensionality-polar
+           tmap::lookup-with-default-becomes-lookup-syntaxp)
   :use (:instance lookup-when-equal-of-adj-list-edges
-                  (from (mv-nth 0 (treemap::ext-equal-witness x y)))))
+                  (from (mv-nth 0 (tmap::ext-equal-witness x y)))))

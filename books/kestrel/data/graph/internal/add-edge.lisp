@@ -11,12 +11,12 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -27,18 +27,18 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -59,19 +59,19 @@
 ;; source to the target.
 
 (define adj-list-add-edge (from to label (adjl adj-listp))
-  :returns (new-adjl treemap::mapp)
-  (b* ((adj (treemap::lookup from adjl :default (treemap::empty)))
-       (labels (treemap::lookup to adj :default (treeset::empty))))
-    (treemap::update from
-                     (treemap::update to
-                                      (treeset::insert label labels)
-                                      adj)
-                     adjl)))
+  :returns (new-adjl tmap::mapp)
+  (b* ((adj (tmap::lookup from adjl :default (tmap::empty)))
+       (labels (tmap::lookup to adj :default (tset::empty))))
+    (tmap::update from
+                  (tmap::update to
+                                (tset::insert label labels)
+                                adj)
+                  adjl)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-add-edge-when-treemap-equiv-of-arg4-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-add-edge-when-tmap-equiv-of-arg4-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-add-edge from to label adjl0)
                   (adj-list-add-edge from to label adjl1)))
   :rule-classes :congruence
@@ -89,15 +89,15 @@
 ;; absent, the corresponding lookup reads as empty.
 
 (defrule keys-of-adj-list-add-edge
-  (equal (treemap::keys (adj-list-add-edge from to label adjl))
-         (treeset::insert from (treemap::keys adjl)))
+  (equal (tmap::keys (adj-list-add-edge from to label adjl))
+         (tset::insert from (tmap::keys adjl)))
   :enable adj-list-add-edge)
 
 (defrule adj-list-edges-of-adj-list-add-edge
   (equal (adj-list-edges (adj-list-add-edge from to label adjl))
-         (treeset::insert (edge from to label) (adj-list-edges adjl)))
+         (tset::insert (edge from to label) (adj-list-edges adjl)))
   :enable (adj-list-add-edge
-           treeset::extensionality-no-backchain-limit-polar
+           tset::extensionality-no-backchain-limit-polar
            in-of-adj-list-edges)
   :disable adj-list-edges-of-update)
 
@@ -107,7 +107,7 @@
 
 (defrule well-formedp-of-adj-list-add-edge
   (implies (and (well-formedp adjl)
-                (treeset::in to (treemap::keys adjl)))
+                (tset::in to (tmap::keys adjl)))
            (well-formedp (adj-list-add-edge from to label adjl)))
   :enable (adj-list-add-edge
            well-formedp))

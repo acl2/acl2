@@ -6,12 +6,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The raw-Lisp part of the treeset benchmarks. Loaded by benchmark.lsp;
+; The raw-Lisp part of the tset benchmarks. Loaded by benchmark.lsp;
 ; see the usage comment there. This file is read by the Common Lisp
 ; reader (via cl:load), not by ld, so it may define and enter its own
 ; package.
 
-(defpackage "TREESET-BENCH"
+(defpackage "TSET-BENCH"
   (:use "COMMON-LISP" "BENCH")
   (:export "RUN-QUICK"
            "RUN-FULL"
@@ -21,7 +21,7 @@
            "TEST-VARIANT-REPORT"
            "SERIALIZED-SIZE"))
 
-(in-package "TREESET-BENCH")
+(in-package "TSET-BENCH")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,7 +55,7 @@
               (format t "; building cardinality-~:D containers~%" n)
               (finish-output)
               (list :keys keys
-                    :treeset (treeset::from-list lst)
+                    :tset (tset::from-list lst)
                     :oset (set::mergesort lst)
                     ;; The fast alist is for lookup benchmarks only;
                     ;; repeatedly re-extending one alist would break the
@@ -93,15 +93,15 @@
 
 (defun in-specs (n hit-prob)
   (let* ((c (containers n))
-         (tset (getf c :treeset))
+         (tset (getf c :tset))
          (oset (getf c :oset))
          (fal (getf c :fal))
          (ht (getf c :ht))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob))))
     (list
-      (spec "treeset-in" class n setup
-            (lambda (x) (treeset::in x tset :test =)))
+      (spec "tset-in" class n setup
+            (lambda (x) (tset::in x tset :test =)))
       (spec "oset-in" class n setup
             (lambda (x) (set::in x oset)))
       (spec "fast-alist-get" class n setup
@@ -115,14 +115,14 @@
   ;; overwritten thereafter, so its steady state measures
   ;; mostly-overwrite puts.
   (let* ((c (containers n))
-         (tset (getf c :treeset))
+         (tset (getf c :tset))
          (oset (getf c :oset))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob)))
          (ht-copy nil))
     (list
-      (spec "treeset-insert" class n setup
-            (lambda (x) (treeset::insert x tset :test =)))
+      (spec "tset-insert" class n setup
+            (lambda (x) (tset::insert x tset :test =)))
       (spec "oset-insert" class n setup
             (lambda (x) (set::insert x oset)))
       (spec "hash-table-put" class n
@@ -136,13 +136,13 @@
 
 (defun delete-specs (n hit-prob)
   (let* ((c (containers n))
-         (tset (getf c :treeset))
+         (tset (getf c :tset))
          (oset (getf c :oset))
          (class (probe-class hit-prob))
          (setup (lambda () (probes-vector n hit-prob))))
     (list
-      (spec "treeset-delete" class n setup
-            (lambda (x) (treeset::delete x tset :test =)))
+      (spec "tset-delete" class n setup
+            (lambda (x) (tset::delete x tset :test =)))
       (spec "oset-delete" class n setup
             (lambda (x) (set::delete x oset))))))
 
@@ -182,8 +182,8 @@
            (memo-setup
              (lambda ()
                (map 'vector
-                    (lambda (p) (cons (treeset::from-list (car p))
-                                      (treeset::from-list (cdr p))))
+                    (lambda (p) (cons (tset::from-list (car p))
+                                      (tset::from-list (cdr p))))
                     pairs))))
          (setup-oset
            (memo-setup
@@ -193,30 +193,30 @@
                                       (set::mergesort (cdr p))))
                     pairs)))))
     (list
-      (spec "treeset-union" class n setup-tree
-            (lambda (p) (treeset::union (car p) (cdr p) :test =)))
+      (spec "tset-union" class n setup-tree
+            (lambda (p) (tset::union (car p) (cdr p) :test =)))
       (spec "oset-union" class n setup-oset
             (lambda (p) (set::union (car p) (cdr p))))
-      (spec "treeset-intersect" class n setup-tree
-            (lambda (p) (treeset::intersect (car p) (cdr p) :test =)))
+      (spec "tset-intersect" class n setup-tree
+            (lambda (p) (tset::intersect (car p) (cdr p) :test =)))
       (spec "oset-intersect" class n setup-oset
             (lambda (p) (set::intersect (car p) (cdr p))))
-      (spec "treeset-diff" class n setup-tree
-            (lambda (p) (treeset::diff (car p) (cdr p) :test =)))
+      (spec "tset-diff" class n setup-tree
+            (lambda (p) (tset::diff (car p) (cdr p) :test =)))
       (spec "oset-diff" class n setup-oset
             (lambda (p) (set::difference (car p) (cdr p)))))))
 
 (defun construction-specs (n)
   ;; Whole-container construction from the same random key list.
   (let ((setup-list (lambda () (vector (coerce (keys-vector n) 'list))))
-        (setup-set (lambda () (vector (getf (containers n) :treeset)))))
+        (setup-set (lambda () (vector (getf (containers n) :tset)))))
     (list
-      (spec "treeset-from-list" "u60" n setup-list
-            (lambda (l) (treeset::from-list l)))
+      (spec "tset-from-list" "u60" n setup-list
+            (lambda (l) (tset::from-list l)))
       (spec "oset-mergesort" "u60" n setup-list
             (lambda (l) (set::mergesort l)))
-      (spec "treeset-to-oset" "u60" n setup-set
-            (lambda (s) (treeset::to-oset s))))))
+      (spec "tset-to-oset" "u60" n setup-set
+            (lambda (s) (tset::to-oset s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +247,7 @@
   ;; Interned in this package rather than ACL2, to avoid filling the
   ;; ACL2 package with junk. Note the package name is part of a symbol's
   ;; encoding, so it contributes a fixed overhead to the serialized size.
-  (intern (random-string nchars) "TREESET-BENCH"))
+  (intern (random-string nchars) "TSET-BENCH"))
 
 (defun random-character ()
   (code-char (random 256)))
@@ -340,7 +340,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Containers and probes for a key class. Only treesets and osets are
+;; Containers and probes for a key class. Only tsets and osets are
 ;; built: the fast alist and hash table rows exist to place the two
 ;; libraries on a scale, which one cardinality already does, and an eql
 ;; hash table would not even accept the non-atomic classes.
@@ -359,7 +359,7 @@
                         (getf kc :name) n)
                 (finish-output)
                 (list :keys keys
-                      :treeset (treeset::from-list lst)
+                      :tset (tset::from-list lst)
                       :oset (set::mergesort lst)))))))
 
 (defun class-probes-vector (kc n hit-prob)
@@ -377,17 +377,17 @@
   ;; in and insert only: they are the operations whose cost is dominated
   ;; by the element, and insert is the only one that hashes.
   (let* ((c (class-containers kc n))
-         (tset (getf c :treeset))
+         (tset (getf c :tset))
          (oset (getf c :oset))
          (class (getf kc :name))
          (setup (lambda () (class-probes-vector kc n hit-prob))))
     (list
-      (spec "treeset-in" class n setup
-            (lambda (x) (treeset::in x tset)))
+      (spec "tset-in" class n setup
+            (lambda (x) (tset::in x tset)))
       (spec "oset-in" class n setup
             (lambda (x) (set::in x oset)))
-      (spec "treeset-insert" class n setup
-            (lambda (x) (treeset::insert x tset)))
+      (spec "tset-insert" class n setup
+            (lambda (x) (tset::insert x tset)))
       (spec "oset-insert" class n setup
             (lambda (x) (set::insert x oset))))))
 
@@ -395,31 +395,31 @@
   ;; :test is a macro keyword and must be literal, so each variant is
   ;; its own lambda rather than a parameter.
   (ecase test
-    (equal (lambda (x) (treeset::in x tset)))
-    (=     (lambda (x) (treeset::in x tset :test =)))
-    (eq    (lambda (x) (treeset::in x tset :test eq)))
-    (eql   (lambda (x) (treeset::in x tset :test eql)))))
+    (equal (lambda (x) (tset::in x tset)))
+    (=     (lambda (x) (tset::in x tset :test =)))
+    (eq    (lambda (x) (tset::in x tset :test eq)))
+    (eql   (lambda (x) (tset::in x tset :test eql)))))
 
 (defun test-insert-op (test tset)
   (ecase test
-    (equal (lambda (x) (treeset::insert x tset)))
-    (=     (lambda (x) (treeset::insert x tset :test =)))
-    (eq    (lambda (x) (treeset::insert x tset :test eq)))
-    (eql   (lambda (x) (treeset::insert x tset :test eql)))))
+    (equal (lambda (x) (tset::insert x tset)))
+    (=     (lambda (x) (tset::insert x tset :test =)))
+    (eq    (lambda (x) (tset::insert x tset :test eq)))
+    (eql   (lambda (x) (tset::insert x tset :test eql)))))
 
 (defun test-specs (kc n hit-prob)
   "in and insert under each :test the class admits, so the cost of the
    specialized guards and hashes can be read off against the default."
   (let* ((c (class-containers kc n))
-         (tset (getf c :treeset))
+         (tset (getf c :tset))
          (class (getf kc :name))
          (setup (lambda () (class-probes-vector kc n hit-prob))))
     (loop for test in (getf kc :tests)
           append
           (list
-            (spec (format nil "treeset-in-~(~A~)" test) class n setup
+            (spec (format nil "tset-in-~(~A~)" test) class n setup
                   (test-in-op test tset))
-            (spec (format nil "treeset-insert-~(~A~)" test) class n setup
+            (spec (format nil "tset-insert-~(~A~)" test) class n setup
                   (test-insert-op test tset))))))
 
 (defparameter *size-report-sample* 1000)
@@ -444,7 +444,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Treap shape statistics (untimed). The raw treeset representation is
+;; Treap shape statistics (untimed). The raw tset representation is
 ;; nil for the empty tree and (head . (left . right)) otherwise; the
 ;; walkers traverse the conses directly. Depth is O(log n) with high
 ;; probability, so recursion is safe.
@@ -530,9 +530,9 @@
   (format t "  ~10@A ~12A ~10A ~10A~%" "n" "keys" "avg" "height")
   (dolist (n cardinalities)
     (dolist (entry
-              (list (cons "random" (getf (containers n) :treeset))
+              (list (cons "random" (getf (containers n) :tset))
                     (cons "sequential"
-                          (treeset::from-list
+                          (tset::from-list
                             (loop for i below n collect i)))))
       (multiple-value-bind (sum count) (tree-depth-sum (cdr entry) 1)
         (format t "  ~10:D ~12A ~10,2F ~10,2F~%"
@@ -568,17 +568,17 @@
 
 (defun hash-share-report (&key (cardinalities '(1000 10000 100000 1000000))
                                (hit-prob 1/2))
-  ;; treeset::hash (= hash::jenkins, benchmarked in the hash library's
+  ;; tset::hash (= hash::jenkins, benchmarked in the hash library's
   ;; own suite) is measured inline rather than as a spec row: its cost
   ;; is independent of cardinality, and only the ratio matters here.
   (let* ((class (probe-class hit-prob))
          (n0 (car (last cardinalities)))
-         (h (median-ns-of-op (lambda (x) (treeset::hash x))
+         (h (median-ns-of-op (lambda (x) (tset::hash x))
                              (probes-vector n0 hit-prob))))
-    (format t "~&Hash share of treeset-insert (p=~A, hash ~,1Fns):~%"
+    (format t "~&Hash share of tset-insert (p=~A, hash ~,1Fns):~%"
             hit-prob h)
     (dolist (n cardinalities)
-      (let ((i (median-of "treeset-insert" class n)))
+      (let ((i (median-of "tset-insert" class n)))
         (when (and i (plusp i))
           (format t "  n=~10:D: insert ~8,1Fns -> hash share ~5,1F%~%"
                   n i (* 100 (/ h i))))))))
@@ -595,11 +595,11 @@
     (let ((class (getf kc :name)))
       (when (cdr (getf kc :tests))
         (dolist (op '("in" "insert"))
-          (let ((base (median-of (format nil "treeset-~A-equal" op)
+          (let ((base (median-of (format nil "tset-~A-equal" op)
                                  class n)))
             (when (and base (plusp base))
               (dolist (test (getf kc :tests))
-                (let ((v (median-of (format nil "treeset-~A-~(~A~)" op test)
+                (let ((v (median-of (format nil "tset-~A-~(~A~)" op test)
                                     class n)))
                   (when v
                     (format t "  ~12A ~8A ~8A ~12,1F ~9,1F%~%"
@@ -709,12 +709,12 @@
   (let ((stamp (substitute #\- #\: (bench::timestamp))))
     (run-suite :key-classes (default-key-classes)
                :test-variants t
-               :out (format nil "results/treeset-bench-~A.csv" stamp)
+               :out (format nil "results/tset-bench-~A.csv" stamp)
                :samples-out
-               (format nil "results/treeset-bench-~A-samples.csv" stamp))))
+               (format nil "results/tset-bench-~A-samples.csv" stamp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(format t "~&; Running quick smoke suite; use (treeset-bench::run-full) ~
+(format t "~&; Running quick smoke suite; use (tset-bench::run-full) ~
            for the real thing.~%")
 (run-quick)

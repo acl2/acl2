@@ -6,12 +6,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-order-defs" :dir :system)
 
 (include-book "tree-defs")
 
@@ -19,8 +19,8 @@
 (local (acl2::controlled-configuration :hooks nil))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 
 (local (include-book "tree"))
 
@@ -132,7 +132,7 @@
                 (heap<-all-l tree y))
            (heap<-all-l tree x))
   :enable heap<-all-l-weaken
-  :use (:instance treeset::heap<-trichotomy
+  :use (:instance tset::heap<-trichotomy
                   (x x)
                   (y y)))
 

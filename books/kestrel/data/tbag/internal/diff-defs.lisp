@@ -6,12 +6,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/heap-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/join-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/heap-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/join-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/split-defs" :dir :system)
 
 (include-book "map-values-all-posp-defs")
 

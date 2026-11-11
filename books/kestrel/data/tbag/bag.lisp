@@ -6,16 +6,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "internal/map-values-all-posp-defs")
 
@@ -24,10 +24,10 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 
@@ -40,13 +40,13 @@
 (define bagp (x)
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  :parents (treebag)
-  :short "Recognizer for @(see treebag)s."
+  :parents (tbag)
+  :short "Recognizer for @(see tbag)s."
   :long
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(n)$)."))
-  (and (treemap::mapp x)
+  (and (tmap::mapp x)
        (map-values-all-posp x)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,9 +54,9 @@
 (define empty ()
   :type-prescription :none
   :returns (bag bagp)
-  :parents (treebag)
-  :short "The empty @(see treebag)."
-  (treemap::empty)
+  :parents (tbag)
+  :short "The empty @(see tbag)."
+  (tmap::empty)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,15 +68,15 @@
 (define fix ((bag bagp))
   :type-prescription :none
   :returns (bag$ bagp)
-  :parents (treebag)
-  :short "Fixer for @(see treebag)s."
+  :parents (tbag)
+  :short "Fixer for @(see tbag)s."
   (mbe :logic (if (bagp bag)
                   bag
                 (empty))
        :exec (the list bag))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* bagp
-                                            treemap::break-abstraction))))
+                                            tmap::break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -100,7 +100,7 @@
   :by fix-when-not-bagp)
 
 (defruled mapp-of-fix
-  (treemap::mapp (fix bag))
+  (tmap::mapp (fix bag))
   :enable (fix
            bagp
            empty))
@@ -108,20 +108,20 @@
 (add-to-ruleset break-abstraction '(mapp-of-fix))
 
 (defruled bstp-of-fix
-  (treemap::bstp (fix bag))
+  (tmap::bstp (fix bag))
   :enable (fix
            bagp
            empty
-           treemap::break-abstraction))
+           tmap::break-abstraction))
 
 (add-to-ruleset break-abstraction '(bstp-of-fix))
 
 (defruled heapp-of-fix
-  (treemap::heapp (fix bag))
+  (tmap::heapp (fix bag))
   :enable (fix
            bagp
            empty
-           treemap::break-abstraction))
+           tmap::break-abstraction))
 
 (add-to-ruleset break-abstraction '(heapp-of-fix))
 
@@ -140,22 +140,22 @@
 (add-to-ruleset break-abstraction '(tree-all-vals-posp-of-fix))
 
 ;; Binding an element to a positive value, or removing it, in the underlying
-;; treemap yields a bag.
+;; tmap yields a bag.
 
-(defruled bagp-of-treemap-update
+(defruled bagp-of-tmap-update
   (implies (posp v)
-           (bagp (treemap::update x v (fix bag))))
+           (bagp (tmap::update x v (fix bag))))
   :enable (bagp
            break-abstraction))
 
-(add-to-ruleset break-abstraction '(bagp-of-treemap-update))
+(add-to-ruleset break-abstraction '(bagp-of-tmap-update))
 
-(defruled bagp-of-treemap-delete
-  (bagp (treemap::delete x (fix bag)))
+(defruled bagp-of-tmap-delete
+  (bagp (tmap::delete x (fix bag)))
   :enable (bagp
            break-abstraction))
 
-(add-to-ruleset break-abstraction '(bagp-of-treemap-delete))
+(add-to-ruleset break-abstraction '(bagp-of-tmap-delete))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -164,7 +164,7 @@
    (y bagp))
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  :parents (treebag)
+  :parents (tbag)
   :short "Equivalence up to @(tsee fix)."
   (equal (fix x)
          (fix y))
@@ -192,9 +192,9 @@
 (define emptyp ((bag bagp))
   :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
-  :parents (treebag)
-  :short "Check if a @(see treebag) is empty."
-  (treemap::emptyp (fix bag))
+  :parents (tbag)
+  :short "Check if a @(see tbag) is empty."
+  (tmap::emptyp (fix bag))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
@@ -221,9 +221,9 @@
            fix
            bagp
            empty
-           treemap::emptyp
-           treemap::empty
-           treemap::break-abstraction))
+           tmap::emptyp
+           tmap::empty
+           tmap::break-abstraction))
 
 (defrule fix-when-emptyp-cheap
   (implies (emptyp bag)

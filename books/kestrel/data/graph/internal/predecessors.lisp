@@ -11,16 +11,16 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/size-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/min-max-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "adj-list-defs")
 
@@ -29,19 +29,19 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/size" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/size" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "adj-list"))
 
@@ -51,21 +51,21 @@
 ;; visiting every node.
 
 (define adj-list-predecessors (to (adjl adj-listp))
-  :returns (preds treeset::setp)
-  (if (treemap::emptyp adjl)
-      (treeset::empty)
-    (b* ((from (treemap::min-key adjl))
-         (preds (adj-list-predecessors to (treemap::delete from adjl))))
-      (if (treemap::in to (treemap::lookup from adjl))
-          (treeset::insert from preds)
+  :returns (preds tset::setp)
+  (if (tmap::emptyp adjl)
+      (tset::empty)
+    (b* ((from (tmap::min-key adjl))
+         (preds (adj-list-predecessors to (tmap::delete from adjl))))
+      (if (tmap::in to (tmap::lookup from adjl))
+          (tset::insert from preds)
         preds)))
-  :measure (treemap::size adjl)
+  :measure (tmap::size adjl)
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-predecessors-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-predecessors-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-predecessors to adjl0)
                   (adj-list-predecessors to adjl1)))
   :rule-classes :congruence
@@ -73,9 +73,9 @@
            (adj-list-predecessors to adjl1)))
 
 (defruled in-of-adj-list-predecessors
-  (equal (treeset::in from (adj-list-predecessors to adjl))
-         (treeset::in to (treemap::keys (treemap::lookup from
-                                                         adjl
-                                                         :default (treemap::empty)))))
+  (equal (tset::in from (adj-list-predecessors to adjl))
+         (tset::in to (tmap::keys (tmap::lookup from
+                                                adjl
+                                                :default (tmap::empty)))))
   :induct t
   :enable adj-list-predecessors)

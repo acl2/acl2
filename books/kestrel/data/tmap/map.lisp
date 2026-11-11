@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -35,8 +35,8 @@
 (define mapp (x)
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treemap)
-  :short "Recognizer for @(see treemap)s."
+  :parents (tmap)
+  :short "Recognizer for @(see tmap)s."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -105,8 +105,8 @@
 
 (define empty ()
   :returns (map mapp)
-  :parents (treemap)
-  :short "The empty @(see treemap)."
+  :parents (tmap)
+  :short "The empty @(see tmap)."
   nil
   :inline t)
 
@@ -139,8 +139,8 @@
 (define fix ((map mapp))
   :type-prescription :none
   :returns (map$ mapp)
-  :parents (treemap)
-  :short "Fixer for @(see treemap)s."
+  :parents (tmap)
+  :short "Fixer for @(see tmap)s."
   (mbe :logic (if (mapp map)
                   map
                 (empty))
@@ -207,7 +207,7 @@
    (y mapp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treemap)
+  :parents (tmap)
   :short "Equivalence up to @(tsee fix)."
   (equal (fix x)
          (fix y))
@@ -251,8 +251,8 @@
 (define emptyp ((map mapp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  :parents (treemap)
-  :short "Check if a @(see treemap) is empty."
+  :parents (tmap)
+  :short "Check if a @(see tmap) is empty."
   (tree-empty-p (fix map))
   :inline t
   :guard-hints (("Goal" :in-theory (enable mapp))))
@@ -323,8 +323,8 @@
 
 (define head-key ((map mapp))
   :guard (not (emptyp map))
-  :parents (treemap)
-  :short "Get a key from the nonempty @(see treemap)."
+  :parents (tmap)
+  :short "Get a key from the nonempty @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p

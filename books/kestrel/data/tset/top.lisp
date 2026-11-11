@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "defs")
 (include-book "hash")
@@ -31,6 +31,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; For ordinary use of treesets, it is recommend that you include the "defs"
+;; For ordinary use of tsets, it is recommend that you include the "defs"
 ;; books (or some subset of the books it includes), and then this book (or some
 ;; subset of its includes) *locally*.

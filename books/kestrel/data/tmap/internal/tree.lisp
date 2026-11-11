@@ -6,20 +6,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
-(include-book "kestrel/data/treeset/hash-defs" :dir :system)
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -33,14 +33,14 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This captures the structure of @(see treemap)s, without the
+      "This captures the structure of @(see tmap)s, without the
        invariants."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: rename tree-element-p to tree-element-p in treeset/internal?
+;; TODO: rename tree-element-p to tree-element-p in tset/internal?
 ;; TODO: swap hash and key.
 (define tree-element-p (x)
   :type-prescription :none
@@ -503,7 +503,7 @@
    (xdoc::p
      "For empty trees, this is logically @(tsee irr-tree-element).")
    (xdoc::p
-     "For a tree recognized by @(tsee heapp) (including @(see treemap)s), this
+     "For a tree recognized by @(tsee heapp) (including @(see tmap)s), this
       is the largest element with respect to the @(tsee heap<) ordering."))
   :guard (not (tree-empty-p tree))
   :returns (elem tree-element-p

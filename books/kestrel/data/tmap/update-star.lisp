@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "std/osets/defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/min-defs" :dir :system)
@@ -34,11 +34,11 @@
 
 (local (include-book "std/omaps/core" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -71,8 +71,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc update*
-  :parents (treemap)
-  :short "An @($n$)-ary left-biased union on @(see treemap)s."
+  :parents (tmap)
+  :short "An @($n$)-ary left-biased union on @(see tmap)s."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -194,8 +194,8 @@
 
 (defrule keys-of-update*
   (equal (keys (update* x y))
-         (treeset::union (keys x)
-                         (keys y)))
+         (tset::union (keys x)
+                      (keys y)))
   :enable (update*
            keys
            mapp
@@ -203,7 +203,7 @@
 
 (defrule lookup-of-update*
   (equal (lookup key (update* x y) :default default)
-         (if (treeset::in key (keys x))
+         (if (tset::in key (keys x))
              (lookup key x :default default)
            (lookup key y :default default)))
   :enable (update*
@@ -306,14 +306,14 @@
 
 ;; TODO: expensive? Disable and introduce cheap rule?
 (defrule update*-of-arg1-and-update
-  (implies (not (treeset::in key (keys x)))
+  (implies (not (tset::in key (keys x)))
            (equal (update* x (update key val y))
                   (update key val (update* x y))))
   :enable extensionality)
 
 (defruled update*-of-delete
   (equal (update* (delete key x) y)
-         (if (treeset::in key (keys y))
+         (if (tset::in key (keys y))
              ;; It isn't clear that this is simpler than the LHS.
              ;; TODO: clarify normal forms we are striving for.
              (update key (lookup key y) (update* x y))
@@ -322,7 +322,7 @@
 
 ;; TODO: expensive? Disable and introduce cheap rule?
 (defrule update*-of-delete-when-not-in-of-keys
-  (implies (not (treeset::in key (keys y)))
+  (implies (not (tset::in key (keys y)))
            (equal (update* (delete key x) y)
                   (delete key (update* x y))))
   :by update*-of-delete)
@@ -330,7 +330,7 @@
 ;; TODO: disable by default? Introduce conditional/cheap rules?
 (defrule update*-of-arg1-and-delete
   (equal (update* x (delete key y))
-         (if (treeset::in key (keys x))
+         (if (tset::in key (keys x))
              (update* x y)
            (delete key (update* x y))))
   :enable extensionality)

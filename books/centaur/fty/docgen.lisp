@@ -610,17 +610,17 @@ binder.</p>")
             :no-override t))
         state)))
 
-(defun flextreeset->defxdoc (x parents kwd-alist state)
+(defun flextset->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (declare (ignorable state))
-  (b* (((flextreeset x) x)
+  (b* (((flextset x) x)
        (parents (getarg :parents parents kwd-alist))
        (short   (or (getarg :short nil kwd-alist)
-                    (cat "A @(see acl2::treeset) of @(see? "
+                    (cat "A @(see acl2::tset) of @(see? "
                          (xdoc::full-escape-symbol x.elt-type)
                          ") objects.")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::deftreeset), containing @(see? "
+                    (cat "<p>This is an ordinary @(see fty::deftset), containing @(see? "
                          (xdoc::full-escape-symbol x.elt-type)
                          ") elements.</p>"))))
     (mv `((defxdoc ,x.name
@@ -630,10 +630,10 @@ binder.</p>")
             :no-override t))
         state)))
 
-(defun flextreemap->defxdoc (x parents kwd-alist state)
+(defun flextmap->defxdoc (x parents kwd-alist state)
   ;; Returns (mv events state)
   (declare (ignorable state))
-  (b* (((flextreemap x) x)
+  (b* (((flextmap x) x)
        (parents (getarg :parents parents kwd-alist))
        (key-link (if x.key-type
                      (cat "@(see? " (xdoc::full-escape-symbol x.key-type) ")")
@@ -642,9 +642,9 @@ binder.</p>")
                      (cat "@(see? " (xdoc::full-escape-symbol x.val-type) ")")
                    "anything"))
        (short   (or (getarg :short nil kwd-alist)
-                    (cat "A @(see treemap::treemap) mapping " key-link " to " val-link ".")))
+                    (cat "A @(see tmap::tmap) mapping " key-link " to " val-link ".")))
        (long    (or (getarg :long nil kwd-alist)
-                    (cat "<p>This is an ordinary @(see fty::deftreemap), mapping " key-link " to "
+                    (cat "<p>This is an ordinary @(see fty::deftmap), mapping " key-link " to "
                          val-link ".</p>"))))
     (mv `((defxdoc ,x.name
             :parents ,parents

@@ -60,18 +60,18 @@
 
 (acl2::assert-equal
   (graph::successors (external-uid "entry") *call-graph*)
-  (treeset::set (internal-uid "a.c" "helper")
-                (external-uid "shared")))
+  (tset::set (internal-uid "a.c" "helper")
+             (external-uid "shared")))
 
 (acl2::assert-equal
   (graph::successors (external-uid "shared") *call-graph*)
-  (treeset::set (internal-uid "b.c" "helper")))
+  (tset::set (internal-uid "b.c" "helper")))
 
 ;; A defined function which calls nothing has no successors.
 
 (acl2::assert-equal
   (graph::successors (external-uid "leaf") *call-graph*)
-  (treeset::empty))
+  (tset::empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,7 +79,7 @@
 
 (acl2::assert-equal
   (graph::successors (external-uid "forms") *call-graph*)
-  (treeset::set (external-uid "leaf")))
+  (tset::set (external-uid "leaf")))
 
 ;; Calls through a pointer are not resolved, including through a global
 ;; pointer, whose unique identifier has the same form as a function's, and
@@ -87,17 +87,17 @@
 
 (acl2::assert-equal
   (graph::successors (external-uid "through_pointer") *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 (acl2::assert-equal
   (graph::successors (external-uid "through_global_pointer") *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 (acl2::assert! (not (graph::node-in (external-uid "global_fp") *call-graph*)))
 
 (acl2::assert-equal
   (graph::successors (external-uid "shadowed") *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,34 +105,34 @@
 
 (acl2::assert-equal
   (graph::successors (external-uid "calls_undefined") *call-graph*)
-  (treeset::set (external-uid "undefined")))
+  (tset::set (external-uid "undefined")))
 
 (acl2::assert-equal
   (graph::successors (external-uid "undefined") *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 (acl2::assert-equal
   (graph::successors (c$::uid-external (ident "__builtin_expect"))
                      *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 ;; A built-in which the validator does not know is still a direct call.
 
 (acl2::assert-equal
   (graph::successors (external-uid "calls_unknown_builtin") *call-graph*)
-  (treeset::set (c$::uid-external (ident "__builtin_parity"))))
+  (tset::set (c$::uid-external (ident "__builtin_parity"))))
 
 ;; Assembler statements may call anything.
 
 (acl2::assert-equal
   (graph::successors (external-uid "with_asm") *call-graph*)
-  (treeset::set nil))
+  (tset::set nil))
 
 ;; Size expressions of variably modified parameters are evaluated on entry.
 
 (acl2::assert-equal
   (graph::successors (external-uid "vla_param") *call-graph*)
-  (treeset::set (external-uid "size")))
+  (tset::set (external-uid "size")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 
 (include-book "bag-defs")
 

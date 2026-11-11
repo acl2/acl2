@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "xdoc/constructors" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -21,19 +21,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ treemap
+(defxdoc+ tmap
   :parents (data::data-lib)
   :short "A tree-based implementation of ordered finite maps."
   :long
   (xdoc::topstring
     (xdoc::p
       "This library generalizes the finite sets of the "
-      (xdoc::seetopic "acl2::treeset" "treeset")
+      (xdoc::seetopic "acl2::tset" "tset")
       " library to finite maps. Just as "
-      (xdoc::seetopic "acl2::treeset" "treeset")
+      (xdoc::seetopic "acl2::tset" "tset")
       "s are isomorphic to "
       (xdoc::seetopic "set::std/osets" "osets")
-      ", @(see treemap)s are isomorphic to "
+      ", @(see tmap)s are isomorphic to "
       (xdoc::seetopic "omap::omaps" "omaps")
       ".")
     (xdoc::p
@@ -76,18 +76,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ implementation
-  :parents (treemap)
-  :short "Implementation details of @(see treemap)s."
+  :parents (tmap)
+  :short "Implementation details of @(see tmap)s."
   :long
   (xdoc::topstring
     (xdoc::p
-      "The representation of @(see treemap)s is a straightforward
+      "The representation of @(see tmap)s is a straightforward
        generalization from "
-      (xdoc::seetopic "acl2::treeset" "treeset")
+      (xdoc::seetopic "acl2::tset" "tset")
       "s. Node values are replaced with
        key/value pairs, and all invariants (i.e., @(tsee bstp) and @(tsee
        heapp)) apply just to the key values.")
     (xdoc::p
-      "See @(see treeset::implementation) for an overview of the underlying
+      "See @(see tset::implementation) for an overview of the underlying
        treap data structure."))
   :order-subtopics t)

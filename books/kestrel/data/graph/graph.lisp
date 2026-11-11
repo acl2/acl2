@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
 
 (include-book "internal/adj-list-defs")
 (include-book "internal/well-formed-defs")
@@ -21,7 +21,7 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
 
 (local (include-book "internal/adj-list"))
 (local (include-book "internal/well-formed"))
@@ -47,7 +47,7 @@
    (xdoc::p
      "Time complexity: @($O(n + m\\log(n))$), where @($n$) is the number of
       nodes and @($m$) the number of pairs of nodes joined by an edge."))
-  (and (treemap::mapp x)
+  (and (tmap::mapp x)
        (map-values-all-adjacencyp x)
        (well-formedp x)))
 
@@ -58,7 +58,7 @@
   :returns (graph graphp)
   :parents (graph)
   :short "The empty @(see graph)."
-  (treemap::empty)
+  (tmap::empty)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +78,7 @@
        :exec (the list graph))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* graphp
-                                            treemap::break-abstraction))))
+                                            tmap::break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +102,7 @@
   :by fix-when-not-graphp)
 
 (defruled mapp-of-fix
-  (treemap::mapp (fix graph))
+  (tmap::mapp (fix graph))
   :enable (fix
            graphp
            empty))
@@ -130,7 +130,7 @@
 
 (defruled mapp-when-graphp
   (implies (graphp graph)
-           (treemap::mapp graph))
+           (tmap::mapp graph))
   :enable graphp)
 
 (add-to-ruleset break-abstraction '(mapp-when-graphp))

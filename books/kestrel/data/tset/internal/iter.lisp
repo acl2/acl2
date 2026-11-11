@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -602,7 +602,7 @@
       leaves the elements behind.")
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see treeset) -- but @($O(1)$) amortized over a traversal."))
+      @(see tset) -- but @($O(1)$) amortized over a traversal."))
   ;; Logically the move saturates at the far end, which is what @(tsee
   ;; next-identity-iff-after-lastp) reports. The guard rules that case out for
   ;; execution only, so the executable form need not test for it: one keyword
@@ -1588,7 +1588,7 @@
   :enable tree-iter-oset-after)
 
 ;; Both invariants pass from the plug, so over a search tree the built sides
-;; are proper treesets.
+;; are proper tsets.
 
 (defrule bstp-of-tree-iter-tree-before-when-bstp
   (implies (bstp (tree-iter-plug iter))

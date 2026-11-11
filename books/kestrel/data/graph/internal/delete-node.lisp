@@ -11,21 +11,21 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/size-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/min-max-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -39,31 +39,31 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/heap" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/size" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/heap" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/size" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -77,9 +77,9 @@
 
 (defrulel mapp-of-tree-element->val-of-tree->head-when-tree-all-vals-adjacencyp
   (implies (and (tree-all-vals-adjacencyp tree)
-                (not (treemap::tree-empty-p tree)))
-           (treemap::mapp
-             (treemap::tree-element->val (treemap::tree->head tree))))
+                (not (tmap::tree-empty-p tree)))
+           (tmap::mapp
+             (tmap::tree-element->val (tmap::tree->head tree))))
   :enable tree-all-vals-adjacencyp)
 
 ;; The walk that executes removing a node as a target. It visits every node of
@@ -92,26 +92,26 @@
 ;; Time complexity: @($O(n \\log(d))$), where @($d$) is the largest number of
 ;; targets of a source.
 
-(define tree-delete-target (node (tree treemap::treep))
+(define tree-delete-target (node (tree tmap::treep))
   :guard (tree-all-vals-adjacencyp tree)
-  :returns (new-tree treemap::treep)
-  (if (treemap::tree-empty-p tree)
+  :returns (new-tree tmap::treep)
+  (if (tmap::tree-empty-p tree)
       nil
-    (b* ((head (treemap::tree->head tree))
-         (adj (treemap::tree-element->val head)))
-      (treemap::tree-node-with-hint
-        (mbe :logic (treemap::tree-element
-                      (treemap::tree-element->hash head)
-                      (treemap::tree-element->key head)
-                      (treemap::delete node adj))
-             :exec (if (treemap::in node adj)
-                       (treemap::tree-element
-                         (treemap::tree-element->hash head)
-                         (treemap::tree-element->key head)
-                         (treemap::delete node adj))
+    (b* ((head (tmap::tree->head tree))
+         (adj (tmap::tree-element->val head)))
+      (tmap::tree-node-with-hint
+        (mbe :logic (tmap::tree-element
+                      (tmap::tree-element->hash head)
+                      (tmap::tree-element->key head)
+                      (tmap::delete node adj))
+             :exec (if (tmap::in node adj)
+                       (tmap::tree-element
+                         (tmap::tree-element->hash head)
+                         (tmap::tree-element->key head)
+                         (tmap::delete node adj))
                      head))
-        (tree-delete-target node (treemap::tree->left tree))
-        (tree-delete-target node (treemap::tree->right tree))
+        (tree-delete-target node (tmap::tree->left tree))
+        (tree-delete-target node (tmap::tree->right tree))
         tree)))
   :guard-hints (("Goal" :in-theory (enable tree-all-vals-adjacencyp)))
   :verify-guards :after-returns)
@@ -119,7 +119,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-delete-target-when-tree-equiv-of-arg2-congruence
-  (implies (treemap::tree-equiv tree0 tree1)
+  (implies (tmap::tree-equiv tree0 tree1)
            (equal (tree-delete-target node tree0)
                   (tree-delete-target node tree1)))
   :rule-classes :congruence
@@ -127,51 +127,51 @@
   :enable tree-delete-target)
 
 (defrulel tree-key-set-of-tree-delete-target
-  (equal (treemap::tree-key-set (tree-delete-target node tree))
-         (treemap::tree-key-set tree))
+  (equal (tmap::tree-key-set (tree-delete-target node tree))
+         (tmap::tree-key-set tree))
   :induct t
   :enable tree-delete-target)
 
 (defrulel <<-all-l-of-tree-delete-target
-  (equal (treemap::<<-all-l (tree-delete-target node tree) key)
-         (treemap::<<-all-l tree key))
+  (equal (tmap::<<-all-l (tree-delete-target node tree) key)
+         (tmap::<<-all-l tree key))
   :induct t
   :enable tree-delete-target)
 
 (defrulel <<-all-r-of-tree-delete-target
-  (equal (treemap::<<-all-r key (tree-delete-target node tree))
-         (treemap::<<-all-r key tree))
+  (equal (tmap::<<-all-r key (tree-delete-target node tree))
+         (tmap::<<-all-r key tree))
   :induct t
   :enable tree-delete-target)
 
 (defrulel heap<-all-l-of-tree-delete-target
-  (equal (treemap::heap<-all-l (tree-delete-target node tree) key)
-         (treemap::heap<-all-l tree key))
+  (equal (tmap::heap<-all-l (tree-delete-target node tree) key)
+         (tmap::heap<-all-l tree key))
   :induct t
   :enable tree-delete-target)
 
 (defrulel bstp-of-tree-delete-target
-  (implies (treemap::bstp tree)
-           (treemap::bstp (tree-delete-target node tree)))
+  (implies (tmap::bstp tree)
+           (tmap::bstp (tree-delete-target node tree)))
   :induct t
   :enable tree-delete-target)
 
 (defrulel heapp-of-tree-delete-target
-  (implies (treemap::heapp tree)
-           (treemap::heapp (tree-delete-target node tree)))
+  (implies (tmap::heapp tree)
+           (tmap::heapp (tree-delete-target node tree)))
   :induct t
   :enable tree-delete-target)
 
 (defrulel mapp-of-tree-delete-target
-  (implies (treemap::mapp tree)
-           (treemap::mapp (tree-delete-target node tree)))
-  :enable treemap::mapp)
+  (implies (tmap::mapp tree)
+           (tmap::mapp (tree-delete-target node tree)))
+  :enable tmap::mapp)
 
 (defrulel tree-lookup-of-tree-delete-target
-  (equal (treemap::tree-lookup key (tree-delete-target node tree))
-         (if (treeset::in key (treemap::tree-key-set tree))
-             (treemap::delete node (treemap::tree-lookup key tree))
-           (treemap::tree-lookup key tree)))
+  (equal (tmap::tree-lookup key (tree-delete-target node tree))
+         (if (tset::in key (tmap::tree-key-set tree))
+             (tmap::delete node (tmap::tree-lookup key tree))
+           (tmap::tree-lookup key tree)))
   :induct t
   :enable tree-delete-target)
 
@@ -187,26 +187,26 @@
 ;; Time complexity: @($O(n \\log(d))$), as for @(tsee tree-delete-target).
 
 (define adj-list-delete-target (node (adjl adj-listp))
-  :returns (new-adjl treemap::mapp)
-  (mbe :logic (if (treemap::emptyp adjl)
-                  (treemap::empty)
-                (b* ((from (treemap::min-key adjl)))
-                  (treemap::update
+  :returns (new-adjl tmap::mapp)
+  (mbe :logic (if (tmap::emptyp adjl)
+                  (tmap::empty)
+                (b* ((from (tmap::min-key adjl)))
+                  (tmap::update
                     from
-                    (treemap::delete node (treemap::lookup from adjl))
+                    (tmap::delete node (tmap::lookup from adjl))
                     (adj-list-delete-target node
-                                            (treemap::delete from adjl)))))
+                                            (tmap::delete from adjl)))))
        :exec (tree-delete-target node adjl))
-  :measure (treemap::size adjl)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+  :measure (tmap::size adjl)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   ;; Verified below
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-delete-target-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-delete-target-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-delete-target node adjl0)
                   (adj-list-delete-target node adjl1)))
   :rule-classes :congruence
@@ -214,17 +214,17 @@
            (adj-list-delete-target node adjl1)))
 
 (defrule keys-of-adj-list-delete-target
-  (equal (treemap::keys (adj-list-delete-target node adjl))
-         (treemap::keys adjl))
+  (equal (tmap::keys (adj-list-delete-target node adjl))
+         (tmap::keys adjl))
   :induct t
   :enable adj-list-delete-target)
 
 (defrule lookup-of-adj-list-delete-target
-  (equal (treemap::lookup key
-                          (adj-list-delete-target node adjl)
-                          :default default)
-         (if (treeset::in key (treemap::keys adjl))
-             (treemap::delete node (treemap::lookup key adjl))
+  (equal (tmap::lookup key
+                       (adj-list-delete-target node adjl)
+                       :default default)
+         (if (tset::in key (tmap::keys adjl))
+             (tmap::delete node (tmap::lookup key adjl))
            default))
   :induct t
   :enable adj-list-delete-target)
@@ -239,16 +239,16 @@
 ;; execute.
 
 (defruledl adj-list-delete-target-becomes-tree-delete-target
-  (implies (treemap::mapp adjl)
+  (implies (tmap::mapp adjl)
            (equal (adj-list-delete-target node adjl)
                   (tree-delete-target node adjl)))
-  :enable (treemap::extensionality-polar
-           treemap::lookup
-           treemap::keys))
+  :enable (tmap::extensionality-polar
+           tmap::lookup
+           tmap::keys))
 
 (verify-guards adj-list-delete-target
   :hints (("Goal"
-           :in-theory (enable treemap::treep-when-mapp-forward-chaining)
+           :in-theory (enable tmap::treep-when-mapp-forward-chaining)
            :use adj-list-delete-target-becomes-tree-delete-target
            :expand ((adj-list-delete-target node adjl)))))
 
@@ -258,23 +258,23 @@
 (defrule map-values-all-keys-subsetp-of-adj-list-delete-target
   (implies (map-values-all-keys-subsetp adjl nodes)
            (map-values-all-keys-subsetp (adj-list-delete-target node adjl)
-                                        (treeset::delete node nodes)))
+                                        (tset::delete node nodes)))
   :induct t
   :enable adj-list-delete-target)
 
 ;; The incoming edges are exactly the ones lost.
 
 (defruled in-of-adj-list-edges-of-adj-list-delete-target
-  (equal (treeset::in edge (adj-list-edges (adj-list-delete-target node adjl)))
-         (and (treeset::in edge (adj-list-edges adjl))
+  (equal (tset::in edge (adj-list-edges (adj-list-delete-target node adjl)))
+         (and (tset::in edge (adj-list-edges adjl))
               (not (equal (edge->to (double-rewrite edge)) node))))
   :enable in-of-adj-list-edges)
 
 (defrule adj-list-edges-of-adj-list-delete-target
   (equal (adj-list-edges (adj-list-delete-target node adjl))
-         (treeset::diff (adj-list-edges adjl)
-                        (adj-list-edges-to node adjl)))
-  :enable (treeset::extensionality-no-backchain-limit-polar
+         (tset::diff (adj-list-edges adjl)
+                     (adj-list-edges-to node adjl)))
+  :enable (tset::extensionality-no-backchain-limit-polar
            in-of-adj-list-edges-of-adj-list-delete-target
            in-of-adj-list-edges-to))
 
@@ -286,13 +286,13 @@
 ;; Time complexity: @($O(n \\log(d))$), as for @(tsee adj-list-delete-target).
 
 (define adj-list-delete-node (node (adjl adj-listp))
-  :returns (new-adjl treemap::mapp)
-  (treemap::delete node (adj-list-delete-target node adjl)))
+  :returns (new-adjl tmap::mapp)
+  (tmap::delete node (adj-list-delete-target node adjl)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-delete-node-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-delete-node-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-delete-node node adjl0)
                   (adj-list-delete-node node adjl1)))
   :rule-classes :congruence
@@ -309,16 +309,16 @@
 ;; edge touching it.
 
 (defrule keys-of-adj-list-delete-node
-  (equal (treemap::keys (adj-list-delete-node node adjl))
-         (treeset::delete node (treemap::keys adjl)))
+  (equal (tmap::keys (adj-list-delete-node node adjl))
+         (tset::delete node (tmap::keys adjl)))
   :enable adj-list-delete-node)
 
 (defruled in-of-adj-list-edges-of-adj-list-delete-node
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge
-                               (adj-list-edges
-                                 (adj-list-delete-node node adjl)))
-                  (and (treeset::in edge (adj-list-edges adjl))
+           (equal (tset::in edge
+                            (adj-list-edges
+                              (adj-list-delete-node node adjl)))
+                  (and (tset::in edge (adj-list-edges adjl))
                        (not (equal (edge->from edge$) node))
                        (not (equal (edge->to edge$) node)))))
   :enable (adj-list-delete-node
@@ -335,26 +335,26 @@
 ;; anyway.
 
 (defrulel in-of-keys-of-lookup-when-subset-of-adj-list-predecessors
-  (implies (and (treeset::subset (adj-list-predecessors node adjl)
-                                 (treeset::insert node (treeset::empty)))
+  (implies (and (tset::subset (adj-list-predecessors node adjl)
+                              (tset::insert node (tset::empty)))
                 (not (equal key node)))
-           (not (treeset::in node (treemap::keys (treemap::lookup key adjl)))))
-  :use (:instance treeset::in-when-in-and-subset
-                  (treeset::a key)
-                  (treeset::x (adj-list-predecessors node adjl))
-                  (treeset::y (treeset::insert node (treeset::empty))))
+           (not (tset::in node (tmap::keys (tmap::lookup key adjl)))))
+  :use (:instance tset::in-when-in-and-subset
+                  (tset::a key)
+                  (tset::x (adj-list-predecessors node adjl))
+                  (tset::y (tset::insert node (tset::empty))))
   :enable (in-of-adj-list-predecessors
-           treemap::lookup-with-default-becomes-lookup-syntaxp)
-  :disable treeset::in-when-in-and-subset)
+           tmap::lookup-with-default-becomes-lookup-syntaxp)
+  :disable tset::in-when-in-and-subset)
 
 (defruled adj-list-delete-node-when-subset-of-adj-list-predecessors
   (implies (and (map-values-all-adjacencyp adjl)
-                (treeset::subset (adj-list-predecessors node adjl)
-                                 (treeset::insert node (treeset::empty))))
+                (tset::subset (adj-list-predecessors node adjl)
+                              (tset::insert node (tset::empty))))
            (equal (adj-list-delete-node node adjl)
-                  (treemap::delete node adjl)))
+                  (tmap::delete node adjl)))
   :enable (adj-list-delete-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -362,17 +362,17 @@
   (equal (adj-list-delete-node node (adj-list-delete-node node adjl))
          (adj-list-delete-node node adjl))
   :enable (adj-list-delete-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))
 
 (defrule adj-list-delete-node-of-adj-list-delete-node-commutative
   (equal (adj-list-delete-node node0 (adj-list-delete-node node1 adjl))
          (adj-list-delete-node node1 (adj-list-delete-node node0 adjl)))
   :enable (adj-list-delete-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))
 
 (defrule adj-list-delete-node-of-adj-list-add-node-same
   (equal (adj-list-delete-node node (adj-list-add-node node adjl))
          (adj-list-delete-node node adjl))
   :enable (adj-list-delete-node
            adj-list-add-node
-           treemap::extensionality-polar))
+           tmap::extensionality-polar))

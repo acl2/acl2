@@ -6,16 +6,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/tree-defs")
@@ -31,11 +31,11 @@
 (local (include-book "std/osets/top" :dir :system))
 (local (include-book "std/omaps/core" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/to-oset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/values"))
@@ -48,9 +48,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define values ((map mapp))
-  :returns (values treeset::setp)
-  :parents (treemap)
-  :short "Get the value @(see acl2::treeset) from a @(see treemap)."
+  :returns (values tset::setp)
+  :parents (tmap)
+  :short "Get the value @(see acl2::tset) from a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -68,7 +68,7 @@
   :enable values)
 
 (defrule emptyp-of-values
-  (equal (treeset::emptyp (values map))
+  (equal (tset::emptyp (values map))
          (emptyp map))
   :enable (values
            emptyp))
@@ -76,28 +76,28 @@
 (defruled values-when-emptyp
   (implies (emptyp map)
            (equal (values map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :use emptyp-of-values
-  :enable treeset::emptyp-alt-definition
+  :enable tset::emptyp-alt-definition
   :disable emptyp-of-values)
 
 (defrule values-when-emptyp-cheap
   (implies (emptyp map)
            (equal (values map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by values-when-emptyp)
 
 (defrule values-of-empty
   (equal (values (empty))
-         (treeset::empty))
+         (tset::empty))
   :enable values-when-emptyp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule cardinality-of-values-linear
-  (<= (treeset::cardinality (values map))
-      (treeset::cardinality (keys map)))
+  (<= (tset::cardinality (values map))
+      (tset::cardinality (keys map)))
   :rule-classes :linear
   :enable (values
            keys
@@ -106,9 +106,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-lookup-and-values
-  (implies (treeset::in key (keys map))
-           (treeset::in (lookup key map :default default)
-                        (values map)))
+  (implies (tset::in key (keys map))
+           (tset::in (lookup key map :default default)
+                     (values map)))
   :enable (lookup
            keys
            values))
@@ -119,7 +119,7 @@
 ;; default.
 (defrule values-of-to-omap
   (equal (omap::values (to-omap map))
-         (treeset::to-oset (values map)))
+         (tset::to-oset (values map)))
   :enable (to-omap
            values
            break-abstraction))
@@ -128,8 +128,8 @@
 
 (defruled values-becomes-omap-values
   (equal (values map)
-         (treeset::from-oset (omap::values (to-omap map))))
-  :enable treeset::extensionality)
+         (tset::from-oset (omap::values (to-omap map))))
+  :enable tset::extensionality)
 
 (add-to-ruleset to-omap-theory '(values-becomes-omap-values))
 

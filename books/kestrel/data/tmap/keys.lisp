@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/tree-defs")
@@ -28,11 +28,11 @@
 (local (include-book "std/osets/top" :dir :system))
 (local (include-book "std/omaps/core" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/to-oset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -43,9 +43,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keys ((map mapp))
-  :returns (keys treeset::setp)
-  :parents (treemap)
-  :short "Get the key @(see acl2::treeset) from a @(see treemap)."
+  :returns (keys tset::setp)
+  :parents (tmap)
+  :short "Get the key @(see acl2::tset) from a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -64,7 +64,7 @@
   :enable keys)
 
 (defrule emptyp-of-keys
-  (equal (treeset::emptyp (keys map))
+  (equal (tset::emptyp (keys map))
          (emptyp map))
   :enable (keys
            emptyp))
@@ -72,25 +72,25 @@
 (defruled keys-when-emptyp
   (implies (emptyp map)
            (equal (keys map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :use emptyp-of-keys
-  :enable treeset::emptyp-alt-definition
+  :enable tset::emptyp-alt-definition
   :disable emptyp-of-keys)
 
 (defrule keys-when-emptyp-cheap
   (implies (emptyp map)
            (equal (keys map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by keys-when-emptyp)
 
 (defrule keys-of-empty
   (equal (keys (empty))
-         (treeset::empty))
+         (tset::empty))
   :enable keys-when-emptyp)
 
 (defrule in-of-head-key
-  (equal (treeset::in (head-key map) (keys map))
+  (equal (tset::in (head-key map) (keys map))
          (not (emptyp map)))
   :enable (head-key
            keys
@@ -102,7 +102,7 @@
 ;; default.
 (defrule keys-of-to-omap
   (equal (omap::keys (to-omap map))
-         (treeset::to-oset (keys map)))
+         (tset::to-oset (keys map)))
   :enable (to-omap
            keys
            break-abstraction))
@@ -111,8 +111,8 @@
 
 (defruled keys-becomes-omap-keys
   (equal (keys map)
-         (treeset::from-oset (omap::keys (to-omap map))))
-  :enable treeset::extensionality)
+         (tset::from-oset (omap::keys (to-omap map))))
+  :enable tset::extensionality)
 
 (add-to-ruleset to-omap-theory '(keys-becomes-omap-keys))
 
@@ -123,7 +123,7 @@
 (define map-keys-acl2-numberp ((map mapp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (mbe :logic (treeset::set-all-acl2-numberp (keys map))
+  (mbe :logic (tset::set-all-acl2-numberp (keys map))
        :exec (tree-keys-acl2-numberp map))
   :enabled t
   :inline t
@@ -141,7 +141,7 @@
 (define map-keys-symbolp ((map mapp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (mbe :logic (treeset::set-all-symbolp (keys map))
+  (mbe :logic (tset::set-all-symbolp (keys map))
        :exec (tree-keys-symbolp map))
   :enabled t
   :inline t
@@ -159,7 +159,7 @@
 (define map-keys-eqlablep ((map mapp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (mbe :logic (treeset::set-all-eqlablep (keys map))
+  (mbe :logic (tset::set-all-eqlablep (keys map))
        :exec (tree-keys-eqlablep map))
   :enabled t
   :inline t

@@ -12,9 +12,9 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -27,11 +27,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "../edges"))
@@ -91,8 +91,8 @@
 
 (defrule walk-edges-of-walk-snoc
   (equal (walk-edges (walk-snoc walk to label))
-         (treeset::insert (edge (walk-end walk) to label)
-                          (walk-edges walk)))
+         (tset::insert (edge (walk-end walk) to label)
+                       (walk-edges walk)))
   :enable (walk-edges
            walk-end
            steps-edges))
@@ -100,6 +100,6 @@
 (defrule walk-in-of-walk-snoc
   (equal (walk-in (walk-snoc walk to label) graph)
          (and (walk-in walk graph)
-              (treeset::in (edge (walk-end walk) to label)
-                           (edges graph))))
+              (tset::in (edge (walk-end walk) to label)
+                        (edges graph))))
   :enable walk-in)

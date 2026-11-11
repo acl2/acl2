@@ -6,16 +6,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/hash-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 (include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
@@ -35,12 +35,12 @@
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
 
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/alist" :dir :system))
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
@@ -82,8 +82,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc update
-  :parents (treemap)
-  :short "Add a key-value pair (or multiples pairs) to a @(see treemap)."
+  :parents (tmap)
+  :short "Add a key-value pair (or multiples pairs) to a @(see tmap)."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -194,7 +194,7 @@
 
 (defrule keys-of-update
   (equal (keys (update key val map))
-         (treeset::insert key (keys map)))
+         (tset::insert key (keys map)))
   :enable (keys
            update
            fix
@@ -222,7 +222,7 @@
   :enable extensionality)
 
 (defruled update-redundant
-  (implies (and (treeset::in key (keys map))
+  (implies (and (tset::in key (keys map))
                 (equal (lookup key map) val))
            (equal (update key val map)
                   (fix map)))
@@ -230,7 +230,7 @@
 
 (defrule update-redundant-cheap
   (implies (and (equal (lookup key map) val)
-                (treeset::in key (keys map)))
+                (tset::in key (keys map)))
            (equal (update key val map)
                   (fix map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
@@ -244,7 +244,7 @@
 (defrule equal-of-update
   (equal (equal (update key val map) map)
          (and (mapp map)
-              (treeset::in key (keys map))
+              (tset::in key (keys map))
               (equal (lookup key map) val))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -252,13 +252,13 @@
 (defrule submap-of-update-when-submap
   (implies (submap x y)
            (equal (submap (update key val x) y)
-                  (and (treeset::in key (keys y))
+                  (and (tset::in key (keys y))
                        (equal (lookup key y) val))))
   :prep-lemmas
   ((defrule lemma0
      (implies (and (submap x y)
                    (submap (update key val x) y))
-              (and (treeset::in key (keys y))
+              (and (tset::in key (keys y))
                    (equal (lookup key y) val)))
      ;; TODO: can this proof be improved?
      :use ((:instance lookup-when-in-of-keys-and-submap
@@ -270,14 +270,14 @@
 
    (defrule lemma1
      (implies (and (submap x y)
-                   (treeset::in key (keys y))
+                   (tset::in key (keys y))
                    (equal (lookup key y) val))
               (submap (update key val x) y))
      :enable pick-a-point-polar)))
 
 (defrule submap-of-arg1-and-update
   (equal (submap map (update key val map))
-         (or (not (treeset::in key (keys map)))
+         (or (not (tset::in key (keys map)))
              (equal (lookup key map) val)))
   :use (:instance lookup-when-in-of-keys-and-submap
                   (x map)
@@ -390,7 +390,7 @@
 
 (defrule keys-of-update-from-alist-rev
   (equal (keys (update-from-alist-rev alist map))
-         (treeset::insert-all (strip-cars alist) (keys map)))
+         (tset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist-rev
            strip-cars))
@@ -412,7 +412,7 @@
   :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
-  :short "Add an alist of key-value pairs to a @(see treemap)."
+  :short "Add an alist of key-value pairs to a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -470,7 +470,7 @@
 
 (defrule keys-of-update-from-alist
   (equal (keys (update-from-alist alist map))
-         (treeset::insert-all (strip-cars alist) (keys map)))
+         (tset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist
            strip-cars))
@@ -526,7 +526,7 @@
 (define from-alist
   ((alist alistp))
   :type-prescription :none
-  :parents (treemap)
+  :parents (tmap)
   :short "Create a map from an alist of key-value pairs."
   :long
   (xdoc::topstring
@@ -568,9 +568,9 @@
 
 (defrule keys-of-from-alist
   (equal (keys (from-alist alist))
-         (treeset::from-list (strip-cars alist)))
+         (tset::from-list (strip-cars alist)))
   :enable (from-alist
-           treeset::from-list))
+           tset::from-list))
 
 (defrule lookup-of-from-alist
   (implies (alistp alist)
@@ -617,7 +617,7 @@
   :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
-  :short "Add an omap of key-value pairs to a @(see treemap)."
+  :short "Add an omap of key-value pairs to a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -676,13 +676,13 @@
 
 (defrule keys-of-update-from-omap
   (equal (keys (update-from-omap omap map))
-         (treeset::union (treeset::from-oset (omap::keys omap))
-                         (keys map)))
+         (tset::union (tset::from-oset (omap::keys omap))
+                      (keys map)))
   :induct t
   :enable (update-from-omap
            omap::keys)
   ;; TODO: maybe this should be disabled in general
-  :disable ((:e treeset::from-oset)))
+  :disable ((:e tset::from-oset)))
 
 (defrule assoc-of-update-from-omap
   (equal (lookup key (update-from-omap omap map) :default default)
@@ -725,7 +725,7 @@
 (define from-omap
   ((omap omap::mapp))
   :type-prescription :none
-  :parents (treemap)
+  :parents (tmap)
   :short "Create a map from an omap."
   :long
   (xdoc::topstring
@@ -779,14 +779,14 @@
 
 (defrule keys-of-from-omap
   (equal (keys (from-omap omap))
-         (treeset::from-oset (omap::keys omap)))
+         (tset::from-oset (omap::keys omap)))
   :enable from-omap)
 
 (add-to-ruleset to-omap-theory '(keys-of-from-omap))
 
 (defruled omap-keys-becomes-keys
   (equal (omap::keys omap)
-         (treeset::to-oset (keys (from-omap omap)))))
+         (tset::to-oset (keys (from-omap omap)))))
 
 (add-to-ruleset from-omap-theory '(omap-keys-becomes-keys))
 
@@ -801,7 +801,7 @@
 
 (defruled omap-assoc-becomes-lookup
   (equal (omap::assoc key omap)
-         (if (treeset::in key (keys (from-omap omap)))
+         (if (tset::in key (keys (from-omap omap)))
              (cons key (lookup key (from-omap omap)))
            nil))
   :enable omap::in-of-keys-to-assoc)
@@ -811,14 +811,14 @@
 ;; TODO
 ;; (defrule values-of-from-omap
 ;;   (equal (values (from-omap omap))
-;;          (treeset::from-oset (omap::values omap)))
+;;          (tset::from-oset (omap::values omap)))
 ;;   :enable from-omap)
 ;;
 ;; (add-to-ruleset to-omap-theory '(values-of-from-omap))
 ;;
 ;; (defruled omap-values-becomes-values
 ;;   (equal (omap::values omap)
-;;          (treeset::to-oset (values (from-omap omap)))))
+;;          (tset::to-oset (values (from-omap omap)))))
 ;;
 ;; (add-to-ruleset from-omap-theory '(omap-values-becomes-values))
 
@@ -838,7 +838,7 @@
 
 (defruled omap-size-becomes-cardinality-of-keys
   (equal (omap::size omap)
-         (treeset::cardinality (keys (from-omap omap))))
+         (tset::cardinality (keys (from-omap omap))))
   :use (:instance size-of-to-omap
                   (map (from-omap omap)))
   :disable size-of-to-omap)
@@ -893,8 +893,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc map
-  :parents (treemap)
-  :short "Build a @(see treemap)."
+  :parents (tmap)
+  :short "Build a @(see tmap)."
   :long
   (xdoc::topstring
     (xdoc::p

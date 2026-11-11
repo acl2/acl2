@@ -6,17 +6,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/bst-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/split-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/bst-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/in-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/split-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "keys-defs")
@@ -28,17 +28,17 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/bst" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/in" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/split" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tset/internal/bst" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap" :dir :system))
+(local (include-book "kestrel/data/tset/internal/in" :dir :system))
+(local (include-book "kestrel/data/tset/internal/split" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -55,7 +55,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-restrict
-  ((keys treeset::treep)
+  ((keys tset::treep)
    (tree treep))
   :type-prescription :none
   :parents (implementation)
@@ -66,17 +66,17 @@
      "The result might not be the expected restriction if the input trees are
       not binary search trees."))
   :returns (tree treep)
-  (cond ((or (treeset::tree-empty-p keys)
+  (cond ((or (tset::tree-empty-p keys)
              (tree-empty-p tree))
          nil)
-        ((heap<-with-hashes (treeset::tree-element->val
-                              (treeset::tree->head keys))
+        ((heap<-with-hashes (tset::tree-element->val
+                              (tset::tree->head keys))
                             (tree-element->key (tree->head tree))
-                            (treeset::tree-element->hash
-                              (treeset::tree->head keys))
+                            (tset::tree-element->hash
+                              (tset::tree->head keys))
                             (tree-element->hash (tree->head tree)))
          (mv-let (in left right)
-                 (treeset::tree-split (tree-element->key (tree->head tree)) keys)
+                 (tset::tree-split (tree-element->key (tree->head tree)) keys)
            (let ((left (tree-restrict left (tree->left tree)))
                  (right (tree-restrict right (tree->right tree))))
              (if in
@@ -86,27 +86,27 @@
                     :exec (tree-join left right))))))
         (t
          (mv-let (assoc left right)
-                 (tree-split (treeset::tree-element->val
-                               (treeset::tree->head keys))
+                 (tree-split (tset::tree-element->val
+                               (tset::tree->head keys))
                              tree)
-           (let ((left (tree-restrict (treeset::tree->left keys) left))
-                 (right (tree-restrict (treeset::tree->right keys) right)))
+           (let ((left (tree-restrict (tset::tree->left keys) left))
+                 (right (tree-restrict (tset::tree->right keys) right)))
              (if assoc
                  (tree-node
                    (mbe :logic (tree-element
-                                 (treeset::tree-element->hash
-                                   (treeset::tree->head keys))
-                                 (treeset::tree-element->val
-                                   (treeset::tree->head keys))
+                                 (tset::tree-element->hash
+                                   (tset::tree->head keys))
+                                 (tset::tree-element->val
+                                   (tset::tree->head keys))
                                  (cdr assoc))
-                        :exec (cons (treeset::tree-element->hash
-                                      (treeset::tree->head keys))
+                        :exec (cons (tset::tree-element->hash
+                                      (tset::tree->head keys))
                                     assoc))
                    left
                    right)
                (mbe :logic (tree-join-at
-                             (treeset::tree-element->val
-                               (treeset::tree->head keys))
+                             (tset::tree-element->val
+                               (tset::tree->head keys))
                              left
                              right)
                     :exec (tree-join left right)))))))
@@ -127,7 +127,7 @@
   :enable tree-restrict)
 
 (defrule tree-restrict-when-tree-equiv-of-arg1-congruence
-  (implies (treeset::tree-equiv x0 x1)
+  (implies (tset::tree-equiv x0 x1)
            (equal (tree-restrict x0 z)
                   (tree-restrict x1 z)))
   :rule-classes :congruence
@@ -145,7 +145,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-empty-p-of-tree-restrict-when-tree-empty-p-of-arg1
-  (implies (treeset::tree-empty-p keys)
+  (implies (tset::tree-empty-p keys)
            (tree-empty-p (tree-restrict keys tree)))
   :enable tree-restrict)
 
@@ -155,7 +155,7 @@
   :enable tree-restrict)
 
 (defrule not-tree-restrict-when-tree-empty-p-of-arg1
-  (implies (treeset::tree-empty-p keys)
+  (implies (tset::tree-empty-p keys)
            (not (tree-restrict keys tree)))
   :enable tree-restrict)
 
@@ -165,11 +165,11 @@
   :enable tree-restrict)
 
 (defrule in-of-tree-key-set-of-tree-restrict
-  (implies (and (treeset::bstp keys)
+  (implies (and (tset::bstp keys)
                 (bstp tree))
-           (equal (treeset::in a (tree-key-set (tree-restrict keys tree)))
-                  (and (treeset::tree-in a keys)
-                       (treeset::in a (tree-key-set tree)))))
+           (equal (tset::in a (tree-key-set (tree-restrict keys tree)))
+                  (and (tset::tree-in a keys)
+                       (tset::in a (tree-key-set tree)))))
   ;; TODO: improve proof
   :induct t
   :enable (tree-restrict
@@ -178,14 +178,14 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule <<-all-l-of-tree-restrict
-  (implies (and (treeset::<<-all-l keys x)
+  (implies (and (tset::<<-all-l keys x)
                 (<<-all-l tree x))
            (<<-all-l (tree-restrict keys tree) x))
   :induct t
   :enable tree-restrict)
 
 (defrule <<-all-r-of-arg1-and-tree-restrict
-  (implies (and (treeset::<<-all-r x keys)
+  (implies (and (tset::<<-all-r x keys)
                 (<<-all-r x tree))
            (<<-all-r x (tree-restrict keys tree)))
   :induct t
@@ -194,7 +194,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule bstp-of-tree-restrict-when-bstp
-  (implies (and (treeset::bstp keys)
+  (implies (and (tset::bstp keys)
                 (bstp tree))
            (bstp (tree-restrict keys tree)))
   :induct t
@@ -203,10 +203,10 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-lookup-of-tree-restrict
-  (implies (and (treeset::bstp keys)
+  (implies (and (tset::bstp keys)
                 (bstp tree))
            (equal (tree-lookup key (tree-restrict keys tree))
-                  (if (treeset::tree-in key keys)
+                  (if (tset::tree-in key keys)
                       (tree-lookup key tree)
                     nil)))
   ;; TODO: improve proof
@@ -217,7 +217,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule heap<-all-l-of-tree-restrict
-  (implies (and (treeset::heap<-all-l keys x)
+  (implies (and (tset::heap<-all-l keys x)
                 (heap<-all-l tree x))
            (heap<-all-l (tree-restrict keys tree) x))
   :induct t
@@ -226,23 +226,23 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled tree->head-when-heapp-and-tree-in-tree->head
-  (implies (and (treeset::heapp x)
+  (implies (and (tset::heapp x)
                 (heapp y)
-                (treeset::in (treeset::tree-element->val (treeset::tree->head x))
-                             (tree-key-set y))
-                (treeset::tree-in (tree-element->key (tree->head y)) x))
-           (equal (treeset::tree-element->val (treeset::tree->head x))
+                (tset::in (tset::tree-element->val (tset::tree->head x))
+                          (tree-key-set y))
+                (tset::tree-in (tree-element->key (tree->head y)) x))
+           (equal (tset::tree-element->val (tset::tree->head x))
                   (tree-element->key (tree->head y))))
   :use ((:instance heap<-of-arg1-and-tree->head-when-in-arg1-of-tree-key-set
-                   (key (treeset::tree-element->val (treeset::tree->head x)))
+                   (key (tset::tree-element->val (tset::tree->head x)))
                    (tree y)))
   :enable heap<-rules
   :disable heap<-of-arg1-and-tree->head-when-in-arg1-of-tree-key-set)
 
 (defrule heapp-of-tree-restrict-when-bstp-and-heapp
-  (implies (and (treeset::bstp keys)
+  (implies (and (tset::bstp keys)
                 (bstp tree)
-                (treeset::heapp keys)
+                (tset::heapp keys)
                 (heapp tree))
            (heapp (tree-restrict keys tree)))
   ;; TODO: why can't this rule just be enabled?
@@ -255,21 +255,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define acl2-number-tree-restrict
-  ((keys treeset::acl2-number-treep)
+  ((keys tset::acl2-number-treep)
    (tree acl2-number-treep))
   (mbe :logic (tree-restrict keys tree)
        :exec
-       (cond ((or (treeset::tree-empty-p keys)
+       (cond ((or (tset::tree-empty-p keys)
                   (tree-empty-p tree))
               nil)
-             ((heap<-with-hashes (treeset::tree-element->val
-                                   (treeset::tree->head keys))
+             ((heap<-with-hashes (tset::tree-element->val
+                                   (tset::tree->head keys))
                                  (tree-element->key (tree->head tree))
-                                 (treeset::tree-element->hash
-                                   (treeset::tree->head keys))
+                                 (tset::tree-element->hash
+                                   (tset::tree->head keys))
                                  (tree-element->hash (tree->head tree)))
               (mv-let (in left right)
-                      (treeset::acl2-number-tree-split
+                      (tset::acl2-number-tree-split
                         (tree-element->key (tree->head tree)) keys)
                 (let ((left (acl2-number-tree-restrict left
                                                        (tree->left tree)))
@@ -280,23 +280,23 @@
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
-                      (acl2-number-tree-split (treeset::tree-element->val
-                                                (treeset::tree->head keys))
+                      (acl2-number-tree-split (tset::tree-element->val
+                                                (tset::tree->head keys))
                                               tree)
                 (let ((left (acl2-number-tree-restrict
-                              (treeset::tree->left keys) left))
+                              (tset::tree->left keys) left))
                       (right (acl2-number-tree-restrict
-                               (treeset::tree->right keys) right)))
+                               (tset::tree->right keys) right)))
                   (if assoc
                       (tree-node
                         (mbe :logic (tree-element
-                                      (treeset::tree-element->hash
-                                        (treeset::tree->head keys))
-                                      (treeset::tree-element->val
-                                        (treeset::tree->head keys))
+                                      (tset::tree-element->hash
+                                        (tset::tree->head keys))
+                                      (tset::tree-element->val
+                                        (tset::tree->head keys))
                                       (cdr assoc))
-                             :exec (cons (treeset::tree-element->hash
-                                           (treeset::tree->head keys))
+                             :exec (cons (tset::tree-element->hash
+                                           (tset::tree->head keys))
                                          assoc))
                         left
                         right)
@@ -304,7 +304,7 @@
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-restrict
                                            acl2-number-tree-restrict
-                                           treeset::tree-all-acl2-numberp
+                                           tset::tree-all-acl2-numberp
                                            tree-keys-acl2-numberp
                                            tree-join-at
                                            tree-element
@@ -313,21 +313,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define symbol-tree-restrict
-  ((keys treeset::symbol-treep)
+  ((keys tset::symbol-treep)
    (tree symbol-treep))
   (mbe :logic (tree-restrict keys tree)
        :exec
-       (cond ((or (treeset::tree-empty-p keys)
+       (cond ((or (tset::tree-empty-p keys)
                   (tree-empty-p tree))
               nil)
-             ((heap<-with-hashes (treeset::tree-element->val
-                                   (treeset::tree->head keys))
+             ((heap<-with-hashes (tset::tree-element->val
+                                   (tset::tree->head keys))
                                  (tree-element->key (tree->head tree))
-                                 (treeset::tree-element->hash
-                                   (treeset::tree->head keys))
+                                 (tset::tree-element->hash
+                                   (tset::tree->head keys))
                                  (tree-element->hash (tree->head tree)))
               (mv-let (in left right)
-                      (treeset::symbol-tree-split
+                      (tset::symbol-tree-split
                         (tree-element->key (tree->head tree)) keys)
                 (let ((left (symbol-tree-restrict left
                                                        (tree->left tree)))
@@ -338,23 +338,23 @@
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
-                      (symbol-tree-split (treeset::tree-element->val
-                                                (treeset::tree->head keys))
+                      (symbol-tree-split (tset::tree-element->val
+                                                (tset::tree->head keys))
                                               tree)
                 (let ((left (symbol-tree-restrict
-                              (treeset::tree->left keys) left))
+                              (tset::tree->left keys) left))
                       (right (symbol-tree-restrict
-                               (treeset::tree->right keys) right)))
+                               (tset::tree->right keys) right)))
                   (if assoc
                       (tree-node
                         (mbe :logic (tree-element
-                                      (treeset::tree-element->hash
-                                        (treeset::tree->head keys))
-                                      (treeset::tree-element->val
-                                        (treeset::tree->head keys))
+                                      (tset::tree-element->hash
+                                        (tset::tree->head keys))
+                                      (tset::tree-element->val
+                                        (tset::tree->head keys))
                                       (cdr assoc))
-                             :exec (cons (treeset::tree-element->hash
-                                           (treeset::tree->head keys))
+                             :exec (cons (tset::tree-element->hash
+                                           (tset::tree->head keys))
                                          assoc))
                         left
                         right)
@@ -362,7 +362,7 @@
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-restrict
                                            symbol-tree-restrict
-                                           treeset::tree-all-symbolp
+                                           tset::tree-all-symbolp
                                            tree-keys-symbolp
                                            tree-join-at
                                            tree-element
@@ -371,21 +371,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eqlable-tree-restrict
-  ((keys treeset::eqlable-treep)
+  ((keys tset::eqlable-treep)
    (tree eqlable-treep))
   (mbe :logic (tree-restrict keys tree)
        :exec
-       (cond ((or (treeset::tree-empty-p keys)
+       (cond ((or (tset::tree-empty-p keys)
                   (tree-empty-p tree))
               nil)
-             ((heap<-with-hashes (treeset::tree-element->val
-                                   (treeset::tree->head keys))
+             ((heap<-with-hashes (tset::tree-element->val
+                                   (tset::tree->head keys))
                                  (tree-element->key (tree->head tree))
-                                 (treeset::tree-element->hash
-                                   (treeset::tree->head keys))
+                                 (tset::tree-element->hash
+                                   (tset::tree->head keys))
                                  (tree-element->hash (tree->head tree)))
               (mv-let (in left right)
-                      (treeset::eqlable-tree-split
+                      (tset::eqlable-tree-split
                         (tree-element->key (tree->head tree)) keys)
                 (let ((left (eqlable-tree-restrict left
                                                        (tree->left tree)))
@@ -396,23 +396,23 @@
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
-                      (eqlable-tree-split (treeset::tree-element->val
-                                                (treeset::tree->head keys))
+                      (eqlable-tree-split (tset::tree-element->val
+                                                (tset::tree->head keys))
                                               tree)
                 (let ((left (eqlable-tree-restrict
-                              (treeset::tree->left keys) left))
+                              (tset::tree->left keys) left))
                       (right (eqlable-tree-restrict
-                               (treeset::tree->right keys) right)))
+                               (tset::tree->right keys) right)))
                   (if assoc
                       (tree-node
                         (mbe :logic (tree-element
-                                      (treeset::tree-element->hash
-                                        (treeset::tree->head keys))
-                                      (treeset::tree-element->val
-                                        (treeset::tree->head keys))
+                                      (tset::tree-element->hash
+                                        (tset::tree->head keys))
+                                      (tset::tree-element->val
+                                        (tset::tree->head keys))
                                       (cdr assoc))
-                             :exec (cons (treeset::tree-element->hash
-                                           (treeset::tree->head keys))
+                             :exec (cons (tset::tree-element->hash
+                                           (tset::tree->head keys))
                                          assoc))
                         left
                         right)
@@ -420,7 +420,7 @@
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-restrict
                                            eqlable-tree-restrict
-                                           treeset::tree-all-eqlablep
+                                           tset::tree-all-eqlablep
                                            tree-keys-eqlablep
                                            tree-join-at
                                            tree-element

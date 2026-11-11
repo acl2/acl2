@@ -22,19 +22,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The deftreeset generator ships with deftypes, but using it requires the
-;; treeset library, which is supplied by the deftreeset book included below.
+;; The deftset generator ships with deftypes, but using it requires the
+;; tset library, which is supplied by the deftset book included below.
 
 (must-fail
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat))
 
-(include-book "deftreeset")
+(include-book "deftset")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat)
 
   (assert! (function-symbolp 'nat-set-p (w state)))
@@ -42,40 +42,40 @@
   (assert! (function-symbolp 'nat-set-equiv$inline (w state)))
   ;; No count unless :count is supplied (as with defset).
   (assert! (not (function-symbolp 'nat-set-count (w state))))
-  (assert! (let ((s (treeset::insert 1 (treeset::insert 2 (treeset::empty)))))
+  (assert! (let ((s (tset::insert 1 (tset::insert 2 (tset::empty)))))
              (and (nat-set-p s)
-                  (nat-set-p (treeset::empty))
-                  (not (nat-set-p (treeset::insert 'a (treeset::empty))))
+                  (nat-set-p (tset::empty))
+                  (not (nat-set-p (tset::insert 'a (tset::empty))))
                   (not (nat-set-p 7))
                   (equal (nat-set-fix s) s))))
   ;; The fixer is bounded by any bound of its argument.
   (defthm subset-of-nat-set-fix-test
-    (implies (treeset::subset x y)
-             (treeset::subset (nat-set-fix x) y))
+    (implies (tset::subset x y)
+             (tset::subset (nat-set-fix x) y))
     :hints (("Goal" :in-theory '(subset-of-nat-set-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-fail ; malformed name
-  (fty::deftreeset nat set
+  (fty::deftset nat set
     :elt-type nat))
 
 (must-fail ; unknown keyword
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :cheap t))
 
 (must-fail ; missing :elt-type
-  (fty::deftreeset nat-set))
+  (fty::deftset nat-set))
 
 (must-fail ; no such element fixtype
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type no-such-fixtype))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :pred nat-setp)
 
@@ -84,7 +84,7 @@
   (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :fix nat-sfix)
 
@@ -93,7 +93,7 @@
   (assert! (function-symbolp 'nat-set-equiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :equiv nat-sequiv)
 
@@ -102,7 +102,7 @@
   (assert! (function-symbolp 'nat-sequiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :pred nat-setp
     :fix nat-sfix
@@ -113,18 +113,18 @@
   (assert! (function-symbolp 'nat-sequiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :count nat-set-size)
 
   (assert! (function-symbolp 'nat-set-size (w state)))
   (assert! (not (function-symbolp 'nat-set-count (w state))))
-  (assert! (let ((s (treeset::insert 1 (treeset::insert 2 (treeset::empty)))))
+  (assert! (let ((s (tset::insert 1 (tset::insert 2 (tset::empty)))))
              (and (equal (nat-set-size s) 2)
-                  (equal (nat-set-size (treeset::empty)) 0)))))
+                  (equal (nat-set-size (tset::empty)) 0)))))
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :no-count t)
 
@@ -134,45 +134,45 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
-    :parents (fty::deftreeset)))
+    :parents (fty::deftset)))
 
 (must-succeed
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :short "short"))
 
 (must-succeed
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :short (concatenate 'string "sh" "ort")))
 
 (must-succeed
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :long "long"))
 
 (must-succeed
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat
     :long (concatenate 'string "lo" "ng")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
-  (fty::deftreeset sym-set
+  (fty::deftset sym-set
     :elt-type symbol))
 
 (must-succeed*
   (fty::defprod point
     ((xc natp)
      (yc natp)))
-  (fty::deftreeset point-set
+  (fty::deftset point-set
     :elt-type point)
-  (assert! (let ((s (treeset::insert (make-point :xc 1 :yc 2) (treeset::empty))))
+  (assert! (let ((s (tset::insert (make-point :xc 1 :yc 2) (tset::empty))))
              (and (point-set-p s)
-                  (not (point-set-p (treeset::insert 3 (treeset::empty))))
+                  (not (point-set-p (tset::insert 3 (tset::empty))))
                   (equal (point-set-fix s) s)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,7 +183,7 @@
       (:num ((val integerp)))
       (:plus ((args int-term-ts-set))))
 
-    (fty::deftreeset int-term-ts-set
+    (fty::deftset int-term-ts-set
       :elt-type int-term-ts))
 
   (defines eval-int-term-ts/s
@@ -199,16 +199,16 @@
     (define eval-int-term-ts-set ((tms int-term-ts-set-p))
       :returns (i integerp)
       (if (or (not (mbt (int-term-ts-set-p tms)))
-              (treeset::emptyp tms))
+              (tset::emptyp tms))
           0
-        (+ (eval-int-term-ts (treeset::min tms))
-           (eval-int-term-ts-set (treeset::delete (treeset::min tms) tms))))
+        (+ (eval-int-term-ts (tset::min tms))
+           (eval-int-term-ts-set (tset::delete (tset::min tms) tms))))
       :measure (int-term-ts-set-count tms)))
 
   (assert!
     (let* ((n1 (int-term-ts-num 1))
            (n2 (int-term-ts-num 2))
-           (s (treeset::insert n1 (treeset::insert n2 (treeset::empty))))
+           (s (tset::insert n1 (tset::insert n2 (tset::empty))))
            (p (int-term-ts-plus s)))
       (and (int-term-ts-p p)
            (equal (eval-int-term-ts p) 3)))))
@@ -225,7 +225,7 @@
       (:plus ((args int-term-ts-set)))
       :measure (acl2-count x))
 
-    (fty::deftreeset int-term-ts-set
+    (fty::deftset int-term-ts-set
       :elt-type int-term-ts
       :measure (acl2-count x))))
 
@@ -239,18 +239,18 @@
       :layout :tree
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::deftreeset tnode-set
+    (fty::deftset tnode-set
       :elt-type tnode
       :measure (two-nats-measure (acl2-count x) 0)))
 
   (assert!
-    (let* ((leaf (make-tnode :label 'a :kids (treeset::empty)))
-           (kids (treeset::insert leaf (treeset::empty)))
+    (let* ((leaf (make-tnode :label 'a :kids (tset::empty)))
+           (kids (tset::insert leaf (tset::empty)))
            (parent (make-tnode :label 'b :kids kids)))
       (and (tnode-p leaf)
            (tnode-set-p kids)
            (tnode-p parent)
-           (not (tnode-set-p (treeset::insert 7 (treeset::empty))))
+           (not (tnode-set-p (tset::insert 7 (tset::empty))))
            (equal (tnode->kids parent) kids)
            (natp (tnode-set-count kids))))))
 
@@ -263,7 +263,7 @@
       :base-case-override :sset
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::deftreeset rec-tset-set
+    (fty::deftset rec-tset-set
       :elt-type rec-tset
       :measure (two-nats-measure (acl2-count x) 0))))
 
@@ -276,26 +276,26 @@
       (:app ((args uterm-set)))
       :count nil)
 
-    (fty::deftreeset uterm-set
+    (fty::deftset uterm-set
       :elt-type uterm))
 
   (assert!
     (let* ((v1 (uterm-v 'a))
            (v2 (uterm-v 'b))
-           (s (treeset::insert v1 (treeset::insert v2 (treeset::empty)))))
+           (s (tset::insert v1 (tset::insert v2 (tset::empty)))))
       (and (uterm-p v1)
            (uterm-set-p s)
            (uterm-p (uterm-app s))
            (equal (uterm-set-count s) 2)   ; nodes only
-           (equal (uterm-set-count (treeset::empty)) 0))))
+           (equal (uterm-set-count (tset::empty)) 0))))
 
   (define sum-uterm-set-sizes ((s uterm-set-p))
     :measure (uterm-set-count s)
     :verify-guards nil
     (if (or (not (mbt (uterm-set-p s)))
-            (treeset::emptyp s))
+            (tset::emptyp s))
         0
-      (+ 1 (sum-uterm-set-sizes (treeset::delete (treeset::min s) s))))))
+      (+ 1 (sum-uterm-set-sizes (tset::delete (tset::min s) s))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,12 +305,12 @@
       (:v ((s symbolp)))
       (:app ((args ncx-set))))
 
-    (fty::deftreeset ncx-set
+    (fty::deftset ncx-set
       :elt-type ncx
       :no-count t))
 
   (assert! (not (function-symbolp 'ncx-set-count (w state))))
-  (assert! (let ((s (treeset::insert (ncx-v 'a) (treeset::empty))))
+  (assert! (let ((s (tset::insert (ncx-v 'a) (tset::empty))))
              (and (ncx-set-p s)
                   (ncx-p (ncx-app s))
                   (natp (ncx-count (ncx-app s)))))))
@@ -324,19 +324,19 @@
       (:node ((kids dexpr-set)
               (attrs attr-set))))
 
-    (fty::deftreeset dexpr-set
+    (fty::deftset dexpr-set
       :elt-type dexpr)
 
     (fty::deftagsum attr
       (:a ((s symbolp)))
       (:sub ((sub dexpr))))
 
-    (fty::deftreeset attr-set
+    (fty::deftset attr-set
       :elt-type attr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Two treesets of the same element type in one clique: fine (each member's
+; Two tsets of the same element type in one clique: fine (each member's
 ; internal names derive from the member name).
 (must-succeed*
   (fty::deftypes dup
@@ -345,36 +345,36 @@
       (:pair ((as dup-aset)
               (bs dup-bset))))
 
-    (fty::deftreeset dup-aset
+    (fty::deftset dup-aset
       :elt-type dup)
 
-    (fty::deftreeset dup-bset
+    (fty::deftset dup-bset
       :elt-type dup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A loop over a typed treeset. An iterator carries no element type, so the
-;; guard of nat-id at (treeset::value iter) is discharged by the generated
+;; A loop over a typed tset. An iterator carries no element type, so the
+;; guard of nat-id at (tset::value iter) is discharged by the generated
 ;; natp-of-value-when-nat-set-p-of-from-iter, with no hints.
 
-(include-book "kestrel/data/treeset/iter" :dir :system)
+(include-book "kestrel/data/tset/iter" :dir :system)
 
 (must-succeed*
-  (fty::deftreeset nat-set
+  (fty::deftset nat-set
     :elt-type nat)
 
   (define nat-id ((n natp))
     (mbe :logic (nfix n) :exec n))
 
-  (define nat-set-loop ((iter treeset::iterp))
-    :guard (nat-set-p (treeset::from-iter iter))
-    (if (treeset::has-valuep iter)
-        (cons (nat-id (treeset::value iter))
-              (nat-set-loop (treeset::next iter)))
+  (define nat-set-loop ((iter tset::iterp))
+    :guard (nat-set-p (tset::from-iter iter))
+    (if (tset::has-valuep iter)
+        (cons (nat-id (tset::value iter))
+              (nat-set-loop (tset::next iter)))
       nil)
-    :measure (treeset::nexts iter))
+    :measure (tset::nexts iter))
 
   (assert! (equal (nat-set-loop
-                   (treeset::iter-min
-                    (treeset::insert 2 (treeset::insert 1 (treeset::empty)))))
+                   (tset::iter-min
+                    (tset::insert 2 (tset::insert 1 (tset::empty)))))
                   '(1 2))))

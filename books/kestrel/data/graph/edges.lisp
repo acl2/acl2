@@ -12,8 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -23,12 +23,12 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -41,7 +41,7 @@
 
 (define edges ((graph graphp))
   :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (graph)
   :short "The set of edges of a @(see graph)."
   :long
@@ -67,27 +67,27 @@
   :enable edges)
 
 (defrule edgep-when-in-of-edges
-  (implies (treeset::in edge (edges graph))
+  (implies (tset::in edge (edges graph))
            (edgep edge))
   :enable edges)
 
 (defruled edges-when-emptyp-of-nodes
-  (implies (treeset::emptyp (nodes graph))
+  (implies (tset::emptyp (nodes graph))
            (equal (edges graph)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable (edges
            empty))
 
 (defrule edges-when-emptyp-of-nodes-cheap
-  (implies (treeset::emptyp (nodes graph))
+  (implies (tset::emptyp (nodes graph))
            (equal (edges graph)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by edges-when-emptyp-of-nodes)
 
 (defrule edges-of-empty
   (equal (edges (empty))
-         (treeset::empty))
+         (tset::empty))
   :enable edges-when-emptyp-of-nodes)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,15 +96,15 @@
 ;; invariant, seen from the logical view.
 
 (defrule in-of-edge->from-and-nodes-when-in-of-edges
-  (implies (treeset::in edge (edges graph))
-           (treeset::in (edge->from edge) (nodes graph)))
+  (implies (tset::in edge (edges graph))
+           (tset::in (edge->from edge) (nodes graph)))
   :enable (edges
            nodes
            in-of-adj-list-edges))
 
 (defrule in-of-edge->to-and-nodes-when-in-of-edges
-  (implies (treeset::in edge (edges graph))
-           (treeset::in (edge->to edge) (nodes graph)))
+  (implies (tset::in edge (edges graph))
+           (tset::in (edge->to edge) (nodes graph)))
   :enable (edges
            nodes
            in-of-adj-list-edges
@@ -114,21 +114,21 @@
 ;; value known not to be a node.
 
 (defrule equal-of-edge->from-when-in-of-edges-and-not-in-of-nodes
-  (implies (and (treeset::in edge (edges graph))
-                (not (treeset::in node (nodes graph))))
+  (implies (and (tset::in edge (edges graph))
+                (not (tset::in node (nodes graph))))
            (not (equal (edge->from edge) node))))
 
 (defrule equal-of-edge->to-when-in-of-edges-and-not-in-of-nodes
-  (implies (and (treeset::in edge (edges graph))
-                (not (treeset::in node (nodes graph))))
+  (implies (and (tset::in edge (edges graph))
+                (not (tset::in node (nodes graph))))
            (not (equal (edge->to edge) node))))
 
 ;; The same facts for an edge written out by its parts, as forward chaining.
 
 (defrule in-of-nodes-when-in-of-edge-and-edges-forward-chaining
-  (implies (treeset::in (edge from to label) (edges graph))
-           (and (treeset::in from (nodes graph))
-                (treeset::in to (nodes graph))))
+  (implies (tset::in (edge from to label) (edges graph))
+           (and (tset::in from (nodes graph))
+                (tset::in to (nodes graph))))
   :rule-classes :forward-chaining
   :enable (edges
            nodes
@@ -139,7 +139,7 @@
 
 (define edges-from (node (graph graphp))
   :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (graph)
   :short "The edges out of a node of a @(see graph)."
   :long
@@ -147,7 +147,7 @@
     "Time complexity: @($O(\\log(n) + k\\log(k))$), where @($n$) is the
      number of nodes and @($k$) the number of edges out of the node.")
   (adjacency-edges node
-                   (treemap::lookup node (fix graph) :default (treemap::empty)))
+                   (tmap::lookup node (fix graph) :default (tmap::empty)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
@@ -162,8 +162,8 @@
 
 (defrule in-of-edges-from
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (edges-from node graph))
-                  (and (treeset::in edge (edges graph))
+           (equal (tset::in edge (edges-from node graph))
+                  (and (tset::in edge (edges graph))
                        (equal (edge->from edge$) node))))
   :enable (edges-from
            edges
@@ -174,7 +174,7 @@
 
 (define edges-to (node (graph graphp))
   :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (graph)
   :short "The edges into a node of a @(see graph)."
   :long
@@ -201,8 +201,8 @@
 
 (defrule in-of-edges-to
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (edges-to node graph))
-                  (and (treeset::in edge (edges graph))
+           (equal (tset::in edge (edges-to node graph))
+                  (and (tset::in edge (edges graph))
                        (equal (edge->to edge$) node))))
   :enable (edges-to
            edges

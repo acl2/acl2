@@ -9,12 +9,12 @@
 (in-package "ACL2")
 
 (include-book "kestrel/data/portcullis" :dir :system)
-(include-book "kestrel/data/treeset/portcullis" :dir :system)
+(include-book "kestrel/data/tset/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defpkg "TREEMAP"
+(defpkg "TMAP"
   (union-eq '(data::max-<<
               data::min-<<
               define-sk
@@ -22,15 +22,15 @@
               defxdoc+
               enable*
               lnfix
-              treemap
-              treeset::acl2-number-hash
-              treeset::eqlable-hash
-              treeset::hash
-              treeset::heap<
-              treeset::heap<-rules
-              treeset::heap<-with-hashes
-              treeset::symbol-hash
-              treeset::heap<-trichotomy
+              tmap
+              tset::acl2-number-hash
+              tset::eqlable-hash
+              tset::hash
+              tset::heap<
+              tset::heap<-rules
+              tset::heap<-with-hashes
+              tset::symbol-hash
+              tset::heap<-trichotomy
               )
             (set-difference-eq *std-pkg-symbols*
                                #!STD

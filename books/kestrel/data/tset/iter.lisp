@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -54,12 +54,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc iterator
-  :parents (treeset)
-  :short "A position within a @(see treeset)."
+  :parents (tset)
+  :short "A position within a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Walking a @(see treeset) with @(tsee min) and @(tsee tail) is
+     "Walking a @(see tset) with @(tsee min) and @(tsee tail) is
       inefficient. For this and other reasons, we provide iterator objects,
       which may be used to walk over the set in-order,
       one element at a time, at an amortized cost of @($O(1)$) per step.")
@@ -71,7 +71,7 @@
       @(tsee after-lastp) and @(tsee before-firstp) recognize the two ends,
       where there is no element to read.")
    (xdoc::p
-     "Neither direction is privileged. Over an empty @(see treeset) each
+     "Neither direction is privileged. Over an empty @(see tset) each
       constructor lands on the end its own walk would stop at, so a walk from
       either is immediately over.")
    (xdoc::p
@@ -88,8 +88,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "An iterator is a position within a tree which is a @(see treeset). Time
-      complexity: @($O(n)$), since it checks the @(see treeset) invariants."))
+     "An iterator is a position within a tree which is a @(see tset). Time
+      complexity: @($O(n)$), since it checks the @(see tset) invariants."))
   (and (tree-iter-p x)
        (setp (tree-iter-plug x))))
 
@@ -126,12 +126,12 @@
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an @(see iterator) at the first element of a @(see treeset)."
+  :short "Construct an @(see iterator) at the first element of a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
      "The iterator starts at the first element, or past the end when the
-      @(see treeset) is empty.")
+      @(see tset) is empty.")
    (xdoc::p
      "Time complexity: @($O(\\log(n))$), to descend to the first element."))
   (tree-iter-min (fix set))
@@ -155,12 +155,12 @@
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an @(see iterator) at the last element of a @(see treeset)."
+  :short "Construct an @(see iterator) at the last element of a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
      "The mirror of @(tsee iter-min): the iterator starts at the last element,
-      or before the first when the @(see treeset) is empty. Either way it is
+      or before the first when the @(see tset) is empty. Either way it is
       the position a walk in its own direction begins from, and the empty case
       is the one where that walk is immediately over.")
    (xdoc::p
@@ -317,7 +317,7 @@
    (xdoc::p
      "A forward walk never reaches this position: neither @(tsee iter-min) nor
       @(tsee next) yields it. It is reached by @(tsee prev), or by @(tsee
-      iter-max) over an empty @(see treeset), where a backward walk is over
+      iter-max) over an empty @(see tset), where a backward walk is over
       before it begins."))
   (tree-iter-before-first-p (iter-fix iter))
   :inline t)
@@ -422,7 +422,7 @@
                          :in-theory
                          (enable setp-of-tree-iter-plug-of-iter-fix))))
   :parents (iterator)
-  :short "The @(see treeset) an @(see iterator) walks."
+  :short "The @(see tset) an @(see iterator) walks."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -535,7 +535,7 @@
 ;; exactly what they are; @(tsee from-oset) only changes the representation.
 
 ;; Over a search tree each side's built tree and its oset denote the same
-;; elements, and treesets are canonical, so they are the same object. This is
+;; elements, and tsets are canonical, so they are the same object. This is
 ;; what lets the builders serve as the executable branch below while the
 ;; logical definitions stay on the osets.
 
@@ -558,7 +558,7 @@
 (define before ((iter iterp))
   :returns (set setp)
   :parents (iterator)
-  :short "The @(see treeset) of elements before an @(see iterator)."
+  :short "The @(see tset) of elements before an @(see iterator)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -591,7 +591,7 @@
 (define after ((iter iterp))
   :returns (set setp)
   :parents (iterator)
-  :short "The @(see treeset) of elements after an @(see iterator)."
+  :short "The @(see tset) of elements after an @(see iterator)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -676,7 +676,7 @@
            setp-of-tree-iter-plug-of-iter-fix))
 
 ;; At the constructors the same holds with no hypothesis, including over the
-;; empty @(see treeset), where the iterator lands on the far end and the side
+;; empty @(see tset), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
 
 (defrule before-of-iter-min
@@ -739,7 +739,7 @@
            iter-fix-of-tree-iter-max-of-fix
            break-abstraction))
 
-;; The value an @(see iterator) is at is an element of the @(see treeset) it
+;; The value an @(see iterator) is at is an element of the @(see tset) it
 ;; walks. With @(tsee value-of-iter-min) this is what connects a walk to the
 ;; contents of the set rather than just to its shape.
 ;;

@@ -2413,8 +2413,8 @@ flt f(int x) {
  :cond (b* ((externals (trans-ensemble-vinfo->externals
                         (trans-ensemble->info ast))))
          (and (equal (omap::size (trans-ensemble->units ast)) 2)
-              (treemap::lookup (ident "a") externals)
-              (treemap::lookup (ident "b") externals))))
+              (tmap::lookup (ident "a") externals)
+              (tmap::lookup (ident "b") externals))))
 
 ;; Both operands of a conditional expression may have void type [C17:6.5.15/3].
 (test-valid

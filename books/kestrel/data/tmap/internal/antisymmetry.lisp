@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/defrule" :dir :system)
 
@@ -20,11 +20,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 
@@ -61,17 +61,17 @@
         ;; These :use hints are necessary because the in-facts never appear
         ;; as rewrite targets; they are only needed to relieve the hypotheses
         ;; of backchain-limit-0 rules, and so must be present verbatim.
-        (:instance treeset::in-when-subset-and-in
+        (:instance tset::in-when-subset-and-in
                    (a (tree-element->key (tree->head y)))
                    (x (tree-key-set y))
                    (y (tree-key-set x)))
-        (:instance treeset::in-when-subset-and-in
+        (:instance tset::in-when-subset-and-in
                    (a (tree-element->key (tree->head x)))
                    (x (tree-key-set x))
                    (y (tree-key-set y))))
   :disable (heap<-of-tree->head-and-arg2-when-in-arg2-of-tree-key-set
-            treeset::in-when-in-and-subset
-            treeset::in-when-subset-and-in))
+            tset::in-when-in-and-subset
+            tset::in-when-subset-and-in))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -117,9 +117,9 @@
                           (tree->right y))
                 (<<-all-l (tree->left x)
                           (tree-element->key (tree->head y)))
-                (treeset::in key (tree-key-set (tree->left x)))
-                (treeset::in key (tree-key-set y)))
-           (treeset::in key (tree-key-set (tree->left y))))
+                (tset::in key (tree-key-set (tree->left x)))
+                (tset::in key (tree-key-set y)))
+           (tset::in key (tree-key-set (tree->left y))))
   :enable tree-key-set)
 
 (defrule tree-submap-p-of-tree->left-tree->left-when-tree-submap-p-and-<<-all-l
@@ -152,9 +152,9 @@
                           (tree-element->key (tree->head y)))
                 (<<-all-r (tree-element->key (tree->head y))
                           (tree->right x))
-                (treeset::in key (tree-key-set (tree->right x)))
-                (treeset::in key (tree-key-set y)))
-           (treeset::in key (tree-key-set (tree->right y))))
+                (tset::in key (tree-key-set (tree->right x)))
+                (tset::in key (tree-key-set y)))
+           (tset::in key (tree-key-set (tree->right y))))
   :enable tree-key-set)
 
 (defrule tree-submap-p-of-tree->right-tree->right-when-tree-submap-p-and-<<-all-r

@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -25,16 +25,16 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/induction"))
@@ -49,8 +49,8 @@
 (define subbag ((sub bagp)
                 (sup bagp))
   :returns (yes/no booleanp)
-  :parents (treebag)
-  :short "Check if every value occurs in one @(see treebag) at most as often
+  :parents (tbag)
+  :short "Check if every value occurs in one @(see tbag) at most as often
           as in another."
   :long
   (xdoc::topstring-p
@@ -60,7 +60,7 @@
   :inline t
   :guard-hints (("Goal" :in-theory (enable bagp
                                            tree-all-vals-posp-of-fix
-                                           treemap::treep-when-mapp-forward-chaining))))
+                                           tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -91,8 +91,8 @@
   :rule-classes :linear
   :enable (subbag
            count
-           treemap::lookup
-           treemap::keys
+           tmap::lookup
+           tmap::keys
            break-abstraction
            in-of-tree-key-set-when-tree-subbag-p
            tree-lookup-<=-tree-lookup-when-tree-subbag-p))
@@ -121,8 +121,8 @@
   :enable (subbag
            tree-subbag-p-pick-a-point
            count
-           treemap::lookup
-           treemap::keys
+           tmap::lookup
+           tmap::keys
            break-abstraction))
 
 (defruledl subbag-sk-when-subbag
@@ -264,10 +264,10 @@
 ;; a subbag and its superbag takes an induction. Each step removes every
 ;; occurrence of the subbag's smallest element from both bags.
 
-(defruledl subbag-of-treemap-delete-and-treemap-delete
+(defruledl subbag-of-tmap-delete-and-tmap-delete
   (implies (subbag sub sup)
-           (subbag (treemap::delete x (fix sub))
-                   (treemap::delete x (fix sup))))
+           (subbag (tmap::delete x (fix sub))
+                   (tmap::delete x (fix sup))))
   :enable (pick-a-point-polar
            break-abstraction))
 
@@ -281,7 +281,7 @@
   :rule-classes ((:linear :trigger-terms ((count x sup))))
   :induct (min-delete-both-induction sub sup)
   :enable (break-abstraction
-           subbag-of-treemap-delete-and-treemap-delete)
+           subbag-of-tmap-delete-and-tmap-delete)
   :disable fix-when-bagp)
 
 (defrule cardinality-when-subbag-linear
@@ -291,7 +291,7 @@
   :rule-classes :linear
   :induct (min-delete-both-induction sub sup)
   :enable (break-abstraction
-           subbag-of-treemap-delete-and-treemap-delete)
+           subbag-of-tmap-delete-and-tmap-delete)
   :disable fix-when-bagp)
 
 (defrule cardinality-when-proper-subbag-linear

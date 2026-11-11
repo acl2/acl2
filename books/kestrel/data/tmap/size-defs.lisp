@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 
 (include-book "internal/count-defs")
 (include-book "map-defs")

@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
 (include-book "internal/min-max-defs")
 (include-book "map-defs")

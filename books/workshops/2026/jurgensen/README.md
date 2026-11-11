@@ -1,8 +1,8 @@
 Raw benchmark data for the evaluation in "Treesets: Efficient Finite Sets with
 Unique Representations" (Grant Jurgensen, ACL2 Workshop 2026).
 
-- `bench-raw.csv`: `(treeset-bench::run-full)`, from
-  `[books]/kestrel/data/treeset/benchmark/`.
+- `bench-raw.csv`: `(tset-bench::run-full)`, from
+  `[books]/kestrel/data/tset/benchmark/`.
 - `hash-bench-raw.csv`: `(hash-bench::run-full)`, from
   `[books]/kestrel/data/hash/benchmark/`.
 - `reports.txt`: the treap depth and serialized-size reports, which the
@@ -15,7 +15,7 @@ books/kestrel/data is identical at the two.
 
 The implementations are in the community books:
 
-- `[books]/kestrel/data/treeset/`
-- `[books]/kestrel/data/treemap/`
+- `[books]/kestrel/data/tset/`
+- `[books]/kestrel/data/tmap/`
 - `[books]/kestrel/data/hash/`
 - `[books]/kestrel/data/benchmark/`

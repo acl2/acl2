@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
-(include-book "kestrel/data/treemap/defunion" :dir :system)
+(include-book "kestrel/data/tmap/defunion" :dir :system)
 
 (include-book "map-values-all-posp-defs")
 
@@ -21,7 +21,7 @@
 ;; union of their maps which adds the values of a shared key. A sum of
 ;; positive values is positive, so the union of two bags' maps is a bag's map.
 
-(treemap::defunion map-sum
+(tmap::defunion map-sum
   :combine (lambda (key x y)
              (declare (ignore key))
              (+ (nfix x) (nfix y)))

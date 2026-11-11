@@ -8,7 +8,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Based on deftreeset tests
+;; Based on deftset tests
 
 (in-package "ACL2")
 
@@ -22,73 +22,73 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The deftreemap generator ships with deftypes, but using it requires the
-;; treemap library, which is supplied by the deftreemap book included below.
+;; The deftmap generator ships with deftypes, but using it requires the
+;; tmap library, which is supplied by the deftmap book included below.
 
 (must-fail
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string))
 
-(include-book "deftreemap")
+(include-book "deftmap")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string)
 
   (assert! (function-symbolp 'nat-string-map-p (w state)))
   (assert! (function-symbolp 'nat-string-map-fix (w state)))
   (assert! (function-symbolp 'nat-string-map-equiv$inline (w state)))
-  ;; No count unless :count is supplied (as with deftreeset).
+  ;; No count unless :count is supplied (as with deftset).
   (assert! (not (function-symbolp 'nat-string-map-count (w state))))
-  (assert! (let ((m (treemap::update 1 "one"
-                                     (treemap::update 2 "two"
-                                                      (treemap::empty)))))
+  (assert! (let ((m (tmap::update 1 "one"
+                                  (tmap::update 2 "two"
+                                                (tmap::empty)))))
              (and (nat-string-map-p m)
-                  (nat-string-map-p (treemap::empty))
-                  (not (nat-string-map-p (treemap::update 'a "x" (treemap::empty))))
-                  (not (nat-string-map-p (treemap::update 1 'x (treemap::empty))))
+                  (nat-string-map-p (tmap::empty))
+                  (not (nat-string-map-p (tmap::update 'a "x" (tmap::empty))))
+                  (not (nat-string-map-p (tmap::update 1 'x (tmap::empty))))
                   (not (nat-string-map-p 7))
                   (equal (nat-string-map-fix m) m))))
   ;; The fixer is bounded by any bound of its argument.
   (defthm submap-of-nat-string-map-fix-test
-    (implies (treemap::submap x y)
-             (treemap::submap (nat-string-map-fix x) y))
+    (implies (tmap::submap x y)
+             (tmap::submap (nat-string-map-fix x) y))
     :hints (("Goal" :in-theory '(submap-of-nat-string-map-fix)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-fail ; malformed name
-  (fty::deftreemap nat string-map
+  (fty::deftmap nat string-map
     :key-type nat
     :val-type string))
 
 (must-fail ; unknown keyword
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :cheap t))
 
 (must-fail ; missing :key-type
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :val-type string))
 
 (must-fail ; missing :val-type
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat))
 
 (must-fail ; no such key fixtype
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type no-such-fixtype
     :val-type string))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :pred nat-string-mapp)
@@ -98,7 +98,7 @@
   (assert! (function-symbolp 'nat-string-map-equiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :fix nat-string-mfix)
@@ -108,7 +108,7 @@
   (assert! (function-symbolp 'nat-string-map-equiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :equiv nat-string-mequiv)
@@ -118,21 +118,21 @@
   (assert! (function-symbolp 'nat-string-mequiv$inline (w state))))
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :count nat-string-map-size)
 
   (assert! (function-symbolp 'nat-string-map-size (w state)))
   (assert! (not (function-symbolp 'nat-string-map-count (w state))))
-  (assert! (let ((m (treemap::update 1 "one"
-                                     (treemap::update 2 "two"
-                                                      (treemap::empty)))))
+  (assert! (let ((m (tmap::update 1 "one"
+                                  (tmap::update 2 "two"
+                                                (tmap::empty)))))
              (and (equal (nat-string-map-size m) 2)
-                  (equal (nat-string-map-size (treemap::empty)) 0)))))
+                  (equal (nat-string-map-size (tmap::empty)) 0)))))
 
 (must-succeed*
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :no-count t)
@@ -143,19 +143,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
-    :parents (fty::deftreemap)))
+    :parents (fty::deftmap)))
 
 (must-succeed
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :short "short"))
 
 (must-succeed
-  (fty::deftreemap nat-string-map
+  (fty::deftmap nat-string-map
     :key-type nat
     :val-type string
     :long "long"))
@@ -163,7 +163,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (must-succeed
-  (fty::deftreemap sym-nat-map
+  (fty::deftmap sym-nat-map
     :key-type symbol
     :val-type nat))
 
@@ -171,13 +171,13 @@
   (fty::defprod point
     ((xc natp)
      (yc natp)))
-  (fty::deftreemap sym-point-map
+  (fty::deftmap sym-point-map
     :key-type symbol
     :val-type point)
-  (assert! (let ((m (treemap::update 'origin (make-point :xc 0 :yc 0)
-                                     (treemap::empty))))
+  (assert! (let ((m (tmap::update 'origin (make-point :xc 0 :yc 0)
+                                  (tmap::empty))))
              (and (sym-point-map-p m)
-                  (not (sym-point-map-p (treemap::update 'p 3 (treemap::empty))))
+                  (not (sym-point-map-p (tmap::update 'p 3 (tmap::empty))))
                   (equal (sym-point-map-fix m) m)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,7 +190,7 @@
       (:v ((s symbolp)))
       (:closure ((env term-env))))
 
-    (fty::deftreemap term-env
+    (fty::deftmap term-env
       :key-type symbol
       :val-type env-term))
 
@@ -207,19 +207,19 @@
     (define count-term-env ((env term-env-p))
       :returns (n natp)
       (if (or (not (mbt (term-env-p env)))
-              (treemap::emptyp env))
+              (tmap::emptyp env))
           0
-        (+ (count-env-term (treemap::lookup (treeset::min (treemap::keys env))
-                                            env))
-           (count-term-env (treemap::delete (treeset::min (treemap::keys env))
-                                            env))))
+        (+ (count-env-term (tmap::lookup (tset::min (tmap::keys env))
+                                         env))
+           (count-term-env (tmap::delete (tset::min (tmap::keys env))
+                                         env))))
       :measure (term-env-count env)))
 
   (assert!
     (let* ((v1 (env-term-v 'a))
            (v2 (env-term-v 'b))
-           (env (treemap::update 'x v1
-                                 (treemap::update 'y v2 (treemap::empty))))
+           (env (tmap::update 'x v1
+                              (tmap::update 'y v2 (tmap::empty))))
            (c (env-term-closure env)))
       (and (env-term-p c)
            (term-env-p env)
@@ -235,7 +235,7 @@
       (:v ((s symbolp)))
       (:closure ((env term-env))))
 
-    (fty::deftreemap term-env
+    (fty::deftmap term-env
       :key-type symbol
       :val-type env-term))
 
@@ -243,9 +243,9 @@
     :measure (term-env-count env)
     :verify-guards nil
     (if (or (not (mbt (term-env-p env)))
-            (treemap::emptyp env))
+            (tmap::emptyp env))
         0
-      (+ 1 (count-env-entries (treemap::delete (treemap::head-key env) env))))))
+      (+ 1 (count-env-entries (tmap::delete (tmap::head-key env) env))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -259,7 +259,7 @@
       (:closure ((env term-env)))
       :measure (acl2-count x))
 
-    (fty::deftreemap term-env
+    (fty::deftmap term-env
       :key-type env-term
       :val-type env-term
       :measure (acl2-count x))))
@@ -274,19 +274,19 @@
       :layout :tree
       :measure (two-nats-measure (acl2-count x) 1))
 
-    (fty::deftreemap tnode-map
+    (fty::deftmap tnode-map
       :key-type nat
       :val-type tnode
       :measure (two-nats-measure (acl2-count x) 0)))
 
   (assert!
-    (let* ((leaf (make-tnode :label 'a :kids (treemap::empty)))
-           (kids (treemap::update 0 leaf (treemap::empty)))
+    (let* ((leaf (make-tnode :label 'a :kids (tmap::empty)))
+           (kids (tmap::update 0 leaf (tmap::empty)))
            (parent (make-tnode :label 'b :kids kids)))
       (and (tnode-p leaf)
            (tnode-map-p kids)
            (tnode-p parent)
-           (not (tnode-map-p (treemap::update 0 7 (treemap::empty))))
+           (not (tnode-map-p (tmap::update 0 7 (tmap::empty))))
            (equal (tnode->kids parent) kids)
            (natp (tnode-map-count kids))))))
 
@@ -300,7 +300,7 @@
       (:leaf ((n natp)))
       (:node ((kids kexpr-nat-map))))
 
-    (fty::deftreemap kexpr-nat-map
+    (fty::deftmap kexpr-nat-map
       :key-type kexpr
       :val-type nat)))
 
@@ -313,20 +313,20 @@
       (:app ((args sym-uterm-map)))
       :count nil)
 
-    (fty::deftreemap sym-uterm-map
+    (fty::deftmap sym-uterm-map
       :key-type symbol
       :val-type uterm))
 
   (assert!
     (let* ((v1 (uterm-v 'a))
            (v2 (uterm-v 'b))
-           (m (treemap::update 'x v1
-                               (treemap::update 'y v2 (treemap::empty)))))
+           (m (tmap::update 'x v1
+                            (tmap::update 'y v2 (tmap::empty)))))
       (and (uterm-p v1)
            (sym-uterm-map-p m)
            (uterm-p (uterm-app m))
            (equal (sym-uterm-map-count m) 2)   ; entries only
-           (equal (sym-uterm-map-count (treemap::empty)) 0)))))
+           (equal (sym-uterm-map-count (tmap::empty)) 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -336,20 +336,20 @@
       (:v ((s symbolp)))
       (:app ((args sym-ncx-map))))
 
-    (fty::deftreemap sym-ncx-map
+    (fty::deftmap sym-ncx-map
       :key-type symbol
       :val-type ncx
       :no-count t))
 
   (assert! (not (function-symbolp 'sym-ncx-map-count (w state))))
-  (assert! (let ((m (treemap::update 'x (ncx-v 'a) (treemap::empty))))
+  (assert! (let ((m (tmap::update 'x (ncx-v 'a) (tmap::empty))))
              (and (sym-ncx-map-p m)
                   (ncx-p (ncx-app m))
                   (natp (ncx-count (ncx-app m)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Two treemaps in one clique, sharing element types.
+;; Two tmaps in one clique, sharing element types.
 
 (must-succeed*
   (fty::deftypes dup
@@ -358,19 +358,19 @@
       (:pair ((as sym-dup-amap)
               (bs sym-dup-bmap))))
 
-    (fty::deftreemap sym-dup-amap
+    (fty::deftmap sym-dup-amap
       :key-type symbol
       :val-type dup)
 
-    (fty::deftreemap sym-dup-bmap
+    (fty::deftmap sym-dup-bmap
       :key-type symbol
       :val-type dup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A treeset and a treemap in one clique.
+;; A tset and a tmap in one clique.
 
-(include-book "deftreeset")
+(include-book "deftset")
 
 (must-succeed*
   (fty::deftypes mixed
@@ -379,41 +379,41 @@
       (:node ((set mixed-set)
               (map sym-mixed-map))))
 
-    (fty::deftreeset mixed-set
+    (fty::deftset mixed-set
       :elt-type mixed)
 
-    (fty::deftreemap sym-mixed-map
+    (fty::deftmap sym-mixed-map
       :key-type symbol
       :val-type mixed)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A loop over a typed treemap. An iterator carries no key or value type, so
-;; the guards of symbol-name at (treemap::entry-key iter) and of nat-id at
-;; (treemap::entry-val iter) are discharged by the generated
+;; A loop over a typed tmap. An iterator carries no key or value type, so
+;; the guards of symbol-name at (tmap::entry-key iter) and of nat-id at
+;; (tmap::entry-val iter) are discharged by the generated
 ;; symbolp-of-entry-key-when-sym-nat-map-p-of-from-iter and
 ;; natp-of-entry-val-when-sym-nat-map-p-of-from-iter, with no hints.
 
-(include-book "kestrel/data/treemap/iter" :dir :system)
+(include-book "kestrel/data/tmap/iter" :dir :system)
 
 (must-succeed*
-  (fty::deftreemap sym-nat-map
+  (fty::deftmap sym-nat-map
     :key-type symbol
     :val-type nat)
 
   (define nat-id ((n natp))
     (mbe :logic (nfix n) :exec n))
 
-  (define sym-nat-map-loop ((iter treemap::iterp))
-    :guard (sym-nat-map-p (treemap::from-iter iter))
-    (if (treemap::has-valuep iter)
-        (cons (cons (symbol-name (treemap::entry-key iter))
-                    (nat-id (treemap::entry-val iter)))
-              (sym-nat-map-loop (treemap::next iter)))
+  (define sym-nat-map-loop ((iter tmap::iterp))
+    :guard (sym-nat-map-p (tmap::from-iter iter))
+    (if (tmap::has-valuep iter)
+        (cons (cons (symbol-name (tmap::entry-key iter))
+                    (nat-id (tmap::entry-val iter)))
+              (sym-nat-map-loop (tmap::next iter)))
       nil)
-    :measure (treemap::nexts iter))
+    :measure (tmap::nexts iter))
 
   (assert! (equal (sym-nat-map-loop
-                   (treemap::iter-min
-                    (treemap::update 'b 2 (treemap::update 'a 1 (treemap::empty)))))
+                   (tmap::iter-min
+                    (tmap::update 'b 2 (tmap::update 'a 1 (tmap::empty)))))
                   '(("A" . 1) ("B" . 2)))))

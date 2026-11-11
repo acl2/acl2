@@ -6,15 +6,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
-(include-book "kestrel/data/treeset/internal/heap-order-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-order-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -29,10 +29,10 @@
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 (local (include-book "std/omaps/core" :dir :system))
 
 (local (include-book "tree"))
@@ -96,7 +96,7 @@
     :returns (yes/no booleanp :rule-classes :type-prescription)
     (forall (key)
       (non-exec
-        (implies (treeset::in key (tree-key-set tree))
+        (implies (tset::in key (tree-key-set tree))
                  (<< key x))))))
 
 (local (in-theory (disable (:t <<-all-l-sk))))
@@ -139,7 +139,7 @@
 (defruledl <<-all-l-pick-a-point
   (equal (<<-all-l tree x)
          (let ((key (<<-all-l-sk-witness tree x)))
-           (implies (treeset::in key (tree-key-set tree))
+           (implies (tset::in key (tree-key-set tree))
                     (<< key x))))
   :rule-classes :definition
   :use (<<-all-l-becomes-<<-all-l-sk
@@ -149,7 +149,7 @@
   (implies (syntaxp (acl2::want-to-weaken (<<-all-l tree x)))
            (equal (<<-all-l tree x)
                   (let ((key (<<-all-l-sk-witness tree x)))
-                    (implies (treeset::in key (tree-key-set tree))
+                    (implies (tset::in key (tree-key-set tree))
                              (<< key x)))))
   :rule-classes :definition
   :by <<-all-l-pick-a-point)
@@ -291,18 +291,18 @@
 ;; keys: those of the input not in the remainder.
 
 (defrule in-of-tree-key-set-of-tree-from-omap-below.acc$-when-in
-  (implies (treeset::in x (tree-key-set acc))
-           (treeset::in
+  (implies (tset::in x (tree-key-set acc))
+           (tset::in
              x
              (tree-key-set (mv-nth 1 (tree-from-omap-below omap parent acc)))))
   :induct t
   :enable tree-from-omap-below)
 
 (defrule in-of-tree-key-set-of-tree-from-omap-below.acc$
-  (equal (treeset::in
+  (equal (tset::in
            x
            (tree-key-set (mv-nth 1 (tree-from-omap-below omap parent acc))))
-         (or (treeset::in x (tree-key-set acc))
+         (or (tset::in x (tree-key-set acc))
              (and (omap::assoc x omap)
                   (not (omap::assoc
                          x
@@ -540,7 +540,7 @@
                                 (mv-nth 0 (omap::head omap))
                                 (mv-nth 1 (omap::head omap))))))
   :enable (heap<-rules
-           treeset::heap<-expensive-rules))
+           tset::heap<-expensive-rules))
 
 ;; Like heap<-all-l-weaken, but the hypothesis order binds the free variable
 ;; by matching known heap<-all-l facts rather than known heap< facts. (This
@@ -615,7 +615,7 @@
   :enable (tree-from-omap-below
            heap<-all-l-weaken
            heap<-rules
-           treeset::heap<-expensive-rules))
+           tset::heap<-expensive-rules))
 
 ;; Note the invariant hypothesis: the accumulator must also lie below the
 ;; next entry to be consumed, since that entry takes the accumulator as its
@@ -634,7 +634,7 @@
            not-equal-of-head-and-head-of-tree-from-omap-below.omap$-of-tail
            not-heap<-of-head-of-tree-from-omap-below.omap$-alt
            heap<-rules
-           treeset::heap<-expensive-rules))
+           tset::heap<-expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -679,8 +679,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-key-set-of-tree-from-omap-acc
-  (equal (treeset::in x (tree-key-set (tree-from-omap-acc omap acc)))
-         (or (treeset::in x (tree-key-set acc))
+  (equal (tset::in x (tree-key-set (tree-from-omap-acc omap acc)))
+         (or (tset::in x (tree-key-set acc))
              (and (omap::assoc x omap) t)))
   :induct t
   :enable (tree-from-omap-acc
@@ -737,7 +737,7 @@
            heap<-of-head-and-head-of-tree-from-omap-below.omap$-of-tail
            not-heap<-of-head-of-tree-from-omap-below.omap$-alt
            heap<-rules
-           treeset::heap<-expensive-rules))
+           tset::heap<-expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -758,7 +758,7 @@
   :disable treep-of-tree-from-omap)
 
 (defrule in-of-tree-key-set-of-tree-from-omap
-  (equal (treeset::in x (tree-key-set (tree-from-omap omap)))
+  (equal (tset::in x (tree-key-set (tree-from-omap omap)))
          (and (omap::assoc x omap) t))
   :enable tree-from-omap)
 

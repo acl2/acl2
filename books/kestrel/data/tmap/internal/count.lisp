@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/internal/count-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/count-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 (include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
 (include-book "tree-defs")
@@ -24,12 +24,12 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treeset/internal/count" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tset/internal/count" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
@@ -158,18 +158,18 @@
 
 (defruled tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
   (equal (tree-nodes-count tree)
-         (treeset::tree-nodes-count (tree-key-tree tree)))
+         (tset::tree-nodes-count (tree-key-tree tree)))
   :rule-classes :definition
   :induct t
   :enable (tree-nodes-count
-           treeset::tree-nodes-count
+           tset::tree-nodes-count
            tree-key-tree))
 
 (defrule tree-nodes-count-when-bstp
   (implies (and (bstp tree)
                 (heapp tree))
            (equal (tree-nodes-count tree)
-                  (treeset::cardinality (tree-key-set tree))))
+                  (tset::cardinality (tree-key-set tree))))
   :rule-classes :definition
   :use tree-nodes-count-becomes-tree-nodes-count-of-tree-key-tree
-  :enable treeset::cardinality)
+  :enable tset::cardinality)

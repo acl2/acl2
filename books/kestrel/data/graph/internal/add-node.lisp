@@ -11,12 +11,12 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "adj-list-defs")
 (include-book "well-formed-defs")
@@ -25,18 +25,18 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 
 (local (include-book "adj-list"))
 (local (include-book "well-formed"))
@@ -50,15 +50,15 @@
 ;; Time complexity: @($O(\\log(n))$).
 
 (define adj-list-add-node (node (adjl adj-listp))
-  :returns (new-adjl treemap::mapp)
-  (if (treemap::in node adjl)
-      (treemap::fix adjl)
-    (treemap::update node (treemap::empty) adjl)))
+  :returns (new-adjl tmap::mapp)
+  (if (tmap::in node adjl)
+      (tmap::fix adjl)
+    (tmap::update node (tmap::empty) adjl)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule adj-list-add-node-when-treemap-equiv-of-arg2-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule adj-list-add-node-when-tmap-equiv-of-arg2-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (adj-list-add-node node adjl0)
                   (adj-list-add-node node adjl1)))
   :rule-classes :congruence
@@ -74,8 +74,8 @@
 ;; The effect on the node and edge sets: the node is added, and no edges are.
 
 (defrule keys-of-adj-list-add-node
-  (equal (treemap::keys (adj-list-add-node node adjl))
-         (treeset::insert node (treemap::keys adjl)))
+  (equal (tmap::keys (adj-list-add-node node adjl))
+         (tset::insert node (tmap::keys adjl)))
   :enable adj-list-add-node)
 
 (defrule adj-list-edges-of-adj-list-add-node
@@ -86,10 +86,10 @@
 ;; The added node has the empty adjacency, which is how an absent node reads.
 
 (defrule lookup-of-adj-list-add-node
-  (equal (treemap::lookup key
-                          (adj-list-add-node node adjl)
-                          :default (treemap::empty))
-         (treemap::lookup key adjl :default (treemap::empty)))
+  (equal (tmap::lookup key
+                       (adj-list-add-node node adjl)
+                       :default (tmap::empty))
+         (tmap::lookup key adjl :default (tmap::empty)))
   :enable adj-list-add-node)
 
 ;; Adding a node only enlarges the node set and adds no targets, so it

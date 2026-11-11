@@ -6,13 +6,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/count-defs")
@@ -23,7 +23,7 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/count"))
@@ -37,8 +37,8 @@
 (define size ((map mapp))
   :type-prescription :none
   :returns (size natp)
-  :parents (treemap)
-  :short "The number of key/value pairs in a @(see treemap)."
+  :parents (tmap)
+  :short "The number of key/value pairs in a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -46,8 +46,8 @@
    (xdoc::p
      "This is <i>not</i> the logical normal form used by this library.
       Instead, we rewrite @('(size map)') to
-      @('(treeset::cardinality (keys map))')."))
-  (mbe :logic (treeset::cardinality (keys map))
+      @('(tset::cardinality (keys map))')."))
+  (mbe :logic (tset::cardinality (keys map))
        :exec (tree-nodes-count map))
   :enabled t
   :inline t

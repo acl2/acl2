@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -15,10 +15,10 @@
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "bst-defs")
@@ -28,15 +28,15 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/internal/heap-order" :dir :system))
+(local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "tree"))
 (local (include-book "bst"))
@@ -59,7 +59,7 @@
          nil)
         ((equal key (tree-element->key (tree->head tree)))
          (tree-element->val (tree->head tree)))
-        ((treeset::in key (tree-key-set (tree->left tree)))
+        ((tset::in key (tree-key-set (tree->left tree)))
          (tree-lookup key (tree->left tree)))
         (t
          (tree-lookup key (tree->right tree))))
@@ -88,7 +88,7 @@
   (equal (tree-lookup key (tree-node head left right))
          (cond ((equal key (tree-element->key head))
                 (tree-element->val head))
-               ((treeset::in key (tree-key-set left))
+               ((tset::in key (tree-key-set left))
                 (tree-lookup key left))
                (t
                 (tree-lookup key right))))
@@ -117,26 +117,26 @@
 
 (defruled in-of-tree-key-set-when-tree-lookup
   (implies (tree-lookup key tree)
-           (treeset::in key (tree-key-set tree)))
+           (tset::in key (tree-key-set tree)))
   :induct t
   :enable tree-lookup)
 
 (defrule in-of-tree-key-set-when-tree-lookup-type-prescription
   (implies (not (equal (tree-lookup key tree) nil))
-           (treeset::in key (tree-key-set tree)))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :type-prescription
   :use in-of-tree-key-set-when-tree-lookup)
 
 (defrule in-of-tree-key-set-when-tree-lookup-forward-chaining
   (implies (tree-lookup key tree)
-           (treeset::in key (tree-key-set tree)))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-when-tree-lookup)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-lookup-when-not-in-of-tree-key-set
-  (implies (not (treeset::in key (tree-key-set tree)))
+  (implies (not (tset::in key (tree-key-set tree)))
            (equal (tree-lookup key tree)
                   nil)))
 
@@ -160,13 +160,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled tree-lookup-when-in-of-tree-key-set-tree->left-and-bstp
-  (implies (and (treeset::in key (tree-key-set (tree->left tree)))
+  (implies (and (tset::in key (tree-key-set (tree->left tree)))
                 (bstp tree))
            (equal (tree-lookup key tree)
                   (tree-lookup key (tree->left tree)))))
 
 (defrule tree-lookup-when-in-of-tree-key-set-tree->left-and-bstp-cheap
-  (implies (and (treeset::in key (tree-key-set (tree->left tree)))
+  (implies (and (tset::in key (tree-key-set (tree->left tree)))
                 (bstp tree))
            (equal (tree-lookup key tree)
                   (tree-lookup key (tree->left tree))))
@@ -174,14 +174,14 @@
   :by tree-lookup-when-in-of-tree-key-set-tree->left-and-bstp)
 
 (defruled tree-lookup-when-in-of-tree-key-set-tree->right-and-bstp
-  (implies (and (treeset::in key (tree-key-set (tree->right tree)))
+  (implies (and (tset::in key (tree-key-set (tree->right tree)))
                 (bstp tree))
            (equal (tree-lookup key tree)
                   (tree-lookup key (tree->right tree))))
   :enable tree-lookup)
 
 (defrule tree-lookup-when-in-of-tree-key-set-tree->right-and-bstp-cheap
-  (implies (and (treeset::in key (tree-key-set (tree->right tree)))
+  (implies (and (tset::in key (tree-key-set (tree->right tree)))
                 (bstp tree))
            (equal (tree-lookup key tree)
                   (tree-lookup key (tree->right tree))))
@@ -235,21 +235,21 @@
 
 (defruled in-of-tree-key-set-when-tree-search-assoc
   (implies (tree-search-assoc key tree)
-           (treeset::in key (tree-key-set tree)))
+           (tset::in key (tree-key-set tree)))
   :induct t
   :enable (tree-search-assoc
            tree-key-set))
 
 (defrule in-of-tree-key-set-when-tree-search-assoc-forward-chaining
   (implies (tree-search-assoc key tree)
-           (treeset::in key (tree-key-set tree)))
+           (tset::in key (tree-key-set tree)))
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-when-tree-search-assoc)
 
 (defrule tree-search-assoc-becomes-tree-lookup-when-bstp
   (implies (bstp tree)
            (equal (tree-search-assoc key tree)
-                  (if (treeset::in key (tree-key-set tree))
+                  (if (tset::in key (tree-key-set tree))
                       (cons key (tree-lookup key tree))
                     nil)))
   :rule-classes :definition

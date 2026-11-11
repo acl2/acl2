@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -34,8 +34,8 @@
 (define cardinality ((set setp))
   :type-prescription :none
   :returns (cardinality natp)
-  :parents (treeset)
-  :short "The number of elements in a @(see treeset)."
+  :parents (tset)
+  :short "The number of elements in a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p

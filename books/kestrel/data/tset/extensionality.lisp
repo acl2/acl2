@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -30,12 +30,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc extensionality
-  :parents (treeset)
-  :short "Extensional equality of @(see treeset)s."
+  :parents (tset)
+  :short "Extensional equality of @(see tset)s."
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see treeset) equality. It is often
+      "This definition is equivalent to @(see tset) equality. It is often
        useful to prove equality by rewriting to this quantifier-based form.
        To do so, just enable the @('extensionality') rule.")))
 

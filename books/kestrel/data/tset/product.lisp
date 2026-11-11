@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -44,7 +44,7 @@
    (set setp))
   :returns (set setp)
   :parents (product)
-  :short "Cons an element to each element of a @(see treeset)."
+  :short "Cons an element to each element of a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -122,8 +122,8 @@
   ((x setp)
    (y setp))
   :returns (set setp)
-  :parents (treeset)
-  :short "Create the Cartesian product of two @(see treeset)s."
+  :parents (tset)
+  :short "Create the Cartesian product of two @(see tset)s."
   :long
   (xdoc::topstring
    (xdoc::p

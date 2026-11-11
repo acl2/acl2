@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/min-max-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "../bag-defs")
 
@@ -22,15 +22,15 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "../bag"))
 
@@ -45,8 +45,8 @@
 (define min-delete-induction ((bag bagp))
   (or (emptyp bag)
       (min-delete-induction
-        (treemap::delete (treemap::min-key (fix bag)) (fix bag))))
-  :measure (treeset::cardinality (treemap::keys (fix bag)))
+        (tmap::delete (tmap::min-key (fix bag)) (fix bag))))
+  :measure (tset::cardinality (tmap::keys (fix bag)))
   :hints (("Goal" :in-theory (enable* emptyp
                                       break-abstraction)))
   :verify-guards nil)
@@ -58,10 +58,10 @@
                                    (b bagp))
   (if (emptyp a)
       (list a b)
-    (let ((x (treemap::min-key (fix a))))
-      (min-delete-both-induction (treemap::delete x (fix a))
-                                 (treemap::delete x (fix b)))))
-  :measure (treeset::cardinality (treemap::keys (fix a)))
+    (let ((x (tmap::min-key (fix a))))
+      (min-delete-both-induction (tmap::delete x (fix a))
+                                 (tmap::delete x (fix b)))))
+  :measure (tset::cardinality (tmap::keys (fix a)))
   :hints (("Goal" :in-theory (enable* emptyp
                                       break-abstraction)))
   :verify-guards nil)

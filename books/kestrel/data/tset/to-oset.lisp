@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREESET")
+(in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -29,24 +29,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This theory aggressively rewrites from treesets to osets.
+;; This theory aggressively rewrites from tsets to osets.
 (def-ruleset! to-oset-theory ())
 
-;; This theory aggressively rewrites from osets to treesets.
+;; This theory aggressively rewrites from osets to tsets.
 (def-ruleset! from-oset-theory ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-oset ((set setp))
   :type-prescription :none
-  :parents (treeset)
-  :short "Build an oset from a @(see treeset)."
+  :parents (tset)
+  :short "Build an oset from a @(see tset)."
   :long
   (xdoc::topstring
    (xdoc::p
      "Time complexity: @($O(n)$).")
    (xdoc::p
-     "@(see Treeset)s are isomorphic to "
+     "@(see Tset)s are isomorphic to "
      (xdoc::seetopic "set::std/osets" "osets")
      ". This function may be used in combination with @(tsee from-oset) to go
       back and forth between the two representations. There are rules relating
@@ -54,8 +54,8 @@
       union), etc.).")
    (xdoc::p
      "We provide a @(see acl2::ruleset), @('to-oset-theory'), to aggressively
-      rewrite @(see treeset)s into @(see set::std/osets). To rewrite in the
-      other direction (i.e., from @(see set::std/osets) to @(see treeset)s), we
+      rewrite @(see tset)s into @(see set::std/osets). To rewrite in the
+      other direction (i.e., from @(see set::std/osets) to @(see tset)s), we
       provide the @('from-oset-theory') ruleset. To use one ruleset, the other
       must be explicitly disabled. If the other ruleset is not disabled, expect
       rewrite loops."))

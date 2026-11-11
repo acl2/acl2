@@ -11,20 +11,20 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treemap/internal/tree-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/values-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tmap/internal/tree-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/values-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "adj-list-defs")
 
@@ -33,22 +33,22 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/values" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/update" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/values" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/update" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/generic-typed" :dir :system))
 
 (local (include-book "adj-list"))
 
@@ -74,17 +74,17 @@
 ;; This form is for reasoning only, and its guards are not verified: keys
 ;; requires a map, and nothing at this level says the elements are maps.
 
-(define set-all-keys-subsetp ((set treeset::setp)
-                              (nodes treeset::setp))
+(define set-all-keys-subsetp ((set tset::setp)
+                              (nodes tset::setp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (or (treeset::emptyp set)
-      (and (treeset::subset (treemap::keys (treeset::min set)) nodes)
-           (set-all-keys-subsetp (treeset::delete (treeset::min set) set)
+  (or (tset::emptyp set)
+      (and (tset::subset (tmap::keys (tset::min set)) nodes)
+           (set-all-keys-subsetp (tset::delete (tset::min set) set)
                                  nodes)))
-  :measure (treeset::cardinality set)
-  :hints (("Goal" :in-theory (enable treeset::cardinality-of-delete-when-in
-                                     treeset::in-of-min)))
+  :measure (tset::cardinality set)
+  :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
+                                     tset::in-of-min)))
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -94,8 +94,8 @@
   :rule-classes ((:type-prescription
                    :typed-term (set-all-keys-subsetp set nodes))))
 
-(defrule set-all-keys-subsetp-when-treeset-equiv-of-arg2-congruence
-  (implies (treeset::equiv nodes0 nodes1)
+(defrule set-all-keys-subsetp-when-tset-equiv-of-arg2-congruence
+  (implies (tset::equiv nodes0 nodes1)
            (equal (set-all-keys-subsetp set nodes0)
                   (set-all-keys-subsetp set nodes1)))
   :rule-classes :congruence
@@ -104,7 +104,7 @@
 
 (defruled set-all-keys-subsetp-when-set-all-keys-subsetp-and-subset
   (implies (and (set-all-keys-subsetp set nodes0)
-                (treeset::subset nodes0 nodes1))
+                (tset::subset nodes0 nodes1))
            (set-all-keys-subsetp set nodes1))
   :induct (set-all-keys-subsetp set nodes0)
   :enable set-all-keys-subsetp)
@@ -115,22 +115,22 @@
 ;; adjacency's targets are checked against the node set directly, without
 ;; collecting the targets of all the adjacencies first.
 
-(define tree-all-vals-keys-subsetp ((tree treemap::treep)
-                                    (nodes treeset::setp))
+(define tree-all-vals-keys-subsetp ((tree tmap::treep)
+                                    (nodes tset::setp))
   :guard (tree-all-vals-adjacencyp tree)
-  (or (treemap::tree-empty-p tree)
-      (and (treeset::subset
-             (treemap::keys
-               (treemap::tree-element->val (treemap::tree->head tree)))
+  (or (tmap::tree-empty-p tree)
+      (and (tset::subset
+             (tmap::keys
+               (tmap::tree-element->val (tmap::tree->head tree)))
              nodes)
-           (tree-all-vals-keys-subsetp (treemap::tree->left tree) nodes)
-           (tree-all-vals-keys-subsetp (treemap::tree->right tree) nodes)))
+           (tree-all-vals-keys-subsetp (tmap::tree->left tree) nodes)
+           (tree-all-vals-keys-subsetp (tmap::tree->right tree) nodes)))
   :guard-hints (("Goal" :in-theory (enable tree-all-vals-adjacencyp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-all-vals-keys-subsetp-when-treeset-equiv-of-arg2-congruence
-  (implies (treeset::equiv nodes0 nodes1)
+(defrule tree-all-vals-keys-subsetp-when-tset-equiv-of-arg2-congruence
+  (implies (tset::equiv nodes0 nodes1)
            (equal (tree-all-vals-keys-subsetp tree nodes0)
                   (tree-all-vals-keys-subsetp tree nodes1)))
   :rule-classes :congruence
@@ -138,20 +138,20 @@
   :enable tree-all-vals-keys-subsetp)
 
 (defruled tree-all-vals-keys-subsetp-becomes-set-all-keys-subsetp-of-values
-  (implies (treemap::mapp map)
+  (implies (tmap::mapp map)
            (equal (tree-all-vals-keys-subsetp map nodes)
-                  (set-all-keys-subsetp (treemap::values (double-rewrite map))
+                  (set-all-keys-subsetp (tmap::values (double-rewrite map))
                                         nodes)))
   :use (:instance
          (:functional-instance
-           treemap::tree-all-vals-genericp-becomes-set-all-genericp-of-values
-           (treeset::genericp
-             (lambda (x) (treeset::subset (treemap::keys x) nodes)))
-           (treeset::set-all-genericp
+           tmap::tree-all-vals-genericp-becomes-set-all-genericp-of-values
+           (tset::genericp
+             (lambda (x) (tset::subset (tmap::keys x) nodes)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-keys-subsetp set nodes)))
-           (treemap::tree-all-vals-genericp
+           (tmap::tree-all-vals-genericp
              (lambda (tree) (tree-all-vals-keys-subsetp tree nodes))))
-         (treemap::map map))
+         (tmap::map map))
   :enable (set-all-keys-subsetp
            tree-all-vals-keys-subsetp))
 
@@ -163,19 +163,19 @@
 ;; of the map, @($n$) the size of nodes, and @($m$) the total number of targets
 ;; over all adjacencies.
 
-(define map-values-all-keys-subsetp ((map treemap::mapp)
-                                     (nodes treeset::setp))
+(define map-values-all-keys-subsetp ((map tmap::mapp)
+                                     (nodes tset::setp))
   :type-prescription :none
   :guard (map-values-all-adjacencyp map)
   :returns (yes/no booleanp)
-  (mbe :logic (set-all-keys-subsetp (treemap::values map) nodes)
+  (mbe :logic (set-all-keys-subsetp (tmap::values map) nodes)
        :exec (tree-all-vals-keys-subsetp map nodes))
   :inline t
   :guard-hints
   (("Goal"
     :in-theory
     (enable tree-all-vals-keys-subsetp-becomes-set-all-keys-subsetp-of-values
-            treemap::treep-when-mapp-forward-chaining))))
+            tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -184,48 +184,48 @@
   :rule-classes ((:type-prescription
                    :typed-term (map-values-all-keys-subsetp map nodes))))
 
-(defrule map-values-all-keys-subsetp-when-treemap-equiv-of-arg1-congruence
-  (implies (treemap::equiv map0 map1)
+(defrule map-values-all-keys-subsetp-when-tmap-equiv-of-arg1-congruence
+  (implies (tmap::equiv map0 map1)
            (equal (map-values-all-keys-subsetp map0 nodes)
                   (map-values-all-keys-subsetp map1 nodes)))
   :rule-classes :congruence
   :enable map-values-all-keys-subsetp)
 
-(defrule map-values-all-keys-subsetp-when-treeset-equiv-of-arg2-congruence
-  (implies (treeset::equiv nodes0 nodes1)
+(defrule map-values-all-keys-subsetp-when-tset-equiv-of-arg2-congruence
+  (implies (tset::equiv nodes0 nodes1)
            (equal (map-values-all-keys-subsetp map nodes0)
                   (map-values-all-keys-subsetp map nodes1)))
   :rule-classes :congruence
   :enable map-values-all-keys-subsetp)
 
 (defrule tree-all-vals-keys-subsetp-when-map-values-all-keys-subsetp
-  (implies (and (treemap::mapp map)
+  (implies (and (tmap::mapp map)
                 (map-values-all-keys-subsetp (double-rewrite map) nodes))
            (tree-all-vals-keys-subsetp map nodes))
   :enable (map-values-all-keys-subsetp
            tree-all-vals-keys-subsetp-becomes-set-all-keys-subsetp-of-values))
 
 (defruled map-values-all-keys-subsetp-when-tree-all-vals-keys-subsetp
-  (implies (and (treemap::mapp map)
+  (implies (and (tmap::mapp map)
                 (tree-all-vals-keys-subsetp map nodes))
            (map-values-all-keys-subsetp map nodes))
   :enable (map-values-all-keys-subsetp
            tree-all-vals-keys-subsetp-becomes-set-all-keys-subsetp-of-values))
 
 (defruled map-values-all-keys-subsetp-when-emptyp
-  (implies (treemap::emptyp map)
+  (implies (tmap::emptyp map)
            (map-values-all-keys-subsetp map nodes))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp))
 
 (defrule map-values-all-keys-subsetp-when-emptyp-cheap
-  (implies (treemap::emptyp map)
+  (implies (tmap::emptyp map)
            (map-values-all-keys-subsetp map nodes))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by map-values-all-keys-subsetp-when-emptyp)
 
 (defrule map-values-all-keys-subsetp-of-empty
-  (map-values-all-keys-subsetp (treemap::empty) nodes)
+  (map-values-all-keys-subsetp (tmap::empty) nodes)
   :enable map-values-all-keys-subsetp-when-emptyp)
 
 ;; Growing the node set preserves the invariant. The bound being grown from is
@@ -233,7 +233,7 @@
 
 (defruled map-values-all-keys-subsetp-when-map-values-all-keys-subsetp-and-subset
   (implies (and (map-values-all-keys-subsetp map nodes0)
-                (treeset::subset nodes0 nodes1))
+                (tset::subset nodes0 nodes1))
            (map-values-all-keys-subsetp map nodes1))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp-when-set-all-keys-subsetp-and-subset))
@@ -242,65 +242,65 @@
 
 (defrule map-values-all-keys-subsetp-of-arg1-and-insert
   (implies (map-values-all-keys-subsetp map nodes)
-           (map-values-all-keys-subsetp map (treeset::insert node nodes)))
+           (map-values-all-keys-subsetp map (tset::insert node nodes)))
   :enable map-values-all-keys-subsetp-when-map-values-all-keys-subsetp-and-subset)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule subset-of-keys-of-lookup-when-map-values-all-keys-subsetp
   (implies (and (map-values-all-keys-subsetp map nodes)
-                (treemap::in k map))
-           (treeset::subset (treemap::keys (treemap::lookup k map)) nodes))
+                (tmap::in k map))
+           (tset::subset (tmap::keys (tmap::lookup k map)) nodes))
   :use (:instance
          (:functional-instance
-           treemap::genericp-of-lookup-when-set-all-genericp-of-values
-           (treeset::genericp
-             (lambda (x) (treeset::subset (treemap::keys x) nodes)))
-           (treeset::set-all-genericp
+           tmap::genericp-of-lookup-when-set-all-genericp-of-values
+           (tset::genericp
+             (lambda (x) (tset::subset (tmap::keys x) nodes)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-keys-subsetp set nodes))))
-         (treemap::map map)
-         (treemap::k k))
+         (tmap::map map)
+         (tmap::k k))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp))
 
 (defrule subset-of-keys-of-lookup-with-default-empty-when-map-values-all-keys-subsetp
   (implies (map-values-all-keys-subsetp map nodes)
-           (treeset::subset (treemap::keys (treemap::lookup
-                                             k
-                                             map
-                                             :default (treemap::empty)))
-                            nodes))
-  :enable treemap::lookup-with-default-becomes-lookup-syntaxp)
+           (tset::subset (tmap::keys (tmap::lookup
+                                       k
+                                       map
+                                       :default (tmap::empty)))
+                         nodes))
+  :enable tmap::lookup-with-default-becomes-lookup-syntaxp)
 
 (defrule map-values-all-keys-subsetp-of-update
-  (equal (map-values-all-keys-subsetp (treemap::update k v map) nodes)
-         (and (treeset::subset (treemap::keys (double-rewrite v)) nodes)
-              (map-values-all-keys-subsetp (treemap::delete k map) nodes)))
+  (equal (map-values-all-keys-subsetp (tmap::update k v map) nodes)
+         (and (tset::subset (tmap::keys (double-rewrite v)) nodes)
+              (map-values-all-keys-subsetp (tmap::delete k map) nodes)))
   :use (:instance
          (:functional-instance
-           treemap::set-all-genericp-of-values-of-update
-           (treeset::genericp
-             (lambda (x) (treeset::subset (treemap::keys x) nodes)))
-           (treeset::set-all-genericp
+           tmap::set-all-genericp-of-values-of-update
+           (tset::genericp
+             (lambda (x) (tset::subset (tmap::keys x) nodes)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-keys-subsetp set nodes))))
-         (treemap::map map)
-         (treemap::k k)
-         (treemap::v v))
+         (tmap::map map)
+         (tmap::k k)
+         (tmap::v v))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp))
 
 (defrule map-values-all-keys-subsetp-of-delete
   (implies (map-values-all-keys-subsetp map nodes)
-           (map-values-all-keys-subsetp (treemap::delete k map) nodes))
+           (map-values-all-keys-subsetp (tmap::delete k map) nodes))
   :use (:instance
          (:functional-instance
-           treemap::set-all-genericp-of-values-of-delete
-           (treeset::genericp
-             (lambda (x) (treeset::subset (treemap::keys x) nodes)))
-           (treeset::set-all-genericp
+           tmap::set-all-genericp-of-values-of-delete
+           (tset::genericp
+             (lambda (x) (tset::subset (tmap::keys x) nodes)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-keys-subsetp set nodes))))
-         (treemap::map map)
-         (treemap::k k))
+         (tmap::map map)
+         (tmap::k k))
   :enable (map-values-all-keys-subsetp
            set-all-keys-subsetp))
 
@@ -314,7 +314,7 @@
 (define well-formedp ((adjl adj-listp))
   :type-prescription :none
   :returns (yes/no booleanp)
-  (map-values-all-keys-subsetp adjl (treemap::keys adjl))
+  (map-values-all-keys-subsetp adjl (tmap::keys adjl))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -323,26 +323,26 @@
   (booleanp (well-formedp adjl))
   :rule-classes ((:type-prescription :typed-term (well-formedp adjl))))
 
-(defrule well-formedp-when-treemap-equiv-congruence
-  (implies (treemap::equiv adjl0 adjl1)
+(defrule well-formedp-when-tmap-equiv-congruence
+  (implies (tmap::equiv adjl0 adjl1)
            (equal (well-formedp adjl0)
                   (well-formedp adjl1)))
   :rule-classes :congruence
   :enable well-formedp)
 
 (defrule well-formedp-of-empty
-  (well-formedp (treemap::empty))
+  (well-formedp (tmap::empty))
   :enable well-formedp)
 
 ;; The point of well-formedness: a target is a node.
 
 (defrule subset-of-keys-of-lookup-when-well-formedp
   (implies (well-formedp adjl)
-           (treeset::subset (treemap::keys (treemap::lookup
-                                             node
-                                             adjl
-                                             :default (treemap::empty)))
-                            (treemap::keys adjl)))
+           (tset::subset (tmap::keys (tmap::lookup
+                                       node
+                                       adjl
+                                       :default (tmap::empty)))
+                         (tmap::keys adjl)))
   :enable well-formedp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

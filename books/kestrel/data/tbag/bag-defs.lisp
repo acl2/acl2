@@ -6,9 +6,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
 
 (include-book "internal/map-values-all-posp-defs")
 

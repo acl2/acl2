@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -18,7 +18,7 @@
 ;; definition. Including them here as well makes them dependencies of every
 ;; book which uses the macro.
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "kestrel/data/treeset/hash" :dir :system))
+(local (include-book "kestrel/data/tset/hash" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/lookup"))
@@ -28,8 +28,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc defunion
-  :parents (treemap)
-  :short "Define a union of @(see treemap)s which combines the values of
+  :parents (tmap)
+  :short "Define a union of @(see tmap)s which combines the values of
           shared keys."
   :long
   (xdoc::topstring
@@ -67,9 +67,9 @@
         "@(':val-pred') and @(':val-set-pred')"
         (xdoc::p
           "A predicate on values, and its check over a @(see
-           acl2::treeset). They are given together or not at all. The set
-           check must be defined as @('treeset::set-all-genericp') is,
-           with @(':val-pred') in place of @('treeset::genericp'). When they
+           acl2::tset). They are given together or not at all. The set
+           check must be defined as @('tset::set-all-genericp') is,
+           with @(':val-pred') in place of @('tset::genericp'). When they
            are given, the combination must preserve @(':val-pred'), and the
            union of maps whose values satisfy it is generated."))
       (xdoc::desc
@@ -89,7 +89,7 @@
         (xdoc::li
           "@('tree-<name>'), the union on the implementation trees.")
         (xdoc::li
-          "@('<name>'), the union on @(see treemap)s, which is inlined.")
+          "@('<name>'), the union on @(see tmap)s, which is inlined.")
         (xdoc::li
           "Theorems about @('<name>'): its return type, congruences,
            @(tsee emptyp), @(tsee keys), and @(tsee lookup) of it, its value
@@ -171,19 +171,19 @@
        (subst `((generic-union ,fn)
                 (tree-generic-union ,tree-name)
                 (generic-combine ,combine-fn)
-                (treeset::genericp ,(or val-pred '(lambda (v) t)))))
+                (tset::genericp ,(or val-pred '(lambda (v) t)))))
        (context (list subst tree-name fn (and val-pred closure)))
        (xdoc (append (and parents `(:parents ,parents))
                      (and short `(:short ,short))
                      (and long `(:long ,long)))))
     `(encapsulate ()
        (local (include-book "kestrel/utilities/ordinals" :dir :system))
-       (local (include-book "kestrel/data/treeset/hash" :dir :system))
-       (local (include-book "kestrel/data/treemap/internal/tree" :dir :system))
+       (local (include-book "kestrel/data/tset/hash" :dir :system))
+       (local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
        (local
-         (include-book "kestrel/data/treemap/internal/lookup" :dir :system))
-       (local (include-book "kestrel/data/treemap/internal/split" :dir :system))
-       (local (include-book "kestrel/data/treemap/map" :dir :system))
+         (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
+       (local (include-book "kestrel/data/tmap/internal/split" :dir :system))
+       (local (include-book "kestrel/data/tmap/map" :dir :system))
 
        ,@(and (not (symbolp combine))
               `((define ,combine-fn ,(second combine)
@@ -292,15 +292,15 @@
 
        (defrule ,(defunion-sym "KEYS-OF-" name "")
          (equal (keys (,name x y))
-                (treeset::union (keys x)
-                                (keys y)))
+                (tset::union (keys x)
+                             (keys y)))
          :hints ,(defunion-hints 'keys-of-generic-union
                                  context nil nil))
 
        (defrule ,(defunion-sym "LOOKUP-OF-" name "")
          (equal (lookup key (,name x y) :default default)
-                (if (treeset::in key (keys x))
-                    (if (treeset::in key (keys y))
+                (if (tset::in key (keys x))
+                    (if (tset::in key (keys y))
                         (,combine-fn key
                                      (lookup key x)
                                      (lookup key y))
@@ -359,7 +359,7 @@
                   :hints ,(defunion-hints
                             'set-all-genericp-of-values-of-generic-union
                             context
-                            `((treeset::set-all-genericp ,val-set-pred))
+                            `((tset::set-all-genericp ,val-set-pred))
                             `(,val-set-pred))))))))
 
 ;;;;;;;;;;;;;;;;;;;;

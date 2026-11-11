@@ -6,14 +6,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
 
 (include-book "kestrel/utilities/polarity" :dir :system)
 
@@ -25,11 +25,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
 
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -57,8 +57,8 @@
   :guard (bstp y)
   (or (tree-empty-p x)
       (and (mbe :logic
-                (and (treeset::in (tree-element->key (tree->head x))
-                                  (tree-key-set y))
+                (and (tset::in (tree-element->key (tree->head x))
+                               (tree-key-set y))
                      (equal (tree-lookup (tree-element->key (tree->head x)) y)
                             (tree-element->val (tree->head x))))
                 :exec
@@ -102,24 +102,24 @@
 
 (defruled subset-of-tree-key-set-tree-key-set
   (implies (tree-submap-p x y)
-           (treeset::subset (tree-key-set x) (tree-key-set y)))
-  :enable treeset::pick-a-point-polar
+           (tset::subset (tree-key-set x) (tree-key-set y)))
+  :enable tset::pick-a-point-polar
   :prep-lemmas
   ((defrule tree-assoc-when-in-of-tree-key-set-and-tree-submap-p
-     (implies (and (treeset::in key (tree-key-set x))
+     (implies (and (tset::in key (tree-key-set x))
                    (tree-submap-p x y))
-              (treeset::in key (tree-key-set y)))
+              (tset::in key (tree-key-set y)))
      :induct t
      :enable tree-submap-p)))
 
 (defrule subset-of-tree-key-set-tree-key-set-forward-chaining
   (implies (tree-submap-p x y)
-           (treeset::subset (tree-key-set x) (tree-key-set y)))
+           (tset::subset (tree-key-set x) (tree-key-set y)))
   :rule-classes :forward-chaining
   :by subset-of-tree-key-set-tree-key-set)
 
 (defruled tree-lookup-when-in-of-tree-key-set-and-tree-submap-p
-  (implies (and (treeset::in key (tree-key-set x))
+  (implies (and (tset::in key (tree-key-set x))
                 (tree-submap-p x y))
            (equal (tree-lookup key y)
                   (tree-lookup key x)))
@@ -128,7 +128,7 @@
 
 ;; TODO: disable by default?
 (defrule tree-lookup-when-in-of-tree-key-set-and-proper-tree-submap-p
-  (implies (and (treeset::in key (tree-key-set x))
+  (implies (and (tset::in key (tree-key-set x))
                 (tree-submap-p x y)
                 ;; This hypothesis is not logically necessary.
                 ;; It is used to prevent rewrite looping.
@@ -139,7 +139,7 @@
 
 (defruled tree-lookup-when-tree-submap-p-and-in-of-tree-key-set
   (implies (and (tree-submap-p x y)
-                (treeset::in key (tree-key-set x)))
+                (tset::in key (tree-key-set x)))
            (equal (tree-lookup key y)
                   (tree-lookup key x)))
   :by tree-lookup-when-in-of-tree-key-set-and-tree-submap-p)
@@ -147,7 +147,7 @@
 ;; TODO: disable by default?
 (defrule tree-lookup-when-proper-tree-submap-p-and-in-of-tree-key-set
   (implies (and (tree-submap-p x y)
-                (treeset::in key (tree-key-set x))
+                (tset::in key (tree-key-set x))
                 ;; This hypothesis is not logically necessary.
                 ;; It is used to prevent rewrite looping.
                 (not (tree-submap-p y x)))
@@ -156,12 +156,12 @@
   :by tree-lookup-when-tree-submap-p-and-in-of-tree-key-set)
 
 (defrule tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining
-  (implies (and (treeset::in key (tree-key-set x))
+  (implies (and (tset::in key (tree-key-set x))
                 (tree-submap-p x y))
            (equal (tree-lookup key y)
                   (tree-lookup key x)))
   :rule-classes ((:forward-chaining
-                  :trigger-terms ((treeset::in key (tree-key-set x))
+                  :trigger-terms ((tset::in key (tree-key-set x))
                                   (tree-submap-p x y))))
   :by tree-lookup-when-in-of-tree-key-set-and-tree-submap-p)
 
@@ -235,7 +235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: Simplify treeset proof
+;; TODO: Simplify tset proof
 (defrule reflexivity-of-tree-submap-p-when-bstp
   (implies (bstp tree)
            (tree-submap-p tree tree))
@@ -271,13 +271,13 @@
 
 (defruled tree-submap-p-when-not-tree-assoc-of-tree->head
   (implies (and (not (tree-empty-p x))
-                (not (treeset::in (tree-element->key (tree->head x))
-                                  (tree-key-set y))))
+                (not (tset::in (tree-element->key (tree->head x))
+                               (tree-key-set y))))
            (not (tree-submap-p x y))))
 
 (defrule tree-submap-p-when-not-tree-assoc-of-tree->head-cheap
-  (implies (and (not (treeset::in (tree-element->key (tree->head x))
-                                  (tree-key-set y)))
+  (implies (and (not (tset::in (tree-element->key (tree->head x))
+                               (tree-key-set y)))
                 (not (tree-empty-p x)))
            (not (tree-submap-p x y)))
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
@@ -308,8 +308,8 @@
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (key)
     (non-exec
-      (implies (treeset::in key (tree-key-set x))
-               (and (treeset::in key (tree-key-set y))
+      (implies (tset::in key (tree-key-set x))
+               (and (tset::in key (tree-key-set y))
                     (equal (tree-lookup key x)
                            (tree-lookup key y)))))))
 
@@ -397,8 +397,8 @@
   (implies (bstp x)
            (equal (tree-submap-p x y)
                   (let ((key (tree-submap-p-sk-witness x y)))
-                    (implies (treeset::in key (tree-key-set x))
-                             (and (treeset::in key (tree-key-set y))
+                    (implies (tset::in key (tree-key-set x))
+                             (and (tset::in key (tree-key-set y))
                                   (equal (tree-lookup key x)
                                          (tree-lookup key y)))))))
   :rule-classes :definition
@@ -410,8 +410,8 @@
                 (bstp x))
            (equal (tree-submap-p x y)
                   (let ((key (tree-submap-p-sk-witness x y)))
-                    (implies (treeset::in key (tree-key-set x))
-                             (and (treeset::in key (tree-key-set y))
+                    (implies (tset::in key (tree-key-set x))
+                             (and (tset::in key (tree-key-set y))
                                   (equal (tree-lookup key x)
                                          (tree-lookup key y)))))))
   :rule-classes :definition
@@ -436,7 +436,7 @@
                    (tree-submap-p x y))
               (tree-submap-p x (tree->left y)))
      ;; TODO: improve proof
-     :use ((:instance treeset::in-when-subset-and-in
+     :use ((:instance tset::in-when-subset-and-in
                       (x (tree-key-set x))
                       (y (tree-key-set y))
                       (a (tree-submap-p-sk-witness x (tree->left y))))
@@ -444,8 +444,8 @@
                       (key (tree-submap-p-sk-witness x (tree->left y)))))
      :enable (tree-submap-p-pick-a-point-polar
               in-of-tree-key-set-when-not-tree-empty-p)
-     :disable (treeset::in-when-in-and-subset
-               treeset::in-when-subset-and-in
+     :disable (tset::in-when-in-and-subset
+               tset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
 
 (defrule tree-submap-p-when-<<-all-r-of-head
@@ -465,7 +465,7 @@
                    (tree-submap-p x y))
               (tree-submap-p x (tree->right y)))
      ;; TODO: improve proof
-     :use ((:instance treeset::in-when-subset-and-in
+     :use ((:instance tset::in-when-subset-and-in
                       (x (tree-key-set x))
                       (y (tree-key-set y))
                       (a (tree-submap-p-sk-witness x (tree->right y))))
@@ -473,8 +473,8 @@
                       (key (tree-submap-p-sk-witness x (tree->right y)))))
      :enable (tree-submap-p-pick-a-point-polar
               in-of-tree-key-set-when-not-tree-empty-p)
-     :disable (treeset::in-when-in-and-subset
-               treeset::in-when-subset-and-in
+     :disable (tset::in-when-in-and-subset
+               tset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -607,7 +607,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Bounds are monotone under submap: what bounds every key of a tree bounds
-;; every key of any submap. These mirror the subset versions in TREESET.
+;; every key of any submap. These mirror the subset versions in TSET.
 
 (defruled <<-all-r-when-tree-submap-p
   (implies (and (<<-all-r x tree)

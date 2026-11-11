@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -29,16 +29,16 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
 
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
-(local (include-book "kestrel/data/treemap/min-max" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
 
 (local (include-book "internal/map-values-all-posp"))
 (local (include-book "internal/induction"))
@@ -68,8 +68,8 @@
   :returns (bag bagp
                 :hints (("Goal" :in-theory (enable* bagp
                                                     break-abstraction))))
-  :parents (treebag)
-  :short "Add the occurrences of two @(see treebag)s."
+  :parents (tbag)
+  :short "Add the occurrences of two @(see tbag)s."
   :long
   (xdoc::topstring
     (xdoc::p
@@ -198,8 +198,8 @@
 ;; first bag's smallest element at each step. Removing an element from the
 ;; first bag removes as many occurrences from the sum.
 
-(defruledl sum-of-treemap-delete
-  (equal (sum (treemap::delete x (fix a)) b)
+(defruledl sum-of-tmap-delete
+  (equal (sum (tmap::delete x (fix a)) b)
          (delete-many x (count x a) (sum a b)))
   :enable (extensionality
            break-abstraction
@@ -212,7 +212,7 @@
             (cardinality b)))
   :induct (min-delete-induction a)
   :enable (break-abstraction
-           sum-of-treemap-delete
+           sum-of-tmap-delete
            nfix)
   :disable fix-when-bagp)
 

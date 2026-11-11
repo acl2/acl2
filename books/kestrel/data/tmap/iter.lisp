@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
@@ -32,10 +32,10 @@
 (local (include-book "std/omaps/extensionality" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "std/omaps/inverse" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
@@ -67,12 +67,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc iterator
-  :parents (treemap)
-  :short "A position within a @(see treemap)."
+  :parents (tmap)
+  :short "A position within a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Walking a @(see treemap) with @(tsee min) and @(tsee tail) is
+     "Walking a @(see tmap) with @(tsee min) and @(tsee tail) is
       inefficient. For this and other reasons, we provide iterator objects,
       which may be used to walk over the map in-order,
       one entry at a time, at an amortized cost of @($O(1)$) per step.")
@@ -84,7 +84,7 @@
       @(tsee after-lastp) and @(tsee before-firstp) recognize the two ends,
       where there is no entry to read.")
    (xdoc::p
-     "Neither direction is privileged. Over an empty @(see treemap) each
+     "Neither direction is privileged. Over an empty @(see tmap) each
       constructor lands on the end its own walk would stop at, so a walk from
       either is immediately over.")
    (xdoc::p
@@ -101,8 +101,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "An iterator is a position within a tree which is a @(see treemap). Time
-      complexity: @($O(n)$), since it checks the @(see treemap) invariants."))
+     "An iterator is a position within a tree which is a @(see tmap). Time
+      complexity: @($O(n)$), since it checks the @(see tmap) invariants."))
   (and (tree-iter-p x)
        (mapp (tree-iter-plug x))))
 
@@ -139,12 +139,12 @@
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an @(see iterator) at the first entry of a @(see treemap)."
+  :short "Construct an @(see iterator) at the first entry of a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
      "The iterator starts at the first entry, or past the end when the
-      @(see treemap) is empty.")
+      @(see tmap) is empty.")
    (xdoc::p
      "Time complexity: @($O(\\log(n))$), to descend to the first entry."))
   (tree-iter-min (fix map))
@@ -168,12 +168,12 @@
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
-  :short "Construct an @(see iterator) at the last entry of a @(see treemap)."
+  :short "Construct an @(see iterator) at the last entry of a @(see tmap)."
   :long
   (xdoc::topstring
    (xdoc::p
      "The mirror of @(tsee iter-min): the iterator starts at the last entry,
-      or before the first when the @(see treemap) is empty. Either way it is
+      or before the first when the @(see tmap) is empty. Either way it is
       the position a walk in its own direction begins from, and the empty case
       is the one where that walk is immediately over.")
    (xdoc::p
@@ -330,7 +330,7 @@
    (xdoc::p
      "A forward walk never reaches this position: neither @(tsee iter-min) nor
       @(tsee next) yields it. It is reached by @(tsee prev), or by @(tsee
-      iter-max) over an empty @(see treemap), where a backward walk is over
+      iter-max) over an empty @(see tmap), where a backward walk is over
       before it begins."))
   (tree-iter-before-first-p (iter-fix iter))
   :inline t)
@@ -436,7 +436,7 @@
                          :in-theory
                          (enable mapp-of-tree-iter-plug-of-iter-fix))))
   :parents (iterator)
-  :short "The @(see treemap) an @(see iterator) walks."
+  :short "The @(see tmap) an @(see iterator) walks."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -549,7 +549,7 @@
 ;; exactly what they are; @(tsee from-omap) only changes the representation.
 
 ;; Over a search tree each side's built tree and its oset denote the same
-;; elements, and treesets are canonical, so they are the same object. This is
+;; elements, and tsets are canonical, so they are the same object. This is
 ;; what lets the builders serve as the executable branch below while the
 ;; logical definitions stay on the osets.
 
@@ -557,7 +557,7 @@
   (implies (mapp (tree-iter-plug iter))
            (equal (tree-iter-tree-before iter)
                   (from-omap (tree-iter-omap-before iter))))
-  ;; Unlike TREESET, where canonicity of sets settles this from membership,
+  ;; Unlike TSET, where canonicity of sets settles this from membership,
   ;; the map version goes round the `to-omap'/`from-omap' trip: the side tree's
   ;; in-order alist is its omap over a search tree.
   :use (:instance from-omap-of-to-omap
@@ -571,7 +571,7 @@
   (implies (mapp (tree-iter-plug iter))
            (equal (tree-iter-tree-after iter)
                   (from-omap (tree-iter-omap-after iter))))
-  ;; Unlike TREESET, where canonicity of sets settles this from membership,
+  ;; Unlike TSET, where canonicity of sets settles this from membership,
   ;; the map version goes round the `to-omap'/`from-omap' trip: the side tree's
   ;; in-order alist is its omap over a search tree.
   :use (:instance from-omap-of-to-omap
@@ -584,7 +584,7 @@
 (define before ((iter iterp))
   :returns (map mapp)
   :parents (iterator)
-  :short "The @(see treemap) of entries before an @(see iterator)."
+  :short "The @(see tmap) of entries before an @(see iterator)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -617,7 +617,7 @@
 (define after ((iter iterp))
   :returns (map mapp)
   :parents (iterator)
-  :short "The @(see treemap) of entries after an @(see iterator)."
+  :short "The @(see tmap) of entries after an @(see iterator)."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -704,7 +704,7 @@
            mapp-of-tree-iter-plug-of-iter-fix))
 
 ;; At the constructors the same holds with no hypothesis, including over the
-;; empty @(see treemap), where the iterator lands on the far end and the side
+;; empty @(see tmap), where the iterator lands on the far end and the side
 ;; in question is empty for the other reason.
 
 (defrule before-of-iter-min
@@ -731,7 +731,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The entry an iterator is at, split the way TREEMAP splits @(tsee head),
+;; The entry an iterator is at, split the way TMAP splits @(tsee head),
 ;; @(tsee min), and @(tsee max): the key and the value are the primitives, and
 ;; the paired form returns both.
 
@@ -837,7 +837,7 @@
            lookup
            break-abstraction))
 
-;; The entry-key an @(see iterator) is at is an element of the @(see treemap) it
+;; The entry-key an @(see iterator) is at is an element of the @(see tmap) it
 ;; walks. With @(tsee entry-key-of-iter-min) this is what connects a walk to the
 ;; contents of the set rather than just to its shape.
 ;;
@@ -847,7 +847,7 @@
 
 (defrule in-of-keys-of-entry-key
   (implies (has-valuep iter)
-           (treeset::in (entry-key iter) (keys (from-iter iter))))
+           (tset::in (entry-key iter) (keys (from-iter iter))))
   :enable (entry-key
            from-iter
            has-valuep
@@ -875,25 +875,25 @@
 ;; about the order of a walk wants.
 
 (defruled in-of-keys-of-before-becomes-omap-assoc
-  (equal (treeset::in x (keys (before iter)))
+  (equal (tset::in x (keys (before iter)))
          (and (omap::assoc x (tree-iter-omap-before (iter-fix iter))) t))
   :enable (before
-           treeset::in-of-from-oset
+           tset::in-of-from-oset
            omap::in-of-keys-to-assoc))
 
 (add-to-ruleset break-abstraction '(in-of-keys-of-before-becomes-omap-assoc))
 
 (defruled in-of-keys-of-after-becomes-omap-assoc
-  (equal (treeset::in x (keys (after iter)))
+  (equal (tset::in x (keys (after iter)))
          (and (omap::assoc x (tree-iter-omap-after (iter-fix iter))) t))
   :enable (after
-           treeset::in-of-from-oset
+           tset::in-of-from-oset
            omap::in-of-keys-to-assoc))
 
 (add-to-ruleset break-abstraction '(in-of-keys-of-after-becomes-omap-assoc))
 
 (defruled in-of-keys-of-before-becomes-assoc-equal
-  (equal (treeset::in x (keys (before iter)))
+  (equal (tset::in x (keys (before iter)))
          (and (assoc-equal x (tree-iter-before (iter-fix iter))) t))
   :enable (in-of-keys-of-before-becomes-omap-assoc
            assoc-of-tree-iter-omap-before))
@@ -901,14 +901,14 @@
 (add-to-ruleset break-abstraction '(in-of-keys-of-before-becomes-assoc-equal))
 
 (defruled in-of-keys-of-after-becomes-assoc-equal
-  (equal (treeset::in x (keys (after iter)))
+  (equal (tset::in x (keys (after iter)))
          (and (assoc-equal x (tree-iter-after (iter-fix iter))) t))
   :enable (in-of-keys-of-after-becomes-omap-assoc
            assoc-of-tree-iter-omap-after))
 
 (add-to-ruleset break-abstraction '(in-of-keys-of-after-becomes-assoc-equal))
 
-;; The value counterparts. TREESET needs only the membership bridges above,
+;; The value counterparts. TSET needs only the membership bridges above,
 ;; because set extensionality is settled by membership; map extensionality
 ;; compares the values too, so every step law below needs these as well.
 
@@ -953,7 +953,7 @@
 
 (defrule <<-of-entry-key-when-in-of-keys-of-after
   (implies (and (has-valuep iter)
-                (treeset::in x (keys (after iter))))
+                (tset::in x (keys (after iter))))
            (<< (entry-key iter) x))
   :enable (entry-key
            has-valuep
@@ -963,7 +963,7 @@
 
 (defrule <<-of-arg1-and-entry-key-when-in-of-keys-of-before
   (implies (and (has-valuep iter)
-                (treeset::in x (keys (before iter))))
+                (tset::in x (keys (before iter))))
            (<< x (entry-key iter)))
   :enable (entry-key
            has-valuep
@@ -975,22 +975,22 @@
 
 (defrule not-in-of-keys-of-entry-key-and-before
   (implies (has-valuep iter)
-           (not (treeset::in (entry-key iter) (keys (before iter)))))
+           (not (tset::in (entry-key iter) (keys (before iter)))))
   :use (:instance <<-of-arg1-and-entry-key-when-in-of-keys-of-before (x (entry-key iter)))
   :disable <<-of-arg1-and-entry-key-when-in-of-keys-of-before
   :enable data::<<-rules)
 
 (defrule not-in-of-keys-of-entry-key-and-after
   (implies (has-valuep iter)
-           (not (treeset::in (entry-key iter) (keys (after iter)))))
+           (not (tset::in (entry-key iter) (keys (after iter)))))
   :use (:instance <<-of-entry-key-when-in-of-keys-of-after (x (entry-key iter)))
   :disable <<-of-entry-key-when-in-of-keys-of-after
   :enable data::<<-rules)
 
 (defrule not-in-of-keys-of-after-when-in-of-keys-of-before
   (implies (and (has-valuep iter)
-                (treeset::in x (keys (before iter))))
-           (not (treeset::in x (keys (after iter)))))
+                (tset::in x (keys (before iter))))
+           (not (tset::in x (keys (after iter)))))
   :use (<<-of-entry-key-when-in-of-keys-of-after
         <<-of-arg1-and-entry-key-when-in-of-keys-of-before)
   :disable (<<-of-entry-key-when-in-of-keys-of-after
@@ -1002,7 +1002,7 @@
 ;; Each side agrees with the whole map on the values of its own keys. This is
 ;; the value counterpart of @(tsee in-of-keys-of-from-iter-when-has-valuep):
 ;; that one says where a key of the map is, this one says a side binds it to
-;; what the map binds it to. TREESET needs nothing like it, because a set
+;; what the map binds it to. TSET needs nothing like it, because a set
 ;; carries no values, but a walk over a map is only useful if what it reads is
 ;; what the map holds.
 ;;
@@ -1092,7 +1092,7 @@
   (implies (and (iterp iter)
                 (has-valuep iter)
                 (assoc-equal key (tree-iter-before iter)))
-           (treeset::in key (tree-key-set (tree-iter-plug iter))))
+           (tset::in key (tree-key-set (tree-iter-plug iter))))
   :use ((:instance assoc-equal-of-tree-in-order-when-bstp
                    (tree (tree-iter-plug iter))))
   :enable (tree-in-order-of-tree-iter-plug-becomes-append
@@ -1109,7 +1109,7 @@
   (implies (and (iterp iter)
                 (has-valuep iter)
                 (assoc-equal key (tree-iter-after iter)))
-           (treeset::in key (tree-key-set (tree-iter-plug iter))))
+           (tset::in key (tree-key-set (tree-iter-plug iter))))
   :use ((:instance assoc-equal-of-tree-in-order-when-bstp
                    (tree (tree-iter-plug iter))))
   :enable (tree-in-order-of-tree-iter-plug-becomes-append
@@ -1124,7 +1124,7 @@
 
 (defrulel lookup-of-from-iter-when-in-of-keys-of-before
   (implies (and (has-valuep iter)
-                (treeset::in key (keys (before iter))))
+                (tset::in key (keys (before iter))))
            (equal (lookup key (from-iter iter) :default default)
                   (lookup key (before iter) :default default)))
   :enable (from-iter
@@ -1144,7 +1144,7 @@
 
 (defrulel lookup-of-from-iter-when-in-of-keys-of-after
   (implies (and (has-valuep iter)
-                (treeset::in key (keys (after iter))))
+                (tset::in key (keys (after iter))))
            (equal (lookup key (from-iter iter) :default default)
                   (lookup key (after iter) :default default)))
   :enable (from-iter
@@ -1247,23 +1247,23 @@
 ;; are the only thing rewriting the sides.
 
 (defruledl in-of-keys-of-from-iter-becomes-in-of-tree-key-set
-  (equal (treeset::in x (keys (from-iter iter)))
-         (treeset::in x (tree-key-set (tree-iter-plug (iter-fix iter)))))
+  (equal (tset::in x (keys (from-iter iter)))
+         (tset::in x (tree-key-set (tree-iter-plug (iter-fix iter)))))
   :enable (from-iter
            keys))
 
 (defrule in-of-keys-of-from-iter-when-has-valuep
   (implies (has-valuep iter)
-           (equal (treeset::in x (keys (from-iter iter)))
-                  (or (treeset::in x (keys (before iter)))
+           (equal (tset::in x (keys (from-iter iter)))
+                  (or (tset::in x (keys (before iter)))
                       (equal x (entry-key iter))
-                      (treeset::in x (keys (after iter))))))
+                      (tset::in x (keys (after iter))))))
   :enable (in-of-keys-of-before-becomes-assoc-equal
            in-of-keys-of-after-becomes-assoc-equal
            in-of-keys-of-from-iter-becomes-in-of-tree-key-set
            entry-key
            has-valuep
-           (:t treeset::in$inline))
+           (:t tset::in$inline))
   ;; The split is an `iff' rule, so it cannot rewrite under the `equal' here.
   :use (:instance in-of-tree-key-set-of-tree-iter-plug-split
                   (key x)
@@ -1475,7 +1475,7 @@
            has-valuep
            next))
 
-;; What a step forward lands on: the least of what lay ahead. This is TREESET's
+;; What a step forward lands on: the least of what lay ahead. This is TSET's
 ;; proof, read on keys: `equal-of-min-becomes-sk' reduces the claim to
 ;; membership plus minimality, and the ordered alist supplies minimality
 ;; through `<<-of-caar-when-assoc-equal-of-cdr'.
@@ -1484,8 +1484,8 @@
   (implies (has-valuep (next iter))
            (equal (entry-key (next iter))
                   (min-key (after iter))))
-  :enable (treeset::equal-of-min-becomes-sk
-           treeset::not-<<-all-l-sk
+  :enable (tset::equal-of-min-becomes-sk
+           tset::not-<<-all-l-sk
            in-of-keys-of-after-becomes-assoc-equal
            bstp-of-tree-iter-plug-of-iter-fix
            entry-key
@@ -1501,12 +1501,12 @@
                    (x (tree-iter-after (iter-fix iter))))
         (:instance data::<<-of-caar-when-assoc-equal-of-cdr
                    (l (tree-iter-after (iter-fix iter)))
-                   (x (treeset::not-<<-all-l-sk-witness
+                   (x (tset::not-<<-all-l-sk-witness
                         (keys (after iter))
                         (car (car (tree-iter-after (iter-fix iter)))))))
-        (:instance treeset::in-when-emptyp
-                   (treeset::x (car (car (tree-iter-after (iter-fix iter)))))
-                   (treeset::set (keys (after iter))))))
+        (:instance tset::in-when-emptyp
+                   (tset::x (car (car (tree-iter-after (iter-fix iter)))))
+                   (tset::set (keys (after iter))))))
 
 ;; And the value it lands on, likewise. @(tsee min-val) is a lookup in the side
 ;; map, while the value law above reads the same entry out of the whole map;
@@ -1524,7 +1524,7 @@
                    (x (after iter))
                    (y (from-iter iter))
                    (default nil)))
-  :enable (treeset::in-of-min
+  :enable (tset::in-of-min
            emptyp-of-keys)
   :disable lookup-of-entry-key-and-from-iter)
 
@@ -1584,7 +1584,7 @@
   :enable (data::binary-max-<<
            data::<<-rules
            ;; The empty-side case is vacuous once `(emptyp (empty))' resolves.
-           treeset::emptyp-of-empty)
+           tset::emptyp-of-empty)
   :use ((:instance <<-of-arg1-and-entry-key-when-in-of-keys-of-before
                    (iter (prev iter))
                    (x (max-key (before (prev iter))))))
@@ -1597,7 +1597,7 @@
 (defrulel assoc-equal-of-tree-iter-before-becomes-in-of-keys-when-iterp
   (implies (iterp iter)
            (iff (assoc-equal x (tree-iter-before iter))
-                (treeset::in x (keys (before iter)))))
+                (tset::in x (keys (before iter)))))
   :enable in-of-keys-of-before-becomes-assoc-equal)
 
 (defrule before-of-prev-when-has-valuep
@@ -1612,10 +1612,10 @@
   ;; disjointness instance discharges the delete of the absent maximum.
   :enable (extensionality
            lookup-of-before-becomes-assoc-equal
-           treeset::in-when-emptyp
+           tset::in-when-emptyp
            assoc-equal
            entry-val
-           treeset::emptyp-of-empty)
+           tset::emptyp-of-empty)
   :use ((:instance entry-key-of-prev)
         (:instance not-in-of-keys-of-entry-key-and-before (iter (prev iter)))
         (:instance has-valuep-when-neither-end (iter (prev iter)))
@@ -1753,14 +1753,14 @@
 ;; after-of-iter-max), and they are what connects the start of a walk to a
 ;; specification's first step.
 ;;
-;; Unlike the TREESET versions, map extensionality compares values as well as
+;; Unlike the TSET versions, map extensionality compares values as well as
 ;; keys, so each proof carries a lookup obligation alongside the membership
 ;; one; the side being a submap of the whole is what discharges it.
 
 (defrulel assoc-equal-of-tree-iter-after-becomes-in-of-keys-when-iterp
   (implies (iterp iter)
            (iff (assoc-equal x (tree-iter-after iter))
-                (treeset::in x (keys (after iter)))))
+                (tset::in x (keys (after iter)))))
   :enable in-of-keys-of-after-becomes-assoc-equal)
 
 (defrule after-of-iter-min
@@ -1770,7 +1770,7 @@
   :enable (extensionality
            lookup-of-after-becomes-assoc-equal
            lookup-when-not-in-of-keys
-           treeset::in-of-arg1-and-empty
+           tset::in-of-arg1-and-empty
            from-iter-of-iter-min
            before-of-iter-min
            entry-key-of-iter-min
@@ -1803,7 +1803,7 @@
   :enable (extensionality
            lookup-of-before-becomes-assoc-equal
            lookup-when-not-in-of-keys
-           treeset::in-of-arg1-and-empty
+           tset::in-of-arg1-and-empty
            from-iter-of-iter-max
            after-of-iter-max
            entry-key-of-iter-max

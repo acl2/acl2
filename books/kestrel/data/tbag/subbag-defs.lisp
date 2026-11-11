@@ -6,7 +6,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "internal/subbag-defs")
 (include-book "bag-defs")
@@ -17,7 +17,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; As in treeset's subset-defs: std::defredundant cannot reproduce a
+;; As in tset's subset-defs: std::defredundant cannot reproduce a
 ;; guard-verified define-sk, so the quantified form is stated here with its
 ;; guards verified separately.
 

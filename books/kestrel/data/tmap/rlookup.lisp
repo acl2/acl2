@@ -6,17 +6,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEMAP")
+(in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/to-oset-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 (include-book "kestrel/data/utilities/omap-defs" :dir :system)
 
 (include-book "internal/tree-defs")
@@ -33,10 +33,10 @@
 
 (local (include-book "std/omaps/core" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/to-oset" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/keys"))
@@ -55,8 +55,8 @@
 (define rlookup
   (val
    (map mapp))
-  :returns (keys treeset::setp)
-  :parents (treemap)
+  :returns (keys tset::setp)
+  :parents (tmap)
   :short "Lookup all keys associated to a value."
   :long
   (xdoc::topstring-p
@@ -79,47 +79,47 @@
 (defruled rlookup-when-emptyp
   (implies (emptyp map)
            (equal (rlookup val map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable (rlookup
            break-abstraction))
 
 (defrule rlookup-when-emptyp-cheap
   (implies (emptyp map)
            (equal (rlookup val map)
-                  (treeset::empty)))
+                  (tset::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by rlookup-when-emptyp)
 
 (defruled rlookup-of-empty
   (equal (rlookup val (empty))
-         (treeset::empty))
+         (tset::empty))
   :enable rlookup-when-emptyp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled in-of-keys-when-in-of-rlookup
-  (implies (treeset::in key (rlookup val map))
-           (treeset::in key (keys map)))
+  (implies (tset::in key (rlookup val map))
+           (tset::in key (keys map)))
   :enable (rlookup
            keys))
 
 (defrule in-of-keys-when-in-of-rlookup-forward-chaining
-  (implies (treeset::in key (rlookup val map))
-           (treeset::in key (keys map)))
+  (implies (tset::in key (rlookup val map))
+           (tset::in key (keys map)))
   :rule-classes :forward-chaining
   :by in-of-keys-when-in-of-rlookup)
 
 (defrule subset-of-rlookup-tree-and-keys
-  (treeset::subset (rlookup val map)
-                   (keys map))
+  (tset::subset (rlookup val map)
+                (keys map))
   :enable (rlookup
            keys))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-rlookup
-  (equal (treeset::in key (rlookup val map))
-         (and (treeset::in key (keys map))
+  (equal (tset::in key (rlookup val map))
+         (and (tset::in key (keys map))
               (equal (lookup key map) val)))
   :enable (rlookup
            lookup
@@ -127,26 +127,26 @@
            break-abstraction))
 
 (defrule emptyp-of-rlookup
-  (equal (treeset::emptyp (rlookup val map))
-         (not (treeset::in val (values map))))
+  (equal (tset::emptyp (rlookup val map))
+         (not (tset::in val (values map))))
   :enable (rlookup
            values))
 
 (defrule emptyp-of-rlookup-when-in-of-values-forward-chaining
-  (implies (treeset::in val (values map))
-           (not (treeset::emptyp (rlookup val map))))
+  (implies (tset::in val (values map))
+           (not (tset::emptyp (rlookup val map))))
   :rule-classes :forward-chaining)
 
 (defrule emptyp-of-rlookup-when-not-in-of-values-forward-chaining
-  (implies (not (treeset::in val (values map)))
-           (treeset::emptyp (rlookup val map)))
+  (implies (not (tset::in val (values map)))
+           (tset::emptyp (rlookup val map)))
   :rule-classes :forward-chaining)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule rlookup-of-to-omap
   (equal (omap::rlookup val (to-omap map))
-         (treeset::to-oset (rlookup val map)))
+         (tset::to-oset (rlookup val map)))
   :enable (to-omap
            rlookup
            break-abstraction))
@@ -155,6 +155,6 @@
 
 (defruled rlookup-becomes-omap-rlookup
   (equal (rlookup val map)
-         (treeset::from-oset (omap::rlookup val (to-omap map)))))
+         (tset::from-oset (omap::rlookup val (to-omap map)))))
 
 (add-to-ruleset to-omap-theory '(rlookup-becomes-omap-rlookup))

@@ -291,7 +291,7 @@
                (new-fn fundefp
                        "The new function definition."))
   (b* (((mv idents -)
-        (free-vars-block-item-list items (treeset::empty)))
+        (free-vars-block-item-list items (tset::empty)))
        (decls (ident-param-declon-map-filter decls idents))
        (idents (omap::keys decls))
        ;; We use strip-cdrs instead of omap::values because we need these in
@@ -322,7 +322,7 @@
            nil)
           ((mv key val)
            (omap::head map)))
-       (if (treeset::in key idents)
+       (if (tset::in key idents)
            (omap::update key
                          val
                          (ident-param-declon-map-filter (omap::tail map) idents))

@@ -6,11 +6,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "TREEBAG")
+(in-package "TBAG")
 
 (include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "bag-defs")
 (include-book "count-defs")

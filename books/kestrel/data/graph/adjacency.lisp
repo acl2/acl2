@@ -12,10 +12,10 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -25,11 +25,11 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/lookup" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/lookup" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -43,7 +43,7 @@
 
 (define adjacency (node (graph graphp))
   :type-prescription :none
-  :returns (adj treemap::mapp
+  :returns (adj tmap::mapp
                 :hints (("Goal" :in-theory (enable* break-abstraction))))
   :parents (graph)
   :short "The targets of the edges out of a node of a @(see graph), with their
@@ -52,16 +52,16 @@
   (xdoc::topstring
     (xdoc::p
       "This is a "
-      (xdoc::seetopic "acl2::treemap" "treemap")
+      (xdoc::seetopic "acl2::tmap" "tmap")
       " from each target of an edge out of the node to the nonempty "
-      (xdoc::seetopic "acl2::treeset" "treeset")
+      (xdoc::seetopic "acl2::tset" "tset")
       " of labels on the edges to it. The graph stores this map for each node,
        so it is returned without being constructed. A value which is not a
        node has the empty map, as does a node with no outgoing edges.")
     (xdoc::p
       "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
        nodes."))
-  (treemap::lookup node (fix graph) :default (treemap::empty))
+  (tmap::lookup node (fix graph) :default (tmap::empty))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
@@ -75,16 +75,16 @@
   :enable adjacency)
 
 (defruled adjacency-when-not-in-of-nodes
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (adjacency node graph)
-                  (treemap::empty)))
+                  (tmap::empty)))
   :enable (adjacency
            nodes))
 
 (defrule adjacency-when-not-in-of-nodes-cheap
-  (implies (not (treeset::in node (nodes graph)))
+  (implies (not (tset::in node (nodes graph)))
            (equal (adjacency node graph)
-                  (treemap::empty)))
+                  (tmap::empty)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by adjacency-when-not-in-of-nodes)
 
@@ -92,7 +92,7 @@
 
 (define labels (from to (graph graphp))
   :type-prescription :none
-  :returns (labels treeset::setp
+  :returns (labels tset::setp
                    :hints (("Goal" :in-theory (enable* adjacency
                                                        break-abstraction))))
   :parents (graph)
@@ -103,7 +103,7 @@
     "The set is empty when there is no such edge. Time complexity:
      @($O(\\log(n) + \\log(d))$), where @($n$) is the number of nodes and
      @($d$) the number of successors of @('from').")
-  (treemap::lookup to (adjacency from graph) :default (treeset::empty))
+  (tmap::lookup to (adjacency from graph) :default (tset::empty))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -117,15 +117,15 @@
 
 ;; The value at a target of an adjacency is the set of labels of the edges to
 ;; it, which is written as labels. An absent target may be read with either
-;; empty default, @('nil') or @('(treeset::empty)').
+;; empty default, @('nil') or @('(tset::empty)').
 
 (defrule lookup-of-adjacency
-  (implies (and (treeset::setp default)
-                (treeset::emptyp (double-rewrite default)))
-           (equal (treemap::lookup to (adjacency from graph) :default default)
+  (implies (and (tset::setp default)
+                (tset::emptyp (double-rewrite default)))
+           (equal (tmap::lookup to (adjacency from graph) :default default)
                   (labels from to graph)))
   :enable (labels
-           treeset::emptyp-alt-definition))
+           tset::emptyp-alt-definition))
 
 (theory-invariant (incompatible! (:definition labels$inline)
                                  (:rewrite lookup-of-adjacency)))
@@ -137,8 +137,8 @@
 ;; them.
 
 (defrule in-of-labels
-  (equal (treeset::in label (labels from to graph))
-         (treeset::in (edge from to label) (edges graph)))
+  (equal (tset::in label (labels from to graph))
+         (tset::in (edge from to label) (edges graph)))
   :enable (labels
            adjacency
            edges
@@ -160,10 +160,10 @@
     (xdoc::p
       "This is a convenient abbreviation, not the logical normal form used by
        this library. It is enabled, so @('(edge-in from to label graph)')
-       becomes @('(treeset::in (edge from to label) (edges graph))'). Unlike
+       becomes @('(tset::in (edge from to label) (edges graph))'). Unlike
        that form, it does not construct the edge set when executed."))
-  (mbe :logic (treeset::in (edge from to label) (edges graph))
-       :exec (treeset::in label (labels from to graph)))
+  (mbe :logic (tset::in (edge from to label) (edges graph))
+       :exec (tset::in label (labels from to graph)))
   :enabled t
   :inline t)
 
@@ -183,7 +183,7 @@
       "Time complexity: @($O(\\log(n))$), where @($n$) is the number of
        nodes."))
   (mbe :logic (adjacency node graph)
-       :exec (treemap::lookup! node graph))
+       :exec (tmap::lookup! node graph))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* adjacency
