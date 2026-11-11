@@ -110,8 +110,9 @@
 ; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
 ; for the '__float...' and '_Float...' types.
 
-; We include the GCC extension for the 'typeof' operator,
-; along with its '__typeof' and '__typeof__' variants.
+; We include the 'typeof' operator, which is standard in C23
+; and a GCC extension in earlier versions of C,
+; along with its GCC variants '__typeof' and '__typeof__'.
 ; This is documented at https://gcc.gnu.org/onlinedocs/gcc/Typeof.html.
 ; This must fit into the grammar as a type specifier.
 

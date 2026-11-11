@@ -2001,8 +2001,10 @@
       "As a GCC extension, we allow a structure type specifier with no members,
        and with an optional name; see the ABNF grammar.")
      (xdoc::p
-      "As a GCC extension, we include @('typeof'),
-       along with its variants @('__typeof') and @('__typeof__').
+      "We include @('typeof'),
+       which is standard in C23 [C23:6.7.3.6]
+       and a GCC extension in earlier versions of C,
+       along with its GCC variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
        and therefore we also need to include the ambiguous possibility.")
      (xdoc::p
