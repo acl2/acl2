@@ -33,26 +33,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc extensionality
-  :parents (tbag)
-  :short "Extensional equality of @(see tbag)s."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This definition is equivalent to @(see tbag) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule.")
-    (xdoc::p
-      "A bag is determined by its multiplicities alone, with no side condition
-       on which elements are present: an element absent from the bag and an
-       element of multiplicity zero are the same thing, since @(tsee count)
-       reads zero for an absent element and no element is bound to zero. This
-       is the one place the representation invariant is visible from outside,
-       and it is what lets a single quantifier do the work that @(see
-       tmap::extensionality) needs two for.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; A lookup in the underlying tmap, read through count. An element is bound
 ;; exactly when its count is positive, since no element is bound to zero.
 
@@ -192,6 +172,22 @@
            (equal (equal x y)
                   (equal (count (ext-equal-witness x y) x)
                          (count (ext-equal-witness x y) y))))
+  :parents (tbag)
+  :short "Extensional equality of @(see tbag)s."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "This definition is equivalent to @(see tbag) equality. It is often
+       useful to prove equality by rewriting to this quantifier-based form.
+       To do so, just enable the @('extensionality') rule.")
+    (xdoc::p
+      "A bag is determined by its multiplicities alone, with no side condition
+       on which elements are present: an element absent from the bag and an
+       element of multiplicity zero are the same thing, since @(tsee count)
+       reads zero for an absent element and no element is bound to zero. This
+       is the one place the representation invariant is visible from outside,
+       and it is what lets a single quantifier do the work that @(see
+       tmap::extensionality) needs two for."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by extensionality-no-backchain-limit)
 

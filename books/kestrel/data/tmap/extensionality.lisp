@@ -31,18 +31,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc extensionality
-  :parents (tmap)
-  :short "Extensional equality of @(see tmap)s."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This definition is equivalent to @(see tmap) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk ext-equal (x y)
   :parents (extensionality)
   (forall (key default)
@@ -169,6 +157,14 @@
                           (ext-equal-witness x y)
                     (equal (lookup arbitrary-key x :default default)
                            (lookup arbitrary-key y :default default)))))
+  :parents (tmap)
+  :short "Extensional equality of @(see tmap)s."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "This definition is equivalent to @(see tmap) equality. It is often
+       useful to prove equality by rewriting to this quantifier-based form.
+       To do so, just enable the @('extensionality') rule."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by extensionality-no-backchain-limit)
 

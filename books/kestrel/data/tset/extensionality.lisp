@@ -29,18 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc extensionality
-  :parents (tset)
-  :short "Extensional equality of @(see tset)s."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "This definition is equivalent to @(see tset) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define-sk ext-equal (x y)
   :parents (extensionality)
   (forall (elem)
@@ -164,6 +152,14 @@
                   (let ((arbitrary-elem (ext-equal-witness x y)))
                     (equal (in arbitrary-elem x)
                            (in arbitrary-elem y)))))
+  :parents (tset)
+  :short "Extensional equality of @(see tset)s."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "This definition is equivalent to @(see tset) equality. It is often
+       useful to prove equality by rewriting to this quantifier-based form.
+       To do so, just enable the @('extensionality') rule."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by extensionality-no-backchain-limit)
 

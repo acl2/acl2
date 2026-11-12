@@ -29,23 +29,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc cursor-extensionality
-  :parents (cursor)
-  :short "A @(see cursor) is determined by what is before it, what it is at,
-          and what is after it."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Two cursors are equal exactly when they agree on @(tsee entryp), @(tsee
-      before), @(tsee entry), and @(tsee after). Equalities between cursors
-      are proved by enabling the @('cursor-extensionality') rule.")
-   (xdoc::p
-     "Two cursors at entries are also equal exactly when they agree on @(tsee
-      from-cursor) and @(tsee entry). This is the
-      @('cursor-extensionality-when-entryp') rule.")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defruledl equal-of-from-cursor-when-equal-of-view
   (implies (and (equal (entryp x) (entryp y))
                 (equal (before x) (before y))
@@ -96,6 +79,19 @@
                        (equal (before x$) (before y$))
                        (equal (entry x$) (entry y$))
                        (equal (after x$) (after y$)))))
+  :parents (cursor)
+  :short "A @(see cursor) is determined by what is before it, what it is at,
+          and what is after it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Two cursors are equal exactly when they agree on @(tsee entryp), @(tsee
+      before), @(tsee entry), and @(tsee after). Equalities between cursors
+      are proved by enabling the @('cursor-extensionality') rule.")
+   (xdoc::p
+     "Two cursors at entries are also equal exactly when they agree on @(tsee
+      from-cursor) and @(tsee entry). This is the
+      @('cursor-extensionality-when-entryp') rule."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1 nil nil)))
   :by cursor-extensionality-no-backchain-limit)
 
