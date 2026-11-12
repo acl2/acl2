@@ -192,8 +192,7 @@
   :cases ((entryp cursor))
   :enable (next
            prev
-           endp)
-  :disable after-when-endp-cheap)
+           endp))
 
 (defrule next-of-prev
   (implies (not (emptyp (before cursor)))
@@ -202,5 +201,4 @@
   :cases ((entryp cursor))
   :enable (next
            prev
-           beginp)
-  :disable before-when-beginp-cheap)
+           beginp))

@@ -141,12 +141,16 @@
   :enable (beginp
            emptyp-alt-definition))
 
-(defrule before-when-beginp-cheap
+(defruled emptyp-of-before-when-beginp
   (implies (beginp cursor)
-           (equal (before cursor)
-                  (empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by before-when-beginp)
+           (emptyp (before cursor)))
+  :enable beginp)
+
+(defrule emptyp-of-before-when-beginp-forward-chaining
+  (implies (beginp cursor)
+           (emptyp (before cursor)))
+  :rule-classes :forward-chaining
+  :by emptyp-of-before-when-beginp)
 
 (defruled after-when-endp
   (implies (endp cursor)
@@ -155,12 +159,16 @@
   :enable (endp
            emptyp-alt-definition))
 
-(defrule after-when-endp-cheap
+(defruled emptyp-of-after-when-endp
   (implies (endp cursor)
-           (equal (after cursor)
-                  (empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by after-when-endp)
+           (emptyp (after cursor)))
+  :enable endp)
+
+(defrule emptyp-of-after-when-endp-forward-chaining
+  (implies (endp cursor)
+           (emptyp (after cursor)))
+  :rule-classes :forward-chaining
+  :by emptyp-of-after-when-endp)
 
 (defruled after-when-beginp
   (implies (beginp cursor)
@@ -189,6 +197,34 @@
                   (from-cursor cursor)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by before-when-endp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-emptyp-of-before-when-not-beginp-and-not-entryp
+  (implies (and (not (beginp cursor))
+                (not (entryp cursor)))
+           (not (emptyp (before cursor))))
+  :enable beginp)
+
+(defrule not-emptyp-of-before-when-not-beginp-and-not-entryp-forward-chaining
+  (implies (and (not (beginp cursor))
+                (not (entryp cursor)))
+           (not (emptyp (before cursor))))
+  :rule-classes :forward-chaining
+  :by not-emptyp-of-before-when-not-beginp-and-not-entryp)
+
+(defruled not-emptyp-of-after-when-not-endp-and-not-entryp
+  (implies (and (not (endp cursor))
+                (not (entryp cursor)))
+           (not (emptyp (after cursor))))
+  :enable endp)
+
+(defrule not-emptyp-of-after-when-not-endp-and-not-entryp-forward-chaining
+  (implies (and (not (endp cursor))
+                (not (entryp cursor)))
+           (not (emptyp (after cursor))))
+  :rule-classes :forward-chaining
+  :by not-emptyp-of-after-when-not-endp-and-not-entryp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -250,11 +286,13 @@
 
 (defrule before-of-begin
   (equal (before (begin set))
-         (empty)))
+         (empty))
+  :enable before-when-beginp)
 
 (defrule after-of-end
   (equal (after (end set))
-         (empty)))
+         (empty))
+  :enable after-when-endp)
 
 (defrule after-of-begin
   (equal (after (begin set))
@@ -309,7 +347,11 @@
     not-beginp-when-entryp
     not-endp-when-entryp
     before-when-beginp
+    emptyp-of-before-when-beginp
     after-when-endp
+    emptyp-of-after-when-endp
     after-when-beginp
     before-when-endp
+    not-emptyp-of-before-when-not-beginp-and-not-entryp
+    not-emptyp-of-after-when-not-endp-and-not-entryp
     emptyp-of-from-cursor-when-beginp-and-endp))

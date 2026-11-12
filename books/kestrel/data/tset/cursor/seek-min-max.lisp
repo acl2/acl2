@@ -204,12 +204,16 @@
   :enable (minp
            emptyp-alt-definition))
 
-(defrule before-when-minp-cheap
+(defruled emptyp-of-before-when-minp
   (implies (minp cursor)
-           (equal (before cursor)
-                  (empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by before-when-minp)
+           (emptyp (before cursor)))
+  :enable minp)
+
+(defrule emptyp-of-before-when-minp-forward-chaining
+  (implies (minp cursor)
+           (emptyp (before cursor)))
+  :rule-classes :forward-chaining
+  :by emptyp-of-before-when-minp)
 
 (defruled after-when-maxp
   (implies (maxp cursor)
@@ -218,12 +222,44 @@
   :enable (maxp
            emptyp-alt-definition))
 
-(defrule after-when-maxp-cheap
+(defruled emptyp-of-after-when-maxp
   (implies (maxp cursor)
-           (equal (after cursor)
-                  (empty)))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by after-when-maxp)
+           (emptyp (after cursor)))
+  :enable maxp)
+
+(defrule emptyp-of-after-when-maxp-forward-chaining
+  (implies (maxp cursor)
+           (emptyp (after cursor)))
+  :rule-classes :forward-chaining
+  :by emptyp-of-after-when-maxp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-emptyp-of-before-when-not-minp-and-entryp
+  (implies (and (not (minp cursor))
+                (entryp cursor))
+           (not (emptyp (before cursor))))
+  :enable minp)
+
+(defrule not-emptyp-of-before-when-not-minp-and-entryp-forward-chaining
+  (implies (and (not (minp cursor))
+                (entryp cursor))
+           (not (emptyp (before cursor))))
+  :rule-classes :forward-chaining
+  :by not-emptyp-of-before-when-not-minp-and-entryp)
+
+(defruled not-emptyp-of-after-when-not-maxp-and-entryp
+  (implies (and (not (maxp cursor))
+                (entryp cursor))
+           (not (emptyp (after cursor))))
+  :enable maxp)
+
+(defrule not-emptyp-of-after-when-not-maxp-and-entryp-forward-chaining
+  (implies (and (not (maxp cursor))
+                (entryp cursor))
+           (not (emptyp (after cursor))))
+  :rule-classes :forward-chaining
+  :by not-emptyp-of-after-when-not-maxp-and-entryp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -307,4 +343,8 @@
     not-minp-when-not-entryp
     not-maxp-when-not-entryp
     before-when-minp
-    after-when-maxp))
+    emptyp-of-before-when-minp
+    after-when-maxp
+    emptyp-of-after-when-maxp
+    not-emptyp-of-before-when-not-minp-and-entryp
+    not-emptyp-of-after-when-not-maxp-and-entryp))

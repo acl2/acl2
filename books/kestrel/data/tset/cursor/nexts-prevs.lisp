@@ -82,19 +82,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule nexts-equal-0
+(defruled equal-of-nexts-and-0-becomes-endp
   (equal (equal (nexts cursor) 0)
          (endp cursor))
   :enable (nexts
            endp
            equal-of-cardinality-and-0-becomes-emptyp))
 
-(defrule prevs-equal-0
+(defrule nexts-when-endp-forward-chaining
+  (implies (endp cursor)
+           (equal (nexts cursor) 0))
+  :rule-classes :forward-chaining
+  :enable equal-of-nexts-and-0-becomes-endp)
+
+(defrule endp-when-equal-nexts-and-0-forward-chaining
+  (implies (equal (nexts cursor) 0)
+           (endp cursor))
+  :rule-classes :forward-chaining
+  :enable equal-of-nexts-and-0-becomes-endp)
+
+(defrule nexts-when-not-endp-type-prescription
+  (implies (not (endp cursor))
+           (and (integerp (nexts cursor))
+                (< 0 (nexts cursor))))
+  :rule-classes :type-prescription
+  :enable equal-of-nexts-and-0-becomes-endp)
+
+(defruled nexts-when-not-endp-linear
+  (implies (not (endp cursor))
+           (< 0 (nexts cursor)))
+  :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-of-prevs-and-0-becomes-beginp
   (equal (equal (prevs cursor) 0)
          (beginp cursor))
   :enable (prevs
            beginp
            equal-of-cardinality-and-0-becomes-emptyp))
+
+(defrule prevs-when-beginp-forward-chaining
+  (implies (beginp cursor)
+           (equal (prevs cursor) 0))
+  :rule-classes :forward-chaining
+  :enable equal-of-prevs-and-0-becomes-beginp)
+
+(defrule beginp-when-equal-prevs-and-0-forward-chaining
+  (implies (equal (prevs cursor) 0)
+           (beginp cursor))
+  :rule-classes :forward-chaining
+  :enable equal-of-prevs-and-0-becomes-beginp)
+
+(defrule prevs-when-not-beginp-type-prescription
+  (implies (not (beginp cursor))
+           (and (integerp (prevs cursor))
+                (< 0 (prevs cursor))))
+  :rule-classes :type-prescription
+  :enable equal-of-prevs-and-0-becomes-beginp)
+
+(defruled prevs-when-not-beginp-linear
+  (implies (not (beginp cursor))
+           (< 0 (prevs cursor)))
+  :rule-classes :linear)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -187,5 +237,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy nexts-prevs-extra-rules
-  '(nexts-of-seek-max
+  '(nexts-when-not-endp-linear
+    prevs-when-not-beginp-linear
+    nexts-of-seek-max
     prevs-of-seek-min))
