@@ -43,6 +43,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-forward ((cursor cursorp))
+  :type-prescription :none
   :returns (cursor$ cursorp
                     :hints (("Goal" :in-theory (enable* cursorp
                                                         break-abstraction))))
@@ -63,6 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-backward ((cursor cursorp))
+  :type-prescription :none
   :returns (cursor$ cursorp
                     :hints (("Goal" :in-theory (enable* cursorp
                                                         break-abstraction))))
@@ -81,8 +83,6 @@
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t step-forward) (:t step-backward)))
 
 (defrule step-forward-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)

@@ -34,7 +34,7 @@
 
 (define setp (x)
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tset)
   :short "Recognizer for @(see tset)s."
   :long
@@ -46,10 +46,6 @@
        (heapp x)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule setp-type-prescription
-  (booleanp (setp x))
-  :rule-classes ((:type-prescription :typed-term (setp x))))
 
 (defruled setp-compound-recognizer
   (if (setp set)
@@ -104,6 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
+  :type-prescription :none
   :returns (set setp)
   :parents (tset)
   :short "The empty @(see tset)."
@@ -112,9 +109,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t empty) (:e empty)))
+(in-theory (disable (:e empty)))
 
-(add-to-ruleset break-abstraction '((:t empty)))
+(defruled empty-type-prescription
+  (equal (empty) nil)
+  :rule-classes ((:type-prescription :typed-term (empty)))
+  :enable empty)
+
+(add-to-ruleset break-abstraction '(empty-type-prescription))
 
 (defruled treep-of-empty
   (treep (empty))
@@ -206,7 +208,7 @@
   ((x setp)
    (y setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tset)
   :short "Equivalence up to @(tsee fix)."
   (equal (fix x)
@@ -217,10 +219,6 @@
   (defequiv equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule equiv-type-prescription
-  (booleanp (equiv x y))
-  :rule-classes ((:type-prescription :typed-term (equiv x y))))
 
 (defruled equiv-when-tree-equiv-refinement
   (implies (tree-equiv tree0 tree1)
@@ -250,7 +248,7 @@
 
 (define emptyp ((set setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tset)
   :short "Check if a @(see tset) is empty."
   (tree-empty-p (fix set))
@@ -258,10 +256,6 @@
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule emptyp-type-prescription
-  (booleanp (emptyp set))
-  :rule-classes ((:type-prescription :typed-term (emptyp set))))
 
 (defruled emptyp-compound-recognizer
   (implies (not (emptyp set))
@@ -322,6 +316,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head ((set setp))
+  :type-prescription :none
   :guard (not (emptyp set))
   :parents (tset)
   :short "Get an element of the nonempty @(see tset)."
@@ -368,43 +363,25 @@
 
 (define set-all-acl2-numberp ((set setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (tree-all-acl2-numberp (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-acl2-numberp-type-prescription
-  (booleanp (set-all-acl2-numberp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-acl2-numberp set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-symbolp ((set setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (tree-all-symbolp (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-symbolp-type-prescription
-  (booleanp (set-all-symbolp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-symbolp set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-eqlablep ((set setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (tree-all-eqlablep (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-eqlablep-type-prescription
-  (booleanp (set-all-eqlablep set))
-  :rule-classes ((:type-prescription :typed-term (set-all-eqlablep set))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -412,6 +389,7 @@
 ;; simultaneously).
 
 (define acl2-number-setp (x)
+  :type-prescription :none
   :parents (setp)
   :short "Refinement of @(tsee setp) to sets whose elements are recognized by
           @(tsee acl2-numberp)."
@@ -420,6 +398,7 @@
   :enabled t)
 
 (define symbol-setp (x)
+  :type-prescription :none
   :parents (setp)
   :short "Refinement of @(tsee setp) to sets whose elements are recognized by
           @(tsee symbolp)."
@@ -428,6 +407,7 @@
   :enabled t)
 
 (define eqlable-setp (x)
+  :type-prescription :none
   :parents (setp)
   :short "Refinement of @(tsee setp) to sets whose elements are recognized by
           @(tsee eqlablep)."

@@ -47,6 +47,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-delete-induction (map)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)
       (head-delete-induction (delete (head-key map) map)))
@@ -58,6 +60,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define head-delete-bi-induction (x y)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp x)
       (emptyp y)
@@ -71,6 +75,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min-delete-induction (map)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)
       (min-delete-induction (delete (min-key map) map)))
@@ -82,6 +88,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define max-delete-induction (map)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)
       (max-delete-induction (delete (max-key map) map)))

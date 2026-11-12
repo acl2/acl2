@@ -42,6 +42,7 @@
 (define cons-all-r
   (x
    (set setp))
+  :type-prescription :none
   :returns (set setp)
   :parents (product)
   :short "Cons an element to each element of a @(see tset)."
@@ -121,6 +122,7 @@
 (define product
   ((x setp)
    (y setp))
+  :type-prescription :none
   :returns (set setp)
   :parents (tset)
   :short "Create the Cartesian product of two @(see tset)s."

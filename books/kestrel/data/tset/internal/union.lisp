@@ -46,6 +46,7 @@
 (define tree-union
   ((x treep)
    (y treep))
+  :type-prescription :none
   :parents (implementation)
   :short "Take the union of two treaps."
   :long
@@ -180,6 +181,7 @@
 (define acl2-number-tree-union
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-union x y)
        :exec
        (cond ((tree-empty-p x)
@@ -216,6 +218,7 @@
 (define symbol-tree-union
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-union x y)
        :exec
        (cond ((tree-empty-p x)
@@ -250,6 +253,7 @@
 (define eqlable-tree-union
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-union x y)
        :exec
        (cond ((tree-empty-p x)

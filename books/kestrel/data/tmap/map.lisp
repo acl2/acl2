@@ -34,7 +34,7 @@
 
 (define mapp (x)
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Recognizer for @(see tmap)s."
   :long
@@ -46,10 +46,6 @@
        (heapp x)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule mapp-type-prescription
-  (booleanp (mapp x))
-  :rule-classes ((:type-prescription :typed-term (mapp x))))
 
 (defruled mapp-compound-recognizer
   (if (mapp map)
@@ -104,6 +100,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
+  :type-prescription :none
   :returns (map mapp)
   :parents (tmap)
   :short "The empty @(see tmap)."
@@ -112,9 +109,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t empty) (:e empty)))
+(in-theory (disable (:e empty)))
 
-(add-to-ruleset break-abstraction '((:t empty)))
+(defruled empty-type-prescription
+  (equal (empty) nil)
+  :rule-classes ((:type-prescription :typed-term (empty)))
+  :enable empty)
+
+(add-to-ruleset break-abstraction '(empty-type-prescription))
 
 (defruled treep-of-empty
   (treep (empty))
@@ -206,7 +208,7 @@
   ((x mapp)
    (y mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Equivalence up to @(tsee fix)."
   (equal (fix x)
@@ -217,10 +219,6 @@
   (defequiv equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule equiv-type-prescription
-  (booleanp (equiv x y))
-  :rule-classes ((:type-prescription :typed-term (equiv x y))))
 
 (defruled equiv-when-tree-equiv-refinement
   (implies (tree-equiv tree0 tree1)
@@ -250,7 +248,7 @@
 
 (define emptyp ((map mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Check if a @(see tmap) is empty."
   (tree-empty-p (fix map))
@@ -258,10 +256,6 @@
   :guard-hints (("Goal" :in-theory (enable mapp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule emptyp-type-prescription
-  (booleanp (emptyp map))
-  :rule-classes ((:type-prescription :typed-term (emptyp map))))
 
 (defruled emptyp-compound-recognizer
   (implies (not (emptyp map))
@@ -322,6 +316,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-key ((map mapp))
+  :type-prescription :none
   :guard (not (emptyp map))
   :parents (tmap)
   :short "Get a key from the nonempty @(see tmap)."

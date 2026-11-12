@@ -92,6 +92,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((graph graphp))
+  :type-prescription :none
   :parents (graph)
   :short "Check if a @(see graph) has no nodes."
   :long
@@ -113,6 +114,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define node-in (node (graph graphp))
+  :type-prescription :none
   :parents (graph)
   :short "Check if a value is a node of a @(see graph)."
   :long

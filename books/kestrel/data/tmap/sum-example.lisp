@@ -67,6 +67,7 @@
 (define sum-loop
   ((iter iterp)
    (acc acl2-numberp))
+  :type-prescription :none
   :guard (not (before-firstp iter))
   :returns (result acl2-numberp :rule-classes :type-prescription)
   :parents (sum)
@@ -80,13 +81,10 @@
                  (acl2::fix (entry-val iter))
                  acc))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t sum-loop)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sum ((map mapp))
+  :type-prescription :none
   :returns (result acl2-numberp :rule-classes :type-prescription)
   :parents (tmap)
   :short "The sum of the keys and values of a @(see tmap)."
@@ -115,8 +113,6 @@
        :exec (sum-loop (iter-min map) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t sum)))
 
 (defruled sum-when-emptyp
   (implies (emptyp (double-rewrite map))

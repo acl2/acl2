@@ -48,6 +48,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define values ((map mapp))
+  :type-prescription :none
   :returns (values tset::setp)
   :parents (tmap)
   :short "Get the value @(see acl2::tset) from a @(see tmap)."

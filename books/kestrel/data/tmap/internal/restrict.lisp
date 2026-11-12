@@ -257,6 +257,7 @@
 (define acl2-number-tree-restrict
   ((keys tset::acl2-number-treep)
    (tree acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-restrict keys tree)
        :exec
        (cond ((or (tset::tree-empty-p keys)
@@ -315,6 +316,7 @@
 (define symbol-tree-restrict
   ((keys tset::symbol-treep)
    (tree symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-restrict keys tree)
        :exec
        (cond ((or (tset::tree-empty-p keys)
@@ -373,6 +375,7 @@
 (define eqlable-tree-restrict
   ((keys tset::eqlable-treep)
    (tree eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-restrict keys tree)
        :exec
        (cond ((or (tset::tree-empty-p keys)

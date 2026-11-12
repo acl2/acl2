@@ -94,6 +94,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-bytes (st (bytes byte-listp))
+  :type-prescription :none
   :short "Fold the constrained step function over a byte list."
   :returns (st$ statep)
   (if (endp bytes)
@@ -102,8 +103,6 @@
                   (cdr bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t update-bytes)))
 
 (defrule update-bytes-of-state-fix
   (equal (update-bytes (state-fix st) bytes)

@@ -193,6 +193,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define adjacentp (from to (graph graphp))
+  :type-prescription :none
   :parents (graph)
   :short "Check if there is an edge from one node of a @(see graph) to
           another."
@@ -331,6 +332,7 @@
   ((frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
+  :type-prescription :none
   :returns (closure tset::setp)
   :parents (successors+)
   :short "Expand nodes from a frontier, each at most once, and return the

@@ -93,6 +93,7 @@
 (define diff$inline
   ((x setp)
    (y setp))
+  :type-prescription :none
   :returns (set setp
                 :hints (("Goal" :in-theory (enable setp
                                                    fix
@@ -104,8 +105,6 @@
   (add-macro-fn diff diff$inline))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t diff)))
 
 (defruled diff-type-prescription
   (or (consp (diff x y))
@@ -508,6 +507,7 @@
 (define diff-=
   ((x acl2-number-setp)
    (y acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (diff x y)
        :exec (acl2-number-tree-diff x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -519,6 +519,7 @@
 (define diff-eq
   ((x symbol-setp)
    (y symbol-setp))
+  :type-prescription :none
   (mbe :logic (diff x y)
        :exec (symbol-tree-diff x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
@@ -530,6 +531,7 @@
 (define diff-eql
   ((x eqlable-setp)
    (y eqlable-setp))
+  :type-prescription :none
   (mbe :logic (diff x y)
        :exec (eqlable-tree-diff x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction

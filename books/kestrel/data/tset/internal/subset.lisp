@@ -224,15 +224,12 @@
 
 (define-sk tree-subset-p-sk (x y)
   :parents (implementation)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
     (non-exec
       (implies (tree-in elem x)
                (tree-in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-subset-p-sk)))
 
 (defruled tree-subset-p-sk-of-tree->left
   (implies (tree-subset-p-sk x y)
@@ -314,7 +311,8 @@
 (define fast-tree-subset-p
   ((x treep)
    (y treep))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree-subset-p)
   :short "Fast subset check."
   (cond ((tree-empty-p x) t)
@@ -358,6 +356,7 @@
 (define acl2-number-fast-tree-subset-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec
@@ -380,6 +379,7 @@
 (define symbol-fast-tree-subset-p
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec
@@ -402,6 +402,7 @@
 (define eqlable-fast-tree-subset-p
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec

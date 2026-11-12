@@ -83,7 +83,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-p (x)
-  (declare (xargs :type-prescription (booleanp (zip-frame-p x))))
+  :type-prescription (booleanp (zip-frame-p x))
   :short "Recognizer for zipper path frames."
   :long
   (xdoc::topstring
@@ -197,7 +197,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->from-left ((frame zip-frame-p))
-  :returns (from-left booleanp
+  :type-prescription :none
+  :returns (from-left booleanp :rule-classes :type-prescription
                       :hints (("Goal" :in-theory (enable zip-frame-p
                                                          zip-frame-fix
                                                          irr-zip-frame))))
@@ -217,6 +218,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->elem ((frame zip-frame-p))
+  :type-prescription :none
   :returns (elem tree-element-p
                  :hints (("Goal" :in-theory (enable zip-frame-p
                                                     zip-frame-fix
@@ -238,6 +240,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->sibling ((frame zip-frame-p))
+  :type-prescription :none
   :returns (sibling treep
                     :hints (("Goal" :in-theory (enable zip-frame-p
                                                        zip-frame-fix
@@ -329,7 +332,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-listp (x)
-  (declare (xargs :type-prescription (booleanp (zip-frame-listp x))))
+  :type-prescription (booleanp (zip-frame-listp x))
   :short "Recognizer for lists of @(see zip-frame-p)s."
   :long
   (xdoc::topstring
@@ -371,6 +374,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-list-fix ((path zip-frame-listp))
+  :type-prescription :none
   :returns (path$ zip-frame-listp)
   :short "Fixer for @(see zip-frame-listp)s."
   (mbe :logic (if (zip-frame-listp path) path nil)
@@ -378,8 +382,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-frame-list-fix)))
 
 (defrule zip-frame-list-fix-when-zip-frame-listp
   (implies (zip-frame-listp path)
@@ -454,7 +456,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zipp (x)
-  (declare (xargs :type-prescription (booleanp (zipp x))))
+  :type-prescription (booleanp (zipp x))
   :short "Recognizer for @(see zipper)s."
   :long
   (xdoc::topstring
@@ -584,6 +586,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->focus ((zip zipp))
+  :type-prescription :none
   :returns (focus treep
                   :hints (("Goal" :in-theory (enable zipp
                                                      zip-fix
@@ -615,6 +618,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->path ((zip zipp))
+  :type-prescription :none
   :returns (path zip-frame-listp
                  :hints (("Goal" :in-theory (enable zipp
                                                     zip-fix
@@ -645,6 +649,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->nlefts ((zip zipp))
+  :type-prescription :none
   :returns (nlefts natp
                    :rule-classes :type-prescription
                    :hints (("Goal" :in-theory (enable zipp
@@ -679,6 +684,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->nrights ((zip zipp))
+  :type-prescription :none
   :returns (nrights natp
                     :rule-classes :type-prescription
                     :hints (("Goal" :in-theory (enable zipp
@@ -826,6 +832,7 @@
 (define zip-frame-plug
   ((frame zip-frame-p)
    (tree treep))
+  :type-prescription :none
   :returns (tree$ treep)
   :short "Rebuild the node of a frame, with the given tree in its hole."
   (if (zip-frame->from-left frame)
@@ -862,6 +869,7 @@
 (define zip-path-plug
   ((path zip-frame-listp)
    (tree treep))
+  :type-prescription :none
   :returns (tree$ treep)
   :short "Rebuild a tree by plugging it into a path, innermost frame first."
   (if (endp path)
@@ -870,8 +878,6 @@
                    (zip-frame-plug (car path) tree))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-path-plug)))
 
 (defrule zip-path-plug-when-tree-equiv-of-arg2-congruence
   (implies (tree-equiv tree0 tree1)
@@ -921,6 +927,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-plug ((zip zipp))
+  :type-prescription :none
   :returns (tree treep)
   :short "Recover the whole tree from a zipper."
   :long
@@ -933,8 +940,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-plug)))
 
 (defrule zip-plug-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1028,6 +1033,7 @@
 ;; which is what the plug rules below record.
 
 (define zip-descend-left ((zip zipp))
+  :type-prescription :none
   :guard (not (tree-empty-p (tree->left (zip->focus zip))))
   :returns (zip$ zipp)
   :short "Move the focus to the left child, pushing a frame."
@@ -1040,8 +1046,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-descend-left)))
 
 (defrule zip-descend-left-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1061,6 +1065,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-right ((zip zipp))
+  :type-prescription :none
   :guard (not (tree-empty-p (tree->right (zip->focus zip))))
   :returns (zip$ zipp)
   :short "Move the focus to the right child, pushing a frame."
@@ -1073,8 +1078,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-descend-right)))
 
 (defrule zip-descend-right-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1127,6 +1130,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-one ((zip zipp))
+  :type-prescription :none
   :guard (consp (zip->path zip))
   :returns (zip$ zipp)
   :short "Move the focus up to its parent, popping a frame."
@@ -1149,8 +1153,6 @@
                                            zip-count-rights))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-ascend-one)))
 
 (defrule zip-ascend-one-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1200,6 +1202,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-leftmost ((zip zipp))
+  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the leftmost node within it."
   :long
@@ -1213,8 +1216,6 @@
   :measure (acl2-count (zip->focus zip)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-descend-leftmost)))
 
 (defrule zip-descend-leftmost-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1233,6 +1234,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-rightmost ((zip zipp))
+  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the rightmost node within it."
   :long
@@ -1246,8 +1248,6 @@
   :measure (acl2-count (zip->focus zip)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-descend-rightmost)))
 
 (defrule zip-descend-rightmost-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1266,6 +1266,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-left-frame ((zip zipp))
+  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus up to the nearest ancestor that follows it."
   :long
@@ -1288,8 +1289,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t zip-ascend-to-left-frame)))
-
 (defrule zip-ascend-to-left-frame-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
            (equal (zip-ascend-to-left-frame zip0)
@@ -1307,6 +1306,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-right-frame ((zip zipp))
+  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus up to the nearest ancestor that precedes it."
   :long
@@ -1322,8 +1322,6 @@
   :measure (len (zip->path zip)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-ascend-to-right-frame)))
 
 (defrule zip-ascend-to-right-frame-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1383,6 +1381,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-next ((zip zipp))
+  :type-prescription :none
   :guard (not (zip-at-last-p zip))
   :returns (zip$ zipp)
   :short "Move the focus to the next element in order."
@@ -1415,8 +1414,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t zip-next)))
-
 (defrule zip-next-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
            (equal (zip-next zip0)
@@ -1432,6 +1429,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-prev ((zip zipp))
+  :type-prescription :none
   :guard (not (zip-at-first-p zip))
   :returns (zip$ zipp)
   :short "Move the focus to the previous element in order."
@@ -1453,8 +1451,6 @@
   :guard-hints (("Goal" :in-theory (enable zip-at-first-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-prev)))
 
 (defrule zip-prev-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -1716,6 +1712,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-root ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (zip zipp)
   :short "The zipper focused on a whole tree, with an empty path."
@@ -1723,8 +1720,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-root)))
 
 (defrule zip-root-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -1761,6 +1756,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-first ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (zip zipp)
   :short "The zipper focused on the first element of a tree."
@@ -1770,6 +1766,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-last ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (zip zipp)
   :short "The zipper focused on the last element of a tree."
@@ -1777,8 +1774,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-first) (:t zip-last)))
 
 (defrule zip-first-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -1900,6 +1895,7 @@
 
 
 (define zip-key ((zip zipp))
+  :type-prescription :none
   :short "The key at the focus."
   (tree-element->key (tree->head (zip->focus zip)))
   :inline t)
@@ -1916,6 +1912,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-val ((zip zipp))
+  :type-prescription :none
   :short "The value at the focus."
   (tree-element->val (tree->head (zip->focus zip)))
   :inline t)
@@ -1932,6 +1929,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-key+val ((zip zipp))
+  :type-prescription :none
   :short "The key and value at the focus, as a pair."
   :long
   (xdoc::topstring
@@ -1976,6 +1974,7 @@
 
 (define zip-path-tree-before ((path zip-frame-listp)
                               (acc treep))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements which precede the focus subtree, as a tree atop an
           accumulator."
@@ -1994,6 +1993,7 @@
 
 (define zip-path-tree-after ((path zip-frame-listp)
                              (acc treep))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements which follow the focus subtree, as a tree atop an
           accumulator."
@@ -2009,8 +2009,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-path-tree-before) (:t zip-path-tree-after)))
 
 (defrule zip-path-tree-before-when-tree-equiv-of-arg2-congruence
   (implies (tree-equiv acc0 acc1)
@@ -2031,6 +2029,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-tree-before ((zip zipp))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements which precede the cursor, as a tree."
   :long
@@ -2046,6 +2045,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-tree-after ((zip zipp))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements which follow the cursor, as a tree."
   :long
@@ -2059,8 +2059,6 @@
                        (tree->right (zip->focus zip))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-tree-before) (:t zip-tree-after)))
 
 (defrule zip-tree-before-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -2084,7 +2082,8 @@
 
 (local
   (define zip-path-before-rec ((path zip-frame-listp))
-    :returns (alist alistp)
+    :type-prescription :none
+    :returns (alist true-listp :rule-classes :type-prescription)
     :verify-guards nil
     (if (endp path)
         nil
@@ -2097,7 +2096,8 @@
 
 (local
   (define zip-path-after-rec ((path zip-frame-listp))
-    :returns (alist alistp)
+    :type-prescription :none
+    :returns (alist true-listp :rule-classes :type-prescription)
     :verify-guards nil
     (if (endp path)
         nil
@@ -2437,6 +2437,7 @@
 ;; form: statements phrased over them face the mature omap theory.
 
 (define zip-path-omap-before ((path zip-frame-listp))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries which precede the focus subtree, as an omap."
   (tree-omap (zip-path-tree-before path nil)))
@@ -2444,6 +2445,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-omap-after ((path zip-frame-listp))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries which follow the focus subtree, as an omap."
   (tree-omap (zip-path-tree-after path nil)))
@@ -2451,6 +2453,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-omap-before ((zip zipp))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries which precede the cursor, as an omap."
   (tree-omap (zip-path-tree-before (zip->path zip)
@@ -2459,15 +2462,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-omap-after ((zip zipp))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries which follow the cursor, as an omap."
   (tree-omap (zip-path-tree-after (zip->path zip)
                                   (tree->right (zip->focus zip)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-path-omap-before) (:t zip-path-omap-after)
-                    (:t zip-omap-before) (:t zip-omap-after)))
 
 (defrule zip-omap-before-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
@@ -3064,6 +3065,7 @@
   (define zip-path-tree-before-induction ((path zip-frame-listp)
                                           (tree treep)
                                           (acc treep))
+    :type-prescription :none
     :verify-guards nil
     :enabled t
     (if (endp path)
@@ -3081,6 +3083,7 @@
   (define zip-path-tree-after-induction ((path zip-frame-listp)
                                          (tree treep)
                                          (acc treep))
+    :type-prescription :none
     :verify-guards nil
     :enabled t
     (if (endp path)

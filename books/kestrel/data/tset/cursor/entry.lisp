@@ -42,6 +42,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry ((cursor cursorp))
+  :type-prescription :none
   :guard (entryp cursor)
   :parents (cursor)
   :short "The entry a @(see cursor) is at."
@@ -53,8 +54,6 @@
   :guard-hints (("Goal" :in-theory (enable* entryp break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t entry)))
 
 (defrule entry-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)

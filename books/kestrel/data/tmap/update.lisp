@@ -106,6 +106,7 @@
 (define update-macro-loop
   (update
    (list true-listp))
+  :type-prescription :none
   :guard (and (consp (cdr list))
               (member-eq update
                          '(update$inline update-= update-eq update-eql)))
@@ -122,6 +123,7 @@
 
 (define update-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -156,6 +158,7 @@
   (key
    val
    (map mapp))
+  :type-prescription :none
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      mapp))))
@@ -166,8 +169,6 @@
   (add-macro-fn update update$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t update)))
 
 (defrule update-when-equiv-congruence
   (implies (equiv map0 map1)
@@ -316,6 +317,7 @@
   (key
    (hash (unsigned-byte-p 32 hash))
    val)
+  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (update key val (empty))
@@ -328,6 +330,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define singleton (key val)
+  :type-prescription :none
   (mbe :logic (update key val (empty))
        :exec (tree-singleton key (hash key) val))
   :enabled t
@@ -916,6 +919,7 @@
 (define map-macro-loop
   (test
    (list true-listp))
+  :type-prescription :none
   :guard (consp list)
   (cond ((endp (cdr list))
          (er hard? 'map "Missing value for key: ~x0." (first list)))
@@ -931,6 +935,7 @@
 
 (define map-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -952,6 +957,7 @@
   ((key acl2-numberp)
    val
    (map acl2-number-mapp))
+  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (acl2-number-tree-update key val map))
   :enabled t
@@ -964,6 +970,7 @@
   ((key symbolp)
    val
    (map symbol-mapp))
+  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (symbol-tree-update key val map))
   :enabled t
@@ -975,6 +982,7 @@
   ((key eqlablep)
    val
    (map eqlable-mapp))
+  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (eqlable-tree-update key val map))
   :enabled t
@@ -990,6 +998,7 @@
    (hash (unsigned-byte-p 32 hash))
    val
    (map mapp))
+  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (update key val map)

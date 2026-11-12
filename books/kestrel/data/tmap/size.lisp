@@ -36,7 +36,7 @@
 
 (define size ((map mapp))
   :type-prescription :none
-  :returns (size natp)
+  :returns (size natp :rule-classes :type-prescription)
   :parents (tmap)
   :short "The number of key/value pairs in a @(see tmap)."
   :long
@@ -55,10 +55,6 @@
                                            keys))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule size-type-prescription
-  (natp (size map))
-  :rule-classes ((:type-prescription :typed-term (size map))))
 
 (defrule size-when-map-equiv-congruence
   (implies (equiv map0 map1)

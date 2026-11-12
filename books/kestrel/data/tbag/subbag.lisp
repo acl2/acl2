@@ -48,7 +48,8 @@
 
 (define subbag ((sub bagp)
                 (sup bagp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tbag)
   :short "Check if every value occurs in one @(see tbag) at most as often
           as in another."
@@ -63,12 +64,6 @@
                                            tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t subbag)))
-
-(defrule subbag-type-prescription
-  (booleanp (subbag sub sup))
-  :rule-classes ((:type-prescription :typed-term (subbag sub sup))))
 
 (defrule subbag-when-equiv-of-arg1-congruence
   (implies (equiv sub0 sub1)
@@ -101,15 +96,12 @@
 
 (define-sk subbag-sk (sub sup)
   :parents (subbag)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
     (non-exec
       (<= (count elem sub)
           (count elem sup)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t subbag-sk)))
 
 ;; The check fails, if at all, at its witness.
 

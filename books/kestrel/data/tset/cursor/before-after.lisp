@@ -54,6 +54,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define before ((cursor cursorp))
+  :type-prescription :none
   :returns (set setp)
   :parents (cursor)
   :short "The @(see tset) of elements before a @(see cursor)."
@@ -67,8 +68,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t before)))
-
 (defrule before-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)
            (equal (before cursor0)
@@ -79,6 +78,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define after ((cursor cursorp))
+  :type-prescription :none
   :returns (set setp)
   :parents (cursor)
   :short "The @(see tset) of elements after a @(see cursor)."
@@ -91,8 +91,6 @@
                                             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t after)))
 
 (defrule after-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)

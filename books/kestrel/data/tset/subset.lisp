@@ -76,7 +76,8 @@
 (define subset$inline
   ((x setp)
    (y setp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tree-subset-p (fix x) (fix y))
        :exec (fast-tree-subset-p x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
@@ -85,12 +86,6 @@
   (add-macro-fn subset subset$inline))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t subset)))
-
-(defrule subset-type-prescription
-  (booleanp (subset x y))
-  :rule-classes ((:type-prescription :typed-term (subset x y))))
 
 (defrule subset-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)
@@ -225,15 +220,12 @@
 
 (define-sk subset-sk (x y)
   :parents (subset)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (elem)
     (non-exec
       (implies (in elem x)
                (in elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t subset-sk)))
 
 (defruled subset-sk-becomes-tree-subset-p-sk
   (equal (subset-sk x y)
@@ -348,6 +340,7 @@
 (define subset-=
   ((x acl2-number-setp)
    (y acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (acl2-number-fast-tree-subset-p x y))
   :enabled t
@@ -361,6 +354,7 @@
 (define subset-eq
   ((x symbol-setp)
    (y symbol-setp))
+  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (symbol-fast-tree-subset-p x y))
   :enabled t
@@ -374,6 +368,7 @@
 (define subset-eql
   ((x eqlable-setp)
    (y eqlable-setp))
+  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (eqlable-fast-tree-subset-p x y))
   :enabled t

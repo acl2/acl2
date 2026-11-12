@@ -45,19 +45,12 @@
 
 (define-sk ext-equal (x y)
   :parents (extensionality)
-  :returns (yes/no booleanp)
   (forall (key default)
     (non-exec
       (equal (lookup key x :default default)
              (lookup key y :default default)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t ext-equal)))
-
-(defrule ext-equal-type-prescription
-  (booleanp (ext-equal x y))
-  :rule-classes ((:type-prescription :typed-term (ext-equal x y))))
 
 (defrule ext-equal-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)

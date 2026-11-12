@@ -315,6 +315,7 @@
   ((frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
+  :type-prescription :none
   :returns (closure tset::setp)
   :parents (predecessors+)
   :short "Expand nodes from a frontier, each at most once, adding a node's

@@ -148,6 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->key ((elem tree-element-p))
+  :type-prescription :none
   (cadr (tree-element-fix elem))
   :inline t
   :guard-hints (("Goal" :in-theory (enable tree-element-p))))
@@ -174,6 +175,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->val ((elem tree-element-p))
+  :type-prescription :none
   (cddr (tree-element-fix elem))
   :inline t
   :guard-hints (("Goal" :in-theory (enable tree-element-p))))
@@ -227,6 +229,7 @@
 
 ;; Where else should this be used. Assoc maybe?
 (define tree-element->key+val ((elem tree-element-p))
+  :type-prescription :none
   (mbe :logic (cons (tree-element->key elem)
                     (tree-element->val elem))
        :exec (cdr elem))
@@ -333,6 +336,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element$ (key val)
+  :type-prescription :none
   :returns (elem tree-element-p)
   (tree-element (hash key) key val)
   :enabled t
@@ -341,7 +345,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define treep (x)
-  (declare (xargs :type-prescription (booleanp (treep x))))
+  :type-prescription (booleanp (treep x))
   :short "Recognizer for @(see tree)s."
   (if (consp x)
       (and (tree-element-p (car x))
@@ -408,7 +412,7 @@
 (define tree-equiv
   ((x treep)
    (y treep))
-  (declare (xargs :type-prescription (booleanp (tree-equiv x y))))
+  :type-prescription (booleanp (tree-equiv x y))
   :short "Equivalence up to @(tsee tree-fix)."
   (equal (tree-fix x)
          (tree-fix y))
@@ -434,7 +438,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-empty-p ((tree treep))
-  (declare (xargs :type-prescription (booleanp (tree-empty-p tree))))
+  :type-prescription (booleanp (tree-empty-p tree))
   :short "Check if a @(see tree) is empty."
   (endp (tree-fix tree))
   :inline t)
@@ -734,7 +738,7 @@
   ((head tree-element-p)
    (left treep)
    (right treep))
-  (declare (xargs :type-prescription (consp (tree-node head left right))))
+  :type-prescription (consp (tree-node head left right))
   :returns (tree treep
                 :hints (("Goal" :in-theory (enable treep))))
   :short "Construct a nonempty @(see tree)."
@@ -824,6 +828,7 @@
    (left treep)
    (right treep)
    (hint treep))
+  :type-prescription :none
   :returns (tree treep)
   :short "A variant of @(tsee tree-node) which reuses an existing node."
   :long
@@ -846,6 +851,7 @@
 
 (define tree-leaf
   ((head tree-element-p))
+  :type-prescription :none
   :returns (tree treep)
   :short "Construct a @(see tree) with a single node."
   :long
@@ -863,6 +869,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-induct (tree)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Induct over the structure of a binary tree."
   (or (tree-empty-p tree)
       (let ((left (tree-induct (tree->left tree)))
@@ -888,6 +896,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-bi-induct (x y)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Induct over the structure of two binary trees simultaneously."
   (or (tree-empty-p x)
       (tree-empty-p y)
@@ -902,7 +912,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-listp (x)
-  (declare (xargs :type-prescription (booleanp (tree-listp x))))
+  :type-prescription (booleanp (tree-listp x))
   :short "Recognizer for a true list of @(see tree)s."
   (if (consp x)
       (and (treep (first x))

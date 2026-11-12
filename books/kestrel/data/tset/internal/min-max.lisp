@@ -40,6 +40,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-min ((tree treep))
+  :type-prescription :none
   (if (tree-empty-p tree)
       nil
     (if (tree-empty-p (tree->left tree))
@@ -139,6 +140,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-max ((tree treep))
+  :type-prescription :none
   (if (tree-empty-p tree)
       nil
     (if (tree-empty-p (tree->left tree))
@@ -307,6 +309,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-leftmost ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
       (tree-element->val (tree->head tree))
@@ -368,6 +371,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
       (tree-element->val (tree->head tree))

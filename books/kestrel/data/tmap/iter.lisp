@@ -95,7 +95,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iterp (x)
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Recognizer for @(see iterator)s."
   :long
@@ -136,6 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-min ((map mapp))
+  :type-prescription :none
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
@@ -153,8 +155,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t iter-min)))
-
 (defrule iter-min-when-equiv-congruence
   (implies (equiv map0 map1)
            (equal (iter-min map0)
@@ -165,6 +165,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-max ((map mapp))
+  :type-prescription :none
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
@@ -184,8 +185,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t iter-max)))
-
 (defrule iter-max-when-equiv-congruence
   (implies (equiv map0 map1)
            (equal (iter-max map0)
@@ -196,6 +195,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-fix ((iter iterp))
+  :type-prescription :none
   :returns (iter$ iterp)
   :parents (iterator)
   :short "Fixer for @(see iterator)s."
@@ -206,8 +206,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t iter-fix)))
 
 ;; Rules mentioning an internal function are disabled and registered in
 ;; break-abstraction, so that internal terms do not enter a caller's proof
@@ -284,7 +282,8 @@
 (define iter-equiv
   ((x iterp)
    (y iterp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Equivalence up to @(tsee iter-fix)."
   (equal (iter-fix x)
@@ -431,6 +430,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-iter ((iter iterp))
+  :type-prescription :none
   :returns (map mapp
                 :hints (("Goal"
                          :in-theory
@@ -448,8 +448,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-iter)))
 
 (defrule from-iter-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -582,6 +580,7 @@
            tree-iter-omap-after-becomes-tree-iter-after))
 
 (define before ((iter iterp))
+  :type-prescription :none
   :returns (map mapp)
   :parents (iterator)
   :short "The @(see tmap) of entries before an @(see iterator)."
@@ -603,8 +602,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t before)))
-
 (defrule before-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
            (equal (before iter0)
@@ -615,6 +612,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define after ((iter iterp))
+  :type-prescription :none
   :returns (map mapp)
   :parents (iterator)
   :short "The @(see tmap) of entries after an @(see iterator)."
@@ -635,8 +633,6 @@
                         break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t after)))
 
 (defrule after-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -736,6 +732,7 @@
 ;; the paired form returns both.
 
 (define entry-key ((iter iterp))
+  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The key an @(see iterator) is at."
@@ -744,8 +741,6 @@
   :guard-hints (("Goal" :in-theory (enable has-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t entry-key)))
 
 (defrule entry-key-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -757,6 +752,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry-val ((iter iterp))
+  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The value an @(see iterator) is at."
@@ -765,8 +761,6 @@
   :guard-hints (("Goal" :in-theory (enable has-valuep))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t entry-val)))
 
 (defrule entry-val-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)
@@ -778,6 +772,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry ((iter iterp))
+  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The @(tsee entry-key) and @(tsee entry-val)."
@@ -786,8 +781,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t entry)))
 
 
 ;; What a walk yields first: the minimum. This is what ties the entries an
@@ -1272,6 +1265,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((iter iterp))
+  :type-prescription :none
   :guard (not (after-lastp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
@@ -1309,6 +1303,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prev ((iter iterp))
+  :type-prescription :none
   :guard (not (before-firstp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
@@ -1326,8 +1321,6 @@
   :guard-hints (("Goal" :in-theory (enable before-firstp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t next) (:t prev)))
 
 (defrule next-when-iter-equiv-congruence
   (implies (iter-equiv iter0 iter1)

@@ -59,14 +59,13 @@
    y
    (hash-x (unsigned-byte-p 32 hash-x))
    (hash-y (unsigned-byte-p 32 hash-y)))
+  :type-prescription (booleanp (heap<-with-hashes x y hash-x hash-y))
   :guard (mbe :logic (and (equal (hash x) hash-x)
                           (equal (hash y) hash-y))
               :exec (and (data::u32-equal (hash x) hash-x)
                          (data::u32-equal (hash y) hash-y)))
   (declare (type (unsigned-byte 32) hash-x hash-y)
-           (xargs :split-types t
-                  :type-prescription
-                  (booleanp (heap<-with-hashes x y hash-x hash-y))))
+           (xargs :split-types t))
   :short "Variant of @(tsee heap<) which uses pre-computed hashes."
   :long
   (xdoc::topstring
@@ -97,7 +96,7 @@
   :guard-hints (("Goal" :in-theory (enable data::u32-equal))))
 
 (define heap< (x y)
-  (declare (xargs :type-prescription (booleanp (heap< x y))))
+  :type-prescription (booleanp (heap< x y))
   :parents nil
   (let ((hash-x (hash x))
         (hash-y (hash y)))

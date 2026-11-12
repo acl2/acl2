@@ -38,7 +38,7 @@
 
 (define edgep (x)
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (graph)
   :short "Recognizer for the edges of a @(see graph)."
   (and (consp x)
@@ -46,10 +46,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule edgep-type-prescription
-  (booleanp (edgep x))
-  :rule-classes ((:type-prescription :typed-term (edgep x))))
 
 (defruled edgep-compound-recognizer
   (implies (edgep x)
@@ -114,7 +110,7 @@
   ((x edgep)
    (y edgep))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (edgep)
   :short "Equivalence of edges up to @(tsee edge-fix)."
   (equal (edge-fix x)
@@ -125,10 +121,6 @@
   (defequiv edge-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule edge-equiv-type-prescription
-  (booleanp (edge-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (edge-equiv x y))))
 
 (defrule edge-fix-when-edge-equiv-congruence
   (implies (edge-equiv edge0 edge1)
@@ -145,6 +137,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->from ((edge edgep))
+  :type-prescription :none
   :parents (edgep)
   :short "The source of an edge."
   (car (edge-fix edge))
@@ -163,6 +156,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->to ((edge edgep))
+  :type-prescription :none
   :parents (edgep)
   :short "The target of an edge."
   (cadr (edge-fix edge))
@@ -181,6 +175,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->label ((edge edgep))
+  :type-prescription :none
   :parents (edgep)
   :short "The label of an edge."
   (cddr (edge-fix edge))

@@ -79,6 +79,7 @@
 ;; The position of an atom's type in the order alphorder puts on atoms of
 ;; different types.
 (define atom-type-rank (x)
+  :type-prescription :none
   :returns (rank natp :rule-classes :type-prescription)
   (cond ((real/rationalp x) 0)
         ((complex/complex-rationalp x) 1)
@@ -93,6 +94,7 @@
 (define fast-acl2-number-compare-<<
   ((x acl2-numberp)
    (y acl2-numberp))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -120,6 +122,7 @@
 (define fast-symbol-compare-<<
   ((x symbolp)
    (y symbolp))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -150,6 +153,7 @@
 (define fast-eqlable-compare-<<
   ((x eqlablep)
    (y eqlablep))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -179,6 +183,7 @@
 ;; slower on the string pairs compared while validating nginx, most of which
 ;; differ.
 (define fast-compare-<< (x y)
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (cond ((consp x)
@@ -239,6 +244,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define compare-<< (x y)
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -251,6 +257,7 @@
 (define acl2-number-compare-<<
   ((x acl2-numberp)
    (y acl2-numberp))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -270,6 +277,7 @@
 (define symbol-compare-<<
   ((x symbolp)
    (y symbolp))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))
@@ -285,6 +293,7 @@
 (define eqlable-compare-<<
   ((x eqlablep)
    (y eqlablep))
+  :type-prescription :none
   :returns (mv (equalp booleanp)
                (ltp booleanp))
   (mbe :logic (mv (equal x y) (<< x y))

@@ -56,6 +56,7 @@
 ;; set. @('deftset') instantiates its laws for each fixer it generates.
 
 (define generic-fix (set)
+  :type-prescription :none
   (if (genericp set)
       set
     (empty)))
@@ -71,17 +72,13 @@
 
 (define set-all-genericp ((set setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (emptyp set)
       (and (genericp (min set))
            (set-all-genericp (delete (min set) set))))
   :measure (cardinality set))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-genericp-type-prescription
-  (booleanp (set-all-genericp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-genericp set))))
 
 (defrule set-all-genericp-when-equiv-congruence
   (implies (equiv set0 set1)
@@ -118,19 +115,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk set-all-genericp-sk (set)
-  :returns (yes/no booleanp)
   (forall (elem)
     (non-exec
       (implies (in elem set)
                (genericp elem)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t set-all-genericp-sk)))
-
-(defrule set-all-genericp-sk-type-prescription
-  (booleanp (set-all-genericp-sk set))
-  :rule-classes ((:type-prescription :typed-term (set-all-genericp-sk set))))
 
 (defruledl set-all-genericp-sk-when-set-all-genericp
   (implies (set-all-genericp set)
@@ -180,6 +170,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-genericp ((tree treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (genericp (tree-element->val (tree->head tree)))
            (tree-all-genericp (tree->left tree))
@@ -315,6 +307,7 @@
 (encapsulate ()
   (local
     (define set-all-acl2-numberp-alt (set)
+      :type-prescription :none
       (or (emptyp set)
           (and (acl2-numberp (min set))
                (set-all-acl2-numberp-alt (delete (min set) set))))
@@ -425,6 +418,7 @@
 (encapsulate ()
   (local
     (define set-all-symbolp-alt (set)
+      :type-prescription :none
       (or (emptyp set)
           (and (symbolp (min set))
                (set-all-symbolp-alt (delete (min set) set))))
@@ -535,6 +529,7 @@
 (encapsulate ()
   (local
     (define set-all-eqlablep-alt (set)
+      :type-prescription :none
       (or (emptyp set)
           (and (eqlablep (min set))
                (set-all-eqlablep-alt (delete (min set) set))))

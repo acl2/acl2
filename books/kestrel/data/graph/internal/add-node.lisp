@@ -50,6 +50,7 @@
 ;; Time complexity: @($O(\\log(n))$).
 
 (define adj-list-add-node (node (adjl adj-listp))
+  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (if (tmap::in node adjl)
       (tmap::fix adjl)

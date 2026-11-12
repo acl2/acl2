@@ -99,8 +99,8 @@
 (define jenkins-acc-byte
   ((byte (unsigned-byte-p 8 byte))
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 8) byte)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -126,8 +126,8 @@
 (define jenkins-acc-bytes
   ((bytes byte-listp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$)
                  :hints (("Goal" :induct t)))
@@ -203,8 +203,8 @@
 (define jenkins-acc-leb128-small
   ((n (unsigned-byte-p 56 n))
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 56) n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -238,8 +238,8 @@
   ((x (unsigned-byte-p 56 x))
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 56) x)
            (type unsigned-byte m)
            (type (unsigned-byte 32) acc))
@@ -278,9 +278,9 @@
   ((x natp)
    (m natp)
    (acc (unsigned-byte-p 32 acc)))
+  :type-prescription :none
   :guard (unsigned-byte-p (* 7 m) x)
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  (declare (xargs :split-types t)
            (type unsigned-byte x)
            (type unsigned-byte m)
            (type (unsigned-byte 32) acc))
@@ -320,8 +320,8 @@
 (define jenkins-acc-nat
   ((n natp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type unsigned-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -358,8 +358,8 @@
 (define jenkins-acc-integer-contents
   ((n integerp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type signed-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -383,8 +383,8 @@
 (define jenkins-acc-integer
   ((n integerp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type signed-byte n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -407,8 +407,8 @@
 (define jenkins-acc-rational-contents
   ((n rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type rational n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -430,8 +430,8 @@
 (define jenkins-acc-rational
   ((n rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type rational n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -451,8 +451,8 @@
 (define jenkins-acc-complex-rational
   ((n complex-rationalp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type complex n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -475,8 +475,8 @@
 (define jenkins-acc-acl2-number
   ((n acl2-numberp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type number n)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -502,8 +502,8 @@
 (define jenkins-acc-character-contents
   ((c characterp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type character c)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -527,8 +527,8 @@
 (define jenkins-acc-character
   ((c characterp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type character c)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -550,14 +550,14 @@
    (i (unsigned-byte-p data::*fixnum-bits* i))
    (len (unsigned-byte-p data::*fixnum-bits* len))
    (acc (unsigned-byte-p 32 acc)))
+  :type-prescription :none
   :guard (mbe :logic (and (<= i len)
                           (equal len (length str)))
               :exec (and (<= (data::the-u-fixnum i)
                              (data::the-u-fixnum len))
                          (equal (data::the-u-fixnum len)
                                 (length (the string str)))))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  (declare (xargs :split-types t)
            (type string str)
            (type #.data::*u-fixnum-type* i len)
            (type (unsigned-byte 32) acc))
@@ -597,8 +597,8 @@
 (define jenkins-acc-string-contents
   ((str stringp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type string str)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -630,8 +630,8 @@
 (define jenkins-acc-string
   ((str stringp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type string str)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -651,8 +651,8 @@
 (define jenkins-acc-symbol
   ((symbol symbolp)
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type symbol symbol)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -682,10 +682,10 @@
 (define jenkins-acc-atom
   (x
    (acc (unsigned-byte-p 32 acc)))
+  :type-prescription :none
   :guard (mbe :logic (not (consp x))
               :exec (atom x))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  (declare (xargs :split-types t)
            (type atom x)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
@@ -715,8 +715,8 @@
 (define jenkins-acc
   (x
    (acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 32) acc))
   :returns (acc$ (unsigned-byte-p 32 acc$))
   (let ((acc (mbe :logic (if (unsigned-byte-p 32 acc)
@@ -976,8 +976,8 @@
 ;; incorporated.
 (define jenkins-finalize
   ((acc (unsigned-byte-p 32 acc)))
-  (declare (xargs :split-types t
-                  :type-prescription :none)
+  :type-prescription :none
+  (declare (xargs :split-types t)
            (type (unsigned-byte 32) acc))
   :returns (hash (unsigned-byte-p 32 hash))
   (the (unsigned-byte 32)
@@ -998,7 +998,7 @@
 ;; The Jenkins one-at-a-time hash of an explicit byte list.
 (define jenkins-bytes
   ((bytes byte-listp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (hash (unsigned-byte-p 32 hash))
   (jenkins-finalize (jenkins-acc-bytes bytes 0)))
 
@@ -1012,7 +1012,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define jenkins (x)
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (jenkins-one-at-a-time)
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (jenkins-bytes (to-bytes x))
@@ -1032,6 +1032,7 @@
 
 (define acl2-number-jenkins
   ((x acl2-numberp))
+  :type-prescription :none
   (mbe :logic (jenkins x)
        :exec (jenkins-finalize (jenkins-acc-acl2-number x 0)))
   :enabled t
@@ -1045,6 +1046,7 @@
 
 (define symbol-jenkins
   ((x symbolp))
+  :type-prescription :none
   (mbe :logic (jenkins x)
        :exec (jenkins-finalize (jenkins-acc-symbol x 0)))
   :enabled t
@@ -1058,6 +1060,7 @@
 
 (define eqlable-jenkins
   ((x eqlablep))
+  :type-prescription :none
   (mbe :logic (jenkins x)
        :exec (jenkins-finalize (cond ((symbolp x)
                                       (jenkins-acc-symbol x 0))

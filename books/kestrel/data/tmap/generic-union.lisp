@@ -68,6 +68,7 @@
 
   (local
     (define generic-combine (key x y)
+      :type-prescription :none
       (declare (ignore key x))
       y))
 
@@ -85,6 +86,7 @@
 (define tree-generic-union
   ((x treep)
    (y treep))
+  :type-prescription :none
   :returns (tree treep)
   (cond ((tree-empty-p x)
          (tree-fix y))

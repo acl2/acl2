@@ -55,6 +55,7 @@
 (define tree-rlookup
   (val
    (tree treep))
+  :type-prescription :none
   :returns (keys tset::setp)
   :parents (implementation)
   :short "Lookup all keys in the tree mapping to a value."
@@ -68,8 +69,6 @@
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-rlookup)))
 
 (defrule tree-rlookup-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

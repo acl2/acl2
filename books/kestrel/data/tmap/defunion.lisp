@@ -202,6 +202,7 @@
        (define ,tree-name
          ((x treep)
           (y treep))
+         :type-prescription :none
          :returns (tree treep)
          (cond ((tree-empty-p x)
                 (tree-fix y))

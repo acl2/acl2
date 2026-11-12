@@ -59,6 +59,7 @@
 ;; source to the target.
 
 (define adj-list-add-edge (from to label (adjl adj-listp))
+  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (b* ((adj (tmap::lookup from adjl :default (tmap::empty)))
        (labels (tmap::lookup to adj :default (tset::empty))))

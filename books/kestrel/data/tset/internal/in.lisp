@@ -35,7 +35,7 @@
 (define tree-in
   (x
    (tree treep))
-  (declare (xargs :type-prescription (booleanp (tree-in x tree))))
+  :type-prescription (booleanp (tree-in x tree))
   :parents (implementation)
   :short "Determine if a value appears in the tree."
   :long
@@ -398,7 +398,7 @@
 (define tree-search-in
   (x
    (tree treep))
-  (declare (xargs :type-prescription (booleanp (tree-search-in x tree))))
+  :type-prescription (booleanp (tree-search-in x tree))
   :parents (tree-in)
   :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
@@ -445,6 +445,7 @@
 (define acl2-number-tree-search-in
   ((x acl2-numberp)
    (tree acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
@@ -465,6 +466,7 @@
 (define symbol-tree-search-in
   ((x symbolp)
    (tree symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
@@ -485,6 +487,7 @@
 (define eqlable-tree-search-in
   ((x eqlablep)
    (tree eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil

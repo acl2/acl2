@@ -58,13 +58,10 @@
   (xdoc::topstring-p
     "This is the specification of @(tsee cyclicp), to which it is equal. It
      is not executable.")
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (exists (node)
     (non-exec (reachable+p node node graph))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t cyclicp-sk)))
 
 (defrule cyclicp-sk-when-equiv-congruence
   (implies (equiv graph0 graph1)
@@ -82,7 +79,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cyclicp ((graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if a @(see graph) has a cycle."
   :long
@@ -154,6 +152,7 @@
 
 (local
   (define find-node-on-cycle ((set tset::setp) graph)
+    :type-prescription :none
     (b* (((when (tset::emptyp set))
           nil)
          (node (tset::min set))

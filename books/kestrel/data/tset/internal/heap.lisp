@@ -29,6 +29,7 @@
 (define heap<-with-tree-element
   ((x tree-element-p)
    (y tree-element-p))
+  :type-prescription :none
   (heap<-with-hashes (tree-element->val x)
                      (tree-element->val y)
                      (tree-element->hash x)
@@ -166,6 +167,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fast-nonempty-heapp ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (mv (heapp booleanp :rule-classes :type-prescription)
                (hash-max (unsigned-byte-p 32 hash-max)))
@@ -270,7 +272,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define heapp ((tree treep))
-  (declare (xargs :type-prescription (booleanp (heapp tree))))
+  :type-prescription (booleanp (heapp tree))
   :parents (tree)
   :short "Check the max heap property."
   (or (tree-empty-p tree)

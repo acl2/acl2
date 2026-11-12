@@ -94,7 +94,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reachable+p-sortedp ((list true-listp) (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-orderp)
   :short "Check if no node in a list reaches itself or an earlier node of the
           list."
@@ -167,7 +168,8 @@
   ((order true-listp)
    (seen tset::setp)
    (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-orderp)
   :short "Check a list in one pass, keeping the set of nodes seen."
   (b* (((when (endp order))
@@ -343,7 +345,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define topological-orderp ((order true-listp) (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-sort)
   :short "Check if a list is a topological order of a @(see graph)."
   :long
@@ -427,6 +430,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define topological-sort ((graph graphp))
+  :type-prescription :none
   :returns (mv (cyclicp booleanp)
                (order true-listp))
   :parents (walks)

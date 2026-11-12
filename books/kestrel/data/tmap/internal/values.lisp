@@ -47,6 +47,7 @@
 ;; TODO: It may be slightly faster to MBE-in a version that avoids union by
 ;; using an accumulator.
 (define tree-val-set ((tree treep))
+  :type-prescription :none
   :returns (set tset::setp)
   (if (tree-empty-p tree)
       (tset::empty)
@@ -60,7 +61,7 @@
 
 ;; The executable rule is disabled because it often produces `nil` when it
 ;; should produce `emptyp`.
-(in-theory (disable (:t tree-val-set) (:e tree-val-set)))
+(in-theory (disable (:e tree-val-set)))
 
 (defrule tree-val-set-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

@@ -367,6 +367,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-omap ((tree treep))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :verify-guards :after-returns
   :parents (implementation)
@@ -396,7 +397,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t tree-omap) (:e tree-omap)))
+(in-theory (disable (:e tree-omap)))
 
 (defrule tree-omap-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

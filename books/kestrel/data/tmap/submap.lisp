@@ -91,7 +91,8 @@
 (define submap$inline
   ((x mapp)
    (y mapp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tree-submap-p (fix x) (fix y))
        :exec (fast-tree-submap-p x y))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
@@ -100,12 +101,6 @@
   (add-macro-fn submap submap$inline))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t submap)))
-
-(defrule submap-type-prescription
-  (booleanp (submap x y))
-  :rule-classes ((:type-prescription :typed-term (submap x y))))
 
 (defrule submap-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)
@@ -304,7 +299,6 @@
 
 (define-sk submap-sk (x y)
   :parents (submap)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (key default)
     (non-exec
       (implies (tset::in key (keys x))
@@ -317,8 +311,6 @@
                       (lookup key y :default default))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t submap-sk)))
 
 (defruled submap-sk-becomes-tree-submap-p-sk
   (equal (submap-sk x y)
@@ -475,6 +467,7 @@
 (define submap-=
   ((x acl2-number-mapp)
    (y acl2-number-mapp))
+  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (acl2-number-fast-tree-submap-p x y))
   :enabled t
@@ -489,6 +482,7 @@
 (define submap-eq
   ((x symbol-mapp)
    (y symbol-mapp))
+  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (symbol-fast-tree-submap-p x y))
   :enabled t
@@ -503,6 +497,7 @@
 (define submap-eql
   ((x eqlable-mapp)
    (y eqlable-mapp))
+  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (eqlable-fast-tree-submap-p x y))
   :enabled t

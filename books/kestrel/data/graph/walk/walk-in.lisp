@@ -46,7 +46,8 @@
 ;; from. This builds no edge set, so it is what walk-in executes.
 
 (define steps-in (from (steps step-listp) (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walk-in)
   :short "Check that each of a list of steps, taken from a node, follows an edge
           of a @(see graph)."
@@ -77,7 +78,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-in ((walk walkp) (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if a walk is a walk in a @(see graph)."
   :long

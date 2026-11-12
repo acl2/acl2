@@ -93,6 +93,7 @@
 ;; targets of a source.
 
 (define tree-delete-target (node (tree tmap::treep))
+  :type-prescription :none
   :guard (tree-all-vals-adjacencyp tree)
   :returns (new-tree tmap::treep)
   (if (tmap::tree-empty-p tree)
@@ -187,6 +188,7 @@
 ;; Time complexity: @($O(n \\log(d))$), as for @(tsee tree-delete-target).
 
 (define adj-list-delete-target (node (adjl adj-listp))
+  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (mbe :logic (if (tmap::emptyp adjl)
                   (tmap::empty)
@@ -286,6 +288,7 @@
 ;; Time complexity: @($O(n \\log(d))$), as for @(tsee adj-list-delete-target).
 
 (define adj-list-delete-node (node (adjl adj-listp))
+  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (tmap::delete node (adj-list-delete-target node adjl)))
 

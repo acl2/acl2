@@ -284,6 +284,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-oset ((tree treep))
+  :type-prescription :none
   :returns (oset set::setp)
   :verify-guards :after-returns
   :parents (implementation)
@@ -305,8 +306,6 @@
                              (tree-oset (tree->right tree))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-oset)))
 
 (defrule tree-oset-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

@@ -77,7 +77,7 @@
 (define set-all-keys-subsetp ((set tset::setp)
                               (nodes tset::setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tset::subset (tmap::keys (tset::min set)) nodes)
            (set-all-keys-subsetp (tset::delete (tset::min set) set)
@@ -88,11 +88,6 @@
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-keys-subsetp-type-prescription
-  (booleanp (set-all-keys-subsetp set nodes))
-  :rule-classes ((:type-prescription
-                   :typed-term (set-all-keys-subsetp set nodes))))
 
 (defrule set-all-keys-subsetp-when-tset-equiv-of-arg2-congruence
   (implies (tset::equiv nodes0 nodes1)
@@ -117,6 +112,8 @@
 
 (define tree-all-vals-keys-subsetp ((tree tmap::treep)
                                     (nodes tset::setp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :guard (tree-all-vals-adjacencyp tree)
   (or (tmap::tree-empty-p tree)
       (and (tset::subset
@@ -167,7 +164,7 @@
                                      (nodes tset::setp))
   :type-prescription :none
   :guard (map-values-all-adjacencyp map)
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-keys-subsetp (tmap::values map) nodes)
        :exec (tree-all-vals-keys-subsetp map nodes))
   :inline t
@@ -178,11 +175,6 @@
             tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-values-all-keys-subsetp-type-prescription
-  (booleanp (map-values-all-keys-subsetp map nodes))
-  :rule-classes ((:type-prescription
-                   :typed-term (map-values-all-keys-subsetp map nodes))))
 
 (defrule map-values-all-keys-subsetp-when-tmap-equiv-of-arg1-congruence
   (implies (tmap::equiv map0 map1)
@@ -313,15 +305,11 @@
 
 (define well-formedp ((adjl adj-listp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (map-values-all-keys-subsetp adjl (tmap::keys adjl))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule well-formedp-type-prescription
-  (booleanp (well-formedp adjl))
-  :rule-classes ((:type-prescription :typed-term (well-formedp adjl))))
 
 (defrule well-formedp-when-tmap-equiv-congruence
   (implies (tmap::equiv adjl0 adjl1)

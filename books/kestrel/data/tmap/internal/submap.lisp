@@ -305,7 +305,6 @@
 
 (define-sk tree-submap-p-sk (x y)
   :parents (implementation)
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (forall (key)
     (non-exec
       (implies (tset::in key (tree-key-set x))
@@ -314,8 +313,6 @@
                            (tree-lookup key y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-submap-p-sk)))
 
 (defrule tree-submap-p-sk-when-tree-equiv-of-arg1-congruence
   (implies (tree-equiv x0 x1)
@@ -482,7 +479,8 @@
 (define fast-tree-submap-p
   ((x treep)
    (y treep))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree-submap-p)
   :short "Fast submap check."
   (cond ((tree-empty-p x) t)
@@ -528,6 +526,7 @@
 (define acl2-number-fast-tree-submap-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec
@@ -552,6 +551,7 @@
 (define symbol-fast-tree-submap-p
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec
@@ -576,6 +576,7 @@
 (define eqlable-fast-tree-submap-p
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec

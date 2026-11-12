@@ -75,7 +75,6 @@
 
 (local
   (define-sk <<-all-l-sk (tree x)
-    :returns (yes/no booleanp :rule-classes :type-prescription)
     (forall (elem)
       (non-exec
         (implies (tree-in elem tree)
@@ -150,6 +149,7 @@
   ((oset set::setp)
    (parent tree-element-p)
    (acc treep))
+  :type-prescription :none
   :returns (mv (oset$ set::setp)
                (acc$ treep))
   (if (set::emptyp oset)
@@ -556,6 +556,7 @@
 (define tree-from-oset-acc
   ((oset set::setp)
    (acc treep))
+  :type-prescription :none
   :returns (tree treep)
   (if (set::emptyp oset)
       (tree-fix acc)
@@ -620,6 +621,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-from-oset ((oset set::setp))
+  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Build a treap holding an oset's elements, in linear time."

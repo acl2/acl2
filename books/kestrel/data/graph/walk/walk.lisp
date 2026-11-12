@@ -43,7 +43,7 @@
 
 (define walkp (x)
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Recognizer for walks."
   :long
@@ -63,10 +63,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule walkp-type-prescription
-  (booleanp (walkp x))
-  :rule-classes ((:type-prescription :typed-term (walkp x))))
 
 (defruled walkp-compound-recognizer
   (implies (walkp x)
@@ -130,7 +126,7 @@
   ((x walkp)
    (y walkp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walkp)
   :short "Equivalence of walks up to @(tsee walk-fix)."
   (equal (walk-fix x)
@@ -141,10 +137,6 @@
   (defequiv walk-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule walk-equiv-type-prescription
-  (booleanp (walk-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (walk-equiv x y))))
 
 (defrule walk-fix-when-walk-equiv-congruence
   (implies (walk-equiv walk0 walk1)
@@ -161,6 +153,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk->start ((walk walkp))
+  :type-prescription :none
   :parents (walkp)
   :short "The node a walk starts at."
   (car (walk-fix walk))
@@ -179,6 +172,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk->steps ((walk walkp))
+  :type-prescription :none
   :returns (steps step-listp
                   :hints (("Goal" :in-theory (enable walk-fix
                                                      walkp
@@ -260,6 +254,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-end ((walk walkp))
+  :type-prescription :none
   :parents (walkp)
   :short "The node a walk ends at."
   :long

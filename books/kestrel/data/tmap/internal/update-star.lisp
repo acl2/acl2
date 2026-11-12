@@ -54,6 +54,7 @@
 (define tree-update*
   ((x treep)
    (y treep))
+  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Take the left-biased union of two treaps."
@@ -221,6 +222,7 @@
 (define acl2-number-tree-update*
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-update* x y)
        :exec
        (cond ((tree-empty-p x)
@@ -267,6 +269,7 @@
 (define symbol-tree-update*
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-update* x y)
        :exec
        (cond ((tree-empty-p x)
@@ -310,6 +313,7 @@
 (define eqlable-tree-update*
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-update* x y)
        :exec
        (cond ((tree-empty-p x)

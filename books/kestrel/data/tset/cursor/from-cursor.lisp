@@ -35,6 +35,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-cursor ((cursor cursorp))
+  :type-prescription :none
   :returns (set setp
                 :hints (("Goal" :in-theory (enable* break-abstraction))))
   :parents (cursor)
@@ -47,8 +48,6 @@
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t from-cursor)))
 
 (defrule from-cursor-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)

@@ -35,17 +35,13 @@
 
 (define stepp (x)
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Recognizer for the steps of a walk in a @(see graph)."
   (consp x)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule stepp-type-prescription
-  (booleanp (stepp x))
-  :rule-classes ((:type-prescription :typed-term (stepp x))))
 
 (defruled stepp-compound-recognizer
   (equal (stepp x)
@@ -110,7 +106,7 @@
   ((x stepp)
    (y stepp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (stepp)
   :short "Equivalence of steps up to @(tsee step-fix)."
   (equal (step-fix x)
@@ -121,10 +117,6 @@
   (defequiv step-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule step-equiv-type-prescription
-  (booleanp (step-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (step-equiv x y))))
 
 (defrule step-fix-when-step-equiv-congruence
   (implies (step-equiv step0 step1)
@@ -141,6 +133,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step->to ((step stepp))
+  :type-prescription :none
   :parents (stepp)
   :short "The node a step leads to."
   (car (step-fix step))
@@ -159,6 +152,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step->label ((step stepp))
+  :type-prescription :none
   :parents (stepp)
   :short "The label of the edge a step follows."
   (cdr (step-fix step))
@@ -230,7 +224,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-listp (x)
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (stepp)
   :short "Recognizer for true lists of steps."
   (if (consp x)
@@ -273,6 +268,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-list-fix ((steps step-listp))
+  :type-prescription :none
   :returns (steps$ step-listp)
   :parents (step-listp)
   :short "Fixer for lists of steps."
@@ -301,7 +297,7 @@
   ((x step-listp)
    (y step-listp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (step-listp)
   :short "Equivalence of lists of steps up to @(tsee step-list-fix)."
   (equal (step-list-fix x)
@@ -312,10 +308,6 @@
   (defequiv step-list-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule step-list-equiv-type-prescription
-  (booleanp (step-list-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (step-list-equiv x y))))
 
 (defrule step-list-fix-when-step-list-equiv-congruence
   (implies (step-list-equiv steps0 steps1)
@@ -388,6 +380,7 @@
 ;; The node a list of steps ends at, when taken from the given node.
 
 (define steps-end (from (steps step-listp))
+  :type-prescription :none
   :parents (step-listp)
   :short "The node a list of steps ends at, when taken from a node."
   (if (consp steps)

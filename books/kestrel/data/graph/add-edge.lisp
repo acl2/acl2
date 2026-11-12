@@ -85,6 +85,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-edge! (from to label (graph graphp))
+  :type-prescription :none
   :guard (node-in to graph)
   :parents (add-edge)
   :short "Add a labeled edge to a @(see graph) whose target is already a

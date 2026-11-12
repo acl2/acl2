@@ -43,6 +43,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keys ((map mapp))
+  :type-prescription :none
   :returns (keys tset::setp)
   :parents (tmap)
   :short "Get the key @(see acl2::tset) from a @(see tmap)."
@@ -122,7 +123,7 @@
 
 (define map-keys-acl2-numberp ((map mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-acl2-numberp (keys map))
        :exec (tree-keys-acl2-numberp map))
   :enabled t
@@ -130,17 +131,11 @@
   :guard-hints (("Goal" :in-theory (enable* keys
                                             break-abstraction))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-keys-acl2-numberp-type-prescription
-  (booleanp (map-keys-acl2-numberp map))
-  :rule-classes ((:type-prescription :typed-term (map-keys-acl2-numberp map))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-symbolp ((map mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-symbolp (keys map))
        :exec (tree-keys-symbolp map))
   :enabled t
@@ -148,17 +143,11 @@
   :guard-hints (("Goal" :in-theory (enable* keys
                                             break-abstraction))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-keys-symbolp-type-prescription
-  (booleanp (map-keys-symbolp map))
-  :rule-classes ((:type-prescription :typed-term (map-keys-symbolp map))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-eqlablep ((map mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-eqlablep (keys map))
        :exec (tree-keys-eqlablep map))
   :enabled t
@@ -166,18 +155,13 @@
   :guard-hints (("Goal" :in-theory (enable* keys
                                             break-abstraction))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-keys-eqlablep-type-prescription
-  (booleanp (map-keys-eqlablep map))
-  :rule-classes ((:type-prescription :typed-term (map-keys-eqlablep map))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: more efficient implementations (check mapp and contents
 ;; simultaneously).
 
 (define acl2-number-mapp (x)
+  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee acl2-numberp)."
@@ -186,6 +170,7 @@
   :enabled t)
 
 (define symbol-mapp (x)
+  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee symbolp)."
@@ -194,6 +179,7 @@
   :enabled t)
 
 (define eqlable-mapp (x)
+  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee eqlablep)."

@@ -21,7 +21,8 @@
 ;; acl2::fixnum-bound, which expands to a literal, so that the compiler sees
 ;; constant comparisons and can derive the fixnum type.
 (define fixnump (x)
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (and (integerp x)
        (<= (- -1 (acl2::fixnum-bound)) x)
        (<= x (acl2::fixnum-bound)))

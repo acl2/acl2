@@ -51,6 +51,7 @@
 ;; has positive values.
 
 (define set-all-posp ((set tset::setp))
+  :type-prescription :none
   (or (tset::emptyp set)
       (and (posp (tset::min set))
            (set-all-posp (tset::delete (tset::min set) set))))
@@ -75,6 +76,7 @@
 ;; A combination given as a function symbol.
 
 (define max-combine (key x y)
+  :type-prescription :none
   (declare (ignore key))
   (max (nfix x) (nfix y)))
 

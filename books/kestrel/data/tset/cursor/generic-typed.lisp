@@ -40,6 +40,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursor-all-genericp ((cursor cursorp))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :type-prescription :none
   :guard (or (entryp cursor)
              (endp cursor))
@@ -57,12 +58,6 @@
   :rule-classes :congruence
   :expand ((cursor-all-genericp cursor0)
            (cursor-all-genericp cursor1)))
-
-(defrule booleanp-of-cursor-all-genericp
-  (booleanp (cursor-all-genericp cursor))
-  :rule-classes (:rewrite :type-prescription)
-  :induct (cursor-all-genericp cursor)
-  :enable cursor-all-genericp)
 
 (defruled cursor-all-genericp-when-not-entryp
   (implies (not (entryp cursor))

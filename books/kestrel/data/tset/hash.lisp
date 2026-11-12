@@ -44,6 +44,7 @@
 
 (define acl2-number-hash
   ((x acl2-numberp))
+  :type-prescription :none
   (mbe :logic (hash x)
        :exec (hash::acl2-number-jenkins x))
   :enabled t
@@ -52,6 +53,7 @@
 
 (define symbol-hash
   ((x symbolp))
+  :type-prescription :none
   (mbe :logic (hash x)
        :exec (hash::symbol-jenkins x))
   :enabled t
@@ -60,6 +62,7 @@
 
 (define eqlable-hash
   ((x eqlablep))
+  :type-prescription :none
   (mbe :logic (hash x)
        :exec (hash::eqlable-jenkins x))
   :enabled t

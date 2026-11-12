@@ -77,6 +77,7 @@
 ;; The edges from one source to one target, one for each label.
 
 (define labels-edges (from to (labels tset::setp))
+  :type-prescription :none
   :returns (edges tset::setp)
   (if (tset::emptyp labels)
       (tset::empty)
@@ -113,6 +114,7 @@
 ;; The edges out of one source, as recorded by its adjacency.
 
 (define adjacency-edges (from (adj tmap::mapp))
+  :type-prescription :none
   :guard (map-values-all-nonempty-setp adj)
   :returns (edges tset::setp)
   (if (tmap::emptyp adj)
@@ -156,6 +158,7 @@
 ;; The edges of the whole list.
 
 (define adj-list-edges ((adjl adj-listp))
+  :type-prescription :none
   :returns (edges tset::setp)
   (if (tmap::emptyp adjl)
       (tset::empty)
@@ -218,6 +221,7 @@
 ;; the edges, where @($d$) is the largest number of targets of a source.
 
 (define adj-list-edges-to (to (adjl adj-listp))
+  :type-prescription :none
   :returns (edges tset::setp)
   (if (tmap::emptyp adjl)
       (tset::empty)

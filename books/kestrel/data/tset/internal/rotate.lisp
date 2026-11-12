@@ -51,6 +51,7 @@
 
   (define rotate-left
     ((tree treep))
+    :type-prescription :none
     :short "Perform a left tree rotation."
     :long
     (xdoc::topstring
@@ -70,6 +71,7 @@
 
   (define rotate-right
     ((tree treep))
+    :type-prescription :none
     :short "Perform a right tree rotation."
     :long
     (xdoc::topstring
@@ -91,6 +93,7 @@
     ((head tree-element-p)
      (left treep)
      (right treep))
+    :type-prescription :none
     :short "Construct a node and perform a left rotation on it."
     :long
     (xdoc::topstring
@@ -112,6 +115,7 @@
     ((head tree-element-p)
      (left treep)
      (right treep))
+    :type-prescription :none
     :short "Construct a node and perform a right rotation on it."
     :long
     (xdoc::topstring

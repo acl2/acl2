@@ -76,6 +76,7 @@
 
 (define tree-intersect ((x tmap::treep)
                         (y tmap::treep))
+  :type-prescription :none
   :guard (and (tree-all-vals-posp x)
               (tree-all-vals-posp y))
   :returns (tree tmap::treep)

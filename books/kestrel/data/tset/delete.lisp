@@ -84,6 +84,7 @@
 (define delete-macro-loop
   (delete
    (list true-listp))
+  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list))
               (member-eq delete
@@ -99,6 +100,7 @@
 
 (define delete-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -131,6 +133,7 @@
 (define delete$inline
   (x
    (set setp))
+  :type-prescription :none
   :returns (set$ setp
                  :hints (("Goal" :in-theory (enable setp
                                                     fix
@@ -142,8 +145,6 @@
   (add-macro-fn delete delete$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t delete)))
 
 (defruled delete-type-prescription
   (or (consp (delete x set))
@@ -388,6 +389,7 @@
 (define delete-=
   ((x acl2-numberp)
    (set acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (delete x set)
        :exec (acl2-number-tree-delete x set))
   :enabled t
@@ -401,6 +403,7 @@
 (define delete-eq
   ((x symbolp)
    (set symbol-setp))
+  :type-prescription :none
   (mbe :logic (delete x set)
        :exec (symbol-tree-delete x set))
   :enabled t
@@ -414,6 +417,7 @@
 (define delete-eql
   ((x eqlablep)
    (set eqlable-setp))
+  :type-prescription :none
   (mbe :logic (delete x set)
        :exec (eqlable-tree-delete x set))
   :enabled t
@@ -426,6 +430,7 @@
 
 (define tail
   ((set setp))
+  :type-prescription :none
   :parents (delete)
   :short "Remove the @(see head) from a nonempty @(see tset)."
   :long

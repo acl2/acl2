@@ -38,6 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-min ((set setp))
+  :type-prescription :none
   :returns (cursor cursorp)
   :parents (cursor)
   :short "Construct a @(see cursor) at the least entry of a @(see tset)."
@@ -59,6 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-max ((set setp))
+  :type-prescription :none
   :returns (cursor cursorp)
   :parents (cursor)
   :short "Construct a @(see cursor) at the greatest entry of a @(see tset)."
@@ -78,8 +80,6 @@
                                             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t seek-min) (:t seek-max)))
 
 (defrule seek-min-when-equiv-congruence
   (implies (equiv set0 set1)

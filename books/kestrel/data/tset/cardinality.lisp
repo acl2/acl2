@@ -33,7 +33,7 @@
 
 (define cardinality ((set setp))
   :type-prescription :none
-  :returns (cardinality natp)
+  :returns (cardinality natp :rule-classes :type-prescription)
   :parents (tset)
   :short "The number of elements in a @(see tset)."
   :long
@@ -45,10 +45,6 @@
   :guard-hints (("Goal" :in-theory (enable setp))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule cardinality-type-prescription
-  (natp (cardinality set))
-  :rule-classes ((:type-prescription :typed-term (cardinality set))))
 
 (defrule cardinality-when-set-equiv-congruence
   (implies (equiv set0 set1)

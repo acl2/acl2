@@ -68,6 +68,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-set ((tree treep))
+  :type-prescription :none
   :returns (set tset::setp)
   (if (tree-empty-p tree)
       (tset::empty)
@@ -82,7 +83,7 @@
 
 ;; The executable rule is disabled because it often produces `nil` when it
 ;; should produce `emptyp`.
-(in-theory (disable (:t tree-key-set) (:e tree-key-set)))
+(in-theory (disable (:e tree-key-set)))
 
 (defrule tree-key-set-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -765,16 +766,19 @@
 ;; tree-keys checks simultaneously.
 
 (define acl2-number-treep (x)
+  :type-prescription :none
   (and (treep x)
        (tree-keys-acl2-numberp x))
   :enabled t)
 
 (define symbol-treep (x)
+  :type-prescription :none
   (and (treep x)
        (tree-keys-symbolp x))
   :enabled t)
 
 (define eqlable-treep (x)
+  :type-prescription :none
   (and (treep x)
        (tree-keys-eqlablep x))
   :enabled t)

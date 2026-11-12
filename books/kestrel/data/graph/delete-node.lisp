@@ -244,6 +244,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-node! (node (graph graphp))
+  :type-prescription :none
   :guard (tset::subset (predecessors node graph)
                        (tset::set node))
   :parents (delete-node)

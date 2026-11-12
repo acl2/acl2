@@ -62,6 +62,7 @@
 
   (local
     (define generic-count (key val)
+      :type-prescription :none
       (declare (ignore key val))
       0))
 

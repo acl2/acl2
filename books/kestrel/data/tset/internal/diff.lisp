@@ -183,6 +183,7 @@
 (define acl2-number-tree-diff
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-diff x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -216,6 +217,7 @@
 (define symbol-tree-diff
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-diff x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -248,6 +250,7 @@
 (define eqlable-tree-diff
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-diff x y)
        :exec
        (cond ((or (tree-empty-p x)

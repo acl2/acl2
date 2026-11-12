@@ -115,6 +115,7 @@
 ;; The nodes removed, in the order of removal.
 
 (define kahn-order ((remaining tset::setp) (graph graphp))
+  :type-prescription :none
   :returns (order true-listp)
   :parents (topological-sort)
   :short "The nodes Kahn's algorithm removes, in the order of removal."
@@ -235,6 +236,7 @@
   ((targets tset::setp)
    (frontier tset::setp)
    (counters tmap::mapp))
+  :type-prescription :none
   :returns (mv (frontier$ tset::setp)
                (counters$ tmap::mapp))
   :parents (cyclicp)
@@ -293,6 +295,7 @@
    (counters tmap::mapp)
    (order true-listp)
    (graph graphp))
+  :type-prescription :none
   :returns (mv (order$ true-listp
                        :hyp (true-listp order))
                (remaining$ tset::setp))
@@ -531,6 +534,7 @@
 ;; execute.
 
 (define kahn ((graph graphp))
+  :type-prescription :none
   :returns (mv (order true-listp)
                (remaining tset::setp))
   :parents (cyclicp)

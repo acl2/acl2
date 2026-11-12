@@ -52,6 +52,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-tail-induction (set)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp set)
       (head-tail-induction (delete (head set) set)))
@@ -64,6 +66,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define head-tail-bi-induction (x y)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (emptyp x)
       (emptyp y)
       (head-tail-bi-induction (delete (head x) x)
@@ -77,6 +81,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min-delete-induction (set)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp set)
       (min-delete-induction (delete (min set) set)))
@@ -89,6 +95,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define max-delete-induction (set)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp set)
       (max-delete-induction (delete (max set) set)))

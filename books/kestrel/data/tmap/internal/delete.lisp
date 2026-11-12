@@ -216,6 +216,7 @@
 (define acl2-number-tree-delete
   ((key acl2-numberp)
    (tree acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-delete key tree)
        :exec
        (if (tree-empty-p tree)
@@ -250,6 +251,7 @@
 (define symbol-tree-delete
   ((key symbolp)
    (tree symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-delete key tree)
        :exec
        (if (tree-empty-p tree)
@@ -282,6 +284,7 @@
 (define eqlable-tree-delete
   ((key eqlablep)
    (tree eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-delete key tree)
        :exec
        (if (tree-empty-p tree)

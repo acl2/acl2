@@ -67,7 +67,8 @@
 (define in$inline
   (x
    (set setp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tree-in x (fix set))
        :exec (tree-search-in x set))
   :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
@@ -76,12 +77,6 @@
   (add-macro-fn in in$inline))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t in)))
-
-(defrule in-type-prescription
-  (booleanp (in x set))
-  :rule-classes ((:type-prescription :typed-term (in x set))))
 
 (defrule in-when-set-equiv-congruence
   (implies (equiv set0 set1)
@@ -148,6 +143,7 @@
 (define in-=
   ((x acl2-numberp)
    (set acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (in x set)
        :exec (acl2-number-tree-search-in x set))
   :enabled t
@@ -159,6 +155,7 @@
 (define in-eq
   ((x symbolp)
    (set symbol-setp))
+  :type-prescription :none
   (mbe :logic (in x set)
        :exec (symbol-tree-search-in x set))
   :enabled t
@@ -170,6 +167,7 @@
 (define in-eql
   ((x eqlablep)
    (set eqlable-setp))
+  :type-prescription :none
   (mbe :logic (in x set)
        :exec (eqlable-tree-search-in x set))
   :enabled t

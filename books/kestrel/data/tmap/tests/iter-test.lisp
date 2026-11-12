@@ -58,6 +58,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-any-evenp ((iter iterp))
+  :type-prescription :none
   (and (has-valuep iter)
        (or (evenp (nfix (entry-val iter)))
            (iter-any-evenp (next iter))))
@@ -74,6 +75,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define any-evenp ((map mapp))
+  :type-prescription :none
   (mbe :logic (and (not (emptyp map))
                    (or (evenp (nfix (min-val map)))
                        (any-evenp (delete (min-key map) map))))

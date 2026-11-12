@@ -51,6 +51,7 @@
 ;; The cardinality of a bag's tree: the sum of the multiplicities at its nodes.
 
 (define tree-cardinality ((tree tmap::treep))
+  :type-prescription :none
   :guard (tree-all-vals-posp tree)
   :returns (cardinality natp :rule-classes :type-prescription)
   (if (tmap::tree-empty-p tree)

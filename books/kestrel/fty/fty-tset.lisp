@@ -444,8 +444,8 @@
                   :in-theory
                   (enable tset::cardinality-of-delete-when-in
                           tset::in-of-min
-                          tset::cardinality-type-prescription
-                          tset::emptyp-type-prescription
+                          tset::natp-of-cardinality
+                          tset::booleanp-of-emptyp
                           acl2::o-p)))
          :verify-guards nil))
       (local
@@ -527,7 +527,7 @@
         :hints (("Goal"
                  :use ((:instance
                         (:functional-instance
-                         tset::set-all-genericp-type-prescription
+                         tset::booleanp-of-set-all-genericp
                          (tset::genericp ,x.elt-type)
                          (tset::set-all-genericp ,alt))
                         (tset::set ,x.xvar)))
@@ -742,7 +742,7 @@
                                      tset::fix-when-setp
                                      tset::tree-empty-p-compound-recognizer
                                      tset::treep-compound-recognizer
-                                     tset::setp-type-prescription
+                                     tset::booleanp-of-setp
                                      (:induction ,fold))
                   :expand ((,fold ,x.xvar)
                            (,x.count ,x.xvar))))))
@@ -874,7 +874,7 @@
                                       tset::fix-when-setp
                                       tset::tree-element-p-of-tree->head
                                       tset::acl2-count-of-tree-element->val-linear
-                                      tset::setp-type-prescription
+                                      tset::booleanp-of-setp
                                       tset::tree->head-type-prescription
                                       tset::emptyp$inline))))))
                (flextset->kwd-alist x1))))

@@ -69,19 +69,12 @@
 
 (define-sk ext-equal (x y)
   :parents (extensionality)
-  :returns (yes/no booleanp)
   (forall (elem)
     (non-exec
       (equal (count elem x)
              (count elem y)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t ext-equal)))
-
-(defrule ext-equal-type-prescription
-  (booleanp (ext-equal x y))
-  :rule-classes ((:type-prescription :typed-term (ext-equal x y))))
 
 (defrule ext-equal-when-equiv-of-arg1-congruence
   (implies (equiv x0 x1)

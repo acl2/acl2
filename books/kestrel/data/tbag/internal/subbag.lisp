@@ -46,6 +46,7 @@
 
 (define tree-subbag-p ((x tmap::treep)
                        (y tmap::treep))
+  :type-prescription :none
   :guard (and (tree-all-vals-posp x)
               (tree-all-vals-posp y))
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -92,6 +93,7 @@
 
 (define tree-subbag-p-witness ((x tmap::treep)
                                (y tmap::treep))
+  :type-prescription :none
   (if (tmap::tree-empty-p x)
       nil
     (mv-let (assoc left right)

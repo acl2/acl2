@@ -36,6 +36,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((cursor cursorp))
+  :type-prescription :none
   :guard (entryp cursor)
   :returns (cursor$ cursorp)
   :parents (cursor)
@@ -59,6 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prev ((cursor cursorp))
+  :type-prescription :none
   :guard (entryp cursor)
   :returns (cursor$ cursorp)
   :parents (cursor)
@@ -80,8 +82,6 @@
                                             break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t next) (:t prev)))
 
 (defrule next-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)

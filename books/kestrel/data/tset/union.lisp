@@ -91,6 +91,7 @@
 (define union-macro-loop
   (union
    (list true-listp))
+  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list))
               (member-eq union
@@ -106,6 +107,7 @@
 
 (define union-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -138,6 +140,7 @@
 (define union$inline
   ((x setp)
    (y setp))
+  :type-prescription :none
   :returns (set setp
                 :hints (("Goal" :in-theory (enable setp
                                                    fix
@@ -148,8 +151,6 @@
 (add-macro-fn union union$inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t union)))
 
 (defruled union-type-prescription
   (or (consp (union x y))
@@ -517,6 +518,7 @@
 (define union-=
   ((x acl2-number-setp)
    (y acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (union x y)
        :exec (acl2-number-tree-union x y))
   :enabled t
@@ -530,6 +532,7 @@
 (define union-eq
   ((x symbol-setp)
    (y symbol-setp))
+  :type-prescription :none
   (mbe :logic (union x y)
        :exec (symbol-tree-union x y))
   :enabled t
@@ -543,6 +546,7 @@
 (define union-eql
   ((x eqlable-setp)
    (y eqlable-setp))
+  :type-prescription :none
   (mbe :logic (union x y)
        :exec (eqlable-tree-union x y))
   :enabled t

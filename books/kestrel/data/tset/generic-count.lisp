@@ -47,6 +47,7 @@
 
   (local
     (define generic-count (x)
+      :type-prescription :none
       (declare (ignore x))
       0))
 

@@ -68,7 +68,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursorp (x)
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Recognizer for @(see cursor)s."
   :long
@@ -107,6 +108,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define begin ((set setp))
+  :type-prescription :none
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
@@ -127,6 +129,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define end ((set setp))
+  :type-prescription :none
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
@@ -146,8 +149,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t begin) (:t end)))
-
 (defrule begin-when-equiv-congruence
   (implies (equiv set0 set1)
            (equal (begin set0)
@@ -165,6 +166,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursor-fix ((cursor cursorp))
+  :type-prescription :none
   :returns (cursor$ cursorp)
   :parents (cursor)
   :short "Fixer for @(see cursor)s."
@@ -175,8 +177,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t cursor-fix)))
 
 (defrule cursor-fix-when-cursorp
   (implies (cursorp cursor)
@@ -202,7 +202,8 @@
 (define cursor-equiv
   ((x cursorp)
    (y cursorp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Equivalence up to @(tsee cursor-fix)."
   (equal (cursor-fix x)

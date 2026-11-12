@@ -47,6 +47,7 @@
 (define tree-split
   (key
    (tree treep))
+  :type-prescription :none
   :parents (implementation)
   :short "Split a tree into two disjoint subtrees."
   :long
@@ -612,6 +613,7 @@
 (define acl2-number-tree-split
   ((key acl2-numberp)
    (tree acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)
@@ -652,6 +654,7 @@
 (define symbol-tree-split
   ((key symbolp)
    (tree symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)
@@ -691,6 +694,7 @@
 (define eqlable-tree-split
   ((key eqlablep)
    (tree eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)

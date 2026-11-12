@@ -184,6 +184,7 @@
 (define acl2-number-tree-intersect
   ((x acl2-number-treep)
    (y acl2-number-treep))
+  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -218,6 +219,7 @@
 (define symbol-tree-intersect
   ((x symbol-treep)
    (y symbol-treep))
+  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -251,6 +253,7 @@
 (define eqlable-tree-intersect
   ((x eqlable-treep)
    (y eqlable-treep))
+  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)

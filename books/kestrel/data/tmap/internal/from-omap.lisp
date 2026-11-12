@@ -93,7 +93,6 @@
 
 (local
   (define-sk <<-all-l-sk (tree x)
-    :returns (yes/no booleanp :rule-classes :type-prescription)
     (forall (key)
       (non-exec
         (implies (tset::in key (tree-key-set tree))
@@ -168,6 +167,7 @@
   ((omap omap::mapp)
    (parent tree-element-p)
    (acc treep))
+  :type-prescription :none
   :returns (mv (omap$ omap::mapp)
                (acc$ treep))
   (if (omap::emptyp omap)
@@ -646,6 +646,7 @@
 (define tree-from-omap-acc
   ((omap omap::mapp)
    (acc treep))
+  :type-prescription :none
   :returns (tree treep)
   (if (omap::emptyp omap)
       (tree-fix acc)
@@ -742,6 +743,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-from-omap ((omap omap::mapp))
+  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Build a treap holding an omap's entries, in linear time."

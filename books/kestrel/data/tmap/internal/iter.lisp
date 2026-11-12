@@ -74,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-p (x)
-  (declare (xargs :type-prescription (booleanp (tree-iter-p x))))
+  :type-prescription (booleanp (tree-iter-p x))
   :short "Recognizer for @(see tree-iterator)s."
   :long
   (xdoc::topstring
@@ -190,7 +190,7 @@
 (define tree-iter-equiv
   ((x tree-iter-p)
    (y tree-iter-p))
-  (declare (xargs :type-prescription (booleanp (tree-iter-equiv x y))))
+  :type-prescription (booleanp (tree-iter-equiv x y))
   :short "Equivalence up to @(tsee tree-iter-fix)."
   (equal (tree-iter-fix x)
          (tree-iter-fix y))
@@ -214,6 +214,7 @@
 ;; iterator.
 
 (define tree-iter-before-first ((tree treep))
+  :type-prescription :none
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "The iterator before the first element of a tree."
@@ -223,6 +224,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after-last ((tree treep))
+  :type-prescription :none
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "The iterator after the last element of a tree."
@@ -230,8 +232,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-before-first) (:t tree-iter-after-last)))
 
 (defrule tree-iter-before-first-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -455,6 +455,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter->zip ((iter tree-iter-p))
+  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :returns (zip zipp)
   :short "Get the zipper of an iterator which is at an element."
@@ -466,8 +467,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-iter-has-value-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter->zip)))
 
 (defrule tree-iter->zip-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -495,6 +494,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-plug ((iter tree-iter-p))
+  :type-prescription :none
   :returns (tree treep)
   :short "Recover the tree an iterator is a position in."
   :long
@@ -508,8 +508,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-plug)))
 
 (defrule tree-iter-plug-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -601,6 +599,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-next ((iter tree-iter-p))
+  :type-prescription :none
   :guard (not (tree-iter-after-last-p iter))
   :returns (iter$ tree-iter-p)
   :short "Move the iterator to the next position."
@@ -646,6 +645,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-prev ((iter tree-iter-p))
+  :type-prescription :none
   :guard (not (tree-iter-before-first-p iter))
   :returns (iter$ tree-iter-p)
   :short "Move the iterator to the previous position."
@@ -679,8 +679,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-iter-has-value-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-next) (:t tree-iter-prev)))
 
 (defrule tree-iter-next-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -792,14 +790,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-key ((iter tree-iter-p))
+  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The key at the iterator."
   (zip-key (tree-iter->zip iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-key)))
 
 (defrule tree-iter-key-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -811,14 +808,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-val ((iter tree-iter-p))
+  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The value at the iterator."
   (zip-val (tree-iter->zip iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-val)))
 
 (defrule tree-iter-val-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -830,14 +826,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-key+val ((iter tree-iter-p))
+  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The entry at the iterator, as a key-value pair."
   (zip-key+val (tree-iter->zip iter))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-key+val)))
 
 (defrule tree-iter-key+val-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -864,6 +859,7 @@
 ;; nothing to build.
 
 (define tree-iter-tree-before ((iter tree-iter-p))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements to the left of the iterator, as a tree."
   (cond ((tree-iter-before-first-p iter) nil)
@@ -873,6 +869,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-tree-after ((iter tree-iter-p))
+  :type-prescription :none
   :returns (tree treep)
   :short "The elements to the right of the iterator, as a tree."
   (cond ((tree-iter-after-last-p iter) nil)
@@ -880,8 +877,6 @@
         (t (zip-tree-after (tree-iter->zip iter)))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-tree-before) (:t tree-iter-tree-after)))
 
 (defrule tree-iter-tree-before-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -1328,6 +1323,7 @@
 ;; zipper versions they wrap.
 
 (define tree-iter-omap-before ((iter tree-iter-p))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries to the left of the iterator, as an omap."
   (tree-omap (tree-iter-tree-before iter)))
@@ -1335,13 +1331,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-omap-after ((iter tree-iter-p))
+  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries to the right of the iterator, as an omap."
   (tree-omap (tree-iter-tree-after iter)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-omap-before) (:t tree-iter-omap-after)))
 
 (defrule tree-iter-omap-before-when-tree-iter-equiv-congruence
   (implies (tree-iter-equiv iter0 iter1)
@@ -1495,6 +1490,7 @@
 ;; walk in its own direction, landing on a value exactly when there is one.
 
 (define tree-iter-min ((tree treep))
+  :type-prescription :none
   :returns (iter tree-iter-p)
   :short "The tree iterator at the least element."
   (tree-iter-next (tree-iter-before-first tree))
@@ -1503,14 +1499,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-max ((tree treep))
+  :type-prescription :none
   :returns (iter tree-iter-p)
   :short "The tree iterator at the greatest element."
   (tree-iter-prev (tree-iter-after-last tree))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-iter-min) (:t tree-iter-max)))
 
 (defrule tree-iter-min-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)

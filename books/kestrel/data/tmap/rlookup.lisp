@@ -55,6 +55,7 @@
 (define rlookup
   (val
    (map mapp))
+  :type-prescription :none
   :returns (keys tset::setp)
   :parents (tmap)
   :short "Lookup all keys associated to a value."

@@ -470,8 +470,8 @@
            :in-theory
            (enable tset::cardinality-of-delete-when-in
                    tset::in-of-min
-                   tset::cardinality-type-prescription
-                   tset::emptyp-type-prescription
+                   tset::natp-of-cardinality
+                   tset::booleanp-of-emptyp
                    acl2::o-p))))
        (booleanp-of-alt-keys (intern-in-package-of-symbol
                               (concatenate 'string "BOOLEANP-OF-"
@@ -602,7 +602,7 @@
          :hints (("Goal"
                   :use ((:instance
                          (:functional-instance
-                          tset::set-all-genericp-type-prescription
+                          tset::booleanp-of-set-all-genericp
                           (tset::genericp ,x.key-type)
                           (tset::set-all-genericp ,alt-keys))
                          (tset::set ,sv)))
@@ -616,7 +616,7 @@
          :hints (("Goal"
                   :use ((:instance
                          (:functional-instance
-                          tset::set-all-genericp-type-prescription
+                          tset::booleanp-of-set-all-genericp
                           (tset::genericp ,x.val-type)
                           (tset::set-all-genericp ,alt-vals))
                          (tset::set ,sv)))
@@ -629,7 +629,7 @@
         :hints (("Goal" :in-theory (enable ,pred-def
                                            ,keys-bridge
                                            ,vals-bridge
-                                           tmap::mapp-type-prescription
+                                           tmap::booleanp-of-mapp
                                            tmap::mapp-of-fix
                                            acl2::booleanp-compound-recognizer)
                  :do-not-induct t)))
@@ -951,7 +951,7 @@
                                     ,alt-vals
                                     tmap::fix-when-mapp
                                     tmap::mapp-of-delete$inline
-                                    tmap::emptyp-type-prescription
+                                    tmap::booleanp-of-emptyp
                                     tmap::emptyp-of-keys
                                     tmap::keys-when-emptyp-cheap
                                     tmap::values-when-emptyp-cheap
@@ -1113,7 +1113,7 @@
                                      tmap::fix-when-mapp
                                      tmap::tree-empty-p-compound-recognizer
                                      tmap::treep-compound-recognizer
-                                     tmap::mapp-type-prescription
+                                     tmap::booleanp-of-mapp
                                      tmap::mapp-of-tree->left
                                      tmap::mapp-of-tree->right
                                      (:induction ,fold))
@@ -1346,7 +1346,7 @@
                                       tmap::tree-element-p-of-tree->head
                                       tmap::acl2-count-of-tree-element->key-linear
                                       tmap::acl2-count-of-tree-element->val-linear
-                                      tmap::mapp-type-prescription
+                                      tmap::booleanp-of-mapp
                                       tmap::tree->head-type-prescription
                                       tmap::emptyp$inline))))))
                (flextmap->kwd-alist x1))))

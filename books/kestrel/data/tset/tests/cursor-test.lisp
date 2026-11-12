@@ -34,6 +34,7 @@
 ;; @(tsee next) maintains.
 
 (define cursor-any-evenp ((cursor cursorp))
+  :type-prescription :none
   :guard (or (entryp cursor)
              (endp cursor))
   (and (entryp cursor)
@@ -52,6 +53,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define any-evenp ((set setp))
+  :type-prescription :none
   (mbe :logic (and (not (emptyp set))
                    (or (evenp (nfix (min set)))
                        (any-evenp (delete (min set) set))))

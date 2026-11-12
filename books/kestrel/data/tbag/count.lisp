@@ -128,6 +128,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define in (x (bag bagp))
+  :type-prescription :none
   :parents (tbag)
   :short "Check if a value occurs in a @(see tbag)."
   :long

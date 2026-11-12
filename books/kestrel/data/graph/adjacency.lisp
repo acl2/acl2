@@ -148,6 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge-in (from to label (graph graphp))
+  :type-prescription :none
   :parents (graph)
   :short "Check if a labeled edge is an edge of a @(see graph)."
   :long
@@ -170,6 +171,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define adjacency! (node (graph graphp))
+  :type-prescription :none
   :guard (node-in node graph)
   :parents (adjacency)
   :short "The targets of the edges out of a node of a @(see graph), with their

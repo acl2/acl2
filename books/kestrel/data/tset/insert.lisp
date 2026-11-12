@@ -96,6 +96,7 @@
 (define insert-macro-loop
   (insert
    (list true-listp))
+  :type-prescription :none
   :guard (and (consp (rest list))
               (member-eq insert
                          '(insert$inline insert-= insert-eq insert-eql)))
@@ -108,6 +109,7 @@
 
 (define insert-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -141,6 +143,7 @@
 (define insert$inline
   (x
    (set setp))
+  :type-prescription :none
   :returns (set$ setp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      setp
@@ -155,8 +158,6 @@
   (add-macro-fn insert insert$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t insert)))
 
 (defrule insert-when-equiv-congruence
   (implies (equiv set0 set1)
@@ -340,6 +341,7 @@
 (define singleton-with-hash
   (x
    (hash (unsigned-byte-p 32 hash)))
+  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (insert x (empty))
@@ -352,6 +354,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define singleton (x)
+  :type-prescription :none
   (mbe :logic (insert x (empty))
        :exec (tree-singleton x (hash x)))
   :enabled t
@@ -607,6 +610,7 @@
 
 (define set-macro-fn
   ((list true-listp))
+  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -790,6 +794,7 @@
 (define insert-=
   ((x acl2-numberp)
    (set acl2-number-setp))
+  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (acl2-number-tree-insert x set)
@@ -804,6 +809,7 @@
 (define insert-eq
   ((x symbolp)
    (set symbol-setp))
+  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (symbol-tree-insert x set)
@@ -818,6 +824,7 @@
   ((x eqlablep)
 
    (set eqlable-setp))
+  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (eqlable-tree-insert x set)
@@ -835,6 +842,7 @@
   (x
    (hash (unsigned-byte-p 32 hash))
    (set setp))
+  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (insert x set)

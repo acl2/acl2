@@ -107,6 +107,7 @@
 (define restrict$inline
   ((keys tset::setp)
    (map mapp))
+  :type-prescription :none
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* mapp
                                                      tset::break-abstraction
@@ -119,8 +120,6 @@
   (add-macro-fn restrict restrict$inline t))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t restrict)))
 
 (defruled restrict-type-prescription
   (or (consp (restrict keys map))
@@ -449,6 +448,7 @@
 (define restrict-=
   ((keys tset::acl2-number-setp)
    (map acl2-number-mapp))
+  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (acl2-number-tree-restrict keys map))
   :enabled t
@@ -464,6 +464,7 @@
 (define restrict-eq
   ((keys tset::symbol-setp)
    (map symbol-mapp))
+  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (symbol-tree-restrict keys map))
   :enabled t
@@ -479,6 +480,7 @@
 (define restrict-eql
   ((keys tset::eqlable-setp)
    (map eqlable-mapp))
+  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (eqlable-tree-restrict keys map))
   :enabled t

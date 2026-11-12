@@ -51,6 +51,7 @@
 ;; visiting every node.
 
 (define adj-list-predecessors (to (adjl adj-listp))
+  :type-prescription :none
   :returns (preds tset::setp)
   (if (tmap::emptyp adjl)
       (tset::empty)

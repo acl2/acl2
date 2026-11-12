@@ -38,6 +38,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min ((set setp))
+  :type-prescription :none
   :parents (tset)
   :short "The minimum element of a @(see tset) (with respect to
           @(tsee <<))."
@@ -122,19 +123,12 @@
 
 (define-sk not-<<-all-l-sk (set x)
   :parents (min)
-  :returns (yes/no booleanp)
   (forall (elem)
     (non-exec
       (implies (in elem set)
                (not (<< elem x))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t not-<<-all-l-sk)))
-
-(defrule not-<<-all-l-sk-type-prescription
-  (booleanp (not-<<-all-l-sk set x))
-  :rule-classes :type-prescription)
 
 (defrule not-<<-all-l-sk-when-equiv-congruence
   (implies (equiv set0 set1)
@@ -166,6 +160,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max ((set setp))
+  :type-prescription :none
   :parents (tset)
   :short "The maximum element of a @(see tset) (with respect to
           @(tsee <<))."
@@ -247,19 +242,12 @@
 
 (define-sk not-<<-all-r-sk (x set)
   :parents (max)
-  :returns (yes/no booleanp)
   (forall (elem)
     (non-exec
       (implies (in elem set)
                (not (<< x elem))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t not-<<-all-r-sk)))
-
-(defrule not-<<-all-r-sk-type-prescription
-  (booleanp (not-<<-all-r-sk set x))
-  :rule-classes :type-prescription)
 
 (defrule not-<<-all-r-sk-when-equiv-congruence
   (implies (equiv set0 set1)

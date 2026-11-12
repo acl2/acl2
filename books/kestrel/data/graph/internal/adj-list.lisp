@@ -63,7 +63,7 @@
 
 (define set-all-nonempty-setp ((set tset::setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tset::setp (tset::min set))
            (not (tset::emptyp (tset::min set)))
@@ -72,12 +72,6 @@
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-nonempty-setp-type-prescription
-  (booleanp (set-all-nonempty-setp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-nonempty-setp set))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The same check run as a single walk over the map's own tree, reading the
@@ -85,6 +79,8 @@
 ;; recognizer executes.
 
 (define tree-all-vals-nonempty-setp ((tree tmap::treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (tset::setp
              (tmap::tree-element->val (tmap::tree->head tree)))
@@ -121,7 +117,7 @@
 
 (define map-values-all-nonempty-setp ((map tmap::mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-nonempty-setp (tmap::values map))
        :exec (tree-all-vals-nonempty-setp map))
   :inline t
@@ -132,11 +128,6 @@
             tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-values-all-nonempty-setp-type-prescription
-  (booleanp (map-values-all-nonempty-setp map))
-  :rule-classes ((:type-prescription
-                   :typed-term (map-values-all-nonempty-setp map))))
 
 (defrule map-values-all-nonempty-setp-when-tmap-equiv-congruence
   (implies (tmap::equiv map0 map1)
@@ -282,7 +273,7 @@
 
 (define set-all-adjacencyp ((set tset::setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tmap::mapp (tset::min set))
            (map-values-all-nonempty-setp (tset::min set))
@@ -291,15 +282,11 @@
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-adjacencyp-type-prescription
-  (booleanp (set-all-adjacencyp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-adjacencyp set))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-vals-adjacencyp ((tree tmap::treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (tmap::mapp
              (tmap::tree-element->val (tmap::tree->head tree)))
@@ -333,7 +320,7 @@
 
 (define map-values-all-adjacencyp ((map tmap::mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-adjacencyp (tmap::values map))
        :exec (tree-all-vals-adjacencyp map))
   :inline t
@@ -344,11 +331,6 @@
             tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-values-all-adjacencyp-type-prescription
-  (booleanp (map-values-all-adjacencyp map))
-  :rule-classes ((:type-prescription
-                   :typed-term (map-values-all-adjacencyp map))))
 
 (defrule map-values-all-adjacencyp-when-tmap-equiv-congruence
   (implies (tmap::equiv map0 map1)
@@ -474,6 +456,7 @@
 ;; for its two conjuncts, and rules are stated over those.
 
 (define adj-listp (x)
+  :type-prescription :none
   (and (tmap::mapp x)
        (map-values-all-adjacencyp x))
   :enabled t)

@@ -73,7 +73,6 @@
   (xdoc::topstring-p
     "This is the specification of @(tsee reachable+p), to which it is equal.
      It is not executable.")
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (exists (walk)
     (non-exec
       (and (walk-in walk graph)
@@ -82,8 +81,6 @@
            (consp (walk->steps walk))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t reachable+p-sk)))
 
 (defrule reachable+p-sk-when-equiv-congruence
   (implies (equiv graph0 graph1)
@@ -109,7 +106,8 @@
    (frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (reachable+p)
   :short "Search from a frontier for a node, stopping when it is found."
   (b* (((when (tset::emptyp frontier))
@@ -178,7 +176,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reachable+p (from to (graph graphp))
-  :returns (yes/no booleanp)
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if there is a walk of at least one step from one node to
           another in a @(see graph)."
@@ -259,7 +258,8 @@
 
 (local
   (define set-all-reachable+p-sk (from (set tset::setp) graph)
-    :returns (yes/no booleanp)
+    :type-prescription :none
+    :returns (yes/no booleanp :rule-classes :type-prescription)
     (or (tset::emptyp set)
         (and (reachable+p-sk from (tset::min set) graph)
              (set-all-reachable+p-sk from
@@ -552,7 +552,8 @@
 
 (local
   (define set-all-reachable+p-to ((set tset::setp) to graph)
-    :returns (yes/no booleanp)
+    :type-prescription :none
+    :returns (yes/no booleanp :rule-classes :type-prescription)
     (or (tset::emptyp set)
         (and (reachable+p (tset::min set) to graph)
              (set-all-reachable+p-to (tset::delete (tset::min set) set)

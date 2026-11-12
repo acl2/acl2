@@ -24,6 +24,7 @@
 
 (define min-<<-macro-loop
   ((list true-listp))
+  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list)))
   (if (endp (rest (rest list)))
@@ -40,6 +41,7 @@
   (min-<<-macro-loop (list* x y rst)))
 
 (define binary-min-<< (x y)
+  :type-prescription :none
   (if (<< x y)
       x
     y)

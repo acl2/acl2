@@ -86,7 +86,7 @@
 
 (define set-all-posp ((set tset::setp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (posp (tset::min set))
            (set-all-posp (tset::delete (tset::min set) set))))
@@ -95,10 +95,6 @@
                                      tset::in-of-min))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule set-all-posp-type-prescription
-  (booleanp (set-all-posp set))
-  :rule-classes ((:type-prescription :typed-term (set-all-posp set))))
 
 (defrule set-all-posp-when-tset-equiv-congruence
   (implies (tset::equiv set0 set1)
@@ -247,6 +243,8 @@
 ;; recognizer executes.
 
 (define tree-all-vals-posp ((tree tmap::treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (posp (tmap::tree-element->val (tmap::tree->head tree)))
            (tree-all-vals-posp (tmap::tree->left tree))
@@ -359,7 +357,7 @@
 
 (define map-values-all-posp ((map tmap::mapp))
   :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-posp (tmap::values map))
        :exec (tree-all-vals-posp map))
   :guard-hints
@@ -367,10 +365,6 @@
                               tmap::treep-when-mapp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule map-values-all-posp-type-prescription
-  (booleanp (map-values-all-posp map))
-  :rule-classes ((:type-prescription :typed-term (map-values-all-posp map))))
 
 (defrule map-values-all-posp-when-tmap-equiv-congruence
   (implies (tmap::equiv map0 map1)

@@ -336,12 +336,16 @@
 ;; meet the projection laws above, one functional instance per fold.
 
 (define tree-all-keys-genericp ((tree treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (tset::genericp (tree-element->key (tree->head tree)))
            (tree-all-keys-genericp (tree->left tree))
            (tree-all-keys-genericp (tree->right tree)))))
 
 (define tree-all-vals-genericp ((tree treep))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (tset::genericp (tree-element->val (tree->head tree)))
            (tree-all-vals-genericp (tree->left tree))
@@ -419,6 +423,7 @@
 ;; generates.
 
 (define generic-fix (map)
+  :type-prescription :none
   (if (tset::genericp map)
       map
     (empty)))

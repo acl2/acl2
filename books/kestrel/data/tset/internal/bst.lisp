@@ -28,7 +28,7 @@
 (define <<-all-l
   ((tree treep)
    x)
-  (declare (xargs :type-prescription (booleanp (<<-all-l tree x))))
+  :type-prescription (booleanp (<<-all-l tree x))
   :parents (tree)
   :short "Check that all members of a tree are @(tsee <<) some value."
   (or (tree-empty-p tree)
@@ -39,7 +39,7 @@
 (define <<-all-r
   (x
    (tree treep))
-  (declare (xargs :type-prescription (booleanp (<<-all-r x tree))))
+  :type-prescription (booleanp (<<-all-r x tree))
   :parents (tree)
   :short "Check that some value is @(tsee <<) all members of a tree."
   (or (tree-empty-p tree)
@@ -314,6 +314,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fast-bstp-nonempty ((tree treep))
+  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (mv bstp
                min
@@ -340,8 +341,6 @@
     (mv t nil nil)))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t fast-bstp-nonempty)))
 
 (defrule fast-bstp-nonempty-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
@@ -428,7 +427,7 @@
 
 (define bstp
   ((tree treep))
-  (declare (xargs :type-prescription (booleanp (bstp tree))))
+  :type-prescription (booleanp (bstp tree))
   :parents (tree)
   :short "Check the binary search tree property."
   (or (tree-empty-p tree)
