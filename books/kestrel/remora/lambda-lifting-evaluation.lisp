@@ -86,12 +86,7 @@
   (b* (((when (endp names)) nil)
        ((ok val) (expr-denv-lookup-expr (car names) denv))
        ((ok vals) (expr-denv-lookup-exprs (cdr names) denv)))
-    (cons val vals))
-  ///
-  (defret len-of-expr-denv-lookup-exprs
-    (implies (not (reserrp vals))
-             (equal (len vals) (len names)))
-    :hints (("Goal" :induct t :in-theory (enable len)))))
+    (cons val vals)))
 
 (defrule eval-expr-of-expr-var
   (equal (eval-expr (expr-var name) denv limit)

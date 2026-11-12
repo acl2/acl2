@@ -73,10 +73,15 @@
          ((when (reserrp senvs)) nil)
          (denv (eval-bind-list binds (init-expr-denv) 100000))
          ((when (reserrp denv)) nil))
-      (expr-denv-typed-p denv
-                         (senvs+binds->ienv senvs)
-                         (senvs+binds->tenv senvs)
-                         (senvs+binds->eenv senvs)))))
+      (and (expr-denv-typed-p denv
+                              (senvs+binds->ienv senvs)
+                              (senvs+binds->tenv senvs)
+                              (senvs+binds->eenv senvs))
+           (expr-denv-typed-for-p denv
+                                  (senvs+binds->ienv senvs)
+                                  (senvs+binds->tenv senvs)
+                                  (senvs+binds->eenv senvs)
+                                  (bind-list-bound-expr-vars binds))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

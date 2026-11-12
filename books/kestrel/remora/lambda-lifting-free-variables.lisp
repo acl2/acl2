@@ -63,8 +63,9 @@
     "The set of names in use only grows along the traversal, and the
      definitions lifted out of a node are bound to names that are in use
      afterwards and were not in use before: @('used-of-ll-expr').  Since
-     @(tsee lambda-lift-top-expr) starts from every variable of the input,
-     no lifted definition is named like any variable of the input: @('lifted-names-fresh-of-lambda-lift-top-expr').  The lifted definitions
+     @(tsee lambda-lift-top-expr) starts from every variable and binder name of
+     the input (see @(tsee lambda-lift-top-used)), no lifted definition is
+     named like any of them: @('lifted-names-fresh-of-lambda-lift-top-expr').  The lifted definitions
      are all functions, so they bind no type or ispace variables, which is
      what lets the free variables of the nested @(':let') that the entry
      point builds (@(tsee nest-let-binds)) reduce to a union.")
@@ -267,15 +268,6 @@
            (equal (mv-nth 2 (emit-lifted-lambda params body type? tenv locals used))
                   (set::insert (fresh-expr-var "lam_" (string-sfix used)) (string-sfix used))))
   :enable emit-lifted-lambda)
-
-(defrule expr-free-expr-vars-of-emit-lifted-lambda
-  (implies (consp (mv-nth 1 (emit-lifted-lambda params body type? tenv locals used)))
-           (set::subset (expr-free-expr-vars (mv-nth 0 (emit-lifted-lambda params body type? tenv locals used)))
-                        (set::insert (fresh-expr-var "lam_" (string-sfix used))
-                                     (set::difference (expr-free-expr-vars body)
-                                                      (set::mergesort (var+type?-list->var params))))))
-  :enable (emit-lifted-lambda set::pick-a-point-subset-strategy)
-  :expand ((:free (n) (expr-free-expr-vars (expr-var n)))))
 
 ; Hoisting of a local function.
 
@@ -543,8 +535,7 @@
                                      hoist-local-fun-when-hoisted-fun-pieces
                                      difference-of-nil-right
                                      consp-when-positive-len
-                                     positive-len-when-consp
-                                     set::emptyp)
+                                     positive-len-when-consp)
                                     (emit-lifted-lambda hoist-local-fun apply-to-names
                                      binary-append
                                      acl2::utf8-table36-length-lemmas
@@ -556,7 +547,13 @@
                                      acl2::emptyp-string-sfix
                                      acl2::member-when-atom
                                      consp-of-var+type?-list->var
-                                     set::insert-when-emptyp))
+                                     set::insert-when-emptyp
+                                     len
+                                     acl2::append-when-not-consp
+                                     set::insert-identity
+                                     set::in-tail
+                                     string-listp
+                                     str::string-list-fix-when-string-listp))
            :expand ((ll-expr x tenv tlets locals lmap used)
                     (atom-free-type-vars (expr-atom->atom x))
                     (atom-free-ispace-vars (expr-atom->atom x))
@@ -653,34 +650,6 @@
 ; of a node are named freshly: their names are among the names in use
 ; afterwards and were not in use before.
 
-(defruledl emptyp-intersect-of-union-left
-  (implies (and (set::emptyp (set::intersect a c))
-                (set::emptyp (set::intersect b c)))
-           (set::emptyp (set::intersect (set::union a b) c)))
-  :use ((:instance set::in-head (x (set::intersect (set::union a b) c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::union a b) c)))
-                   (set::x (set::intersect a c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::union a b) c)))
-                   (set::x (set::intersect b c)))))
-
-(defruledl emptyp-intersect-when-subset-right
-  (implies (and (set::emptyp (set::intersect a c1))
-                (set::subset c c1))
-           (set::emptyp (set::intersect a c)))
-  :use ((:instance set::in-head (x (set::intersect a c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect a c)))
-                   (set::x (set::intersect a c1)))
-        (:instance set::subset-in (set::a (set::head (set::intersect a c)))
-                   (set::x c) (set::y c1))))
-
-(defruledl emptyp-intersect-of-insert-left
-  (implies (and (not (set::in x c))
-                (set::emptyp (set::intersect a c)))
-           (set::emptyp (set::intersect (set::insert x a) c)))
-  :use ((:instance set::in-head (x (set::intersect (set::insert x a) c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::insert x a) c)))
-                   (set::x (set::intersect a c)))))
-
 (defrule hoist-local-fun-when-not-fun
   (implies (not (equal (bind-kind b) :fun))
            (equal (mv-nth 0 (hoist-local-fun b rebound tenv locals used)) nil))
@@ -696,26 +665,11 @@
          nil)
   :enable (emit-lifted-lambda bind-list-bound-ispace-vars bind-bound-ispace-vars))
 
-(defruledl emptyp-of-intersect-of-union
-  (equal (set::emptyp (set::intersect (set::union a b) c))
-         (and (set::emptyp (set::intersect a c))
-              (set::emptyp (set::intersect b c))))
-  :use (emptyp-intersect-of-union-left
-        (:instance set::in-head (x (set::intersect a c)))
-        (:instance set::in-head (x (set::intersect b c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect a c)))
-                   (set::x (set::intersect (set::union a b) c)))
-        (:instance set::never-in-empty (set::a (set::head (set::intersect b c)))
-                   (set::x (set::intersect (set::union a b) c)))))
-
 (defrule not-in-of-fresh-expr-var-when-subset
   (implies (set::subset s (string-sfix used))
            (not (set::in (fresh-expr-var prefix used) s)))
   :use ((:instance set::subset-in (set::a (fresh-expr-var prefix used))
                    (set::x s) (set::y (string-sfix used)))))
-
-(defrulel emptyp-intersect-of-nil-left
-  (set::emptyp (set::intersect nil c)))
 
 (defrulel emptyp-intersect-of-singleton-when-not-in
   (implies (not (set::in a s))
@@ -841,14 +795,14 @@
 (defrule expr-free-type-vars-of-lambda-lift-top-expr
   (equal (expr-free-type-vars (lambda-lift-top-expr x))
          (set::union (bind-list-free-type-vars
-                      (mv-nth 1 (ll-expr x nil nil nil nil (expr-all-expr-vars x))))
+                      (mv-nth 1 (ll-expr x nil nil nil nil (lambda-lift-top-used x))))
                      (expr-free-type-vars x)))
   :enable lambda-lift-top-expr)
 
 (defrule expr-free-ispace-vars-of-lambda-lift-top-expr
   (equal (expr-free-ispace-vars (lambda-lift-top-expr x))
          (set::union (bind-list-free-ispace-vars
-                      (mv-nth 1 (ll-expr x nil nil nil nil (expr-all-expr-vars x))))
+                      (mv-nth 1 (ll-expr x nil nil nil nil (lambda-lift-top-used x))))
                      (expr-free-ispace-vars x)))
   :enable lambda-lift-top-expr)
 
@@ -862,7 +816,7 @@
 
 (defrule lifted-names-fresh-of-lambda-lift-top-expr
   (set::emptyp (set::intersect (bind-list-bound-expr-vars
-                                (mv-nth 1 (ll-expr x nil nil nil nil (expr-all-expr-vars x))))
-                               (expr-all-expr-vars x)))
+                                (mv-nth 1 (ll-expr x nil nil nil nil (lambda-lift-top-used x))))
+                               (lambda-lift-top-used x)))
   :use ((:instance used-of-ll-expr
-                   (tenv nil) (tlets nil) (locals nil) (lmap nil) (used (expr-all-expr-vars x)))))
+                   (tenv nil) (tlets nil) (locals nil) (lmap nil) (used (lambda-lift-top-used x)))))

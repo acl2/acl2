@@ -176,29 +176,6 @@
   :expand ((:free (tenv) (name-to-type-option v (string-type-map-fix tenv)))
            (name-to-type-option v tenv)))
 
-(defrule assoc-of-restrict-to-keys-when-not-in
-  (implies (not (set::in key (string-sfix keys)))
-           (not (omap::assoc key (restrict-to-keys keys tenv))))
-  :induct (restrict-to-keys keys tenv)
-  :enable (restrict-to-keys omap::assoc-of-update))
-
-(defrule name-to-type-option-of-extend-tenv-with-binds
-  (implies (and (stringp v)
-                (not (set::in v (bind-list-bound-expr-vars binds))))
-           (equal (name-to-type-option v (extend-tenv-with-binds binds tenv))
-                  (name-to-type-option v tenv)))
-  :enable (extend-tenv-with-binds name-to-type-option)
-  :use ((:instance assoc-of-restrict-to-keys-when-not-in
-                   (key v)
-                   (keys (bind-list-bound-expr-vars binds))
-                   (tenv (expr-senv->exprs
-                          (senvs+binds->eenv
-                           (check-bind-list
-                            binds
-                            (ispace-senv nil)
-                            (type-senv nil)
-                            (tenv-to-expr-senv (string-type-map-fix tenv)))))))))
-
 (defrule param-type-closed-p-of-extend-tenv-with-params
   (implies (and (stringp v)
                 (not (member-equal v (var+type?-list->var params))))
@@ -212,26 +189,11 @@
                   (omap::assoc key tenv)))
   :enable omap::assoc-of-update*)
 
-(defrule name-to-type-option-of-extend-tenv-with-let-bind
-  (implies (and (stringp v)
-                (not (set::in v (bind-bound-expr-vars b))))
-           (equal (name-to-type-option
-                   v (mv-nth 0 (extend-tenv-with-let-bind b tenv tlets locals)))
-                  (name-to-type-option v tenv)))
-  :enable (extend-tenv-with-let-bind name-to-type-option))
-
 (defrule param-type-closed-p-of-extend-tenv-with-let-bind
   (implies (and (stringp v)
                 (not (set::in v (bind-bound-expr-vars b))))
            (equal (param-type-closed-p
                    v (mv-nth 0 (extend-tenv-with-let-bind b tenv tlets locals)))
-                  (param-type-closed-p v tenv)))
-  :enable param-type-closed-p)
-
-(defrule param-type-closed-p-of-extend-tenv-with-binds
-  (implies (and (stringp v)
-                (not (set::in v (bind-list-bound-expr-vars binds))))
-           (equal (param-type-closed-p v (extend-tenv-with-binds binds tenv))
                   (param-type-closed-p v tenv)))
   :enable param-type-closed-p)
 
@@ -581,31 +543,10 @@
            (set::subset used (mv-nth 2 (ll-expr x tenv tlets locals lmap used))))
   :use used-of-ll-expr)
 
-(defrule used-subset-of-ll-lambda
-  (implies (string-setp used)
-           (set::subset used (mv-nth 2 (ll-lambda params body type? tenv tlets locals lmap used))))
-  :use used-of-ll-lambda)
-
-(defrule used-subset-of-ll-let-binds
-  (implies (string-setp used)
-           (set::subset used (mv-nth 5 (ll-let-binds binds body-binders
-                                                     tenv tlets locals lmap used))))
-  :use used-of-ll-let-binds)
-
-(defrule used-subset-of-ll-expr-list
-  (implies (string-setp used)
-           (set::subset used (mv-nth 2 (ll-expr-list x tenv tlets locals lmap used))))
-  :use used-of-ll-expr-list)
-
 (defrule used-subset-of-ll-atom
   (implies (string-setp used)
            (set::subset used (mv-nth 2 (ll-atom x tenv tlets locals lmap used))))
   :use used-of-ll-atom)
-
-(defrule used-subset-of-ll-atom-list
-  (implies (string-setp used)
-           (set::subset used (mv-nth 2 (ll-atom-list x tenv tlets locals lmap used))))
-  :use used-of-ll-atom-list)
 
 (defrule used-subset-of-ll-bind
   (implies (string-setp used)
@@ -1185,27 +1126,6 @@
   :expand ((expr-all-expr-vars body)
            (atom-all-expr-vars (expr-atom->atom body))))
 
-(defrule free-vars-of-nested-lambda-body-when-closed
-  (b* (((mv nestedp more inner type?) (nested-lambda body)))
-    (implies (and nestedp
-                  (set::emptyp (expr-free-type-vars body))
-                  (set::emptyp (expr-free-ispace-vars body)))
-             (and (set::emptyp (var+type?-list-free-type-vars more))
-                  (set::emptyp (var+type?-list-free-ispace-vars more))
-                  (set::emptyp (expr-free-type-vars inner))
-                  (set::emptyp (expr-free-ispace-vars inner))
-                  (set::emptyp (type-option-free-type-vars type?))
-                  (set::emptyp (type-option-free-ispace-vars type?)))))
-  :enable nested-lambda
-  :expand ((expr-free-type-vars body)
-           (expr-free-ispace-vars body)
-           (atom-free-type-vars (expr-atom->atom body))
-           (atom-free-ispace-vars (expr-atom->atom body))
-           (:free (x y) (var+type?-list-free-type-vars (cons x y)))
-           (:free (x y) (var+type?-list-free-ispace-vars (cons x y)))
-           (var+type?-list-free-type-vars nil)
-           (var+type?-list-free-ispace-vars nil)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The binders of the body of a :LET are not local after its bindings, if
@@ -1404,12 +1324,12 @@
 
 (defrule binds-closed-p-of-lifted-of-lambda-lift-top-expr
   (implies (not (expr-duplicate-names x))
-           (binds-closed-p (mv-nth 1 (ll-expr x nil nil nil nil (expr-all-expr-vars x)))))
+           (binds-closed-p (mv-nth 1 (ll-expr x nil nil nil nil (lambda-lift-top-used x)))))
   :enable expr-duplicate-names
   :use ((:instance closed-lifted-of-ll-expr
                    (tenv nil) (tlets nil) (locals nil) (lmap nil)
-                   (used (expr-all-expr-vars x))
-                   (v0 (expr-all-expr-vars x)))))
+                   (used (lambda-lift-top-used x))
+                   (v0 (lambda-lift-top-used x)))))
 
 (defrule expr-free-type-vars-of-lambda-lift-top-expr-when-unique
   (implies (not (expr-duplicate-names x))

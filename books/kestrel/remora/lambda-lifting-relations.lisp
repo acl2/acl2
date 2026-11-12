@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "lambda-lifting-typing")
+(include-book "lambda-lifting-free-variables")
 
 (include-book "portcullis")
 
@@ -26,6 +27,49 @@
                            expr-denv-groundp
                            type-value-groundp
                            type-value-list-groundp)))
+
+;; Rules that profiling showed useless here and costly.
+(local
+ (in-theory
+  (disable no-duplicatesp-equal-when-no-duplicatesp-equal-of-type-var-list->name
+           no-duplicatesp-equal-when-no-duplicatesp-equal-of-ispace-var-list->name
+           no-duplicatesp-equal-when-not-duplicated-names
+           duplicated-names-when-no-duplicatesp-equal
+           member-equal-of-type-var-list->name-when-member-equal
+           member-equal-of-ispace-var-list->name-when-member-equal
+           member-of-type-var->name-in-type-var-list->name
+           member-of-ispace-var->name-in-ispace-var-list->name
+           acl2::consp-when-member-equal-of-cons-listp
+           acl2::subsetp-car-member
+           consp-of-type-var-list->name
+           consp-of-ispace-var-list->name
+           cdr-of-type-var-list->name
+           cdr-of-ispace-var-list->name
+           type-var-list->name-when-not-consp
+           ispace-var-list->name-when-not-consp)))
+
+;; Further rules that profiling showed useless here and costly.
+(local
+ (in-theory
+  (disable acl2::ustring-true-list
+           acl2::cdr-preserves-ustring
+           acl2::true-listp-when-utf8-partition
+           acl2::utf8-partition-successful-when-any-valid-partitioning-exists
+           acl2::utf8-table36-length-lemmas
+           acl2::uchar-range
+           acl2::integerp-of-car-when-integer-listp
+           acl2::rationalp-of-car-when-rational-listp
+           acl2::integer-listp-of-cdr-when-integer-listp
+           acl2::rational-listp-of-cdr-when-rational-listp
+           set::sets-are-true-lists-cheap
+           str::consp-of-explode
+           (:t omap::assoc-when-emptyp)
+           (:t omap::head-key-when-emptyp)
+           (:t omap::head-value-when-emptyp)
+           (:t omap::tail-when-emptyp)
+           omap::assoc-when-assoc-tail
+           omap::assoc-when-assoc-of-tail-cheap
+           omap::mapp-non-nil-implies-not-emptyp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,10 +107,13 @@
      @(tsee expr-denv-ll-related-p): each variable free in the original
      body is bound in the lifted environment to a related value, except
      that a hoisted local function is not bound, but its replacement
-     evaluates to a related value; the definitions that lifting the body
-     introduces are bound as they are at the top of the lifted program,
-     in the environment @('genv') that the relations are parameterized
-     by; and the values meet what the transform relied on from the types
+     evaluates to a related value; the variables of the lifted body that
+     are not local --- the definitions it refers to, and the primitive
+     operations --- are bound as they are at the top of the lifted
+     program, in the environment @('genv') that the relations are
+     parameterized by, where the definitions lifted out of the body are
+     bound to their values (see @(tsee ll-defs-bound-p)); and the values
+     meet what the transform relied on from the types
      it was given: a variable whose type is flat, closed, and evaluable
      has a value of matching dimensions, and a variable whose type was
      inferred from its binding has a value of that type (see @(tsee
@@ -103,6 +150,14 @@
        ((mv new-x & &)
         (ll-expr x ctx.tenv ctx.tlets ctx.locals ctx.lmap ctx.used)))
     new-x))
+
+(define ll-context-lifted ((x exprp) (ctx ll-context-p))
+  :returns (lifted bind-listp)
+  :short "The definitions lifted out of an expression, in a context."
+  (b* (((ll-context ctx) ctx)
+       ((mv & lifted &)
+        (ll-expr x ctx.tenv ctx.tlets ctx.locals ctx.lmap ctx.used)))
+    lifted))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -228,12 +283,14 @@
   (xdoc::topstring
    (xdoc::p
     "Inferred types are closed (see @(tsee extend-tenv-with-let-bind)), so
-     they are evaluated in the empty environment."))
+     they are evaluated in the empty environment; the type is required to be
+     closed, so that it evaluates alike in any environment."))
   (b* ((type? (name-to-type-option name tenv))
        ((unless (type-option-case type? :some)) nil)
-       (tval (eval-type (type-option-some->val type?)
-                        (type-denv (ispace-denv nil) nil))))
-    (and (not (reserrp tval))
+       (type (type-option-some->val type?))
+       (tval (eval-type type (type-denv (ispace-denv nil) nil))))
+    (and (type-closed-p type)
+         (not (reserrp tval))
          (expr-value-typed-p val tval)))
   :verify-guards nil)
 
@@ -279,19 +336,209 @@
                              (new-denv expr-denvp)
                              (genv expr-denvp))
   :returns (yes/no booleanp)
-  :short "Whether an environment binds some names as another one does."
+  :short "Whether an environment binds some names as another one does,
+          where that one binds them."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This says that the definitions referred to by an expression of the
-     lifted program are bound to what they are bound to at its top."))
+    "This says that the definitions and the primitive operations referred
+     to by an expression of the lifted program are bound to what they are
+     bound to at its top.  Names that @('genv') does not bind are
+     unconstrained: the original program may refer to an unbound variable
+     in code that it never evaluates."))
+  (or (set::emptyp names)
+      (b* ((name (set::head names))
+           (gval (expr-denv-lookup-expr name genv)))
+        (and (or (reserrp gval)
+                 (equal (expr-denv-lookup-expr name new-denv) gval))
+             (names-bound-as-in-p (set::tail names) new-denv genv))))
+  :measure (acl2-count names)
+  :verify-guards nil)
+
+(define new-values-meet-types-p ((names string-setp)
+                                 (new-denv expr-denvp)
+                                 (tenv string-type-mapp))
+  :returns (yes/no booleanp)
+  :short "Whether an environment of the lifted program binds some local
+          variables, to values that meet the requirements of their types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A local variable that the lifted expression refers to may be captured
+     by a lifted definition, whose application checks its value against
+     the type of its parameter (see @(tsee value-meets-required-type-p)).
+     The variables captured through the replacement of a hoisted function
+     need not be free in the original expression, so this is required of
+     the values in the lifted environment, not of the original ones."))
   (or (set::emptyp names)
       (b* ((name (set::head names))
            (val (expr-denv-lookup-expr name new-denv)))
         (and (not (reserrp val))
-             (equal val (expr-denv-lookup-expr name genv))
-             (names-bound-as-in-p (set::tail names) new-denv genv))))
+             (value-meets-required-type-p val name tenv)
+             (new-values-meet-types-p (set::tail names) new-denv tenv))))
   :measure (acl2-count names)
+  :verify-guards nil)
+
+(define expr-denv-with-names-from ((names string-setp)
+                                   (denv expr-denvp)
+                                   (genv expr-denvp))
+  :returns (new-denv expr-denvp)
+  :short "Bind some names in an environment as another one binds them."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names that @('genv') does not bind are left as they are.  This is
+     how the replacement of a hoisted local function is evaluated by the
+     relations: its function is a definition, bound at the top of the
+     lifted program, and the environment at hand need not bind it, if the
+     expression evaluated there does not refer to it."))
+  (b* (((when (set::emptyp names)) (expr-denv-fix denv))
+       (name (set::head names))
+       (val (expr-denv-lookup-expr name genv))
+       (denv (if (reserrp val) denv (expr-denv-add-expr name val denv))))
+    (expr-denv-with-names-from (set::tail names) denv genv))
+  :measure (acl2-count names)
+  :verify-guards nil)
+
+(define ll-defs-bound-p ((defs bind-listp) (genv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "Whether definitions are bound at the top of the lifted program to
+          what their bindings give them there."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each definition is a function binding, and @('genv') binds its name to
+     the value that evaluating the binding in @('genv') would: a closure
+     over @('genv') restricted to the variables the definition refers to.
+     That is the fixed point that evaluating the definitions at the top
+     reaches, since their names are fresh and distinct, and each refers only
+     to the primitive operations and to definitions before it."))
+  (b* (((when (endp defs)) t)
+       (def (car defs))
+       ((unless (bind-case def :fun)) nil)
+       (name (bind-fun->var def))
+       (ext (eval-bind def genv 1)))
+    (and (not (reserrp ext))
+         (equal (expr-denv-lookup-expr name genv)
+                (expr-denv-lookup-expr name ext))
+         (ll-defs-bound-p (cdr defs) genv)))
+  :verify-guards nil)
+
+(define genv-agrees-with-init-p ((genv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "Whether an environment binds the primitive operations as the
+          initial one does."
+  (names-bound-as-in-p (omap::keys (expr-denv->exprs (init-expr-denv)))
+                       genv
+                       (init-expr-denv))
+  :verify-guards nil)
+
+; The shape of the replacement of a hoisted function: its definition's
+; name, bound at the top and neither local nor among some names, applied to
+; local variables that are not among those names.
+
+
+
+(define var-expr-names ((es expr-listp))
+  :returns (mv (okp booleanp) (names string-listp))
+  :short "The names of a list of variable expressions, if they all are."
+  (b* (((when (endp es)) (mv t nil))
+       (e (car es))
+       ((unless (expr-case e :var)) (mv nil nil))
+       ((mv okp names) (var-expr-names (cdr es))))
+    (mv okp (cons (expr-var->name e) names))))
+
+(define replacement-parts ((repl exprp))
+  :returns (mv (okp booleanp) (h stringp) (hns string-listp))
+  :short "The name and the arguments of a replacement that applies a name to
+          variables (see @(tsee apply-to-names)), if it is one."
+  (expr-case
+   repl
+   :var (mv t repl.name nil)
+   :app (if (and (expr-case repl.fun :var)
+                 (expr-case repl.arg :var))
+            (mv t (expr-var->name repl.fun) (list (expr-var->name repl.arg)))
+          (mv nil "" nil))
+   :appn (b* (((unless (expr-case repl.fun :var)) (mv nil "" nil))
+              ((mv okp names) (var-expr-names repl.args))
+              ((unless (and okp (consp (cdr names)))) (mv nil "" nil)))
+           (mv t (expr-var->name repl.fun) names))
+   :otherwise (mv nil "" nil))
+  :verify-guards nil)
+
+(define ll-replacement-ok-p ((repl exprp)
+                             (locals string-setp)
+                             (pnames string-listp)
+                             (genv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "Whether a replacement of a hoisted function has the expected
+          shape."
+  (b* (((mv okp h hns) (replacement-parts repl)))
+    (and okp
+         (not (set::in h (string-sfix locals)))
+         (not (member-equal h (str::string-list-fix pnames)))
+         (not (reserrp (expr-denv-lookup-expr h genv)))
+         (subsetp-equal hns (string-sfix locals))
+         (not (intersectp-equal hns (str::string-list-fix pnames)))))
+  :verify-guards nil)
+
+(define string-expr-map-closed-p ((lmap string-expr-mapp))
+  :returns (yes/no booleanp)
+  :short "Whether the expressions in a map are closed in type and ispace
+          variables (an executable form of @(tsee lmap-closed-p))."
+  (b* ((lmap (string-expr-map-fix lmap))
+       ((when (omap::emptyp lmap)) t))
+    (and (equal (expr-free-type-vars (omap::head-val lmap)) nil)
+         (equal (expr-free-ispace-vars (omap::head-val lmap)) nil)
+         (string-expr-map-closed-p (omap::tail lmap))))
+  :measure (acl2-count (string-expr-map-fix lmap)))
+
+(define lmap-replacements-ok-p ((lmap string-expr-mapp)
+                                (locals string-setp)
+                                (pnames string-listp)
+                                (genv expr-denvp))
+  :returns (yes/no booleanp)
+  :verify-guards nil
+  (b* ((lmap (string-expr-map-fix lmap))
+       ((when (omap::emptyp lmap)) t))
+    (and (ll-replacement-ok-p (omap::head-val lmap) locals pnames genv)
+         (lmap-replacements-ok-p (omap::tail lmap) locals pnames genv)))
+  :measure (acl2-count (string-expr-map-fix lmap)))
+
+(define ll-context-ok-p ((x exprp) (ctx ll-context-p) (genv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "The invariants of the lifting traversal that the simulation relies
+          on, at an expression in a context."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The local names are in use, so that the fresh names of the
+     definitions are not local; and the definitions lifted out of the
+     expression are bound in @('genv') to their values (see @(tsee
+     ll-defs-bound-p)).  The relations require this of the bodies of
+     closures, so that the simulation can be applied to them when the
+     closures are.  Besides, @('genv') is well formed and binds the
+     primitive operations as the initial environment does, since the
+     definitions' names are not theirs.  The replacements of the hoisted
+     functions are closed in type and ispace variables, the hoisted
+     functions are local, and each replacement is its definition's name,
+     bound at the top, applied to local variables, neither of which is
+     bound again in the expression.  The binders of the expression bind
+     distinct names, which are in use and not local: a binder does not
+     shadow a variable bound around the expression.  The type environment
+     types only local variables, so a binder's name has no type there."))
+  (b* (((ll-context c) ctx))
+    (and (set::subset c.locals c.used)
+         (ll-defs-bound-p (ll-context-lifted x ctx) genv)
+         (genv-agrees-with-init-p genv)
+         (expr-denv-wfp genv)
+         (string-expr-map-closed-p c.lmap)
+         (set::subset (omap::keys c.lmap) c.locals)
+         (lmap-replacements-ok-p c.lmap c.locals (expr-binder-names x) genv)
+         (not (expr-duplicate-names x))
+         (subsetp-equal (expr-binder-names x) c.used)
+         (not (intersectp-equal (expr-binder-names x) c.locals))
+         (set::subset (omap::keys c.tenv) c.locals)))
   :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -349,6 +596,8 @@
 (defines expr-value-ll-related-p
   :flag-local nil
   :verify-guards nil
+  ;; The return types are boolean type prescriptions of the definitions.
+  :returns-no-induct t
 
   (define expr-value-ll-related-p ((new-val expr-valuep)
                                    (val expr-valuep)
@@ -365,11 +614,14 @@
        the remaining parameters (see @(tsee lifted-closure-body)) of what
        lifting rebuilds the original body into, in the context of the
        witness (see @(tsee closure-body-parts) for how the original body
-       is split).  The parameters are local, and neither hoisted nor with
-       inferred types, there; the parameter's type value is the one its
-       variable requires, if any, and the remaining ones are typed as the
-       context types them.  The environments are related at the body
-       (see @(tsee expr-denv-ll-related-p)), excluding the parameters.")
+       is split).  The parameters are distinct and local, and neither
+       hoisted nor with inferred types, there, and the replacements of the
+       hoisted functions there do not refer to them (see @(tsee
+       ll-replacement-ok-p)), so that binding them leaves the replacements'
+       values alone; the parameter's type value is the one its variable
+       requires, if any, and the remaining ones are typed as the context
+       types them.  The environments are related at the body (see @(tsee
+       expr-denv-ll-related-p)), excluding the parameters.")
      (xdoc::p
       "A type or ispace lambda value is related to one with the same
        parameter, whose body is what lifting rebuilds the original body
@@ -377,7 +629,9 @@
        the body.")
      (xdoc::p
       "Ground values are related to themselves, and boxes, vectors, and
-       primitive operations componentwise."))
+       primitive operations componentwise.  An empty vector is related to
+       itself even if it is not ground: its element type value may be that
+       of functions, which lifting does not change."))
     :measure (expr-value-count val)
     (b* (((when (ll-value-witness-case w :ground))
           (and (equal (expr-value-fix new-val) (expr-value-fix val))
@@ -385,7 +639,7 @@
       (expr-value-case
        val
        :base nil
-       :vector-empty nil
+       :vector-empty (equal (expr-value-fix new-val) (expr-value-fix val))
        :primop (and (expr-value-case new-val :primop)
                     (ll-value-witness-case w :primop)
                     (primop-value-ll-related-p
@@ -410,9 +664,12 @@
                      (lifted-closure-body w-.prest
                                           (ll-context-new-expr inner w-.ctx)
                                           inner-type?))
+              (no-duplicatesp-equal pnames)
               (names-in-context-p pnames w-.ctx)
+              (lmap-replacements-ok-p c.lmap c.locals pnames genv)
               (param-type-consistent-p val.param c.tenv)
               (prest-tenv-consistent-p w-.prest c.tenv)
+              (ll-context-ok-p inner w-.ctx genv)
               (expr-denv-ll-related-p u.denv val.denv inner w-.ctx pnames
                                       w-.denv genv)))
        :tlambda
@@ -422,6 +679,7 @@
             ((expr-value-tlambda u) new-val))
          (and (equal u.param val.param)
               (equal u.body (ll-context-new-expr val.body w-.ctx))
+              (ll-context-ok-p val.body w-.ctx genv)
               (expr-denv-ll-related-p u.denv val.denv val.body w-.ctx nil
                                       w-.denv genv)))
        :ilambda
@@ -431,6 +689,7 @@
             ((expr-value-ilambda u) new-val))
          (and (equal u.param val.param)
               (equal u.body (ll-context-new-expr val.body w-.ctx))
+              (ll-context-ok-p val.body w-.ctx genv)
               (expr-denv-ll-related-p u.denv val.denv val.body w-.ctx nil
                                       w-.denv genv)))
        :box (and (expr-value-case new-val :box)
@@ -482,9 +741,9 @@
        in the expression, other than those in @('excl') (the parameters
        of a closure, not yet bound), are related as described in @(tsee
        string-expr-value-map-ll-related-p).  The variables free in the
-       rebuilt expression that are not in use in the context, which are
-       the definitions introduced by lifting it, are bound as in
-       @('genv')."))
+       rebuilt expression that are not local in the context are bound as
+       in @('genv'), where it binds them: they are the definitions lifted
+       before or out of the expression, and the primitive operations."))
     :measure (expr-denv-count denv)
     (b* (((ll-context c) ctx)
          (fv (set::difference (expr-free-expr-vars x)
@@ -494,7 +753,11 @@
            (string-expr-value-map-ll-related-p new-denv
                                                (expr-denv->exprs denv)
                                                fv nfv ctx dw genv)
-           (names-bound-as-in-p (set::difference nfv c.used) new-denv genv))))
+           (names-bound-as-in-p (set::difference nfv c.locals) new-denv genv)
+           (new-values-meet-types-p
+            (set::difference (set::intersect nfv c.locals)
+                             (set::mergesort (str::string-list-fix excl)))
+            new-denv c.tenv))))
 
   (define string-expr-value-map-ll-related-p ((new-denv expr-denvp)
                                               (map string-expr-value-mapp)
@@ -513,12 +776,15 @@
       "Each variable of the map that is in @('fv') is bound in the lifted
        environment to a value related to its value in the map, via its
        witness, unless it is a hoisted local function: then its
-       replacement evaluates, in the lifted environment at the limit of
-       the witness, to a related value.  This is required only if the
-       rebuilt expression refers to the variable, or to all the variables
-       of its replacement (which @('nfv') has): a variable used only in
-       lambdas that are lifted out is not referred to, unless it is
-       local, when they capture it.  Its value meets the requirement
+       replacement evaluates, at the limit of the witness, to a related
+       value, in the lifted environment with the replacement's function
+       bound as in @('genv') (see @(tsee expr-denv-with-names-from)).
+       This is required only if the rebuilt expression refers to the
+       variable, or to all the local variables of its replacement (which
+       @('nfv') has): a variable used only in lambdas that are lifted out
+       is not referred to, unless it is local, when they capture it; the
+       function of a replacement is not local, and the lifted lambdas that
+       use it refer to it themselves.  Its value meets the requirement
        of its type (see @(tsee value-meets-required-type-p)); if its type
        was inferred from its binding, its value has that type; and if it
        is not local, it is a primitive operation, bound as at the top."))
@@ -531,11 +797,17 @@
          (wpair (omap::assoc var d.vals))
          (w (if wpair (cdr wpair) (ll-value-witness-ground)))
          (lpair (omap::assoc var c.lmap))
+         (rvars (and lpair (expr-free-expr-vars (cdr lpair))))
          (referredp (if lpair
-                        (set::subset (expr-free-expr-vars (cdr lpair)) nfv)
+                        (set::subset (set::intersect rvars c.locals) nfv)
                       (set::in var nfv)))
          (new-val (if lpair
-                      (eval-expr (cdr lpair) new-denv d.limit)
+                      (eval-expr (cdr lpair)
+                                 (expr-denv-with-names-from
+                                  (set::difference rvars c.locals)
+                                  new-denv
+                                  genv)
+                                 d.limit)
                     (expr-denv-lookup-expr var new-denv))))
       (and (or (not (set::in var fv))
                (and (or (not referredp)
@@ -883,6 +1155,147 @@
   :use ((:instance expr-value-fix-when-vector-empty (x x))
         (:instance expr-value-fix-when-vector-empty (x y))))
 
+;; An induction scheme for the theorem below.  It makes the recursive calls
+;; of the relation, with the same arguments, but only under the tests on the
+;; original value; the relation's own scheme also splits on the kind and
+;; fields of the new value, making 316 cases (instead of 21), each of which
+;; re-expands the large case splits of the primitive operation values.
+
+(local
+ (defun ll-groundp-ind (flag new-val val w new-vals vals ws new-op op)
+   (declare (xargs :measure (case flag
+                              (expr-value-ll-related-p (expr-value-count val))
+                              (expr-value-list-ll-related-p
+                               (expr-value-list-count vals))
+                              ((expr-denv-ll-related-p
+                                string-expr-value-map-ll-related-p)
+                               0)
+                              (otherwise (primop-value-count op)))
+                   :verify-guards nil)
+            (irrelevant new-val w new-vals ws new-op))
+   (case flag
+     (expr-value-ll-related-p
+      (expr-value-case
+       val
+       :primop (ll-groundp-ind 'primop-value-ll-related-p
+                               new-val val w new-vals vals
+                               (ll-value-witness-primop->ws w)
+                               (expr-value-primop->val new-val)
+                               (expr-value-primop->val val))
+       :box (ll-groundp-ind 'expr-value-ll-related-p
+                            (expr-value-box->array new-val)
+                            (expr-value-box->array val)
+                            (ll-value-witness-box->array w)
+                            new-vals vals ws new-op op)
+       :vector (ll-groundp-ind 'expr-value-list-ll-related-p
+                               new-val val w
+                               (expr-value-vector->elems new-val)
+                               (expr-value-vector->elems val)
+                               (ll-value-witness-vector->elems w)
+                               new-op op)
+       :otherwise nil))
+     (expr-value-list-ll-related-p
+      (if (endp vals)
+          nil
+        (list (ll-groundp-ind 'expr-value-ll-related-p
+                              (car new-vals) (car vals) (car ws)
+                              new-vals vals ws new-op op)
+              (ll-groundp-ind 'expr-value-list-ll-related-p
+                              new-val val w
+                              (cdr new-vals) (cdr vals) (cdr ws)
+                              new-op op))))
+     ((expr-denv-ll-related-p string-expr-value-map-ll-related-p) nil)
+     (otherwise
+      ;; The relation fixes the witnesses before taking them apart.
+      (let ((ws (ll-value-witness-list-fix ws)))
+        (primop-value-case
+         op
+         :int-binary-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-int-binary-x->xval new-op)
+                         (primop-value-int-binary-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :int-rel-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-int-rel-x->xval new-op)
+                         (primop-value-int-rel-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :float-binary-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-float-binary-x->xval new-op)
+                         (primop-value-float-binary-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :float-rel-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-float-rel-x->xval new-op)
+                         (primop-value-float-rel-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :bool-binary-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-bool-binary-x->xval new-op)
+                         (primop-value-bool-binary-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :bool-rel-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-bool-rel-x->xval new-op)
+                         (primop-value-bool-rel-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :append-t-m-n-s-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-append-t-m-n-s-x->xval new-op)
+                         (primop-value-append-t-m-n-s-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :index-t-m-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-index-t-m-x->xval new-op)
+                         (primop-value-index-t-m-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :index2d-t-m-n-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-index2d-t-m-n-x->xval new-op)
+                         (primop-value-index2d-t-m-n-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :reduce-t-d-s-f
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-reduce-t-d-s-f->fval new-op)
+                         (primop-value-reduce-t-d-s-f->fval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :fold-t-t2-d-s-s2-f
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-fold-t-t2-d-s-s2-f->fval new-op)
+                         (primop-value-fold-t-t2-d-s-s2-f->fval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :trace-t-r-s-q-x
+         (ll-groundp-ind 'expr-value-ll-related-p
+                         (primop-value-trace-t-r-s-q-x->xval new-op)
+                         (primop-value-trace-t-r-s-q-x->xval op)
+                         (car ws)
+                         new-vals vals ws new-op op)
+         :fold-t-t2-d-s-s2-f-z
+         (list
+          (ll-groundp-ind 'expr-value-ll-related-p
+                          (primop-value-fold-t-t2-d-s-s2-f-z->fval new-op)
+                          (primop-value-fold-t-t2-d-s-s2-f-z->fval op)
+                          (car ws)
+                          new-vals vals ws new-op op)
+          (ll-groundp-ind 'expr-value-ll-related-p
+                          (primop-value-fold-t-t2-d-s-s2-f-z->zval new-op)
+                          (primop-value-fold-t-t2-d-s-s2-f-z->zval op)
+                          (cadr ws)
+                          new-vals vals ws new-op op))
+         :otherwise nil))))))
+
 (defret-mutual expr-value-ll-related-p-when-groundp
   (defret expr-value-ll-related-p-when-groundp
     (implies (and yes/no
@@ -908,6 +1321,8 @@
   ;; fields (the FIX-WHEN rules, disabled by default), which the OF-FIELDS
   ;; rules would immediately undo, so those are disabled here.
   :hints (("Goal"
+           :induct (ll-groundp-ind flag new-val val w new-vals vals ws
+                                   new-op op)
            :expand ((expr-value-ll-related-p new-val val w genv)
                     (expr-value-list-ll-related-p new-vals vals ws genv)
                     (primop-value-ll-related-p new-op op ws genv)

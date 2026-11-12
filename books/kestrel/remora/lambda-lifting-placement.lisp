@@ -191,14 +191,6 @@
   :use ((:instance string-expr-map-free-expr-vars-of-remove-keys-when-subset
                    (s (string-expr-map-free-expr-vars map)))))
 
-(defrule keys-of-string-expr-map-remove-keys-superset
-  (set::subset (set::difference (omap::keys (string-expr-map-fix map))
-                                (set::mergesort (str::string-list-fix keys)))
-               (omap::keys (string-expr-map-remove-keys keys map)))
-  :enable (set::pick-a-point-subset-strategy
-           omap::in-of-keys-to-assoc))
-
-
 ; Sequential free variables of bindings.
 
 (defruled in-of-bind-list-free-expr-vars-of-append
@@ -253,13 +245,6 @@
   :induct (names-to-params names tenv)
   :enable (names-to-params str::string-list-fix))
 
-(defrule member-of-var+type?-list->var-of-append
-  (iff (member-equal a (var+type?-list->var (append x y)))
-       (or (member-equal a (var+type?-list->var x))
-           (member-equal a (var+type?-list->var y))))
-  :induct (len x)
-  :enable (len append var+type?-list->var))
-
 (defrule member-of-string-list-fix-when-string-setp
   (implies (string-setp s)
            (iff (member-equal a (str::string-list-fix s))
@@ -291,44 +276,10 @@
          (consp names))
   :expand ((names-to-params names tenv)))
 
-(defrule bind-list-free-expr-vars-of-lifted-of-emit-lifted-lambda
-  (set::subset (bind-list-free-expr-vars
-                (mv-nth 1 (emit-lifted-lambda params body type? tenv locals used)))
-               (set::difference
-                (set::difference (expr-free-expr-vars body)
-                                 (set::mergesort (var+type?-list->var params)))
-                locals))
-  :cases ((consp (mv-nth 1 (emit-lifted-lambda params body type? tenv locals used))))
-  :enable (emit-lifted-lambda set::pick-a-point-subset-strategy)
-  :disable (set::intersect-under-set-equiv
-            set::difference-under-set-equiv
-            set::mergesort-under-set-equiv)
-  :expand ((:free (v ps ty e) (bind-free-expr-vars (bind-fun v ps ty e)))))
-
 ; A hoisted function's definition likewise refers to the non-local free
 ; variables of the function, and its replacement to its name and the local
-; ones.
-
-(defrule hoist-local-fun-free-expr-vars-when-hoisted
-  (implies (mv-nth 0 (hoist-local-fun b rebound tenv locals used))
-           (and (set::subset
-                 (bind-free-expr-vars
-                  (mv-nth 2 (hoist-local-fun b rebound tenv locals used)))
-                 (set::difference (bind-free-expr-vars b) locals))
-                (set::subset
-                 (expr-free-expr-vars
-                  (mv-nth 3 (hoist-local-fun b rebound tenv locals used)))
-                 (set::insert (fresh-expr-var (bind-fun->var b) (string-sfix used))
-                              (set::intersect (bind-free-expr-vars b)
-                                              locals)))))
-  :enable (hoist-local-fun set::pick-a-point-subset-strategy)
-  :expand ((bind-free-expr-vars b)
-           (:free (v ps ty e) (bind-free-expr-vars (bind-fun v ps ty e)))
-           (:free (n) (expr-free-expr-vars (expr-var n)))))
-
-
-; Membership forms of the facts above, for the traversal proofs, which
-; reason about one variable at a time.
+; ones.  Both facts are stated in membership form, for the traversal proofs,
+; which reason about one variable at a time.
 
 (defruled in-fv-of-assoc
   (implies (and (string-expr-mapp m)
@@ -839,32 +790,6 @@
                             (string-sfix used)))))
   :disable used-of-ll-let-binds)
 
-(defruled not-in-used-when-in-lifted-of-ll-lambda
-  (implies (set::in v (bind-list-bound-expr-vars
-                       (mv-nth 1 (ll-lambda params body type? tenv tlets locals lmap used))))
-           (not (set::in v (string-sfix used))))
-  :use (used-of-ll-lambda
-        (:instance set::never-in-empty
-                   (set::a v)
-                   (set::x (set::intersect
-                            (bind-list-bound-expr-vars
-                             (mv-nth 1 (ll-lambda params body type? tenv tlets locals lmap used)))
-                            (string-sfix used)))))
-  :disable used-of-ll-lambda)
-
-(defruled not-in-used-when-in-lifted-of-ll-expr-list
-  (implies (set::in v (bind-list-bound-expr-vars
-                       (mv-nth 1 (ll-expr-list x tenv tlets locals lmap used))))
-           (not (set::in v (string-sfix used))))
-  :use (used-of-ll-expr-list
-        (:instance set::never-in-empty
-                   (set::a v)
-                   (set::x (set::intersect
-                            (bind-list-bound-expr-vars
-                             (mv-nth 1 (ll-expr-list x tenv tlets locals lmap used)))
-                            (string-sfix used)))))
-  :disable used-of-ll-expr-list)
-
 (defruled not-in-used-when-in-lifted-of-ll-atom
   (implies (set::in v (bind-list-bound-expr-vars
                        (mv-nth 1 (ll-atom x tenv tlets locals lmap used))))
@@ -877,20 +802,6 @@
                              (mv-nth 1 (ll-atom x tenv tlets locals lmap used)))
                             (string-sfix used)))))
   :disable used-of-ll-atom)
-
-(defruled not-in-used-when-in-lifted-of-ll-atom-list
-  (implies (set::in v (bind-list-bound-expr-vars
-                       (mv-nth 1 (ll-atom-list x tenv tlets locals lmap used))))
-           (not (set::in v (string-sfix used))))
-  :use (used-of-ll-atom-list
-        (:instance set::never-in-empty
-                   (set::a v)
-                   (set::x (set::intersect
-                            (bind-list-bound-expr-vars
-                             (mv-nth 1 (ll-atom-list x tenv tlets locals lmap used)))
-                            (string-sfix used)))))
-  :disable used-of-ll-atom-list)
-
 
 ; As above, with the freshness of the generated name attached to the
 ; variable, so that it is available whatever the variable is rewritten to.
@@ -1102,10 +1013,7 @@
                             not-in-used-when-in-lifted-of-ll-expr
                             not-in-used-when-in-lifted-of-ll-bind
                             not-in-used-when-in-lifted-of-ll-let-binds
-                            not-in-used-when-in-lifted-of-ll-lambda
-                            not-in-used-when-in-lifted-of-ll-expr-list
                             not-in-used-when-in-lifted-of-ll-atom
-                            not-in-used-when-in-lifted-of-ll-atom-list
                             consp-when-positive-len
                             positive-len-when-consp
                             not-in-v0-when-placement-inv
@@ -1142,7 +1050,19 @@
                             consp-of-ispace-var-list->name
                             acl2::utf8-table36-length-lemmas
                             acl2::subsetp-car-member
-                            acl2::subsetp-when-atom-right))
+                            acl2::subsetp-when-atom-right
+                            len
+                            binary-append
+                            acl2::append-when-not-consp
+                            set::in-tail
+                            set::insert-identity
+                            not-in-type-var-set-when-name-not-in-names
+                            not-in-ispace-var-set-when-name-not-in-names
+                            default-+-1
+                            default-+-2
+                            default-car
+                            default-cdr
+                            acl2::consp-when-member-equal-of-cons-listp))
            :expand ((ll-expr x tenv tlets locals lmap used)
                     (:free (type?) (ll-lambda params body type? tenv tlets locals lmap used))
                     (ll-let-binds binds body-binders tenv tlets locals lmap used)
@@ -1278,10 +1198,7 @@
                             not-in-used-when-in-lifted-of-ll-expr
                             not-in-used-when-in-lifted-of-ll-bind
                             not-in-used-when-in-lifted-of-ll-let-binds
-                            not-in-used-when-in-lifted-of-ll-lambda
-                            not-in-used-when-in-lifted-of-ll-expr-list
                             not-in-used-when-in-lifted-of-ll-atom
-                            not-in-used-when-in-lifted-of-ll-atom-list
                             in-fv-of-remove-keys
                             in-keys-of-remove-keys
                             omap::assoc-to-in-of-keys
@@ -1368,15 +1285,15 @@
   :disable (expr-free-expr-vars-of-nest-let-binds)
   :use ((:instance rebuilt-free-vars-of-ll-expr
                    (tenv nil) (tlets nil) (locals nil) (lmap nil)
-                   (used (expr-all-expr-vars x))
-                   (v0 (expr-all-expr-vars x)))
+                   (used (lambda-lift-top-used x))
+                   (v0 (lambda-lift-top-used x)))
         (:instance lifted-free-vars-of-ll-expr
                    (tenv nil) (tlets nil) (locals nil) (lmap nil)
-                   (used (expr-all-expr-vars x))
-                   (v0 (expr-all-expr-vars x)))
+                   (used (lambda-lift-top-used x))
+                   (v0 (lambda-lift-top-used x)))
         (:instance in-new-used-of-ll-expr
                    (tenv nil) (tlets nil) (locals nil) (lmap nil)
-                   (used (expr-all-expr-vars x))))
+                   (used (lambda-lift-top-used x))))
   :expand ((string-expr-map-free-expr-vars nil)))
 
 (defrule expr-free-expr-vars-of-lambda-lift-top-expr
@@ -1439,3 +1356,18 @@
                 (decl-list-to-binds (file->decls f))))
   :enable lambda-lift-file)
 
+; Type environments: restriction and extension by a let binding.
+
+(defrule assoc-of-restrict-to-keys-when-not-in
+  (implies (not (set::in key (string-sfix keys)))
+           (not (omap::assoc key (restrict-to-keys keys tenv))))
+  :induct (restrict-to-keys keys tenv)
+  :enable (restrict-to-keys omap::assoc-of-update))
+
+(defrule name-to-type-option-of-extend-tenv-with-let-bind
+  (implies (and (stringp v)
+                (not (set::in v (bind-bound-expr-vars b))))
+           (equal (name-to-type-option
+                   v (mv-nth 0 (extend-tenv-with-let-bind b tenv tlets locals)))
+                  (name-to-type-option v tenv)))
+  :enable (extend-tenv-with-let-bind name-to-type-option))
