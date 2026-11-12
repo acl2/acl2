@@ -36140,6 +36140,21 @@
                                       (,fn-limit-stable ,@fn-formals)))))))
             `(,fn ,fn-limit ,fn-limit-change ,fn-limit-stable ,def)))))))
 
+(defun partial-functions-table-event (val)
+
+; Val is a non-empty list of tuples (fn fn-limit fn-limit-change
+; fn-limit-stable def), one for each function introduced by a single defun or
+; mutual-recursion.  We return a table event that extends the value associated
+; with the first fn-limit in partial-functions-table by val.
+
+  (let ((key (cadr (car val))))
+    `(table partial-functions-table ',key
+            (put-assoc-eq-alist
+             (cdr (assoc-eq ',key
+                            (table-alist 'partial-functions-table
+                                         world)))
+             ',val))))
+
 (defun memoize-partial-supporting-events-rec (tuples flet-bindings wrld msg
                                                      defs table-tuples)
 
@@ -36151,14 +36166,7 @@
          (mv (and msg
                   (msg "~|~@0~|See :DOC memoize-partial.~|" msg))
              (reverse defs)
-             (let* ((val (reverse table-tuples))
-                    (key (cadr (car val))))
-               `(table partial-functions-table ',key
-                       (put-assoc-eq-alist
-                        (cdr (assoc-eq ',key
-                                       (table-alist 'partial-functions-table
-                                                    world)))
-                        ',val)))))
+             (partial-functions-table-event (reverse table-tuples))))
         (t (mv-let (msg1 defs1 table-tuple)
               (let ((tuple (car tuples)))
                 (memoize-partial-supporting-events-1
@@ -36272,12 +36280,48 @@
                                                   last-is-limit)))))
 )
 
+(mutual-recursion
+
+(defun ec-call-p (fns term)
+
+; If term contains a subterm (ec-call (fn ...)) for some fn in fns, return one
+; such fn.  Otherwise return nil.
+
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (pseudo-termp term))
+                  :mode :logic))
+  (cond ((or (variablep term)
+             (fquotep term))
+         nil)
+        ((flambda-applicationp term)
+         (or (ec-call-p fns (lambda-body (ffn-symb term)))
+             (ec-call-listp fns (fargs term))))
+        (t (case-match term
+             (('return-last ''ec-call1-raw & (f . args))
+              (cond ((member-eq f fns)
+                     f)
+                    ((eq f 'quote)
+                     (er hard? 'ec-call-p
+                         "Unexpected return-last call, ~x0"
+                         term))
+                    (t (ec-call-listp fns args))))
+             (& (ec-call-listp fns (fargs term)))))))
+
+(defun ec-call-listp (fns terms)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (pseudo-term-listp terms))))
+  (cond ((endp terms) nil)
+        (t (or (ec-call-p fns (car terms))
+               (ec-call-listp fns (cdr terms))))))
+)
+
 (defun memoize-partial-translations-msg-bodies (tail fns-limit limit wrld)
 
-; The error cases below, except for the one about limit occurring free, will
-; probably never occur, because such checks are already made on the
-; untranslated bodies (see memoize-partial-supporting-events-1).  But we make
-; them here anyhow, for extra confidence in the completeness of our checks.
+; The error cases below, except for the one about limit occurring free and the
+; one checking ec-call, will probably never occur, because such checks are
+; already made on the untranslated bodies (see
+; memoize-partial-supporting-events-1).  But we make them here anyhow, for
+; extra confidence in the completeness of our checks.
 
   (cond
    ((endp tail) nil)
@@ -36287,18 +36331,32 @@
            (str "Unexpected form for translated body of ~x0"))
       (case-match body
         (('IF ('ZP !limit)
-              &
+              base
               (('LAMBDA (!limit . vars) body)
                ('binary-+ ''-1 !limit)
                . vars))
          (declare (ignore vars))
-         (if (free-exactly-in-last-arg-of-calls limit fns-limit body)
-             (memoize-partial-translations-msg-bodies
-              (cdr tail) fns-limit limit wrld)
+         (cond
+          ((free-exactly-in-last-arg-of-calls limit fns-limit body)
+           (let ((fn1 (or (ec-call-p fns-limit base)
+                          (ec-call-p fns-limit body))))
+             (cond
+              (fn1
+
+; See books/system/tests/memoize-partial-ec-call.lisp for why we have this
+; check.
+
+               (msg "In the attempt to apply ~x0 to ~&1, the definition of ~
+                     ~x2 has has ~x3 applied to a call of ~x4.  This is ~
+                     illegal.  See :DOC memoize-partial."
+                    'memoize-partial fns-limit fn 'ec-call fn1))
+              (t (memoize-partial-translations-msg-bodies
+                  (cdr tail) fns-limit limit wrld)))))
+          (t
            (msg "The limit variable ~x0 fails to occur free exactly where ~
                  expected in the body of the definition of function ~x1 ~
                  (essentially, as the last argument of each recursive call)."
-                limit fn)))
+                limit fn))))
         (& (msg "~@0 (must be of the form (IF (ZP LIMIT) & &))."
                 (msg str fn))))))))
 
@@ -36319,7 +36377,10 @@
         (consp fns-limit))
    (let* ((fn (car fns-limit))
           (limit (car (last (formals fn wrld)))))
-     (or (memoize-partial-translations-msg-formals
+     (or (and (getpropc fn 'loop$-recursion nil wrld) ; no mutual-recursion
+; See books/system/tests/memoize-partial-loop-flet-capture.lisp.
+              (msg "~x0 was defined with xargs :loop$-recursion t."))
+         (memoize-partial-translations-msg-formals
           fns-limit limit fn wrld)
          (memoize-partial-translations-msg-bodies
           fns-limit fns-limit limit wrld)))))
@@ -36386,7 +36447,6 @@
                (t
                 (mv-let (msg defs table-event)
                   (memoize-partial-supporting-events new-tuples wrld)
-                  (declare (ignore table-event))
                   (or msg
                       (let ((bad-events (collect-non-redundant defs wrld)))
                         (cond
@@ -36397,6 +36457,22 @@
                                (list "" "~X*2~|~%" "~X*2~|~%" "~X*2~|~%"
                                      bad-events
                                      (cons #\2 nil))))
+                         ((not (equal (partial-functions-table-event
+                                       new-tuples)
+                                      table-event))
+
+; The last element of each tuple is the raw Lisp definition that memoize
+; installs for the first element (see cltl-def-memoize-partial).  So we insist
+; that new-tuples is the value in the table event generated by
+; memoize-partial, which takes the other elements of each tuple from
+; new-tuples.
+
+                          (msg "The last element of each tuple in the ~
+                                proposed extension of the old value must be ~
+                                the definition generated by memoize-partial, ~
+                                as in the following event.~|~%~X01"
+                               table-event
+                               nil))
                          (t (memoize-partial-translations-msg
                              fns-limit wrld))))))))))))))))
 

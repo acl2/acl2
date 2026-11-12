@@ -31923,11 +31923,12 @@ ld) and @(tsee include-book)"
   (ec-call (fn term1 ... termk) :dfs-in 'dfs-in :dfs-out dfs-out)
  })
 
- <p>where @('fn') is a known function symbol other than those in the list that
- is the value of the constant @('*ec-call-bad-ops*').  (But see the Note on
- Inlining below for an exception pertaining to inlining.)  In particular,
- @('fn') is not a macro.  The second form is only relevant for those who use
- @(see df)s and is discussed at the end of this topic.</p>
+ <p>where @('fn') is a known function symbol that is not in the list value of
+ the constant @('*ec-call-bad-ops*') and is not locally bound by @(tsee
+ flet).  (But see the Note on Inlining below for an exception pertaining to
+ inlining.)  In particular, @('fn') is not a macro.  The second form is only
+ relevant for those who use @(see df)s and is discussed at the end of this
+ topic.</p>
 
  <p>Semantically, @('(ec-call (fn term1 ... termk))') equals @('(fn term1
  ... termk)').  However, this use of @('ec-call') has two effects.</p>
@@ -74525,7 +74526,7 @@ it."
 
  @({
  (defun fn-limit (x1 ... xn limit)
-   (declare ...) ; optional, as usual for defun ; ;
+   (declare ...) ; optional, as usual for defun
    (if (zp limit)
        <base>
      (let ((limit (1- limit)))
@@ -74541,7 +74542,10 @@ it."
  @('<body>') is converted to a translated term (see @(see term)).  In other
  words, the translation of @('<body>') must have the property that the limit
  variable only occurs in recursive calls, and in those calls it occurs exactly
- as the final argument and not in any other arguments.</p>
+ as the final argument and not in any other arguments.  (There are two
+ additional, perhaps obscure restrictions: the body of @('fn-limit') must not
+ use @(tsee ec-call) on any recursive call of that function, and @('fn-limit')
+ must not have @(tsee xargs) specifying @(':loop$-recursion t').)</p>
 
  <p>Such use of a ``limit'' argument to obtain termination is an old trick that
  pre-dates ACL2.  Such ``limited'' functions have traditionally often been
@@ -110797,6 +110801,27 @@ it."
  This was fixed by changing @('collect-bounder-args').  See @(see
  community-books) @('system/tests/tau-bounder-nil-interval.lisp').</p>
 
+ <p>Fixed two soundness bugs in @(tsee memoize-partial) by implementing the
+ following prohibitions on its total function (the one with the
+ &ldquo;limit&rdquo; variable as its last argument).</p>
+
+ <ul>
+
+ <li>The use of @(tsee ec-call) is prohibited on recursive calls of that total
+ function; see @(see community-book)
+ @('system/tests/memoize-partial-ec-call.lisp').</li>
+
+ <li>The use of @(':loop$-recursion t') is prohibited in any @(tsee xargs)
+ declaration of that total function; see @(see community-book)
+ @('system/tests/memoize-partial-loop-flet-capture.lisp').</li>
+
+ </ul>
+
+ <p>Fixed a soundness bug that allowed a @(tsee table) event to supply
+ arbitrary code to run for a function memoized with @(tsee memoize-partial)
+ (or with the @(':total') argument of @(tsee memoize)).  For an example, see
+ @(see community-book) @('system/tests/memoize-partial-table-def.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -110905,6 +110930,10 @@ it."
  :q
  ; Now the exit command failed to work, so we were stuck in the proof-builder.
  })
+
+ <p>Fixed a soundness bug caused by permitting @(tsee ec-call) to be used with
+ a function that is locally bound by @(tsee flet).  This now causes an error.
+ See @(see community-book) @('system/tests/ec-call-under-flet.lisp').</p>
 
  <h3>Changes at the System Level</h3>
 

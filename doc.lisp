@@ -35334,11 +35334,12 @@ Subtopics
     (ec-call (fn term1 ... termk))
     (ec-call (fn term1 ... termk) :dfs-in 'dfs-in :dfs-out dfs-out)
 
-  where [30m[47mfn[0m[0m is a known function symbol other than those in the list that
-  is the value of the constant [30m[47m*ec-call-bad-ops*[0m[0m.  (But see the Note
-  on Inlining below for an exception pertaining to inlining.)  In
-  particular, [30m[47mfn[0m[0m is not a macro.  The second form is only relevant
-  for those who use [df]s and is discussed at the end of this topic.
+  where [30m[47mfn[0m[0m is a known function symbol that is not in the list value of
+  the constant [30m[47m*ec-call-bad-ops*[0m[0m and is not locally bound by [30m[47m[flet][0m[0m.
+  (But see the Note on Inlining below for an exception pertaining to
+  inlining.)  In particular, [30m[47mfn[0m[0m is not a macro.  The second form is
+  only relevant for those who use [df]s and is discussed at the end
+  of this topic.
 
   Semantically, [30m[47m(ec-call (fn term1 ... termk))[0m[0m equals [30m[47m(fn term1 ...
   termk)[0m[0m.  However, this use of [30m[47mec-call[0m[0m has two effects.
@@ -78249,7 +78250,7 @@ Subtopics
   introduced by [30m[47m[defun][0m[0m, as follows, under certain restrictions.
 
     (defun fn-limit (x1 ... xn limit)
-      (declare ...) ; optional, as usual for defun ; ;
+      (declare ...) ; optional, as usual for defun
       (if (zp limit)
           <base>
         (let ((limit (1- limit)))
@@ -78265,7 +78266,10 @@ Subtopics
   term (see [term]).  In other words, the translation of [30m[47m<body>[0m[0m must
   have the property that the limit variable only occurs in recursive
   calls, and in those calls it occurs exactly as the final argument
-  and not in any other arguments.
+  and not in any other arguments.  (There are two additional, perhaps
+  obscure restrictions: the body of [30m[47mfn-limit[0m[0m must not use [30m[47m[ec-call][0m[0m
+  on any recursive call of that function, and [30m[47mfn-limit[0m[0m must not have
+  [30m[47m[xargs][0m[0m specifying [30m[47m:loop$-recursion t[0m[0m.)
 
   Such use of a ``limit'' argument to obtain termination is an old
   trick that pre-dates ACL2.  Such ``limited'' functions have
@@ -107687,6 +107691,24 @@ Bug Fixes From AI via Eric Smith
   [30m[47mcollect-bounder-args[0m[0m.  See [community-books]
   [30m[47msystem/tests/tau-bounder-nil-interval.lisp[0m[0m.
 
+  Fixed two soundness bugs in [30m[47m[memoize-partial][0m[0m by implementing the
+  following prohibitions on its total function (the one with the
+  ``limit'' variable as its last argument).
+
+    * The use of [30m[47m[ec-call][0m[0m is prohibited on recursive calls of that total
+      function; see [community-book]
+      [30m[47msystem/tests/memoize-partial-ec-call.lisp[0m[0m.
+
+    * The use of [30m[47m:loop$-recursion t[0m[0m is prohibited in any [30m[47m[xargs][0m[0m
+      declaration of that total function; see [community-book]
+      [30m[47msystem/tests/memoize-partial-loop-flet-capture.lisp[0m[0m.
+
+  Fixed a soundness bug that allowed a [30m[47m[table][0m[0m event to supply
+  arbitrary code to run for a function memoized with
+  [30m[47m[memoize-partial][0m[0m (or with the [30m[47m:total[0m[0m argument of [30m[47m[memoize][0m[0m).  For
+  an example, see [community-book]
+  [30m[47msystem/tests/memoize-partial-table-def.lisp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -107795,6 +107817,10 @@ Other Bug Fixes
     (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
     :q
     ; Now the exit command failed to work, so we were stuck in the proof-builder.
+
+  Fixed a soundness bug caused by permitting [30m[47m[ec-call][0m[0m to be used with
+  a function that is locally bound by [30m[47m[flet][0m[0m.  This now causes an
+  error.  See [community-book] [30m[47msystem/tests/ec-call-under-flet.lisp[0m[0m.
 
 
 Changes at the System Level
