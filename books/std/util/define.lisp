@@ -2335,7 +2335,8 @@ may not work with macros that generate names like @('args.extensions').</p>"
     :ruler-extenders
     :verify-guards
     :ret-patbinder
-    :parents))
+    :parents
+    :type-prescription))
 
 (local
  (defthm define-config-keywords-okp
@@ -2350,10 +2351,33 @@ may not work with macros that generate names like @('args.extensions').</p>"
                 (consp (cdr l))
                 (define-config-keyword-value-listp (cddr l))))))
 
+(defun define-config-value-error (key val)
+  ;; Returns an error message if VAL is not a sensible configuration value for
+  ;; KEY, or NIL otherwise.
+  (declare (xargs :guard t))
+  (case key
+    (:type-prescription
+     (and (not (member-eq val '(nil :none)))
+          (msg "Expected :type-prescription to be NIL or :NONE, but found ~
+                the type-prescription formula ~x0."
+               val)))
+    (otherwise nil)))
+
+(defun define-config-values-error (args)
+  ;; Returns an error message for the first unsuitable value in ARGS, or NIL.
+  (declare (xargs :guard (keyword-value-listp args)))
+  (if (atom args)
+      nil
+    (or (define-config-value-error (first args) (second args))
+        (define-config-values-error (cddr args)))))
+
 (defmacro make-define-config (&rest args)
   (declare (xargs :guard (define-config-keyword-value-listp args)))
-  `(local
-    (table define 'define-config
-           (keyval-list-to-kwd-alist (quote ,args)))))
+  (b* ((error (define-config-values-error args))
+       ((when error)
+        (er hard? 'make-define-config "~@0" error)))
+    `(local
+      (table define 'define-config
+             (keyval-list-to-kwd-alist (quote ,args))))))
 
 ;; ----------------------------------------------------------------------
