@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -w
+#!/usr/bin/env ruby
 
 def fix_string(str)
   # strip color codes by turning escape char into ?.
@@ -16,9 +16,9 @@ end
 
 
 def get_cons_sizes(dir)
-  # read proof sizes from pcert.out files in bootstrap dirs
+  # read proof sizes from the per-book build logs in the bootstrap dirs
   sizes = Array.new
-  Dir["ACL2/bootstrap/#{dir}/*.pcert.out"].each { |path|
+  Dir["ACL2/bootstrap/#{dir}/*.out"].each { |path|
     File.open(path).each { |line|
       line = fix_string(line)
       case line
@@ -35,10 +35,11 @@ def get_cons_sizes(dir)
 end
 
 def get_file_sizes(dir)
-  # read actual file sizes from proof files in Proofs dirs
+  # read actual file sizes from proof files in Proofs dirs.  Proof files live
+  # in Proofs/<level>/<book>/, so recurse.
   sizes = Array.new
-  Dir["Proofs/#{dir}/*.*"].each { |path|
-    sizes.push(File.size(path))
+  Dir["Proofs/#{dir}/**/*.*"].each { |path|
+    sizes.push(File.size(path)) if File.file?(path)
   }
   return sizes
 end
@@ -109,7 +110,7 @@ def summarize(dir)
 
   events = summarize_events(dir)
 
-  puts "  Found #{conses.size} proof-size lines in ACL2/bootstrap/#{dir}/*.pcert.out"
+  puts "  Found #{conses.size} proof-size lines in ACL2/bootstrap/#{dir}/*.out"
   puts "  Found #{files.size} proof files in Proofs/#{dir}"
   puts "  Maximum proof size is: #{pretty_number(max_conses)}"
   puts "  Sum of proof sizes is: #{pretty_number(sum_conses)}"
