@@ -397,7 +397,7 @@
      similarly to @(tsee tset::diff).")
 
    (xdoc::p
-    "The @(see tset::iterator) was rewritten.
+    "The @(see tset::cursor) was rewritten.
      The new implementation is based on zippers,
      and allows bidirectional traversal.")
 

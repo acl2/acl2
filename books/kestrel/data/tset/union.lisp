@@ -95,7 +95,7 @@
               (consp (rest list))
               (member-eq union
                          '(union$inline union-= union-eq union-eql)))
-  (if (endp (rest (rest list)))
+  (if (acl2::endp (rest (rest list)))
       (list union
             (first list)
             (second list))

@@ -353,11 +353,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A loop over a typed tset. An iterator carries no element type, so the
-;; guard of nat-id at (tset::value iter) is discharged by the generated
-;; natp-of-value-when-nat-set-p-of-from-iter, with no hints.
+;; A loop over a typed tset. A cursor carries no element type, so the guard
+;; of nat-id at (tset::entry cursor) is discharged by the generated
+;; natp-of-entry-when-nat-set-p-of-from-cursor, with no hints.
 
-(include-book "kestrel/data/tset/iter" :dir :system)
+(include-book "kestrel/data/tset/cursor/top" :dir :system)
 
 (must-succeed*
   (fty::deftset nat-set
@@ -366,15 +366,17 @@
   (define nat-id ((n natp))
     (mbe :logic (nfix n) :exec n))
 
-  (define nat-set-loop ((iter tset::iterp))
-    :guard (nat-set-p (tset::from-iter iter))
-    (if (tset::has-valuep iter)
-        (cons (nat-id (tset::value iter))
-              (nat-set-loop (tset::next iter)))
-      nil)
-    :measure (tset::nexts iter))
+  (define nat-set-loop ((cursor tset::cursorp))
+    :guard (and (nat-set-p (tset::from-cursor cursor))
+                (or (tset::entryp cursor)
+                    (tset::endp cursor)))
+    (if (tset::endp cursor)
+        nil
+      (cons (nat-id (tset::entry cursor))
+            (nat-set-loop (tset::next cursor))))
+    :measure (tset::nexts cursor))
 
   (assert! (equal (nat-set-loop
-                   (tset::iter-min
+                   (tset::seek-min
                     (tset::insert 2 (tset::insert 1 (tset::empty)))))
                   '(1 2))))

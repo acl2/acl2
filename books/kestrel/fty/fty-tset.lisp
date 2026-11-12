@@ -398,7 +398,7 @@
                 x.pred))
        (av (intern-in-package-of-symbol "A" x.name))
        (yv (intern-in-package-of-symbol "Y" x.name))
-       (iterv (intern-in-package-of-symbol "ITER" x.name))
+       (cursorv (intern-in-package-of-symbol "CURSOR" x.name))
        (np (symbol-name x.pred))
        (ne (symbol-name x.elt-type))
        (pred-of-delete (intern-in-package-of-symbol
@@ -406,9 +406,9 @@
        (elt-of-min-when-pred (intern-in-package-of-symbol
                               (concatenate 'string ne "-OF-MIN-WHEN-" np)
                               x.pred))
-       (elt-of-value-when-pred (intern-in-package-of-symbol
-                                (concatenate 'string ne "-OF-VALUE-WHEN-" np
-                                             "-OF-FROM-ITER")
+       (elt-of-entry-when-pred (intern-in-package-of-symbol
+                                (concatenate 'string ne "-OF-ENTRY-WHEN-" np
+                                             "-OF-FROM-CURSOR")
                                 x.pred))
        (alt-definition (intern-in-package-of-symbol
                         (concatenate 'string np "-ALT-DEFINITION") x.pred))
@@ -491,19 +491,19 @@
                  :in-theory (enable ,pred-def ,bridge ,alt
                                     tset::fix-when-setp)
                  :do-not-induct t)))
-      ;; An iterator carries no element type, so a typed loop's guard at
-      ;; (tset::value iter) is discharged from the type of the set walked.
-      (defthm ,elt-of-value-when-pred
-        (implies (and (,x.pred (tset::from-iter ,iterv))
-                      (tset::has-valuep ,iterv))
-                 (,x.elt-type (tset::value ,iterv)))
+      ;; A cursor carries no element type, so a typed loop's guard at
+      ;; (tset::entry cursor) is discharged from the type of the set walked.
+      (defthm ,elt-of-entry-when-pred
+        (implies (and (,x.pred (tset::from-cursor ,cursorv))
+                      (tset::entryp ,cursorv))
+                 (,x.elt-type (tset::entry ,cursorv)))
         :hints (("Goal"
                  :use ((:instance
                         (:functional-instance
-                         tset::genericp-of-value-when-set-all-genericp
+                         tset::genericp-of-entry-when-set-all-genericp
                          (tset::genericp ,x.elt-type)
                          (tset::set-all-genericp ,alt))
-                        (tset::iter ,iterv)))
+                        (tset::cursor ,cursorv)))
                  :in-theory (enable ,pred-def ,bridge ,alt
                                     tset::fix-when-setp)
                  :do-not-induct t)))

@@ -1,0 +1,343 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+
+(include-book "../set-defs")
+(include-book "../min-max-defs")
+(include-book "../insert-defs")
+(include-book "../delete-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "before-after-defs")
+(include-book "from-cursor-defs")
+(include-book "begin-end-defs")
+
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
+
+(local (include-book "kestrel/data/utilities/oset" :dir :system))
+(local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/member-equal" :dir :system))
+
+(local (include-book "../insert"))
+(local (include-book "../delete"))
+(local (include-book "../extensionality"))
+(local (include-book "cursor"))
+(local (include-book "entry"))
+(local (include-book "before-after"))
+(local (include-book "internal/before-after"))
+(local (include-book "from-cursor"))
+(local (include-book "internal/begin-end"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define step-forward ((cursor cursorp))
+  :returns (cursor$ cursorp
+                    :hints (("Goal" :in-theory (enable* cursorp
+                                                        break-abstraction))))
+  :parents (cursor)
+  :short "Move a @(see cursor) to the next position."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "From an entry, this is the hole just after it; from a hole, the entry
+      just after it. At @(tsee end) there is nothing after, and the cursor
+      stays put.")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$) in the worst case."))
+  (zip-step-forward (cursor-fix cursor))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define step-backward ((cursor cursorp))
+  :returns (cursor$ cursorp
+                    :hints (("Goal" :in-theory (enable* cursorp
+                                                        break-abstraction))))
+  :parents (cursor)
+  :short "Move a @(see cursor) to the previous position."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "From an entry, this is the hole just before it; from a hole, the entry
+      just before it. At @(tsee begin) there is nothing before, and the cursor
+      stays put.")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$) in the worst case."))
+  (zip-step-backward (cursor-fix cursor))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t step-forward) (:t step-backward)))
+
+(defrule step-forward-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (step-forward cursor0)
+                  (step-forward cursor1)))
+  :rule-classes :congruence
+  :enable step-forward)
+
+(defrule step-backward-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (step-backward cursor0)
+                  (step-backward cursor1)))
+  :rule-classes :congruence
+  :enable step-backward)
+
+(defruled cursor-fix-of-zip-step-forward-of-cursor-fix
+  (equal (cursor-fix (zip-step-forward (cursor-fix cursor)))
+         (zip-step-forward (cursor-fix cursor)))
+  :use cursorp-of-step-forward
+  :enable step-forward)
+
+(add-to-ruleset break-abstraction
+                '(cursor-fix-of-zip-step-forward-of-cursor-fix))
+
+(defruled cursor-fix-of-zip-step-backward-of-cursor-fix
+  (equal (cursor-fix (zip-step-backward (cursor-fix cursor)))
+         (zip-step-backward (cursor-fix cursor)))
+  :use cursorp-of-step-backward
+  :enable step-backward)
+
+(add-to-ruleset break-abstraction
+                '(cursor-fix-of-zip-step-backward-of-cursor-fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule from-cursor-of-step-forward
+  (equal (from-cursor (step-forward cursor))
+         (from-cursor cursor))
+  :enable (from-cursor
+           step-forward
+           break-abstraction))
+
+(defrule from-cursor-of-step-backward
+  (equal (from-cursor (step-backward cursor))
+         (from-cursor cursor))
+  :enable (from-cursor
+           step-backward
+           break-abstraction))
+
+(defrule equal-of-step-forward-and-cursor-fix
+  (equal (equal (step-forward cursor) (cursor-fix cursor))
+         (endp cursor))
+  :enable (step-forward
+           endp-becomes-zip-at-end-p
+           break-abstraction)
+  :use (:instance equal-of-zip-step-forward-and-zip-fix
+                  (zip (cursor-fix cursor))))
+
+(defrule equal-of-step-backward-and-cursor-fix
+  (equal (equal (step-backward cursor) (cursor-fix cursor))
+         (beginp cursor))
+  :enable (step-backward
+           beginp-becomes-zip-at-begin-p
+           break-abstraction)
+  :use (:instance equal-of-zip-step-backward-and-zip-fix
+                  (zip (cursor-fix cursor))))
+
+(defruled step-forward-when-endp
+  (implies (endp cursor)
+           (equal (step-forward cursor)
+                  (cursor-fix cursor)))
+  :use equal-of-step-forward-and-cursor-fix
+  :disable equal-of-step-forward-and-cursor-fix)
+
+(defrule step-forward-when-endp-cheap
+  (implies (endp cursor)
+           (equal (step-forward cursor)
+                  (cursor-fix cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by step-forward-when-endp)
+
+(defruled step-backward-when-beginp
+  (implies (beginp cursor)
+           (equal (step-backward cursor)
+                  (cursor-fix cursor)))
+  :use equal-of-step-backward-and-cursor-fix
+  :disable equal-of-step-backward-and-cursor-fix)
+
+(defrule step-backward-when-beginp-cheap
+  (implies (beginp cursor)
+           (equal (step-backward cursor)
+                  (cursor-fix cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by step-backward-when-beginp)
+
+(defrule step-backward-of-step-forward
+  (implies (not (endp cursor))
+           (equal (step-backward (step-forward cursor))
+                  (cursor-fix cursor)))
+  :enable (step-forward
+           step-backward
+           endp-becomes-zip-at-end-p
+           zip-at-end-p
+           break-abstraction))
+
+(defrule step-forward-of-step-backward
+  (implies (not (beginp cursor))
+           (equal (step-forward (step-backward cursor))
+                  (cursor-fix cursor)))
+  :enable (step-forward
+           step-backward
+           beginp-becomes-zip-at-begin-p
+           zip-at-begin-p
+           break-abstraction))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule entryp-of-step-forward
+  (equal (entryp (step-forward cursor))
+         (and (not (entryp cursor))
+              (not (emptyp (after cursor)))))
+  :enable (entryp
+           step-forward
+           emptyp-of-after-becomes-not-consp
+           break-abstraction))
+
+(defrule before-of-step-forward-when-entryp
+  (implies (entryp cursor)
+           (equal (before (step-forward cursor))
+                  (insert (entry cursor) (before cursor))))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           step-forward
+           entry
+           entryp
+           break-abstraction))
+
+(defrule after-of-step-forward-when-entryp
+  (implies (entryp cursor)
+           (equal (after (step-forward cursor))
+                  (after cursor)))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           step-forward
+           entryp
+           break-abstraction))
+
+(defrule before-of-step-forward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (before (step-forward cursor))
+                  (before cursor)))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           step-forward
+           entryp
+           break-abstraction))
+
+(defrule entry-of-step-forward-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (not (emptyp (after cursor))))
+           (equal (entry (step-forward cursor))
+                  (min (after cursor))))
+  :enable (min-of-after-becomes-car-of-zip-after
+           emptyp-of-after-becomes-not-consp
+           step-forward
+           entry
+           entryp
+           break-abstraction))
+
+(defrule after-of-step-forward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (after (step-forward cursor))
+                  (delete (min (after cursor)) (after cursor))))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           min-of-after-becomes-car-of-zip-after
+           data::member-equal-of-cdr-when-osetp
+           step-forward
+           entryp
+           break-abstraction))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule entryp-of-step-backward
+  (equal (entryp (step-backward cursor))
+         (and (not (entryp cursor))
+              (not (emptyp (before cursor)))))
+  :enable (entryp
+           step-backward
+           emptyp-of-before-becomes-not-consp
+           break-abstraction))
+
+(defrule after-of-step-backward-when-entryp
+  (implies (entryp cursor)
+           (equal (after (step-backward cursor))
+                  (insert (entry cursor) (after cursor))))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           step-backward
+           entry
+           entryp
+           break-abstraction))
+
+(defrule before-of-step-backward-when-entryp
+  (implies (entryp cursor)
+           (equal (before (step-backward cursor))
+                  (before cursor)))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           step-backward
+           entryp
+           break-abstraction))
+
+(defrule after-of-step-backward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (after (step-backward cursor))
+                  (after cursor)))
+  :enable (extensionality
+           in-of-after-becomes-member-equal
+           step-backward
+           entryp
+           break-abstraction))
+
+(defrule entry-of-step-backward-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (not (emptyp (before cursor))))
+           (equal (entry (step-backward cursor))
+                  (max (before cursor))))
+  :enable (max-of-before-becomes-car-of-last-of-zip-before
+           emptyp-of-before-becomes-not-consp
+           step-backward
+           entry
+           entryp
+           break-abstraction))
+
+(defrule before-of-step-backward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (before (step-backward cursor))
+                  (delete (max (before cursor)) (before cursor))))
+  :cases ((emptyp (before cursor)))
+  :use (:instance not-in-of-entry-and-before
+                  (cursor (step-backward cursor)))
+  :enable (extensionality
+           in-of-before-becomes-member-equal
+           max-of-before-becomes-car-of-last-of-zip-before
+           emptyp-of-before-becomes-not-consp
+           zip-at-begin-p-becomes-not-consp-of-zip-before
+           step-backward
+           entry
+           entryp
+           break-abstraction)
+  :disable not-in-of-entry-and-before)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy step-extra-rules
+  '(step-forward-when-endp
+    step-backward-when-beginp))

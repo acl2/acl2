@@ -19,7 +19,7 @@
 (include-book "extensionality")
 (include-book "insert")
 (include-book "delete")
-(include-book "iter")
+(include-book "cursor/top")
 (include-book "generic-typed")
 (include-book "generic-count")
 (include-book "induction")

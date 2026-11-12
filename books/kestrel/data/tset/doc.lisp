@@ -77,13 +77,13 @@
          a set. In @(see set::std/osets), one uses @(tsee set::head) and
          @(tsee set::tail). While there are corresponding functions on
          @(see tset)s (@(tsee min) and @(tsee tail)), it would be
-         inefficient to use them for iteration. Instead, one should use an
-         @(see iterator). This requires an initial step to create the
-         @(see iterator) (via @(tsee iter-min)), but once one has an iterator, one
-         can call @(tsee value) and @(tsee next) as you would @(tsee set::head)
+         inefficient to use them for iteration. Instead, one should use a
+         @(see cursor). This requires an initial step to create the
+         @(see cursor) (via @(tsee seek-min)), but once one has a cursor, one
+         can call @(tsee entry) and @(tsee next) as you would @(tsee set::head)
          and @(tsee set::tail). To walk the other way, start from @(tsee
-         iter-max) and use @(tsee prev). If you are going to iterate over the entire
-         set (i.e. you don't need to ``exit early''), you could also use
+         seek-max) and use @(tsee prev). If you are going to iterate over the
+         entire set (i.e. you don't need to ``exit early''), you could also use
          @('to-oset'). All these methods of iteration take @($O(n)$) time.")))
   :order-subtopics t)
 

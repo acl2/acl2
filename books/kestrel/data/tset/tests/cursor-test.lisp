@@ -14,7 +14,7 @@
 (include-book "../cardinality-defs")
 (include-book "../delete-defs")
 (include-book "../min-max-defs")
-(include-book "../iter-defs")
+(include-book "../cursor/defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -25,23 +25,29 @@
 (local (include-book "../cardinality"))
 (local (include-book "../delete"))
 (local (include-book "../min-max"))
-(local (include-book "../iter"))
+(local (include-book "../cursor/top"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define iter-any-evenp ((iter iterp))
-  (and (has-valuep iter)
-       (or (evenp (nfix (value iter)))
-           (iter-any-evenp (next iter))))
-  :measure (nexts iter))
+;; A walk in the recommended style: it tests for the end hole, and its guard
+;; says that any hole it is at is the end, which a walk from @(tsee seek-min)
+;; with @(tsee next) maintains.
 
-(defrule iter-any-evenp-when-iter-equiv-congruence
-  (implies (iter-equiv iter0 iter1)
-           (equal (iter-any-evenp iter0)
-                  (iter-any-evenp iter1)))
+(define cursor-any-evenp ((cursor cursorp))
+  :guard (or (entryp cursor)
+             (endp cursor))
+  (and (not (endp cursor))
+       (or (evenp (nfix (entry cursor)))
+           (cursor-any-evenp (next cursor))))
+  :measure (nexts cursor))
+
+(defrule cursor-any-evenp-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (cursor-any-evenp cursor0)
+                  (cursor-any-evenp cursor1)))
   :rule-classes :congruence
-  :induct (iter-any-evenp iter0)
-  :enable iter-any-evenp)
+  :induct (cursor-any-evenp cursor0)
+  :enable cursor-any-evenp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -49,18 +55,20 @@
   (mbe :logic (and (not (emptyp set))
                    (or (evenp (nfix (min set)))
                        (any-evenp (delete (min set) set))))
-       :exec (iter-any-evenp (iter-min set)))
+       :exec (cursor-any-evenp (seek-min set)))
   :measure (cardinality set)
   :verify-guards nil ;; Verified below
   ///
 
-  (defrule iter-any-evenp-becomes-any-evenp
-    (equal (iter-any-evenp iter)
-           (and (has-valuep iter)
-                (or (evenp (nfix (value iter)))
-                    (any-evenp (after iter)))))
-    :induct t
-    :enable (iter-any-evenp
+  (defrule cursor-any-evenp-becomes-any-evenp
+    (implies (or (entryp cursor)
+                 (endp cursor))
+             (equal (cursor-any-evenp cursor)
+                    (and (entryp cursor)
+                         (or (evenp (nfix (entry cursor)))
+                             (any-evenp (after cursor))))))
+    :induct (cursor-any-evenp cursor)
+    :enable (cursor-any-evenp
              any-evenp))
 
   (verify-guards any-evenp))
@@ -72,4 +80,3 @@
   :rule-classes :congruence
   :induct (any-evenp set0)
   :enable any-evenp)
-

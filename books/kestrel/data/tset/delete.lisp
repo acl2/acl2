@@ -88,7 +88,7 @@
               (consp (rest list))
               (member-eq delete
                          '(delete$inline delete-= delete-eq delete-eql)))
-  (if (endp (rest (rest list)))
+  (if (acl2::endp (rest (rest list)))
       (list delete
             (first list)
             (second list))

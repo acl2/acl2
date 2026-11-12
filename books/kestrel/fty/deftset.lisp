@@ -23,4 +23,5 @@
 (include-book "kestrel/data/tset/intersect" :dir :system)
 (include-book "kestrel/data/tset/diff" :dir :system)
 (include-book "kestrel/data/tset/generic-typed" :dir :system)
+(include-book "kestrel/data/tset/cursor/generic-typed" :dir :system)
 (include-book "kestrel/data/tset/generic-count" :dir :system)

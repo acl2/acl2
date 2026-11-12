@@ -99,7 +99,7 @@
   :guard (and (consp (rest list))
               (member-eq insert
                          '(insert$inline insert-= insert-eq insert-eql)))
-  (if (endp (rest (rest list)))
+  (if (acl2::endp (rest (rest list)))
       (cons insert list)
     (list insert
           (first list)
@@ -372,7 +372,7 @@
    (xdoc::p
      "Time complexity: @($O(n\\log(n+m))$), where @($n$) is the size of the list,
       and @($m$) is the size of the set."))
-  (if (endp list)
+  (if (acl2::endp list)
       (fix set)
     (insert-all (rest list)
                 (insert (first list) set))))

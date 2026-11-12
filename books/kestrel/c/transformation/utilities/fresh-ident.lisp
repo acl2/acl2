@@ -24,7 +24,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
-(local (include-book "kestrel/data/tset/iter" :dir :system))
+(local (include-book "kestrel/data/tset/cursor/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -147,41 +147,41 @@
          (if (stringp unwrapped)
              (insert unwrapped strings)
            strings))
-       :exec (map-ident->unwrap-loop (tset::iter-min idents)))
+       :exec (map-ident->unwrap-loop (tset::seek-min idents)))
   :measure (tset::cardinality (ident-set-fix idents))
   :verify-guards nil
 
   :prepwork
-  ((define map-ident->unwrap-loop ((iter tset::iterp))
-     :guard (ident-setp (tset::from-iter iter))
+  ((define map-ident->unwrap-loop ((cursor tset::cursorp))
+     :guard (ident-setp (tset::from-cursor cursor))
      :returns (strings acl2::string-setp)
      :parents nil
-     (b* (((unless (tset::has-valuep iter))
+     (b* (((when (not (tset::entryp cursor)))
            nil)
-          (unwrapped (ident->unwrap (tset::value iter)))
-          (strings (map-ident->unwrap-loop (tset::next iter))))
+          (unwrapped (ident->unwrap (tset::entry cursor)))
+          (strings (map-ident->unwrap-loop (tset::next cursor))))
        (if (stringp unwrapped)
            (insert unwrapped strings)
          strings))
-     :measure (tset::nexts iter)
-     :guard-hints (("Goal" :use (:instance tset::in-of-value
-                                           (tset::iter iter))))
+     :measure (tset::nexts cursor)
+     :guard-hints (("Goal" :use (:instance tset::in-of-entry
+                                           (tset::cursor cursor))))
      :verify-guards :after-returns))
 
   ///
 
   (defrulel map-ident->unwrap-loop-of-next
-    (implies (and (tset::has-valuep iter)
-                  (ident-setp (tset::after iter)))
-             (equal (map-ident->unwrap-loop (tset::next iter))
-                    (map-ident->unwrap (tset::after iter))))
-    :induct (map-ident->unwrap-loop iter)
+    (implies (and (tset::entryp cursor)
+                  (ident-setp (tset::after cursor)))
+             (equal (map-ident->unwrap-loop (tset::next cursor))
+                    (map-ident->unwrap (tset::after cursor))))
+    :induct (map-ident->unwrap-loop cursor)
     :enable (map-ident->unwrap-loop
              map-ident->unwrap))
 
   (verify-guards map-ident->unwrap
     :hints (("Goal"
-             :expand ((map-ident->unwrap-loop (tset::iter-min idents)))))))
+             :expand ((map-ident->unwrap-loop (tset::seek-min idents)))))))
 
 (define fresh-ident
   ((ident identp)

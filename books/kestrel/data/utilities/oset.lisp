@@ -106,6 +106,19 @@
            append
            <<-of-cars-when-osetp-of-append))
 
+;; So every element of a prefix is below every element of what follows.
+
+(defruled <<-across-append-of-members-when-osetp
+  (implies (and (setp (append a b))
+                (member-equal x a)
+                (member-equal y b))
+           (<< x y))
+  :cases ((equal y (car b)))
+  :use (<<-across-append-when-osetp
+        (:instance setp-of-suffix-when-osetp-of-append (x a) (y b))
+        (:instance <<-of-car-when-member-equal-of-cdr (l b) (x y)))
+  :enable <<-rules)
+
 ;; An oset has no duplicates, so membership in the tail is membership anywhere
 ;; but at the head.
 

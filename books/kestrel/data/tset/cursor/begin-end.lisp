@@ -1,0 +1,317 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+
+(include-book "../set-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "before-after-defs")
+(include-book "from-cursor-defs")
+
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
+
+(local (include-book "../internal/tree"))
+(local (include-book "../set"))
+(local (include-book "../in"))
+(local (include-book "../extensionality"))
+(local (include-book "cursor"))
+(local (include-book "entry"))
+(local (include-book "before-after"))
+(local (include-book "internal/before-after"))
+(local (include-book "from-cursor"))
+(local (include-book "extensionality"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define beginp ((cursor cursorp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :parents (cursor)
+  :short "Check whether a @(see cursor) is at the hole before every element."
+  :long
+  (xdoc::topstring-p
+    "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$) at an
+     entry.")
+  (mbe :logic (and (not (entryp cursor))
+                   (emptyp (before cursor)))
+       :exec (zip-at-begin-p (cursor-fix cursor)))
+  :inline t
+  :guard-hints
+  (("Goal" :in-theory (enable* entryp
+                               emptyp-of-before-becomes-not-consp
+                               zip-at-begin-p-becomes-not-consp-of-zip-before
+                               break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define endp ((cursor cursorp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :parents (cursor)
+  :short "Check whether a @(see cursor) is at the hole after every element."
+  :long
+  (xdoc::topstring-p
+    "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$) at an
+     entry.")
+  (mbe :logic (and (not (entryp cursor))
+                   (emptyp (after cursor)))
+       :exec (zip-at-end-p (cursor-fix cursor)))
+  :inline t
+  :guard-hints
+  (("Goal" :in-theory (enable* entryp
+                               emptyp-of-after-becomes-not-consp
+                               zip-at-end-p-becomes-not-consp-of-zip-after
+                               break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule beginp-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (beginp cursor0)
+                  (beginp cursor1)))
+  :rule-classes :congruence
+  :enable beginp)
+
+(defrule endp-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (endp cursor0)
+                  (endp cursor1)))
+  :rule-classes :congruence
+  :enable endp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled not-entryp-when-beginp
+  (implies (beginp cursor)
+           (not (entryp cursor)))
+  :enable beginp)
+
+(defrule not-entryp-when-beginp-forward-chaining
+  (implies (beginp cursor)
+           (not (entryp cursor)))
+  :rule-classes :forward-chaining
+  :by not-entryp-when-beginp)
+
+(defruled not-entryp-when-endp
+  (implies (endp cursor)
+           (not (entryp cursor)))
+  :enable endp)
+
+(defrule not-entryp-when-endp-forward-chaining
+  (implies (endp cursor)
+           (not (entryp cursor)))
+  :rule-classes :forward-chaining
+  :by not-entryp-when-endp)
+
+(defruled not-beginp-when-entryp
+  (implies (entryp cursor)
+           (not (beginp cursor))))
+
+(defrule not-beginp-when-entryp-forward-chaining
+  (implies (entryp cursor)
+           (not (beginp cursor)))
+  :rule-classes :forward-chaining
+  :by not-beginp-when-entryp)
+
+(defruled not-endp-when-entryp
+  (implies (entryp cursor)
+           (not (endp cursor))))
+
+(defrule not-endp-when-entryp-forward-chaining
+  (implies (entryp cursor)
+           (not (endp cursor)))
+  :rule-classes :forward-chaining
+  :by not-endp-when-entryp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled before-when-beginp
+  (implies (beginp cursor)
+           (equal (before cursor)
+                  (empty)))
+  :enable (beginp
+           emptyp-alt-definition))
+
+(defrule before-when-beginp-cheap
+  (implies (beginp cursor)
+           (equal (before cursor)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by before-when-beginp)
+
+(defruled after-when-endp
+  (implies (endp cursor)
+           (equal (after cursor)
+                  (empty)))
+  :enable (endp
+           emptyp-alt-definition))
+
+(defrule after-when-endp-cheap
+  (implies (endp cursor)
+           (equal (after cursor)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by after-when-endp)
+
+(defruled after-when-beginp
+  (implies (beginp cursor)
+           (equal (after cursor)
+                  (from-cursor cursor)))
+  :enable (extensionality
+           in-of-from-cursor-becomes-in-of-before-or-entry-or-after))
+
+(defrule after-when-beginp-cheap
+  (implies (beginp cursor)
+           (equal (after cursor)
+                  (from-cursor cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by after-when-beginp)
+
+(defruled before-when-endp
+  (implies (endp cursor)
+           (equal (before cursor)
+                  (from-cursor cursor)))
+  :enable (extensionality
+           in-of-from-cursor-becomes-in-of-before-or-entry-or-after))
+
+(defrule before-when-endp-cheap
+  (implies (endp cursor)
+           (equal (before cursor)
+                  (from-cursor cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by before-when-endp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled emptyp-of-from-cursor-when-beginp-and-endp
+  (implies (and (beginp cursor)
+                (endp cursor))
+           (emptyp (from-cursor cursor)))
+  :enable (endp
+           after-when-beginp))
+
+(defrule emptyp-of-from-cursor-when-beginp-and-endp-forward-chaining
+  (implies (and (beginp cursor)
+                (endp cursor))
+           (emptyp (from-cursor cursor)))
+  :rule-classes :forward-chaining
+  :by emptyp-of-from-cursor-when-beginp-and-endp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule beginp-of-begin
+  (beginp (begin set))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((begin set))))
+  :enable (beginp
+           entryp
+           begin
+           emptyp-of-before-becomes-not-consp
+           break-abstraction))
+
+(defrule endp-of-end
+  (endp (end set))
+  :rule-classes (:rewrite
+                 (:forward-chaining :trigger-terms ((end set))))
+  :enable (endp
+           entryp
+           end
+           emptyp-of-after-becomes-not-consp
+           break-abstraction))
+
+(defrule not-entryp-of-begin
+  (not (entryp (begin set))))
+
+(defrule not-entryp-of-end
+  (not (entryp (end set))))
+
+(defrule from-cursor-of-begin
+  (equal (from-cursor (begin set))
+         (fix set))
+  :enable (from-cursor
+           begin
+           break-abstraction))
+
+(defrule from-cursor-of-end
+  (equal (from-cursor (end set))
+         (fix set))
+  :enable (from-cursor
+           end
+           break-abstraction))
+
+(defrule before-of-begin
+  (equal (before (begin set))
+         (empty)))
+
+(defrule after-of-end
+  (equal (after (end set))
+         (empty)))
+
+(defrule after-of-begin
+  (equal (after (begin set))
+         (fix set)))
+
+(defrule before-of-end
+  (equal (before (end set))
+         (fix set)))
+
+(defrule endp-of-begin
+  (equal (endp (begin set))
+         (emptyp set))
+  :enable endp)
+
+(defrule beginp-of-end
+  (equal (beginp (end set))
+         (emptyp set))
+  :enable beginp)
+
+(defrule equal-of-begin-and-end
+  (equal (equal (begin x) (end y))
+         (and (emptyp x)
+              (emptyp y)))
+  :enable (cursor-extensionality
+           emptyp-alt-definition))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled beginp-becomes-equal-of-begin
+  (equal (beginp cursor)
+         (equal (cursor-fix cursor)
+                (begin (from-cursor cursor))))
+  :enable (cursor-extensionality
+           beginp
+           emptyp-alt-definition)
+  :use after-when-beginp)
+
+(defruled endp-becomes-equal-of-end
+  (equal (endp cursor)
+         (equal (cursor-fix cursor)
+                (end (from-cursor cursor))))
+  :enable (cursor-extensionality
+           endp
+           emptyp-alt-definition)
+  :use before-when-endp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy begin-end-extra-rules
+  '(not-entryp-when-beginp
+    not-entryp-when-endp
+    not-beginp-when-entryp
+    not-endp-when-entryp
+    before-when-beginp
+    after-when-endp
+    after-when-beginp
+    before-when-endp
+    emptyp-of-from-cursor-when-beginp-and-endp))

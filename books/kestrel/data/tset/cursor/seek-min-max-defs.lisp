@@ -8,32 +8,20 @@
 
 (in-package "TSET")
 
-(include-book "internal/iter")
-(include-book "set-defs")
-(include-book "insert-defs")
+(include-book "../set-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "before-after-defs")
+(include-book "step-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "iter"))
+(local (include-book "seek-min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (iterp
-          iter-min
-          iter-max
-          iter-fix
-          iter-equiv
-          after-lastp
-          before-firstp
-          has-valuep
-          from-iter
-          before
-          after
-          value
-          next
-          prev
-          nexts
-          prevs
+  :names (seek-min
+          seek-max
+          minp
+          maxp
           ))
-
-(defequiv iter-equiv)

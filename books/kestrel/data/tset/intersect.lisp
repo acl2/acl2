@@ -94,7 +94,7 @@
               (member-eq intersect
                          '(intersect$inline intersect-= intersect-eq
                            intersect-eql)))
-  (if (endp (rest (rest list)))
+  (if (acl2::endp (rest (rest list)))
       (list intersect
             (first list)
             (second list))

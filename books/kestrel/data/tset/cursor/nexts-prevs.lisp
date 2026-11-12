@@ -1,0 +1,127 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+
+(include-book "../cardinality-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "before-after-defs")
+(include-book "begin-end-defs")
+(include-book "next-prev-defs")
+
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil))
+
+(local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+
+(local (include-book "../set"))
+(local (include-book "../min-max"))
+(local (include-book "../delete"))
+(local (include-book "../cardinality"))
+(local (include-book "entry"))
+(local (include-book "before-after"))
+(local (include-book "begin-end"))
+(local (include-book "step"))
+(local (include-book "next-prev"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nexts ((cursor cursorp))
+  :type-prescription :none
+  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :parents (cursor)
+  :short "The number of entries at or after a @(see cursor)."
+  :long
+  (xdoc::topstring-p
+    "This is a measure for a walk with @(tsee next): it decreases until the
+     cursor is at @(tsee end).")
+  (+ (cardinality (after cursor))
+     (if (entryp cursor) 1 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define prevs ((cursor cursorp))
+  :type-prescription :none
+  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :parents (cursor)
+  :short "The number of entries at or before a @(see cursor)."
+  :long
+  (xdoc::topstring-p
+    "This is a measure for a walk with @(tsee prev): it decreases until the
+     cursor is at @(tsee begin).")
+  (+ (cardinality (before cursor))
+     (if (entryp cursor) 1 0)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (nexts cursor0)
+                  (nexts cursor1)))
+  :rule-classes :congruence
+  :enable nexts)
+
+(defrule prevs-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (prevs cursor0)
+                  (prevs cursor1)))
+  :rule-classes :congruence
+  :enable prevs)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-equal-0
+  (equal (equal (nexts cursor) 0)
+         (endp cursor))
+  :enable (nexts
+           endp
+           equal-of-cardinality-and-0-becomes-emptyp))
+
+(defrule prevs-equal-0
+  (equal (equal (prevs cursor) 0)
+         (beginp cursor))
+  :enable (prevs
+           beginp
+           equal-of-cardinality-and-0-becomes-emptyp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-of-next
+  (implies (not (endp cursor))
+           (equal (nexts (next cursor))
+                  (- (nexts cursor) 1)))
+  :cases ((entryp cursor))
+  :enable (nexts
+           next
+           endp))
+
+(defrule prevs-of-prev
+  (implies (not (beginp cursor))
+           (equal (prevs (prev cursor))
+                  (- (prevs cursor) 1)))
+  :cases ((entryp cursor))
+  :enable (prevs
+           prev
+           beginp))
+
+(defrule nexts-linear
+  (implies (not (endp cursor))
+           (< (nexts (next cursor))
+              (nexts cursor)))
+  :rule-classes :linear)
+
+(defrule prevs-linear
+  (implies (not (beginp cursor))
+           (< (prevs (prev cursor))
+              (prevs cursor)))
+  :rule-classes :linear)

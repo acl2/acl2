@@ -55,10 +55,12 @@
        focus does not, so the whole tree can be recovered from a zipper, and a
        zipper can be moved without rebuilding the tree from scratch.")
     (xdoc::p
-      "The focus is never empty, so a zipper is always at an element: a tree
-       with @($n$) nodes has exactly @($n$) zippers, and the empty tree has
-       none. The positions before the first element and after the last are not
-       zippers; they are supplied by @(see tree-iterator).")
+      "The focus may be empty. A zipper whose focus is a nonempty subtree is at
+       an element, the root of that subtree, and one whose focus is empty is at
+       a hole, a gap of the in-order sequence. A tree with @($n$) nodes has
+       @($n+1$) empty subtrees, one per gap, so it has @($2n+1$) zippers in all,
+       alternating between holes and elements in order. The empty tree has
+       exactly one, a hole with an empty path.")
     (xdoc::p
       "Costs below are given as @($O(d)$), where @($d$) is a depth within the
        tree. That is the honest bound here, since a zipper is over an arbitrary
@@ -377,67 +379,59 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-count-lefts ((path zip-frame-listp))
-  :type-prescription :none
-  :returns (count natp :rule-classes :type-prescription)
-  :short "Count the frames of a path whose focus lies in the left child."
+(define zip-path-no-left-frames-p ((path zip-frame-listp))
+  :short "Check that no frame of a path has the focus in its left child."
   :long
   (xdoc::topstring
    (xdoc::p
-     "These are exactly the frames whose node follows the focus in order. A
-      zipper caches this count so that it can tell in constant time whether
-      anything remains to its right."))
-  (if (endp path)
-      0
-    (+ (if (zip-frame->from-left (car path)) 1 0)
-       (zip-count-lefts (cdr path))))
-  :verify-guards :after-returns)
+     "A frame whose focus lies in the left child holds a node which follows
+      the focus in order, so this checks that nothing outside the focus
+      subtree follows it.")
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the length of the path,
+      although the check stops at the first left frame."))
+  (or (acl2::endp path)
+      (and (not (zip-frame->from-left (car path)))
+           (zip-path-no-left-frames-p (cdr path)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-count-rights ((path zip-frame-listp))
-  :type-prescription :none
-  :returns (count natp :rule-classes :type-prescription)
-  :short "Count the frames of a path whose focus lies in the right child."
+(define zip-path-no-right-frames-p ((path zip-frame-listp))
+  :short "Check that no frame of a path has the focus in its right child."
   :long
   (xdoc::topstring
    (xdoc::p
-     "These are exactly the frames whose node precedes the focus in order. A
-      zipper caches this count so that it can tell in constant time whether
-      anything remains to its left."))
-  (if (endp path)
-      0
-    (+ (if (zip-frame->from-left (car path)) 0 1)
-       (zip-count-rights (cdr path))))
-  :verify-guards :after-returns)
+     "The mirror image of @(tsee zip-path-no-left-frames-p): this checks that
+      nothing outside the focus subtree precedes it."))
+  (or (acl2::endp path)
+      (and (zip-frame->from-left (car path))
+           (zip-path-no-right-frames-p (cdr path)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-count-lefts-of-cons
-  (equal (zip-count-lefts (cons frame path))
-         (+ (if (zip-frame->from-left frame) 1 0)
-            (zip-count-lefts path)))
-  :enable zip-count-lefts)
+(defrule zip-path-no-left-frames-p-of-cons
+  (equal (zip-path-no-left-frames-p (cons frame path))
+         (and (not (zip-frame->from-left frame))
+              (zip-path-no-left-frames-p path)))
+  :enable zip-path-no-left-frames-p)
 
-(defrule zip-count-rights-of-cons
-  (equal (zip-count-rights (cons frame path))
-         (+ (if (zip-frame->from-left frame) 0 1)
-            (zip-count-rights path)))
-  :enable zip-count-rights)
+(defrule zip-path-no-right-frames-p-of-cons
+  (equal (zip-path-no-right-frames-p (cons frame path))
+         (and (zip-frame->from-left frame)
+              (zip-path-no-right-frames-p path)))
+  :enable zip-path-no-right-frames-p)
 
-(defrule zip-count-lefts-when-not-consp-cheap
+(defrule zip-path-no-left-frames-p-when-not-consp-cheap
   (implies (not (consp path))
-           (equal (zip-count-lefts path)
-                  0))
+           (zip-path-no-left-frames-p path))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable zip-count-lefts)
+  :enable zip-path-no-left-frames-p)
 
-(defrule zip-count-rights-when-not-consp-cheap
+(defrule zip-path-no-right-frames-p-when-not-consp-cheap
   (implies (not (consp path))
-           (equal (zip-count-rights path)
-                  0))
+           (zip-path-no-right-frames-p path))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable zip-count-rights)
+  :enable zip-path-no-right-frames-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -447,29 +441,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-     "A zipper pairs a focus with the path from the root down to it, along with
-      the two frame counts of that path. The counts are redundant, but caching
-      them is what makes the boundary checks constant time. Since they are
-      determined by the path, zippers remain unique.")
-   (xdoc::p
-     "The focus is never empty: a zipper is always at an element. A tree with
-      @($n$) nodes has @($n+1$) empty subtrees, one per gap of the in-order
-      sequence, but only the two outermost of those are positions an iterator
-      would ever occupy, and admitting all @($n+1$) would mean admitting
-      @($n-1$) values that are not positions at all. The two ends are supplied
-      instead by a layer above this one, which can also tell them apart on the
-      empty tree, where there is only one gap to be found.")
+     "A zipper pairs a focus with the path from the root down to it. The focus
+      is any tree, empty or not: an empty focus is a hole.")
    (xdoc::p
      "This recognizer is structural only. Whether the tree recovered from a
       zipper satisfies the @(see tset) invariants is a separate question."))
   (and (consp x)
-       (consp (cdr x))
-       (consp (cddr x))
        (treep (car x))
-       (not (tree-empty-p (car x)))
-       (zip-frame-listp (cadr x))
-       (equal (caddr x) (zip-count-lefts (cadr x)))
-       (equal (cdddr x) (zip-count-rights (cadr x)))))
+       (zip-frame-listp (cdr x))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -487,13 +466,9 @@
                 :hints (("Goal" :in-theory (enable zipp))))
   :short "An irrelevant @(see zipper), used as the fixer's default."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "The empty tree has no zipper at all, so the default cannot be built from
-      it. This is the zipper of the one-node tree holding an irrelevant
-      element, focused at the root."))
-  (cons (tree-node (irr-tree-element) nil nil)
-        (cons nil (cons 0 0))))
+  (xdoc::topstring-p
+    "This is the one zipper of the empty tree, at its only hole.")
+  (cons nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -577,6 +552,9 @@
                                                      zip-fix
                                                      irr-zip))))
   :short "Get the subtree in focus."
+  :long
+  (xdoc::topstring-p
+    "The zipper is at a hole exactly when this is empty.")
   (car (zip-fix zip))
   :inline t)
 
@@ -589,17 +567,6 @@
   :rule-classes :congruence
   :enable (zip->focus))
 
-;; A zipper is always at an element. This holds of any object, since the fixer
-;; sends a non-zipper to one which is also at an element, so it discharges the
-;; hypothesis on the constructor's type with nothing to backchain through.
-
-(defrule not-tree-empty-p-of-zip->focus
-  (not (tree-empty-p (zip->focus zip)))
-  :enable (zip->focus
-           zip-fix
-           zipp
-           irr-zip))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->path ((zip zipp))
@@ -608,7 +575,7 @@
                                                     zip-fix
                                                     irr-zip))))
   :short "Get the path from the root down to the focus."
-  (cadr (zip-fix zip))
+  (cdr (zip-fix zip))
   :inline t
   :guard-hints (("Goal" :in-theory (enable zipp))))
 
@@ -622,7 +589,7 @@
   :enable (zip->path))
 
 ;; The frame-list compound recognizer cannot fire on a compound term, so the
-;; iterated ascents, whose base case tests @(tsee endp) of a path, need this.
+;; iterated ascents, whose base case tests @(tsee acl2::endp) of a path, need this.
 
 (defrule true-listp-of-zip->path
   (true-listp (zip->path zip))
@@ -632,176 +599,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip->nlefts ((zip zipp))
-  :returns (nlefts natp
-                   :rule-classes :type-prescription
-                   :hints (("Goal" :in-theory (enable zipp
-                                                      zip-fix
-                                                      irr-zip))))
-  :short "Get the number of frames whose node follows the focus in order."
-  (caddr (zip-fix zip))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable zipp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip->nlefts-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip->nlefts zip0)
-                  (zip->nlefts zip1)))
-  :rule-classes :congruence
-  :enable (zip->nlefts))
-
-;; The cached count always agrees with the path, even for ill-formed input,
-;; since the fixer supplies the empty zipper. We normalize the cache away, so
-;; that reasoning only ever sees the path.
-(defrule zip->nlefts-becomes-zip-count-lefts
-  (equal (zip->nlefts zip)
-         (zip-count-lefts (zip->path zip)))
-  :enable (zip->nlefts
-           zip->path
-           zip-fix
-           zipp
-           irr-zip))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip->nrights ((zip zipp))
-  :returns (nrights natp
-                    :rule-classes :type-prescription
-                    :hints (("Goal" :in-theory (enable zipp
-                                                       zip-fix
-                                                       irr-zip))))
-  :short "Get the number of frames whose node precedes the focus in order."
-  (cdddr (zip-fix zip))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable zipp))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip->nrights-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip->nrights zip0)
-                  (zip->nrights zip1)))
-  :rule-classes :congruence
-  :enable (zip->nrights))
-
-(defrule zip->nrights-becomes-zip-count-rights
-  (equal (zip->nrights zip)
-         (zip-count-rights (zip->path zip)))
-  :enable (zip->nrights
-           zip->path
-           zip-fix
-           zipp
-           irr-zip))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define zip
   ((focus treep)
-   (path zip-frame-listp)
-   (nlefts natp)
-   (nrights natp))
+   (path zip-frame-listp))
   :type-prescription :none
-  :guard (and (not (tree-empty-p focus))
-              (equal nlefts (zip-count-lefts path))
-              (equal nrights (zip-count-rights path)))
   :returns (zip zipp
                 :hints (("Goal" :in-theory (enable zipp))))
   :short "Constructor for @(see zipper)s."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "Logically, the counts are ignored: they are determined by the path.
-      Passing them in only avoids recomputing them, which is the whole point of
-      caching them.")
-   (xdoc::p
-     "An empty focus is fixed away. The accessor rules need a nonempty focus
-      either way, since an unfixed empty focus would not build a zipper and the
-      accessors would fix it right back; fixing here at least keeps the type
-      unconditional for every zipper-producing function downstream."))
-  (let ((path (zip-frame-list-fix path))
-        (focus (mbe :logic (if (tree-empty-p focus)
-                               (tree-node (irr-tree-element) nil nil)
-                             (tree-fix focus))
-                    :exec focus)))
-    (cons focus
-          (cons path
-                (cons (mbe :logic (zip-count-lefts path)
-                           :exec nlefts)
-                      (mbe :logic (zip-count-rights path)
-                           :exec nrights)))))
+  (cons (tree-fix focus)
+        (zip-frame-list-fix path))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule zip-type-prescription
-  (zipp (zip focus path nlefts nrights))
-  :rule-classes ((:type-prescription
-                   :typed-term (zip focus path nlefts nrights))))
+  (zipp (zip focus path))
+  :rule-classes ((:type-prescription :typed-term (zip focus path))))
 
 (defrule zip-when-tree-equiv-of-arg1-congruence
   (implies (tree-equiv focus0 focus1)
-           (equal (zip focus0 path nlefts nrights)
-                  (zip focus1 path nlefts nrights)))
+           (equal (zip focus0 path)
+                  (zip focus1 path)))
   :rule-classes :congruence
   :enable zip)
 
-;; Logically, the counts are ignored. We choose to arbitrarily normalize them
-;; to nil.
-(defruled zip-arg3-becomes-nil
-  (equal (zip focus path nlefts nrights)
-         (zip focus path nil nrights))
-  :enable zip)
-
-(defrule zip-when-arg3-not-nil-syntaxp
-  (implies (syntaxp (not (equal nlefts ''nil)))
-           (equal (zip focus path nlefts nrights)
-                  (zip focus path nil nrights)))
-  :by zip-arg3-becomes-nil)
-
-(defruled zip-arg4-becomes-nil
-  (equal (zip focus path nlefts nrights)
-         (zip focus path nlefts nil))
-  :enable zip)
-
-(defrule zip-when-arg4-not-nil-syntaxp
-  (implies (syntaxp (not (equal nrights ''nil)))
-           (equal (zip focus path nlefts nrights)
-                  (zip focus path nlefts nil)))
-  :by zip-arg4-becomes-nil)
-
 (defrule zip->focus-of-zip
-  (implies (not (tree-empty-p focus))
-           (equal (zip->focus (zip focus path nlefts nrights))
-                  (tree-fix focus)))
+  (equal (zip->focus (zip focus path))
+         (tree-fix focus))
   :enable (zip
            zip->focus
            zipp))
 
 (defrule zip->path-of-zip
-  (equal (zip->path (zip focus path nlefts nrights))
+  (equal (zip->path (zip focus path))
          (zip-frame-list-fix path))
   :enable (zip
            zip->path
            zipp))
 
-;; These follow from the normalization of the cached counts into counts of the
-;; path, so they need no help beyond the rule for the path itself.
-(defrule zip->nlefts-of-zip
-  (equal (zip->nlefts (zip focus path nlefts nrights))
-         (zip-count-lefts (zip-frame-list-fix path))))
-
-(defrule zip->nrights-of-zip
-  (equal (zip->nrights (zip focus path nlefts nrights))
-         (zip-count-rights (zip-frame-list-fix path))))
-
 (defrule zip-elim
   (implies (zipp zip)
            (equal (zip (zip->focus zip)
-                       (zip->path zip)
-                       (zip->nlefts zip)
-                       (zip->nrights zip))
+                       (zip->path zip))
                   zip))
   :rule-classes :elim
   :enable (zip
@@ -852,7 +691,7 @@
    (tree treep))
   :returns (tree$ treep)
   :short "Rebuild a tree by plugging it into a path, innermost frame first."
-  (if (endp path)
+  (if (acl2::endp path)
       (tree-fix tree)
     (zip-path-plug (cdr path)
                    (zip-frame-plug (car path) tree))))
@@ -932,22 +771,14 @@
   :enable zip-plug)
 
 (defrule zip-plug-of-zip
-  (implies (not (tree-empty-p focus))
-           (equal (zip-plug (zip focus path nlefts nrights))
-                  (zip-path-plug (zip-frame-list-fix path)
-                                 (tree-fix focus))))
-  :enable zip-plug)
-
-;; A zipper is at an element, so the tree it is a cursor into holds at least
-;; that element.
-
-(defrule not-tree-empty-p-of-zip-plug
-  (not (tree-empty-p (zip-plug zip)))
+  (equal (zip-plug (zip focus path))
+         (zip-path-plug (zip-frame-list-fix path)
+                        (tree-fix focus)))
   :enable zip-plug)
 
 (defrule zip-plug-of-irr-zip
   (equal (zip-plug (irr-zip))
-         (tree-node (irr-tree-element) nil nil))
+         nil)
   :enable (zip-plug
            irr-zip
            zip-fix
@@ -975,7 +806,7 @@
   :by tree-node-elim)
 
 (defrulel zip-of-zip-accessors
-  (equal (zip (zip->focus zip) (zip->path zip) nil nil)
+  (equal (zip (zip->focus zip) (zip->path zip))
          (zip-fix zip))
   :enable (zip
            zip->focus
@@ -1010,21 +841,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The single steps. Every other move iterates one of these, so that each move
-;; is defined, and reasoned about, at the level of whole zippers rather than
-;; their parts. Moving a zipper never changes the tree it is a cursor into,
-;; which is what the plug rules below record.
+;; The single moves through the tree. Every other move iterates one of these,
+;; so that each move is defined, and reasoned about, at the level of whole
+;; zippers rather than their parts. Moving a zipper never changes the tree it
+;; is a cursor into, which is what the plug rules below record.
 
 (define zip-descend-left ((zip zipp))
-  :guard (not (tree-empty-p (tree->left (zip->focus zip))))
+  :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move the focus to the left child, pushing a frame."
+  :long
+  (xdoc::topstring-p
+    "The child may be empty, in which case the move lands on a hole.")
   (let ((focus (zip->focus zip)))
     (zip (tree->left focus)
          (cons (zip-frame t (tree->head focus) (tree->right focus))
-               (zip->path zip))
-         (+ 1 (the unsigned-byte (zip->nlefts zip)))
-         (zip->nrights zip)))
+               (zip->path zip))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1039,7 +871,7 @@
   :enable zip-descend-left)
 
 (defrule zip-plug-of-zip-descend-left
-  (implies (not (tree-empty-p (tree->left (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-plug (zip-descend-left zip))
                   (zip-plug zip)))
   :enable (zip-descend-left
@@ -1049,15 +881,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-right ((zip zipp))
-  :guard (not (tree-empty-p (tree->right (zip->focus zip))))
+  :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move the focus to the right child, pushing a frame."
+  :long
+  (xdoc::topstring-p
+    "The child may be empty, in which case the move lands on a hole.")
   (let ((focus (zip->focus zip)))
     (zip (tree->right focus)
          (cons (zip-frame nil (tree->head focus) (tree->left focus))
-               (zip->path zip))
-         (zip->nlefts zip)
-         (+ 1 (the unsigned-byte (zip->nrights zip)))))
+               (zip->path zip))))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1072,7 +905,7 @@
   :enable zip-descend-right)
 
 (defrule zip-plug-of-zip-descend-right
-  (implies (not (tree-empty-p (tree->right (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-plug (zip-descend-right zip))
                   (zip-plug zip)))
   :enable (zip-descend-right
@@ -1085,15 +918,13 @@
 ;; the iterated moves, whose measures are stated on the focus.
 
 (defrule zip->focus-of-zip-descend-left
-  (implies (not (tree-empty-p (tree->left (zip->focus zip))))
-           (equal (zip->focus (zip-descend-left zip))
-                  (tree->left (zip->focus zip))))
+  (equal (zip->focus (zip-descend-left zip))
+         (tree->left (zip->focus zip)))
   :enable zip-descend-left)
 
 (defrule zip->focus-of-zip-descend-right
-  (implies (not (tree-empty-p (tree->right (zip->focus zip))))
-           (equal (zip->focus (zip-descend-right zip))
-                  (tree->right (zip->focus zip))))
+  (equal (zip->focus (zip-descend-right zip))
+         (tree->right (zip->focus zip)))
   :enable zip-descend-right)
 
 (defrule zip->path-of-zip-descend-left
@@ -1118,23 +949,10 @@
   :guard (consp (zip->path zip))
   :returns (zip$ zipp)
   :short "Move the focus up to its parent, popping a frame."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "The popped frame says which side the focus hung on, and so which of the
-      two counts loses one."))
   (let ((frame (car (zip->path zip))))
     (zip (zip-frame-plug frame (zip->focus zip))
-         (cdr (zip->path zip))
-         (if (zip-frame->from-left frame)
-             (- (the (integer 1 *) (zip->nlefts zip)) 1)
-           (zip->nlefts zip))
-         (if (zip-frame->from-left frame)
-             (zip->nrights zip)
-           (- (the (integer 1 *) (zip->nrights zip)) 1))))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable zip-count-lefts
-                                           zip-count-rights))))
+         (cdr (zip->path zip))))
+  :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1162,24 +980,23 @@
   :enable zip-ascend-one)
 
 (defrule zip->focus-of-zip-ascend-one
-  (implies (consp (zip->path zip))
-           (equal (zip->focus (zip-ascend-one zip))
-                  (zip-frame-plug (car (zip->path zip))
-                                  (zip->focus zip))))
+  (equal (zip->focus (zip-ascend-one zip))
+         (zip-frame-plug (car (zip->path zip))
+                         (zip->focus zip)))
   :enable zip-ascend-one)
 
 ;; A single-step ascent undoes a single-step descent. Every cancellation law
 ;; between the iterated moves comes back to one of these two.
 
 (defrule zip-ascend-one-of-zip-descend-left
-  (implies (not (tree-empty-p (tree->left (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-ascend-one (zip-descend-left zip))
                   (zip-fix zip)))
   :enable (zip-ascend-one
            zip-frame-plug))
 
 (defrule zip-ascend-one-of-zip-descend-right
-  (implies (not (tree-empty-p (tree->right (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-ascend-one (zip-descend-right zip))
                   (zip-fix zip)))
   :enable (zip-ascend-one
@@ -1189,9 +1006,12 @@
 
 (define zip-descend-leftmost ((zip zipp))
   :returns (zip$ zipp)
-  :short "Move the focus to the leftmost node within it."
+  :short "Move the focus to the leftmost element within it."
   :long
   (xdoc::topstring
+   (xdoc::p
+     "At a hole there is no element within the focus, and the zipper stays
+      put.")
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
       @($O(\\log(n))$) over a @(see tset)."))
@@ -1222,12 +1042,11 @@
 
 (define zip-descend-rightmost ((zip zipp))
   :returns (zip$ zipp)
-  :short "Move the focus to the rightmost node within it."
+  :short "Move the focus to the rightmost element within it."
   :long
   (xdoc::topstring
    (xdoc::p
-     "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
-      @($O(\\log(n))$) over a @(see tset)."))
+     "The mirror image of @(tsee zip-descend-leftmost)."))
   (if (tree-empty-p (tree->right (zip->focus zip)))
       (zip-fix zip)
     (zip-descend-rightmost (zip-descend-right zip)))
@@ -1251,6 +1070,71 @@
   :induct t
   :enable zip-descend-rightmost)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-descend-leftmost-hole ((zip zipp))
+  :returns (zip$ zipp)
+  :short "Move the focus to the leftmost hole within it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "At a hole, that hole is the only one within the focus, and the zipper
+      stays put.")
+   (xdoc::p
+     "Time complexity: @($O(d)$), where @($d$) is the depth descended, and so
+      @($O(\\log(n))$) over a @(see tset)."))
+  (if (tree-empty-p (zip->focus zip))
+      (zip-fix zip)
+    (zip-descend-leftmost-hole (zip-descend-left zip)))
+  :measure (acl2-count (zip->focus zip)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-descend-rightmost-hole ((zip zipp))
+  :returns (zip$ zipp)
+  :short "Move the focus to the rightmost hole within it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The mirror image of @(tsee zip-descend-leftmost-hole)."))
+  (if (tree-empty-p (zip->focus zip))
+      (zip-fix zip)
+    (zip-descend-rightmost-hole (zip-descend-right zip)))
+  :measure (acl2-count (zip->focus zip)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-descend-leftmost-hole)
+                    (:t zip-descend-rightmost-hole)))
+
+(defrule zip-descend-leftmost-hole-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-descend-leftmost-hole zip0)
+                  (zip-descend-leftmost-hole zip1)))
+  :rule-classes :congruence
+  :expand ((zip-descend-leftmost-hole zip0)
+           (zip-descend-leftmost-hole zip1)))
+
+(defrule zip-descend-rightmost-hole-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-descend-rightmost-hole zip0)
+                  (zip-descend-rightmost-hole zip1)))
+  :rule-classes :congruence
+  :expand ((zip-descend-rightmost-hole zip0)
+           (zip-descend-rightmost-hole zip1)))
+
+(defrule zip-plug-of-zip-descend-leftmost-hole
+  (equal (zip-plug (zip-descend-leftmost-hole zip))
+         (zip-plug zip))
+  :induct t
+  :enable zip-descend-leftmost-hole)
+
+(defrule zip-plug-of-zip-descend-rightmost-hole
+  (equal (zip-plug (zip-descend-rightmost-hole zip))
+         (zip-plug zip))
+  :induct t
+  :enable zip-descend-rightmost-hole)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-left-frame ((zip zipp))
@@ -1266,7 +1150,7 @@
    (xdoc::p
      "Time complexity: @($O(d)$), where @($d$) is the depth ascended, and so
       @($O(\\log(n))$) over a @(see tset)."))
-  (cond ((endp (zip->path zip))
+  (cond ((acl2::endp (zip->path zip))
          (zip-fix zip))
         ((zip-frame->from-left (car (zip->path zip)))
          (zip-ascend-one zip))
@@ -1301,7 +1185,7 @@
   (xdoc::topstring
    (xdoc::p
      "The mirror image of @(tsee zip-ascend-to-left-frame)."))
-  (cond ((endp (zip->path zip))
+  (cond ((acl2::endp (zip->path zip))
          (zip-fix zip))
         ((zip-frame->from-left (car (zip->path zip)))
          (zip-ascend-to-right-frame (zip-ascend-one zip)))
@@ -1327,135 +1211,6 @@
   :induct t
   :enable zip-ascend-to-right-frame)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; The boundary checks. Each is constant time: the focus and the cached counts
-;; are all immediately at hand. A zipper is at the first element exactly when
-;; nothing lies to its left, which is to say its focus has no left child and no
-;; ancestor precedes it.
-
-(define zip-at-first-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is focused on the first element."
-  (and (tree-empty-p (tree->left (zip->focus zip)))
-       (equal (zip->nrights zip) 0))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-at-last-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is focused on the last element."
-  (and (tree-empty-p (tree->right (zip->focus zip)))
-       (equal (zip->nlefts zip) 0))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip-at-first-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-first-p zip0)
-                  (zip-at-first-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-first-p)
-
-(defrule zip-at-last-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-last-p zip0)
-                  (zip-at-last-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-last-p)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-next ((zip zipp))
-  :guard (not (zip-at-last-p zip))
-  :returns (zip$ zipp)
-  :short "Move the focus to the next element in order."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "When the focus has a right subtree, the successor is the leftmost node of
-      it. Otherwise the successor is the nearest ancestor that follows the
-      focus. At the last element there is neither, and the move saturates; the
-      layer which supplies the two ends is the one that turns that into a
-      position past the end.")
-   (xdoc::p
-     "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
-      @(see tset) -- but @($O(1)$) amortized over a traversal, since each
-      edge of the tree is crossed twice."))
-  ;; Logically the move saturates at the last element, which is what @(tsee
-  ;; zip-next-identity-iff-zip-at-last-p) reports. The guard rules that case
-  ;; out of execution, so the executable form need not test for it.
-  (mbe :logic (cond ((zip-at-last-p zip)
-                     (zip-fix zip))
-                    ((tree-empty-p (tree->right (zip->focus zip)))
-                     (zip-ascend-to-left-frame zip))
-                    (t
-                     (zip-descend-leftmost (zip-descend-right zip))))
-       :exec (if (tree-empty-p (tree->right (zip->focus zip)))
-                 (zip-ascend-to-left-frame zip)
-               (zip-descend-leftmost (zip-descend-right zip))))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable zip-at-last-p))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-next)))
-
-(defrule zip-next-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-next zip0)
-                  (zip-next zip1)))
-  :rule-classes :congruence
-  :enable zip-next)
-
-(defrule zip-plug-of-zip-next
-  (equal (zip-plug (zip-next zip))
-         (zip-plug zip))
-  :enable (zip-next))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-prev ((zip zipp))
-  :guard (not (zip-at-first-p zip))
-  :returns (zip$ zipp)
-  :short "Move the focus to the previous element in order."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "The mirror image of @(tsee zip-next)."))
-  ;; The mirror of @(tsee zip-next), guard and all.
-  (mbe :logic (cond ((zip-at-first-p zip)
-                     (zip-fix zip))
-                    ((tree-empty-p (tree->left (zip->focus zip)))
-                     (zip-ascend-to-right-frame zip))
-                    (t
-                     (zip-descend-rightmost (zip-descend-left zip))))
-       :exec (if (tree-empty-p (tree->left (zip->focus zip)))
-                 (zip-ascend-to-right-frame zip)
-               (zip-descend-rightmost (zip-descend-left zip))))
-  :inline t
-  :guard-hints (("Goal" :in-theory (enable zip-at-first-p))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t zip-prev)))
-
-(defrule zip-prev-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-prev zip0)
-                  (zip-prev zip1)))
-  :rule-classes :congruence
-  :enable zip-prev)
-
-(defrule zip-plug-of-zip-prev
-  (equal (zip-plug (zip-prev zip))
-         (zip-plug zip))
-  :enable (zip-prev))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Where a descent lands, and what it leaves untouched.
@@ -1472,6 +1227,18 @@
                   (zip-fix zip)))
   :enable zip-descend-rightmost)
 
+(defrule zip-descend-leftmost-hole-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-descend-leftmost-hole zip)
+                  (zip-fix zip)))
+  :enable zip-descend-leftmost-hole)
+
+(defrule zip-descend-rightmost-hole-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-descend-rightmost-hole zip)
+                  (zip-fix zip)))
+  :enable zip-descend-rightmost-hole)
+
 (defrule tree-empty-p-of-tree->left-of-focus-of-zip-descend-leftmost
   (tree-empty-p
     (tree->left (zip->focus (zip-descend-leftmost zip))))
@@ -1484,38 +1251,94 @@
   :induct t
   :enable zip-descend-rightmost)
 
-;; A leftmost descent pushes only left frames, so it leaves the other count
-;; alone, and vice versa.
-
-(defrule zip-count-rights-of-path-of-zip-descend-leftmost
-  (equal (zip-count-rights
-           (zip->path (zip-descend-leftmost zip)))
-         (zip-count-rights (zip->path zip)))
+(defrule tree-empty-p-of-focus-of-zip-descend-leftmost
+  (equal (tree-empty-p (zip->focus (zip-descend-leftmost zip)))
+         (tree-empty-p (zip->focus zip)))
   :induct t
   :enable zip-descend-leftmost)
 
-(defrule zip-count-lefts-of-path-of-zip-descend-rightmost
-  (equal (zip-count-lefts
-           (zip->path (zip-descend-rightmost zip)))
-         (zip-count-lefts (zip->path zip)))
+(defrule tree-empty-p-of-focus-of-zip-descend-rightmost
+  (equal (tree-empty-p (zip->focus (zip-descend-rightmost zip)))
+         (tree-empty-p (zip->focus zip)))
   :induct t
   :enable zip-descend-rightmost)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defrule tree-empty-p-of-focus-of-zip-descend-leftmost-hole
+  (tree-empty-p (zip->focus (zip-descend-leftmost-hole zip)))
+  :induct t
+  :enable zip-descend-leftmost-hole)
 
-;; The boundaries: at either end the move saturates.
+(defrule tree-empty-p-of-focus-of-zip-descend-rightmost-hole
+  (tree-empty-p (zip->focus (zip-descend-rightmost-hole zip)))
+  :induct t
+  :enable zip-descend-rightmost-hole)
 
-(defrule zip-next-when-zip-at-last-p
-  (implies (zip-at-last-p zip)
-           (equal (zip-next zip)
-                  (zip-fix zip)))
-  :enable zip-next)
+;; From an element, the leftmost hole is just past the leftmost element, and
+;; symmetrically.
 
-(defrule zip-prev-when-zip-at-first-p
-  (implies (zip-at-first-p zip)
-           (equal (zip-prev zip)
-                  (zip-fix zip)))
-  :enable zip-prev)
+(defruled zip-descend-leftmost-hole-becomes-descend-left-of-leftmost
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-descend-leftmost-hole zip)
+                  (zip-descend-left (zip-descend-leftmost zip))))
+  :induct (zip-descend-leftmost zip)
+  :enable (zip-descend-leftmost
+           zip-descend-leftmost-hole))
+
+(defruled zip-descend-rightmost-hole-becomes-descend-right-of-rightmost
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-descend-rightmost-hole zip)
+                  (zip-descend-right (zip-descend-rightmost zip))))
+  :induct (zip-descend-rightmost zip)
+  :enable (zip-descend-rightmost
+           zip-descend-rightmost-hole))
+
+;; A leftward descent pushes only left frames, so it adds no right frames,
+;; and vice versa.
+
+(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost
+  (equal (zip-path-no-right-frames-p
+           (zip->path (zip-descend-leftmost zip)))
+         (zip-path-no-right-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-leftmost)
+
+(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost
+  (equal (zip-path-no-left-frames-p
+           (zip->path (zip-descend-rightmost zip)))
+         (zip-path-no-left-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-rightmost)
+
+(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost-hole
+  (equal (zip-path-no-right-frames-p
+           (zip->path (zip-descend-leftmost-hole zip)))
+         (zip-path-no-right-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-leftmost-hole)
+
+(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost-hole
+  (equal (zip-path-no-left-frames-p
+           (zip->path (zip-descend-rightmost-hole zip)))
+         (zip-path-no-left-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-rightmost-hole)
+
+;; An ascent that finds its frame lands on the node of that frame, which is an
+;; element.
+
+(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-left-frame
+  (implies (not (zip-path-no-left-frames-p (zip->path zip)))
+           (not (tree-empty-p (zip->focus (zip-ascend-to-left-frame zip)))))
+  :induct t
+  :enable (zip-ascend-to-left-frame
+           zip-path-no-left-frames-p))
+
+(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-right-frame
+  (implies (not (zip-path-no-right-frames-p (zip->path zip)))
+           (not (tree-empty-p (zip->focus (zip-ascend-to-right-frame zip)))))
+  :induct t
+  :enable (zip-ascend-to-right-frame
+           zip-path-no-right-frames-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1540,174 +1363,426 @@
            zip-frame-plug))
 
 ;; Popping a frame the focus hung to the right of does not move the rightmost
-;; node below, and symmetrically.
+;; hole below, and symmetrically.
 
-(defruledl zip-descend-rightmost-of-zip-ascend-one-when-not-from-left
+(defruledl zip-descend-rightmost-hole-of-zip-ascend-one-when-not-from-left
   (implies (and (consp (zip->path zip))
                 (not (zip-frame->from-left (car (zip->path zip)))))
-           (equal (zip-descend-rightmost (zip-ascend-one zip))
-                  (zip-descend-rightmost zip)))
-  :expand ((zip-descend-rightmost (zip-ascend-one zip)))
+           (equal (zip-descend-rightmost-hole (zip-ascend-one zip))
+                  (zip-descend-rightmost-hole zip)))
+  :expand ((zip-descend-rightmost-hole (zip-ascend-one zip)))
   :enable (zip-frame-plug
            zip-descend-right-of-zip-ascend-one-when-not-from-left))
 
-(defruledl zip-descend-leftmost-of-zip-ascend-one-when-from-left
+(defruledl zip-descend-leftmost-hole-of-zip-ascend-one-when-from-left
   (implies (and (consp (zip->path zip))
                 (zip-frame->from-left (car (zip->path zip))))
-           (equal (zip-descend-leftmost (zip-ascend-one zip))
-                  (zip-descend-leftmost zip)))
-  :expand ((zip-descend-leftmost (zip-ascend-one zip)))
+           (equal (zip-descend-leftmost-hole (zip-ascend-one zip))
+                  (zip-descend-leftmost-hole zip)))
+  :expand ((zip-descend-leftmost-hole (zip-ascend-one zip)))
   :enable (zip-frame-plug
            zip-descend-left-of-zip-ascend-one-when-from-left))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Descending and then ascending past what was pushed cancels out: a leftmost
+;; Descending and then ascending past what was pushed cancels out: a leftward
 ;; descent pushes only left frames, and an ascent to a right frame pops left
 ;; frames on its way, so the descent leaves no trace.
 
-(defruledl zip-ascend-to-right-frame-of-zip-descend-leftmost
-  (equal (zip-ascend-to-right-frame (zip-descend-leftmost zip))
+(defruledl zip-ascend-to-right-frame-of-zip-descend-leftmost-hole
+  (equal (zip-ascend-to-right-frame (zip-descend-leftmost-hole zip))
          (zip-ascend-to-right-frame zip))
-  :induct (zip-descend-leftmost zip)
-  :enable (zip-descend-leftmost
+  :induct (zip-descend-leftmost-hole zip)
+  :enable (zip-descend-leftmost-hole
            zip-ascend-to-right-frame))
 
-(defruledl zip-ascend-to-left-frame-of-zip-descend-rightmost
-  (equal (zip-ascend-to-left-frame (zip-descend-rightmost zip))
+(defruledl zip-ascend-to-left-frame-of-zip-descend-rightmost-hole
+  (equal (zip-ascend-to-left-frame (zip-descend-rightmost-hole zip))
          (zip-ascend-to-left-frame zip))
-  :induct (zip-descend-rightmost zip)
-  :enable (zip-descend-rightmost
+  :induct (zip-descend-rightmost-hole zip)
+  :enable (zip-descend-rightmost-hole
            zip-ascend-to-left-frame))
 
 ;; A single-step descent is undone by the matching searching ascent, since the
 ;; frame it just pushed is the very frame that ascent stops at.
 
 (defruledl zip-ascend-to-right-frame-of-zip-descend-right
-  (implies (not (tree-empty-p (tree->right (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-ascend-to-right-frame (zip-descend-right zip))
                   (zip-fix zip)))
   :enable zip-ascend-to-right-frame)
 
 (defruledl zip-ascend-to-left-frame-of-zip-descend-left
-  (implies (not (tree-empty-p (tree->left (zip->focus zip))))
+  (implies (not (tree-empty-p (zip->focus zip)))
            (equal (zip-ascend-to-left-frame (zip-descend-left zip))
                   (zip-fix zip)))
   :enable zip-ascend-to-left-frame)
 
+;; A descent through a frame on the other side is passed over by the searching
+;; ascent, which carries on from where the descent began.
+
+(defruledl zip-ascend-to-left-frame-of-zip-descend-right
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-ascend-to-left-frame (zip-descend-right zip))
+                  (zip-ascend-to-left-frame zip)))
+  :expand ((zip-ascend-to-left-frame (zip-descend-right zip))))
+
+(defruledl zip-ascend-to-right-frame-of-zip-descend-left
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-ascend-to-right-frame (zip-descend-left zip))
+                  (zip-ascend-to-right-frame zip)))
+  :expand ((zip-ascend-to-right-frame (zip-descend-left zip))))
+
 ;; And in the other direction: ascending to a frame and then descending back
 ;; down lands where a descent from the original position would have.
 
-(defruledl zip-descend-rightmost-of-descend-left-of-ascend-to-left-frame
-  (implies (not (equal (zip-count-lefts (zip->path zip)) 0))
-           (equal (zip-descend-rightmost
+(defruledl zip-descend-rightmost-hole-of-descend-left-of-ascend-to-left-frame
+  (implies (not (zip-path-no-left-frames-p (zip->path zip)))
+           (equal (zip-descend-rightmost-hole
                     (zip-descend-left (zip-ascend-to-left-frame zip)))
-                  (zip-descend-rightmost zip)))
+                  (zip-descend-rightmost-hole zip)))
   :induct (zip-ascend-to-left-frame zip)
   :enable (zip-ascend-to-left-frame
-           zip-count-lefts
+           zip-path-no-left-frames-p
            zip-descend-left-of-zip-ascend-one-when-from-left
-           zip-descend-rightmost-of-zip-ascend-one-when-not-from-left))
+           zip-descend-rightmost-hole-of-zip-ascend-one-when-not-from-left))
 
-(defruledl zip-descend-leftmost-of-descend-right-of-ascend-to-right-frame
-  (implies (not (equal (zip-count-rights (zip->path zip)) 0))
-           (equal (zip-descend-leftmost
+(defruledl zip-descend-leftmost-hole-of-descend-right-of-ascend-to-right-frame
+  (implies (not (zip-path-no-right-frames-p (zip->path zip)))
+           (equal (zip-descend-leftmost-hole
                     (zip-descend-right (zip-ascend-to-right-frame zip)))
-                  (zip-descend-leftmost zip)))
+                  (zip-descend-leftmost-hole zip)))
   :induct (zip-ascend-to-right-frame zip)
   :enable (zip-ascend-to-right-frame
-           zip-count-rights
+           zip-path-no-right-frames-p
            zip-descend-right-of-zip-ascend-one-when-not-from-left
-           zip-descend-leftmost-of-zip-ascend-one-when-from-left))
+           zip-descend-leftmost-hole-of-zip-ascend-one-when-from-left))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The steps. Positions alternate between holes and elements in order, and a
+;; step moves to the adjacent position in one direction. Every other movement
+;; between positions is defined logically as steps.
+
+(define zip-step-forward ((zip zipp))
+  :returns (zip$ zipp)
+  :short "Move to the next position in order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "From an element, this is the hole just after it, the leftmost hole of
+      its right subtree. From a hole, it is the element just after it, the
+      nearest ancestor that follows the hole. At the last hole there is
+      nothing after, and the move saturates.")
+   (xdoc::p
+     "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
+      @(see tset)."))
+  (cond ((not (tree-empty-p (zip->focus zip)))
+         (zip-descend-leftmost-hole (zip-descend-right zip)))
+        ((zip-path-no-left-frames-p (zip->path zip))
+         (zip-fix zip))
+        (t
+         (zip-ascend-to-left-frame zip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; An ascent that finds its frame lands on a node with a child on the side it
-;; came from, which is what lets the reverse move descend back.
+(define zip-step-backward ((zip zipp))
+  :returns (zip$ zipp)
+  :short "Move to the previous position in order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The mirror image of @(tsee zip-step-forward)."))
+  (cond ((not (tree-empty-p (zip->focus zip)))
+         (zip-descend-rightmost-hole (zip-descend-left zip)))
+        ((zip-path-no-right-frames-p (zip->path zip))
+         (zip-fix zip))
+        (t
+         (zip-ascend-to-right-frame zip))))
 
-(defruledl not-tree-empty-p-of-left-of-focus-of-ascend-to-left-frame
-  (implies (not (equal (zip-count-lefts (zip->path zip)) 0))
-           (not (tree-empty-p
-                  (tree->left
-                    (zip->focus (zip-ascend-to-left-frame zip))))))
-  :induct (zip-ascend-to-left-frame zip)
-  :enable (zip-ascend-to-left-frame
-           zip-count-lefts
-           zip-frame-plug))
+;;;;;;;;;;;;;;;;;;;;
 
-(defruledl not-tree-empty-p-of-right-of-focus-of-ascend-to-right-frame
-  (implies (not (equal (zip-count-rights (zip->path zip)) 0))
-           (not (tree-empty-p
-                  (tree->right
-                    (zip->focus (zip-ascend-to-right-frame zip))))))
-  :induct (zip-ascend-to-right-frame zip)
-  :enable (zip-ascend-to-right-frame
-           zip-count-rights
-           zip-frame-plug))
+(in-theory (disable (:t zip-step-forward) (:t zip-step-backward)))
+
+(defrule zip-step-forward-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-step-forward zip0)
+                  (zip-step-forward zip1)))
+  :rule-classes :congruence
+  :enable zip-step-forward)
+
+(defrule zip-step-backward-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-step-backward zip0)
+                  (zip-step-backward zip1)))
+  :rule-classes :congruence
+  :enable zip-step-backward)
+
+(defrule zip-plug-of-zip-step-forward
+  (equal (zip-plug (zip-step-forward zip))
+         (zip-plug zip))
+  :enable zip-step-forward)
+
+(defrule zip-plug-of-zip-step-backward
+  (equal (zip-plug (zip-step-backward zip))
+         (zip-plug zip))
+  :enable zip-step-backward)
+
+;; A step changes the kind of position, except where it saturates.
+
+(defrule tree-empty-p-of-focus-of-zip-step-forward
+  (equal (tree-empty-p (zip->focus (zip-step-forward zip)))
+         (or (not (tree-empty-p (zip->focus zip)))
+             (zip-path-no-left-frames-p (zip->path zip))))
+  :enable zip-step-forward)
+
+(defrule tree-empty-p-of-focus-of-zip-step-backward
+  (equal (tree-empty-p (zip->focus (zip-step-backward zip)))
+         (or (not (tree-empty-p (zip->focus zip)))
+             (zip-path-no-right-frames-p (zip->path zip))))
+  :enable zip-step-backward)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The two moves are inverse everywhere they have somewhere to go. This is
+;; The two steps are inverse everywhere they have somewhere to go. This is
 ;; where uniqueness earns its keep: the recovered zipper is not merely
-;; equivalent to the original, it is @(tsee equal) to it. Since every zipper is
-;; at an element, the only exclusions are the two ends, where the move
-;; saturates and has nothing to invert.
+;; equivalent to the original, it is @(tsee equal) to it. The only exclusions
+;; are the end holes, where a step saturates and has nothing to invert.
 
-(defrule zip-prev-of-zip-next
-  (implies (not (zip-at-last-p zip))
-           (equal (zip-prev (zip-next zip))
+(defrule zip-step-backward-of-zip-step-forward
+  (implies (not (and (tree-empty-p (zip->focus zip))
+                     (zip-path-no-left-frames-p (zip->path zip))))
+           (equal (zip-step-backward (zip-step-forward zip))
                   (zip-fix zip)))
-  :enable (zip-next
-           zip-prev
-           zip-at-last-p
-           zip-at-first-p
-           zip-descend-rightmost-of-descend-left-of-ascend-to-left-frame
-           zip-ascend-to-right-frame-of-zip-descend-leftmost
+  :enable (zip-step-forward
+           zip-step-backward
+           zip-ascend-to-right-frame-of-zip-descend-leftmost-hole
            zip-ascend-to-right-frame-of-zip-descend-right
-           not-tree-empty-p-of-left-of-focus-of-ascend-to-left-frame))
+           zip-descend-rightmost-hole-of-descend-left-of-ascend-to-left-frame))
 
-(defrule zip-next-of-zip-prev
-  (implies (not (zip-at-first-p zip))
-           (equal (zip-next (zip-prev zip))
+(defrule zip-step-forward-of-zip-step-backward
+  (implies (not (and (tree-empty-p (zip->focus zip))
+                     (zip-path-no-right-frames-p (zip->path zip))))
+           (equal (zip-step-forward (zip-step-backward zip))
                   (zip-fix zip)))
-  :enable (zip-next
-           zip-prev
-           zip-at-last-p
-           zip-at-first-p
-           zip-descend-leftmost-of-descend-right-of-ascend-to-right-frame
-           zip-ascend-to-left-frame-of-zip-descend-rightmost
+  :enable (zip-step-forward
+           zip-step-backward
+           zip-ascend-to-left-frame-of-zip-descend-rightmost-hole
            zip-ascend-to-left-frame-of-zip-descend-left
-           not-tree-empty-p-of-right-of-focus-of-ascend-to-right-frame))
+           zip-descend-leftmost-hole-of-descend-right-of-ascend-to-right-frame))
 
-;; A move leaves something behind it, so it cannot land at the far end it came
-;; from. The two branches argue differently: a descent pushes a right frame, so
-;; the count of those is nonzero afterwards; an ascent lands on a node whose
-;; child on the side it came from is nonempty. A layer supplying the two ends
-;; needs this to know that stepping inward never overshoots.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule not-zip-at-first-p-of-zip-next
-  (implies (not (zip-at-last-p zip))
-           (not (zip-at-first-p (zip-next zip))))
-  :enable (zip-next
-           zip-at-last-p
-           zip-at-first-p
-           not-tree-empty-p-of-left-of-focus-of-ascend-to-left-frame))
+;; Two steps from an element reach the next element, or the last hole when
+;; there is none. The intermediate hole need not be visited: these are the
+;; direct moves, which the element-to-element moves below execute.
 
-(defrule not-zip-at-last-p-of-zip-prev
-  (implies (not (zip-at-first-p zip))
-           (not (zip-at-last-p (zip-prev zip))))
-  :enable (zip-prev
-           zip-at-last-p
-           zip-at-first-p
-           not-tree-empty-p-of-right-of-focus-of-ascend-to-right-frame))
+(defruledl zip-step-forward-of-zip-step-forward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-step-forward (zip-step-forward zip))
+                  (cond ((not (tree-empty-p (tree->right (zip->focus zip))))
+                         (zip-descend-leftmost (zip-descend-right zip)))
+                        ((zip-path-no-left-frames-p (zip->path zip))
+                         (zip-descend-right zip))
+                        (t
+                         (zip-ascend-to-left-frame zip)))))
+  :enable (zip-step-forward
+           zip-descend-leftmost-hole-becomes-descend-left-of-leftmost
+           zip-ascend-to-left-frame-of-zip-descend-left
+           zip-ascend-to-left-frame-of-zip-descend-right))
+
+(defruledl zip-step-backward-of-zip-step-backward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-step-backward (zip-step-backward zip))
+                  (cond ((not (tree-empty-p (tree->left (zip->focus zip))))
+                         (zip-descend-rightmost (zip-descend-left zip)))
+                        ((zip-path-no-right-frames-p (zip->path zip))
+                         (zip-descend-left zip))
+                        (t
+                         (zip-ascend-to-right-frame zip)))))
+  :enable (zip-step-backward
+           zip-descend-rightmost-hole-becomes-descend-right-of-rightmost
+           zip-ascend-to-right-frame-of-zip-descend-right
+           zip-ascend-to-right-frame-of-zip-descend-left))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-next ((zip zipp))
+  :guard (not (tree-empty-p (zip->focus zip)))
+  :returns (zip$ zipp)
+  :short "Move from an element to the next element in order, or to the last
+          hole if there is none."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Logically, this is two steps forward, from any position. From an
+      element, it executes directly: the successor is the leftmost element of
+      the right subtree when there is one, and otherwise the nearest ancestor
+      that follows.")
+   (xdoc::p
+     "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
+      @(see tset) -- but @($O(1)$) amortized over a traversal, since each
+      edge of the tree is crossed twice."))
+  (mbe :logic (zip-step-forward (zip-step-forward zip))
+       :exec (cond ((not (tree-empty-p (tree->right (zip->focus zip))))
+                    (zip-descend-leftmost (zip-descend-right zip)))
+                   ((zip-path-no-left-frames-p (zip->path zip))
+                    (zip-descend-right zip))
+                   (t
+                    (zip-ascend-to-left-frame zip))))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable zip-step-forward-of-zip-step-forward-when-not-tree-empty-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-prev ((zip zipp))
+  :guard (not (tree-empty-p (zip->focus zip)))
+  :returns (zip$ zipp)
+  :short "Move from an element to the previous element in order, or to the
+          first hole if there is none."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "The mirror image of @(tsee zip-next)."))
+  (mbe :logic (zip-step-backward (zip-step-backward zip))
+       :exec (cond ((not (tree-empty-p (tree->left (zip->focus zip))))
+                    (zip-descend-rightmost (zip-descend-left zip)))
+                   ((zip-path-no-right-frames-p (zip->path zip))
+                    (zip-descend-left zip))
+                   (t
+                    (zip-ascend-to-right-frame zip))))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable zip-step-backward-of-zip-step-backward-when-not-tree-empty-p))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-next) (:t zip-prev)))
+
+(defrule zip-next-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-next zip0)
+                  (zip-next zip1)))
+  :rule-classes :congruence
+  :enable zip-next)
+
+(defrule zip-prev-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-prev zip0)
+                  (zip-prev zip1)))
+  :rule-classes :congruence
+  :enable zip-prev)
+
+(defrule zip-plug-of-zip-next
+  (equal (zip-plug (zip-next zip))
+         (zip-plug zip))
+  :enable zip-next)
+
+(defrule zip-plug-of-zip-prev
+  (equal (zip-plug (zip-prev zip))
+         (zip-plug zip))
+  :enable zip-prev)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The boundary checks. A zipper is at the last hole exactly when it is at a
+;; hole with nothing following it, which is to say no ancestor follows it, and
+;; at the last element when its focus has no right child and no ancestor
+;; follows it. Each check walks the path only as far as the first frame which
+;; settles it.
+
+(define zip-at-begin-p ((zip zipp))
+  :short "Check whether the zipper is at the first hole."
+  (and (tree-empty-p (zip->focus zip))
+       (zip-path-no-right-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-end-p ((zip zipp))
+  :short "Check whether the zipper is at the last hole."
+  (and (tree-empty-p (zip->focus zip))
+       (zip-path-no-left-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-min-p ((zip zipp))
+  :short "Check whether the zipper is at the first element."
+  (and (not (tree-empty-p (zip->focus zip)))
+       (tree-empty-p (tree->left (zip->focus zip)))
+       (zip-path-no-right-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-max-p ((zip zipp))
+  :short "Check whether the zipper is at the last element."
+  (and (not (tree-empty-p (zip->focus zip)))
+       (tree-empty-p (tree->right (zip->focus zip)))
+       (zip-path-no-left-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-at-begin-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-begin-p zip0)
+                  (zip-at-begin-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-begin-p)
+
+(defrule zip-at-end-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-end-p zip0)
+                  (zip-at-end-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-end-p)
+
+(defrule zip-at-min-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-min-p zip0)
+                  (zip-at-min-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-min-p)
+
+(defrule zip-at-max-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-max-p zip0)
+                  (zip-at-max-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-max-p)
+
+;; A step saturates exactly at the end hole it moves toward.
+
+(defrule zip-step-forward-when-zip-at-end-p
+  (implies (zip-at-end-p zip)
+           (equal (zip-step-forward zip)
+                  (zip-fix zip)))
+  :enable (zip-step-forward
+           zip-at-end-p))
+
+(defrule zip-step-backward-when-zip-at-begin-p
+  (implies (zip-at-begin-p zip)
+           (equal (zip-step-backward zip)
+                  (zip-fix zip)))
+  :enable (zip-step-backward
+           zip-at-begin-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-root ((tree treep))
-  :guard (not (tree-empty-p tree))
   :returns (zip zipp)
   :short "The zipper focused on a whole tree, with an empty path."
-  (zip tree nil 0 0)
+  :long
+  (xdoc::topstring-p
+    "For the empty tree, this is its one hole.")
+  (zip tree nil)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -1722,15 +1797,13 @@
   :enable zip-root)
 
 (defrule zip-plug-of-zip-root
-  (implies (not (tree-empty-p tree))
-           (equal (zip-plug (zip-root tree))
-                  (tree-fix tree)))
+  (equal (zip-plug (zip-root tree))
+         (tree-fix tree))
   :enable zip-root)
 
 (defrule zip->focus-of-zip-root
-  (implies (not (tree-empty-p tree))
-           (equal (zip->focus (zip-root tree))
-                  (tree-fix tree)))
+  (equal (zip->focus (zip-root tree))
+         (tree-fix tree))
   :enable zip-root)
 
 (defrule zip->path-of-zip-root
@@ -1738,83 +1811,74 @@
          nil)
   :enable zip-root)
 
-(defrule zip->nlefts-of-zip-root
-  (equal (zip->nlefts (zip-root tree))
-         0))
-
-(defrule zip->nrights-of-zip-root
-  (equal (zip->nrights (zip-root tree))
-         0))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-first ((tree treep))
-  :guard (not (tree-empty-p tree))
+(define zip-begin ((tree treep))
   :returns (zip zipp)
-  :short "The zipper focused on the first element of a tree."
-  (zip-descend-leftmost (zip-root tree))
+  :short "The zipper at the first hole of a tree."
+  (zip-descend-leftmost-hole (zip-root tree))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-last ((tree treep))
-  :guard (not (tree-empty-p tree))
+(define zip-end ((tree treep))
   :returns (zip zipp)
-  :short "The zipper focused on the last element of a tree."
-  (zip-descend-rightmost (zip-root tree))
+  :short "The zipper at the last hole of a tree."
+  (zip-descend-rightmost-hole (zip-root tree))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:t zip-first) (:t zip-last)))
+(in-theory (disable (:t zip-begin) (:t zip-end)))
 
-(defrule zip-first-when-tree-equiv-congruence
+(defrule zip-begin-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
-           (equal (zip-first tree0)
-                  (zip-first tree1)))
+           (equal (zip-begin tree0)
+                  (zip-begin tree1)))
   :rule-classes :congruence
-  :enable zip-first)
+  :enable zip-begin)
 
-(defrule zip-last-when-tree-equiv-congruence
+(defrule zip-end-when-tree-equiv-congruence
   (implies (tree-equiv tree0 tree1)
-           (equal (zip-last tree0)
-                  (zip-last tree1)))
+           (equal (zip-end tree0)
+                  (zip-end tree1)))
   :rule-classes :congruence
-  :enable zip-last)
+  :enable zip-end)
 
-(defrule zip-plug-of-zip-first
-  (implies (not (tree-empty-p tree))
-           (equal (zip-plug (zip-first tree))
-                  (tree-fix tree)))
-  :enable zip-first)
+(defrule zip-plug-of-zip-begin
+  (equal (zip-plug (zip-begin tree))
+         (tree-fix tree))
+  :enable zip-begin)
 
-(defrule zip-plug-of-zip-last
-  (implies (not (tree-empty-p tree))
-           (equal (zip-plug (zip-last tree))
-                  (tree-fix tree)))
-  :enable zip-last)
+(defrule zip-plug-of-zip-end
+  (equal (zip-plug (zip-end tree))
+         (tree-fix tree))
+  :enable zip-end)
 
-(defrule zip-at-first-p-of-zip-first
-  (implies (not (tree-empty-p tree))
-           (zip-at-first-p (zip-first tree)))
-  :enable (zip-first
-           zip-at-first-p))
+(defrule zip-at-begin-p-of-zip-begin
+  (zip-at-begin-p (zip-begin tree))
+  :enable (zip-begin
+           zip-at-begin-p))
 
-(defrule zip-at-last-p-of-zip-last
-  (implies (not (tree-empty-p tree))
-           (zip-at-last-p (zip-last tree)))
-  :enable (zip-last
-           zip-at-last-p))
+(defrule zip-at-end-p-of-zip-end
+  (zip-at-end-p (zip-end tree))
+  :enable (zip-end
+           zip-at-end-p))
+
+(defrule tree-empty-p-of-focus-of-zip-begin
+  (tree-empty-p (zip->focus (zip-begin tree)))
+  :enable zip-begin)
+
+(defrule tree-empty-p-of-focus-of-zip-end
+  (tree-empty-p (zip->focus (zip-end tree)))
+  :enable zip-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The two ends of a tree are unique: a zipper at the last element is the very
-;; zipper @(tsee zip-last) builds, and likewise at the first. A layer
-;; supplying the ends needs this to step back inward and land where it started.
-;;
-;; The argument is that when nothing above the focus follows it, ascending in
-;; search of a left frame never finds one and so climbs to the root, and that
-;; climb does not move the rightmost node below.
+;; Ascending from a position no ancestor follows climbs all the way to the
+;; root, and that climb does not move the rightmost hole below. So the end
+;; hole is unique: a zipper there is the very zipper @(tsee zip-end) builds,
+;; and likewise at the beginning.
 
 (defrulel zip->path-when-not-consp
   (implies (not (consp (zip->path zip)))
@@ -1823,71 +1887,145 @@
 
 (defrulel zip-of-focus-and-nil-when-path-not-consp
   (implies (not (consp (zip->path zip)))
-           (equal (zip (zip->focus zip) nil nil nil)
+           (equal (zip (zip->focus zip) nil)
                   (zip-fix zip)))
   :use zip-of-zip-accessors
   :disable zip-of-zip-accessors)
 
-(defruledl zip-ascend-to-left-frame-when-no-left-frames
-  (implies (equal (zip-count-lefts (zip->path zip)) 0)
+(defruledl zip-ascend-to-left-frame-when-zip-path-no-left-frames-p
+  (implies (zip-path-no-left-frames-p (zip->path zip))
            (equal (zip-ascend-to-left-frame zip)
                   (zip-root (zip-plug zip))))
   :induct (zip-ascend-to-left-frame zip)
-  :expand ((zip-count-lefts (zip->path zip)))
   :enable (zip-ascend-to-left-frame
+           zip-path-no-left-frames-p
            zip-root
            zip-plug))
 
-(defruledl zip-ascend-to-right-frame-when-no-right-frames
-  (implies (equal (zip-count-rights (zip->path zip)) 0)
+(defruledl zip-ascend-to-right-frame-when-zip-path-no-right-frames-p
+  (implies (zip-path-no-right-frames-p (zip->path zip))
            (equal (zip-ascend-to-right-frame zip)
                   (zip-root (zip-plug zip))))
   :induct (zip-ascend-to-right-frame zip)
-  :expand ((zip-count-rights (zip->path zip)))
   :enable (zip-ascend-to-right-frame
+           zip-path-no-right-frames-p
            zip-root
            zip-plug))
 
-(defruledl zip-descend-rightmost-of-ascend-to-left-frame-when-no-left-frames
-  (implies (equal (zip-count-lefts (zip->path zip)) 0)
-           (equal (zip-descend-rightmost (zip-ascend-to-left-frame zip))
-                  (zip-descend-rightmost zip)))
+(defruledl zip-rightmost-hole-of-ascend-to-left-frame-when-no-left-frames
+  (implies (zip-path-no-left-frames-p (zip->path zip))
+           (equal (zip-descend-rightmost-hole (zip-ascend-to-left-frame zip))
+                  (zip-descend-rightmost-hole zip)))
   :induct (zip-ascend-to-left-frame zip)
-  :expand ((zip-count-lefts (zip->path zip)))
   :enable (zip-ascend-to-left-frame
-           zip-descend-rightmost-of-zip-ascend-one-when-not-from-left))
+           zip-path-no-left-frames-p
+           zip-descend-rightmost-hole-of-zip-ascend-one-when-not-from-left))
 
-(defruledl zip-descend-leftmost-of-ascend-to-right-frame-when-no-right-frames
-  (implies (equal (zip-count-rights (zip->path zip)) 0)
-           (equal (zip-descend-leftmost (zip-ascend-to-right-frame zip))
-                  (zip-descend-leftmost zip)))
+(defruledl zip-leftmost-hole-of-ascend-to-right-frame-when-no-right-frames
+  (implies (zip-path-no-right-frames-p (zip->path zip))
+           (equal (zip-descend-leftmost-hole (zip-ascend-to-right-frame zip))
+                  (zip-descend-leftmost-hole zip)))
   :induct (zip-ascend-to-right-frame zip)
-  :expand ((zip-count-rights (zip->path zip)))
   :enable (zip-ascend-to-right-frame
-           zip-descend-leftmost-of-zip-ascend-one-when-from-left))
+           zip-path-no-right-frames-p
+           zip-descend-leftmost-hole-of-zip-ascend-one-when-from-left))
 
-(defrule zip-last-of-zip-plug-when-zip-at-last-p
-  (implies (zip-at-last-p zip)
-           (equal (zip-last (zip-plug zip))
+(defrule zip-end-of-zip-plug-when-zip-at-end-p
+  (implies (zip-at-end-p zip)
+           (equal (zip-end (zip-plug zip))
                   (zip-fix zip)))
-  :enable (zip-last
-           zip-at-last-p)
-  :use (zip-ascend-to-left-frame-when-no-left-frames
-        zip-descend-rightmost-of-ascend-to-left-frame-when-no-left-frames))
+  :enable (zip-end
+           zip-at-end-p)
+  :use (zip-ascend-to-left-frame-when-zip-path-no-left-frames-p
+        zip-rightmost-hole-of-ascend-to-left-frame-when-no-left-frames))
 
-(defrule zip-first-of-zip-plug-when-zip-at-first-p
-  (implies (zip-at-first-p zip)
-           (equal (zip-first (zip-plug zip))
+(defrule zip-begin-of-zip-plug-when-zip-at-begin-p
+  (implies (zip-at-begin-p zip)
+           (equal (zip-begin (zip-plug zip))
                   (zip-fix zip)))
-  :enable (zip-first
-           zip-at-first-p)
-  :use (zip-ascend-to-right-frame-when-no-right-frames
-        zip-descend-leftmost-of-ascend-to-right-frame-when-no-right-frames))
+  :enable (zip-begin
+           zip-at-begin-p)
+  :use (zip-ascend-to-right-frame-when-zip-path-no-right-frames-p
+        zip-leftmost-hole-of-ascend-to-right-frame-when-no-right-frames))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-min ((tree treep))
+  :returns (zip zipp)
+  :short "The zipper at the first element of a tree, or at its one hole if it
+          is empty."
+  :long
+  (xdoc::topstring-p
+    "Logically, this is one step forward from @(tsee zip-begin). It executes
+     as a direct descent to the leftmost element.")
+  (mbe :logic (zip-step-forward (zip-begin tree))
+       :exec (if (tree-empty-p tree)
+                 (zip-root tree)
+               (zip-descend-leftmost (zip-root tree))))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable zip-begin
+            zip-step-forward
+            zip-descend-leftmost-hole-becomes-descend-left-of-leftmost
+            zip-ascend-to-left-frame-of-zip-descend-left))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-max ((tree treep))
+  :returns (zip zipp)
+  :short "The zipper at the last element of a tree, or at its one hole if it
+          is empty."
+  :long
+  (xdoc::topstring-p
+    "The mirror image of @(tsee zip-min).")
+  (mbe :logic (zip-step-backward (zip-end tree))
+       :exec (if (tree-empty-p tree)
+                 (zip-root tree)
+               (zip-descend-rightmost (zip-root tree))))
+  :inline t
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable zip-end
+            zip-step-backward
+            zip-descend-rightmost-hole-becomes-descend-right-of-rightmost
+            zip-ascend-to-right-frame-of-zip-descend-right))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:t zip-min) (:t zip-max)))
+
+(defrule zip-min-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (zip-min tree0)
+                  (zip-min tree1)))
+  :rule-classes :congruence
+  :enable zip-min)
+
+(defrule zip-max-when-tree-equiv-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (zip-max tree0)
+                  (zip-max tree1)))
+  :rule-classes :congruence
+  :enable zip-max)
+
+(defrule zip-plug-of-zip-min
+  (equal (zip-plug (zip-min tree))
+         (tree-fix tree))
+  :enable zip-min)
+
+(defrule zip-plug-of-zip-max
+  (equal (zip-plug (zip-max tree))
+         (tree-fix tree))
+  :enable zip-max)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-value ((zip zipp))
-  :short "The value at the focus."
+  :guard (not (tree-empty-p (zip->focus zip)))
+  :short "The value of the element the zipper is at."
   (tree-element->val (tree->head (zip->focus zip)))
   :inline t)
 
@@ -1919,7 +2057,7 @@
   :returns (tree treep)
   :short "The elements which precede the focus subtree, as a tree atop an
           accumulator."
-  (if (endp path)
+  (if (acl2::endp path)
       (tree-fix acc)
     (zip-path-tree-before
       (cdr path)
@@ -1937,7 +2075,7 @@
   :returns (tree treep)
   :short "The elements which follow the focus subtree, as a tree atop an
           accumulator."
-  (if (endp path)
+  (if (acl2::endp path)
       (tree-fix acc)
     (zip-path-tree-after
       (cdr path)
@@ -2026,7 +2164,7 @@
   (define zip-path-before-rec ((path zip-frame-listp))
     :returns (list true-listp :rule-classes :type-prescription)
     :verify-guards nil
-    (if (endp path)
+    (if (acl2::endp path)
         nil
       (append (zip-path-before-rec (cdr path))
               (if (zip-frame->from-left (car path))
@@ -2039,7 +2177,7 @@
   (define zip-path-after-rec ((path zip-frame-listp))
     :returns (list true-listp :rule-classes :type-prescription)
     :verify-guards nil
-    (if (endp path)
+    (if (acl2::endp path)
         nil
       (append (if (zip-frame->from-left (car path))
                   (cons (tree-element->val (zip-frame->elem (car path)))
@@ -2176,21 +2314,39 @@
            zip-path-after-rec))
 
 ;; A path with no left frames has nothing to the right of the focus, and
-;; symmetrically. This is what the cached counts are testing.
+;; symmetrically. Conversely, a frame the focus hangs to the left of
+;; contributes at least its own node, so a path which contributes nothing has
+;; no such frame.
 
-(defrule zip-path-after-when-zip-count-lefts-zero
-  (implies (equal (zip-count-lefts path) 0)
+(defrule zip-path-after-when-zip-path-no-left-frames-p
+  (implies (zip-path-no-left-frames-p path)
            (equal (zip-path-after path)
                   nil))
   :induct (zip-path-after-rec path)
-  :enable (zip-path-after-rec))
+  :enable (zip-path-after-rec
+           zip-path-no-left-frames-p))
 
-(defrule zip-path-before-when-zip-count-rights-zero
-  (implies (equal (zip-count-rights path) 0)
+(defrule zip-path-before-when-zip-path-no-right-frames-p
+  (implies (zip-path-no-right-frames-p path)
            (equal (zip-path-before path)
                   nil))
   :induct (zip-path-before-rec path)
-  :enable (zip-path-before-rec))
+  :enable (zip-path-before-rec
+           zip-path-no-right-frames-p))
+
+(defrule zip-path-no-left-frames-p-when-not-consp-of-zip-path-after
+  (implies (not (consp (zip-path-after path)))
+           (zip-path-no-left-frames-p path))
+  :induct (zip-path-after-rec path)
+  :enable (zip-path-after-rec
+           zip-path-no-left-frames-p))
+
+(defrule zip-path-no-right-frames-p-when-not-consp-of-zip-path-before
+  (implies (not (consp (zip-path-before path)))
+           (zip-path-no-right-frames-p path))
+  :induct (zip-path-before-rec path)
+  :enable (zip-path-before-rec
+           zip-path-no-right-frames-p))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -2293,14 +2449,17 @@
                  (zip-path-after (zip->path zip))))
   :enable zip-plug)
 
-;; The same sequence, cut at the cursor instead: since a zipper is always at an
-;; element, the cut always splits the sequence around one value.
+;; The same sequence, cut at the cursor instead. At an element the cut splits
+;; the sequence around its value, and at a hole it falls between two adjacent
+;; values, or at an end.
 
 (defruled tree-in-order-of-zip-plug-split-at-cursor
   (equal (tree-in-order (zip-plug zip))
          (append (zip-before zip)
-                 (cons (zip-value zip)
-                       (zip-after zip))))
+                 (if (tree-empty-p (zip->focus zip))
+                     (zip-after zip)
+                   (cons (zip-value zip)
+                         (zip-after zip)))))
   :enable (zip-before
            zip-after
            zip-value
@@ -2322,7 +2481,7 @@
 (defruled tree-nodes-count-of-zip-plug-split-at-cursor
   (equal (tree-nodes-count (zip-plug zip))
          (+ (len (zip-before zip))
-            1
+            (if (tree-empty-p (zip->focus zip)) 0 1)
             (len (zip-after zip))))
   :use (:instance len-of-tree-in-order (tree (zip-plug zip)))
   :enable tree-in-order-of-zip-plug-split-at-cursor
@@ -2455,7 +2614,9 @@
   :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
         (:instance data::setp-of-prefix-when-osetp-of-append
                    (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip)))))
+                   (data::y (if (tree-empty-p (zip->focus zip))
+                                (zip-after zip)
+                              (cons (zip-value zip) (zip-after zip))))))
   :disable (osetp-of-tree-in-order-when-bstp))
 
 (defrule osetp-of-zip-after-when-bstp
@@ -2465,7 +2626,9 @@
   :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
         (:instance data::setp-of-suffix-when-osetp-of-append
                    (data::x (zip-before zip))
-                   (data::y (cons (zip-value zip) (zip-after zip))))
+                   (data::y (if (tree-empty-p (zip->focus zip))
+                                (zip-after zip)
+                              (cons (zip-value zip) (zip-after zip)))))
         (:instance data::setp-of-cdr-when-osetp
                    (data::l (cons (zip-value zip) (zip-after zip)))))
   :disable (osetp-of-tree-in-order-when-bstp))
@@ -2491,13 +2654,14 @@
            set::pick-a-point-subset-strategy))
 
 ;; The two osets as order filters of the whole set: over a search tree, what
-;; lies on each side of the cursor is exactly the elements on that side of the
+;; lies on each side of an element is exactly the elements on that side of its
 ;; value in the @(tsee <<) order. This is what ties the geometry of a zipper
 ;; to the order of the set, and every ordering law downstream is a
 ;; consequence.
 
 (defrule in-of-zip-oset-before-when-bstp
-  (implies (bstp (zip-plug zip))
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
            (equal (set::in x (zip-oset-before zip))
                   (and (tree-in x (zip-plug zip))
                        (<< x (zip-value zip)))))
@@ -2521,7 +2685,8 @@
             osetp-of-tree-in-order-when-bstp))
 
 (defrule in-of-zip-oset-after-when-bstp
-  (implies (bstp (zip-plug zip))
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
            (equal (set::in x (zip-oset-after zip))
                   (and (tree-in x (zip-plug zip))
                        (<< (zip-value zip) x))))
@@ -2544,273 +2709,391 @@
   :disable (member-equal-of-tree-in-order-under-iff
             osetp-of-tree-in-order-when-bstp))
 
+;; At a hole as well as at an element, everything before the cursor lies below
+;; everything after it. The membership hypotheses come first, so that a proof
+;; which has them binds the zipper. Left disabled, since it would otherwise be
+;; tried on every @(tsee <<) term.
+
+(defruled <<-when-member-equal-of-zip-before-and-zip-after
+  (implies (and (member-equal x (zip-before zip))
+                (member-equal y (zip-after zip))
+                (bstp (zip-plug zip)))
+           (<< x y))
+  :enable tree-in-order-of-zip-plug-split-at-cursor
+  :use ((:instance osetp-of-tree-in-order-when-bstp (tree (zip-plug zip)))
+        (:instance data::<<-across-append-of-members-when-osetp
+                   (data::a (zip-before zip))
+                   (data::b (if (tree-empty-p (zip->focus zip))
+                                (zip-after zip)
+                              (cons (zip-value zip) (zip-after zip))))
+                   (data::x x)
+                   (data::y y)))
+  :disable osetp-of-tree-in-order-when-bstp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The iteration is in order: a step moves exactly one value across the cut,
-;; from the front of what follows to the back of what precedes. Everything
-;; about position is a consequence of this, which is why no separate index is
-;; needed to say that a traversal proceeds in order.
-;;
-;; The two branches of the move argue differently. A descent to the right and
-;; then leftmost lands where the path alone decides, and the frame that descent
-;; pushed contributes the focus's left subtree and its value. An ascent instead
-;; preserves everything before or within the focus subtree, all the way up to
-;; the frame it stops at.
+;; The two end holes and the two extreme elements, as tests on the sequences.
+;; Nothing follows the last hole or the last element, and at a hole or an
+;; element with nothing following, no ancestor follows either.
 
-(defruledl zip-before-of-zip-descend-leftmost
-  (equal (zip-before (zip-descend-leftmost zip))
-         (zip-path-before (zip->path zip)))
-  :induct (zip-descend-leftmost zip)
-  :enable (zip-descend-leftmost
+(defrule zip-after-when-zip-at-end-p
+  (implies (zip-at-end-p zip)
+           (equal (zip-after zip)
+                  nil))
+  :enable (zip-at-end-p
+           zip-after))
+
+(defrule zip-before-when-zip-at-begin-p
+  (implies (zip-at-begin-p zip)
+           (equal (zip-before zip)
+                  nil))
+  :enable (zip-at-begin-p
            zip-before))
 
-(defruledl zip-path-before-of-path-of-zip-descend-right
-  (equal (zip-path-before (zip->path (zip-descend-right zip)))
-         (append (zip-before zip)
-                 (list (zip-value zip))))
-  :enable (zip-before
-           zip-value))
+(defrule zip-after-when-zip-at-max-p
+  (implies (zip-at-max-p zip)
+           (equal (zip-after zip)
+                  nil))
+  :enable (zip-at-max-p
+           zip-after))
+
+(defrule zip-before-when-zip-at-min-p
+  (implies (zip-at-min-p zip)
+           (equal (zip-before zip)
+                  nil))
+  :enable (zip-at-min-p
+           zip-before))
+
+(defruled zip-at-end-p-becomes-not-consp-of-zip-after
+  (equal (zip-at-end-p zip)
+         (and (tree-empty-p (zip->focus zip))
+              (not (consp (zip-after zip)))))
+  :enable (zip-at-end-p
+           zip-after)
+  :cases ((zip-path-no-left-frames-p (zip->path zip))))
+
+(defruled zip-at-begin-p-becomes-not-consp-of-zip-before
+  (equal (zip-at-begin-p zip)
+         (and (tree-empty-p (zip->focus zip))
+              (not (consp (zip-before zip)))))
+  :enable (zip-at-begin-p
+           zip-before)
+  :cases ((zip-path-no-right-frames-p (zip->path zip))))
+
+(defruled zip-at-max-p-becomes-not-consp-of-zip-after
+  (equal (zip-at-max-p zip)
+         (and (not (tree-empty-p (zip->focus zip)))
+              (not (consp (zip-after zip)))))
+  :enable (zip-at-max-p
+           zip-after)
+  :cases ((and (zip-path-no-left-frames-p (zip->path zip))
+                (tree-empty-p (tree->right (zip->focus zip))))))
+
+(defruled zip-at-min-p-becomes-not-consp-of-zip-before
+  (equal (zip-at-min-p zip)
+         (and (not (tree-empty-p (zip->focus zip)))
+              (not (consp (zip-before zip)))))
+  :enable (zip-at-min-p
+           zip-before)
+  :cases ((and (zip-path-no-right-frames-p (zip->path zip))
+                (tree-empty-p (tree->left (zip->focus zip))))))
+
+;; At a hole, the path alone decides what follows and what precedes, so the
+;; path tests are the sequence tests.
+
+(defrule zip-path-no-left-frames-p-of-zip->path-when-tree-empty-p
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-path-no-left-frames-p (zip->path zip))
+                  (not (consp (zip-after zip)))))
+  :enable zip-after
+  :cases ((zip-path-no-left-frames-p (zip->path zip))))
+
+(defrule zip-path-no-right-frames-p-of-zip->path-when-tree-empty-p
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-path-no-right-frames-p (zip->path zip))
+                  (not (consp (zip-before zip)))))
+  :enable zip-before
+  :cases ((zip-path-no-right-frames-p (zip->path zip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The steps are in order. A step from an element moves its value across the
+;; cut, onto the back of what precedes; a step from a hole moves the next value
+;; across, off the front of what follows. Everything about position is a
+;; consequence, which is why no separate index is needed to say that a
+;; traversal proceeds in order.
+;;
+;; A step from an element descends: the frame pushed by the descent to the
+;; right contributes the element and its left subtree, and the leftward
+;; descent below it contributes nothing. A step from a hole ascends, which
+;; preserves everything before the focus subtree, all the way up to the frame
+;; it stops at. The step back is the mirror image.
+
+(defruledl zip-before-of-zip-descend-leftmost-hole
+  (equal (zip-before (zip-descend-leftmost-hole zip))
+         (zip-path-before (zip->path zip)))
+  :induct (zip-descend-leftmost-hole zip)
+  :enable (zip-descend-leftmost-hole
+           zip-before))
+
+(defruledl zip-after-of-zip-descend-rightmost-hole
+  (equal (zip-after (zip-descend-rightmost-hole zip))
+         (zip-path-after (zip->path zip)))
+  :induct (zip-descend-rightmost-hole zip)
+  :enable (zip-descend-rightmost-hole
+           zip-after))
 
 (defruledl zip-before-of-zip-ascend-to-left-frame
-  (implies (not (equal (zip-count-lefts (zip->path zip)) 0))
+  (implies (not (zip-path-no-left-frames-p (zip->path zip)))
            (equal (zip-before (zip-ascend-to-left-frame zip))
                   (append (zip-path-before (zip->path zip))
                           (tree-in-order (zip->focus zip)))))
   :induct (zip-ascend-to-left-frame zip)
-  :expand ((zip-count-lefts (zip->path zip))
-           (zip-path-before-rec (zip->path zip)))
+  :expand ((zip-path-before-rec (zip->path zip)))
   :enable (zip-ascend-to-left-frame
+           zip-path-no-left-frames-p
            zip-before
            zip-path-before-becomes-rec
            zip-frame-plug
            tree-in-order))
 
+(defruledl zip-after-of-zip-ascend-to-right-frame
+  (implies (not (zip-path-no-right-frames-p (zip->path zip)))
+           (equal (zip-after (zip-ascend-to-right-frame zip))
+                  (append (tree-in-order (zip->focus zip))
+                          (zip-path-after (zip->path zip)))))
+  :induct (zip-ascend-to-right-frame zip)
+  :expand ((zip-path-after-rec (zip->path zip)))
+  :enable (zip-ascend-to-right-frame
+           zip-path-no-right-frames-p
+           zip-after
+           zip-path-after-becomes-rec
+           zip-frame-plug
+           tree-in-order))
+
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-before-of-zip-next
-  (implies (not (zip-at-last-p zip))
-           (equal (zip-before (zip-next zip))
+(defrule zip-before-of-zip-step-forward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-before (zip-step-forward zip))
                   (append (zip-before zip)
                           (list (zip-value zip)))))
-  :expand ((tree-in-order (zip->focus zip)))
-  :enable (zip-next
-           zip-at-last-p
+  :enable (zip-step-forward
            zip-before
            zip-value
-           zip-before-of-zip-descend-leftmost
-           zip-before-of-zip-ascend-to-left-frame))
+           zip-before-of-zip-descend-leftmost-hole))
 
-;; What follows the cursor loses its first value, which is the one the move
-;; lands on. Both fall out of the law above by cancelling the common prefix in
-;; the two decompositions.
+(defrule zip-before-of-zip-step-forward-when-tree-empty-p
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-before (zip-step-forward zip))
+                  (zip-before zip)))
+  :enable (zip-step-forward
+           zip-before
+           zip-before-of-zip-ascend-to-left-frame
+           tree-in-order))
 
-(defrule zip-after-of-zip-next
-  (implies (not (zip-at-last-p zip))
-           (equal (zip-after (zip-next zip))
+(defrule zip-after-of-zip-step-backward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-after (zip-step-backward zip))
+                  (cons (zip-value zip)
+                        (zip-after zip))))
+  :enable (zip-step-backward
+           zip-after
+           zip-value
+           zip-after-of-zip-descend-rightmost-hole))
+
+(defrule zip-after-of-zip-step-backward-when-tree-empty-p
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-after (zip-step-backward zip))
+                  (zip-after zip)))
+  :enable (zip-step-backward
+           zip-after
+           zip-after-of-zip-ascend-to-right-frame
+           tree-in-order))
+
+;; The other side of each step falls out of the side above by cancelling the
+;; common part of the two decompositions of the same sequence.
+
+(defrule zip-after-of-zip-step-forward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-after (zip-step-forward zip))
+                  (zip-after zip)))
+  :use (tree-in-order-of-zip-plug-split-at-cursor
+        (:instance tree-in-order-of-zip-plug-split-at-cursor
+                   (zip (zip-step-forward zip)))))
+
+(defrule zip-after-of-zip-step-forward-when-tree-empty-p
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-after (zip-step-forward zip))
                   (cdr (zip-after zip))))
   :use (tree-in-order-of-zip-plug-split-at-cursor
         (:instance tree-in-order-of-zip-plug-split-at-cursor
-                   (zip (zip-next zip)))))
+                   (zip (zip-step-forward zip)))))
 
-(defrule zip-value-of-zip-next
-  (implies (not (zip-at-last-p zip))
-           (equal (zip-value (zip-next zip))
+(defrule zip-value-of-zip-step-forward-when-tree-empty-p
+  (implies (and (tree-empty-p (zip->focus zip))
+                (consp (zip-after zip)))
+           (equal (zip-value (zip-step-forward zip))
                   (car (zip-after zip))))
   :use (tree-in-order-of-zip-plug-split-at-cursor
         (:instance tree-in-order-of-zip-plug-split-at-cursor
-                   (zip (zip-next zip)))))
+                   (zip (zip-step-forward zip)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defrule zip-before-of-zip-step-backward-when-not-tree-empty-p
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-before (zip-step-backward zip))
+                  (zip-before zip)))
+  :use (tree-in-order-of-zip-plug-split-at-cursor
+        (:instance tree-in-order-of-zip-plug-split-at-cursor
+                   (zip (zip-step-backward zip)))))
 
-;; Having nothing before you is being at the first element, and having nothing
-;; after you is being at the last. A frame the focus hangs to the right of
-;; contributes at least its own node, so a path which contributes nothing has
-;; no such frame.
+;; What precedes a hole is what precedes the element before it, followed by
+;; that element: the step forward from that element returns to the hole.
+;; Stated in this direction, since the element before is the one the step
+;; lands on.
 
-(defruledl zip-count-rights-when-not-consp-of-zip-path-before
-  (implies (not (consp (zip-path-before path)))
-           (equal (zip-count-rights path) 0))
-  :induct (zip-path-before-rec path)
-  :enable (zip-path-before-rec))
-
-(defruledl zip-count-lefts-when-not-consp-of-zip-path-after
-  (implies (not (consp (zip-path-after path)))
-           (equal (zip-count-lefts path) 0))
-  :induct (zip-path-after-rec path)
-  :enable (zip-path-after-rec))
-
-(defrule zip-before-when-zip-at-first-p
-  (implies (zip-at-first-p zip)
+(defrule zip-before-of-zip-step-backward-when-tree-empty-p
+  (implies (and (tree-empty-p (zip->focus zip))
+                (consp (zip-before zip)))
            (equal (zip-before zip)
-                  nil))
-  :enable (zip-at-first-p
-           zip-before))
-
-(defrule zip-after-when-zip-at-last-p
-  (implies (zip-at-last-p zip)
-           (equal (zip-after zip)
-                  nil))
-  :enable (zip-at-last-p
-           zip-after))
-
-(defrule zip-at-first-p-when-not-consp-of-zip-before
-  (implies (not (consp (zip-before zip)))
-           (zip-at-first-p zip))
-  :enable (zip-at-first-p
-           zip-before
-           zip-count-rights-when-not-consp-of-zip-path-before))
-
-(defrule zip-at-last-p-when-not-consp-of-zip-after
-  (implies (not (consp (zip-after zip)))
-           (zip-at-last-p zip))
-  :enable (zip-at-last-p
-           zip-after
-           zip-count-lefts-when-not-consp-of-zip-path-after))
-
-(defrule not-zip-at-first-p-when-consp-of-zip-before
-  (implies (consp (zip-before zip))
-           (not (zip-at-first-p zip)))
-  :use zip-before-when-zip-at-first-p
-  :disable zip-before-when-zip-at-first-p)
-
-(defrule not-zip-at-last-p-when-consp-of-zip-after
-  (implies (consp (zip-after zip))
-           (not (zip-at-last-p zip)))
-  :use zip-after-when-zip-at-last-p
-  :disable zip-after-when-zip-at-last-p)
-
-;; The same fact by forward chaining. The rewrite form above cannot relieve
-;; this hypothesis for a rule whose conclusion is about @(tsee zip-after) of a
-;; move: doing so would rewrite @(tsee zip-at-last-p) into a term mentioning
-;; @(tsee zip-after), which the ancestors check blocks as possibly looping.
-;; Forward chaining puts the fact in the context first, so no backchaining is
-;; needed.
-
-(defrule not-zip-at-last-p-when-consp-of-zip-after-forward-chaining
-  (implies (consp (zip-after zip))
-           (not (zip-at-last-p zip)))
-  :rule-classes :forward-chaining)
-
-;; The two ends as tests on the sequences alone. Left disabled, since either
-;; direction on its own is the cheaper rule; this form is for proofs which know
-;; two zippers have the same sequence and need them to be at an end together.
-
-(defruled zip-at-first-p-becomes-not-consp-of-zip-before
-  (equal (zip-at-first-p zip)
-         (not (consp (zip-before zip))))
-  :cases ((consp (zip-before zip))))
-
-(defruled zip-at-last-p-becomes-not-consp-of-zip-after
-  (equal (zip-at-last-p zip)
-         (not (consp (zip-after zip))))
-  :cases ((consp (zip-after zip))))
-
-;; The mirror of the ordering law, read backwards.
-
-(defrule zip-before-of-zip-prev
-  (implies (not (zip-at-first-p zip))
-           (equal (zip-before zip)
-                  (append (zip-before (zip-prev zip))
-                          (list (zip-value (zip-prev zip))))))
-  :use (:instance zip-before-of-zip-next
-                  (zip (zip-prev zip)))
-  :disable zip-before-of-zip-next)
-
-;; What follows a step back gains the value stepped away from, at its front.
-;; Read off the round trip: what follows the previous position loses its head
-;; to a forward step, and that head is the value that step lands on.
-
-(defrule zip-after-of-zip-prev
-  (implies (not (zip-at-first-p zip))
-           (equal (zip-after (zip-prev zip))
-                  (cons (zip-value zip)
-                        (zip-after zip))))
-  :use ((:instance zip-after-of-zip-next (zip (zip-prev zip)))
-        (:instance zip-value-of-zip-next (zip (zip-prev zip)))
-        (:instance zip-at-last-p-when-not-consp-of-zip-after
-                   (zip (zip-prev zip))))
-  :disable (zip-after-of-zip-next
-            zip-value-of-zip-next
-            zip-at-last-p-when-not-consp-of-zip-after
-            acl2::cons-car-cdr))
+                  (append (zip-before (zip-step-backward zip))
+                          (list (zip-value (zip-step-backward zip))))))
+  :use (:instance zip-before-of-zip-step-forward-when-not-tree-empty-p
+                  (zip (zip-step-backward zip)))
+  :disable zip-before-of-zip-step-forward-when-not-tree-empty-p)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; UNIQUENESS. A zipper is determined by the tree it is a cursor into together
-;; with what follows the cursor in that tree. Note that no @(tsee bstp)
-;; hypothesis is needed: this is structural, and holds of any tree.
+;; A step is the identity exactly at the end it saturates against, and nowhere
+;; else. This is what says a traversal makes progress: reaching a fixed point
+;; means being done, rather than merely being stuck.
+
+(defrule equal-of-zip-step-forward-and-zip-fix
+  (equal (equal (zip-step-forward zip) (zip-fix zip))
+         (zip-at-end-p zip))
+  :use (zip-after-of-zip-step-forward-when-tree-empty-p
+        tree-empty-p-of-focus-of-zip-step-forward)
+  :enable zip-at-end-p-becomes-not-consp-of-zip-after
+  :disable (zip-after-of-zip-step-forward-when-tree-empty-p
+            tree-empty-p-of-focus-of-zip-step-forward))
+
+(defrule equal-of-zip-step-backward-and-zip-fix
+  (equal (equal (zip-step-backward zip) (zip-fix zip))
+         (zip-at-begin-p zip))
+  :use (zip-after-of-zip-step-backward-when-not-tree-empty-p
+        tree-empty-p-of-focus-of-zip-step-backward)
+  :enable zip-at-begin-p-becomes-not-consp-of-zip-before
+  :disable (zip-after-of-zip-step-backward-when-not-tree-empty-p
+            tree-empty-p-of-focus-of-zip-step-backward))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The moves between elements, read off as two steps.
+
+(defrule zip-before-of-zip-next
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-before (zip-next zip))
+                  (append (zip-before zip)
+                          (list (zip-value zip)))))
+  :enable zip-next)
+
+(defrule zip-after-of-zip-next
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-after (zip-next zip))
+                  (cdr (zip-after zip))))
+  :enable zip-next)
+
+(defrule tree-empty-p-of-focus-of-zip-next
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (tree-empty-p (zip->focus (zip-next zip)))
+                  (not (consp (zip-after zip)))))
+  :enable zip-next)
+
+(defrule zip-value-of-zip-next
+  (implies (and (not (tree-empty-p (zip->focus zip)))
+                (consp (zip-after zip)))
+           (equal (zip-value (zip-next zip))
+                  (car (zip-after zip))))
+  :enable zip-next)
+
+(defrule zip-after-of-zip-prev
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (zip-after (zip-prev zip))
+                  (cons (zip-value zip)
+                        (zip-after zip))))
+  :enable zip-prev)
+
+(defrule tree-empty-p-of-focus-of-zip-prev
+  (implies (not (tree-empty-p (zip->focus zip)))
+           (equal (tree-empty-p (zip->focus (zip-prev zip)))
+                  (not (consp (zip-before zip)))))
+  :enable zip-prev)
+
+(defrule zip-before-of-zip-prev
+  (implies (and (not (tree-empty-p (zip->focus zip)))
+                (consp (zip-before zip)))
+           (equal (zip-before zip)
+                  (append (zip-before (zip-prev zip))
+                          (list (zip-value (zip-prev zip))))))
+  :use (:instance zip-before-of-zip-step-backward-when-tree-empty-p
+                  (zip (zip-step-backward zip)))
+  :enable zip-prev
+  :disable zip-before-of-zip-step-backward-when-tree-empty-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; UNIQUENESS. A zipper is determined by the tree it is a cursor into, whether
+;; it is at a hole, and what follows the cursor in that tree. Note that no
+;; @(tsee bstp) hypothesis is needed: this is structural, and holds of any
+;; tree.
 ;;
-;; The proof walks both zippers forward in step. Each step drops one value from
-;; what follows, so the two stay in agreement, and the walk ends at the last
-;; element, where @(tsee zip-last) already pins the zipper down. Undoing
-;; the walk with @(tsee zip-prev) carries the equality back to the start.
+;; The proof walks both zippers forward in step. Each pair of steps drops one
+;; value from what follows, so the two stay in agreement, and the walk ends
+;; at the last hole, where @(tsee zip-end) already pins the zipper down.
+;; Undoing the walk with @(tsee zip-step-backward) carries the equality back
+;; to the start.
 
 (local
  (defun zip-position-induction (zip1 zip2)
-   (declare (xargs :measure (len (zip-after zip1))))
-   (if (zip-at-last-p zip1)
+   (declare (xargs :measure (+ (* 2 (len (zip-after zip1)))
+                               (if (tree-empty-p (zip->focus zip1)) 0 1))
+                   :hints
+                   (("Goal"
+                     :in-theory
+                     (enable zip-at-end-p-becomes-not-consp-of-zip-after)))))
+   (if (zip-at-end-p zip1)
        (list zip1 zip2)
-     (zip-position-induction (zip-next zip1)
-                             (zip-next zip2)))))
+     (zip-position-induction (zip-step-forward zip1)
+                             (zip-step-forward zip2)))))
 
-(defrule zip-uniqueness-when-zip-after-equal
+(defrule zip-uniqueness
   (implies (and (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (tree-empty-p (zip->focus zip1))
+                       (tree-empty-p (zip->focus zip2)))
                 (equal (zip-after zip1) (zip-after zip2)))
            (equal (zip-fix zip1) (zip-fix zip2)))
   :rule-classes nil
   :hints (("Goal"
            :induct (zip-position-induction zip1 zip2)
-           :in-theory (enable zip-at-last-p-becomes-not-consp-of-zip-after
-                              zip-after-of-zip-next))
+           :in-theory (enable zip-at-end-p-becomes-not-consp-of-zip-after))
           ;; Both cases need the round trip named at a specific pair of
           ;; zippers, which no rewrite can supply: the base case has no
-          ;; @(tsee zip-prev) term to match on, and the step case must undo a
-          ;; move to recover the zippers from their successors. Keyed on
-          ;; stability rather than on subgoal names, which shift.
+          ;; @(tsee zip-step-backward) term to match on, and the step case
+          ;; must undo a move to recover the zippers from their successors.
+          ;; Keyed on stability rather than on subgoal names, which shift.
           (and stable-under-simplificationp
-               '(:use ((:instance zip-prev-of-zip-next (zip zip1))
-                       (:instance zip-prev-of-zip-next (zip zip2))
-                       (:instance zip-last-of-zip-plug-when-zip-at-last-p
+               '(:use ((:instance zip-step-backward-of-zip-step-forward
                                   (zip zip1))
-                       (:instance zip-last-of-zip-plug-when-zip-at-last-p
+                       (:instance zip-step-backward-of-zip-step-forward
+                                  (zip zip2))
+                       (:instance zip-end-of-zip-plug-when-zip-at-end-p
+                                  (zip zip1))
+                       (:instance zip-end-of-zip-plug-when-zip-at-end-p
                                   (zip zip2)))
-                 :in-theory (e/d (zip-at-last-p-becomes-not-consp-of-zip-after
-                                  zip-after-of-zip-next)
-                                 (zip-prev-of-zip-next
-                                  zip-last-of-zip-plug-when-zip-at-last-p))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; A move is the identity exactly at the end it saturates against, and nowhere
-;; else. This is what says a traversal makes progress: reaching a fixed point
-;; means being done, rather than merely being stuck.
-;;
-;; It reads straight off the ordering laws. If a step left the zipper alone it
-;; would leave what follows the cursor alone too, but a step drops one value
-;; from that, and no list is its own @(tsee cdr).
-
-(defruledl not-equal-of-cdr-when-consp
-  (implies (consp x)
-           (not (equal x (cdr x))))
-  :disable acl2::len-of-cdr)
-
-(defruledl not-equal-of-append-of-singleton
-  (not (equal x (append x (list y))))
-  :use (:instance acl2::len-of-append (acl2::x x) (acl2::y (list y)))
-  :disable acl2::len-of-append)
-
-(defrule zip-next-identity-iff-zip-at-last-p
-  (equal (equal (zip-next zip) (zip-fix zip))
-         (zip-at-last-p zip))
-  :use zip-after-of-zip-next
-  :disable zip-after-of-zip-next
-  :cases ((consp (zip-after zip))))
-
-(defrule zip-prev-identity-iff-zip-at-first-p
-  (equal (equal (zip-prev zip) (zip-fix zip))
-         (zip-at-first-p zip))
-  :use zip-before-of-zip-prev
-  :disable zip-before-of-zip-prev)
+                 :cases ((tree-empty-p (zip->focus zip1)))
+                 :in-theory (e/d (zip-at-end-p-becomes-not-consp-of-zip-after)
+                                 (zip-step-backward-of-zip-step-forward
+                                  zip-end-of-zip-plug-when-zip-at-end-p))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2953,7 +3236,7 @@
                                           (acc treep))
     :verify-guards nil
     :enabled t
-    (if (endp path)
+    (if (acl2::endp path)
         (list tree acc)
       (zip-path-tree-before-induction
         (cdr path)
@@ -2970,7 +3253,7 @@
                                          (acc treep))
     :verify-guards nil
     :enabled t
-    (if (endp path)
+    (if (acl2::endp path)
         (list tree acc)
       (zip-path-tree-after-induction
         (cdr path)
@@ -3122,16 +3405,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Uniqueness by value. What follows the cursor is an order filter of the tree
+;; Uniqueness by value. What follows an element is an order filter of the tree
 ;; (@(tsee in-of-zip-oset-after-when-bstp)), so the value fixes the tail, and
 ;; the tail already fixes the zipper.
 
-;; What follows the cursor, as an oset, is an order filter of the tree, so it
+;; What follows an element, as an oset, is an order filter of the tree, so it
 ;; is fixed by the tree and the value.
 
 (defruled zip-oset-after-when-same-value
   (implies (and (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
+                (not (tree-empty-p (zip->focus zip1)))
+                (not (tree-empty-p (zip->focus zip2)))
                 (equal (zip-value zip1) (zip-value zip2)))
            (equal (zip-oset-after zip1) (zip-oset-after zip2)))
   :enable (set::double-containment
@@ -3148,6 +3433,8 @@
 (defruled zip-after-when-same-value
   (implies (and (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
+                (not (tree-empty-p (zip->focus zip1)))
+                (not (tree-empty-p (zip->focus zip2)))
                 (equal (zip-value zip1) (zip-value zip2)))
            (equal (zip-after zip1) (zip-after zip2)))
   :use ((:instance zip-oset-after-becomes-zip-after (zip zip1))
@@ -3159,8 +3446,10 @@
                 (zipp zip2)
                 (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
+                (not (tree-empty-p (zip->focus zip1)))
+                (not (tree-empty-p (zip->focus zip2)))
                 (equal (zip-value zip1) (zip-value zip2)))
            (equal zip1 zip2))
   :rule-classes nil
-  :use (zip-uniqueness-when-zip-after-equal
+  :use (zip-uniqueness
         zip-after-when-same-value))

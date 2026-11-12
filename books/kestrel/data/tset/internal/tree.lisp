@@ -383,7 +383,7 @@
 (define tree-empty-p ((tree treep))
   (declare (xargs :type-prescription (booleanp (tree-empty-p tree))))
   :short "Check if a @(see tree) is empty."
-  (endp (tree-fix tree))
+  (acl2::endp (tree-fix tree))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
