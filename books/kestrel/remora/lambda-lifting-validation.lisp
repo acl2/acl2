@@ -32,7 +32,8 @@
      evaluating its lambda-lifted form, with a large enough limit,
      succeeds with the same value.
      This book states that property;
-     its proof is not done yet.")
+     it is proved in the book @('lambda-lifting-validation-proof'),
+     as @('lambda-lift-validation-claim').")
    (xdoc::p
     "Unlike uniquification (see @(see unique-names-validation)),
      lambda lifting depends on types at run time.
@@ -392,6 +393,64 @@
          (expr-vars-typed-p (expr-senv->exprs eenv) denv)))
   :verify-guards nil)
 
+; Typing restricted to some expression variables, those an expression or
+; bindings refer to, and only where the dynamic environment binds them: an
+; expression is evaluated in the environment of a closure, which keeps only
+; the variables free in the closure's body.
+
+(define expr-vars-typed-at-p ((types string-type-mapp)
+                              (names string-setp)
+                              (denv expr-denvp))
+  :returns (yes/no booleanp)
+  :short "Whether an expression dynamic environment binds the variables of a
+          map that are in a set, where it binds them, to values of their
+          types."
+  (b* ((types (string-type-map-fix types))
+       ((when (omap::emptyp types)) t)
+       (var (omap::head-key types))
+       (val (expr-denv-lookup-expr var denv))
+       (tval (eval-type (omap::head-val types) (expr-denv->tenv denv))))
+    (and (or (not (set::in var (string-sfix names)))
+             (reserrp val)
+             (and (not (reserrp tval))
+                  (expr-value-typed-p val tval)))
+         (expr-vars-typed-at-p (omap::tail types) names denv)))
+  :measure (acl2-count (string-type-map-fix types))
+  :verify-guards nil)
+
+(define expr-denv-typed-for-p ((denv expr-denvp)
+                               (ienv ispace-senvp)
+                               (tenv type-senvp)
+                               (eenv expr-senvp)
+                               (names string-setp))
+  :returns (yes/no booleanp)
+  :short "Whether an expression dynamic environment is typed by static
+          environments, as far as some expression variables go."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The ispace and type variables are typed as in @(tsee
+     expr-denv-typed-p); the expression variables only if they are in
+     @('names') and bound in the dynamic environment."))
+  (b* ((tdenv (expr-denv->tenv denv)))
+    (and (ispace-denv-typed-p (ispace-senv->ispaces ienv)
+                              (type-denv->ienv tdenv))
+         (type-denv-typed-p (type-senv->types tenv) tdenv)
+         (expr-vars-typed-at-p (expr-senv->exprs eenv) names denv)))
+  :verify-guards nil)
+
+(defruled expr-vars-typed-at-p-when-expr-vars-typed-p
+  (implies (expr-vars-typed-p types denv)
+           (expr-vars-typed-at-p types names denv))
+  :induct (expr-vars-typed-p types denv)
+  :enable (expr-vars-typed-p expr-vars-typed-at-p))
+
+(defruled expr-denv-typed-for-p-when-expr-denv-typed-p
+  (implies (expr-denv-typed-p denv ienv tenv eenv)
+           (expr-denv-typed-for-p denv ienv tenv eenv names))
+  :enable (expr-denv-typed-p expr-denv-typed-for-p
+           expr-vars-typed-at-p-when-expr-vars-typed-p))
+
 ; The initial dynamic environment, of the primitive operations, is typed by
 ; the initial static environments: so the evaluation of a checked expression
 ; starts typed.  This is a fact about constants, settled by evaluation.
@@ -420,8 +479,18 @@
      to a value of the type the checker gives it
      (evaluated in the dynamic environment),
      and checked bindings evaluate, if successfully,
-     to an environment typed by the static environments
-     the checker extends the given ones to.")
+     to an environment that binds the variables they bind
+     to values of the types the checker gives them.")
+   (xdoc::p
+    "Only the expression variables free in the expression or bindings,
+     and bound in the dynamic environment, need be typed
+     (see @(tsee expr-denv-typed-for-p)):
+     evaluation depends on no other variable,
+     and fails on a free variable that is not bound.
+     This matters because expressions are evaluated
+     in the restricted environments of closures,
+     which lack the variables, including the primitive operations,
+     that the closure's body does not refer to.")
    (xdoc::p
     "It is the expression as given that is evaluated,
      not the one the checker returns,
@@ -437,7 +506,9 @@
     (forall (expr binds ienv tenv eenv denv limit)
             (and (b* ((type+expr (check-expr expr ienv tenv eenv))
                       (val (eval-expr expr denv limit)))
-                   (implies (and (expr-denv-typed-p denv ienv tenv eenv)
+                   (implies (and (expr-denv-typed-for-p
+                                  denv ienv tenv eenv
+                                  (expr-free-expr-vars expr))
                                  (not (reserrp type+expr))
                                  (not (reserrp val)))
                             (b* ((tval (eval-type (type+expr->type type+expr)
@@ -446,13 +517,17 @@
                                    (expr-value-typed-p val tval)))))
                  (b* ((senvs (check-bind-list binds ienv tenv eenv))
                       (new-denv (eval-bind-list binds denv limit)))
-                   (implies (and (expr-denv-typed-p denv ienv tenv eenv)
+                   (implies (and (expr-denv-typed-for-p
+                                  denv ienv tenv eenv
+                                  (bind-list-free-expr-vars binds))
                                  (not (reserrp senvs))
                                  (not (reserrp new-denv)))
-                            (expr-denv-typed-p new-denv
-                                               (senvs+binds->ienv senvs)
-                                               (senvs+binds->tenv senvs)
-                                               (senvs+binds->eenv senvs))))))))
+                            (expr-denv-typed-for-p
+                             new-denv
+                             (senvs+binds->ienv senvs)
+                             (senvs+binds->tenv senvs)
+                             (senvs+binds->eenv senvs)
+                             (bind-list-bound-expr-vars binds))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -471,7 +546,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the statement of the theorem still to be proved:
+    "This is the statement of the theorem,
+     proved as @('lambda-lift-validation-claim')
+     in the book @('lambda-lifting-validation-proof'):
      that this holds for every @('expr') and @('limit').
      Under the soundness of the type checker (@(tsee check-sound-p)),
      if a type-checked expression whose binders bind distinct names

@@ -392,3 +392,196 @@
            (not (set::in x b)))
   :enable set::union-in
   :use ((:instance set::subset-in (a x) (x b) (y (set::union u1 u2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; More facts about sets, and about sets as lists, gathered from the proofs
+; about lambda lifting.
+
+(local (include-book "std/lists/sets" :dir :system))
+
+(defruled emptyp-intersect-of-union-left
+  (implies (and (set::emptyp (set::intersect a c))
+                (set::emptyp (set::intersect b c)))
+           (set::emptyp (set::intersect (set::union a b) c)))
+  :use ((:instance set::in-head (x (set::intersect (set::union a b) c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::union a b) c)))
+                   (set::x (set::intersect a c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::union a b) c)))
+                   (set::x (set::intersect b c)))))
+
+(defruled emptyp-intersect-when-subset-right
+  (implies (and (set::emptyp (set::intersect a c1))
+                (set::subset c c1))
+           (set::emptyp (set::intersect a c)))
+  :use ((:instance set::in-head (x (set::intersect a c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect a c)))
+                   (set::x (set::intersect a c1)))
+        (:instance set::subset-in (set::a (set::head (set::intersect a c)))
+                   (set::x c) (set::y c1))))
+
+(defruled emptyp-intersect-of-insert-left
+  (implies (and (not (set::in x c))
+                (set::emptyp (set::intersect a c)))
+           (set::emptyp (set::intersect (set::insert x a) c)))
+  :use ((:instance set::in-head (x (set::intersect (set::insert x a) c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect (set::insert x a) c)))
+                   (set::x (set::intersect a c)))))
+
+(defruled emptyp-of-intersect-of-union
+  (equal (set::emptyp (set::intersect (set::union a b) c))
+         (and (set::emptyp (set::intersect a c))
+              (set::emptyp (set::intersect b c))))
+  :use (emptyp-intersect-of-union-left
+        (:instance set::in-head (x (set::intersect a c)))
+        (:instance set::in-head (x (set::intersect b c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect a c)))
+                   (set::x (set::intersect (set::union a b) c)))
+        (:instance set::never-in-empty (set::a (set::head (set::intersect b c)))
+                   (set::x (set::intersect (set::union a b) c)))))
+
+(defruled subsetp-of-union-mergesort-append
+  (implies (set::setp s)
+           (subsetp-equal (set::union (set::mergesort l) s) (append l s)))
+  :enable set::in-to-member
+  :use ((:instance set::in-to-member
+                   (a (acl2::subsetp-witness (set::union (set::mergesort l) s)
+                                             (append l s)))
+                   (x (set::union (set::mergesort l) s)))))
+
+(defruled subsetp-of-insert-cons
+  (implies (set::setp s)
+           (subsetp-equal (set::insert a s) (cons a s)))
+  :use ((:instance set::in-to-member
+                   (a (acl2::subsetp-witness (set::insert a s) (cons a s)))
+                   (x (set::insert a s)))))
+
+(defruled subset-of-tail-when-subset
+  (implies (set::subset x y)
+           (set::subset (set::tail x) y))
+  :use (:instance set::subset-transitive (x (set::tail x)) (y x) (z y)))
+
+(defruled subset-of-difference-of-difference
+  (implies (and (set::subset a b) (set::subset c d))
+           (set::subset (set::difference a d) (set::difference b c)))
+  :enable (set::subset-in set::pick-a-point-subset-strategy))
+
+(defruled subset-of-difference-when-subset
+  (implies (set::subset a b)
+           (set::subset (set::difference a c) (set::difference b c))))
+
+(defruled subsetp-equal-when-subset-of-set
+  (implies (and (subsetp-equal l s1)
+                (set::subset s1 s2)
+                (set::setp s1)
+                (set::setp s2))
+           (subsetp-equal l s2))
+  :enable (acl2::subsetp-witness-rw acl2::subsetp-member set::subset-in
+           set::in-to-member)
+  :use ((:instance set::subset-in
+                   (a (acl2::subsetp-witness l s2)) (x s1) (y s2))))
+
+(defruled difference-of-singleton-mergesort
+  (implies (set::setp s)
+           (equal (set::difference s (set::mergesort (list v)))
+                  (set::delete v s)))
+  :enable (set::double-containment set::pick-a-point-subset-strategy))
+
+(defruled no-duplicatesp-equal-when-setp
+  (implies (set::setp x)
+           (no-duplicatesp-equal x))
+  :induct (len x)
+  :enable (len set::setp no-duplicatesp-equal member-equal)
+  :expand ((set::setp x))
+  :hints (("Subgoal *1/1"
+           :use ((:instance set::not-member-when-smaller
+                            (a (car x)) (x (cdr x)))))))
+
+(defruled in-when-member-of-subsetp
+  (implies (and (subsetp-equal l s)
+                (member-equal e l)
+                (set::setp s))
+           (set::in e s))
+  :enable (set::in-to-member acl2::subsetp-member))
+
+(defruled car-cdr-of-nonempty-setp
+  (implies (and (set::setp x) (not (set::emptyp x)))
+           (and (equal (set::head x) (car x))
+                (equal (set::tail x) (cdr x))))
+  :enable (set::head set::tail set::emptyp))
+
+(defruled not-emptyp-when-consp-setp
+  (implies (and (set::setp x) (consp x))
+           (not (set::emptyp x)))
+  :enable set::emptyp)
+
+(defruled subset-of-cdr-when-subset-setp
+  (implies (and (set::setp x) (set::subset x y))
+           (set::subset (cdr x) y))
+  :use ((:instance subset-of-tail-when-subset)
+        (:instance car-cdr-of-nonempty-setp))
+  :cases ((set::emptyp x))
+  :enable set::emptyp)
+
+(defruled emptyp-when-not-consp-setp
+  (implies (and (set::setp x) (not (consp x)))
+           (set::emptyp x))
+  :enable set::emptyp)
+
+(defruled subsetp-of-union-mergesort-right
+  (implies (and (subsetp-equal l s)
+                (set::setp s))
+           (subsetp-equal l (set::union (set::mergesort more) s)))
+  :enable acl2::subsetp-member
+  :use ((:instance set::in-to-member
+                   (a
+                    (acl2::subsetp-witness l
+                                           (set::union (set::mergesort more)
+                                                       s)))
+                   (x s))
+        (:instance set::in-to-member
+                   (a
+                    (acl2::subsetp-witness l
+                                           (set::union (set::mergesort more)
+                                                       s)))
+                   (x (set::union (set::mergesort more) s)))))
+
+(defruled union-of-emptyp-right
+  (implies (and (set::setp x) (set::emptyp y))
+           (equal (set::union x y) x)))
+
+(defruled subset-of-difference-and-intersect-when-subset
+  (implies (set::subset a b)
+           (and (set::subset (set::difference a c) b)
+                (set::subset (set::intersect a c) b)))
+  :enable (set::pick-a-point-subset-strategy set::subset-in))
+
+(defruled subset-of-insert-both
+  (implies (set::subset x y)
+           (set::subset (set::insert a x) (set::insert a y)))
+  :enable set::subset-insert-x
+  :use ((:instance set::subset-transitive (set::x x) (set::y y)
+                   (set::z (set::insert a y)))))
+
+(defruled in-insert-when-subset-delete
+  (implies (and (set::subset (set::delete n a) u)
+                (set::in x a))
+           (set::in x (set::insert n u)))
+  :use ((:instance set::subset-in
+                   (set::a x) (set::x (set::delete n a)) (set::y u))))
+
+(defruled subset-insert-when-subset-delete
+  (implies (set::subset (set::delete n a) u)
+           (set::subset a (set::insert n u)))
+  :enable (set::pick-a-point-subset-strategy in-insert-when-subset-delete))
+
+(defruled subsetp-equal-when-all-in
+  (implies (and (set::setp s)
+                (set::subset (set::mergesort l) s))
+           (subsetp-equal l s))
+  :induct (len l)
+  :enable (len subsetp-equal member-equal set::in-to-member
+           mergesort-of-cons)
+  :hints (("Subgoal *1/1"
+           :use ((:instance set::subset-in (set::a (car l))
+                            (set::x (set::mergesort l)) (set::y s))))))
