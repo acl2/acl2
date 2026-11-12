@@ -570,6 +570,8 @@
         (expr-ice-core-3p
          expr.list evaluatedp cast-restrictionsp dialect)
         :unknown)
+       :convertvector
+       :unknown
        :extension
        (expr-ice-core-3p
         expr.expr evaluatedp cast-restrictionsp dialect)))

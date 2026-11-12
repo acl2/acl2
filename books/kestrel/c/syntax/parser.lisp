@@ -757,6 +757,7 @@
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
            (token-keywordp token? "__builtin_va_arg")
+           (token-keywordp token? "__builtin_convertvector")
            (token-keywordp token? "true") ; C23
            (token-keywordp token? "false"))) ; C23
   ///
@@ -3851,15 +3852,19 @@
        zero or more additional generic associations.
        Finally we parse a closed parenthesis and return a generic selection.")
      (xdoc::p
-      "If the token is the GCC keyword @('__builtin_types_compatible_p'),
+      "If the token is the GCC/Clang keyword @('__builtin_types_compatible_p'),
        we parse a call of this built-in function,
        which has two type names as arguments.")
      (xdoc::p
-      "If the token is the GCC keyword @('__builtin_offsetof'),
+      "If the token is the GCC/Clang keyword @('__builtin_offsetof'),
        we parse a call of this built-in function,
        which has a type name and a member designator as arguments.")
      (xdoc::p
-      "If the token is the GCC keyword @('__builtin_va_arg'),
+      "If the token is the GCC/Clang keyword @('__builtin_va_arg'),
+       we parse a call of this built-in function,
+       which has an expression and a type name as arguments.")
+     (xdoc::p
+      "If the token is the GCC/Clang keyword @('__builtin_convertvector'),
        we parse a call of this built-in function,
        which has an expression and a type name as arguments.")
      (xdoc::p
@@ -4027,6 +4032,32 @@
               ;; __builtin_va_arg ( list , type )
               (read-punctuator ")" parstate)))
           (retok (make-expr-va-arg :list list :type type)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token
+                        "__builtin_convertvector") ; __builtin_convertvector
+        (b* (((erp & parstate)
+              ;; __builtin_convertvector (
+              (read-punctuator "(" parstate))
+             (psize (parsize parstate))
+             ((erp vec & parstate)
+              ;; __builtin_convertvector ( vec
+              (parse-assignment-expression parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate)
+              ;; __builtin_convertvector ( vec ,
+              (read-punctuator "," parstate))
+             (psize (parsize parstate))
+             ((erp type & parstate)
+              ;; __builtin_convertvector ( vec , type
+              (parse-type-name parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp last-span parstate)
+              ;; __builtin_convertvector ( vec , type )
+              (read-punctuator ")" parstate)))
+          (retok (make-expr-convertvector :vec vec :type type)
                  (span-join span last-span)
                  parstate)))
        (t ; other

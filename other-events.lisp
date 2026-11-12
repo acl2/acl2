@@ -16099,19 +16099,83 @@
           (when (probe-file cert-file)
             (delete-file cert-file)))))
 
-(defun include-book-alist-uncertified-books (alist acc ctx wrld state)
+(defun include-book-alist-uncertified-books (alist acc pcert1-date ctx wrld
+                                                   state)
 
 ; Alist is a post-alist from a certificate file, which was constructed from the
 ; "proof" pass of certify-book, even if proofs were actually skipped in the
-; Pcertify step of provisional certification.  We use that alist to do a
-; lightweight check for uncertified books, collecting all that we find.  That
-; check is simply that for each entry in the alist, the included sub-book from
-; that entry (even if locally included) has a .cert file with a write date at
-; least as recent as that sub-book.
+; Pcertify step of provisional certification.
 
-; It is clear by induction on the tree of books that if no uncertified book is
-; found this way, then assuming that all .cert files were created by ACL2 in
-; the proper way, all books in the alist are indeed certified.
+; Through Version 8.7, we used that alist to do only a lightweight check for
+; uncertified books, collecting all that we find.  That check was simply that
+; for each entry in the alist, the included sub-book from that entry (even if
+; locally included) has a .cert file with a write date at least as recent as
+; that sub-book.  It then was presumably clear by induction on the tree of
+; books that if no uncertified book is found this way, then assuming that all
+; .cert files were created by ACL2 in the proper way, all books in the alist
+; are indeed certified.
+
+; The flaw in that argument is that sub-books might be modified and
+; recertified.  Here is an example extracted from one found by AI -- just
+; create the four .lisp files and then follow the instructions in script.lsp.
+
+;   $ cat bk.lisp
+;   (in-package "ACL2")
+;   (include-book "defs")
+;   (local (include-book "s"))
+;   (defthm bk-thm (equal (f 5) 3) :hints (("Goal" :use (:instance false-thm (x 5)))))
+;   $ cat defs.lisp
+;   (in-package "ACL2")
+;   (defun f (x) (* 2 x))
+;   $ cat s.lisp.false-thm
+;   (in-package "ACL2")
+;   (include-book "defs")
+;   (defthm false-thm (equal (f x) 3))  ; unprovable; never proved (s is only Pcertified)
+;   $ cat s.lisp.true-thm
+;   (in-package "ACL2")
+;   (include-book "defs")
+;   (defthm true-thm (equal (f 3) 6))
+;   $ cat script.lsp
+;   ;;; Set up:
+;   #|
+;   <path_to_acl2>/books/build/clean.pl
+;   rm -f s.lisp
+;   ls -1
+;   [Output:
+;     bk.lisp
+;     defs.lisp
+;     s.lisp.false-thm
+;     s.lisp.true-thm
+;     script.lsp
+;   ]
+;   cp s.lisp.false-thm s.lisp
+;   <acl2>
+;   |#
+;
+;   (certify-book "defs")
+;   :u
+;   (certify-book "s" 0 t :pcert :create)
+;   :u
+;   (certify-book "bk" 0 t :pcert :create)
+;   :u
+;   (certify-book "bk" 0 t :pcert :convert)
+;   (quit)
+;
+;   ;;; Replace s.lisp etc.:
+;   #|
+;   cp s.lisp.true-thm s.lisp
+;   rm -f s.pcert0 s.pcert1 s.fasl
+;   <acl2>
+;   |#
+;
+;   (certify-book "s")
+;   :u
+;   (certify-book "bk" 0 t :pcert :complete)
+;   :u
+;
+;   (include-book "bk")
+;   (defthm contradiction nil :rule-classes nil :hints (("Goal" :use bk-thm)))
+;   $
 
   (cond ((endp alist) (value acc))
         (t (let* ((entry0 (car alist))
@@ -16131,10 +16195,16 @@
                 (cdr alist)
                 (cond ((and book-date
                             cert-date
-                            (<= book-date cert-date))
+                            (<= book-date cert-date)
+
+; Note that we can't expect (<= cert-date pcert1-date), since both come from
+; provisional certification (creating .pcert1 files) potentially done in
+; parallel.
+
+                            (<= book-date pcert1-date))
                        acc)
                       (t (cons full-book-string acc)))
-                ctx wrld state)))))))
+                pcert1-date ctx wrld state)))))))
 
 (defun count-forms-in-channel (ch state n)
   (mv-let (eofp state)
@@ -16254,21 +16324,34 @@
     (er-let* ((post-alist
                (certificate-post-alist pcert1-file cert-file full-book-name ctx
                                        state))
+              (pcert1-date (mv-let (val state)
+                             (file-write-date$ pcert1-file state)
+                             (value val)))
               (uncertified-books
-               (include-book-alist-uncertified-books
-                (cdr post-alist) ; car is for full-book-name
-                nil              ; accumulator
-                ctx (w state) state)))
+               (if pcert1-date ; always true?
+                   (include-book-alist-uncertified-books
+                    (cdr post-alist) ; car is for full-book-name
+                    nil              ; accumulator
+                    pcert1-date
+                    ctx (w state) state)
+                 (value nil))))
       (cond
        (uncertified-books
         (er soft ctx
-            "Unable to complete the renaming of ~x0 to ~x1, because ~
-             ~#2~[~/each of ~]the following included book~#2~[~/s~] does not ~
-             have a .cert file that is at least as recent as that included ~
-             book: ~&2."
+            "Unable to complete the renaming of ~x0 to ~x1, because for ~
+             ~#2~[~/each of ~]the included book~#2~[~/s~] listed below, the ~
+             following test fails: that book and its certificate file must ~
+             both exist, and that certificate file and the above .pcert1 file ~
+             must both be at least as recent as that book.~|~%~&2"
             pcert1-file
             cert-file
             uncertified-books))
+       ((null pcert1-file) ; impossible?
+        (er soft ctx
+            "Unable to complete the renaming of ~x0 to ~x1, because the ~
+             former seems not to exist."
+            pcert1-file
+            cert-file))
        (t #-acl2-loop-only
           (let ((pcert1-file-os (pathname-unix-to-os pcert1-file state))
                 (cert-file-os (pathname-unix-to-os cert-file state)))

@@ -107,6 +107,12 @@
            (not (emptyp set)))
   :use in-when-emptyp)
 
+(defrule not-emptyp-when-in-forward-chaining
+  (implies (in x set)
+           (not (emptyp set)))
+  :rule-classes :forward-chaining
+  :by not-emptyp-when-in)
+
 (defrule in-of-arg1-and-empty
   (not (in x (empty)))
   :enable in-when-emptyp)

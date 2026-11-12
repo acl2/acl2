@@ -829,6 +829,10 @@
                             (expr-fix expr))
                     nil
                     env)
+        :convertvector (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
+                                   (expr-fix expr))
+                           nil
+                           env)
         :extension (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
                                (expr-fix expr))
                        nil
@@ -2060,6 +2064,6 @@
   :returns (new-code code-ensemblep)
   :short "Transform a code ensemble."
   (b* (((code-ensemble code) code))
-    (make-code-ensemble
-     :trans-units (const-prop-trans-ensemble code.trans-units)
-     :ienv code.ienv)))
+    (change-code-ensemble
+     code
+     :trans-units (const-prop-trans-ensemble code.trans-units))))

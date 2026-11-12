@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,800 +10,350 @@
 
 (in-package "C2C")
 
-(include-book "std/util/bstar" :dir :system)
+(include-book "std/strings/strprefixp" :dir :system)
 (include-book "std/util/define" :dir :system)
-(include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "centaur/fty/deftypes" :dir :system)
-(include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system)
+
+(include-book "kestrel/data/graph/add-edge-defs" :dir :system)
+(include-book "kestrel/data/graph/add-node-defs" :dir :system)
+(include-book "kestrel/data/graph/fty" :dir :system)
+(include-book "kestrel/data/graph/graph-defs" :dir :system)
+(include-book "kestrel/data/graph/nodes-defs" :dir :system)
+(include-book "kestrel/data/graph/successors-defs" :dir :system)
+(include-book "kestrel/data/graph/walk/reachable-defs" :dir :system)
+(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/treeset/delete-defs" :dir :system)
+(include-book "kestrel/data/treeset/diff-defs" :dir :system)
+(include-book "kestrel/data/treeset/fty" :dir :system)
+(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/treeset/set-defs" :dir :system)
+(include-book "kestrel/data/treeset/union-defs" :dir :system)
+
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validator")
+(include-book "../../syntax/validation-annotations")
 
-(include-book "qualified-ident")
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(acl2::controlled-configuration)
 
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
+(local (include-book "kestrel/data/graph/add-edge" :dir :system))
+(local (include-book "kestrel/data/graph/add-node" :dir :system))
+(local (include-book "kestrel/data/graph/graph" :dir :system))
+(local (include-book "kestrel/data/graph/nodes" :dir :system))
+(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
+(local (include-book "kestrel/data/treeset/delete" :dir :system))
+(local (include-book "kestrel/data/treeset/diff" :dir :system))
+(local (include-book "kestrel/data/treeset/insert" :dir :system))
+(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/treeset/set" :dir :system))
+(local (include-book "kestrel/data/treeset/union" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ call-graphs
   :parents (utilities)
-  :short "Utilities to build a call graph from C translation units."
+  :short "A utility to build the call graph of a C translation ensemble."
   :long
   (xdoc::topstring
     (xdoc::p
-      "A call graph is a map from function names to the set of all functions
-       which are called in the original function's body. For instance, consider
-       the following C source file:")
-    (xdoc::codeblock
-      "void bar(void);"
-      ""
-      "void foo(int x) {"
-      "  foo(x);"
-      "  bar(x);"
-      "}"
-      ""
-      "void bar(int x) {"
-      "  foo(x);"
-      "}"
-      ""
-      "int baz(int z) {"
-      "  if (z) {"
-      "    return z;"
-      "  }"
-      "  return baz(z - 1);"
-      "}"
-      ""
-      "int main() {"
-      "  int x = 5;"
-      "  return foo(x);"
-      "}")
+      "The call graph of a validated translation ensemble is a "
+      (xdoc::seetopic "graph::graph" "graph")
+      " whose nodes are the "
+      (xdoc::seetopic "c$::uid" "unique identifiers")
+      " of functions, plus @('nil'), which stands for code we cannot see. A
+       function definition has an edge to each function it calls directly,
+       and an edge to @('nil') if it calls something we cannot resolve, such
+       as a function pointer, or contains an assembler statement. A function
+       without a definition in the ensemble, such as a library function or a
+       built-in, has an edge to @('nil'). Every edge has the label
+       @('nil').")
     (xdoc::p
-      "The call graph for this function would associate @('foo') to @('foo')
-       and @('bar'), @('bar') to @('foo'), @('baz') to @('baz'), and @('main')
-       to @('foo').")
+      "The call graph is sound in the following sense: if a function @('f')
+       may call a function @('g'), then @('g') or @('nil') is a successor of
+       @('f'). Conversely, an edge from @('f') to a function @('g') means
+       that the definition of @('f') contains a call of @('g'). We make no
+       attempt to eliminate calls which are never executed, such as calls in
+       dead code or in the operand of @('sizeof').")
     (xdoc::p
-      "If a call graph edge connects a function to itself, this function is
-       directly recursive. We may also construct the transitive closure of the
-       call graph given some initial function @(tsee
-       call-graph-transitive-closure)). This closure represents all functions
-       which are reachable through some path of function calls. Notably, a
-       mutually recursive function is in its own transitive closure. See @(tsee
-       direct-recursivep) and @(tsee recursivep).")
+      "Query the call graph with @(tsee cg-calls-3p), @(tsee cg-calls+-3p), and
+       @(tsee cg-recursive-3p). These take the unique identifiers of functions;
+       @('resolve-qualified-ident') obtains the unique identifier of a
+       function from its name (see @(see qualified-ident)).")
     (xdoc::p
-      "Identifiers in the call graph are qualified to distinguish internal
-       functions of the same name across different translation units. See @(see
-       qualified-ident).")
-    (xdoc::p
-      "Note that call graph construction currently only recognizes direct
-       function calls. No sort of analysis is done to attempt to resolve calls
-       of dereferenced function pointers. We may wish to add such analysis in
-       the future. Although the problem is undecidable in general, many common
-       cases may be straightforward in practice. Currently, a call of a
-       function pointer is represented as @('nil') in the call graph, so that
-       we can distinguish between function call subgraphs which are known to be
-       complete, and those which contain unresolved function calls. See also
-       @(tsee uncertain-call-pathp)."))
+      "Attributes are currently ignored. In particular, the function named by
+       a GCC @('cleanup') attribute is called implicitly, but no edge to it is
+       recorded."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap call-graph
-  :key-type qualified-ident
-  :val-type qualified-ident-option-set
-  :pred call-graphp)
+(define cg-callee-node ((fun exprp))
+  :returns (node c$::uid-optionp)
+  :short "The call graph node of the function called by a function call."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "The argument is the expression in function position of the call.
+       Parentheses, the address operator @('&'), and the indirection operator
+       @('*') do not change which function is called, so we strip them. If
+       what remains is a variable denoting a function, we return its unique
+       identifier. Otherwise, we return @('nil').")
+    (xdoc::p
+      "A variable denotes a function if it has linkage, and it has either a
+       function type, or the unknown built-in type and a name starting with
+       @('__builtin_'). A function always has linkage, while an object
+       declared in a block has none [C17:6.2.2]. The validator gives the
+       unknown built-in type to built-ins with that prefix which it does not
+       know (see @(tsee c$::prefixed-built-in-identp)), but it also uses that
+       type for vector types, so we check the prefix too."))
+  (expr-case
+    fun
+    :ident (b* (((c$::var-vinfo info) (c$::coerce-var-vinfo fun.info))
+                (name (ident->unwrap fun.ident)))
+             (and (case (type-kind info.type)
+                    (:function t)
+                    (:unknown-builtin (and (stringp name)
+                                           (str::strprefixp "__builtin_"
+                                                            name)))
+                    (otherwise nil))
+                  (not (c$::linkage-case info.linkage :none))
+                  info.uid))
+    :paren (cg-callee-node fun.inner)
+    :unary (and (member-eq (unop-kind fun.op) '(:address :indir))
+                (cg-callee-node fun.arg))
+    :otherwise nil)
+  :measure (expr-count fun))
 
-(defrulel qualified-ident-option-setp-of-cdr-assoc-when-call-graphp
-  (implies (call-graphp graph)
-           (qualified-ident-option-setp (cdr (omap::assoc key graph))))
-  :induct t
-  :enable omap::assoc)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  ;; Temporary workaround. In the fixing theorems of the fold, FTY's
+  ;; <type>-fix-when-<kind> rules (e.g. struct-declon-fix-when-empty) rewrite
+  ;; a fixed AST of a kind without fields to a ground constructor call, and
+  ;; the fold functions are then evaluated on it, giving nil, while the other
+  ;; side of the equation stays (treeset::empty). Remove this once
+  ;; deffold-reduce disables the executable counterparts of the fold
+  ;; functions in those proofs.
+
+  (local (in-theory (enable (:e treeset::empty))))
+
+  (fty::deffold-reduce callees
+    :short "Definition of the functions which collect the call graph nodes
+            called by ASTs."
+    :long
+    (xdoc::topstring
+      (xdoc::p
+        "The result is a set of call graph nodes: the unique identifiers of the
+         functions called directly, plus @('nil') if the AST may call something
+         we cannot resolve.")
+      (xdoc::p
+        "A function call contributes the node of its callee, as computed by
+         @(tsee cg-callee-node), in addition to the nodes called by the callee
+         expression and the arguments. An assembler statement may do anything,
+         so it contributes @('nil').")
+      (xdoc::p
+        "We stop at function definitions. A function definition's callees
+         include those in its declarator, because the size expressions of
+         variably modified parameters are evaluated on entry to the function
+         [C17:6.9.1/10]."))
+    :types (c$::exprs/decls/stmts
+            fundef)
+    :result treeset::setp
+    :default (treeset::empty)
+    :combine treeset::union
+    :override
+    ((expr :funcall (treeset::insert (cg-callee-node expr.fun)
+                                     (treeset::union
+                                       (expr-callees expr.fun)
+                                       (expr-list-callees expr.args))))
+     (c$::stmt :asm (treeset::set nil)))
+    :name abstract-syntax-callees))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define call-graph-update
-  ((fn-name qualified-identp)
-   (called-fn-name? qualified-ident-optionp)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (b* ((call-graph (call-graph-fix call-graph))
-       (assoc (omap::assoc fn-name call-graph))
-       (set (if assoc (cdr assoc) nil)))
-    (omap::update (qualified-ident-fix fn-name)
-                  (insert (qualified-ident-option-fix called-fn-name?) set)
-                  call-graph)))
+(define cg-add-call-edges (caller (callees treeset::setp) (graph graph::graphp))
+  :returns (graph$ graph::graphp)
+  :short "Add an edge from a caller to each node in a set."
+  (if (treeset::emptyp callees)
+      (graph::fix graph)
+    (cg-add-call-edges caller
+                    (treeset::delete (treeset::min callees) callees)
+                    (graph::add-edge caller (treeset::min callees) nil graph)))
+  :measure (treeset::cardinality callees))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define qualify-ident
-  ((filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (ident identp))
-  :returns (qualified-ident qualified-identp)
-  (b* ((info? (c$::valid-lookup-ord-file-scope ident valid-table))
-       (is-internal
-         (and info?
-              (c$::valid-ord-info-case
-                info?
-                :objfun (equal (c$::valid-ord-info-objfun->linkage info?)
-                               (c$::linkage-internal))
-                :otherwise nil))))
-    (if is-internal
-        (qualified-ident filepath ident)
-      (external-ident ident))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define direct-fun-refp
-  ((ident identp)
-   (valid-table c$::valid-tablep))
-  (declare (xargs :type-prescription
-                  (booleanp (direct-fun-refp ident valid-table))))
-  (b* ((info? (c$::valid-lookup-ord-file-scope ident valid-table)))
-    (and info?
-         (c$::valid-ord-info-case
-           info?
-           :objfun t
-           :otherwise nil))))
+(define cg-add-unknown-edges ((nodes treeset::setp) (graph graph::graphp))
+  :returns (graph$ graph::graphp)
+  :short "Add an edge from each node in a set to @('nil')."
+  (if (treeset::emptyp nodes)
+      (graph::fix graph)
+    (cg-add-unknown-edges (treeset::delete (treeset::min nodes) nodes)
+                       (graph::add-edge (treeset::min nodes) nil nil graph)))
+  :measure (treeset::cardinality nodes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines call-graph-exprs-decls
-  (define call-graph-expr
-    ((expr exprp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    ;; :guard (expr-annop expr)
-    :returns (call-graph$ call-graphp)
-    (expr-case
-     expr
-     :paren (call-graph-expr expr.inner fn-name filepath valid-table call-graph)
-     ;; :gensel?
-     :arrsub (call-graph-expr
-               expr.arg2
-               fn-name
-               filepath
-               valid-table
-               (call-graph-expr
-                 expr.arg1
-                 fn-name
-                 filepath
-                 valid-table
-                 call-graph))
-     ;; TODO: add a test of function calls appearing in function call arguments
-     :funcall (b* ((qualified-ident?
-                     (expr-case
-                       expr.fun
-                       :ident (and (direct-fun-refp expr.fun.ident valid-table)
-                                   (qualify-ident filepath
-                                                  valid-table
-                                                  expr.fun.ident))
-                       :otherwise nil)))
-                (call-graph-expr-list expr.args
-                                      fn-name
-                                      filepath
-                                      valid-table
-                                      (call-graph-update fn-name
-                                                         qualified-ident?
-                                                         call-graph)))
-     :member (call-graph-expr
-               expr.arg
-               fn-name
-               filepath
-               valid-table
-               call-graph)
-     :memberp (call-graph-expr
-                expr.arg
-                fn-name
-                filepath
-                valid-table
-                call-graph)
-     :complit (call-graph-desiniter-list
-                expr.elems
-                fn-name
-                filepath
-                valid-table
-                call-graph)
-     :unary (call-graph-expr
-              expr.arg
-              fn-name
-              filepath
-              valid-table
-              call-graph)
-     :cast (call-graph-expr
-             expr.arg
-             fn-name
-             filepath
-             valid-table
-             call-graph)
-     :binary (call-graph-expr
-               expr.arg2
-               fn-name
-               filepath
-               valid-table
-               (call-graph-expr
-                 expr.arg1
-                 fn-name
-                 filepath
-                 valid-table
-                 call-graph))
-     :cond (call-graph-expr
-             expr.else
-             fn-name
-             filepath
-             valid-table
-             (call-graph-expr-option
-               expr.then
-               fn-name
-               filepath
-               valid-table
-               (call-graph-expr
-                 expr.test
-                 fn-name
-                 filepath
-                 valid-table
-                 call-graph)))
-     :comma (call-graph-expr
-              expr.next
-              fn-name
-              filepath
-              valid-table
-              (call-graph-expr
-                expr.first
-                fn-name
-                filepath
-                valid-table
-                call-graph))
-     ;; TODO: error on ambiguous constructs
-     :otherwise (call-graph-fix call-graph))
-    :measure (expr-count expr))
+(define fundef-call-graph ((fundef fundefp)
+                           (graph graph::graphp)
+                           (defined treeset::setp))
+  :guard (fundef-annop fundef)
+  :returns (mv (graph$ graph::graphp)
+               (defined$ treeset::setp))
+  :short "Add the edges of a function definition to the call graph."
+  :long
+  (xdoc::topstring-p
+    "We also add the function to the set of defined functions.")
+  (b* ((caller (type+uid-vinfo->uid (fundef->info fundef))))
+    (mv (cg-add-call-edges caller
+                        (fundef-callees fundef)
+                        (graph::add-node caller graph))
+        (treeset::insert caller defined)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-  (define call-graph-expr-list
-    ((exprs expr-listp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (if (endp exprs)
-        (call-graph-fix call-graph)
-      (call-graph-expr-list (rest exprs)
-                            fn-name
-                            filepath
-                            valid-table
-                            (call-graph-expr (first exprs)
-                                             fn-name
-                                             filepath
-                                             valid-table
-                                             call-graph)))
-    :measure (expr-list-count exprs))
-
-  (define call-graph-expr-option
-    ((expr? expr-optionp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (expr-option-case
-     expr?
-     :some (call-graph-expr expr?.val fn-name filepath valid-table call-graph)
-     :none (call-graph-fix call-graph))
-    :measure (expr-option-count expr?))
-
-  (define call-graph-initer
-    ((initer initerp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (initer-case
-     initer
-     :single (call-graph-expr initer.expr fn-name filepath valid-table call-graph)
-     :list (call-graph-desiniter-list initer.elems fn-name filepath valid-table call-graph))
-    :measure (initer-count initer))
-
-  (define call-graph-initer-option
-    ((initer? initer-optionp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (initer-option-case
-     initer?
-     :some (call-graph-initer initer?.val fn-name filepath valid-table call-graph)
-     :none (call-graph-fix call-graph))
-    :measure (initer-option-count initer?))
-
-  (define call-graph-desiniter
-    ((desiniter desiniterp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (b* (((desiniter desiniter) desiniter))
-      (call-graph-initer desiniter.initer fn-name filepath valid-table call-graph))
-    :measure (desiniter-count desiniter))
-
-  (define call-graph-desiniter-list
-    ((desiniters desiniter-listp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (if (endp desiniters)
-        (call-graph-fix call-graph)
-      (call-graph-desiniter-list
-        (rest desiniters)
-        fn-name
-        filepath
-        valid-table
-        (call-graph-desiniter (first desiniters) fn-name filepath valid-table call-graph)))
-    :measure (desiniter-list-count desiniters))
-
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns)
-
-(define call-graph-const-expr
-  ((const-expr const-exprp)
-   (fn-name qualified-identp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (b* (((const-expr const-expr) const-expr))
-    (call-graph-expr const-expr.expr fn-name filepath valid-table call-graph)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define call-graph-init-declor
-  ((initdeclor init-declorp)
-   (fn-name qualified-identp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (b* (((init-declor initdeclor) initdeclor))
-    ;; TODO: need to look at initdeclor.declor?
-    (call-graph-initer-option initdeclor.initer? fn-name filepath valid-table call-graph)))
-
-(define call-graph-init-declor-list
-  ((initdeclors init-declor-listp)
-   (fn-name qualified-identp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (if (endp initdeclors)
-      (call-graph-fix call-graph)
-    (call-graph-init-declor-list
-      (rest initdeclors)
-      fn-name
-      filepath
-      valid-table
-      (call-graph-init-declor (first initdeclors) fn-name filepath valid-table call-graph))))
-
-(define call-graph-statassert
-  ((statassert statassertp)
-   (fn-name qualified-identp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (b* (((statassert statassert) statassert))
-    (call-graph-const-expr statassert.test fn-name filepath valid-table call-graph)))
-
-(define call-graph-declon
-  ((declon declonp)
-   (fn-name qualified-identp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (declon-case
-   declon
-   :declon (call-graph-init-declor-list declon.declors fn-name filepath valid-table call-graph)
-   ;; TODO: Do we want function calls in statasserts to be part of our call
-   ;;   graph?
-   :statassert (call-graph-statassert declon.statassert fn-name filepath valid-table call-graph)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines call-graph-stmts/block
-  (define call-graph-stmt
-    ((stmt stmtp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (stmt-case
-     stmt
-     :labeled (call-graph-stmt stmt.stmt fn-name filepath valid-table call-graph)
-     :compound (call-graph-comp-stmt stmt.stmt fn-name filepath valid-table call-graph)
-     :expr (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
-     :if (call-graph-stmt
-           stmt.then
-           fn-name
-           filepath
-           valid-table
-           (call-graph-expr stmt.test fn-name filepath valid-table call-graph))
-     :ifelse (call-graph-stmt
-               stmt.else
-               fn-name
-               filepath
-               valid-table
-               (call-graph-stmt
-                 stmt.then
-                 fn-name
-                 filepath
-                 valid-table
-                 (call-graph-expr stmt.test fn-name filepath valid-table call-graph)))
-     :switch (call-graph-stmt
-               stmt.body
-               fn-name
-               filepath
-               valid-table
-               (call-graph-expr stmt.target fn-name filepath valid-table call-graph))
-     :while (call-graph-stmt
-              stmt.body
-              fn-name
-              filepath
-              valid-table
-              (call-graph-expr stmt.test fn-name filepath valid-table call-graph))
-     :dowhile (call-graph-expr
-                stmt.test
-                fn-name
-                filepath
-                valid-table
-                (call-graph-stmt stmt.body fn-name filepath valid-table call-graph))
-     :for-expr (call-graph-stmt
-                 stmt.body
-                 fn-name
-                 filepath
-                 valid-table
-                 (call-graph-expr-option
-                   stmt.next
-                   fn-name
-                   filepath
-                   valid-table
-                   (call-graph-expr-option
-                     stmt.test
-                     fn-name
-                     filepath
-                     valid-table
-                     (call-graph-expr-option
-                       stmt.init
-                       fn-name
-                       filepath
-                       valid-table
-                       call-graph))))
-     :for-declon (call-graph-stmt
-                  stmt.body
-                  fn-name
-                  filepath
-                  valid-table
-                  (call-graph-expr-option
-                   stmt.next
-                   fn-name
-                   filepath
-                   valid-table
-                   (call-graph-expr-option
-                    stmt.test
-                    fn-name
-                    filepath
-                    valid-table
-                    (call-graph-declon
-                     stmt.init
-                     fn-name
-                     filepath
-                     valid-table
-                     call-graph))))
-     ;; TODO: error on ambiguous constructs
-     ;; :for-ambig
-     :return (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
-     :return-attrib (call-graph-expr stmt.expr fn-name filepath valid-table call-graph)
-     :otherwise (call-graph-fix call-graph))
-    :measure (stmt-count stmt))
-
-  (define call-graph-block-item
-    ((item block-itemp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (block-item-case
-     item
-     :declon (call-graph-declon item.declon fn-name filepath valid-table call-graph)
-     :stmt (call-graph-stmt item.stmt fn-name filepath valid-table call-graph)
-     ;; TODO: error on ambiguous constructs
-     :ambig (call-graph-fix call-graph))
-    :measure (block-item-count item))
-
-  (define call-graph-block-item-list
-    ((items block-item-listp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (if (endp items)
-        (call-graph-fix call-graph)
-      (call-graph-block-item-list
-        (rest items)
-        fn-name
-        filepath
-        valid-table
-        (call-graph-block-item (first items) fn-name filepath valid-table call-graph)))
-    :measure (block-item-list-count items))
-
-  (define call-graph-comp-stmt
-    ((cstmt comp-stmtp)
-     (fn-name qualified-identp)
-     (filepath filepathp)
-     (valid-table c$::valid-tablep)
-     (call-graph call-graphp))
-    :returns (call-graph$ call-graphp)
-    (call-graph-block-item-list
-     (comp-stmt->items cstmt) fn-name filepath valid-table call-graph)
-    :measure (comp-stmt-count cstmt))
-
-   :hints (("Goal" :in-theory (enable o< o-finp)))
-   :verify-guards :after-returns)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define call-graph-fundef
-  ((fundef fundefp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (b* (((fundef fundef) fundef)
-       ((declor fundef.declor) fundef.declor))
-    (dirdeclor-case
-      fundef.declor.direct
-      :function-params (b* ((fn-name
-                              (c$::dirdeclor->ident fundef.declor.direct.declor))
-                            (qualified-fn-name
-                              (qualify-ident filepath valid-table fn-name)))
-                         (call-graph-comp-stmt
-                           fundef.body
-                           qualified-fn-name
-                           filepath
-                           valid-table
-                           call-graph))
-      :function-names (b* ((fn-name
-                             (c$::dirdeclor->ident fundef.declor.direct.declor))
-                           (qualified-fn-name
-                             (qualify-ident filepath valid-table fn-name)))
-                        (call-graph-comp-stmt
-                          fundef.body
-                          qualified-fn-name
-                          filepath
-                          valid-table
-                          call-graph))
-      :otherwise (call-graph-fix call-graph))))
-
-(define call-graph-ext-declon
-  ((extdecl ext-declonp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
+(define ext-declon-call-graph ((declon ext-declonp)
+                               (graph graph::graphp)
+                               (defined treeset::setp))
+  :guard (ext-declon-annop declon)
+  :returns (mv (graph$ graph::graphp)
+               (defined$ treeset::setp))
+  :short "Add the edges of an external declaration to the call graph."
   (ext-declon-case
-   extdecl
-   :fundef (call-graph-fundef extdecl.fundef filepath valid-table call-graph)
-   :declon (call-graph-fix call-graph)
-   :empty (call-graph-fix call-graph)
-   :asm (call-graph-fix call-graph)))
+    declon
+    :fundef (fundef-call-graph declon.fundef graph defined)
+    :otherwise (mv (graph::fix graph) (treeset::fix defined)))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define call-graph-trans-item
-  ((item trans-itemp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
+(define trans-item-call-graph ((item trans-itemp)
+                               (graph graph::graphp)
+                               (defined treeset::setp))
+  :guard (trans-item-annop item)
+  :returns (mv (graph$ graph::graphp)
+               (defined$ treeset::setp))
+  :short "Add the edges of a translation unit item to the call graph."
+  :long
+  (xdoc::topstring-p
+    "The validator does not support @('#include') directives or conditional
+     directives, so they should not occur.")
   (trans-item-case
-   item
-   :declon (call-graph-ext-declon item.declon filepath valid-table call-graph)
-   :include (prog2$ (raise "Unsupported #include directives.")
-                    (call-graph-fix call-graph))
-   :define (prog2$ (raise "Unsupported #define directives.")
-                   (call-graph-fix call-graph))
-   :undef (prog2$ (raise "Unsupported #undef directives.")
-                  (call-graph-fix call-graph))
-   :cond (prog2$ (raise "Unsupported conditional directives.")
-                 (call-graph-fix call-graph))
-   :line-comment (call-graph-fix call-graph)))
+    item
+    :declon (ext-declon-call-graph item.declon graph defined)
+    :include (prog2$ (raise "Internal error: unexpected #include directive.")
+                     (mv (graph::fix graph) (treeset::fix defined)))
+    :cond (prog2$ (raise "Internal error: unexpected conditional directive.")
+                  (mv (graph::fix graph) (treeset::fix defined)))
+    :otherwise (mv (graph::fix graph) (treeset::fix defined)))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define call-graph-trans-item-list
-  ((items trans-item-listp)
-   (filepath filepathp)
-   (valid-table c$::valid-tablep)
-   (call-graph call-graphp))
-  :returns (call-graph$ call-graphp)
-  (if (endp items)
-      (call-graph-fix call-graph)
-    (call-graph-trans-item-list
-      (rest items)
-      filepath
-      valid-table
-      (call-graph-trans-item
-        (first items)
-        filepath
-        valid-table
-        call-graph))))
+(define trans-item-list-call-graph ((items trans-item-listp)
+                                    (graph graph::graphp)
+                                    (defined treeset::setp))
+  :guard (trans-item-list-annop items)
+  :returns (mv (graph$ graph::graphp)
+               (defined$ treeset::setp))
+  :short "Add the edges of a list of translation unit items to the call
+          graph."
+  (b* (((when (endp items))
+        (mv (graph::fix graph) (treeset::fix defined)))
+       ((mv graph defined)
+        (trans-item-call-graph (first items) graph defined)))
+    (trans-item-list-call-graph (rest items) graph defined))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define call-graph-trans-unit
-  ((filepath filepathp)
-   (trans-unit trans-unitp)
-   (call-graph call-graphp))
-  :guard (c$::trans-unit-annop trans-unit)
-  :returns (call-graph$ call-graphp)
-  :short "Build a call graph corresponding to a translation unit."
-  (b* (((trans-unit trans-unit) trans-unit)
-       (info (c$::trans-unit-vinfo-fix (c$::trans-unit->info trans-unit)))
-       (valid-table (c$::trans-unit-vinfo->table-end info)))
-    (call-graph-trans-item-list trans-unit.items filepath valid-table call-graph))
-  :guard-hints (("Goal" :in-theory (enable c$::trans-unit-annop))))
+(define filepath-trans-unit-map-call-graph ((map filepath-trans-unit-mapp)
+                                            (graph graph::graphp)
+                                            (defined treeset::setp))
+  :guard (filepath-trans-unit-map-annop map)
+  :returns (mv (graph$ graph::graphp)
+               (defined$ treeset::setp))
+  :short "Add the edges of a map of translation units to the call graph."
+  (b* ((map (c$::filepath-trans-unit-map-fix map))
+       ((when (omap::emptyp map))
+        (mv (graph::fix graph) (treeset::fix defined)))
+       ((mv graph defined)
+        (trans-item-list-call-graph (trans-unit->items (omap::head-val map))
+                                    graph
+                                    defined)))
+    (filepath-trans-unit-map-call-graph (omap::tail map) graph defined))
+  :measure (acl2-count (c$::filepath-trans-unit-map-fix map))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
-(define call-graph-filepath-trans-unit-map
-  ((map filepath-trans-unit-mapp)
-   (call-graph call-graphp))
-  :guard (c$::filepath-trans-unit-map-annop map)
-  :returns (call-graph$ call-graphp)
-  (if (omap::emptyp map)
-      (call-graph-fix call-graph)
-    (call-graph-filepath-trans-unit-map
-      (omap::tail map)
-      (call-graph-trans-unit
-        (omap::head-key map)
-        (omap::head-val map)
-        call-graph)))
-  :guard-hints
-  (("Goal" :in-theory (acl2::enable* c$::abstract-syntax-annop-rules))))
-
-(define call-graph-trans-ensemble
-  ((ensemble trans-ensemblep))
-  :guard (c$::trans-ensemble-annop ensemble)
-  :returns (call-graph$ call-graphp)
-  :short "Build a call graph corresponding to a translation ensemble."
-  (call-graph-filepath-trans-unit-map
-   (c$::trans-ensemble->units ensemble)
-   nil)
-  :guard-hints (("Goal" :in-theory (enable c$::trans-ensemble-annop))))
+(define trans-ensemble-call-graph ((ensemble trans-ensemblep))
+  :guard (trans-ensemble-annop ensemble)
+  :returns (call-graph graph::graphp)
+  :short "Build the call graph of a translation ensemble."
+  :long
+  (xdoc::topstring-p
+    "After adding the edges of all function definitions, we add an edge to
+     @('nil') from every other node except @('nil') itself: these are the
+     functions called without a definition in the ensemble.")
+  (b* (((mv graph defined)
+        (filepath-trans-unit-map-call-graph (trans-ensemble->units ensemble)
+                                            (graph::empty)
+                                            (treeset::empty))))
+    (cg-add-unknown-edges (treeset::delete nil
+                                        (treeset::diff (graph::nodes graph)
+                                                       defined))
+                       graph))
+  :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define call-graph-transitive-closure
-  ((ident qualified-identp)
-   (call-graph call-graphp))
-  :returns (called qualified-ident-option-setp)
-  :short "Build a transitive closure for some identifier in the given call graph."
+(define cg-calls-3p ((caller uidp) (callee uidp) (call-graph graph::graphp))
+  :returns (3vl acl2::3p)
+  :short "Check whether a function contains a call of another function."
   :long
   (xdoc::topstring
-   (xdoc::p
-     "If a function @('f') calls @('g') (i.e. the call graph has an edge from
-      @('f') to @('g')), @('g') is in @('f')'s transitive closure. If @('h')
-      calls @('i'), and @('h') is in @('f')'s transitive closure, then @('i') is
-      also in @('f')'s transitive closure)."))
-  (call-graph-transitive-closure0
-   (insert ident nil)
-   call-graph
-   nil
-   (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
+    (xdoc::p
+      "The result is @('t') if the definition of @('caller') contains a call
+       of @('callee'), and @('nil') if no code which @('caller') may run
+       contains such a call. Otherwise, it is @(':unknown'): the call graph
+       has no edge to @('callee'), but @('caller') may run code we cannot
+       see, for instance because it has no definition in the ensemble.")
+    (xdoc::p
+      "Note that @('t') only means that a call appears in the code, not that
+       it is ever executed."))
+  (b* ((caller (uid-fix caller))
+       (callee (uid-fix callee)))
+    (cond ((not (graph::node-in caller call-graph)) :unknown)
+          ((graph::adjacentp caller callee call-graph) t)
+          ((graph::adjacentp caller nil call-graph) :unknown)
+          (t nil))))
 
-  :prepwork
-  ((local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-   (local (include-book "kestrel/utilities/nfix" :dir :system))
-
-   ;; Currently we are using a step counter for termination.
-   ;; TODO: replace step with termination argument. The measure may be
-   ;; lexicographic, primarily measuring the difference in size of call-graph with
-   ;; respect to the identifiers in the call graph (call-graph is a subset of the this
-   ;; finite set of identifiers), and secondarily the decrease of ident?s.
-   (define call-graph-transitive-closure0
-     ((ident?s qualified-ident-option-setp)
-      (call-graph call-graphp)
-      (called qualified-ident-option-setp)
-      (steps :type (unsigned-byte 60)))
-     :returns (called$ qualified-ident-option-setp)
-     (b* (((when (or (int= 0 (mbe :logic (if (natp (acl2::the-fixnat steps))
-                                             (acl2::the-fixnat steps)
-                                           0)
-                                  :exec (acl2::the-fixnat steps)))
-                     (emptyp ident?s)))
-           (qualified-ident-option-set-fix called))
-          (ident? (head ident?s))
-          ((when (not ident?))
-           (call-graph-transitive-closure0
-             (tail ident?s)
-             call-graph
-             (insert nil called)
-             (- steps 1)))
-          (lookup (omap::assoc ident? call-graph))
-          (ident?s
-            (if lookup
-                (union (difference (cdr lookup) called)
-                       (tail ident?s))
-              (tail ident?s)))
-          (called
-            (if lookup
-                (union (cdr lookup) called)
-              called)))
-       (call-graph-transitive-closure0
-         ident?s
-         call-graph
-         called
-         (- steps 1)))
-     :measure (nfix steps)
-     :hints (("Goal" :in-theory (enable o< o-finp))))))
-
-(define exists-call-pathp
-  ((from qualified-identp)
-   (to qualified-ident-optionp)
-   (call-graph call-graphp))
-  :short "Check for the existence of a call path from the destination to the
-          target."
+(define cg-calls+-3p ((caller uidp) (callee uidp) (call-graph graph::graphp))
+  :returns (3vl acl2::3p)
+  :short "Check whether a function contains a call of another function,
+          directly or through a chain of calls."
   :long
   (xdoc::topstring
-   (xdoc::p
-     "That is, the function checks whether @('to') is in @('from')'s transitive
-      closure. See @(tsee call-graph-transitive-closure)."))
-  (in to (call-graph-transitive-closure from call-graph)))
+    (xdoc::p
+      "This is the transitive version of @(tsee cg-calls-3p). The result is
+       @('t') if the call graph has a path from @('caller') to @('callee'),
+       and @('nil') if it reaches neither @('callee') nor @('nil'). Otherwise,
+       it is @(':unknown').")
+    (xdoc::p
+      "Note that @('t') only means that a chain of calls appears in the
+       code, not that it is ever executed."))
+  (b* ((caller (uid-fix caller))
+       (callee (uid-fix callee)))
+    (cond ((not (graph::node-in caller call-graph)) :unknown)
+          ((graph::reachable+p caller callee call-graph) t)
+          ((graph::reachable+p caller nil call-graph) :unknown)
+          (t nil))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define direct-recursivep
-  ((ident qualified-identp)
-   (call-graph call-graphp))
-  :short "Recognizes functions which calls themselves."
+(define cg-recursive-3p ((fn uidp) (call-graph graph::graphp))
+  :returns (3vl acl2::3p)
+  :short "Check whether a function is recursive, directly or mutually."
   :long
-  (xdoc::topstring
-   (xdoc::p
-     "This function checks where the @('ident') is related to itself under the
-      call graph. See @(tsee call-graph-transitive-closure) and (see
-      call-graph)."))
-  (b* ((lookup (omap::assoc ident call-graph)))
-    (and lookup
-         (in ident (cdr lookup)))))
-
-(define recursivep
-  ((ident qualified-identp)
-   (call-graph call-graphp))
-  :short "Recognizes directly or mutually recursive functions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "This function checks whether @('ident') is in its own transitive
-      closure. See @(tsee call-graph-transitive-closure) and (see
-      call-graph)."))
-  (exists-call-pathp ident ident call-graph))
-
-(define uncertain-call-pathp
-  ((ident qualified-identp)
-   (call-graph call-graphp))
-  :short "Recognizes functions which possess an unresolved function call path."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-     "This function checks whether nil is in @('ident')'s transitive
-      closure. See @(tsee call-graph-transitive-closure) and (see
-      call-graph)."))
-  (exists-call-pathp ident nil call-graph))
+  (xdoc::topstring-p
+    "This is @(tsee cg-calls+-3p) from the function to itself. A result of
+     @('nil') means that the function cannot call itself.")
+  (cg-calls+-3p fn fn call-graph))

@@ -2318,6 +2318,13 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :convertvector
+           (b* ((pstate (print-astring "__builtin_convertvector(" pstate))
+                (pstate (print-expr expr.vec (expr-priority-asg) pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
                 (pstate (print-expr expr.expr (expr-priority-cast) pstate)))
@@ -2436,7 +2443,8 @@
             pstate)
      :sub (b* ((pstate (print-member-designor memdes.member pstate))
                (pstate (print-astring "[" pstate))
-               (pstate (print-expr memdes.index (expr-priority-expr) pstate)))
+               (pstate (print-expr memdes.index (expr-priority-expr) pstate))
+               (pstate (print-astring "]" pstate)))
             pstate))
     :measure (member-designor-count memdes))
 

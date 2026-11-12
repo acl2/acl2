@@ -24,6 +24,8 @@
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
+;; STRICT-MERGE is NIL to accept identifiers with external linkage
+;; declared with incompatible types in different units, else T (the default).
 ;; KEEP-GOING is T to continue past a failing unit, else NIL (the default).
 ;; Optional COND may be over variables AST.
 
@@ -34,6 +36,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :strict-merge
     :keep-going
     :cond))
 
@@ -44,6 +47,7 @@
     :long-bytes
     :llong-bytes
     :plain-char-signedp
+    :strict-merge
     :cond))
 
 (define make-dummy-filepath-filedata-map ((filepath-names string-listp) input)
@@ -84,6 +88,8 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (strict-merge (b* ((option (assoc-eq :strict-merge options)))
+                       (if option (cdr option) t)))
        (keep-going (cdr (assoc-eq :keep-going options)))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
@@ -106,7 +112,8 @@
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t ,keep-going))
             ((mv erp2 ast) (dimb-trans-ensemble ast ienv ,keep-going))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv ,keep-going)))
+            ((mv erp3 ?ast)
+             (valid-trans-ensemble ast ienv ,strict-merge ,keep-going)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -128,6 +135,8 @@
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
        (dialect (or (cdr (assoc-eq :dialect options))
                     '(c::make-dialect :std (c::standard-c17))))
+       (strict-merge (b* ((option (assoc-eq :strict-merge options)))
+                       (if option (cdr option) t)))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
@@ -148,7 +157,8 @@
                              :plain-char-signedp ,plain-char-signedp))
             ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
             ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
-            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
+            ((mv erp3 ?ast)
+             (valid-trans-ensemble ast ienv ,strict-merge nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -499,6 +509,13 @@ void g(void) {
 ")
 
 (test-valid
+ "int f (void);
+  int foo () {
+  int x = sizeof((0, f));
+  }
+")
+
+(test-valid
  "int foo (int *a, int *b) {
  return (char *) (a) - b;
 }
@@ -696,6 +713,44 @@ unsigned __int128_t z;
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
+ "void g(void) {
+  int a[3];
+  typeof(({ a; })) p;
+  int **q = &p;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int f(void);
+void g(void) {
+  int x = sizeof(({ f; }));
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void g(void) {
+  int x = ({ { 1; } });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void g(void) {
+  int x = ({ 1; ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void g(void) {
+  int x = ({ 1; L: ; });
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;
@@ -706,6 +761,79 @@ typeof(bar) foo;
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int x;
+typeof(x) y;
+int y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int x;
+typeof(x) y;
+double y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof(a) b;
+int b[3];
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int a[3];
+typeof(a) b;
+int *b;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int **b);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "void f(int a[3], typeof(a) *b);
+void f(int *a, int (*b)[3]);
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(int *) p;
+int *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(int *) p;
+double *p;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "typeof(*1) x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "typeof(struct s { int m; }) x;
+int g(void) {
+  struct s y;
+  return y.m;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid
+ "int a[3];
+typeof((0, a)) p;
+int *p;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
@@ -2712,6 +2840,33 @@ extern struct s x;
  "struct s { int (*p)[20]; };
 extern struct s x;
 ")
+
+;; Without a strict merge,
+;; incompatible types across translation units are accepted.
+(test-valid
+ "struct s { int a; int *p; };
+extern struct s x;
+"
+ "struct s { int a; float *p; };
+extern struct s x;
+"
+ :strict-merge nil)
+
+;; With a strict merge, they are rejected.
+(test-valid-fail
+ "struct s { int a; int *p; };
+extern struct s x;
+"
+ "struct s { int a; float *p; };
+extern struct s x;
+")
+
+;; Conflicts within a translation unit are still rejected.
+(test-valid-fail
+ "extern int a[10];
+extern int a[20];
+"
+ :strict-merge nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

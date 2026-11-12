@@ -1738,7 +1738,13 @@
        because its second argument is a type name, not an expression.
        The first argument is an expression.")
      (xdoc::p
-      "As a GCC extesntion, we include
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_convertvector').
+       This is not a regular function,
+       because its second argument is a type name, not an expression.
+       The first argument is an expression.")
+     (xdoc::p
+      "As a GCC extension, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
     (:ident ((ident ident)
@@ -1813,6 +1819,8 @@
                 (member member-designor)))
     (:va-arg ((list expr)
               (type tyname)))
+    (:convertvector ((vec expr)
+                     (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
     :layout :fulltree
@@ -1993,8 +2001,10 @@
       "As a GCC extension, we allow a structure type specifier with no members,
        and with an optional name; see the ABNF grammar.")
      (xdoc::p
-      "As a GCC extension, we include @('typeof'),
-       along with its variants @('__typeof') and @('__typeof__').
+      "We include @('typeof'),
+       which is standard in C23 [C23:6.7.3.6]
+       and a GCC extension in earlier versions of C,
+       along with its GCC variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
        and therefore we also need to include the ambiguous possibility.")
      (xdoc::p

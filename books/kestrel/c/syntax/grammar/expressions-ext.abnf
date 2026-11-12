@@ -48,11 +48,19 @@
 ;   Although normal function calls are postfix expressions,
 ;   this is not a normal function because it takes a type name as argument,
 ;   so it seems reasonable that they are primary expressions.
+;
+; - Calls of '__builtin_convertvector'
+;   [GCCM:7.8](https://gcc.gnu.org/onlinedocs/gcc/Vector-Extensions.html)
+;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-functions).
+;   Although normal function calls are postfix expressions,
+;   this is not a normal function because it takes a type name as argument,
+;   so it seems reasonable that they are primary expressions.
 
 primary-expression-ext = "(" compound-statement ")"
                        / types-compatible-call
                        / offsetof-call
                        / va-arg-call
+                       / convertvector-call
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -65,6 +73,9 @@ offsetof-member-designator = identifier
                            / offsetof-member-designator "[" expression "]"
 
 va-arg-call = %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
+
+convertvector-call =
+    %s"__builtin_convertvector" "(" assignment-expression "," type-name ")"
 
 ; As GCC and Clang extensions, we allow the following unary expressions:
 ;

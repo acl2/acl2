@@ -115,7 +115,8 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg))
+                    :va-arg
+                    :convertvector))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,6 +154,7 @@
                     :tycompat
                     :offsetof
                     :va-arg
+                    :convertvector
                     :extension))
        t))
 
@@ -278,6 +280,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
+   :convertvector (expr-priority-primary)
    :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1560,6 +1563,17 @@
   (trans-item-case x :line-comment)
   :elementp-of-nil nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define block-item-null-stmt-p ((item block-itemp))
+  :returns (yes/no booleanp)
+  :short "Check if a block item is a null statement,
+          i.e. an expression statement without expression [C17:6.8.3/3]."
+  (block-item-case item
+                   :stmt (and (stmt-case item.stmt :expr)
+                              (not (stmt-expr->expr? item.stmt)))
+                   :otherwise nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define trans-unit-emptyp ((tunit trans-unitp))
@@ -1714,7 +1728,8 @@
        (xdoc::li
         "@('__builtin_types_compatible_p'),
          @('__builtin_va_arg'),
-         and @('__builtin_offset_of')
+         @('__builtin_offsetof'), and
+         @('__builtin_convertvector')
          are all GCC extensions.
          The GCC manual does not indicate whether they yield lvalues.
          Experiments with GCC indicate that they do not.")
@@ -1751,6 +1766,7 @@
      :tycompat nil
      :offsetof nil
      :va-arg nil
+     :convertvector nil
      :extension (expr-syntactic-lvalue-p expr.expr)
      :cast/call-ambig nil
      :cast/mul-ambig nil

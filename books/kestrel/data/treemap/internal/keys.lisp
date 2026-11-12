@@ -140,15 +140,6 @@
                       (treeset::in key (tree-key-set (tree->right tree))))))
   :by in-of-tree-key-set)
 
-(defrule in-of-tree-key-set-when-not-tree-empty-p-cheap
-  (implies (not (tree-empty-p tree))
-           (equal (treeset::in key (tree-key-set tree))
-                  (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::in key (tree-key-set (tree->left tree)))
-                      (treeset::in key (tree-key-set (tree->right tree))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by in-of-tree-key-set-when-not-tree-empty-p)
-
 (defrule in-of-tree->head-and-tree-key-set
   (equal (treeset::in (tree-element->key (tree->head tree))
                       (tree-key-set tree))
@@ -248,31 +239,46 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
   (implies (and (bstp tree)
                 (not (<< (tree-element->key (tree->head tree)) key)))
            (not (treeset::in key (tree-key-set (tree->right tree))))))
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< key (tree-element->key (tree->head tree))))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
   :enable data::<<-rules)
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head
   (implies (and (bstp tree)
                 (not (<< key (tree-element->key (tree->head tree)))))
            (not (treeset::in key (tree-key-set (tree->left tree))))))
 
-;; TODO: remove the same hyp from treeset rule
 (defrule in-of-tree-key-set-tree->left-when-not->>-of-tree->head-weak
   (implies (and (bstp tree)
                 (<< (tree-element->key (tree->head tree)) key))
            (not (treeset::in key (tree-key-set (tree->left tree)))))
   :enable data::<<-rules)
+
+;; In a binary search tree, a key on one side of the root is in the tree
+;; exactly when it is in the subtree on that side.
+
+(defrule in-of-tree-key-set-when->>-of-tree->head
+  (implies (and (bstp tree)
+                (<< key (tree-element->key (tree->head tree))))
+           (equal (treeset::in key (tree-key-set tree))
+                  (treeset::in key (tree-key-set (tree->left tree)))))
+  :enable (in-of-tree-key-set-when-not-tree-empty-p
+           data::<<-rules))
+
+(defrule in-of-tree-key-set-when-<<-of-tree->head
+  (implies (and (bstp tree)
+                (<< (tree-element->key (tree->head tree)) key))
+           (equal (treeset::in key (tree-key-set tree))
+                  (treeset::in key (tree-key-set (tree->right tree)))))
+  :enable (in-of-tree-key-set-when-not-tree-empty-p
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -337,7 +343,7 @@
   :rule-classes :forward-chaining
   :by in-of-tree-key-set-tree->left-when-in-of-tree-key-set-tree->right)
 
-(defruled in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left
+(defruled in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left
   (implies (and (bstp tree)
                 (treeset::in key (tree-key-set (tree->left tree))))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
@@ -345,12 +351,12 @@
         in-of-tree-key-set-tree->left-when-not->>-of-tree->head)
   :enable data::<<-rules)
 
-(defrule in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left-forward-chaining
+(defrule in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left-forward-chaining
   (implies (and (treeset::in key (tree-key-set (tree->left tree)))
                 (bstp tree))
            (not (treeset::in key (tree-key-set (tree->right tree)))))
   :rule-classes :forward-chaining
-  :by in-of-tree-set-tree-tree->right-when-in-of-tree-key-set-tree->left)
+  :by in-of-tree-key-set-tree->right-when-in-of-tree-key-set-tree->left)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -526,15 +532,6 @@
                       (treeset::tree-in key (tree-key-tree (tree->right tree))))))
   :use tree-in-of-tree-key-tree)
 
-(defrule tree-in-of-tree-key-tree-when-not-tree-empty-p-cheap
-  (implies (not (tree-empty-p tree))
-           (equal (treeset::tree-in key (tree-key-tree tree))
-                  (or (equal key (tree-element->key (tree->head tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->left tree)))
-                      (treeset::tree-in key (tree-key-tree (tree->right tree))))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by tree-in-of-tree-key-tree-when-not-tree-empty-p)
-
 (defrule in-of-tree-key-tree
   (implies (and (bstp tree)
                 (heapp tree))
@@ -563,7 +560,8 @@
                          (treeset::union (tree-key-tree (tree->left tree))
                                          (tree-key-tree (tree->right tree)))))))
      :rule-classes :definition
-     :enable treeset::extensionality-no-backchain-limit)))
+     :enable (treeset::extensionality-no-backchain-limit
+              tree-in-of-tree-key-tree-when-not-tree-empty-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -167,6 +167,7 @@
    (expr :tycompat nil)
    (expr :offsetof nil)
    (expr :va-arg nil)
+   (expr :convertvector nil)
    (expr :extension nil)
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))

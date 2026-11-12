@@ -61,18 +61,9 @@
   (declare (xargs :guard (true-listp lst)))
   (pairlis-x2 lst nil))
 
-(defmacro force? (form)
-
-; At one time this expanded to (force form) if form was a call of zfc or of a
-; function whose name ends in "$PROP"; otherwise it expanded to form.  Now we
-; expand to (force form) in all cases.  In the future we may eliminate this
-; macro and use force directly.
-
-  `(force ,form))
-
-(defun force?-props (lst)
+(defun force-props (lst)
   (declare (xargs :guard (true-listp lst)))
-  (pairlis-x1 'force?
+  (pairlis-x1 'force
               (pairlis-x2 (props-to-hyps lst) nil)))
 
 (defun extend-with-props (form props)
@@ -87,7 +78,7 @@
        (mv (list x) y))
       (& (mv nil form)))
     (list 'implies
-          (conjoin-untranslated-terms (append hyps (force?-props props)))
+          (conjoin-untranslated-terms (append hyps (force-props props)))
           concl)))
 
 (defun unbound-keys (syms alist)
@@ -722,7 +713,7 @@
         (t (let* ((prop-call (car props-calls))
                   (prop (case-match prop-call
                           ((prop) prop)
-                          (('force? (prop)) prop)
+                          (('force (prop)) prop)
                           (& nil))))
              (and prop
                   (hons-assoc-equal prop alist)
@@ -792,7 +783,7 @@
 ; Extend the zfc table by introducing prop as an abbreviation for the forced
 ; props.
 
-  (let ((props-calls (force?-props props)))
+  (let ((props-calls (force-props props)))
     `(progn (defun ,prop ()
               (declare (xargs :guard t))
               (and ,@props-calls))

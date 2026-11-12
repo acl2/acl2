@@ -110736,6 +110736,67 @@ it."
  @(see community-books) files @('system/tests/verify-fn-pc-macro-book.lsp') and
  @('system/tests/pc-macro-retrieve-fn-error-save.lsp').</p>
 
+ <p>An infinite loop was possible when the compiled lambda cache (see @(tsee
+ print-cl-cache)) is full.  This bug (which was in source function
+ @('invalidate-some-cl-cache-lines')) has been fixed.  See @(see
+ community-books) @('system/tests/cl-cache-full-ring-hang.lisp'),
+ @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
+ @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
+
+ <p>The termination analysis for some instances of @(tsee loop$-recursion) was
+ faulty as demonstrated in the @(see community-books)
+ @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
+ @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
+ @('system/tests/loop-recursion-plain-target-subst.lisp'), and
+ @('system/tests/loop-recursion-double-subst-do-guard.lisp'), due to the
+ inadvertent double application of substitutions intended to instantiate
+ locally bound variables.  This soundness bug has been fixed: corrected code is
+ in source function @('termination-machine-rec') with comments explaining the
+ mistake.</p>
+
+ <p>Fixed a soundness bug caused by execution of the raw-Lisp stobj creator
+ during a proof about a @(see stobj-table).  See @(see community-book)
+ @('system/tests/star1-stobj-let-creator-non-live.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see provisional-certification) that could occur
+ when changing and recertifying a sub-book before the final certification takes
+ place.  For details see a comment in ACL2 source function
+ @('include-book-alist-uncertified-books').</p>
+
+ <p>Fixed a soundness bug in @(see tau) related to properly encoding the
+ assumption that something is non-@('NIL') when it is also assumed to be not
+ equal to one or more numeric constants.  See @(see community-books)
+ @('system/tests/S-198-tau-neg-evgs-nil-first.lisp') and
+ @('system/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see tau) related to failing to detect that
+ adding a new constraint to a tau produces a contradiction.  See @(see
+ community-books)
+ @('system/tests/S-199-tau-bound-overwrites-pos-evg.lisp').</p>
+
+ <p>Fixed a @(see tau) bug leading to a hard error, manifested when a tau that
+ asserts its subject is a particular constant is extended to include an
+ interval that does not contain the constant.  This should have caused a
+ contradiction but instead returned a tau that was contradictory but not the
+ canonical tau contradiction.  See @(see community-book)
+ @('system/tests/tau-combine-hard-error.lisp').</p>
+
+ <p>Fixed a @(see tau) soundness bug related to the application of signature
+ rules.  When we apply a signature rule we have to check that the tau of the
+ instance of each variable implies the tau of the hypothesis about that
+ variable.  But these two taus may be computed under different enabled
+ structures and that can affect which tau predicates are known to be true or
+ false for explicit constants.  See @(see community-books)
+ @('system/tests/tau-implies-disabled-exec.lisp'),
+ @('system/tests/tau-implies-pos-evg-ignores-interval.lisp'), and
+ @('system/tests/tau-implies-pos-evg-ignores-recognizers.lisp').</p>
+
+ <p>The @(see tau) system represents the ``universal interval'' by @('nil').
+ But sometimes it has to add a restriction to that interval's domain.  However,
+ that creates an ill-formed interval that could be exploited to prove @('nil').
+ This was fixed by changing @('collect-bounder-args').  See @(see
+ community-books) @('system/tests/tau-bounder-nil-interval.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -176384,6 +176445,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer tamep tame)
 (defpointer tamep-functionp tame)
 (defpointer tamep-lambdap tame)
+(defpointer tau tau-system)
 (defpointer thereis$ loop$)
 (defpointer thereis$+ loop$)
 (defpointer time-limit with-prover-time-limit) ; referenced in :doc prove$

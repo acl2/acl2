@@ -1225,26 +1225,47 @@
 ; :absolute-event-number is less than or equal to the greatest
 ; absolute-event-number in the new current world.  We return nil.
 
+; An earlier version of this function failed to correctly handle a full cache.
+; Generally, the ``alist'' component of the cache is a circular list of the
+; given size.  When it is not full, there is an element of that circular list
+; that is nil (rather than a cl-cache-line).  That nil marks the end of the
+; active segment of the cache.  When the cache is full, there is no nil.  The
+; earlier version of this function swept down the alist until it encountered
+; the nil; the absence of a nil meant it looped forever around the circle.
+; An AI agent discovered this and demonstrated three ways this infinite
+; loop could be manifested (see books/system/tests/):
+
+; cl-cache-full-ring-hang.lisp
+; cl-cache-full-ring-hang-loop.lisp
+; cl-cache-invalidation-semantics.lisp
+
+; The fix was to limit the search for nil to just :size elements.
+
   (and (consp *cl-cache*)
        (let ((cl-cache *cl-cache*)
              (lines (access cl-cache *cl-cache* :alist))
              (evno (if (eq flg 'RETRACTION)
                        (max-absolute-event-number wrld)
-                       nil)))
+                       nil))
+             (size (access cl-cache *cl-cache* :size)))
 
 ; We temporarily clear the cache in case we're interrupted.
 
-         (setq *cl-cache* (access cl-cache *cl-cache* :size))
+         (setq *cl-cache* size)
          (cond
           ((eq flg 'EXTENSION)
            (loop for line in lines
-                 until (null line)
+                 with i = 0
+                 until (or (null line)
+                           (> (setq i (+ 1 i)) size))
                  when (eq (access cl-cache-line line :status) :BAD)
                  do
                  (setf (access-cl-cache-line line :status) :UNKNOWN)))
           (t ; RETRACTION
            (loop for line in lines
-                 until (null line)
+                 with i = 0
+                 until (or (null line)
+                           (> (setq i (+ 1 i)) size))
                  when
                  (and (eq (access cl-cache-line line :status) :GOOD)
                       (< evno

@@ -78,6 +78,18 @@
   :rule-classes :forward-chaining
   :enable equal-of-cardinality-and-0-becomes-emptyp)
 
+(defrule cardinality-when-not-emptyp-type-prescription
+  (implies (not (emptyp set))
+           (and (integerp (cardinality set))
+                (< 0 (cardinality set))))
+  :rule-classes :type-prescription
+  :enable equal-of-cardinality-and-0-becomes-emptyp)
+
+(defruled cardinality-when-not-emptyp-linear
+  (implies (not (emptyp set))
+           (< 0 (cardinality set)))
+  :rule-classes :linear)
+
 (defrule cardinality-of-empty
   (equal (cardinality (empty))
          0)
@@ -101,3 +113,8 @@
          (set::cardinality (to-oset set))))
 
 (add-to-ruleset to-oset-theory '(cardinality-becomes-oset-cardinality))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy cardinality-extra-rules
+  '(cardinality-when-not-emptyp-linear))

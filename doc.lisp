@@ -107625,6 +107625,68 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/verify-fn-pc-macro-book.lsp[0m[0m and
   [30m[47msystem/tests/pc-macro-retrieve-fn-error-save.lsp[0m[0m.
 
+  An infinite loop was possible when the compiled lambda cache (see
+  [30m[47m[print-cl-cache][0m[0m) is full.  This bug (which was in source function
+  [30m[47minvalidate-some-cl-cache-lines[0m[0m) has been fixed.  See
+  [community-books] [30m[47msystem/tests/cl-cache-full-ring-hang.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-full-ring-hang-loop.lisp[0m[0m and
+  [30m[47msystem/tests/cl-cache-invalidation-semantics.lisp[0m[0m.
+
+  The termination analysis for some instances of [30m[47m[loop$-recursion][0m[0m was
+  faulty as demonstrated in the [community-books]
+  [30m[47msystem/tests/loop-in-let-double-subst-rejects-valid-defun.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-double-subst-clause-processor.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-plain-target-subst.lisp[0m[0m, and
+  [30m[47msystem/tests/loop-recursion-double-subst-do-guard.lisp[0m[0m, due to the
+  inadvertent double application of substitutions intended to
+  instantiate locally bound variables.  This soundness bug has been
+  fixed: corrected code is in source function [30m[47mtermination-machine-rec[0m[0m
+  with comments explaining the mistake.
+
+  Fixed a soundness bug caused by execution of the raw-Lisp stobj
+  creator during a proof about a [stobj-table].  See [community-book]
+  [30m[47msystem/tests/star1-stobj-let-creator-non-live.lisp[0m[0m.
+
+  Fixed a soundness bug in [provisional-certification] that could occur
+  when changing and recertifying a sub-book before the final
+  certification takes place.  For details see a comment in ACL2
+  source function [30m[47minclude-book-alist-uncertified-books[0m[0m.
+
+  Fixed a soundness bug in [tau] related to properly encoding the
+  assumption that something is non-[30m[47mNIL[0m[0m when it is also assumed to be
+  not equal to one or more numeric constants.  See [community-books]
+  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first.lisp[0m[0m and
+  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp[0m[0m.
+
+  Fixed a soundness bug in [tau] related to failing to detect that
+  adding a new constraint to a tau produces a contradiction.  See
+  [community-books]
+  [30m[47msystem/tests/S-199-tau-bound-overwrites-pos-evg.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a hard error, manifested when a tau that
+  asserts its subject is a particular constant is extended to include
+  an interval that does not contain the constant.  This should have
+  caused a contradiction but instead returned a tau that was
+  contradictory but not the canonical tau contradiction.  See
+  [community-book] [30m[47msystem/tests/tau-combine-hard-error.lisp[0m[0m.
+
+  Fixed a [tau] soundness bug related to the application of signature
+  rules.  When we apply a signature rule we have to check that the
+  tau of the instance of each variable implies the tau of the
+  hypothesis about that variable.  But these two taus may be computed
+  under different enabled structures and that can affect which tau
+  predicates are known to be true or false for explicit constants.
+  See [community-books] [30m[47msystem/tests/tau-implies-disabled-exec.lisp[0m[0m,
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-interval.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-recognizers.lisp[0m[0m.
+
+  The [tau] system represents the ``universal interval'' by [30m[47mnil[0m[0m.  But
+  sometimes it has to add a restriction to that interval's domain.
+  However, that creates an ill-formed interval that could be
+  exploited to prove [30m[47mnil[0m[0m.  This was fixed by changing
+  [30m[47mcollect-bounder-args[0m[0m.  See [community-books]
+  [30m[47msystem/tests/tau-bounder-nil-interval.lisp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -116634,6 +116696,9 @@ Subtopics
 
   [Tamep-lambdap]
       See [tame].
+
+  [Tau]
+      See [tau-system].
 
   [Thereis$]
       See [loop$].
@@ -150145,6 +150210,7 @@ Logical Definitions
  (TAMEP-FUNCTIONP (POINTERS)
                   "See [tame].")
  (TAMEP-LAMBDAP (POINTERS) "See [tame].")
+ (TAU (POINTERS) "See [tau-system].")
  (TAU-DATA
   (TAU-SYSTEM)
   "To see what tau knows about a function symbol
