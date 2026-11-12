@@ -41,8 +41,7 @@
   :short "Check whether a @(see cursor) is at the hole before every element."
   :long
   (xdoc::topstring-p
-    "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$) at an
-     entry.")
+    "Time complexity: @($O(\\log(n))$).")
   (mbe :logic (and (not (entryp cursor))
                    (emptyp (before cursor)))
        :exec (zip-at-begin-p (cursor-fix cursor)))
@@ -62,8 +61,7 @@
   :short "Check whether a @(see cursor) is at the hole after every element."
   :long
   (xdoc::topstring-p
-    "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$) at an
-     entry.")
+    "Time complexity: @($O(\\log(n))$).")
   (mbe :logic (and (not (entryp cursor))
                    (emptyp (after cursor)))
        :exec (zip-at-end-p (cursor-fix cursor)))

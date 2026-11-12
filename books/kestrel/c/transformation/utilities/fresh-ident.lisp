@@ -153,7 +153,9 @@
 
   :prepwork
   ((define map-ident->unwrap-loop ((cursor tset::cursorp))
-     :guard (ident-setp (tset::from-cursor cursor))
+     :guard (and (ident-setp (tset::from-cursor cursor))
+                 (or (tset::entryp cursor)
+                     (tset::endp cursor)))
      :returns (strings acl2::string-setp)
      :parents nil
      (b* (((when (not (tset::entryp cursor)))
@@ -164,8 +166,6 @@
            (insert unwrapped strings)
          strings))
      :measure (tset::nexts cursor)
-     :guard-hints (("Goal" :use (:instance tset::in-of-entry
-                                           (tset::cursor cursor))))
      :verify-guards :after-returns))
 
   ///

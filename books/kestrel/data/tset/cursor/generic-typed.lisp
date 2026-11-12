@@ -27,12 +27,8 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "../set"))
-(local (include-book "../in"))
-(local (include-book "../delete"))
 (local (include-book "../generic-typed"))
 (local (include-book "entry"))
 (local (include-book "from-cursor"))
@@ -43,15 +39,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable acl2::equal-of-booleans-cheap)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define cursor-all-genericp ((cursor cursorp))
   :type-prescription :none
   :guard (or (entryp cursor)
              (endp cursor))
-  (or (endp cursor)
+  (or (not (entryp cursor))
       (and (genericp (entry cursor))
            (cursor-all-genericp (next cursor))))
   :measure (nexts cursor))
@@ -66,75 +58,52 @@
   :expand ((cursor-all-genericp cursor0)
            (cursor-all-genericp cursor1)))
 
-(defrule genericp-of-entry-when-set-all-genericp
-  (implies (and (set-all-genericp (from-cursor cursor))
-                (entryp cursor))
-           (genericp (entry cursor)))
-  :enable set-all-genericp-pick-a-point
-  :use (:instance set-all-genericp-sk-necc
-                  (elem (entry cursor))
-                  (set (from-cursor cursor))))
-
-(defruled cursor-all-genericp-when-set-all-genericp
-  (implies (and (set-all-genericp (from-cursor cursor))
-                (or (entryp cursor)
-                    (endp cursor)))
-           (cursor-all-genericp cursor))
-  :induct (cursor-all-genericp cursor)
-  :enable cursor-all-genericp)
-
-(defrule cursor-all-genericp-when-endp
-  (implies (endp cursor)
-           (cursor-all-genericp cursor))
-  :enable cursor-all-genericp)
-
-(defruledl genericp-when-in-of-after
-  (implies (and (in x (after cursor))
-                (or (entryp cursor)
-                    (endp cursor))
-                (cursor-all-genericp cursor))
-           (genericp x))
-  :induct (cursor-all-genericp cursor)
-  :expand ((cursor-all-genericp cursor)
-           (cursor-all-genericp (next cursor)))
-  :enable (cursor-all-genericp
-           not-emptyp-when-in))
-
-(defruledl genericp-of-min-when-cursor-all-genericp-of-seek-min
-  (implies (and (cursor-all-genericp (seek-min set))
-                (not (emptyp set)))
-           (genericp (min set)))
-  :expand ((cursor-all-genericp (seek-min set))))
-
-(defruledl genericp-when-in-and-cursor-all-genericp-of-seek-min
-  (implies (and (in x set)
-                (cursor-all-genericp (seek-min set)))
-           (genericp x))
-  :use ((:instance in-of-from-cursor-becomes-in-of-before-or-entry-or-after
-                   (cursor (seek-min set))))
-  :enable (genericp-when-in-of-after
-           genericp-of-min-when-cursor-all-genericp-of-seek-min
-           not-emptyp-when-in)
-  ;; after-of-seek-min would rewrite the `after' term away before
-  ;; genericp-when-in-of-after, which is keyed on it, could fire.
-  :disable (in-of-from-cursor-becomes-in-of-before-or-entry-or-after
-            after-of-seek-min))
-
-(defruled set-all-genericp-when-cursor-all-genericp-of-seek-min
-  (implies (cursor-all-genericp (seek-min set))
-           (set-all-genericp set))
-  :enable (set-all-genericp-pick-a-point
-           genericp-when-in-and-cursor-all-genericp-of-seek-min))
-
 (defrule booleanp-of-cursor-all-genericp
   (booleanp (cursor-all-genericp cursor))
   :rule-classes (:rewrite :type-prescription)
   :induct (cursor-all-genericp cursor)
   :enable cursor-all-genericp)
 
+(defruled cursor-all-genericp-when-not-entryp
+  (implies (not (entryp cursor))
+           (cursor-all-genericp cursor))
+  :enable cursor-all-genericp)
+
+(defrule cursor-all-genericp-when-not-entryp-cheap
+  (implies (not (entryp cursor))
+           (cursor-all-genericp cursor))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by cursor-all-genericp-when-not-entryp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule genericp-of-entry-when-set-all-genericp
+  (implies (and (set-all-genericp (from-cursor cursor))
+                (entryp cursor))
+           (genericp (entry cursor))))
+
+(defruled cursor-all-genericp-becomes-set-all-genericp-of-after
+  (equal (cursor-all-genericp cursor)
+         (or (not (entryp cursor))
+             (and (genericp (entry cursor))
+                  (set-all-genericp (after cursor)))))
+  :induct (cursor-all-genericp cursor)
+  :enable (cursor-all-genericp
+           set-all-genericp))
+
+(defruled cursor-all-genericp-when-set-all-genericp
+  (implies (set-all-genericp (from-cursor cursor))
+           (cursor-all-genericp cursor))
+  :enable (cursor-all-genericp-becomes-set-all-genericp-of-after
+           set-all-genericp-when-set-all-genericp-and-subset))
+
 (defrule cursor-all-genericp-of-seek-min
   (equal (cursor-all-genericp (seek-min set))
          (set-all-genericp set))
-  :enable set-all-genericp-when-cursor-all-genericp-of-seek-min
-  :use (:instance cursor-all-genericp-when-set-all-genericp
-                  (cursor (seek-min set))))
+  :enable (cursor-all-genericp-becomes-set-all-genericp-of-after
+           set-all-genericp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy cursor-all-genericp-extra-rules
+  '(cursor-all-genericp-when-not-entryp))

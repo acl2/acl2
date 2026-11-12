@@ -370,7 +370,7 @@
     :guard (and (nat-set-p (tset::from-cursor cursor))
                 (or (tset::entryp cursor)
                     (tset::endp cursor)))
-    (if (tset::endp cursor)
+    (if (not (tset::entryp cursor))
         nil
       (cons (nat-id (tset::entry cursor))
             (nat-set-loop (tset::next cursor))))

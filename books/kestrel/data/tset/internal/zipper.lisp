@@ -2038,6 +2038,20 @@
   :rule-classes :congruence
   :enable zip-value)
 
+(defruled zip-value-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-value zip)
+                  nil))
+  :enable (zip-value
+           irr-tree-element))
+
+(defrule zip-value-when-tree-empty-p-of-focus-cheap
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-value zip)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by zip-value-when-tree-empty-p-of-focus)
+
 ;; The focus of a zipper occupies a contiguous run of the in-order sequence of
 ;; the whole tree, and what flanks that run is fixed by the path alone. The two
 ;; functions below name those flanks, cutting the sequence in three.
@@ -2708,6 +2722,30 @@
                    (data::y (cons (zip-value zip) (zip-after zip)))))
   :disable (member-equal-of-tree-in-order-under-iff
             osetp-of-tree-in-order-when-bstp))
+
+;; In particular, the element at the cursor is on neither side.
+
+(defrule not-member-equal-of-zip-value-and-zip-before
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
+           (not (member-equal (zip-value zip) (zip-before zip))))
+  :use (:instance in-of-zip-oset-before-when-bstp
+                  (x (zip-value zip)))
+  :enable (zip-oset-before-becomes-zip-before
+           set::in-to-member
+           data::<<-rules)
+  :disable in-of-zip-oset-before-when-bstp)
+
+(defrule not-member-equal-of-zip-value-and-zip-after
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
+           (not (member-equal (zip-value zip) (zip-after zip))))
+  :use (:instance in-of-zip-oset-after-when-bstp
+                  (x (zip-value zip)))
+  :enable (zip-oset-after-becomes-zip-after
+           set::in-to-member
+           data::<<-rules)
+  :disable in-of-zip-oset-after-when-bstp)
 
 ;; At a hole as well as at an element, everything before the cursor lies below
 ;; everything after it. The membership hypotheses come first, so that a proof

@@ -68,9 +68,7 @@
            (equal (entry cursor)
                   nil))
   :enable (entry
-           entryp
-           zip-value
-           irr-tree-element))
+           entryp))
 
 (defrule entry-when-not-entryp-cheap
   (implies (not (entryp cursor))

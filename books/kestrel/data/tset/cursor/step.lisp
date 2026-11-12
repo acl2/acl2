@@ -150,6 +150,20 @@
   :use (:instance equal-of-zip-step-backward-and-zip-fix
                   (zip (cursor-fix cursor))))
 
+(defrule equal-of-step-forward-and-arg1
+  (equal (equal (step-forward cursor) cursor)
+         (and (cursorp cursor)
+              (endp cursor)))
+  :use equal-of-step-forward-and-cursor-fix
+  :disable equal-of-step-forward-and-cursor-fix)
+
+(defrule equal-of-step-backward-and-arg1
+  (equal (equal (step-backward cursor) cursor)
+         (and (cursorp cursor)
+              (beginp cursor)))
+  :use equal-of-step-backward-and-cursor-fix
+  :disable equal-of-step-backward-and-cursor-fix)
+
 (defruled step-forward-when-endp
   (implies (endp cursor)
            (equal (step-forward cursor)
@@ -241,12 +255,13 @@
            break-abstraction))
 
 (defrule entry-of-step-forward-when-not-entryp
-  (implies (and (not (entryp cursor))
-                (not (emptyp (after cursor))))
+  (implies (not (entryp cursor))
            (equal (entry (step-forward cursor))
                   (min (after cursor))))
+  :cases ((emptyp (after cursor)))
   :enable (min-of-after-becomes-car-of-zip-after
            emptyp-of-after-becomes-not-consp
+           zip-at-end-p-becomes-not-consp-of-zip-after
            step-forward
            entry
            entryp
@@ -307,12 +322,13 @@
            break-abstraction))
 
 (defrule entry-of-step-backward-when-not-entryp
-  (implies (and (not (entryp cursor))
-                (not (emptyp (before cursor))))
+  (implies (not (entryp cursor))
            (equal (entry (step-backward cursor))
                   (max (before cursor))))
+  :cases ((emptyp (before cursor)))
   :enable (max-of-before-becomes-car-of-last-of-zip-before
            emptyp-of-before-becomes-not-consp
+           zip-at-begin-p-becomes-not-consp-of-zip-before
            step-backward
            entry
            entryp
@@ -323,8 +339,6 @@
            (equal (before (step-backward cursor))
                   (delete (max (before cursor)) (before cursor))))
   :cases ((emptyp (before cursor)))
-  :use (:instance not-in-of-entry-and-before
-                  (cursor (step-backward cursor)))
   :enable (extensionality
            in-of-before-becomes-member-equal
            max-of-before-becomes-car-of-last-of-zip-before
@@ -333,8 +347,7 @@
            step-backward
            entry
            entryp
-           break-abstraction)
-  :disable not-in-of-entry-and-before)
+           break-abstraction))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

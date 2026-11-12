@@ -268,15 +268,13 @@
   :enable seek-max)
 
 (defrule entry-of-seek-min
-  (implies (not (emptyp set))
-           (equal (entry (seek-min set))
-                  (min set)))
+  (equal (entry (seek-min set))
+         (min set))
   :enable seek-min)
 
 (defrule entry-of-seek-max
-  (implies (not (emptyp set))
-           (equal (entry (seek-max set))
-                  (max set)))
+  (equal (entry (seek-max set))
+         (max set))
   :enable seek-max)
 
 (defrule endp-of-seek-min

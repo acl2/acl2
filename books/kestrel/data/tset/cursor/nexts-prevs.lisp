@@ -17,6 +17,7 @@
 (include-book "entry-defs")
 (include-book "before-after-defs")
 (include-book "begin-end-defs")
+(include-book "seek-min-max-defs")
 (include-book "next-prev-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -32,6 +33,7 @@
 (local (include-book "before-after"))
 (local (include-book "begin-end"))
 (local (include-book "step"))
+(local (include-book "seek-min-max"))
 (local (include-book "next-prev"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -114,14 +116,76 @@
            prev
            beginp))
 
-(defrule nexts-linear
+(defrule nexts-of-next-linear
   (implies (not (endp cursor))
            (< (nexts (next cursor))
               (nexts cursor)))
   :rule-classes :linear)
 
-(defrule prevs-linear
+(defrule prevs-of-prev-linear
   (implies (not (beginp cursor))
            (< (prevs (prev cursor))
               (prevs cursor)))
   :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-of-begin
+  (equal (nexts (begin set))
+         (cardinality set))
+  :enable nexts)
+
+(defrule nexts-of-end
+  (equal (nexts (end set))
+         0)
+  :enable nexts)
+
+(defrule nexts-of-seek-min
+  (equal (nexts (seek-min set))
+         (cardinality set))
+  :cases ((emptyp set))
+  :enable nexts)
+
+(defruled nexts-of-seek-max
+  (equal (nexts (seek-max set))
+         (if (emptyp set) 0 1))
+  :enable nexts)
+
+(defrule nexts-of-seek-max-linear
+  (<= (nexts (seek-max set)) 1)
+  :rule-classes :linear
+  :enable nexts-of-seek-max)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule prevs-of-end
+  (equal (prevs (end set))
+         (cardinality set))
+  :enable prevs)
+
+(defrule prevs-of-begin
+  (equal (prevs (begin set))
+         0)
+  :enable prevs)
+
+(defrule prevs-of-seek-max
+  (equal (prevs (seek-max set))
+         (cardinality set))
+  :cases ((emptyp set))
+  :enable prevs)
+
+(defruled prevs-of-seek-min
+  (equal (prevs (seek-min set))
+         (if (emptyp set) 0 1))
+  :enable prevs)
+
+(defrule prevs-of-seek-min-linear
+  (<= (prevs (seek-min set)) 1)
+  :rule-classes :linear
+  :enable prevs-of-seek-min)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy nexts-prevs-extra-rules
+  '(nexts-of-seek-max
+    prevs-of-seek-min))

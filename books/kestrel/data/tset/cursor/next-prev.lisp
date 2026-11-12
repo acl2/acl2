@@ -112,9 +112,10 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule entryp-of-next
-  (implies (entryp cursor)
-           (equal (entryp (next cursor))
-                  (not (emptyp (after cursor)))))
+  (equal (entryp (next cursor))
+         (and (entryp cursor)
+              (not (emptyp (after cursor)))))
+  :cases ((entryp cursor))
   :enable next)
 
 (defrule endp-of-next
@@ -132,14 +133,15 @@
   :enable next)
 
 (defrule after-of-next
-  (implies (entryp cursor)
-           (equal (after (next cursor))
-                  (delete (min (after cursor)) (after cursor))))
+  (equal (after (next cursor))
+         (delete (min (after cursor)) (after cursor)))
+  :cases ((entryp cursor)
+          (and (not (entryp cursor))
+               (emptyp (after cursor))))
   :enable next)
 
 (defrule entry-of-next
-  (implies (and (entryp cursor)
-                (not (emptyp (after cursor))))
+  (implies (entryp cursor)
            (equal (entry (next cursor))
                   (min (after cursor))))
   :enable next)
@@ -147,9 +149,10 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule entryp-of-prev
-  (implies (entryp cursor)
-           (equal (entryp (prev cursor))
-                  (not (emptyp (before cursor)))))
+  (equal (entryp (prev cursor))
+         (and (entryp cursor)
+              (not (emptyp (before cursor)))))
+  :cases ((entryp cursor))
   :enable prev)
 
 (defrule beginp-of-prev
@@ -167,14 +170,15 @@
   :enable prev)
 
 (defrule before-of-prev
-  (implies (entryp cursor)
-           (equal (before (prev cursor))
-                  (delete (max (before cursor)) (before cursor))))
+  (equal (before (prev cursor))
+         (delete (max (before cursor)) (before cursor)))
+  :cases ((entryp cursor)
+          (and (not (entryp cursor))
+               (emptyp (before cursor))))
   :enable prev)
 
 (defrule entry-of-prev
-  (implies (and (entryp cursor)
-                (not (emptyp (before cursor))))
+  (implies (entryp cursor)
            (equal (entry (prev cursor))
                   (max (before cursor))))
   :enable prev)
@@ -182,19 +186,21 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule prev-of-next
-  (implies (and (entryp cursor)
-                (not (emptyp (after cursor))))
+  (implies (not (emptyp (after cursor)))
            (equal (prev (next cursor))
                   (cursor-fix cursor)))
+  :cases ((entryp cursor))
   :enable (next
            prev
-           endp))
+           endp)
+  :disable after-when-endp-cheap)
 
 (defrule next-of-prev
-  (implies (and (entryp cursor)
-                (not (emptyp (before cursor))))
+  (implies (not (emptyp (before cursor)))
            (equal (next (prev cursor))
                   (cursor-fix cursor)))
+  :cases ((entryp cursor))
   :enable (next
            prev
-           beginp))
+           beginp)
+  :disable before-when-beginp-cheap)

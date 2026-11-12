@@ -43,9 +43,27 @@
       identify the cursor (see @(tsee cursor-extensionality)), and the cursor
       operations are specified by their effect on them.")
    (xdoc::p
-     "The typical use of a cursor is to traverse a set in order. See @(tsee
-      seek-min) and @(tsee next), or, for the reverse order, @(tsee
-      seek-max) and @(tsee prev).")))
+     "The typical use of a cursor is to traverse a set in order. A traversal
+      starts from @(tsee seek-min), reads each @(tsee entry), moves with @(tsee
+      next), and stops when the cursor is no longer at an entry. Its measure is
+      @(tsee nexts). For example, the following collects the elements of a set
+      into a list, when called on @('(seek-min set)').")
+   (xdoc::codeblock
+     "(define walk ((cursor cursorp))"
+     "  :guard (or (entryp cursor)"
+     "             (endp cursor))"
+     "  (if (not (entryp cursor))"
+     "      nil"
+     "    (cons (entry cursor)"
+     "          (walk (next cursor))))"
+     "  :measure (nexts cursor))")
+   (xdoc::p
+     "The guard says that the traversal is at an entry or has reached the hole
+      after every element. This holds of @(tsee seek-min) and is preserved by
+      @(tsee next). It does not hold of @(tsee begin), which is a hole.")
+   (xdoc::p
+     "To traverse in the reverse order, use @(tsee seek-max), @(tsee prev), and
+      @(tsee prevs), with @(tsee beginp) in the guard.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,8 +114,12 @@
   :short "Construct a @(see cursor) at the hole before every element of a
           @(see tset)."
   :long
-  (xdoc::topstring-p
-    "Time complexity: @($O(\\log(n))$), to descend to the first hole.")
+  (xdoc::topstring
+   (xdoc::p
+     "This is a hole, not the least entry. A traversal starts from @(tsee
+      seek-min).")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$), to descend to the first hole."))
   (zip-begin (fix set))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
@@ -112,8 +134,12 @@
   :short "Construct a @(see cursor) at the hole after every element of a
           @(see tset)."
   :long
-  (xdoc::topstring-p
-    "Time complexity: @($O(\\log(n))$), to descend to the last hole.")
+  (xdoc::topstring
+   (xdoc::p
+     "This is a hole, not the greatest entry. A reverse traversal starts from
+      @(tsee seek-max).")
+   (xdoc::p
+     "Time complexity: @($O(\\log(n))$), to descend to the last hole."))
   (zip-end (fix set))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

@@ -29,14 +29,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A walk in the recommended style: it tests for the end hole, and its guard
-;; says that any hole it is at is the end, which a walk from @(tsee seek-min)
-;; with @(tsee next) maintains.
+;; A walk in the recommended style: it tests for an entry, and its guard says
+;; that any hole it is at is the end, which a walk from @(tsee seek-min) with
+;; @(tsee next) maintains.
 
 (define cursor-any-evenp ((cursor cursorp))
   :guard (or (entryp cursor)
              (endp cursor))
-  (and (not (endp cursor))
+  (and (entryp cursor)
        (or (evenp (nfix (entry cursor)))
            (cursor-any-evenp (next cursor))))
   :measure (nexts cursor))
@@ -61,12 +61,10 @@
   ///
 
   (defrule cursor-any-evenp-becomes-any-evenp
-    (implies (or (entryp cursor)
-                 (endp cursor))
-             (equal (cursor-any-evenp cursor)
-                    (and (entryp cursor)
-                         (or (evenp (nfix (entry cursor)))
-                             (any-evenp (after cursor))))))
+    (equal (cursor-any-evenp cursor)
+           (and (entryp cursor)
+                (or (evenp (nfix (entry cursor)))
+                    (any-evenp (after cursor)))))
     :induct (cursor-any-evenp cursor)
     :enable (cursor-any-evenp
              any-evenp))
