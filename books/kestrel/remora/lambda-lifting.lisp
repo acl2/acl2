@@ -353,15 +353,22 @@
      names-to-params)); a variable that @('tenv') does not type would
      become an untyped parameter, on which evaluation fails.  The variable
      of an unboxing, for instance, is local but not in @('tenv').  The
-     types must be flat (see @(tsee type-flat-syntax-p)), for the
-     application that passes the variable to check its dimensions, and
-     they must evaluate successfully (see @(tsee type-evaluable-p)), since
-     the first of them is evaluated where the definition is bound."))
+     types must be flat (see @(tsee type-flat-syntax-p)) and closed in
+     type and ispace variables, for the application that passes the
+     variable to check its dimensions against a type value that does not
+     depend on where it is evaluated, and they must evaluate successfully
+     (see @(tsee type-evaluable-p)), since the first of them is evaluated
+     where the definition is bound.  (Closedness is also checked by @(tsee
+     captured-params-closed-p) before a lambda's body is lifted out of; here
+     it covers the variables captured through the replacements of hoisted
+     functions as well.)"))
   (b* (((unless (mbt (string-setp captured))) nil)
        ((when (set::emptyp captured)) t)
        (type? (name-to-type-option (set::head captured) tenv)))
     (and (type-option-case type? :some)
          (type-flat-syntax-p (type-option-some->val type?))
+         (set::emptyp (type-free-type-vars (type-option-some->val type?)))
+         (set::emptyp (type-free-ispace-vars (type-option-some->val type?)))
          (type-evaluable-p (type-option-some->val type?))
          (captured-params-typed-p (set::tail captured) tenv)))
   :measure (acl2-count captured))
@@ -1013,6 +1020,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define lambda-lift-top-used ((x exprp))
+  :returns (used string-setp)
+  :short "The names in use when lifting starts on a standalone expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the expression variables of @('x') and the names of all its
+     binders, including those of type and ispace variables, so that no
+     lifted definition is named like any of them."))
+  (set::union (expr-all-expr-vars x)
+              (set::mergesort (expr-binder-names x)))
+
+  ///
+
+  (defret subset-of-expr-all-expr-vars-of-lambda-lift-top-used
+    (set::subset (expr-all-expr-vars x) used))
+
+  (defret in-of-lambda-lift-top-used-when-binder-name
+    (implies (member-equal v (expr-binder-names x))
+             (set::in v used))))
+
 (define lambda-lift-top-expr ((x exprp))
   :guard (not (expr-duplicate-names x))
   :returns (new-x exprp)
@@ -1028,7 +1056,7 @@
    (xdoc::p
     "The guard requires the binders of @('x') to bind distinct names, as
      @(tsee expr-uniquify-names) makes them; see @(see lambda-lifting)."))
-  (b* ((used (expr-all-expr-vars x))
+  (b* ((used (lambda-lift-top-used x))
        ((mv new-x lifted &) (ll-expr x nil nil nil nil used)))
     (nest-let-binds lifted new-x)))
 
