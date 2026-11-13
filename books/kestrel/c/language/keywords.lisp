@@ -181,6 +181,7 @@
     "__attribute"
     "__attribute__"
     "__auto_type"
+    "__bf16"
     "__builtin_convertvector"
     "__builtin_offsetof"
     "__builtin_types_compatible_p"
@@ -245,8 +246,9 @@
      (xdoc::ahref
        "https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point"
        "[CLE#half-precision-floating-point]")
-     " and @('__float128'),
-      which Clang treats as a keyword in all language modes and on all targets.")
+     ", @('__float128'),
+      which Clang treats as a keyword in all language modes and on all targets,
+      and @('__bf16').")
    (xdoc::p
     "This list is disjoint from the C17 standard keywords.
      This list is disjoint from the C23 standard keywords,
@@ -265,7 +267,8 @@
       "_Nonnull"
       "_Null_unspecified"
       "_Nullable"
-      "_Nullable_result")
+      "_Nullable_result"
+      "__builtin_bit_cast")
     (set-difference-equal
       *keywords-gcc*
       '("__float80"

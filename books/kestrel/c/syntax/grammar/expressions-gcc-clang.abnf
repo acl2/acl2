@@ -11,7 +11,7 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for expressions
-; in the non-standard C dialects (i.e. with extensions).
+; in the GCC and Clang dialects.
 ; Although [GCCM] and [CLE] do not provide explicit grammar rules,
 ; we classify the extensions into different kinds of expressions
 ; based on judgement and experimentation.
@@ -34,7 +34,7 @@
 ;   and it always starts with a known identifier,
 ;   so it seems reasonable that they are primary expressions.
 ;
-; - Calls of '__builtin_offsetof',
+; - Calls of '__builtin_offsetof'
 ;   [GCCM:6.12.8](https://gcc.gnu.org/onlinedocs/gcc/Offsetof.html)
 ;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#builtin-functions).
 ;   Although normal function calls are postfix expressions,
@@ -56,11 +56,11 @@
 ;   this is not a normal function because it takes a type name as argument,
 ;   so it seems reasonable that they are primary expressions.
 
-primary-expression-ext = "(" compound-statement ")"
-                       / types-compatible-call
-                       / offsetof-call
-                       / va-arg-call
-                       / convertvector-call
+primary-expression-gcc-clang = "(" compound-statement ")"
+                             / types-compatible-call
+                             / offsetof-call
+                             / va-arg-call
+                             / convertvector-call
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -91,7 +91,7 @@ convertvector-call =
 ;   in analogy with the standard grammar rule for 'sizeof'.
 ;
 ; - '__real__' and '__imag__' as unary operators
-;   [GCC:6.1.3](https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
+;   [GCCM:6.1.3](https://gcc.gnu.org/onlinedocs/gcc/Complex.html)
 ;   [CLE](https://clang.llvm.org/docs/LanguageExtensions.html#implementation-defined-keywords).
 ;   Like the other numeric unary operators,
 ;   for which the standard grammar rules require cast expression operands,
@@ -107,21 +107,21 @@ convertvector-call =
 ;   We treat it the same as '__real__' and '__imag__'.
 ;
 ; - '&&' applied to a label to obtain its address
-;   [GCC:6.12.3](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
+;   [GCCM:6.12.3](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
 ;   [CLE] does not seem to mention this, but Clang implementations accept it.
 
-unary-expression-ext = alignof-keyword unary-expression
-                     / %s"__real__" cast-expression
-                     / %s"__imag__" cast-expression
-                     / %s"__extension__" cast-expression
-                     / "&&" identifier
+unary-expression-gcc-clang = alignof-keyword unary-expression
+                           / %s"__real__" cast-expression
+                           / %s"__imag__" cast-expression
+                           / %s"__extension__" cast-expression
+                           / "&&" identifier
 
-; As a GCC and C extension, we allow contiional expressions
+; As a GCC and Clang extension, we allow conditional expressions
 ; whose second operand is omitted
 ; [GCCM:6.12.13](https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html).
 ; We did not find this documented in [CLE], but Clang implementations accept it.
 
-conditional-expression-ext =
+conditional-expression-gcc-clang =
     logical-or-expression "?" ":" conditional-expression
 
 ; TODO: add other kinds of expressions

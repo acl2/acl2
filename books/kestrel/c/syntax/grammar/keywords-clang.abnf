@@ -17,7 +17,7 @@
 ; The Clang documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,
-; but the lists may be incomplete, and it will be extended as needed.
+; but the list may be incomplete, and it will be extended as needed.
 
 keyword-clang = %s"__datasizeof"
               / %s"_ExtInt"
@@ -32,3 +32,4 @@ keyword-clang = %s"__datasizeof"
               / %s"_Null_unspecified"
               / %s"_Nullable"
               / %s"_Nullable_result"
+              / %s"__builtin_bit_cast"

@@ -2325,6 +2325,13 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :bit-cast
+           (b* ((pstate (print-astring "__builtin_bit_cast(" pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-expr expr.arg (expr-priority-expr) pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
                 (pstate (print-expr expr.expr (expr-priority-cast) pstate)))
@@ -2514,6 +2521,7 @@
      :float64x (print-astring "_Float64x" pstate)
      :float128 (print-astring "_Float128" pstate)
      :float128x (print-astring "_Float128x" pstate)
+     :bf16 (print-astring "__bf16" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
                         (pstate (if (consp tyspec.attribs)
