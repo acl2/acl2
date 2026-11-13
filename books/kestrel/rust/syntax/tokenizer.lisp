@@ -469,6 +469,68 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define abs-float-literal-suffix ((tree abnf::treep))
+  :returns (suffix acl2::string-resultp)
+  :short "Abstract the optional-suffix CST
+          inside a @('float-literal')
+          to the suffix as a string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The CST is the tree for @('[ suffix-no-e ]')
+     or for @('[ suffix-no-underscore ]'),
+     according to the alternative of the @('float-literal') rule.
+     As for integer literals,
+     an absent suffix abstracts to the empty string."))
+  (b* (((fty::okf branches) (abnf::check-tree-nonleaf tree nil))
+       ((when (endp branches)) "")
+       ((fty::okf trees) (abnf::check-tree-list-list-1 branches))
+       ((fty::okf sub) (abnf::check-tree-list-1 trees))
+       ((fty::okf rulename?) (abnf::check-tree-nonleaf? sub))
+       ((unless (member-equal rulename?
+                              '("suffix-no-e" "suffix-no-underscore")))
+        (reserrf (list :unexpected-suffix-kind rulename?))))
+    (code-points-to-utf-8-string
+     (abs-symbols-to-nats (abnf::tree->string sub)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define abs-float-literal ((tree abnf::treep))
+  :returns (token token-resultp)
+  :short "Abstract a @('float-literal') CST to a token."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The CST has two branches if the literal ends with its period
+     (the first alternative of the rule),
+     and then it has no suffix.
+     Otherwise the CST has four branches,
+     the last of which is the optional suffix.
+     The text of the token is that of the branches before the suffix,
+     stored as written; see @(see tokens)."))
+  (b* ((sub (abnf::check-tree-nonleaf-2 tree "float-literal"))
+       ((when (not (reserrp sub)))
+        (b* (((fty::okf text)
+              (code-points-to-utf-8-string
+               (abs-symbols-to-nats (abnf::tree->string tree)))))
+          (token-lit (lit-float (make-float-lit :text text
+                                                :suffix "")))))
+       ((fty::okf sub) (abnf::check-tree-nonleaf-4 tree "float-literal"))
+       ((fty::okf text)
+        (code-points-to-utf-8-string
+         (abs-symbols-to-nats
+          (append
+           (abnf::tree-list->string (abnf::tree-list-tuple4->1st sub))
+           (abnf::tree-list->string (abnf::tree-list-tuple4->2nd sub))
+           (abnf::tree-list->string (abnf::tree-list-tuple4->3rd sub))))))
+       ((fty::okf opt-tree)
+        (abnf::check-tree-list-1 (abnf::tree-list-tuple4->4th sub)))
+       ((fty::okf suffix) (abs-float-literal-suffix opt-tree)))
+    (token-lit (lit-float (make-float-lit :text text
+                                          :suffix suffix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define abs-literal-suffix ((tree abnf::treep))
   :returns (suffix acl2::string-resultp)
   :short "Abstract the optional-suffix CST
@@ -660,6 +722,8 @@
            (abs-lifetime-token sub))
           ((equal rulename? "integer-literal")
            (abs-integer-literal sub))
+          ((equal rulename? "float-literal")
+           (abs-float-literal sub))
           ((equal rulename? "char-literal")
            (abs-char-literal sub "char-literal" nil))
           ((equal rulename? "byte-literal")

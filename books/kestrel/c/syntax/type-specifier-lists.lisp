@@ -472,6 +472,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-spec-list-bf16-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('__bf16')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-bf16))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define type-spec-list-float-complex-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form

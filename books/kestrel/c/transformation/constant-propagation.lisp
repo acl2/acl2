@@ -833,6 +833,10 @@
                                    (expr-fix expr))
                            nil
                            env)
+        :bit-cast (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
+                              (expr-fix expr))
+                      nil
+                      env)
         :extension (mv (prog2$ (raise "Unhandled case: ~x0." (expr-fix expr))
                                (expr-fix expr))
                        nil
@@ -1010,6 +1014,7 @@
         :float64x (mv (type-spec-fix tyspec) env)
         :float128 (mv (type-spec-fix tyspec) env)
         :float128x (mv (type-spec-fix tyspec) env)
+        :bf16 (mv (type-spec-fix tyspec) env)
         :builtin-va-list (mv (type-spec-fix tyspec) env)
         :struct-empty (mv (type-spec-fix tyspec) env)
         :typeof-expr (b* (((mv expr - env)

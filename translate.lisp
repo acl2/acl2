@@ -21846,7 +21846,7 @@
                    'return-last 'top-level))))
         (t (mv nil nil))))
 
-(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings)
+(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings flet-alist)
 
 ; Bindings and x are nil if we are not in translate.
 
@@ -21860,16 +21860,12 @@
                                      (corresponding-inline-fn (car arg3)
                                                               wrld))))
                            (and fn
+                                (not (assoc-eq fn flet-alist))
+                                (not (assoc-eq (car arg3) flet-alist))
                                 (not (member-eq fn *ec-call-bad-ops*))))))))
          (mv-msg t x
-                 "The argument ~x0 is illegal for ~x2, because ~@1.  A call ~
-                  of ~x2 must only be made on an argument of the form (FN ~
-                  ...), where FN is a known function symbol of the current ~
-                  ACL2 world not belonging to the list that is the value of ~
-                  the constant ~x3, or is a macro expanding in a certain ~
-                  direct way (as with defun-inline) to a call of FN$INLINE ~
-                  (i.e., the result of adding suffix \"$INLINE\" to the ~
-                  symbol-name of FN).  See :DOC ec-call."
+                 "The argument ~x0 is illegal for ~x2, because ~@1.  See :DOC ~
+                  ec-call."
                  arg3
                  (let* ((fn0 (and (consp arg3)
                                   (car arg3)))
@@ -21877,14 +21873,25 @@
                                  (symbolp fn0)
                                  (if (function-symbolp fn0 wrld)
                                      fn0
-                                   (corresponding-inline-fn fn0
-                                                            wrld)))))
+                                   (corresponding-inline-fn fn0 wrld)))))
                    (cond ((not (and fn0
                                     (true-listp arg3)))
                           (msg "~x0 does not have the form of a function call"
                                arg3))
                          ((not (symbolp fn0))
                           (msg "~x0 is not a symbol" fn0))
+
+; See books/system/tests/ec-call-under-flet.lisp for why the next two cases,
+; which regard flet, are necessary.
+
+                         ((assoc-eq fn0 flet-alist)
+                          (msg "~x0 is bound by a superior FLET form"
+                               fn0))
+                         ((assoc-eq fn flet-alist) ; so fn is not fn0
+                          (msg "~x0 is a macro abbreviating ~x1, which is ~
+                                bound by a superior FLET form"
+                               fn0
+                               fn))
                          ((member-eq fn *ec-call-bad-ops*)
                           (msg "~x0 belongs to ~x1"
                                fn
@@ -26850,7 +26857,7 @@
 
                          (chk-return-last-call-1 key keyp wrld x bindings))
                         (t (chk-return-last-call key keyp arg2 arg3 wrld x
-                                                 bindings)))
+                                                 bindings flet-alist)))
                   (cond
                    (erp (if (eq erp t)
                             (trans-er ctx "~@0" msg)

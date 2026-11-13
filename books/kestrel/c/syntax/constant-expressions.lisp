@@ -572,6 +572,8 @@
         :unknown)
        :convertvector
        :unknown
+       :bit-cast
+       :unknown
        :extension
        (expr-ice-core-3p
         expr.expr evaluatedp cast-restrictionsp dialect)))

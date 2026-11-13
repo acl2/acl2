@@ -2044,6 +2044,19 @@
                                           :type left-type)
                  nil
                  st))
+        :bit-cast
+        (b* (((erp splitp left-type ?right-type st)
+              (tyname-sts-split expr.type st))
+             ((erp left-arg right-arg? st)
+              (expr-sts-split expr.arg st))
+             ((when (or splitp right-arg?))
+              (retmsg$ "Split is not supported in either operand ~
+                        of a __builtin_bit_cast call.~%~@0"
+                       (context-msg-expr expr (sts-split-state->dialect st)))))
+          (retok (make-expr-bit-cast :type left-type
+                                     :arg left-arg)
+                 nil
+                 st))
         :extension
         (b* (((erp left-expr right-expr? st)
               (expr-sts-split expr.expr st)))
@@ -2379,6 +2392,8 @@
         :float128
         (retok (type-spec-fix type-spec) nil nil st)
         :float128x
+        (retok (type-spec-fix type-spec) nil nil st)
+        :bf16
         (retok (type-spec-fix type-spec) nil nil st)
         :builtin-va-list
         (retok (type-spec-fix type-spec) nil nil st)

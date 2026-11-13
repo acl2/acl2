@@ -6328,9 +6328,11 @@
        (alt-thms (defind-pred-alt-when-proof-valid-thm-names
                    (set::difference prem-preds (symbol-sfix clique-preds))
                    name))
+       (concls (defind-proof-concl-var-names pred-formals name))
        (hint-branch
         `(,cond
           '(:use ,lemma-instance
+            :expand ((:free ,concls (,valid-fn ,proof ,@concls)))
             :in-theory '(,valid-fn
                          ,irule-valid-fn
                          ,@alt-thms

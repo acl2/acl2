@@ -168,6 +168,7 @@
    (expr :offsetof nil)
    (expr :va-arg nil)
    (expr :convertvector nil)
+   (expr :bit-cast nil)
    (expr :extension nil)
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))
@@ -182,6 +183,7 @@
    (type-spec :float64x nil)
    (type-spec :float128 nil)
    (type-spec :float128x nil)
+   (type-spec :bf16 nil)
    (type-spec :builtin-va-list nil)
    (type-spec :struct-empty nil)
    (type-spec :typeof-expr nil)
