@@ -24,8 +24,9 @@
 ; a float literal with a radix prefix, an exponent without digits,
 ; reserved prefixes, malformed or unterminated literals,
 ; invalid escapes, an underscore suffix,
-; a lifetime followed by a single quote)
-; must fail here [SC7] [SC8] [SC9] [SC10] [SC11] [SC12],
+; a lifetime followed by a single quote,
+; unterminated block comments)
+; must fail here [SC2] [SC7] [SC8] [SC9] [SC10] [SC11] [SC12],
 ; while cases rustc rejects only in later phases
 ; (float suffixes on based literals, out-of-range values,
 ; suffixes on character and string literals,
@@ -128,6 +129,37 @@
 (test-lex "foo ##bar" 5) ; foo, space, #, #, bar
 (test-lex "r\"foo\"#bar" 3) ; raw string r"foo", then #, bar
 (test-lex "r#foo#bar" 3) ; raw identifier r#foo, then #, bar
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; tests/ui/lexer/unterminated-comment.rs,
+; tests/ui/lexer/unterminated-nested-comment.rs (lexer-stage) [SC2]:
+; unterminated block comments, plain and nested
+; (the text after the first "/*" is the test's own annotation).
+
+(test-lex-fail "/* //~ ERROR E0758
+")
+(test-lex-fail "/* //~ ERROR E0758
+/* */
+/*
+*/
+")
+
+; tests/ui/nested-block-comment.rs:
+; a block comment with a nested one, before a function.
+
+(test-lex "//@ run-pass
+
+/* This test checks that nested comments are supported
+
+   /*
+     This should not panic
+   */
+*/
+
+pub fn main() {
+}
+" 16)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

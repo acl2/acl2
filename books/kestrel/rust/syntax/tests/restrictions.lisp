@@ -167,6 +167,22 @@
 
 (test-lexeme-okp "/**/")
 (test-lexeme-okp "/* a /* nested */ b */")
+(test-lexeme-okp "/*/ */")
+
+; [SC2]: a "/*" inside a block comment opens a nested comment
+; even when a "/" follows its "*",
+; so these character sequences are not complete block comments,
+; and the lexer rejects them.
+
+(defmacro test-not-block-comment (string)
+  `(assert-event
+    (and (not (block-comment-string-p (string=>nats ,string)))
+         (reserrp (lexemize-rust-from-string ,string)))))
+
+(test-not-block-comment "/*/")
+(test-not-block-comment "/*/*/")
+(test-not-block-comment "/* xyz /*/")
+(test-not-block-comment "/* xyz /*/ */")
 (test-lexeme-okp "foo")
 (test-lexeme-okp "0xF_Fu32")
 (test-lexeme-okp " ")
