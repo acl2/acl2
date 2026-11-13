@@ -155,6 +155,7 @@
      "(definductive name"
      "              :preds         ...  ; required, no default"
      "              :irules        ...  ; required, no default"
+     "              :proof-induct2 ...  ; default nil"
      "              :verify-guards ...  ; default t"
      "              :guard-hints   ...  ; no default"
      "              :parents       ...  ; no default"
@@ -293,6 +294,18 @@
        and differ from @('_proof'),
        which is the variable of the fixtypes of proofs
        of that representation."))
+
+    (xdoc::desc
+     "@(':proof-induct2') &mdash; default @('nil')"
+     (xdoc::p
+      "Determines whether the @('p[i]-proof-induct2') functions are generated
+       (see the Section `Generated Events' below).")
+     (xdoc::p
+      "Each of these functions has a case for each pair of rules
+       whose conclusions are @('(p[i] ...)'),
+       so it may be large and take a long time to admit.")
+     (xdoc::p
+      "It must be @('t') or @('nil')."))
 
     (xdoc::desc
      "@(':verify-guards') &mdash; default @('t')"
@@ -554,7 +567,9 @@
        can be used after the call of this macro;
        its flag function is @('p[i]-proof-clique-induct2-flag').")
      (xdoc::p
-      "These functions are generated only for the recursive predicates.")
+      "These functions are generated iff
+       the @(':proof-induct2') input is @('t'),
+       and only for the recursive predicates.")
      (xdoc::p
       "These functions are disabled."))
 

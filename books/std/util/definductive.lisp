@@ -3147,6 +3147,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-process-proof-induct2 (proof-induct2)
+  :returns (mv erp (proof-induct2 booleanp))
+  :short "Process the @(':proof-induct2') input."
+  (b* (((reterr) nil)
+       ((unless (booleanp proof-induct2))
+        (reterr (msg "The :PROOF-INDUCT2 input must be T or NIL, ~
+                      but it is ~x0 instead."
+                     proof-induct2))))
+    (retok proof-induct2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-process-verify-guards (verify-guards)
   :returns (mv erp (verify-guards booleanp))
   :short "Process the @(':verify-guards') input."
@@ -3295,6 +3307,7 @@
                                (preds-suppliedp booleanp)
                                irules
                                (irules-suppliedp booleanp)
+                               proof-induct2
                                verify-guards
                                guard-hints
                                (guard-hints-suppliedp booleanp)
@@ -3311,6 +3324,7 @@
                (pred-infos defind-pred-info-listp)
                (irule-infos defind-irule-info-listp)
                (leveled-cliques symbol-set-list-listp)
+               (proof-induct2 booleanp)
                (verify-guards booleanp)
                (guard-hints true-listp)
                (parents symbol-listp)
@@ -3320,7 +3334,7 @@
                (print evmac-input-print-p)
                state)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil :error state)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil :error state)
        (wrld (w state))
        ((erp name) (defind-process-name name wrld))
        ((erp pred-infos state)
@@ -3328,6 +3342,7 @@
        ((erp irule-infos leveled-cliques state)
         (defind-process-irules irules irules-suppliedp pred-infos state))
        ((erp) (defind-check-proof-names irule-infos pred-infos name))
+       ((erp proof-induct2) (defind-process-proof-induct2 proof-induct2))
        ((erp verify-guards) (defind-process-verify-guards verify-guards))
        ((erp guard-hints)
         (defind-process-guard-hints
@@ -3339,7 +3354,8 @@
           long long-suppliedp))
        ((erp print) (defind-process-print print)))
     (retok name pred-infos irule-infos leveled-cliques
-           verify-guards guard-hints parents short long xdocp print state))
+           proof-induct2 verify-guards guard-hints
+           parents short long xdocp print state))
 
   ///
 
@@ -6797,6 +6813,7 @@
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
                            (leveled-cliques symbol-set-list-listp)
+                           (proof-induct2 booleanp)
                            (verify-guards booleanp)
                            (guard-hints true-listp)
                            (parents symbol-listp)
@@ -6830,8 +6847,9 @@
        (validp-ruleset-events
         (defind-gen-validp-ruleset pred-infos irule-infos name print))
        (proof-ind2-events
-        (defind-gen-proof-ind2-fns
-          pred-infos irule-infos leveled-cliques name xdocp print))
+        (and proof-induct2
+             (defind-gen-proof-ind2-fns
+               pred-infos irule-infos leveled-cliques name xdocp print)))
        ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
@@ -6899,6 +6917,7 @@
                                               (preds-suppliedp booleanp)
                                               irules
                                               (irules-suppliedp booleanp)
+                                              proof-induct2
                                               verify-guards
                                               guard-hints
                                               (guard-hints-suppliedp booleanp)
@@ -6915,12 +6934,13 @@
   :short "Process the inputs and generate all the events."
   (b* (((reterr) '(_) state)
        ((erp name pred-infos irule-infos leveled-cliques
-             verify-guards guard-hints
+             proof-induct2 verify-guards guard-hints
              parents short long xdocp print state)
         (defind-process-inputs
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          proof-induct2
           verify-guards
           guard-hints guard-hints-suppliedp
           parents parents-suppliedp
@@ -6930,7 +6950,7 @@
           state))
        (event (defind-gen-events
                 name pred-infos irule-infos leveled-cliques
-                verify-guards guard-hints
+                proof-induct2 verify-guards guard-hints
                 parents short long xdocp print)))
     (retok event state)))
 
@@ -6941,6 +6961,7 @@
                          (preds-suppliedp booleanp)
                          irules
                          (irules-suppliedp booleanp)
+                         proof-induct2
                          verify-guards
                          guard-hints
                          (guard-hints-suppliedp booleanp)
@@ -6963,6 +6984,7 @@
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          proof-induct2
           verify-guards
           guard-hints guard-hints-suppliedp
           parents parents-suppliedp
@@ -6982,6 +7004,7 @@
                           &key
                           (preds 'nil preds-suppliedp)
                           (irules 'nil irules-suppliedp)
+                          (proof-induct2 'nil)
                           (verify-guards 't)
                           (guard-hints 'nil guard-hints-suppliedp)
                           (parents 'nil parents-suppliedp)
@@ -6995,6 +7018,7 @@
         ',preds-suppliedp
         ',irules
         ',irules-suppliedp
+        ',proof-induct2
         ',verify-guards
         ',guard-hints
         ',guard-hints-suppliedp
