@@ -88,8 +88,10 @@
 ; (depends-on "grammar/expressions-gcc-clang.abnf")
 ; (depends-on "grammar/expressions-c17-noext.abnf")
 ; (depends-on "grammar/expressions-c23-noext.abnf")
-; (depends-on "grammar/expressions-c17-ext.abnf")
-; (depends-on "grammar/expressions-c23-ext.abnf")
+; (depends-on "grammar/expressions-c17-gcc.abnf")
+; (depends-on "grammar/expressions-c17-clang.abnf")
+; (depends-on "grammar/expressions-c23-gcc.abnf")
+; (depends-on "grammar/expressions-c23-clang.abnf")
 ; (depends-on "grammar/attributes.abnf")
 ; (depends-on "grammar/assembly.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
@@ -418,11 +420,19 @@
 (defgrammar expressions-c23-noext
   "expressions in the C23 dialect without extensions")
 
-(defgrammar expressions-c17-ext
-  "expressions in the C17 dialects with extensions")
+(defgrammar expressions-c17-gcc
+  "expressions in the C17 dialect with GCC extensions")
 
-(defgrammar expressions-c23-ext
-  "expressions in the C23 dialects with extensions")
+(defgrammar expressions-c17-clang
+  "expressions in the C17 dialects with Clang extensions
+   (with and without CHERI extensions)")
+
+(defgrammar expressions-c23-gcc
+  "expressions in the C23 dialect with GCC extensions")
+
+(defgrammar expressions-c23-clang
+  "expressions in the C23 dialects with Clang extensions
+   (with and without CHERI extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -576,17 +586,21 @@
      (c::standard-case
       dialect.std
       :c17 (append *grammar-expressions-c17*
-                   (if (or dialect.gcc
-                           dialect.clang)
-                       (append *grammar-expressions-gcc-clang*
-                               *grammar-expressions-c17-ext*)
-                     *grammar-expressions-c17-noext*))
+                   (cond (dialect.gcc
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c17-gcc*))
+                         (dialect.clang
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c17-clang*))
+                         (t *grammar-expressions-c17-noext*)))
       :c23 (append *grammar-expressions-c23*
-                   (if (or dialect.gcc
-                           dialect.clang)
-                       (append *grammar-expressions-gcc-clang*
-                               *grammar-expressions-c23-ext*)
-                     *grammar-expressions-c23-noext*)))
+                   (cond (dialect.gcc
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c23-gcc*))
+                         (dialect.clang
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c23-clang*))
+                         (t *grammar-expressions-c23-noext*))))
      ;; attributes:
      *grammar-attributes*
      ;; assembly:
