@@ -110822,6 +110822,12 @@ it."
  (or with the @(':total') argument of @(tsee memoize)).  For an example, see
  @(see community-book) @('system/tests/memoize-partial-table-def.lisp').</p>
 
+ <p>Fixed a soundness bug in the check on whether a symbol @('warrant-fn') is
+ the warrant function of some function, @('fn') (as performed by ACL2 system
+ function @('warrant-function-namep')).  See @(see community-books)
+ @('system/tests/fake-warrant-defpkg.lisp') and
+ @('system/tests/fake-warrant-name-import.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
