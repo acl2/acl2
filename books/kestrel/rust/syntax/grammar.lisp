@@ -119,25 +119,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This topic is the single list of the differences between
-; the Reference and rustc that affect the grammar:
-; a newly found difference should be added here,
+; This topic is the single list of the places where the Reference
+; does not tell us what rustc does about lexical structure.
+; A newly found one should be added here, under the heading that fits it,
 ; and described only briefly at its place in the grammar.
 
 (defxdoc+ reference-vs-rustc
   :parents (grammar)
-  :short "Where the Rust Reference and rustc differ on lexical structure."
+  :short "Where the Rust Reference differs from rustc on lexical structure,
+          or leaves open what rustc does."
   :long
   (xdoc::topstring
    (xdoc::p
     "Our lexical grammar is synthesized from the Rust Reference
      and from the behavior of rustc, both at version 1.87.0
      (see @(see grammar)).
-     In the cases listed here, the two differ
-     on which inputs lex, or on how an input divides into tokens.
+     This topic lists the cases, found so far,
+     in which the Reference does not tell us what rustc does.
+     They are of two kinds.
+     In the first, the Reference says one thing and rustc does another:
+     the two differ on which inputs lex,
+     or on how an input divides into tokens.
+     In the second, the Reference can be read in more than one way,
+     or says two things that do not agree,
+     and rustc does one of them.
      In each case we follow rustc,
      since the lexer is meant to accept
      exactly the inputs that rustc's lexer accepts.")
+   (xdoc::p
+    "What rustc does in each case, we have observed by running it.
+     What the Reference says is our reading of its rules and text.
+     The Reference gives a rule for each kind of token,
+     but it does not say how an input divides into tokens
+     where rules match texts of different lengths;
+     we read it with the usual convention
+     that the longest token is taken [SC1].")
+   (xdoc::h3 "Where the Reference says one thing and rustc does another")
    (xdoc::desc
     "A lone underscore right after a character or string literal"
     (xdoc::p
@@ -170,36 +187,116 @@
       about lifetimes
       (see @(tsee lexeme-cst-reserved-prefix-okp))."))
    (xdoc::desc
-    "An underscore at the start of the suffix of a number literal"
+    "Zero width joiners in identifiers"
     (xdoc::p
-     "In the Reference, the suffix of an "
+     "The Reference says that "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/identifiers.html"
+      "identifiers")
+     " must not contain
+      the zero width non-joiner (U+200C) or the zero width joiner (U+200D).
+      rustc accepts both after the first character of an identifier,
+      like every other character
+      with the Unicode property @('XID_Continue'),
+      and only warns about them
+      (with its lint @('uncommon_codepoints')).
+      Our identifiers are ASCII-only for now [SC4];
+      when they cover Unicode,
+      they will include these two characters, as in rustc."))
+   (xdoc::desc
+    "A lifetime immediately followed by a single quote"
+    (xdoc::p
+     "The Reference's rules for "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#lifetimes-and-loop-labels"
+      "lifetime tokens")
+     " carry the condition
+      &ldquo;not immediately followed by @('\\'')&rdquo;.
+      The rule for float literals that end with a period
+      carries a condition of the same form,
+      and there it restricts which texts are tokens:
+      in @('1..2'), the text @('1.') is not a float literal,
+      and the token is the shorter @('1').
+      Read in the same way, the condition on lifetimes
+      makes @('\\'ab\\' \\'') lex as
+      the lifetime @('\\'a') followed by the byte literal @('b\\' \\''):
+      there @('\\'ab') is not a lifetime token, and @('\\'a') is one.
+      rustc reads @('\\'ab\\'') as
+      a character literal with two characters,
+      and rejects the input.
+      We reject it, by the side condition [SC12]
+      (see @(tsee lexeme-cst-lifetime-quote-okp))."))
+   (xdoc::h3 "Where the Reference is ambiguous or contradicts itself")
+   (xdoc::desc
+    "An underscore between the digits of a number literal and its suffix"
+    (xdoc::p
+     "In the Reference, the digits of an "
      (xdoc::ahref
       "https://doc.rust-lang.org/1.87.0/reference/tokens.html#integer-literals"
       "integer literal")
-     " is any suffix that does not begin with @('e') or @('E'),
-      so it may begin with an underscore.
-      Since the digits of the literal may end with underscores,
-      @('1_a') can then be read in two ways,
-      and @('1_e') is the integer literal @('1') with suffix @('_e').
-      In rustc, the digits take every underscore that follows them,
-      so a suffix never begins with one;
-      rustc reads @('1_e') as a float literal
-      whose exponent has no digits, and rejects it.
-      Our rule @('suffix-no-e') does not begin with an underscore.")
-    (xdoc::p
-     "The same holds for the suffix of a "
+     " may end with underscores, and the "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#suffixes"
+      "suffix")
+     " after them may begin with one.
+      So @('1_u8') can be read with suffix @('u8') or with suffix @('_u8'),
+      and the same goes for a "
      (xdoc::ahref
       "https://doc.rust-lang.org/1.87.0/reference/tokens.html#floating-point-literals"
       "float literal")
-     ", after the digits of its fraction or of its exponent:
-      in the Reference, @('1.5_f32') can be read
-      with suffix @('f32') or with suffix @('_f32'),
-      and @('1.0_e') can be read as a float literal with suffix @('_e');
-      rustc reads the first with suffix @('f32'),
-      and rejects the second.
-      Our rules @('suffix-no-e') and @('suffix-no-underscore'),
-      for the suffixes of float literals without and with an exponent,
+     " such as @('1.5_f32').
+      Likewise, @('1_e') and @('1.0_e') can be read
+      as literals with suffix @('_e'),
+      and also as reserved forms:
+      a number followed by @('e') and no digit.
+      In rustc, the digits take every underscore that follows them,
+      so a suffix never begins with one:
+      @('1_u8') has type @('u8'), @('1.5_f32') has type @('f32'),
+      and @('1_e') and @('1.0_e') are rejected,
+      as exponents without digits.
+      Our rules for a suffix after digits,
+      @('suffix-no-e') and @('suffix-no-underscore'),
       do not begin with an underscore."))
+   (xdoc::desc
+    "A hexadecimal digit at the start of the suffix of a hexadecimal literal"
+    (xdoc::p
+     "In the Reference's rule for integer literals,
+      a suffix may begin with any letter other than @('e') and @('E'),
+      and so with a letter that is a hexadecimal digit.
+      So @('0x1f') can be read as a hexadecimal literal without a suffix,
+      or as the hexadecimal literal @('0x1') with suffix @('f').
+      The Reference's examples show the first reading
+      (@('0x01_f32') is given as the integer 7986),
+      and rustc does the same: the digits extend as far as they can.
+      Our grammar has both readings, like the Reference;
+      our lexer takes the digits as far as they go.
+      For this reason, the side condition [SC7] tells
+      whether a literal with a radix prefix has a suffix
+      from its text, not from its CST
+      (see @(tsee radix-literal-string-p))."))
+   (xdoc::desc
+    "Text with a radix prefix that is not a literal in that radix"
+    (xdoc::p
+     "Among its "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#reserved-forms-similar-to-number-literals"
+      "reserved forms similar to number literals")
+     ", which are rejected and not read as separate tokens,
+      the Reference lists
+      a radix prefix without digits (@('0b'), @('0b_')),
+      a binary or octal literal followed by
+      a decimal digit that is not of its radix (@('0b12')),
+      and a binary or octal literal followed by @('e') or @('E')
+      (@('0b1e')).
+      But each of these texts also matches the rule for integer literals,
+      as the decimal literal @('0') with a suffix
+      (@('b'), @('b_'), @('b12'), @('b1e')).
+      With more letters after it, that reading is even the longer one:
+      in @('0b_a'), the reserved form is @('0b_'),
+      and the integer literal with suffix @('b_a') is the whole text.
+      rustc rejects all these texts.
+      So do we, by the side condition [SC7]
+      (see @(tsee lexeme-cst-reserved-number-okp))."))
    (xdoc::desc
     "A carriage return in a string continuation"
     (xdoc::p
@@ -227,37 +324,19 @@
       (see @(tsee lexeme-cst-string-continues-okp)).
       The same holds for byte string literals and C string literals."))
    (xdoc::desc
-    "Zero width joiners in identifiers"
+    "A tuple index right after another"
     (xdoc::p
-     "The Reference says that "
+     "The Reference gives the "
      (xdoc::ahref
-      "https://doc.rust-lang.org/1.87.0/reference/identifiers.html"
-      "identifiers")
-     " must not contain
-      the zero width non-joiner (U+200C) or the zero width joiner (U+200D).
-      rustc accepts both after the first character of an identifier,
-      like every other character
-      with the Unicode property @('XID_Continue'),
-      and only warns about them
-      (with its lint @('uncommon_codepoints')).
-      Our identifiers are ASCII-only for now [SC4];
-      when they cover Unicode,
-      they will include these two characters, as in rustc."))
-   (xdoc::desc
-    "A lifetime immediately followed by a single quote"
-    (xdoc::p
-     "The Reference's rules for "
-     (xdoc::ahref
-      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#lifetimes-and-loop-labels"
-      "lifetime tokens")
-     " carry the condition
-      &ldquo;not immediately followed by @('\\'')&rdquo;.
-      Read as a condition on which texts are lifetime tokens,
-      it would make @('\\'ab\\' \\'') lex as
-      the lifetime @('\\'a') followed by the byte literal @('b\\' \\''),
-      since lexing takes the longest token at each point.
-      rustc reads @('\\'ab\\'') as
-      a character literal with two characters,
-      and rejects the input.
-      We reject it, by the side condition [SC12]
-      (see @(tsee lexeme-cst-lifetime-quote-okp))."))))
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#tuple-index"
+      "tuple index")
+     ", as in @('x.0'), as a rule of the lexer: it is an integer literal.
+      But in @('x.0.1'), the text @('0.1') matches
+      the Reference's rule for float literals,
+      which gives the longer token,
+      and the Reference does not say
+      how the two tuple indices come out of it.
+      rustc's lexer produces the float literal @('0.1') there,
+      and rustc's parser splits it into the two indices.
+      Our lexer produces the float literal as well;
+      splitting it will be up to the parser."))))

@@ -128,9 +128,9 @@
 ;       which [SC1] maximizes; unlike [SC2], it depends on the
 ;       input after the candidate.)
 ;
-; Where [Reference] and rustc differ, this grammar follows rustc;
-; the xdoc topic reference-vs-rustc (in grammar.lisp) lists the
-; cases.
+; Where [Reference] and rustc differ, or [Reference] leaves open
+; what rustc does, this grammar follows rustc; the xdoc topic
+; reference-vs-rustc (in grammar.lisp) lists the cases.
 
 ;-------------------------------------------------------------------------------
 ; Lexemes
@@ -265,8 +265,11 @@ hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
 ; this rule.  Nor does it start with "_": the digit rules above
 ; take every "_" that follows the digits, as rustc's lexer does.
 ; ([Reference; suffixes] also lets a suffix start with "_", which
-; makes e.g. 1_a ambiguous, and 1_e the integer 1 with suffix _e,
-; which rustc rejects.)
+; leaves open where the digits end, e.g. in 1_u8.)  A suffix may
+; start with a letter that is a hexadecimal digit, as in
+; [Reference], so the rules read 0x1f also as 0x1 with suffix f;
+; rustc's lexer takes the digits as far as they go, and so does
+; ours.
 
 suffix-no-e = ascii-letter-no-e *identifier-continue
 
