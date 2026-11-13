@@ -174,6 +174,8 @@
 (test-lexeme-okp "r##\"a\"#b\"##")
 (test-lexeme-okp "'a")
 (test-lexeme-okp "'r#fn")
+(test-lexeme-okp "1.")
+(test-lexeme-okp "1_000.5e-3f64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,3 +241,151 @@ b\"")
    (and (equal (len trees) 1)
         (lexeme-cst-okp (car trees))
         (not (equal (car trees) *short-continue-cst*)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC14]: which lexemes are subject to the condition.
+
+(defmacro test-float-period-lexeme (string yes/no)
+  `(assert-event
+    (equal (float-period-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-float-period-lexeme "1." t)
+(test-float-period-lexeme "1_." t)
+(test-float-period-lexeme "1.5" nil)
+(test-float-period-lexeme "1e5" nil)
+(test-float-period-lexeme "1" nil)
+(test-float-period-lexeme "." nil) ; punctuation
+(test-float-period-lexeme ".." nil)
+
+; [SC14]: the condition against the remaining input.
+
+(defmacro test-float-period (string rest-nats yes/no)
+  `(assert-event
+    (equal (lexeme-cst-float-period-okp
+            (car (lexemize-rust-from-string ,string))
+            ,rest-nats)
+           ,yes/no)))
+
+(test-float-period "1." nil t) ; at end of input
+(test-float-period "1." (list #x2b) t) ; 1.+
+(test-float-period "1." (list #x20 #x61) t) ; 1. a
+(test-float-period "1." (list #x2e) nil) ; 1..
+(test-float-period "1." (list #x5f) nil) ; 1._
+(test-float-period "1." (list #x61) nil) ; 1.a
+(test-float-period "1." (list #x45) nil) ; 1.E
+(test-float-period "1.5" (list #x2e) t) ; other float literals are exempt
+(test-float-period "1" (list #x2e) t) ; and so are other lexemes
+
+; The characters that can start an identifier, in the specification,
+; are those for which the lexer lexes an identifier-start.
+
+(defun identifier-start-codes-agree (n)
+  (if (zp n)
+      t
+    (b* ((code (1- n))
+         ((mv tree &) (lex-identifier-start (list code))))
+      (and (equal (identifier-start-code-p code)
+                  (not (reserrp tree)))
+           (identifier-start-codes-agree (1- n))))))
+
+(assert-event (identifier-start-codes-agree #x3000))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC7]: which lexemes are subject to the condition.
+
+(defmacro test-number-literal-lexeme (string yes/no)
+  `(assert-event
+    (equal (number-literal-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-number-literal-lexeme "1" t)
+(test-number-literal-lexeme "0x1f" t)
+(test-number-literal-lexeme "1u8" t)
+(test-number-literal-lexeme "1." t)
+(test-number-literal-lexeme "1.5e5f32" t)
+(test-number-literal-lexeme "a1" nil)
+(test-number-literal-lexeme "'1'" nil)
+(test-number-literal-lexeme "." nil)
+
+; [SC7]: the conditions against the remaining input.
+
+(defmacro test-reserved-number (string rest-nats yes/no)
+  `(assert-event
+    (equal (lexeme-cst-reserved-number-okp
+            (car (lexemize-rust-from-string ,string))
+            ,rest-nats)
+           ,yes/no)))
+
+; A number literal followed by e or E.
+
+(test-reserved-number "1" (list #x65) nil) ; 1e
+(test-reserved-number "1" (list #x45 #x2b) nil) ; 1E+
+(test-reserved-number "1_" (list #x65) nil) ; 1_e
+(test-reserved-number "1.0" (list #x65 #x6d) nil) ; 1.0em
+(test-reserved-number "1" (list #x20 #x65) t) ; 1 e
+(test-reserved-number "1" nil t) ; at end of input
+(test-reserved-number "1e5" nil t)
+(test-reserved-number "+" (list #x65) t) ; other lexemes are exempt
+
+; A literal with a radix prefix and no suffix,
+; followed by a period that would belong to it.
+
+(test-reserved-number "0x1" (list #x2e #x35) nil) ; 0x1.5
+(test-reserved-number "0x1f" (list #x2e #x35) nil) ; 0x1f.5 (f is a digit)
+(test-reserved-number "0b1" (list #x2e) nil) ; 0b1. at end of input
+(test-reserved-number "0o7_" (list #x2e #x20) nil) ; 0o7_. and a space
+(test-reserved-number "0x1" (list #x2e #x2e) t) ; 0x1..
+(test-reserved-number "0x1" (list #x2e #x61) t) ; 0x1.a
+(test-reserved-number "0x1" (list #x2e #x5f) t) ; 0x1._
+(test-reserved-number "0b1u8" (list #x2e #x30) t) ; with a suffix
+(test-reserved-number "0x1g" (list #x2e #x30) t) ; with a suffix
+(test-reserved-number "1" (list #x2e #x2e) t) ; decimal literals are exempt
+
+; Text that starts with a radix prefix,
+; read as the decimal literal 0 with a suffix.
+; For 0b1 there is also the CST with a binary literal,
+; which is the lexer's, and is valid.
+; For 0b12 there is only the CST with the decimal literal 0;
+; it is a valid lexeme CST, so maximal munch chooses it,
+; and the condition rejects it, as the lexer rejects the input.
+
+(defun zero-with-suffix-cst (suffix-nats)
+  (b* (((mv zero &) (lex-dec-literal (list #x30)))
+       ((mv suffix &) (lex-suffix-no-e suffix-nats))
+       (literal (abnf::make-tree-nonleaf
+                 :rulename? (abnf::rulename "integer-literal")
+                 :branches (list (list (body-item zero))
+                                 (list (body-item suffix)))))
+       (token (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "token")
+               :branches (list (list literal)))))
+    (abnf::make-tree-nonleaf
+     :rulename? (abnf::rulename "lexeme")
+     :branches (list (list token)))))
+
+(defconst *0b1-as-decimal-cst* (zero-with-suffix-cst (list #x62 #x31)))
+
+(assert-event (equal (abnf::tree->string *0b1-as-decimal-cst*)
+                     (list #x30 #x62 #x31)))
+(assert-event (lexeme-cst-okp *0b1-as-decimal-cst*))
+(assert-event (dec-integer-literal-lexeme-cst-p *0b1-as-decimal-cst*))
+(assert-event (not (lexeme-cst-reserved-number-okp *0b1-as-decimal-cst* nil)))
+(assert-event
+ (b* ((trees (lexemize-rust-from-string "0b1")))
+   (and (equal (len trees) 1)
+        (lexeme-cst-okp (car trees))
+        (not (dec-integer-literal-lexeme-cst-p (car trees)))
+        (lexeme-cst-reserved-number-okp (car trees) nil))))
+
+(defconst *0b12-as-decimal-cst* (zero-with-suffix-cst (list #x62 #x31 #x32)))
+
+(assert-event (equal (abnf::tree->string *0b12-as-decimal-cst*)
+                     (list #x30 #x62 #x31 #x32)))
+(assert-event (lexeme-cst-okp *0b12-as-decimal-cst*))
+(assert-event (not (lexeme-cst-reserved-number-okp *0b12-as-decimal-cst* nil)))
+(assert-event (reserrp (lexemize-rust-from-string "0b12")))

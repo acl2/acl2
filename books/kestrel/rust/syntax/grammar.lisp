@@ -68,7 +68,7 @@
    (xdoc::p
     "The first slice covers whitespace, comments
      (except block doc comments),
-     ASCII identifiers, lifetimes, integer literals,
+     ASCII identifiers, lifetimes, integer and float literals,
      character, byte, string, byte-string, and C-string literals
      (including their raw forms),
      punctuation, and delimiters;
@@ -170,7 +170,7 @@
       about lifetimes
       (see @(tsee lexeme-cst-reserved-prefix-okp))."))
    (xdoc::desc
-    "An underscore at the start of the suffix of an integer literal"
+    "An underscore at the start of the suffix of a number literal"
     (xdoc::p
      "In the Reference, the suffix of an "
      (xdoc::ahref
@@ -185,7 +185,21 @@
       so a suffix never begins with one;
       rustc reads @('1_e') as a float literal
       whose exponent has no digits, and rejects it.
-      Our rule @('suffix-no-e') does not begin with an underscore."))
+      Our rule @('suffix-no-e') does not begin with an underscore.")
+    (xdoc::p
+     "The same holds for the suffix of a "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/tokens.html#floating-point-literals"
+      "float literal")
+     ", after the digits of its fraction or of its exponent:
+      in the Reference, @('1.5_f32') can be read
+      with suffix @('f32') or with suffix @('_f32'),
+      and @('1.0_e') can be read as a float literal with suffix @('_e');
+      rustc reads the first with suffix @('f32'),
+      and rejects the second.
+      Our rules @('suffix-no-e') and @('suffix-no-underscore'),
+      for the suffixes of float literals without and with an exponent,
+      do not begin with an underscore."))
    (xdoc::desc
     "A carriage return in a string continuation"
     (xdoc::p
