@@ -1998,6 +1998,9 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       ".")
      (xdoc::p
+      "We also include the GCC extension @('__bf16'),
+       which is a floating type.")
+     (xdoc::p
       "We also include the GCC extension @('__builtin_va_list'),
        whch is a type.
        Although we did not see it in the GCC documentation,
@@ -2048,6 +2051,7 @@
     (:float64x ())
     (:float128 ())
     (:float128x ())
+    (:bf16 ())
     (:builtin-va-list ())
     (:struct-empty ((attribs attrib-spec-list)
                     (name? ident-option)

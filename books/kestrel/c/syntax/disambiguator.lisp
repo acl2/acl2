@@ -1931,6 +1931,7 @@
        :float64x (retok (type-spec-float64x) (dstate-fix dstate))
        :float128 (retok (type-spec-float128) (dstate-fix dstate))
        :float128x (retok (type-spec-float128x) (dstate-fix dstate))
+       :bf16 (retok (type-spec-bf16) (dstate-fix dstate))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dstate-fix dstate))
        :struct-empty (retok (type-spec-fix tyspec)

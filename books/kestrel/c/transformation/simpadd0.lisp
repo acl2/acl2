@@ -741,6 +741,7 @@
        :float64x (mv (type-spec-fix tyspec) gout0)
        :float128 (mv (type-spec-fix tyspec) gout0)
        :float128x (mv (type-spec-fix tyspec) gout0)
+       :bf16 (mv (type-spec-fix tyspec) gout0)
        :builtin-va-list (mv (type-spec-fix tyspec) gout0)
        :struct-empty (mv (type-spec-fix tyspec) gout0)
        :typeof-expr (b* (((mv new-expr (gout gout-expr))

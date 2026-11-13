@@ -106,9 +106,12 @@
 ; '_Float64x',
 ; '_Float128',
 ; '_Float128x',
+; '__bf16',
 ; and '__builtin_va_list'.
 ; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
 ; for the '__float...' and '_Float...' types.
+; We could not find explicit documentation for `__bf16',
+; but GCC accepts it.
 
 ; We include the 'typeof' operator, which is standard in C23
 ; and a GCC extension in earlier versions of C,
@@ -201,6 +204,7 @@ type-specifier = %s"void"
                / %s"_Float64x"
                / %s"_Float128"
                / %s"_Float128x"
+               / %s"__bf16"
                / %s"__builtin_va_list"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"

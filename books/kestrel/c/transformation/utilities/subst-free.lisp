@@ -399,6 +399,7 @@
      :float64x (type-spec-fix type-spec)
      :float128 (type-spec-fix type-spec)
      :float128x (type-spec-fix type-spec)
+     :bf16 (type-spec-fix type-spec)
      :builtin-va-list (type-spec-fix type-spec)
      :struct-empty (type-spec-fix type-spec)
      :typeof-expr (c$::type-spec-typeof-expr

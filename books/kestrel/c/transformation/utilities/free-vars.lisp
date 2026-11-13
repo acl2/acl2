@@ -209,6 +209,7 @@
      :float64x (treeset::empty)
      :float128 (treeset::empty)
      :float128x (treeset::empty)
+     :bf16 (treeset::empty)
      :builtin-va-list (treeset::empty)
      :struct-empty (treeset::empty)
      :typeof-expr (free-vars-expr type-spec.expr bound-vars)

@@ -2393,6 +2393,8 @@
         (retok (type-spec-fix type-spec) nil nil st)
         :float128x
         (retok (type-spec-fix type-spec) nil nil st)
+        :bf16
+        (retok (type-spec-fix type-spec) nil nil st)
         :builtin-va-list
         (retok (type-spec-fix type-spec) nil nil st)
         :struct-empty

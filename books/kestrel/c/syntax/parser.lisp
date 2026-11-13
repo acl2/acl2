@@ -458,6 +458,7 @@
      @('_Float64x'),
      @('_Float128'),
      @('_Float128x'),
+     @('__bf16'),
      @('__builtin_va_list'), and
      @('__auto_type').")
    (xdoc::p
@@ -495,6 +496,7 @@
       (token-keywordp token? "_Float64x")
       (token-keywordp token? "_Float128")
       (token-keywordp token? "_Float128x")
+      (token-keywordp token? "__bf16")
       (token-keywordp token? "__builtin_va_list")
       (token-keywordp token? "__auto_type"))
   ///
@@ -545,6 +547,7 @@
         ((token-keywordp token "_Float64x") (type-spec-float64x))
         ((token-keywordp token "_Float128") (type-spec-float128))
         ((token-keywordp token "_Float128x") (type-spec-float128x))
+        ((token-keywordp token "__bf16") (type-spec-bf16))
         ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))
         (t (prog2$ (impossible) (irr-type-spec))))

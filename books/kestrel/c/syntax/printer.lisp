@@ -2521,6 +2521,7 @@
      :float64x (print-astring "_Float64x" pstate)
      :float128 (print-astring "_Float128" pstate)
      :float128x (print-astring "_Float128x" pstate)
+     :bf16 (print-astring "__bf16" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
                         (pstate (if (consp tyspec.attribs)
