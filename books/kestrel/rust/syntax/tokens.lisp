@@ -202,6 +202,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod float-lit
+  :short "Fixtype of float literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A float literal consists of
+     the text of its number, as written,
+     and a suffix, as written
+     (the empty string means no suffix).
+     The text has the integer digits,
+     then possibly a period, possibly followed by fraction digits,
+     then possibly an exponent, with its letter, optional sign, and digits;
+     the digits may contain @('_') separators.
+     Examples are @('\"2.\"'), @('\"0.5\"'),
+     @('\"1e10\"'), and @('\"1_000.0E-3\"').")
+   (xdoc::p
+    "As for integer literals,
+     any identifier-shaped suffix is accepted at the lexical level
+     (e.g. @('1.5px'), or @('1e2e3') with suffix @('\"e3\"')),
+     only later phases restrict suffixes
+     to the standard ones (@('f32') and @('f64')),
+     and the value of the literal is not stored:
+     it is computed by later phases from the text.
+     An integer literal with a float suffix, like @('1f32'),
+     is an integer literal token (see @(tsee int-lit))."))
+  ((text string)
+   (suffix string))
+  :pred float-litp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-float-lit
+  :short "A float-literal witness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see rust::irr-edition) for
+     the purpose of these witnesses."))
+  :type float-litp
+  :body (make-float-lit :text "" :suffix ""))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod char-lit
   :short "Fixtype of character and byte literals."
   :long
@@ -302,11 +345,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Integer literals, character and byte literals,
-     and string literals of all kinds.
-     Float literals will be added
-     as the lexer grows to cover them."))
+    "Integer literals, float literals, character and byte literals,
+     and string literals of all kinds."))
   (:int ((int int-lit)))
+  (:float ((float float-lit)))
   (:char ((char char-lit)))
   (:str ((str str-lit)))
   :pred litp)
@@ -504,6 +546,8 @@
 (assert-event (tokenp (token-lit (lit-int (make-int-lit :radix (radix-hex)
                                                         :digits "7f_ff"
                                                         :suffix "u16")))))
+(assert-event (tokenp (token-lit (lit-float (make-float-lit :text "1_000.0E-3"
+                                                            :suffix "f64")))))
 (assert-event (tokenp (token-open-delim (delim-brace))))
 (assert-event (lexemep (lexeme-comment t " nested /* ok */ ")))
 (assert-event (token+span-listp (list (make-token+span

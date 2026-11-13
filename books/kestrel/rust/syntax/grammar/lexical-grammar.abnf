@@ -11,11 +11,11 @@
 ; This grammar covers the lexical structure of Rust
 ; [Reference; rustc 1.87.0] for a first slice:
 ; whitespace, comments (except block doc comments),
-; identifiers (ASCII-only for now), lifetimes, integer literals,
+; identifiers (ASCII-only for now), lifetimes,
+; integer and float literals,
 ; character, byte, string, byte-string, and C-string literals
 ; (including their raw forms), punctuation, and delimiters.
-; Not yet covered: block doc comments, float literals,
-; and the shebang line.
+; Not yet covered: block doc comments and the shebang line.
 
 ; The input to this grammar is a sequence of Unicode scalar values,
 ; i.e. code points excluding the surrogate range %xD800-DFFF;
@@ -60,10 +60,22 @@
 ;       is a strict or reserved keyword of the current edition
 ;       (see keywords.lisp) is a keyword token, not an identifier.
 ; [SC7] Reserved numeric forms: certain forms are reserved and must
-;       be rejected rather than lexed as an integer literal
-;       followed by more input, e.g. "0b_" (no binary digits) and
-;       "0b123" (decimal digits after a binary prefix)
-;       [Reference; reserved forms similar to number literals].
+;       be rejected rather than lexed as a number literal followed
+;       by more input
+;       [Reference; reserved forms similar to number literals]:
+;       (a) text that starts with "0b", "0o", or "0x" but is not a
+;       bin-literal, oct-literal, or hex-literal with an optional
+;       suffix, e.g. "0b_" (no binary digits), "0b123" (a decimal
+;       digit after the binary digits), and "0b1e" (there are no
+;       binary float literals); by the rules alone, each of these
+;       is the dec-literal "0" with a suffix;
+;       (b) a bin-literal, oct-literal, or hex-literal without a
+;       suffix, immediately followed by a "." that is not itself
+;       followed by ".", "_", or an identifier-start, e.g. "0x1.5"
+;       (there are no hexadecimal float literals);
+;       (c) an integer-literal or float-literal immediately
+;       followed by "e" or "E", e.g. "1e", "1.0e+", and "2em"
+;       (an exponent without digits).
 ; [SC8] Reserved prefixes: an identifier-or-keyword (not a raw
 ;       identifier), or a lone "_", immediately followed by "#",
 ;       "'", or a double quote is a reserved prefix, which must be
@@ -95,9 +107,10 @@
 ;       a "_" as the literal's suffix and rejects it.  In
 ;       [Reference; suffixes], a suffix has the form of an
 ;       identifier, and a lone "_" is not an identifier, so the "_"
-;       would lex as a separate token; we follow rustc.  After an
-;       integer literal, maximal munch absorbs any "_" into the
-;       digits or the suffix.
+;       would lex as a separate token; we follow rustc.  After a
+;       number literal, maximal munch absorbs any "_" into the
+;       digits or the suffix (and a float literal that ends with
+;       its period is not followed by "_", by [SC14]).
 ; [SC12] Lifetimes and character literals: a lifetime-token (raw
 ;       or not) immediately followed by "'" must be rejected.
 ;       rustc reads such text, e.g. 'ab', as a character literal
@@ -107,10 +120,17 @@
 ;       its line feed.  That is, in its literal it is not
 ;       immediately followed by a tab, line feed, or space as a
 ;       character of the literal, which the rules alone allow.
+; [SC14] Float literals ending with a period: a float-literal that
+;       consists of a dec-literal and "." is not immediately
+;       followed by ".", "_", or an identifier-start.  So "1..2" is
+;       "1", "..", "2", and "1.max" is "1", ".", "max".  (Like
+;       [SC2], this condition constrains the candidate set over
+;       which [SC1] maximizes; unlike [SC2], it depends on the
+;       input after the candidate.)
 ;
-; Where [Reference] and rustc differ, this grammar follows rustc;
-; the xdoc topic reference-vs-rustc (in grammar.lisp) lists the
-; cases.
+; Where [Reference] and rustc differ, or [Reference] leaves open
+; what rustc does, this grammar follows rustc; the xdoc topic
+; reference-vs-rustc (in grammar.lisp) lists the cases.
 
 ;-------------------------------------------------------------------------------
 ; Lexemes
@@ -130,6 +150,7 @@ token = identifier-or-keyword ; [SC6]
       / raw-byte-string-literal
       / raw-c-string-literal
       / integer-literal
+      / float-literal
       / punctuation
       / delimiter
 
@@ -244,10 +265,38 @@ hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
 ; this rule.  Nor does it start with "_": the digit rules above
 ; take every "_" that follows the digits, as rustc's lexer does.
 ; ([Reference; suffixes] also lets a suffix start with "_", which
-; makes e.g. 1_a ambiguous, and 1_e the integer 1 with suffix _e,
-; which rustc rejects.)
+; leaves open where the digits end, e.g. in 1_u8.)  A suffix may
+; start with a letter that is a hexadecimal digit, as in
+; [Reference], so the rules read 0x1f also as 0x1 with suffix f;
+; rustc's lexer takes the digits as far as they go, and so does
+; ours.
 
 suffix-no-e = ascii-letter-no-e *identifier-continue
+
+;-------------------------------------------------------------------------------
+; Float literals
+;-------------------------------------------------------------------------------
+
+; A float literal is a decimal literal followed by a period, by a
+; period and a fraction, or by an exponent, with or without a
+; period and a fraction before the exponent.  A literal that ends
+; with its period takes no suffix, and the rule for it
+; overapproximates: see [SC14].  Float literals have no radix
+; prefix, and an exponent has at least one digit: see [SC7].
+
+float-literal = dec-literal "." ; [SC14]
+              / dec-literal "." dec-literal [ suffix-no-e ] ; [SC7]
+              / dec-literal [ "." dec-literal ] float-exponent
+                [ suffix-no-underscore ]
+
+float-exponent = ( %s"e" / %s"E" ) [ "+" / "-" ]
+                 *( dec-digit / "_" ) dec-digit *( dec-digit / "_" )
+
+; After an exponent, a suffix may start with "e" or "E": 1e2e3 is
+; a float literal with suffix e3.  As after any digits, a suffix
+; does not start with "_".
+
+suffix-no-underscore = identifier-start *identifier-continue
 
 ;-------------------------------------------------------------------------------
 ; Character and string literals
