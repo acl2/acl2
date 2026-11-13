@@ -239,6 +239,12 @@
                        subst bound-vars)
       (tyname-subst-free (c$::expr-convertvector->type expr)
                          subst bound-vars))
+     :bit-cast
+     (c$::expr-bit-cast
+       (tyname-subst-free (c$::expr-bit-cast->type expr)
+                          subst bound-vars)
+       (expr-subst-free (c$::expr-bit-cast->arg expr)
+                        subst bound-vars))
      :extension
      (expr-extension
        (expr-subst-free (c$::expr-extension->expr expr)

@@ -20,6 +20,7 @@
 
 primary-expression = primary-expression-std
                    / primary-expression-gcc-clang
+                   / primary-expression-clang
 
 postfix-expression = postfix-expression-std
                    / postfix-expression-c23

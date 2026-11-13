@@ -265,7 +265,8 @@
       "_Nonnull"
       "_Null_unspecified"
       "_Nullable"
-      "_Nullable_result")
+      "_Nullable_result"
+      "__builtin_bit_cast")
     (set-difference-equal
       *keywords-gcc*
       '("__float80"

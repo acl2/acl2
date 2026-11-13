@@ -86,6 +86,7 @@
 ; (depends-on "grammar/expressions-c17.abnf")
 ; (depends-on "grammar/expressions-c23.abnf")
 ; (depends-on "grammar/expressions-gcc-clang.abnf")
+; (depends-on "grammar/expressions-clang.abnf")
 ; (depends-on "grammar/expressions-c17-noext.abnf")
 ; (depends-on "grammar/expressions-c23-noext.abnf")
 ; (depends-on "grammar/expressions-c17-gcc.abnf")
@@ -414,6 +415,9 @@
 (defgrammar expressions-gcc-clang
   "expressions in the GCC and Clang dialects")
 
+(defgrammar expressions-clang
+  "expressions in the Clang dialects")
+
 (defgrammar expressions-c17-noext
   "expressions in the C17 dialect without extensions")
 
@@ -591,6 +595,7 @@
                                   *grammar-expressions-c17-gcc*))
                          (dialect.clang
                           (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-clang*
                                   *grammar-expressions-c17-clang*))
                          (t *grammar-expressions-c17-noext*)))
       :c23 (append *grammar-expressions-c23*
@@ -599,6 +604,7 @@
                                   *grammar-expressions-c23-gcc*))
                          (dialect.clang
                           (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-clang*
                                   *grammar-expressions-c23-clang*))
                          (t *grammar-expressions-c23-noext*))))
      ;; attributes:

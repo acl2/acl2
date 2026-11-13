@@ -499,6 +499,16 @@
          (mv (make-expr-convertvector :vec new-vec
                                       :type new-type)
              (gout-no-thm gin)))
+       :bit-cast
+       (b* (((mv new-type (gout gout-type))
+             (simpadd0-tyname expr.type gin))
+            (gin (gin-update gin gout-type))
+            ((mv new-arg (gout gout-arg))
+             (simpadd0-expr expr.arg gin))
+            (gin (gin-update gin gout-arg)))
+         (mv (make-expr-bit-cast :type new-type
+                                 :arg new-arg)
+             (gout-no-thm gin)))
        :extension
        (b* (((mv new-expr (gout gout-expr))
              (simpadd0-expr expr.expr gin))

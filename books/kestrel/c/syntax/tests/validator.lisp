@@ -2353,6 +2353,26 @@ int f(void) {
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+;; With Clang extensions, __builtin_bit_cast is a keyword,
+;; and the first argument of its calls is a type name.
+(test-valid
+ "typedef float flt;
+flt f(int x) {
+  return __builtin_bit_cast(flt, x);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+;; With GCC extensions, it is an identifier,
+;; and the first argument of its calls must be an expression.
+(test-valid-fail
+ "typedef float flt;
+flt f(int x) {
+  return __builtin_bit_cast(flt, x);
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 ;; Under :keep-going, a unit that fails disambiguation
 ;; does not discard the units disambiguated before it.
 (test-valid

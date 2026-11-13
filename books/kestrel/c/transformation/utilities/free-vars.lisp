@@ -96,6 +96,8 @@
                              (free-vars-tyname expr.type bound-vars))
      :convertvector (treeset::union (free-vars-expr expr.vec bound-vars)
                                     (free-vars-tyname expr.type bound-vars))
+     :bit-cast (treeset::union (free-vars-tyname expr.type bound-vars)
+                               (free-vars-expr expr.arg bound-vars))
      :extension (free-vars-expr expr.expr bound-vars)
      :sizeof-ambig (raise "Unexpected ambiguous expression")
      :alignof-ambig (raise "Unexpected ambiguous expression")

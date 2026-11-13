@@ -1706,6 +1706,10 @@
        (b* (((erp vec dstate) (dimb-expr expr.vec dstate))
             ((erp type dstate) (dimb-tyname expr.type dstate)))
          (retok (make-expr-convertvector :vec vec :type type) dstate))
+       :bit-cast
+       (b* (((erp type dstate) (dimb-tyname expr.type dstate))
+            ((erp arg dstate) (dimb-expr expr.arg dstate)))
+         (retok (make-expr-bit-cast :type type :arg arg) dstate))
        :extension
        (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
          (retok (dimb-make/adjust-expr-extension expr) dstate))))

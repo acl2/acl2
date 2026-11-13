@@ -2325,6 +2325,13 @@
                 (pstate (print-tyname expr.type pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :bit-cast
+           (b* ((pstate (print-astring "__builtin_bit_cast(" pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-expr expr.arg (expr-priority-expr) pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
                 (pstate (print-expr expr.expr (expr-priority-cast) pstate)))

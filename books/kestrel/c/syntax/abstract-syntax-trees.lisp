@@ -1744,6 +1744,12 @@
        because its second argument is a type name, not an expression.
        The first argument is an expression.")
      (xdoc::p
+      "As a Clang extension, we include calls of
+       the built-in function @('__builtin_bit_cast').
+       This is not a regular function,
+       because its first argument is a type name, not an expression.
+       The second argument is an expression.")
+     (xdoc::p
       "As a GCC extension, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
@@ -1811,7 +1817,6 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    ;; GCC extensions:
     (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
@@ -1821,6 +1826,8 @@
               (type tyname)))
     (:convertvector ((vec expr)
                      (type tyname)))
+    (:bit-cast ((type tyname)
+                (arg expr)))
     (:extension ((expr expr)))
     :pred exprp
     :layout :fulltree
