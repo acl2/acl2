@@ -53,7 +53,7 @@
 
 ; As a Clang extension,
 ; we include the nullability type qualifiers described in
-; the 'Nullability Attributess' section of [CLA]
+; the 'Nullability Attributes' section of [CLA]
 ; https://clang.llvm.org/docs/AttributeReference.html#nullability-attributes
 ; (which, despite the name, also describes type qualifiers).
 ; The nullability type qualifiers can only appear in

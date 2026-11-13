@@ -125,11 +125,9 @@
      Our ABNF grammar rules are as similar as possible to
      the grammar rules in [C17] and [C23], for the standard constructs.
      The GCC constructs are captured based on [GCCM] and [GCCL],
+     and the Clang constructs are captured based on [CLE] and [CLA],
      but these documents do not use a grammar notation,
      so the relationship is less direct than for the standard constructs.
-     Currently the grammar only mentions GCC extensions,
-     but most of them also apply to Clang;
-     we plan to assess and explicate the Clang extensions.
      However, we depart from the official syntax
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
@@ -168,7 +166,7 @@
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
                  "[CPPM:1.2]")
     ", so we do that as well, when GCC extensions are enabled,
-     or also when Clang extensions are enabled,
+     and also when Clang extensions are enabled,
      since Clang expressly aims at being compatible with GCC
      (and running Clang confirms that).")
    (xdoc::p
@@ -412,7 +410,7 @@
   "expressions in the C23 dialects")
 
 (defgrammar expressions-gcc-clang
-  "expressions in the non-standard C dialects (i.e. with extensions)")
+  "expressions in the GCC and Clang dialects")
 
 (defgrammar expressions-c17-noext
   "expressions in the C17 dialect without extensions")
