@@ -691,3 +691,23 @@
   (defret natp-of-qux-alt
     (implies (and (integerp x) (<= -54 x))
              (natp ret))))
+
+(make-define-config :type-prescription :none)
+
+(define type-prescription-none-from-config ((x natp))
+  (+ x 54))
+
+(assert! (not (getpropc 'type-prescription-none-from-config
+                        'acl2::type-prescriptions nil (w state))))
+
+(define type-prescription-not-none ((x natp))
+  ;; config object's :type-prescription directive overridden.
+  :type-prescription nil
+  (+ x 54))
+
+(assert! (getpropc 'type-prescription-not-none
+                   'acl2::type-prescriptions nil (w state)))
+
+(must-fail
+ (make-define-config :type-prescription (acl2-numberp (foo x)))
+ :expected :hard)

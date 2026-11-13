@@ -83,6 +83,17 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex-fail "/*")
 (test-lex-fail "/* /* */")
 
+; A "/*" inside a block comment opens a nested comment
+; even when a "/" follows its "*": that "*/" does not close anything.
+
+(test-lex-fail "/*/")
+(test-lex-fail "/*/*/")
+(test-lex-fail "/* xyz /*/")
+(test-lex-fail "/* xyz /*/ */")
+(test-lex-fail "/*/**/")
+(test-lex "/*/ */" 1)
+(test-lex "/**/*/" 3) ; comment, *, /
+
 ; Integer literals, including the [SC7] reserved forms.
 
 (test-lex "0" 1)
