@@ -646,10 +646,12 @@
        require the proof tree to be minimal.
        These theorems drop that requirement.")
      (xdoc::p
-      "The validity hypothesis precedes the recognizer hypothesis,
-       so that, when the theorem is used as a rewrite rule,
-       free variable matching binds the proof tree from the former
-       rather than from the weaker latter.")
+      "Unlike the @('p[i]-suff') theorems,
+       these theorems do not require the proof tree
+       to be in the @('p[i]-proof') fixtype either:
+       since @('p[i]-proof-validp') fixes its proof argument,
+       the fixing of a valid proof tree
+       is a valid proof tree in the fixtype.")
      (xdoc::p
       "If XDOC is generated,
        these theorems,
