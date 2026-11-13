@@ -192,7 +192,7 @@
                     :use ((:instance interp-st-bvar-db-ok-necc
                            (interp-st ,assume)
                            (n (interp-st-bvar-db-ok-witness . ,(cdr lit)))))))))))
-   
+
 
 
 (define bvar-db-term-equivs (bvar-db)
@@ -207,7 +207,7 @@
 
 
 (define recreate-bvar-db-equivs ((objs fgl-objectlist-p)
-                                (old-equivs term-equivs-p))
+                                 (old-equivs term-equivs-p))
   :guard (and (eql (len objs) (len old-equivs)))
   :returns (new-equivs term-equivs-p)
   (b* (((when (atom old-equivs)) nil)
@@ -692,10 +692,10 @@
                   (<= (base-bvar$c (interp-st->bvar-db interp-st)) (nfix n))
                   (< (nfix n) (next-bvar$c (interp-st->bvar-db interp-st)))
                   (bfrlist-boundedp (fgl-object-bfrlist (get-bvar->term$c n (interp-st->bvar-db interp-st)))
-                               k (interp-st->logicman interp-st)))
+                                    k (interp-st->logicman interp-st)))
              (bfrlist-boundedp
-                   (fgl-object-bfrlist (get-bvar->term$c n (interp-st->bvar-db new-interp-st)))
-                   k (interp-st->logicman new-interp-st)))
+              (fgl-object-bfrlist (get-bvar->term$c n (interp-st->bvar-db new-interp-st)))
+              k (interp-st->logicman new-interp-st)))
     :hints(("Goal" :in-theory (enable interp-st-bfrs-ok))
            (acl2::function-termhint
             interp-st-global-transform
@@ -784,6 +784,12 @@
                             :logicman :bvar-db :stack :pathcond :constraint :constraint-db)))
              (equal (interp-st-get key new-interp-st)
                     (interp-st-get key interp-st))))
+
+  (defret stack-binding-domains-of-<fn>
+    (equal (stack-binding-domains (interp-st->stack new-interp-st))
+           (stack-binding-domains (interp-st->stack interp-st)))
+    :hints (("Goal" :in-theory (enable <fn>)))
+    :fn interp-st-global-transform)
 
   (defret scratch-isomorphic-of-<fn>
     (interp-st-scratch-isomorphic new-interp-st interp-st)
@@ -903,8 +909,8 @@
         (mv t nil interp-st state))
        ((unless (fgl-object-case config :g-concrete))
         (fgl-interp-error :msg "Fgl-global-transform: config must be a concrete object"
-                         :debug-obj config
-                         :nvals 2))
+                          :debug-obj config
+                          :nvals 2))
        (config (g-concrete->val config))
        ((mv contra interp-st state)
         (interp-st-global-transform config interp-st state))

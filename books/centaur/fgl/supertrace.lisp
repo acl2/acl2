@@ -73,7 +73,7 @@
        (equal (w (update-open-input-channels x state))
               (w state))
        :hints(("Goal" :in-theory (enable w update-open-input-channels))))))
-   
+  
   (defthm w-of-read-object
     (equal (w (mv-nth 2 (read-object channel statE)))
            (w state))
@@ -186,9 +186,9 @@ from this REPL, including variables bound in the rule being applied.</p>
 
 
 (define fgl-trace-entry-fancy-translate (keyvals
-                                              restore-rules
-                                              (interp-st interp-st-bfrs-ok)
-                                              state)
+                                         restore-rules
+                                         (interp-st interp-st-bfrs-ok)
+                                         state)
   :returns (mv err (entry true-listp :rule-classes :type-prescription)
                new-interp-st new-state)
   (b* (((mv err trans-keyvals interp-st state)
@@ -203,8 +203,8 @@ from this REPL, including variables bound in the rule being applied.</p>
                             restore-rules
                             (interp-st interp-st-bfrs-ok)
                             state)
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv "Rune must satisfy fgl-generic-rune-p" nil interp-st state))
+  (b* (((unless (fgl-rune-p rune))
+        (mv "Rune must satisfy fgl-rune-p" nil interp-st state))
        ((mv err entry interp-st state)
         (fgl-trace-entry-fancy-translate
          keyvals
@@ -222,8 +222,6 @@ from this REPL, including variables bound in the rule being applied.</p>
                       (cond 'nil cond-p)
                       (on-entry 'nil on-entry-p)
                       (on-relieve-hyp 'nil on-relieve-hyp-p)
-                      (on-eval-success 'nil on-eval-success-p)
-                      (on-eval-failure 'nil on-eval-failure-p)
                       (on-success 'nil on-success-p)
                       (on-failure 'nil on-failure-p)
                       (restore-rules 'nil))
@@ -231,8 +229,6 @@ from this REPL, including variables bound in the rule being applied.</p>
                   (list . ,(append (and cond-p `(:cond ',cond))
                                    (and on-entry-p `(:on-entry ',on-entry))
                                    (and on-relieve-hyp-p `(:on-relieve-hyp ',on-relieve-hyp))
-                                   (and on-eval-success-p `(:on-eval-success ',on-eval-success))
-                                   (and on-eval-failure-p `(:on-eval-failure ',on-eval-failure))
                                    (and on-success-p `(:on-success ',on-success))
                                    (and on-failure-p `(:on-failure ',on-failure))))
                   ,restore-rules
@@ -254,15 +250,15 @@ syntax-interp), @(see syntax-bind), syntaxp, and bind-free forms.</p>")
 
 
 (define fgl-untrace*-fn (rune &key (interp-st 'interp-st))
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv "Rune must satisfy fgl-generic-rune-p" nil interp-st))
+  (b* (((unless (fgl-rune-p rune))
+        (mv "Rune must satisfy fgl-rune-p" nil interp-st))
        (old-alist (interp-st->trace-alist interp-st))
        (interp-st (update-interp-st->trace-alist
                    (remove-assoc-equal rune old-alist) interp-st)))
     (mv nil rune interp-st)))
 
 (defmacro fgl-untrace* (rune &key (interp-st 'interp-st))
-  `(fgl-untrace*-fn ',rune ,interp-st))
+  `(fgl-untrace*-fn ',rune :interp-st ,interp-st))
 
 (defxdoc fgl-untrace*
   :parents (fgl-rewrite-tracing)
@@ -305,8 +301,6 @@ FGL processing; see @(see fgl-trace*) for more explanation.</p>")
      (cond 'nil cond-p)
      (on-entry 'nil on-entry-p)
      (on-relieve-hyp 'nil on-relieve-hyp-p)
-     (on-eval-success 'nil on-eval-success-p)
-     (on-eval-failure 'nil on-eval-failure-p)
      (on-success 'nil on-success-p)
      (on-failure 'nil on-failure-p)
      (restore-rules 'nil))
@@ -314,8 +308,6 @@ FGL processing; see @(see fgl-trace*) for more explanation.</p>")
                                     (list . ,(append (and cond-p `(:cond ',cond))
                                                      (and on-entry-p `(:on-entry ',on-entry))
                                                      (and on-relieve-hyp-p `(:on-relieve-hyp ',on-relieve-hyp))
-                                                     (and on-eval-success-p `(:on-eval-success ',on-eval-success))
-                                                     (and on-eval-failure-p `(:on-eval-failure ',on-eval-failure))
                                                      (and on-success-p `(:on-success ',on-success))
                                                      (and on-failure-p `(:on-failure ',on-failure))))
                                     ,restore-rules

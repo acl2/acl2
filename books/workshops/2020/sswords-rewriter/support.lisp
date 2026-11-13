@@ -92,18 +92,6 @@
                                                (fgl-object-alist-fix x))
                                :in-theory (enable (:i len))
                                :induct (len x)))))
-             (local (defthm fgl-ev-context-equv-forall-extensions-trivial
-                      (implies (acl2::rewriting-negative-literal
-                                `(fgl-ev-context-equiv-forall-extensions ,contexts ,obj ,term ,eval-alist))
-                               (iff (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
-                                    (and
-                                     (equal (fgl-ev-context-fix contexts (fgl-ev term eval-alist))
-                                            (fgl-ev-context-fix contexts obj))
-                                     (hide (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))))
-                      :hints (("goal" :expand ((:free (x) (hide x)))
-                               :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
-                                      (ext eval-alist)))
-                               :in-theory (disable fgl-ev-context-equiv-forall-extensions-necc)))))
              (local (include-book "centaur/fgl/primitive-lemmas" :dir :system)))
   :origfn syntactically-true :formals (arg))
 

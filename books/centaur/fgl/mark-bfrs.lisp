@@ -93,9 +93,55 @@
   :fn fgl-object-alist-mark-bfrs)
 
 
+(define fgl-arglist-mark-bfrs ((x fgl-arglist-p) bitarr seen)
+  :guard (and (< 0 (bits-length bitarr))
+              (bfr-listp (fgl-arglist-bfrlist x)
+                         (bfrstate (bfrmode :aignet) (1- (bits-length bitarr)))))
+  :prepwork ((local (in-theory (enable fgl-arglist-bfrlist fgl-arg-bfrlist))))
+  :returns (mv new-bitarr new-seen)
+  :verify-guards nil
+  (b* (((when (atom x)) (mv bitarr seen))
+       (arg (car x))
+       ((mv bitarr seen)
+        (fgl-arg-case arg
+          :unbound (mv bitarr seen)
+          :obj (fgl-object-mark-bfrs arg.obj bitarr seen))))
+    (fgl-arglist-mark-bfrs (cdr x) bitarr seen))
+  ///
+  (defret length-of-<fn>
+    (implies (bfr-listp (fgl-arglist-bfrlist x)
+                        (bfrstate (bfrmode :aignet) (1- (len bitarr))))
+             (equal (len new-bitarr) (len bitarr))))
+
+  (verify-guards fgl-arglist-mark-bfrs)
+
+  (defret length-of-<fn>-incr
+    (>= (len new-bitarr) (len bitarr))
+    :rule-classes :linear)
+
+  (defret bfr-markedp-preserved-of-<fn>
+    (implies (bfr-markedp y bitarr)
+             (bfr-markedp y new-bitarr)))
+
+  (defret bitarr-subsetp-of-<fn>
+    (bitarr-subsetp bitarr new-bitarr))
+
+  (defret bfrs-markedp-preserved-of-<fn>
+    (implies (bfrs-markedp y bitarr)
+             (bfrs-markedp y new-bitarr)))
+
+  (defret <fn>-preserves-invar
+    (implies (fgl-object-mark-bfrs-invar seen bitarr)
+             (fgl-object-mark-bfrs-invar new-seen new-bitarr)))
+
+  (defret <fn>-marks-bfrs
+    (implies (fgl-object-mark-bfrs-invar seen bitarr)
+             (bfrs-markedp (fgl-arglist-bfrlist x) new-bitarr))))
+
+
 (define fgl-object-bindings-mark-bfrs ((x fgl-object-bindings-p)
-                                      bitarr
-                                      seen)
+                                       bitarr
+                                       seen)
   :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
                       (implies (fgl-object-bindings-p x)
                                (fgl-object-alist-p x))
@@ -227,6 +273,8 @@
   :prepwork ((local (in-theory (e/d (scratchobj->bfrlist)
                                     (bfrlist-of-scratchobj-fgl-obj->val
                                      bfrlist-of-scratchobj-fgl-objlist->val
+                                     bfrlist-of-scratchobj-fgl-arglist->val
+                                     bfrlist-of-scratchobj-fgl-bindings->val
                                      bfrlist-of-scratchobj-bfr->val
                                      bfrlist-of-scratchobj-bfrlist->val
                                      bfrlist-of-scratchobj-cinst->val
@@ -236,6 +284,8 @@
   (scratchobj-case x
     :fgl-obj (fgl-object-mark-bfrs x.val bitarr seen)
     :fgl-objlist (fgl-objectlist-mark-bfrs x.val bitarr seen)
+    :fgl-arglist (fgl-arglist-mark-bfrs x.val bitarr seen)
+    :fgl-bindings (fgl-object-bindings-mark-bfrs x.val bitarr seen)
     :bfr (b* ((bitarr (bfr-mark x.val bitarr))) (mv bitarr seen))
     :bfrlist (b* ((bitarr (bfrlist-mark x.val bitarr))) (mv bitarr seen))
     :cinst (constraint-instance-mark-bfrs x.val bitarr seen)
@@ -574,7 +624,7 @@
 ;;   :prepwork ((local (in-theory (enable cgraph-edge-bfrlist))))
 ;;   (fgl-object-bindings-mark-bfrs (cgraph-edge->subst x) bitarr seen)
 ;;   ///
-  
+
 ;;   (defret length-of-<fn>
 ;;     (implies (bfr-listp (cgraph-edge-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
 ;;              (equal (len new-bitarr) (len bitarr))))
@@ -611,9 +661,9 @@
 ;;   (b* (((when (atom x)) (mv bitarr seen))
 ;;        ((mv bitarr seen) (cgraph-edge-mark-bfrs (car x) bitarr seen)))
 ;;     (cgraph-edgelist-mark-bfrs (cdr x) bitarr seen))
-    
+
 ;;   ///
-  
+
 ;;   (defret length-of-<fn>
 ;;     (implies (bfr-listp (cgraph-edgelist-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
 ;;              (equal (len new-bitarr) (len bitarr))))
@@ -652,9 +702,9 @@
 ;;        ((mv bitarr seen) (fgl-object-mark-bfrs (caar x) bitarr seen))
 ;;        ((mv bitarr seen) (cgraph-edgelist-mark-bfrs (cdar x) bitarr seen)))
 ;;     (cgraph-mark-bfrs (cdr x) bitarr seen))
-    
+
 ;;   ///
-  
+
 ;;   (defret length-of-<fn>
 ;;     (implies (bfr-listp (cgraph-bfrlist x) (bfrstate (bfrmode :aignet) (1- (len bitarr))))
 ;;              (equal (len new-bitarr) (len bitarr))))
@@ -694,7 +744,7 @@
         (mv bitarr seen))
        ((mv bitarr seen) (fgl-object-bindings-mark-bfrs (car x) bitarr seen)))
     (fgl-object-bindingslist-mark-bfrs (cdr x) bitarr seen))
-    
+  
   ///
   
   (defret length-of-<fn>
@@ -741,7 +791,7 @@
        ((mv bitarr seen) (fgl-objectlist-mark-bfrs (caar x) bitarr seen))
        ((mv bitarr seen) (fgl-object-bindingslist-mark-bfrs (cdar x) bitarr seen)))
     (sig-table-mark-bfrs (cdr x) bitarr seen))
-    
+  
   ///
   
   (defret length-of-<fn>
@@ -827,7 +877,7 @@
         (mv bitarr seen))
        ((mv bitarr seen) (constraint-tuple-mark-bfrs (car x) bitarr seen)))
     (constraint-tuplelist-mark-bfrs (cdr x) bitarr seen))
-    
+  
   ///
   
   (defret length-of-<fn>
@@ -873,7 +923,7 @@
         (constraint-table-mark-bfrs (cdr x) bitarr seen))
        ((mv bitarr seen) (constraint-tuplelist-mark-bfrs (cdar x) bitarr seen)))
     (constraint-table-mark-bfrs (cdr x) bitarr seen))
-    
+  
   ///
   
   (defret length-of-<fn>

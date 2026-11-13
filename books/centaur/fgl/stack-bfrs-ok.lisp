@@ -54,6 +54,8 @@
        :exec (case (stack-nth-scratch-kind n stack)
                (:fgl-obj (fgl-object-bfrs-ok (stack-nth-scratch-fgl-obj n stack)))
                (:fgl-objlist (fgl-objectlist-bfrs-ok (stack-nth-scratch-fgl-objlist n stack)))
+               (:fgl-arglist (fgl-arglist-bfrs-ok (stack-nth-scratch-fgl-arglist n stack)))
+               (:fgl-bindings (fgl-object-bindings-bfrs-ok (stack-nth-scratch-fgl-bindings n stack)))
                (:bfr (bfr-p (stack-nth-scratch-bfr n stack)))
                (:bfrlist (bfr-listp (stack-nth-scratch-bfrlist n stack)))
                (:cinst (constraint-instance-bfrs-ok (stack-nth-scratch-cinst n stack)))
@@ -547,9 +549,9 @@
 
   (local (defthm major-frame->scratch-base-index-plus-len-scratch-when-length-minus-1-lemma
            (implies (major-stack-p x)
-           (equal (+ (major-frame->scratch-base-index (+ -1 (len x)) x)
-                     (minor-stack-scratch-len (major-frame->minor-stack (nth (+ -1 (len x)) x))))
-                  (major-stack-scratch-len x)))
+                    (equal (+ (major-frame->scratch-base-index (+ -1 (len x)) x)
+                              (minor-stack-scratch-len (major-frame->minor-stack (nth (+ -1 (len x)) x))))
+                           (major-stack-scratch-len x)))
            :hints(("Goal" :in-theory (enable major-frame->scratch-base-index
                                              major-stack-scratch-len
                                              len nth)))))
@@ -576,7 +578,7 @@
                              n (stack-frames stack) stack)
              :expand ((major-stack-bfrlist (nthcdr n (major-stack-fix stack)))
                       (:with major-frame->scratch-base-index-inverse
-                             (:free (stack) (major-frame->scratch-base-index (+ 1 (nfix n)) stack))))
+                       (:free (stack) (major-frame->scratch-base-index (+ 1 (nfix n)) stack))))
              :in-theory (enable stack$a-nth-frame-minor-frames
                                 minor-stack-bfrlist-ok-in-terms-of-stack-scan
                                 stack$a-frames

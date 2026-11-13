@@ -425,17 +425,20 @@ the hypotheses of a conjecture aren't contradictory.</p>"
                    stop-on-ctrex
                    stop-on-fail)
   :parents (fgl-solving)
-  :short "Check that the given object is never NIL and report an error if not."
+  :short "Attempt to prove that the given object is never NIL, optionally stopping on a counterexample or solver failure."
   :long "
 
-<p>Logically, @('(fgl-prove params x)') just returns @('x') fixed to a Boolean
-value.  But when FGL symbolic execution encounters an @('fgl-prove') term, it
+<p>Logically, @('(fgl-prove params msg x)') just returns @('x') fixed to a Boolean
+value. The @('msg') argument is a string or message identifying the check.
+But when FGL symbolic execution encounters an @('fgl-prove') term, it
 checks Boolean satisfiability of @('(not x)').  If the SAT check returns UNSAT,
 then @('x') is never NIL and the proof has succeeded. If the SAT check returns
 SAT, then a counterexample is extracted and run on the current top-level goal;
 we also cause an error if the @(':stop-on-ctrex') keyword argument is
 nonnil. If the SAT check fails, then the @(':stop-on-fail') keyword argument
-similarly determines whether we cause an error.</p>"
+similarly determines whether we cause an error. Both keyword arguments default
+to NIL, so neither a counterexample nor a solver failure causes an error by
+default.</p>"
   (declare (ignore params msg stop-on-ctrex stop-on-fail))
   (if x t nil))
 

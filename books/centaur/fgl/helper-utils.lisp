@@ -314,10 +314,10 @@
   (equal (run-counterexample params msg)
          (fgl-prog2 (syntax-interp
                      (interp-st-run-ctrex (g-concrete->val params) 'interp-st 'state)
-                             ;; (fgl-interp-store-debug-info (msg "~@0: Counterexample -- stopping!"
-                             ;;                                   (g-concrete->val msg))
-                             ;;                              nil 'interp-st)
-                             )
+                     ;; (fgl-interp-store-debug-info (msg "~@0: Counterexample -- stopping!"
+                     ;;                                   (g-concrete->val msg))
+                     ;;                              nil 'interp-st)
+                     )
                     nil)))
 
 (disable-execution run-counterexample)
@@ -411,7 +411,7 @@ be a string or message identifying the particular SAT check.</p>"
                   (syntax-interp (update-interp-st->errmsg (msg "Fgl-prove counterexample on ~@0~%" msg) 'interp-st)))
              (and x t)))))
   :hints(("Goal" :in-theory (enable fgl-prove))))
-                  
+
 
 
 
@@ -561,7 +561,7 @@ keyword argument. Examples of usage:</p>
 
 (define major-frame->debug ((x major-frame-p))
   (b* (((major-frame x)))
-    (list :rule (and x.rule (fgl-generic-rule->rune x.rule))
+    (list :rule (and x.rule (fgl-rule->rune x.rule))
           :phase x.phase
           :minor-frames (minor-stack->debugframes x.minor-stack))))
 
@@ -698,7 +698,7 @@ keyword argument. Examples of usage:</p>
        ;; (?ign (syntax-interp (cw "Evaluation: ~x0~%" obj-val)))
        )
     obj-val))
-    
+
 (defmacro break-on-fgl-error ()
   `(trace! (interp-st-set-error
             :cond (let ((msg (or (interp-st->errmsg interp-st) msg)))
