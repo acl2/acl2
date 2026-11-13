@@ -17,7 +17,7 @@
 ; The GCC and Clang documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,
-; but the lists may be incomplete, and it will be extended as needed.
+; but the list may be incomplete, and it will be extended as needed.
 
 keyword-gcc-clang = %s"__alignof"
                   / %s"__alignof__"
@@ -27,6 +27,7 @@ keyword-gcc-clang = %s"__alignof"
                   / %s"__attribute"
                   / %s"__attribute__"
                   / %s"__auto_type"
+                  / %s"__bf16"
                   / %s"__builtin_convertvector"
                   / %s"__builtin_offsetof"
                   / %s"__builtin_types_compatible_p"

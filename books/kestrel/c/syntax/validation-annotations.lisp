@@ -1232,6 +1232,7 @@
    :offsetof (type-unknown-arithmetic)
    :va-arg (type-unknown)
    :convertvector (type-unknown)
+   :bit-cast (type-unknown)
    :extension (expr-type expr.expr)
    :otherwise (prog2$ (impossible) (irr-type)))
   :measure (expr-count expr)

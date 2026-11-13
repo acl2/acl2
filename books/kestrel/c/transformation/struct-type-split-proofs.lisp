@@ -88,20 +88,16 @@
      except @('_Bool'), plain @('char'), and enumerated types
      (which are currently not supported in our formal semantics).
      The function definitions must have bodies consisting of
-     single return statements with expressions.
+     single return statements with certain expressions.
      We also allow line comments in the code, which are just skipped.")
    (xdoc::p
-    "Theorems are generated from (1) and (2) above;
-     we are working on generating theorems from (3) above,
-     and also on enforcing the requirements for (3) described above.
-     From (1) and (2) we also generate definitions,
-     particularly the notion of equivalence between computation states;
-     this is currently specific to the code,
-     but we plan to generalize it into a reusable predicate
-     that is parameterized over the struct type specifics.
-     The checks that we perform on the code w.r.t. (1) and (2)
-     ensure that the computation state equivalence predicate
-     correctly characterizes the computation states for the code."))
+    "For each function definition in (3) above,
+     we generate a theorem saying that,
+     given the same inputs, the old and new functions return the same outputs,
+     under conditions including the fact that
+     old and new computation states are equivalent
+     in the precise sense of a predicate that is generated
+     from the struct type and variables declared in (1) and (2) above."))
   :order-subtopics t
   :default-parent t)
 

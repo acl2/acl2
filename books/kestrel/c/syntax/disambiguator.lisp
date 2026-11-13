@@ -1706,6 +1706,10 @@
        (b* (((erp vec dstate) (dimb-expr expr.vec dstate))
             ((erp type dstate) (dimb-tyname expr.type dstate)))
          (retok (make-expr-convertvector :vec vec :type type) dstate))
+       :bit-cast
+       (b* (((erp type dstate) (dimb-tyname expr.type dstate))
+            ((erp arg dstate) (dimb-expr expr.arg dstate)))
+         (retok (make-expr-bit-cast :type type :arg arg) dstate))
        :extension
        (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
          (retok (dimb-make/adjust-expr-extension expr) dstate))))
@@ -1927,6 +1931,7 @@
        :float64x (retok (type-spec-float64x) (dstate-fix dstate))
        :float128 (retok (type-spec-float128) (dstate-fix dstate))
        :float128x (retok (type-spec-float128x) (dstate-fix dstate))
+       :bf16 (retok (type-spec-bf16) (dstate-fix dstate))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dstate-fix dstate))
        :struct-empty (retok (type-spec-fix tyspec)

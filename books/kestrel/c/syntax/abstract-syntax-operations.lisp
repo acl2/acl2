@@ -116,7 +116,8 @@
                     :tycompat
                     :offsetof
                     :va-arg
-                    :convertvector))
+                    :convertvector
+                    :bit-cast))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,6 +156,7 @@
                     :offsetof
                     :va-arg
                     :convertvector
+                    :bit-cast
                     :extension))
        t))
 
@@ -281,6 +283,7 @@
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
    :convertvector (expr-priority-primary)
+   :bit-cast (expr-priority-primary)
    :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1734,6 +1737,10 @@
          The GCC manual does not indicate whether they yield lvalues.
          Experiments with GCC indicate that they do not.")
        (xdoc::li
+        "@('__builtin_bit_cast') is a Clang extension,
+         which we did not find documented in [CLE].
+         Experiments with Clang indicate that it does not yield an lvalue.")
+       (xdoc::li
         "The remaining cases &mdash;
          constant expressions and function calls &mdash;
          are not characterized either way.
@@ -1767,6 +1774,7 @@
      :offsetof nil
      :va-arg nil
      :convertvector nil
+     :bit-cast nil
      :extension (expr-syntactic-lvalue-p expr.expr)
      :cast/call-ambig nil
      :cast/mul-ambig nil

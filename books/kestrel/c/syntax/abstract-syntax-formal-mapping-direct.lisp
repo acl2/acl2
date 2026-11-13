@@ -880,6 +880,7 @@
        :va-arg (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :convertvector
        (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
+       :bit-cast (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :extension (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))))
     :measure (expr-count expr))
 

@@ -1744,6 +1744,12 @@
        because its second argument is a type name, not an expression.
        The first argument is an expression.")
      (xdoc::p
+      "As a Clang extension, we include calls of
+       the built-in function @('__builtin_bit_cast').
+       This is not a regular function,
+       because its first argument is a type name, not an expression.
+       The second argument is an expression.")
+     (xdoc::p
       "As a GCC extension, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
@@ -1811,7 +1817,6 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    ;; GCC extensions:
     (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
@@ -1821,6 +1826,8 @@
               (type tyname)))
     (:convertvector ((vec expr)
                      (type tyname)))
+    (:bit-cast ((type tyname)
+                (arg expr)))
     (:extension ((expr expr)))
     :pred exprp
     :layout :fulltree
@@ -1991,6 +1998,9 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       ".")
      (xdoc::p
+      "We also include the GCC extension @('__bf16'),
+       which is a floating type.")
+     (xdoc::p
       "We also include the GCC extension @('__builtin_va_list'),
        whch is a type.
        Although we did not see it in the GCC documentation,
@@ -2041,6 +2051,7 @@
     (:float64x ())
     (:float128 ())
     (:float128x ())
+    (:bf16 ())
     (:builtin-va-list ())
     (:struct-empty ((attribs attrib-spec-list)
                     (name? ident-option)

@@ -103,8 +103,99 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex-fail "0b12")
 (test-lex-fail "0o8")
 (test-lex-fail "0x")
-(test-lex "1e5" 2) ; float literals not in this slice: 1 then e5
-(test-lex "1.5" 3) ; float literals not in this slice: 1 then . then 5
+
+; Float literals: a period, a fraction, an exponent, a suffix.
+
+(test-lex "1.5" 1)
+(test-lex "1." 1)
+(test-lex "0." 1)
+(test-lex "1e5" 1)
+(test-lex "1E5" 1)
+(test-lex "1e+5" 1)
+(test-lex "1e-5" 1)
+(test-lex "1.5e5" 1)
+(test-lex "1_000.000_1" 1)
+(test-lex "0_.5" 1)
+(test-lex "1.5_" 1)
+(test-lex "1e_1" 1) ; underscores before the first digit of the exponent
+(test-lex "1e+_1_" 1)
+(test-lex "1_e3" 1)
+(test-lex "1.5f32" 1)
+(test-lex "1.5_f32" 1)
+(test-lex "1e5f64" 1)
+(test-lex "1.5px" 1) ; any identifier-shaped suffix lexes
+(test-lex "1e1e1" 1) ; after an exponent, a suffix may start with e
+(test-lex "1f32" 1) ; an integer literal with suffix f32
+(test-lex "0x1e5" 1) ; a hexadecimal integer literal
+(test-lex "0x1.e" 3) ; 0x1, ., e
+
+; A period after a number does not belong to it if
+; a period, an underscore, or the start of an identifier follows [SC14].
+
+(test-lex "1..2" 3)
+(test-lex "1..=2" 3)
+(test-lex "1...2" 3)
+(test-lex "1.foo" 3)
+(test-lex "1.e3" 3) ; 1, ., e3
+(test-lex "1.E" 3)
+(test-lex "1._" 3)
+(test-lex "1._1" 3)
+(test-lex "1.r#a" 3)
+(test-lex "1.+2" 3) ; 1., +, 2
+(test-lex "1.;" 2)
+(test-lex "(1.)" 3)
+(test-lex "1. e5" 3) ; 1., whitespace, e5
+(test-lex "1.'a'" 2)
+(test-lex "1.\"a\"" 2)
+(test-lex "1.#" 2)
+
+; A float literal ends where it can no longer continue.
+
+(test-lex "1.1.1" 3) ; 1.1, ., 1
+(test-lex "1.2.3.4" 3) ; 1.2, ., 3.4
+(test-lex "1e1.1" 3) ; 1e1, ., 1
+(test-lex "1.0..2.0" 3)
+(test-lex "x.0.1" 3) ; x, ., 0.1 (rustc's parser splits the float literal)
+(test-lex "1.0f32#" 2) ; a suffix is not a reserved prefix
+(test-lex "1.0r#a" 3) ; 1.0 with suffix r, #, a
+(test-lex "1.0r\"a\"" 2) ; 1.0 with suffix r, then a string literal
+
+; An exponent without digits is a reserved form [SC7].
+
+(test-lex-fail "1e")
+(test-lex-fail "1E")
+(test-lex-fail "0e")
+(test-lex-fail "1e+")
+(test-lex-fail "1e-")
+(test-lex-fail "1e_")
+(test-lex-fail "1e+_")
+(test-lex-fail "1_e")
+(test-lex-fail "2em")
+(test-lex-fail "1else")
+(test-lex-fail "1.0e")
+(test-lex-fail "2.0em")
+(test-lex-fail "1.0else")
+(test-lex "1e1.e" 3) ; 1e1, ., e: this e does not follow a number
+
+; So are a float literal with a radix prefix,
+; and a literal with a radix prefix followed by a period of its own [SC7].
+; (In a hexadecimal literal, e is a digit.)
+
+(test-lex-fail "0b1e")
+(test-lex-fail "0b1e5")
+(test-lex-fail "0o7E1")
+(test-lex-fail "0b1_e")
+(test-lex-fail "0x1.5")
+(test-lex-fail "0x1.")
+(test-lex-fail "0b1.0")
+(test-lex-fail "0o7.")
+(test-lex-fail "0x1.8p1")
+(test-lex "0x1p3" 1) ; 0x1 with suffix p3
+(test-lex "0x1.." 2)
+(test-lex "0o7._" 3)
+(test-lex "0b1.a" 3)
+(test-lex "0b1u8.0" 3) ; a period after a suffix is just a period
+(test-lex "0x1u8." 2)
 
 ; Punctuation and maximal munch [SC1].
 

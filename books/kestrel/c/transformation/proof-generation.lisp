@@ -38,8 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We collect some proof generation utilities
-     that should be of general use.")
+    "We collect some proof generation utilities of general use.")
    (xdoc::p
     "ACL2 functions that carry out proof-generating transformations
      have certain general inputs and outputs that are independent from
@@ -60,7 +59,7 @@
     (xdoc::li
      "If the execution of the old construct does not yield an error,
       neither does the execution of the new construct,
-      and the two executions return the same results.")
+      and the two executions return equivalent results.")
     (xdoc::li
      "If applicable to the construct,
       the type of the result is consistent with the type, or set of types,

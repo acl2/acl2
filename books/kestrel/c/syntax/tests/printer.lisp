@@ -134,3 +134,16 @@
             :member (make-member-designor-ident :ident (ident "a"))
             :index *printer-test-ident*)))
  "__builtin_offsetof(int, a[x])")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The second argument of __builtin_bit_cast is an expression,
+; so a comma expression there is not parenthesized.
+
+(acl2::assert-equal
+ (printer-test-render-expr
+  (make-expr-bit-cast
+   :type (make-tyname :specquals (list (spec/qual-typespec (type-spec-int))))
+   :arg (make-expr-comma :first *printer-test-ident*
+                         :next *printer-test-ident*)))
+ "__builtin_bit_cast(int, x, x)")
