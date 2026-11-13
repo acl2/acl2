@@ -40,6 +40,11 @@
 (local (include-book "from-cursor"))
 (local (include-book "internal/begin-end"))
 
+(local (include-book "internal/zipper"))
+(local (include-book "internal/zip-step"))
+(local (include-book "internal/zip-order"))
+(local (include-book "internal/zip-step-side"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-forward ((cursor cursorp))
@@ -338,14 +343,11 @@
   (implies (not (entryp cursor))
            (equal (before (step-backward cursor))
                   (delete (max (before cursor)) (before cursor))))
-  :cases ((emptyp (before cursor)))
   :enable (extensionality
            in-of-before-becomes-member-equal
            max-of-before-becomes-car-of-last-of-zip-before
-           emptyp-of-before-becomes-not-consp
-           zip-at-begin-p-becomes-not-consp-of-zip-before
+           data::member-equal-of-butlast-when-osetp
            step-backward
-           entry
            entryp
            break-abstraction))
 

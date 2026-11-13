@@ -26,6 +26,9 @@
 (local (include-book "../../insert"))
 (local (include-book "../cursor"))
 
+(local (include-book "zip-side"))
+(local (include-book "zip-order"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This book relates before and after to the zipper's sequences, for use in

@@ -33,6 +33,8 @@
 (local (include-book "begin-end"))
 (local (include-book "step"))
 
+(local (include-book "internal/zip-step"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((cursor cursorp))

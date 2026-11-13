@@ -32,6 +32,8 @@
 (local (include-book "entry"))
 (local (include-book "internal/before-after"))
 
+(local (include-book "internal/zip-side"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-cursor ((cursor cursorp))

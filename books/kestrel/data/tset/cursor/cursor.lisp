@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "../internal/zipper")
+(include-book "internal/zip-step-defs")
 (include-book "../set-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -21,6 +21,9 @@
 
 (local (include-book "../internal/tree"))
 (local (include-book "../set"))
+
+(local (include-book "internal/zipper"))
+(local (include-book "internal/zip-step"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

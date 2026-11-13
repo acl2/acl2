@@ -15,6 +15,7 @@
 
 (include-book "std/osets/top" :dir :system)
 
+(local (include-book "kestrel/lists-light/butlast" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -119,8 +120,22 @@
         (:instance <<-of-car-when-member-equal-of-cdr (l b) (x y)))
   :enable <<-rules)
 
-;; An oset has no duplicates, so membership in the tail is membership anywhere
-;; but at the head.
+;; An oset has no duplicates, so no element is on both sides of an append.
+
+(defruled not-member-equal-of-prefix-when-osetp-of-append
+  (implies (and (setp (append a b))
+                (member-equal x b))
+           (not (member-equal x a)))
+  :use (:instance <<-across-append-of-members-when-osetp (y x))
+  :enable <<-rules)
+
+(defruled not-member-equal-of-suffix-when-osetp-of-append
+  (implies (and (setp (append a b))
+                (member-equal x a))
+           (not (member-equal x b)))
+  :enable not-member-equal-of-prefix-when-osetp-of-append)
+
+;; Likewise, membership in the tail is membership anywhere but at the head.
 
 (defruled member-equal-of-cdr-when-osetp
   (implies (setp l)
@@ -130,3 +145,30 @@
   :enable (setp
            set::not-member-when-smaller
            <<-rules))
+
+;; Likewise, membership in all but the last element is membership anywhere but
+;; at the last.
+
+(defrulel member-equal-of-car-of-last
+  (implies (consp l)
+           (member-equal (car (last l)) l))
+  :induct (last l)
+  :enable last)
+
+(defrulel not-equal-of-car-of-last-when-osetp-of-cons
+  (implies (and (setp (cons a b))
+                (consp b))
+           (not (equal a (car (last b)))))
+  :use (:instance <<-of-car-when-member-equal-of-cdr
+                  (l (cons a b))
+                  (x (car (last b))))
+  :enable <<-rules)
+
+(defruled member-equal-of-butlast-when-osetp
+  (implies (setp l)
+           (iff (member-equal x (butlast l 1))
+                (and (not (equal x (car (last l))))
+                     (member-equal x l))))
+  :induct (last l)
+  :enable (last
+           setp-of-cdr-when-osetp))

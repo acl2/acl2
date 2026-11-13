@@ -17,6 +17,7 @@
 (include-book "../to-oset-defs")
 (include-book "../insert-defs")
 (include-book "cursor-defs")
+(include-book "internal/zip-side-defs")
 (include-book "entry-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -30,6 +31,9 @@
 (local (include-book "../extensionality"))
 (local (include-book "cursor"))
 (local (include-book "entry"))
+
+(local (include-book "internal/zip-side"))
+(local (include-book "internal/zip-order"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

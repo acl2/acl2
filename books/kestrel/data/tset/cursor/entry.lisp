@@ -19,6 +19,8 @@
 (local (include-book "../internal/tree"))
 (local (include-book "cursor"))
 
+(local (include-book "internal/zipper"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entryp ((cursor cursorp))

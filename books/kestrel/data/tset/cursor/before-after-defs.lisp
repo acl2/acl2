@@ -11,6 +11,7 @@
 (include-book "../set-defs")
 (include-book "../insert-defs")
 (include-book "cursor-defs")
+(include-book "internal/zip-side-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "before-after"))

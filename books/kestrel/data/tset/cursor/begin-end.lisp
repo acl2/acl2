@@ -32,6 +32,9 @@
 (local (include-book "from-cursor"))
 (local (include-book "extensionality"))
 
+(local (include-book "internal/zip-step"))
+(local (include-book "internal/zip-step-side"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define beginp ((cursor cursorp))

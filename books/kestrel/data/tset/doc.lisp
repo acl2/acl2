@@ -12,6 +12,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "internal/doc")
+(include-book "cursor/internal/doc")
 (include-book "top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

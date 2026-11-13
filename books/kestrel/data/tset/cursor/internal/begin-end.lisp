@@ -20,6 +20,8 @@
 (local (include-book "../begin-end"))
 (local (include-book "before-after"))
 
+(local (include-book "zip-step-side"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This book relates beginp and endp to the zipper's tests, for use in the

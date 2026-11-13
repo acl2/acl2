@@ -27,6 +27,9 @@
 (local (include-book "internal/before-after"))
 (local (include-book "from-cursor"))
 
+(local (include-book "internal/zipper"))
+(local (include-book "internal/zip-uniqueness"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruledl equal-of-from-cursor-when-equal-of-view

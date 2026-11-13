@@ -35,6 +35,9 @@
 (local (include-book "begin-end"))
 (local (include-book "step"))
 
+(local (include-book "internal/zip-step"))
+(local (include-book "internal/zip-step-side"))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-min ((set setp))

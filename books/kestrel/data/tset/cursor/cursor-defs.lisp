@@ -8,7 +8,7 @@
 
 (in-package "TSET")
 
-(include-book "../internal/zipper")
+(include-book "internal/zip-step-defs")
 (include-book "../set-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))

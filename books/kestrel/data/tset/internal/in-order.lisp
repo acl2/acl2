@@ -199,6 +199,14 @@
   :induct t
   :enable tree-in-order)
 
+(defruled tree-in-becomes-member-equal-of-tree-in-order
+  (equal (tree-in x tree)
+         (and (member-equal x (tree-in-order tree)) t)))
+
+(theory-invariant
+  (incompatible! (:rewrite member-equal-of-tree-in-order-under-iff)
+                 (:rewrite tree-in-becomes-member-equal-of-tree-in-order)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule osetp-of-tree-in-order-when-bstp
