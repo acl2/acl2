@@ -1329,7 +1329,7 @@
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
        ((unless (valid-ord-info-case info :objfun))
-        (retmsg$ "The identifier ~x0, used as a variable,is in scope, ~
+        (retmsg$ "The identifier ~x0, used as a variable, is in scope, ~
                   but does not denote an object or function."
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
