@@ -316,6 +316,18 @@
          (max set))
   :enable seek-max)
 
+(defrule beginp-of-seek-min
+  (equal (beginp (seek-min set))
+         (emptyp set))
+  :enable (beginp
+           not))
+
+(defrule endp-of-seek-max
+  (equal (endp (seek-max set))
+         (emptyp set))
+  :enable (endp
+           not))
+
 (defrule endp-of-seek-min
   (equal (endp (seek-min set))
          (emptyp set))

@@ -40,8 +40,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursor-all-genericp ((cursor cursorp))
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :guard (or (entryp cursor)
              (endp cursor))
   (or (not (entryp cursor))
