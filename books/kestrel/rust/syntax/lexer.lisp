@@ -81,7 +81,9 @@
      [SC2] block comment closing is inherent in
      the recursive structure of the block comment lexing functions;
      [SC7] makes integer literal lexing commit to
-     a radix after @('0b'), @('0o'), or @('0x');
+     a radix after @('0b'), @('0o'), or @('0x'),
+     and rejects a literal with a radix prefix that continues like
+     a float literal, and an exponent without digits;
      [SC8] rejects an identifier, or a lone underscore,
      immediately followed by @('#'), a single quote, or a double quote,
      and a lifetime other than a raw one immediately followed by @('#');
@@ -93,8 +95,11 @@
      immediately followed by an underscore;
      [SC12] rejects a lifetime
      immediately followed by a single quote;
-     and [SC13] holds because the whitespace of a string continuation
-     is lexed by a greedy repetition.
+     [SC13] holds because the whitespace of a string continuation
+     is lexed by a greedy repetition;
+     and [SC14] lets a period after a decimal literal
+     belong to a float literal only if
+     no period, underscore, or start of an identifier follows it.
      Maximal munch [SC1] is implemented by
      greedy repetitions and longest-first dispatch.")
    (xdoc::p
@@ -1762,6 +1767,143 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; What ties this macro to this book is its grammar match theorem.
+; That theorem is stated with cst-matchp, the predicate that deftreeops
+; generates for our lexical grammar, and its proof uses two lemmas of this
+; book: tree-match-of-make-tree-nonleaf-option-elem, which mentions our
+; grammar but holds for any list of rules, and
+; tree-match-element-p-when-cst-matchp$, which follows from the definition
+; of cst-matchp$.  So a version for any grammar would take the deftreeops
+; prefix and the grammar as parameters.  The generated function, and its
+; length and input decomposition theorems, do not depend on the grammar.
+;
+; The macro also assumes that the function for the content of the option
+; has the theorems that the lexing functions of this book have, under the
+; names used here: input-decomposition-of-..., cst-matchp-of-..., and
+; tree-terminatedp-of-....  The ABNF library's defdefparse generates
+; functions like this one, for options with any content, but only with
+; the length theorem; neither its functions nor the parsing primitives
+; have the other theorems.  A general form of this macro would be those
+; generators with these theorems added.
+
+(defsection def-lex-option
+  :short "Event macro to define a lexing function for
+          an option that holds one rule."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given a lexing function for a rule,
+     this macro generates a lexing function for
+     the option @('[ rule ]'), which never fails:
+     if the rule does not lex, the option is empty.
+     We use it for the optional suffixes of literals.")
+   (xdoc::p
+    "The generated theorems are the standard ones (see @(see lexer)),
+     without hypotheses, since the function never fails;
+     there is no strict length bound,
+     since the function may consume no input."))
+
+  (defmacro def-lex-option (fn-name elem-fn option-string)
+    (b* ((len<=-thm (acl2::packn-pos (list 'len-of- fn-name '-<=) fn-name))
+         (decomp-thm (acl2::packn-pos (list 'input-decomposition-of- fn-name)
+                                      fn-name))
+         (term-thm (acl2::packn-pos (list 'tree-terminatedp-of- fn-name)
+                                    fn-name))
+         (match-thm (acl2::packn-pos (list 'cst-matchp-of- fn-name) fn-name))
+         (elem-term-thm (acl2::packn-pos (list 'tree-terminatedp-of- elem-fn)
+                                         fn-name)))
+      `(define ,fn-name ((input nat-listp))
+         :returns (mv (tree abnf::treep)
+                      (rest-input nat-listp))
+         :short ,(acl2::concatenate 'acl2::string
+                                    "Lex a @('" option-string "').")
+         (b* (((mv tree1 input1) (,elem-fn input))
+              ((when (reserrp tree1))
+               (mv (abnf::make-tree-nonleaf :rulename? nil :branches nil)
+                   (nat-list-fix input))))
+           (mv (abnf::make-tree-nonleaf :rulename? nil
+                                        :branches (list (list tree1)))
+               input1))
+         ///
+         (defret ,len<=-thm
+           (<= (len rest-input) (len input))
+           :rule-classes :linear)
+         (defret ,decomp-thm
+           (equal (append (abnf::tree->string tree) rest-input)
+                  (nat-list-fix input))
+           :hints (("Goal" :in-theory (enable abnf::tree->string
+                                              abnf::tree-list->string
+                                              abnf::tree-list-list->string))))
+         (defret ,match-thm
+           (cst-matchp tree ,option-string)
+           :hints (("Goal"
+                    :in-theory
+                    (enable cst-matchp
+                            tree-match-of-make-tree-nonleaf-option-elem
+                            tree-match-element-p-when-cst-matchp$
+                            ,elem-term-thm
+                            abnf::tree-terminatedp
+                            abnf::tree-list-terminatedp
+                            abnf::tree-list-list-terminatedp
+                            abnf::tree-list-list-match-alternation-p
+                            abnf::tree-list-list-match-concatenation-p
+                            abnf::tree-list-match-repetition-p
+                            abnf::tree-list-match-element-p
+                            abnf::numrep-match-repeat-range-p))))
+         (defret ,term-thm
+           (abnf::tree-terminatedp tree)
+           :hints (("Goal" :use ,match-thm
+                           :in-theory (enable cst-matchp))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def-lex-option lex-option-suffix-no-e
+  lex-suffix-no-e "[ suffix-no-e ]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exponent-letter-ahead-p ((input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the input starts with @('e') or @('E')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After the digits of a decimal literal,
+     one of these letters starts the exponent of a float literal,
+     which must then have at least one digit [SC7]."))
+  (b* ((input (nat-list-fix input)))
+    (or (prefixp (list #x65) input) ; e
+        (prefixp (list #x45) input)))) ; E
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define number-period-ahead-p ((input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the input starts with a period
+          that belongs to the number literal before it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After the digits of a number literal,
+     a period belongs to the literal
+     unless it is immediately followed by
+     another period (as in the range @('1..2')),
+     an underscore,
+     or an @('identifier-start') (as in the method call @('1.max(2)')).
+     After a decimal literal, a period that belongs to the literal
+     makes it a float literal [SC14];
+     after a literal with a radix prefix,
+     it makes a reserved form [SC7]."))
+  (b* ((input (nat-list-fix input))
+       ((unless (prefixp (list #x2e) input)) nil) ; .
+       (input1 (cdr input))
+       ((when (prefixp (list #x2e) input1)) nil) ; .
+       ((when (prefixp (list #x5f) input1)) nil) ; _
+       ((mv tree &) (lex-identifier-start input1)))
+    (reserrp tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lex-integer-literal ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
                (rest-input nat-listp))
@@ -1774,12 +1916,30 @@
      @('0b'), @('0o'), and @('0x') select their radix,
      and anything else (starting with a decimal digit)
      is a decimal literal.
-     After the digits, a suffix is lexed if present;
-     since @(tsee lex-suffix-no-e) fails
-     if no suffix-shaped text follows,
-     a failure there just means an absent suffix
-     (empty option CST)."))
+     After the digits, an optional suffix is lexed.")
+   (xdoc::p
+    "Two more reserved forms [SC7] are rejected here,
+     according to what follows the digits.
+     If it is @('e') or @('E'), lexing fails:
+     after a binary or octal literal
+     this would be a float literal with a radix prefix
+     (e.g. @('0b1e5'); in a hexadecimal literal,
+     @('e') and @('E') are digits);
+     after a decimal literal it starts an exponent,
+     so the text is a float literal if anything
+     (see @(tsee lex-float-literal)), not an integer literal.
+     If it is a period that belongs to the literal
+     (see @(tsee number-period-ahead-p))
+     and the literal has a radix prefix, lexing fails as well
+     (e.g. @('0x1.5')).
+     After a decimal literal, such a period also makes a float literal,
+     but here we just leave it in the remaining input:
+     @(tsee lex-token) calls this function
+     only when no float literal starts the input."))
   (b* ((input (nat-list-fix input))
+       (radix-prefix-p (or (prefixp (list #x30 #x62) input) ; "0b"
+                           (prefixp (list #x30 #x6f) input) ; "0o"
+                           (prefixp (list #x30 #x78) input))) ; "0x"
        ((mv lit-tree input1)
         (cond ((prefixp (list #x30 #x62) input) ; "0b"
                (lex-bin-literal input))
@@ -1790,24 +1950,23 @@
               (t (lex-dec-literal input))))
        ((when (reserrp lit-tree))
         (mv (reserrf-push lit-tree) input))
+       ((when (exponent-letter-ahead-p input1)) ; [SC7]
+        (mv (reserrf (list :exponent-letter-after-integer-literal
+                           (abnf::tree->string lit-tree)))
+            input))
+       ((when (and radix-prefix-p
+                   (number-period-ahead-p input1))) ; [SC7]
+        (mv (reserrf (list :period-after-literal-with-radix-prefix
+                           (abnf::tree->string lit-tree)))
+            input))
        (group-tree (abnf::make-tree-nonleaf
                     :rulename? nil
                     :branches (list (list lit-tree))))
-       ((mv suffix-tree input2) (lex-suffix-no-e input1))
-       ((when (reserrp suffix-tree))
-        (mv (abnf::make-tree-nonleaf
-             :rulename? (abnf::rulename "integer-literal")
-             :branches (list (list group-tree)
-                             (list (abnf::make-tree-nonleaf
-                                    :rulename? nil
-                                    :branches nil))))
-            input1)))
+       ((mv suffix-tree input2) (lex-option-suffix-no-e input1)))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "integer-literal")
          :branches (list (list group-tree)
-                         (list (abnf::make-tree-nonleaf
-                                :rulename? nil
-                                :branches (list (list suffix-tree))))))
+                         (list suffix-tree)))
         input2))
   ///
 
@@ -1836,13 +1995,12 @@
              (enable cst-matchp
                      tree-match-of-make-tree-nonleaf-elem
                      tree-match-of-make-tree-nonleaf-group-elem
-                     tree-match-of-make-tree-nonleaf-option-elem
                      tree-match-element-p-when-cst-matchp$
                      tree-terminatedp-of-lex-dec-literal
                      tree-terminatedp-of-lex-bin-literal
                      tree-terminatedp-of-lex-oct-literal
                      tree-terminatedp-of-lex-hex-literal
-                     tree-terminatedp-of-lex-suffix-no-e
+                     tree-terminatedp-of-lex-option-suffix-no-e
                      abnf::tree-terminatedp
                      abnf::tree-list-terminatedp
                      abnf::tree-list-list-terminatedp
@@ -1857,6 +2015,462 @@
              (abnf::tree-terminatedp tree))
     :hints (("Goal" :use cst-matchp-of-lex-integer-literal
                     :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; Float literals.
+;
+; The functions below follow the grammar's "Float literals" section.
+; [SC14] (a float literal that ends with its period) is checked
+; by number-period-ahead-p, defined with the integer literals above.
+
+(def-lex-underscore-item lex-underscore-as-dec-item "( dec-digit / \"_\" )")
+
+(def-lex-repetition lex-*-underscore-as-dec-item
+  lex-underscore-as-dec-item "( dec-digit / \"_\" )" "*( dec-digit / \"_\" )")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-exponent-letter ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('( %s\"e\" / %s\"E\" )')."
+  (b* (((mv tree1 input1) (abnf::parse-schars "e" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-schars "E" input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input))))
+    (mv (abnf::make-tree-nonleaf :rulename? nil
+                                 :branches (list (list tree1)))
+        input1))
+  ///
+
+  (defret len-of-lex-exponent-letter-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-exponent-letter-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-exponent-letter
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-schars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-exponent-letter
+    (implies (not (reserrp tree))
+             (cst-matchp tree "( %s\"e\" / %s\"E\" )"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-group-elem
+                     tree-match-of-parse-schars-elem
+                     tree-terminatedp-of-parse-schars
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-exponent-letter
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-exponent-letter
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-option-sign ((input nat-listp))
+  :returns (mv (tree abnf::treep)
+               (rest-input nat-listp))
+  :short "Lex a @('[ \"+\" / \"-\" ]')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This never fails:
+     if no sign follows,
+     the option is empty."))
+  (b* (((mv tree1 input1) (abnf::parse-ichars "+" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1))
+       ((mv tree1 input1) (abnf::parse-ichars "-" input))
+       ((when (not (reserrp tree1)))
+        (mv (abnf::make-tree-nonleaf :rulename? nil
+                                     :branches (list (list tree1)))
+            input1)))
+    (mv (abnf::make-tree-nonleaf :rulename? nil :branches nil)
+        (nat-list-fix input)))
+  ///
+
+  (defret len-of-lex-option-sign-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-option-sign
+    (equal (append (abnf::tree->string tree) rest-input)
+           (nat-list-fix input))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-option-sign
+    (cst-matchp tree "[ \"+\" / \"-\" ]")
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-option-elem
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-option-sign
+    (abnf::tree-terminatedp tree)
+    :hints (("Goal" :use cst-matchp-of-lex-option-sign
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define lex-float-exponent ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('float-exponent')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After the exponent letter and the optional sign,
+     the digits are lexed as in the radix-prefixed integer literals
+     (see @(tsee def-lex-radix-literal)):
+     underscores before the first digit
+     become the first repetition,
+     the first digit becomes the mandatory element,
+     and everything after it (digits and underscores, greedily)
+     becomes the second repetition.
+     If there is no digit, lexing fails:
+     an exponent without digits is a reserved form [SC7],
+     which the callers reject."))
+  (b* (((mv tree-letter input1) (lex-exponent-letter input))
+       ((when (reserrp tree-letter))
+        (mv (reserrf-push tree-letter) (nat-list-fix input)))
+       ((mv tree-sign input2) (lex-option-sign input1))
+       ((mv trees-lead input3) (lex-*-underscore-as-dec-item input2))
+       ((mv tree-digit input4) (lex-dec-digit input3))
+       ((when (reserrp tree-digit))
+        (mv (reserrf (list :no-digits-in-exponent)) (nat-list-fix input)))
+       ((mv trees-tail input5) (lex-*-dec-digit/underscore input4)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "float-exponent")
+         :branches (list (list tree-letter)
+                         (list tree-sign)
+                         trees-lead
+                         (list tree-digit)
+                         trees-tail))
+        input5))
+  ///
+
+  (defret len-of-lex-float-exponent-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-float-exponent-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-float-exponent
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal"
+             :in-theory
+             (enable input-decomposition-of-lex-*-underscore-as-dec-item
+                     abnf::tree->string
+                     abnf::tree-list->string
+                     abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-float-exponent
+    (implies (not (reserrp tree))
+             (cst-matchp tree "float-exponent"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-element-p-when-cst-list-elem-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-terminatedp-of-lex-exponent-letter
+                     tree-terminatedp-of-lex-option-sign
+                     tree-list-terminatedp-of-lex-*-underscore-as-dec-item
+                     cst-list-elem-matchp-of-lex-*-underscore-as-dec-item
+                     cst-matchp-of-lex-dec-digit
+                     tree-terminatedp-of-lex-dec-digit
+                     cst-list-rep-matchp-of-lex-*-dec-digit/underscore
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-float-exponent
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-float-exponent
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-suffix-no-underscore ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('suffix-no-underscore')."
+  (b* (((mv tree1 input1) (lex-identifier-start input))
+       ((when (reserrp tree1))
+        (mv (reserrf-push tree1) (nat-list-fix input)))
+       ((mv trees2 input2) (lex-*-identifier-continue input1)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "suffix-no-underscore")
+         :branches (list (list tree1) trees2))
+        input2))
+  ///
+
+  (defret len-of-lex-suffix-no-underscore-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-suffix-no-underscore-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-suffix-no-underscore
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-suffix-no-underscore
+    (implies (not (reserrp tree))
+             (cst-matchp tree "suffix-no-underscore"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-list-match-element-p-when-cst-list-elem-matchp$
+                     tree-list-match-repetition-p-when-cst-list-rep-matchp$
+                     tree-terminatedp-of-lex-identifier-start
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-suffix-no-underscore
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-suffix-no-underscore
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(def-lex-option lex-option-suffix-no-underscore
+  lex-suffix-no-underscore "[ suffix-no-underscore ]")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lex-float-literal ((input nat-listp))
+  :returns (mv (tree abnf::tree-resultp)
+               (rest-input nat-listp))
+  :short "Lex a @('float-literal')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "After the decimal literal that starts it,
+     a float literal continues in one of two ways.")
+   (xdoc::p
+    "If @('e') or @('E') follows, an exponent must follow,
+     and then an optional suffix
+     (the third alternative of the rule, without a fraction).
+     If no exponent lexes, lexing fails:
+     the text is a reserved form [SC7], e.g. @('1e') or @('2em').")
+   (xdoc::p
+    "If a period that belongs to the literal follows
+     (see @(tsee number-period-ahead-p)),
+     we try to lex a decimal literal after it, as the fraction.
+     Without a fraction, the float literal ends with the period
+     (the first alternative, subject to [SC14]).
+     With a fraction, if @('e') or @('E') follows it,
+     an exponent must follow, as above,
+     and then an optional suffix
+     (the third alternative, with a fraction);
+     otherwise an optional suffix follows the fraction
+     (the second alternative).")
+   (xdoc::p
+    "If neither follows, lexing fails:
+     the decimal literal starts an integer literal instead.
+     So this function does what rustc's lexer does after the digits:
+     it decides between a float and an integer literal
+     from the next one or two characters,
+     and after deciding for a float literal
+     it never goes back to an integer literal."))
+  (b* ((input (nat-list-fix input))
+       ((mv tree-int input1) (lex-dec-literal input))
+       ((when (reserrp tree-int)) (mv (reserrf-push tree-int) input))
+       ((when (exponent-letter-ahead-p input1))
+        (b* (((mv tree-exp input2) (lex-float-exponent input1))
+             ((when (reserrp tree-exp)) ; [SC7]
+              (mv (reserrf-push tree-exp) input))
+             ((mv tree-suffix input3)
+              (lex-option-suffix-no-underscore input2)))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "float-literal")
+               :branches (list (list tree-int)
+                               (list (abnf::make-tree-nonleaf
+                                      :rulename? nil
+                                      :branches nil))
+                               (list tree-exp)
+                               (list tree-suffix)))
+              input3)))
+       ((unless (number-period-ahead-p input1)) ; [SC14]
+        (mv (reserrf (list :not-a-float-literal
+                           (abnf::tree->string tree-int)))
+            input))
+       ((mv tree-period input2) (abnf::parse-ichars "." input1))
+       ((when (reserrp tree-period)) (mv (reserrf-push tree-period) input))
+       ((mv tree-frac input3) (lex-dec-literal input2))
+       ((when (reserrp tree-frac))
+        (mv (abnf::make-tree-nonleaf
+             :rulename? (abnf::rulename "float-literal")
+             :branches (list (list tree-int)
+                             (list tree-period)))
+            input2))
+       ((when (exponent-letter-ahead-p input3))
+        (b* (((mv tree-exp input4) (lex-float-exponent input3))
+             ((when (reserrp tree-exp)) ; [SC7]
+              (mv (reserrf-push tree-exp) input))
+             ((mv tree-suffix input5)
+              (lex-option-suffix-no-underscore input4)))
+          (mv (abnf::make-tree-nonleaf
+               :rulename? (abnf::rulename "float-literal")
+               :branches (list (list tree-int)
+                               (list (abnf::make-tree-nonleaf
+                                      :rulename? nil
+                                      :branches (list (list tree-period)
+                                                      (list tree-frac))))
+                               (list tree-exp)
+                               (list tree-suffix)))
+              input5)))
+       ((mv tree-suffix input4) (lex-option-suffix-no-e input3)))
+    (mv (abnf::make-tree-nonleaf
+         :rulename? (abnf::rulename "float-literal")
+         :branches (list (list tree-int)
+                         (list tree-period)
+                         (list tree-frac)
+                         (list tree-suffix)))
+        input4))
+  ///
+
+  (defret len-of-lex-float-literal-<=
+    (<= (len rest-input) (len input))
+    :rule-classes :linear)
+
+  (defret len-of-lex-float-literal-<
+    (implies (not (reserrp tree))
+             (< (len rest-input) (len input)))
+    :rule-classes :linear)
+
+  (defret input-decomposition-of-lex-float-literal
+    (implies (not (reserrp tree))
+             (equal (append (abnf::tree->string tree) rest-input)
+                    (nat-list-fix input)))
+    :hints (("Goal" :in-theory (enable input-decomposition-of-parse-ichars
+                                       abnf::tree->string
+                                       abnf::tree-list->string
+                                       abnf::tree-list-list->string))))
+
+  (defret cst-matchp-of-lex-float-literal
+    (implies (not (reserrp tree))
+             (cst-matchp tree "float-literal"))
+    :hints (("Goal"
+             :in-theory
+             (enable cst-matchp
+                     tree-match-of-make-tree-nonleaf-elem
+                     tree-match-of-make-tree-nonleaf-option-elem
+                     tree-match-element-p-when-cst-matchp$
+                     tree-match-of-parse-ichars-elem
+                     tree-terminatedp-of-parse-ichars
+                     tree-terminatedp-of-lex-dec-literal
+                     tree-terminatedp-of-lex-float-exponent
+                     tree-terminatedp-of-lex-option-suffix-no-e
+                     tree-terminatedp-of-lex-option-suffix-no-underscore
+                     abnf::tree-terminatedp
+                     abnf::tree-list-terminatedp
+                     abnf::tree-list-list-terminatedp
+                     abnf::tree-list-list-match-alternation-p
+                     abnf::tree-list-list-match-concatenation-p
+                     abnf::tree-list-match-repetition-p
+                     abnf::tree-list-match-element-p
+                     abnf::numrep-match-repeat-range-p))))
+
+  (defret tree-terminatedp-of-lex-float-literal
+    (implies (not (reserrp tree))
+             (abnf::tree-terminatedp tree))
+    :hints (("Goal" :use cst-matchp-of-lex-float-literal
+                    :in-theory (enable cst-matchp)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define float-literal-ahead-p ((input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the number literal that starts the input
+          is a float literal rather than an integer literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the case if, after the decimal literal that starts the input,
+     there is @('e') or @('E'),
+     or a period that belongs to the literal
+     (see @(tsee number-period-ahead-p)).
+     This is the test on which @(tsee lex-float-literal)
+     goes on to lex a float literal, or else fails,
+     so @(tsee lex-token) uses it to choose between
+     that function and @(tsee lex-integer-literal).
+     The test is false for a literal with a radix prefix:
+     the decimal literal is then @('0'),
+     followed by @('b'), @('o'), or @('x')."))
+  (b* (((mv tree input1) (lex-dec-literal input))
+       ((when (reserrp tree)) nil))
+    (or (exponent-letter-ahead-p input1)
+        (number-period-ahead-p input1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -1989,57 +2603,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define lex-option-suffix ((input nat-listp))
-  :returns (mv (tree abnf::treep)
-               (rest-input nat-listp))
-  :short "Lex a @('[ suffix ]')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This never fails:
-     if no suffix-shaped text follows,
-     the option is empty."))
-  (b* (((mv tree1 input1) (lex-suffix input))
-       ((when (reserrp tree1))
-        (mv (abnf::make-tree-nonleaf :rulename? nil :branches nil)
-            (nat-list-fix input))))
-    (mv (abnf::make-tree-nonleaf :rulename? nil
-                                 :branches (list (list tree1)))
-        input1))
-  ///
-
-  (defret len-of-lex-option-suffix-<=
-    (<= (len rest-input) (len input))
-    :rule-classes :linear)
-
-  (defret input-decomposition-of-lex-option-suffix
-    (equal (append (abnf::tree->string tree) rest-input)
-           (nat-list-fix input))
-    :hints (("Goal" :in-theory (enable abnf::tree->string
-                                       abnf::tree-list->string
-                                       abnf::tree-list-list->string))))
-
-  (defret cst-matchp-of-lex-option-suffix
-    (cst-matchp tree "[ suffix ]")
-    :hints (("Goal"
-             :in-theory
-             (enable cst-matchp
-                     tree-match-of-make-tree-nonleaf-option-elem
-                     tree-match-element-p-when-cst-matchp$
-                     tree-terminatedp-of-lex-suffix
-                     abnf::tree-terminatedp
-                     abnf::tree-list-terminatedp
-                     abnf::tree-list-list-terminatedp
-                     abnf::tree-list-list-match-alternation-p
-                     abnf::tree-list-list-match-concatenation-p
-                     abnf::tree-list-match-repetition-p
-                     abnf::tree-list-match-element-p
-                     abnf::numrep-match-repeat-range-p))))
-
-  (defret tree-terminatedp-of-lex-option-suffix
-    (abnf::tree-terminatedp tree)
-    :hints (("Goal" :use cst-matchp-of-lex-option-suffix
-                    :in-theory (enable cst-matchp)))))
+(def-lex-option lex-option-suffix
+  lex-suffix "[ suffix ]")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4699,7 +5264,10 @@
      an underscore starts an identifier if
      an identifier-continue character follows,
      otherwise it is punctuation;
-     a decimal digit starts an integer literal;
+     a decimal digit starts a number literal,
+     which is a float literal or an integer literal
+     according to what follows its first digits
+     (see @(tsee float-literal-ahead-p));
      a bracket character is a delimiter;
      anything else is attempted as punctuation.")
    (xdoc::p
@@ -4834,7 +5402,9 @@
                :branches (list (list tree)))
               input1)))
        ((when (and (<= #x30 nat) (<= nat #x39))) ; digit
-        (b* (((mv tree input1) (lex-integer-literal input))
+        (b* (((mv tree input1) (if (float-literal-ahead-p input)
+                                   (lex-float-literal input)
+                                 (lex-integer-literal input)))
              ((when (reserrp tree)) (mv (reserrf-push tree) input)))
           (mv (abnf::make-tree-nonleaf
                :rulename? (abnf::rulename "token")
@@ -4952,6 +5522,7 @@
                      tree-terminatedp-of-lex-raw-byte-string-literal
                      tree-terminatedp-of-lex-raw-c-string-literal
                      tree-terminatedp-of-lex-integer-literal
+                     tree-terminatedp-of-lex-float-literal
                      tree-terminatedp-of-lex-punctuation
                      tree-terminatedp-of-lex-delimiter
                      abnf::tree-terminatedp

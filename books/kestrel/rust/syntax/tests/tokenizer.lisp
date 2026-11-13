@@ -138,6 +138,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Float literals: the text of the number as written, and the suffix.
+
+(defmacro float-tok (text suffix)
+  `(token-lit (lit-float (make-float-lit :text ,text
+                                         :suffix ,suffix))))
+
+(test-tokens "2." (list (float-tok "2." "")))
+(test-tokens "0.5" (list (float-tok "0.5" "")))
+(test-tokens "1e10" (list (float-tok "1e10" "")))
+(test-tokens "1E-10" (list (float-tok "1E-10" "")))
+(test-tokens "1_000.000_1" (list (float-tok "1_000.000_1" "")))
+(test-tokens "123.0f64" (list (float-tok "123.0" "f64")))
+(test-tokens "12E+99_f64" (list (float-tok "12E+99_" "f64")))
+(test-tokens "1.5_f32" (list (float-tok "1.5_" "f32")))
+(test-tokens "1e_1" (list (float-tok "1e_1" "")))
+(test-tokens "1.5px" (list (float-tok "1.5" "px")))
+
+; After an exponent, a suffix may start with "e".
+
+(test-tokens "2e5e6" (list (float-tok "2e5" "e6")))
+(test-tokens "2.0e5e6" (list (float-tok "2.0e5" "e6")))
+
+; An integer literal with a float suffix is an integer literal token.
+
+(test-tokens "5f32" (list (int-tok (radix-dec) "5" "f32")))
+(test-tokens "0x01_f32" (list (int-tok (radix-hex) "01_f32" "")))
+
+; A period after a number belongs to a float literal unless
+; a period, an underscore, or the start of an identifier follows it [SC14].
+
+(test-tokens "1..2" (list (int-tok (radix-dec) "1" "")
+                          (token-punct "..")
+                          (int-tok (radix-dec) "2" "")))
+(test-tokens "1.0..2.0" (list (float-tok "1.0" "")
+                              (token-punct "..")
+                              (float-tok "2.0" "")))
+(test-tokens "1.max(2)" (list (int-tok (radix-dec) "1" "")
+                              (token-punct ".")
+                              (token-ident "max" nil)
+                              (token-open-delim (delim-paren))
+                              (int-tok (radix-dec) "2" "")
+                              (token-close-delim (delim-paren))))
+(test-tokens "2.f64" (list (int-tok (radix-dec) "2" "")
+                           (token-punct ".")
+                           (token-ident "f64" nil)))
+(test-tokens "1._" (list (int-tok (radix-dec) "1" "")
+                         (token-punct ".")
+                         (token-punct "_")))
+(test-tokens "1.+2" (list (float-tok "1." "")
+                          (token-punct "+")
+                          (int-tok (radix-dec) "2" "")))
+
+; In a nested tuple field access, the lexer reads the two indices
+; and the period between them as one float literal, as rustc's lexer does
+; (rustc's parser then splits it).
+
+(test-tokens "x.0.1" (list (token-ident "x" nil)
+                           (token-punct ".")
+                           (float-tok "0.1" "")))
+
+; Reserved numeric forms [SC7].
+
+(test-tokenize-fail "1e")
+(test-tokenize-fail "2.0em")
+(test-tokenize-fail "0x1.5")
+(test-tokenize-fail "0b1e2")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Character and string literals: the text between the delimiters as written
 ; (escapes unprocessed), whether byte, the string kind,
 ; the number of "#" of a raw string, and the suffix.
