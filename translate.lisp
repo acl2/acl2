@@ -4462,7 +4462,7 @@
 
 (defun warrant-name (fn)
 
-; Warning: Keep this in sync with warrant-name-inverse.  This function is
+; Warning: Keep this in sync with warrant-function-namep.  This function is
 ; purely syntactic.  There is no guarantee that the returned symbol is actually
 ; the defwarrant-created warrant function of fn!  Fn may have no warrant!
 
@@ -4476,28 +4476,18 @@
                 (symbol-name fn))
    fn))
 
-(defun warrant-name-inverse (warrant-fn)
-
-; Warning: Keep this in sync with warrant-name (q.v.).
-
-  (declare (xargs :guard (symbolp warrant-fn)))
-  (let ((warrant-fn-name (symbol-name warrant-fn)))
-    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
-         (intern-in-package-of-symbol
-          (subseq warrant-fn-name
-                  15 ; (length "APPLY$-WARRANT-")
-                  (length warrant-fn-name))
-          warrant-fn))))
-
 (defun warrant-function-namep (warrant-fn wrld)
 
 ; We check whether warrant-fn is the warrant function of some function, fn.  If
 ; fn has a warrant, its name is APPLY$-WARRANT-fn.  But having a name of that
 ; shape is no guarantee that the function is the warrant function for fn.  (Fn
 ; may have no warrant function and apply$-warrant-fn might have been --
-; maliciously! -- defined by the user.)  Thus, we answer this question by
-; recovering fn from warrant-fn and then looking in the badge-userfn-structure
-; to see whether fn has a warrant.
+; maliciously! -- defined by the user.)  There could also be a package issue;
+; see books/system/tests/fake-warrant-defpkg.lisp and
+; books/system/tests/fake-warrant-name-import.lisp.  Thus, we answer this
+; question by recovering fn from warrant-fn, checking that warrant-fn is indeed
+; the warrant-name of fn, and then looking in the badge-userfn-structure to see
+; whether fn has a warrant.
 
 ; Note: We allow the user to define functions named APPLY$-WARRANT-fn
 ; independently of warrants, but that would preclude the subsequent warranting
@@ -4511,8 +4501,15 @@
 
   (declare (xargs :guard (and (symbolp warrant-fn)
                               (plist-worldp wrld))))
-  (let ((fn (warrant-name-inverse warrant-fn)))
+  (let* ((warrant-fn-name (symbol-name warrant-fn))
+         (fn (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+                  (intern-in-package-of-symbol
+                   (subseq warrant-fn-name
+                           15 ; (length "APPLY$-WARRANT-")
+                           (length warrant-fn-name))
+                   warrant-fn))))
     (and fn
+         (eq (warrant-name fn) warrant-fn)
          (get-warrantp fn wrld))))
 
 ; We originally defined the apply$-badge and the commonly used generic badges in
