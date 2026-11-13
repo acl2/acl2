@@ -85,7 +85,7 @@
 ; (depends-on "grammar/expressions.abnf")
 ; (depends-on "grammar/expressions-c17.abnf")
 ; (depends-on "grammar/expressions-c23.abnf")
-; (depends-on "grammar/expressions-ext.abnf")
+; (depends-on "grammar/expressions-gcc-clang.abnf")
 ; (depends-on "grammar/expressions-c17-noext.abnf")
 ; (depends-on "grammar/expressions-c23-noext.abnf")
 ; (depends-on "grammar/expressions-c17-ext.abnf")
@@ -411,7 +411,7 @@
 (defgrammar expressions-c23
   "expressions in the C23 dialects")
 
-(defgrammar expressions-ext
+(defgrammar expressions-gcc-clang
   "expressions in the non-standard C dialects (i.e. with extensions)")
 
 (defgrammar expressions-c17-noext
@@ -580,13 +580,13 @@
       :c17 (append *grammar-expressions-c17*
                    (if (or dialect.gcc
                            dialect.clang)
-                       (append *grammar-expressions-ext*
+                       (append *grammar-expressions-gcc-clang*
                                *grammar-expressions-c17-ext*)
                      *grammar-expressions-c17-noext*))
       :c23 (append *grammar-expressions-c23*
                    (if (or dialect.gcc
                            dialect.clang)
-                       (append *grammar-expressions-ext*
+                       (append *grammar-expressions-gcc-clang*
                                *grammar-expressions-c23-ext*)
                      *grammar-expressions-c23-noext*)))
      ;; attributes:
