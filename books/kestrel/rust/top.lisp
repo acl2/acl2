@@ -49,7 +49,9 @@
     " as the model for the MIR semantics, and "
     (xdoc::ahref "https://github.com/rust-lang/miri"
                  "Miri")
-    " as a planned testing oracle.")
+    " as a planned testing oracle.
+     For the syntax track, the testing oracle is rustc itself
+     (see @(see rust$::lexer)).")
    (xdoc::p
     "The library is organized in two tracks,
      following the "
@@ -69,7 +71,7 @@
      At this time of writing,
      the syntax track lexes and tokenizes
      most of Rust's lexical structure,
-     float literals and non-ASCII identifiers being the main omissions
+     block doc comments and non-ASCII identifiers being the main omissions
      (see @(see rust$::syntax-for-tools)),
      and the formalization track formalizes a subset of MIR,
      with an interpreter that runs

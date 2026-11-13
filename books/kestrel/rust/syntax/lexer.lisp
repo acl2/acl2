@@ -127,7 +127,61 @@
    (xdoc::p
     "The lexer aims at being clearly correct rather than fast;
      a faster lexer (e.g. using a stobj for the input)
-     can later be proved equivalent to this one."))
+     can later be proved equivalent to this one.")
+   (xdoc::h3 "Validation against rustc")
+   (xdoc::p
+    "The theorems above, and the ones still to be proved,
+     relate the lexer to our grammar and its side conditions.
+     That the grammar and the side conditions describe
+     the inputs that rustc lexes is not something to prove:
+     it is tested, by comparing the lexer and the tokenizer
+     with rustc on the same inputs.")
+   (xdoc::p
+    "The comparison is with the lexing stage of rustc alone.
+     rustc rejects some inputs while lexing them,
+     and others only later, in its parser or after it.
+     An input of the first kind, like @('0b12') or @('1e'),
+     must fail here.
+     An input of the second kind must lex here:
+     for example a string literal with a suffix, like @('\"a\"b'),
+     or an integer literal too large for every integer type.")
+   (xdoc::p
+    "To observe that stage,
+     we give rustc the input as the arguments of
+     a macro that only counts its arguments.
+     Then the tokens of the input never reach rustc's parser:
+     rustc reports an error exactly when its lexer finds one,
+     and otherwise the count says how many tokens the input has.
+     So an input should lex and tokenize here
+     exactly when rustc accepts it in that position,
+     and into the same number of tokens.
+     Two things need care in the comparison.
+     rustc's lexer also groups the tokens by their delimiters
+     (see @(see token-trees)), which ours does not do yet;
+     so rustc rejects an input whose delimiters do not balance,
+     and it counts a delimited group as one argument.
+     And rustc turns each doc comment into an attribute
+     before the macro receives it,
+     so a doc comment counts as the tokens of that attribute.")
+   (xdoc::p
+    "The tests that come with this library,
+     in the directory @('tests'),
+     check for each of their inputs whether it lexes
+     and into how many lexemes or tokens;
+     some of them are transcribed from the tests of rustc 1.87.0.
+     At this time of writing, we have also compared
+     the lexer and the tokenizer with rustc 1.87.0,
+     on about 188,000 generated short inputs,
+     in the editions 2021 and 2024,
+     and on 1,400 source files of published crates,
+     with scripts that are not part of this library.
+     They agree, except on inputs with forms that are not covered yet:
+     block doc comments, carriage returns in doc comments,
+     non-ASCII identifiers,
+     and the forms that only edition 2024 reserves.
+     See @(see related-lexer-descriptions)
+     for other descriptions of Rust's lexical structure,
+     one of which we have run on the same inputs."))
   :order-subtopics t
   :default-parent t)
 
