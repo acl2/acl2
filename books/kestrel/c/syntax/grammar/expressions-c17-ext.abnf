@@ -20,16 +20,16 @@
 ; [CLE] does not seem to mention them, but Clang implementations accept them.
 
 primary-expression = primary-expression-std
-                   / primary-expression-ext
+                   / primary-expression-gcc-clang
 
 postfix-expression = postfix-expression-std
                    / postfix-expression-c17
                    / "(" type-name ")" "{" "}"
 
 unary-expression = unary-expression-std
-                 / unary-expression-ext
+                 / unary-expression-gcc-clang
 
 conditional-expression = conditional-expression-std
-                       / conditional-expression-ext
+                       / conditional-expression-gcc-clang
 
 ; TODO: add other kinds of expressions

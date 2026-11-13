@@ -56,11 +56,11 @@
 ;   this is not a normal function because it takes a type name as argument,
 ;   so it seems reasonable that they are primary expressions.
 
-primary-expression-ext = "(" compound-statement ")"
-                       / types-compatible-call
-                       / offsetof-call
-                       / va-arg-call
-                       / convertvector-call
+primary-expression-gcc-clang = "(" compound-statement ")"
+                             / types-compatible-call
+                             / offsetof-call
+                             / va-arg-call
+                             / convertvector-call
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -110,18 +110,18 @@ convertvector-call =
 ;   [GCC:6.12.3](https://gcc.gnu.org/onlinedocs/gcc/Labels-as-Values.html).
 ;   [CLE] does not seem to mention this, but Clang implementations accept it.
 
-unary-expression-ext = alignof-keyword unary-expression
-                     / %s"__real__" cast-expression
-                     / %s"__imag__" cast-expression
-                     / %s"__extension__" cast-expression
-                     / "&&" identifier
+unary-expression-gcc-clang = alignof-keyword unary-expression
+                           / %s"__real__" cast-expression
+                           / %s"__imag__" cast-expression
+                           / %s"__extension__" cast-expression
+                           / "&&" identifier
 
 ; As a GCC and C extension, we allow contiional expressions
 ; whose second operand is omitted
 ; [GCCM:6.12.13](https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html).
 ; We did not find this documented in [CLE], but Clang implementations accept it.
 
-conditional-expression-ext =
+conditional-expression-gcc-clang =
     logical-or-expression "?" ":" conditional-expression
 
 ; TODO: add other kinds of expressions
