@@ -1861,6 +1861,16 @@
 
 ;;;;;;;;;;
 
+(define defind-pred-when-valid-proof-lemma-name ((pred-name symbolp)
+                                                 (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the lemma for a @('p[i]-when-proof-validp') theorem."
+  (packn-pos (list (defind-pred-when-valid-proof-thm-name pred-name name)
+                   '-lemma)
+             (symbol-lfix name)))
+
+;;;;;;;;;;
+
 (define defind-proof-valid-when-pred-thm-name ((pred-name symbolp)
                                                (name symbolp))
   :returns (thm-name symbolp)
@@ -2039,6 +2049,29 @@
                    '-when-
                    (defind-proof-recog-name pred-name name))
              (symbol-lfix name)))
+
+;;;;;;;;;;
+
+(define defind-proof-fixer-return-thm-name ((pred-name symbolp)
+                                            (standalonep booleanp)
+                                            (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the return theorem of
+          the fixer of a @('p[i]-proof') fixtype."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As with @(tsee defind-proof-count-natp-thm-name),
+     the name depends on whether the predicate forms a singleton clique."))
+  (if standalonep
+      (packn-pos (list (defind-proof-recog-name pred-name name)
+                       '-of-
+                       (defind-proof-fixer-name pred-name name))
+                 (symbol-lfix name))
+    (packn-pos (list 'return-type-of-
+                     (defind-proof-fixer-name pred-name name)
+                     '.new-x)
+               (symbol-lfix name))))
 
 ;;;;;;;;;;
 
@@ -2342,6 +2375,18 @@
     (cons (defind-proof-valid-return-thm-name pred standalonep name)
           thm-names))
   :prepwork ((local (in-theory (enable emptyp-of-symbol-sfix)))))
+
+;;;;;;;;;;
+
+(define defind-proof-valid-fixing-thm-name ((pred-name symbolp) (name symbolp))
+  :returns (thm-name symbolp)
+  :short "Name of the fixing theorem of a @('p[i]-proof-validp') function."
+  (packn-pos (list (defind-proof-valid-fn-name pred-name name)
+                   '-of-
+                   (defind-proof-fixer-name pred-name name)
+                   '-
+                   (defind-proof-var-name name))
+             (symbol-lfix name)))
 
 ;;;;;;;;;;
 
@@ -3102,6 +3147,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defind-process-proof-induct2 (proof-induct2)
+  :returns (mv erp (proof-induct2 booleanp))
+  :short "Process the @(':proof-induct2') input."
+  (b* (((reterr) nil)
+       ((unless (booleanp proof-induct2))
+        (reterr (msg "The :PROOF-INDUCT2 input must be T or NIL, ~
+                      but it is ~x0 instead."
+                     proof-induct2))))
+    (retok proof-induct2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defind-process-verify-guards (verify-guards)
   :returns (mv erp (verify-guards booleanp))
   :short "Process the @(':verify-guards') input."
@@ -3250,6 +3307,7 @@
                                (preds-suppliedp booleanp)
                                irules
                                (irules-suppliedp booleanp)
+                               proof-induct2
                                verify-guards
                                guard-hints
                                (guard-hints-suppliedp booleanp)
@@ -3266,6 +3324,7 @@
                (pred-infos defind-pred-info-listp)
                (irule-infos defind-irule-info-listp)
                (leveled-cliques symbol-set-list-listp)
+               (proof-induct2 booleanp)
                (verify-guards booleanp)
                (guard-hints true-listp)
                (parents symbol-listp)
@@ -3275,7 +3334,7 @@
                (print evmac-input-print-p)
                state)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil :error state)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil nil :error state)
        (wrld (w state))
        ((erp name) (defind-process-name name wrld))
        ((erp pred-infos state)
@@ -3283,6 +3342,7 @@
        ((erp irule-infos leveled-cliques state)
         (defind-process-irules irules irules-suppliedp pred-infos state))
        ((erp) (defind-check-proof-names irule-infos pred-infos name))
+       ((erp proof-induct2) (defind-process-proof-induct2 proof-induct2))
        ((erp verify-guards) (defind-process-verify-guards verify-guards))
        ((erp guard-hints)
         (defind-process-guard-hints
@@ -3294,7 +3354,8 @@
           long long-suppliedp))
        ((erp print) (defind-process-print print)))
     (retok name pred-infos irule-infos leveled-cliques
-           verify-guards guard-hints parents short long xdocp print state))
+           proof-induct2 verify-guards guard-hints
+           parents short long xdocp print state))
 
   ///
 
@@ -5005,13 +5066,13 @@
      that @(tsee defun-sk) generates,
      which now applies only to minimal proofs.
      So we generate @('p[i]-when-proof-validp'),
-     which applies to any valid proof;
-     it is exactly @('p[i]-suff')
-     as it was before the minimality requirement.
+     which applies to any valid proof.
      We generate it disabled, like the other theorems we generate;
      there is no need to disable @('p[i]-suff'),
      because @(tsee std::define-sk) already does that.
-     It is proved by descending from the given proof to a minimal one:
+     We first prove it for a proof in the fixtype of proofs,
+     as the local @('p[i]-when-proof-validp-lemma'),
+     by descending from the given proof to a minimal one:
      if the proof is not minimal,
      the negation of the minimality predicate
      yields a valid proof with a strictly smaller count,
@@ -5019,6 +5080,13 @@
      so the descent is by induction,
      carried by the local @('p[i]-descend') function,
      whose value is irrelevant.")
+   (xdoc::p
+    "Unlike @('p[i]-suff'),
+     @('p[i]-when-proof-validp') does not require
+     the proof to be in the fixtype of proofs:
+     the proof validity predicate fixes its proof argument,
+     so the fixing of a valid proof is a valid proof in the fixtype,
+     with which we instantiate the lemma.")
    (xdoc::p
     "We also generate @('p[i]-proof-validp-when-p[i]'),
      the converse of @('p[i]-when-proof-validp')
@@ -5066,6 +5134,13 @@
        (descend (defind-proof-descend-fn-name pred-info.name name))
        (when-valid-proof
         (defind-pred-when-valid-proof-thm-name pred-info.name name))
+       (when-valid-proof-lemma
+        (defind-pred-when-valid-proof-lemma-name pred-info.name name))
+       (proof-fix (defind-proof-fixer-name pred-info.name name))
+       (proof-fix-return-thm
+        (defind-proof-fixer-return-thm-name pred-info.name standalonep name))
+       (valid-fixing-thm
+        (defind-proof-valid-fixing-thm-name pred-info.name name))
        (proof-valid-when-pred
         (defind-proof-valid-when-pred-thm-name pred-info.name name))
        (suff (defind-pred-suff-thm-name pred-info.name name))
@@ -5127,7 +5202,7 @@
                   (,descend (,minimalp-witness ,proof ,@concl-vars)
                             ,@concl-vars)
                 nil)))
-           (defruled ,when-valid-proof
+           (defruledl ,when-valid-proof-lemma
              (implies (and (,proof-validp ,proof ,@concl-vars)
                            (,proofp ,proof))
                       (,pred-info.name ,@concl-vars))
@@ -5135,7 +5210,15 @@
                       :induct (,descend ,proof ,@concl-vars)
                       :in-theory '(,suff
                                    ,minimalp
-                                   (:induction ,descend)))))))
+                                   (:induction ,descend)))))
+           (defruled ,when-valid-proof
+             (implies (,proof-validp ,proof ,@concl-vars)
+                      (,pred-info.name ,@concl-vars))
+             :hints (("Goal"
+                      :use (:instance ,when-valid-proof-lemma
+                                      (,proof (,proof-fix ,proof)))
+                      :in-theory '(,proof-fix-return-thm
+                                   ,valid-fixing-thm))))))
        (proof-valid-when-pred-event
         `(defruled ,proof-valid-when-pred
            (implies (,pred-info.name ,@pred-info.formals)
@@ -5834,7 +5917,7 @@
      closes the equalities for the arguments of the conclusion.")
    (xdoc::p
     "The theorem about the return type of the constructor
-     gives both the recognizer and the kind of the constructed proof.
+     gives the kind of the constructed proof.
      For a rule with premises that are calls of the predicates being defined
      we also need @(tsee defind-proof-fix-id-thm-name);
      see that function.")
@@ -6730,6 +6813,7 @@
                            (pred-infos defind-pred-info-listp)
                            (irule-infos defind-irule-info-listp)
                            (leveled-cliques symbol-set-list-listp)
+                           (proof-induct2 booleanp)
                            (verify-guards booleanp)
                            (guard-hints true-listp)
                            (parents symbol-listp)
@@ -6763,8 +6847,9 @@
        (validp-ruleset-events
         (defind-gen-validp-ruleset pred-infos irule-infos name print))
        (proof-ind2-events
-        (defind-gen-proof-ind2-fns
-          pred-infos irule-infos leveled-cliques name xdocp print))
+        (and proof-induct2
+             (defind-gen-proof-ind2-fns
+               pred-infos irule-infos leveled-cliques name xdocp print)))
        ((mv pred-events pred-thm-events pred-print-events)
         (defind-gen-preds
           pred-infos irule-infos leveled-cliques name xdocp print))
@@ -6832,6 +6917,7 @@
                                               (preds-suppliedp booleanp)
                                               irules
                                               (irules-suppliedp booleanp)
+                                              proof-induct2
                                               verify-guards
                                               guard-hints
                                               (guard-hints-suppliedp booleanp)
@@ -6848,12 +6934,13 @@
   :short "Process the inputs and generate all the events."
   (b* (((reterr) '(_) state)
        ((erp name pred-infos irule-infos leveled-cliques
-             verify-guards guard-hints
+             proof-induct2 verify-guards guard-hints
              parents short long xdocp print state)
         (defind-process-inputs
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          proof-induct2
           verify-guards
           guard-hints guard-hints-suppliedp
           parents parents-suppliedp
@@ -6863,7 +6950,7 @@
           state))
        (event (defind-gen-events
                 name pred-infos irule-infos leveled-cliques
-                verify-guards guard-hints
+                proof-induct2 verify-guards guard-hints
                 parents short long xdocp print)))
     (retok event state)))
 
@@ -6874,6 +6961,7 @@
                          (preds-suppliedp booleanp)
                          irules
                          (irules-suppliedp booleanp)
+                         proof-induct2
                          verify-guards
                          guard-hints
                          (guard-hints-suppliedp booleanp)
@@ -6896,6 +6984,7 @@
           name
           preds preds-suppliedp
           irules irules-suppliedp
+          proof-induct2
           verify-guards
           guard-hints guard-hints-suppliedp
           parents parents-suppliedp
@@ -6915,6 +7004,7 @@
                           &key
                           (preds 'nil preds-suppliedp)
                           (irules 'nil irules-suppliedp)
+                          (proof-induct2 'nil)
                           (verify-guards 't)
                           (guard-hints 'nil guard-hints-suppliedp)
                           (parents 'nil parents-suppliedp)
@@ -6928,6 +7018,7 @@
         ',preds-suppliedp
         ',irules
         ',irules-suppliedp
+        ',proof-induct2
         ',verify-guards
         ',guard-hints
         ',guard-hints-suppliedp

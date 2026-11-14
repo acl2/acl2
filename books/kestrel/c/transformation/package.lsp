@@ -58,4 +58,5 @@
                  retok
                  symbol-lfix
                  symbol-list
+                 std::defretd
                  std::defret-mutual)))

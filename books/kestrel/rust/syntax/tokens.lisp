@@ -399,10 +399,10 @@
      @('crate'), @('self'), @('super'), or @('Self').")
    (xdoc::p
     "A lifetime token stores its name
-     without the leading @('\\''),
+     without the leading @('''),
      and without the @('r#') prefix if raw
-     (raw lifetimes such as @('\\'r#fn') were added in rustc 1.83);
-     the anonymous lifetime @('\\'_') has name @('\"_\"').")
+     (raw lifetimes such as @(''r#fn') were added in rustc 1.83);
+     the anonymous lifetime @(''_') has name @('\"_\"').")
    (xdoc::p
     "A punctuation token stores its text,
      expected to satisfy @(tsee punctuationp).")
