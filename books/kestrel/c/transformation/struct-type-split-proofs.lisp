@@ -103,6 +103,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define c::struct-valuep ((val c::valuep)
+                          (tag c::identp)
+                          (members c::member-type-listp)
+                          (flexiblep booleanp))
+  :returns (yes/no booleanp)
+  :short "Check if a value is a structure value
+          with given tag, members, and flexible array member flag."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put this in the @('C') package
+     because it pertains to the language formalization,
+     and is more general that C-to-C transformations.")
+   (xdoc::p
+    "The given members are specified by their names and associated types."))
+  (and (c::value-case val :struct)
+       (equal (c::value-struct->tag val)
+              (c::ident-fix tag))
+       (equal (c::member-types-of-member-values (c::value-struct->members val))
+              (c::member-type-list-fix members))
+       (equal (c::value-struct->flexiblep val)
+              (acl2::bool-fix flexiblep)))
+
+  ///
+
+  (defruled c::value-kind-when-struct-valuep
+    (implies (c::struct-valuep val tag members flexiblep)
+             (equal (c::value-kind val) :struct)))
+
+  (defruled c::value-struct-read-when-struct-valuep
+    (implies (c::struct-valuep val tag members flexiblep)
+             (b* ((type (c::member-type-lookup name members))
+                  (memval (c::value-struct-read name val)))
+               (implies (c::typep type)
+                        (and (c::valuep memval)
+                             (equal (c::type-of-value memval)
+                                    type)))))
+    :enable c::value-struct-read
+    :use (:instance c::value-struct-read-aux-when-member-type-lookup
+                    (c::memtypes (c::member-type-list-fix members))
+                    (c::memvals (c::value-struct->members val))
+                    (c::name name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define stsp-process-const-old/new (const (name symbolp) (wrld plist-worldp))
   :returns (mv (erp maybe-msgp)
                (code code-ensemblep))
@@ -461,7 +506,12 @@
    (xdoc::p
     "This is used for the old, left new, and right new struct types:
      one predicate for each, named @('struct-value-<onlr>p'),
-     where @('<onlr>') is passed as input to this function."))
+     where @('<onlr>') is passed as input to this function.")
+   (xdoc::p
+    "The predicate is defined via @(tsee c::struct-valuep),
+     passing the tag,
+     the members with their types,
+     and @('nil') as the flexible array member flag."))
   (b* (((reterr) '(_))
        (struct-value-onlrp (packn-pos (list 'struct-value- onlr 'p)
                                       'struct-value-))
@@ -469,72 +519,50 @@
         (packn-pos (list 'value-kind-when- struct-value-onlrp)
                    struct-value-onlrp))
        ((erp ctag) (ldm-ident tag) :iferr "")
-       ((erp b*-bindings) (stsp-struct-value-pred-loop mems types 0)))
+       ((erp cmemtypes) (stsp-struct-value-pred-loop mems types)))
     (retok
      `(define ,struct-value-onlrp ((sval c::valuep))
         :returns (yes/no booleanp
                         :hints (("Goal"
                                  :in-theory
-                                 '(booleanp-compound-recognizer
-                                   (:t ,struct-value-onlrp)))))
-        (b* (((unless (c::value-case sval :struct)) nil)
-             ((unless (equal (c::value-struct->tag sval) ',ctag)) nil)
-             (memvals (c::value-struct->members sval))
-             ((unless (equal (len memvals) ',(len mems))) nil)
-             ,@b*-bindings
-             ((unless (not (c::value-struct->flexiblep sval))) nil))
-          t)
+                                 '(,struct-value-onlrp
+                                   c::booleanp-of-struct-valuep))))
+        (c::struct-valuep sval ',ctag ',cmemtypes nil)
         :guard-simplify :limited
         :guard-hints
         (("Goal"
-          :do-not '(preprocess) ; for speed
-          :in-theory '(c::member-value-listp-of-value-struct->members
-                       c::member-valuep-of-nth-when-member-value-listp
-                       c::valuep-of-member-value->value
-                       (:t c::value-struct->members)
-                       (:e nfix)
-                       (:e <))))
+          :in-theory '((:e c::identp)
+                       (:e c::member-type-listp)
+                       (:e booleanp))))
         :hooks
         ((:fix
           :hints
           (("Goal"
-            :do-not '(preprocess) ; for speed
             :in-theory
             '(,struct-value-onlrp
-              c::value-kind$inline-of-value-fix-x
-              c::value-struct->tag$inline-of-value-fix-x
-              c::value-struct->members$inline-of-value-fix-x
-              c::value-struct->flexiblep$inline-of-value-fix-x)))))
+              c::struct-valuep-of-value-fix-val)))))
         ///
         (defruled ,value-kind-when-struct-value-onlrp
           (implies (,struct-value-onlrp sval)
                    (equal (c::value-kind sval) :struct))
-          :in-theory '(,struct-value-onlrp)))))
+          :in-theory '(,struct-value-onlrp
+                       c::value-kind-when-struct-valuep)))))
 
   :prepwork
   ((define stsp-struct-value-pred-loop ((mems ident-listp)
-                                        (types type-listp)
-                                        (index natp))
+                                        (types type-listp))
      :guard (equal (len types) (len mems))
      :returns (mv (erp maybe-msgp)
-                  (b*-bindings true-listp))
+                  (cmemtypes c::member-type-listp))
      :parents nil
      (b* (((reterr) nil)
           ((when (endp mems)) (retok nil))
-          (memval `(nth ,(lnfix index) memvals))
           ((erp cmem) (ldm-ident (car mems)) :iferr "")
-          (b*-bindings
-           `(((unless (equal (c::member-value->name ,memval)
-                             ',cmem))
-              nil)
-             ((unless (c::value-case (c::member-value->value ,memval)
-                                     ,(type-kind (car types))))
-              nil)))
-          ((erp more-b*-bindings)
-           (stsp-struct-value-pred-loop (cdr mems)
-                                        (cdr types)
-                                        (1+ (lnfix index)))))
-       (retok (append b*-bindings more-b*-bindings)))
+          ((erp ctype) (ldm-type (car types)) :iferr "")
+          (cmemtype (c::make-member-type :name cmem :type ctype))
+          ((erp cmemtypes)
+           (stsp-struct-value-pred-loop (cdr mems) (cdr types))))
+       (retok (cons cmemtype cmemtypes)))
      :hooks
      ((:fix
        :hints (("Goal" :induct t :in-theory (enable c$::cdr-of-type-list-fix
@@ -561,8 +589,6 @@
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
        ((erp ctype) (ldm-type (car types)) :iferr "")
-       (type-constructor
-        (packn-pos (list 'c::type- (c::type-kind ctype)) 'c::type-))
        (struct-value-onlr-mem
         (packn-pos (list 'struct-value- onlr '- (c::ident->name cmem))
                    'struct-value-))
@@ -592,19 +618,12 @@
            :guard-simplify :limited
            :guard-hints
            (("Goal"
-             :do-not '(preprocess) ; for speed
              :in-theory '(,struct-value-onlrp
-                          c::value-struct-read
-                          c::valuep-of-value-struct-read-aux-when-nth
-                          eq
-                          not
-                          (:e c::identp)
-                          (:e natp)
-                          (:e <))))
-           :prepwork ((local (in-theory (enable ,struct-value-onlrp
-                                                c::value-struct-read
-                                                c::value-struct-read-aux
-                                                nth))))
+                          c::value-kind-when-struct-valuep
+                          c::value-struct-read-when-struct-valuep
+                          (:e c::member-type-lookup)
+                          (:e c::typep)
+                          (:e c::identp))))
            :hooks
            ((:fix
              :hints
@@ -612,49 +631,36 @@
                :in-theory '(,struct-value-onlr-mem
                             c::value-struct-read-of-value-fix-struct)))))
            ///
-           (defret ,value-kind-of-struct-value-onlr-mem
-             (equal (c::value-kind mval) ,(type-kind (car types)))
-             :hyp (,struct-value-onlrp sval)
-             :hints
-             (("Goal"
-               :in-theory '(,struct-value-onlr-mem
-                            ,struct-value-onlrp
-                            c::value-struct-read
-                            c::value-kind$inline-of-value-fix-x
-                            c::value-struct-read-aux-of-nthcdr
-                            acl2::nthcdr-when-zp
-                            (:e zp)
-                            (:e natp)
-                            (:e <)
-                            (:e binary-+)
-                            (:e equal)
-                            (:e c::ident-fix))
-               :use ((:instance c::value-struct-read-aux-of-nthcdr
-                                (c::name ',cmem)
-                                (c::index 0)
-                                (c::members
-                                 (c::value-struct->members sval)))))))
            (defret ,type-of-value-of-struct-value-onlr-mem
              (equal (c::type-of-value mval) ',ctype)
              :hyp (,struct-value-onlrp sval)
              :hints
              (("Goal"
-               :in-theory '(c::type-of-value
-                            ,value-kind-of-struct-value-onlr-mem
-                            (:e ,type-constructor)))))
+               :in-theory '(,struct-value-onlr-mem
+                            ,struct-value-onlrp
+                            c::value-struct-read-when-struct-valuep
+                            c::type-of-value-of-value-fix-val
+                            (:e c::member-type-lookup)
+                            (:e c::typep)))))
+           (defret ,value-kind-of-struct-value-onlr-mem
+             (equal (c::value-kind mval) ,(type-kind (car types)))
+             :hyp (,struct-value-onlrp sval)
+             :hints
+             (("Goal"
+               :in-theory '(,type-of-value-of-struct-value-onlr-mem
+                            (:e c::type-kind))
+               :use (:instance c::type-kind-of-type-of-value
+                               (c::val (,struct-value-onlr-mem sval))))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
                              (,struct-value-onlr-mem sval)))
-             :do-not '(preprocess) ; for speed
              :in-theory '(,struct-value-onlr-mem
                           ,struct-value-onlrp
-                          c::value-struct-read
-                          c::valuep-of-value-struct-read-aux-when-nth
-                          (:e natp)
-                          (:e <))
-             :use ((:instance c::value-fix-when-valuep
-                              (c::x (c::value-struct-read ',cmem sval)))))))
+                          c::value-struct-read-when-struct-valuep
+                          c::value-fix-when-valuep
+                          (:e c::member-type-lookup)
+                          (:e c::typep)))))
        ((erp events) (stsp-struct-value-accs onlr (cdr mems) (cdr types))))
     (retok (cons event events)))
   :hooks ((:fix :hints (("Goal"
