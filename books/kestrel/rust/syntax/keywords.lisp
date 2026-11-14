@@ -48,7 +48,7 @@
       and it is the parser that gives them their special meaning;
       they are not included in @(see keyword-p)."))
    (xdoc::p
-    "The lifetime @('\\'static') is also classified as a weak keyword
+    "The lifetime @(''static') is also classified as a weak keyword
      by the Reference, but since lifetimes are a separate kind of token,
      it cannot be confused with an identifier
      and is not included in the tables here.")
@@ -159,7 +159,7 @@
    (xdoc::p
     "These are lexed as ordinary identifiers;
      the parser recognizes them contextually.
-     The weak keyword @('\\'static') is not included
+     The weak keyword @(''static') is not included
      because it is a lifetime, not identifier-shaped;
      see @(see keywords)."))
   (list "macro_rules"
