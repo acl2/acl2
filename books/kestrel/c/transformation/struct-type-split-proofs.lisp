@@ -189,7 +189,7 @@
     (implies (not erp)
              (code-ensemble-annop code)))
 
-  (std::defretd symbolp-const-when-stsp-process-const-old/new
+  (defretd symbolp-const-when-stsp-process-const-old/new
     (implies (not erp)
              (symbolp const))
     :rule-classes :forward-chaining))
@@ -251,7 +251,7 @@
     (implies (not erp)
              (code-ensemble-annop new-code)))
 
-  (std::defretd symbolp-const-old-when-stsp-process-inputs
+  (defretd symbolp-const-old-when-stsp-process-inputs
     (implies (not erp)
              (symbolp const-old))
     :rule-classes :forward-chaining
@@ -259,7 +259,7 @@
     (("Goal"
       :in-theory (enable symbolp-const-when-stsp-process-const-old/new))))
 
-  (std::defretd symbolp-const-new-when-stsp-process-inputs
+  (defretd symbolp-const-new-when-stsp-process-inputs
     (implies (not erp)
              (symbolp const-new))
     :rule-classes :forward-chaining
