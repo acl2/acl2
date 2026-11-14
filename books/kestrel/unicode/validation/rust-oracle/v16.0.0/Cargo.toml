@@ -1,0 +1,48 @@
+# Unicode Library
+#
+# Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+#
+# Author: Eric McCarthy (bendyarm on GitHub)
+
+# The crates that rustc uses for identifiers and normalization,
+# at the versions that implement Unicode 16.0.0.
+#
+#   unicode-xid 0.2.6            Unicode 16.0.0 (says so itself)
+#   unicode-normalization 0.1.24 Unicode 16.0.0 (says so itself)
+#   unicode-ident 1.0.18         Unicode 16.0.0 (per its README and tests;
+#                                it has no version constant before 1.0.22)
+#   regex-syntax 0.8.5           Unicode 16.0.0 (per its generated tables)
+#   ra-ap-rustc_lexer 0.145.0    rustc's own lexer crate, as published for
+#                                rust-analyzer; this version uses unicode-xid
+
+[package]
+name = "unicode-oracle-v16-0-0"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "oracle"
+path = "../src/main.rs"
+
+[features]
+default = ["have-unicode-xid", "have-regex-syntax"]
+have-unicode-xid = []
+have-regex-syntax = []
+have-unicode-ident-version = []
+
+[dependencies]
+unicode-xid = "=0.2.6"
+unicode-normalization = "=0.1.24"
+unicode-ident = "=1.0.18"
+regex-syntax = "=0.8.5"
+ra-ap-rustc_lexer = "=0.145.0"
+# rustc_lexer uses this crate (for emoji, which this oracle does not use);
+# this is its version for Unicode 16.0.0.
+unicode-properties = "=0.1.3"
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true
