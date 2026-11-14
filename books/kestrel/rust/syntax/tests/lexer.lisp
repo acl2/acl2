@@ -94,6 +94,15 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex "/*/ */" 1)
 (test-lex "/**/*/" 3) ; comment, *, /
 
+; The same holds in block doc comments,
+; which the grammar does not tell from other block comments yet.
+
+(test-lex-fail "/*!/*/")
+(test-lex-fail "/** /*/")
+(test-lex-fail "/*! /*/ */")
+(test-lex "/*! a /* b */ c */" 1)
+(test-lex "/** a /* b */ c */" 1)
+
 ; Integer literals, including the [SC7] reserved forms.
 
 (test-lex "0" 1)
