@@ -48,7 +48,7 @@
                            default-cdr
                            bigmem::pages-serializedp-implies-alistp ; horrible
                            bigmem::mem-serializedp-implies-alistp ; horrible
-                           x86isa::canonical-address-p-limits-thm-4
+                           ; x86isa::canonical-address-p-limits-thm-4 ; no longer incldued
                            x86isa::canonical-address-p-when-unsigned-byte-p
                            x86isa::canonical-address-p-between
                            x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32

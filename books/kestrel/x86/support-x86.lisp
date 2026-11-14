@@ -17,7 +17,20 @@
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
-(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
+;; We used to include projects/x86isa/proofs/utilities/app-view/user-level-memory-utils
+;; here.  These two forms mimic the global theory changes it made, which
+;; books that include this one may rely on:
+(in-theory (disable rb wb canonical-address-p program-at unsigned-byte-p signed-byte-p))
+(in-theory (e/d (riml-size rml-size wiml-size wml-size
+                 rml08 riml08 wml08 wiml08
+                 rml16 riml16 wml16 wiml16
+                 rml32 riml32 wml32 wiml32
+                 rml64 riml64 wml64 wiml64
+                 ea-to-la
+                 rme08 rime08 wme08 wime08)
+                (las-to-pas
+                 xr-fault-wb-in-system-level-marking-view
+                 xr-fault-wb-in-sys-view)))
 ;(include-book "projects/x86isa/machine/state" :dir :system)
 ;(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
@@ -149,30 +162,31 @@
 
 ; Add untranslate patterns for undefined flags
 ;copied from !flgi
-(make-event
- (cons
-  'progn
-  (x86isa::x86-fn-untranslate
-   '(x86isa::!flgi-undefined)
-   '(x86isa::?v x86isa::?x)
-   '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
-   '(x86isa::*CF*
-     x86isa::*PF*
-     x86isa::*AF*
-     x86isa::*ZF*
-     x86isa::*SF*
-     x86isa::*TF*
-     x86isa::*IF*
-     x86isa::*DF*
-     x86isa::*OF*
-     x86isa::*IOPL*
-     x86isa::*NT*
-     x86isa::*RF*
-     x86isa::*VM*
-     x86isa::*AC*
-     x86isa::*VIF*
-     x86isa::*VIP*
-     x86isa::*ID*))))
+;; TODO: These never fire because x86isa::!flgi-undefined is a macro?
+;; (make-event
+;;  (cons
+;;   'progn
+;;   (x86isa::x86-fn-untranslate
+;;    '(x86isa::!flgi-undefined)
+;;    '(x86isa::?v x86isa::?x)
+;;    '(0 2 4 6 7 8 9 10 11 12 14 16 17 18 19 20 21)
+;;    '(x86isa::*CF*
+;;      x86isa::*PF*
+;;      x86isa::*AF*
+;;      x86isa::*ZF*
+;;      x86isa::*SF*
+;;      x86isa::*TF*
+;;      x86isa::*IF*
+;;      x86isa::*DF*
+;;      x86isa::*OF*
+;;      x86isa::*IOPL*
+;;      x86isa::*NT*
+;;      x86isa::*RF*
+;;      x86isa::*VM*
+;;      x86isa::*AC*
+;;      x86isa::*VIF*
+;;      x86isa::*VIP*
+;;      x86isa::*ID*))))
 
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
@@ -217,37 +231,23 @@
             (canonical-address-p paddr)
             (canonical-address-p (+ -1 (len bytes) paddr))
 ;(x86isa::canonical-address-listp addresses)
-            (app-view x86)
-            (X86P X86) ;too bad
-            )
+            (app-view x86))
            (equal (mv-nth 1 (rb 1 addr r-w-x x86))
                   (nth (- addr paddr)
                        bytes)))
   :hints (("Goal" :do-not-induct t
-           :expand ((NTH 0 BYTES))
            :use ((:instance slice-of-combine-bytes
-                            (n (- addr paddr))
-                            )
-                 (:instance x86isa::rb-rb-subset
-                           (j 1)
-                           (addr-j addr)
-                           (r-x-j r-w-x)
-                           (val (x86isa::combine-bytes (acl2::list-fix bytes)))
-                           (i (len bytes))
-                           (addr-i paddr)
-                           (r-x-i :x)))
-;           :expand (RB-1 1 ADDR R-W-X X86)
-           :in-theory (e/d ( ;rb rb-1 program-at rvm08
-                            program-at
-                            ash
-                            ;x86isa::RB-RB-SUBSET
-                            natp
-                            acl2::mod-becomes-bvchop-when-power-of-2p
-                            ;;acl2::bvchop
-                            ;;ACL2::CAR-BECOMES-NTH-OF-0
-                            acl2::bvchop-of-logtail-becomes-slice
-                            )
-                           (slice-of-combine-bytes)))))
+                            (n (- addr paddr)))
+                 (:instance slice-of-mv-nth-1-of-rb-1
+                            (high (+ 7 (* 8 (- addr paddr))))
+                            (low (* 8 (- addr paddr)))
+                            (n (len bytes))
+                            (addr paddr)
+                            (r-x :r))
+                 (:instance rb-1-rx-irrel (n 1) (r-x r-w-x) (r-x-alt :r)))
+           :in-theory (e/d (program-at rb)
+                           (slice-of-combine-bytes
+                            slice-of-mv-nth-1-of-rb-1)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -587,6 +587,32 @@
 (defthm unsigned-byte-p-of-bool->bit
   (unsigned-byte-p 1 (acl2::bool->bit x)))
 
+;; An address is in the list iff it is in the range covered by the list.
+(defthm member-p-of-create-canonical-address-list
+  (implies (and (canonical-address-p addr)
+                (canonical-address-p (+ -1 count addr)))
+           (equal (member-p e (create-canonical-address-list count addr))
+                  (and (integerp e)
+                       (<= addr e)
+                       (< e (+ count addr)))))
+  :hints (("Goal" :in-theory (enable create-canonical-address-list member-p canonical-address-p signed-byte-p))))
+
+(defthm not-member-p-of-create-canonical-address-list-when-out-of-range
+  (implies (or (< e addr)
+               (<= (+ count addr) e))
+           (not (member-p e (create-canonical-address-list count addr))))
+  :hints (("Goal" :in-theory (enable create-canonical-address-list member-p))))
+
+;; A list covering a subrange is a subset.
+(defthm subset-p-of-create-canonical-address-list-and-create-canonical-address-list
+  (implies (and (<= addr2 addr)
+                (<= (+ count addr) (+ count2 addr2))
+                (canonical-address-p addr2)
+                (canonical-address-p (+ -1 count2 addr2)))
+           (subset-p (create-canonical-address-list count addr)
+                     (create-canonical-address-list count2 addr2)))
+  :hints (("Goal" :in-theory (enable create-canonical-address-list subset-p))))
+
 ;looped?
 (defthmd not-member-p-canonical-address-listp-when-disjoint-p-alt
   (implies (and (x86isa::disjoint-p (x86isa::create-canonical-address-list m addr)
@@ -623,7 +649,7 @@
            (not (x86isa::MEMBER-P (+ n TEXT-OFFSET)
                           ; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
                           (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86))))))
-  :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+  :hints (("Goal" :use ((:instance not-member-p-canonical-address-listp-when-disjoint-p-alt
                                    (e (+ n TEXT-OFFSET))
                                    (n total-stack-slots)
                                    (PROG-ADDR (+ neg-total-stack-offset (XR ':RGF '4 X86)))
@@ -637,8 +663,7 @@
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )
-                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+                           (x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
 
 (defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text
   (implies (and (syntaxp (and (quotep stack-slots)
@@ -669,8 +694,7 @@
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )
-                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+                           (x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
 
 ;special case for n=0
 (defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text-special
@@ -702,8 +726,7 @@
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )
-                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+                           (x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
 
 ;dup
 ;why did this cause loops?
@@ -749,7 +772,7 @@
            (not (MEMBER-P (+ n TEXT-OFFSET)
                           ;; we take some number of stack items (like 4), starting at some address above the stack pointer (like rsp+8)
                           (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ pos-stack-offset (XR ':RGF '4 X86))))))
-  :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+  :hints (("Goal" :use ((:instance not-member-p-canonical-address-listp-when-disjoint-p-alt
                                    (e (+ n TEXT-OFFSET))
                                    (n stack-slots)
                                    (PROG-ADDR (+ pos-stack-offset (XR ':RGF '4 X86)))
@@ -767,8 +790,7 @@
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
                             )
-                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P
+                           (x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P
                             x86isa::DISJOINT-P-SUBSET-P)))))
 
 ;tell shilpi
@@ -801,7 +823,8 @@
            (equal (mv-nth 1
                           (rb n-1 addr-1 r-x
                               (mv-nth 1 (wb n-2 addr-2 w val x86))))
-                  (mv-nth 1 (rb n-1 addr-1 r-x x86)))))
+                  (mv-nth 1 (rb n-1 addr-1 r-x x86))))
+  :hints (("Goal" :in-theory (enable separate))))
 
 (defthm rb-of-if-arg2
   (equal (rb n (if test addr1 addr2) rx x86)
