@@ -27,7 +27,7 @@ validated.
 | `quick-check` | The `NF*_Quick_Check` properties (used here only to cross-check normalization). |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `range-sets`, `range-maps`, `nat-maps` | The representations of the tables, with their invariants. |
-| `top` | All of the above. |
+| `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
@@ -49,9 +49,6 @@ utilities for UTF-8 and UTF-16 (this library uses its surrogate recognizers).
 (unicode::xid-start-p #x03BB (unicode::version-v16.0.0))        ; T
 (unicode::nfc '(#x0073 #x0307 #x0323) (unicode::version-v16.0.0)) ; (#x1E69)
 ```
-
-A book that needs only some properties can include only those books, e.g.
-`kestrel/unicode/xid`, which loads only the `XID` tables.
 
 All the functions are in logic mode with guards verified.  The property
 functions take any natural number (and are false, or 0, beyond `#x10FFFF`);
@@ -76,6 +73,64 @@ over the tables, and so re-checked whenever a version is added:
   twelve and nine code points in every supported version.
 - Composing the decomposition of a Hangul syllable gives the syllable back
   (checked for all 11,172 syllables).
+
+### Including only what you need
+
+Each of these books can be included on its own; none of them needs `top`.
+Including one brings in the books in its row, with the tables of every
+supported version, and nothing else of this library.
+
+| To get | Include | Books of this library that it loads | Tables that it loads |
+|--------|---------|-------------------------------------|----------------------|
+| `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
+| `xid-start-p`, `xid-continue-p` | `xid` | `code-points`, `versions`, `range-sets` | `derived-core-properties` |
+| `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `range-sets` | `prop-list` |
+| `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-formatting-class` | `bidi-controls` | `code-points`, `versions`, `range-sets`, `range-maps` | `prop-list`, `derived-bidi-class` |
+| `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `range-sets`, `range-maps`, `nat-maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `range-sets` | `derived-normalization-props` |
+| Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
+
+A front end for a language whose identifiers follow UAX #31 typically needs
+`xid`; `normalization` if it normalizes or compares identifiers;
+`pattern-white-space` and `bidi-controls` if its white space or the
+characters it rejects are defined by those properties; and `utf-8` if it
+decodes its input with `[books]/unicode`.
+
+- **`top`** is all of the above, and the documentation.  Neither `top` nor
+  any book in the table loads the tests or the test vectors: only the books
+  in `tests/` do.
+- **Cost.**  All of them need `centaur/fty/top`, which is most of what it
+  costs to include the small ones.  `normalization` costs the most: it has
+  the largest tables, and it loads the compatibility decompositions even if
+  only NFC is used.
+- **Effect on the including book.**  The settings that these books certify
+  under (`controlled-configuration`) are local to them.  What they leave
+  enabled are the definitions and the theorems about the functions of this
+  library.
+- **Packages.**  A book in another package can call these functions with
+  the package prefix, e.g. `unicode::xid-start-p`, once it has included the
+  book; nothing else is needed.  To import symbols of this library into
+  another package, put
+  `(include-book "kestrel/unicode/portcullis" :dir :system)` before the
+  `defpkg` in that package's `package.lsp`.
+- **Versions.**  A front end should pick its version of Unicode in one
+  place: a function from its own configuration (the edition of the
+  language, the release of the compiler being modeled) to a `version`,
+  whose result it passes down.
+- **Types.**  The property functions take any natural number, so they
+  apply to another library's code points or scalar values as they are.  The
+  normalization functions take a `code-point-listp`, and return a
+  `scalar-value-listp` when given one.  A front end with its own type of
+  scalar values needs a theorem that a list of them is a
+  `scalar-value-listp`, and the converse to get the result back;
+  `scalar-value-p-alt-def` (a scalar value is a natural number below
+  `#xD800`, or from `#xE000` to `#x10FFFF`) makes both easy to prove.
+- **Small sets.**  `Pattern_White_Space` and the bidirectional controls are
+  a few code points, the same in all the supported versions.  A front end
+  that lists them in its own grammar or lexer can keep its list and prove
+  it equal to the property, for any version, from
+  `pattern-white-space-p-alt-def`, `bidi-control-p-alt-def` and
+  `bidi-explicit-formatting-p-alt-def`.
 
 ## Versions
 
