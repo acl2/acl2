@@ -56,8 +56,8 @@
 	    (i-close (standard-part x) x))
    :hints (("Goal"
 	    :use ((:instance i-small-non-standard-part))
-	    :in-theory (enable-disable (i-close i-small)
-				       (i-small-non-standard-part))))))
+	    :in-theory (e/d (i-close i-small)
+			    (i-small-non-standard-part))))))
 
 ;; Now, we show that Rcfn is uniformly continuous.  Note, this only
 ;; holds for limited x.  I.e., x is in the interval [-M,M] where M is
@@ -106,8 +106,8 @@
 	    (equal (standard-part x) (standard-part y)))
    :hints (("Goal"
 	    :use ((:instance i-close-limited))
-	    :in-theory (enable-disable (i-close i-small)
-				       (i-close-limited))))))
+	    :in-theory (e/d (i-close i-small)
+			    (i-close-limited))))))
 |#
 
 ;; But using that lemma, we can prove that (rcfn (std-pt x)) is equal
@@ -129,9 +129,9 @@
 		 (:instance close-x-y->same-standard-part
 			    (x (RCFN (STANDARD-PART X)))
 			    (y (RCFN X))))
-	   :in-theory (enable-disable (standards-are-limited)
-				      (rcfn-continuous
-				       close-x-y->same-standard-part)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (rcfn-continuous
+			    close-x-y->same-standard-part)))))
 
 ; This function finds the largest a+i*eps so that f(a+i*eps)<z.
 
@@ -222,7 +222,7 @@ Note: This has moved to nsa.lisp
 		  (:instance large-if->-large
 			     (x x)
 			     (y b)))
-	    :in-theory (enable-disable (abs) (large-if->-large))))))
+	    :in-theory (e/d (abs) (large-if->-large))))))
 |#
 
 (encapsulate
@@ -393,12 +393,12 @@ Note: This has moved to nsa.lisp
 		 (:instance rcfn-continuous
 			    (x (standard-part x))
 			    (y x)))
-	   :in-theory (enable-disable (standards-are-limited)
-				      (i-close-limited
-				       rcfn-continuous
-				       rcfn-standard-part
-                                       ;; added for v2-6:
-                                       rcfn-uniformly-continuous)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (i-close-limited
+			    rcfn-continuous
+			    rcfn-standard-part
+                            ;; added for v2-6:
+                            rcfn-uniformly-continuous)))))
 
 ;; We'll show that f(r+eps) >= z, so that the r found above is the
 ;; largest possible (within an eps resolution).

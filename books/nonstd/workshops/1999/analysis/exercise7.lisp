@@ -135,9 +135,9 @@
 		  (:instance lemma-1
 			     (x (+ (rdfn x) (- (rdfn y))))
 			     (y (+ x (- y)))))
-	    :in-theory (enable-disable (i-close)
-				       (rdfn-differentiable
-					lemma-1)))))
+	    :in-theory (e/d (i-close)
+			    (rdfn-differentiable
+			     lemma-1)))))
  )
 
 ;; So now, we want to find the maximum of rdfn.  We do this by
@@ -675,8 +675,8 @@
 	    :use ((:instance rdfn-differentiable
 			     (y1 (+ x eps1))
 			     (y2 (+ x eps2))))
-	    :in-theory (enable-disable (differential-rdfn)
-				       (rdfn-differentiable)))))
+	    :in-theory (e/d (differential-rdfn)
+			    (rdfn-differentiable)))))
 
 ;; This is the ohter requirement of a differntiable function, namely
 ;; that the differntial is limited.
@@ -724,10 +724,10 @@
 		  (:instance close-same-standard-part
 			     (x (differential-rdfn x eps))
 			     (y (differential-rdfn x (/ (i-large-integer))))))
-	    :in-theory (enable-disable (derivative-rdfn)
-				       (rdfn-differentiable-2a
-					rdfn-differentiable-2b
-					close-same-standard-part)))))
+	    :in-theory (e/d (derivative-rdfn)
+			    (rdfn-differentiable-2a
+			     rdfn-differentiable-2b
+			     close-same-standard-part)))))
 
 ;; This is a major lemma.  What it says if that if x is a number so
 ;; that a differential of rdfn at x with a given epsilon is positive,
@@ -800,9 +800,9 @@
 			    (eps (/ (i-large-integer))))
 		 (:instance rolles-theorem-lemma-4
 			    (eps (/ (i-large-integer)))))
-	   :in-theory (enable-disable (derivative-rdfn)
-				      (rolles-theorem-lemma-1
-				       rolles-theorem-lemma-4)))
+	   :in-theory (e/d (derivative-rdfn)
+			   (rolles-theorem-lemma-1
+			    rolles-theorem-lemma-4)))
 	  ("Subgoal 2"
 	   :use ((:instance rolles-theorem-lemma-2c
 			    (eps (/ (i-large-integer))))

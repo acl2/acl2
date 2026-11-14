@@ -778,8 +778,8 @@
 	   :use ((:instance large-if->-large
 			    (x (next-integer x))
 			    (y (1+ x))))
-	   :in-theory (enable-disable (standards-are-limited)
-				      (large-if->-large)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (large-if->-large)))))
 
 ;; ...and for that matter, so is next-integer(abs(x))
 
