@@ -86,9 +86,9 @@
                   (consp x))
              (and (consp (car x))
                   (natp (car (car x)))))
-    :rule-classes (:rewrite :forward-chaining))
+    :rule-classes :forward-chaining)
 
-  (defrule cdar-when-nat-map-p
+  (defruled cdar-when-nat-map-p
     (implies (and (nat-map-p x)
                   (consp x))
              (cdr (car x)))))

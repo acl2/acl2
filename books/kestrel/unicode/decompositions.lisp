@@ -18,6 +18,7 @@
 (include-book "data/v17.0.0/unicode-data")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/util/defconsts" :dir :system)
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -193,7 +194,9 @@
   :returns (new-map nat-map-p
                     :hyp (and (nat-map-p entries)
                               (nat-map-p map))
-                    :hints (("Goal" :induct t)))
+                    :hints (("Goal"
+                             :induct t
+                             :in-theory (enable cdar-when-nat-map-p))))
   :short "Add all the entries of a nat map to another nat map."
   (cond ((endp entries) map)
         (t (nat-map-put-all (cdr entries)
@@ -201,7 +204,8 @@
                                          (cdr (car entries))
                                          map))))
   :hooks nil
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :in-theory (enable cdar-when-nat-map-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,16 +253,21 @@
    (xdoc::p
     "For each table we check that it has the type of the decomposition maps,
      in particular that it is sorted,
-     and that it is fully decomposed."))
+     and that it is fully decomposed.")
+   (xdoc::p
+    "The tables are defined with @(tsee defconsts), not @(tsee defconst):
+     they are computed when this book is certified
+     and kept in its certificate,
+     so they are not computed again each time the book is included."))
 
   ;; Unicode 16.0.0:
 
-  (defconst *canonical-full-decomposition-v16.0.0*
+  (defconsts *canonical-full-decomposition-v16.0.0*
     (full-decomposition-map *canonical-decomposition-v16.0.0*
                             *canonical-decomposition-v16.0.0*
                             nil))
 
-  (defconst *compatibility-full-decomposition-v16.0.0*
+  (defconsts *compatibility-full-decomposition-v16.0.0*
     (full-decomposition-map
      (nat-map-put-all *compatibility-decomposition-v16.0.0*
                       *canonical-decomposition-v16.0.0*)
@@ -286,12 +295,12 @@
 
   ;; Unicode 17.0.0:
 
-  (defconst *canonical-full-decomposition-v17.0.0*
+  (defconsts *canonical-full-decomposition-v17.0.0*
     (full-decomposition-map *canonical-decomposition-v17.0.0*
                             *canonical-decomposition-v17.0.0*
                             nil))
 
-  (defconst *compatibility-full-decomposition-v17.0.0*
+  (defconsts *compatibility-full-decomposition-v17.0.0*
     (full-decomposition-map
      (nat-map-put-all *compatibility-decomposition-v17.0.0*
                       *canonical-decomposition-v17.0.0*)
