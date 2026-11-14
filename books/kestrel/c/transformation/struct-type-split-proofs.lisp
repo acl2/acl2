@@ -582,7 +582,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are accessors @('struct-value-<onlr>-><mem>'),
+    "These are accessors @('struct-value-<onlr>-<mem>'),
      where @('<onlr>') is passed as input and refers to the struct,
      and @('<mem>') is the name of a member."))
   (b* (((reterr) nil)
