@@ -115,7 +115,7 @@
    (xdoc::p
     "We put this in the @('C') package
      because it pertains to the language formalization,
-     and is more general that C-to-C transformations.")
+     and is more general than C-to-C transformations.")
    (xdoc::p
     "The given members are specified by their names and associated types."))
   (and (c::value-case val :struct)
