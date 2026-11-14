@@ -594,9 +594,6 @@
                    'struct-value-))
        (struct-value-onlrp (packn-pos (list 'struct-value- onlr 'p)
                                       'struct-value-))
-       (value-kind-of-struct-value-onlr-mem
-        (packn-pos (list 'value-kind-of- struct-value-onlr-mem)
-                   'struct-value-))
        (type-of-value-of-struct-value-onlr-mem
         (packn-pos (list 'type-of-value-of- struct-value-onlr-mem)
                    'struct-value-))
@@ -642,15 +639,6 @@
                             c::type-of-value-of-value-fix-val
                             (:e c::member-type-lookup)
                             (:e c::typep)))))
-           (defret ,value-kind-of-struct-value-onlr-mem
-             (equal (c::value-kind mval) ,(type-kind (car types)))
-             :hyp (,struct-value-onlrp sval)
-             :hints
-             (("Goal"
-               :in-theory '(,type-of-value-of-struct-value-onlr-mem
-                            (:e c::type-kind))
-               :use (:instance c::type-kind-of-type-of-value
-                               (c::val (,struct-value-onlr-mem sval))))))
            (defruled ,value-struct-read-mem-when-struct-value-onlrp
              (implies (,struct-value-onlrp sval)
                       (equal (c::value-struct-read ',cmem sval)
