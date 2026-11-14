@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
