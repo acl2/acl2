@@ -16,6 +16,8 @@
 (include-book "data/v16.0.0/derived-normalization-props")
 (include-book "data/v17.0.0/derived-normalization-props")
 
+(include-book "std/util/defconsts" :dir :system)
+
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -235,11 +237,16 @@
    (xdoc::p
     "For each table we check that it has the type of the composition maps,
      in particular that it is sorted,
-     and that no two primary composites have the same mapping."))
+     and that no two primary composites have the same mapping.")
+   (xdoc::p
+    "The tables are defined with @(tsee defconsts), not @(tsee defconst):
+     they are computed when this book is certified
+     and kept in its certificate,
+     so they are not computed again each time the book is included."))
 
   ;; Unicode 16.0.0:
 
-  (defconst *composition-v16.0.0*
+  (defconsts *composition-v16.0.0*
     (primary-composites *canonical-decomposition-v16.0.0*
                         *full-composition-exclusion-v16.0.0*))
 
@@ -252,7 +259,7 @@
 
   ;; Unicode 17.0.0:
 
-  (defconst *composition-v17.0.0*
+  (defconsts *composition-v17.0.0*
     (primary-composites *canonical-decomposition-v17.0.0*
                         *full-composition-exclusion-v17.0.0*))
 

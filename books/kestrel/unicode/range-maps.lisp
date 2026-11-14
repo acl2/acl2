@@ -86,7 +86,7 @@
                   (consp x))
              (and (consp (car x))
                   (range-p (car (car x)))))
-    :rule-classes (:rewrite :forward-chaining)))
+    :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

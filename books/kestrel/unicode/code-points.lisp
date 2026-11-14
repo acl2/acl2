@@ -117,7 +117,7 @@
 
   ///
 
-  (defrule nat-listp-when-code-point-listp
+  (defruled nat-listp-when-code-point-listp
     (implies (code-point-listp x)
              (nat-listp x))
     :induct t
