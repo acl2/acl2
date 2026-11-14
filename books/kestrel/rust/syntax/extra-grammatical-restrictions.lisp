@@ -69,7 +69,9 @@
       not yet formalized.
       The XID tables are in @(see unicode-xid),
       but the grammar and lexer do not use them yet,
-      so identifiers are ASCII-only meanwhile.")
+      so identifiers are ASCII-only meanwhile.
+      The tables are those of Unicode 16.0.0, as in rustc 1.87.0;
+      rustc moved to Unicode 17.0.0 in its version 1.94.0.")
     (xdoc::li
      "[SC5] Raw identifier and raw lifetime exclusions
       (@('crate'), @('self'), @('super'), @('Self')):
@@ -155,7 +157,34 @@
     "Other side conditions, like [SC7] and [SC8],
      do not restrict the candidates:
      they reject an input
-     because of the lexemes that maximal munch chooses for it."))
+     because of the lexemes that maximal munch chooses for it.")
+   (xdoc::p
+    "Maximal munch is our reading of how the rules combine:
+     the Reference at version 1.87.0 does not state it,
+     and the descriptions whose alternatives are tried in order
+     do not need it (see @(see related-lexer-descriptions),
+     which also says what plays the part of
+     each side condition in those descriptions).
+     It decides between texts of different lengths, and nothing else.
+     So where rustc's token is not the longest text that matches a rule,
+     a side condition must take the longer texts out of the candidates:
+     that is what [SC2], [SC10], and [SC14] do.
+     And where the rules give one text two readings,
+     maximal munch does not choose between them:
+     the grammar or a side condition must exclude one.
+     We know of three such cases.
+     Text that starts with a radix prefix also reads as
+     the decimal literal @('0') with a suffix,
+     as in @('0x3') with suffix @('x3');
+     [SC7] excludes that reading.
+     The whitespace after a string continuation also reads as
+     characters of the string;
+     [SC13] excludes that reading.
+     And a hexadecimal literal may also read as
+     a shorter one with a suffix,
+     as in @('0x1f') with suffix @('f');
+     no side condition excludes that reading yet,
+     and the lexer, like rustc, takes the digits as far as they go."))
   :order-subtopics t
   :default-parent t)
 
@@ -465,15 +494,15 @@ multi-line */")))
      or a lone underscore
      (see @(tsee underscore-lexeme-cst-p)),
      must not be immediately followed by
-     @('#') (U+0023), @('\\'') (U+0027), or @('\"') (U+0022):
+     @('#') (U+0023), @(''') (U+0027), or @('\"') (U+0022):
      such forms are reserved prefixes
      in both supported editions, 2021 and 2024.
      Likewise, a lifetime lexeme that is not a raw lifetime
      (see @(tsee non-raw-lifetime-lexeme-cst-p))
      must not be immediately followed by @('#'):
      such forms are reserved lifetime prefixes.
-     The Reference exempts @('\\'r'),
-     but rustc rejects @('\\'r#') when no raw lifetime follows,
+     The Reference exempts @(''r'),
+     but rustc rejects @(''r#') when no raw lifetime follows,
      and so does this condition:
      when a raw lifetime follows, maximal munch makes it the lexeme.")
    (xdoc::p
@@ -596,8 +625,8 @@ multi-line */")))
    (xdoc::p
     "A lifetime lexeme (see @(tsee lifetime-lexeme-cst-p)),
      raw or not,
-     must not be immediately followed by @('\\'') (U+0027).
-     rustc reads such text, e.g. @('\\'ab\\''),
+     must not be immediately followed by @(''') (U+0027).
+     rustc reads such text, e.g. @(''ab''),
      as a character literal with more than one character,
      and rejects it.")
    (xdoc::p
@@ -607,8 +636,8 @@ multi-line */")))
      (\"not immediately followed by '\");
      read as a restriction on the candidate lexemes,
      it would let maximal munch pick a shorter lifetime instead:
-     @('\\'ab\\' \\'') would lex as
-     the lifetime @('\\'a') followed by the byte literal @('b\\' \\''),
+     @(''ab' '') would lex as
+     the lifetime @(''a') followed by the byte literal @('b' ''),
      which rustc rejects."))
   (implies (lifetime-lexeme-cst-p tree)
            (not (prefixp (list #x27) (nat-list-fix rest-input))))) ; '
