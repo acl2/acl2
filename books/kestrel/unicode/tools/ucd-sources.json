@@ -1,0 +1,86 @@
+{
+  "16.0.0": {
+    "CompositionExclusions.txt": {
+      "sha256": "89e83cf9cc8bef6c1f8bf77e42cf6f0341dfa42e66261f4dbe9b492e7a23c8ee",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/CompositionExclusions.txt"
+    },
+    "DerivedCoreProperties.txt": {
+      "sha256": "39d35161f2954497f69e08bdb9e701493f476a3d30222de20028feda36c1dabd",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/DerivedCoreProperties.txt"
+    },
+    "DerivedNormalizationProps.txt": {
+      "sha256": "4d4c03892dea9146d674b686e495df2d55a28d071ac474041d73518f887abddc",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/DerivedNormalizationProps.txt"
+    },
+    "NormalizationTest.txt": {
+      "sha256": "d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/NormalizationTest.txt"
+    },
+    "PropList.txt": {
+      "sha256": "53d614508e2a0b2305a8aa21cd60d993de9326cdf65993660dfcce4503548583",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/PropList.txt"
+    },
+    "PropertyValueAliases.txt": {
+      "sha256": "440fd3e5460b9bfe31da67b6f923992e1989d31fe2ed91e091c4b8f8e2620bf9",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/PropertyValueAliases.txt"
+    },
+    "UnicodeData.txt": {
+      "sha256": "ff58e5823bd095166564a006e47d111130813dcf8bf234ef79fa51a870edb48f",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/UnicodeData.txt"
+    },
+    "extracted/DerivedBidiClass.txt": {
+      "sha256": "71ed943a49c58568d8d92e80ecc2ba2f06e62aee9c8ebb0e6e8bd2c3ed8b180e",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedBidiClass.txt"
+    },
+    "extracted/DerivedCombiningClass.txt": {
+      "sha256": "52064d588c98c623b2373905e6a449eb520f900113954bcd212e94ef0810b471",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedCombiningClass.txt"
+    },
+    "extracted/DerivedDecompositionType.txt": {
+      "sha256": "29f8bff31296bab424e8d728e2a3c0a3240c5a67dadf47fa7092ec0585ad91b6",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    }
+  },
+  "17.0.0": {
+    "CompositionExclusions.txt": {
+      "sha256": "2f239196ef3b5b61db5cc476e9bd80f534d15aa1b74e1be1dea5d042a344c85f",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/CompositionExclusions.txt"
+    },
+    "DerivedCoreProperties.txt": {
+      "sha256": "24c7fed1195c482faaefd5c1e7eb821c5ee1fb6de07ecdbaa64b56a99da22c08",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/DerivedCoreProperties.txt"
+    },
+    "DerivedNormalizationProps.txt": {
+      "sha256": "71fd6a206a2c0cdd41feb6b7f656aa31091db45e9cedc926985d718397f9e488",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/DerivedNormalizationProps.txt"
+    },
+    "NormalizationTest.txt": {
+      "sha256": "5019ffd530751a741900c849c0e010332f142a3612234639bd200b82138a87db",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/NormalizationTest.txt"
+    },
+    "PropList.txt": {
+      "sha256": "130dcddcaadaf071008bdfce1e7743e04fdfbc910886f017d9f9ac931d8c64dd",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/PropList.txt"
+    },
+    "PropertyValueAliases.txt": {
+      "sha256": "64e9a5f76f7a1e8b5a47d6a1f9a26522a251208f5276bdfa1559dac7cf2e827a",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/PropertyValueAliases.txt"
+    },
+    "UnicodeData.txt": {
+      "sha256": "2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt"
+    },
+    "extracted/DerivedBidiClass.txt": {
+      "sha256": "4867b4b7f0731ed1bfcd34cc6251211ff1542541fce0734b6fbda139ee80b3a4",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedBidiClass.txt"
+    },
+    "extracted/DerivedCombiningClass.txt": {
+      "sha256": "191463abfbd202703c6fd6776a92a23ac44ec65e0476a7f95aa91ca492cef29b",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedCombiningClass.txt"
+    },
+    "extracted/DerivedDecompositionType.txt": {
+      "sha256": "f44e5ceaf40edc1fe06ea0404e8bebc7d356dcc38aac076543b6874008a06e3e",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    }
+  }
+}
