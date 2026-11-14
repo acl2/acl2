@@ -197,7 +197,7 @@
    (xdoc::p
     "What rustc does in each case,
      we have observed by running rustc 1.87.0
-     (see @(see lexer) for how we observe
+     (see @(see differential-testing) for how we observe
      which inputs it lexes, and into how many tokens).
      What the Reference says is our reading of its rules and text.
      The Reference of that version gives a rule for each kind of token,
@@ -245,18 +245,18 @@
       We reject it, by the side condition [SC11]
       (see @(tsee lexeme-cst-literal-underscore-okp))."))
    (xdoc::desc
-    "The lifetime @('\\'r') immediately followed by @('#')"
+    "The lifetime @(''r') immediately followed by @('#')"
     (xdoc::p
      "In the Reference, a non-raw lifetime immediately followed by @('#')
       is a "
      (xdoc::ahref
       "https://doc.rust-lang.org/1.87.0/reference/tokens.html#reserved-prefixes"
       "reserved prefix")
-     ", except for the lifetime @('\\'r');
-      so @('\\'r#1') would be the three tokens
-      @('\\'r'), @('#'), and @('1').
-      rustc rejects @('\\'r#') wherever no raw lifetime starts,
-      as in @('\\'r#1').
+     ", except for the lifetime @(''r');
+      so @(''r#1') would be the three tokens
+      @(''r'), @('#'), and @('1').
+      rustc rejects @(''r#') wherever no raw lifetime starts,
+      as in @(''r#1').
       We reject it, by the part of the side condition [SC8]
       about lifetimes
       (see @(tsee lexeme-cst-reserved-prefix-okp))."))
@@ -285,17 +285,17 @@
       "https://doc.rust-lang.org/1.87.0/reference/tokens.html#lifetimes-and-loop-labels"
       "lifetime tokens")
      " carry the condition
-      &ldquo;not immediately followed by @('\\'')&rdquo;.
+      &ldquo;not immediately followed by @(''')&rdquo;.
       The rule for float literals that end with a period
       carries a condition of the same form,
       and there it restricts which texts are tokens:
       in @('1..2'), the text @('1.') is not a float literal,
       and the token is the shorter @('1').
       Read in the same way, the condition on lifetimes
-      makes @('\\'ab\\' \\'') lex as
-      the lifetime @('\\'a') followed by the byte literal @('b\\' \\''):
-      there @('\\'ab') is not a lifetime token, and @('\\'a') is one.
-      rustc reads @('\\'ab\\'') as
+      makes @(''ab' '') lex as
+      the lifetime @(''a') followed by the byte literal @('b' ''):
+      there @(''ab') is not a lifetime token, and @(''a') is one.
+      rustc reads @(''ab'') as
       a character literal with two characters,
       and rejects the input.
       We reject it, by the side condition [SC12]
@@ -593,7 +593,8 @@
       its rules include the forms that only edition 2024 reserves.")
     (xdoc::p
      "We have run the interpreter of the version for Rust 1.100.0
-      on about 188,000 short inputs,
+      on about 188,000 short inputs
+      (see @(see differential-testing)),
       and compared it with rustc 1.100.0 in edition 2024,
       on whether each input lexes and into how many tokens.
       The two differ on one of those inputs, @('/*!/*/')

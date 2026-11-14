@@ -367,9 +367,9 @@
    (xdoc::p
     "The name of the lifetime token is the text
      after the single quote,
-     or after @('\\'r#') for a raw lifetime,
-     whose text is the only kind that starts with @('\\'r#').
-     The placeholder lifetime @('\\'_') has name @('\"_\"').
+     or after @(''r#') for a raw lifetime,
+     whose text is the only kind that starts with @(''r#').
+     The placeholder lifetime @(''_') has name @('\"_\"').
      The side condition [SC5] is enforced here for raw lifetimes:
      the name must not be
      @('crate'), @('self'), @('super'), or @('Self')."))

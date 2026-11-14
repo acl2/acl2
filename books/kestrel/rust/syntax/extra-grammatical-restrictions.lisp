@@ -494,15 +494,15 @@ multi-line */")))
      or a lone underscore
      (see @(tsee underscore-lexeme-cst-p)),
      must not be immediately followed by
-     @('#') (U+0023), @('\\'') (U+0027), or @('\"') (U+0022):
+     @('#') (U+0023), @(''') (U+0027), or @('\"') (U+0022):
      such forms are reserved prefixes
      in both supported editions, 2021 and 2024.
      Likewise, a lifetime lexeme that is not a raw lifetime
      (see @(tsee non-raw-lifetime-lexeme-cst-p))
      must not be immediately followed by @('#'):
      such forms are reserved lifetime prefixes.
-     The Reference exempts @('\\'r'),
-     but rustc rejects @('\\'r#') when no raw lifetime follows,
+     The Reference exempts @(''r'),
+     but rustc rejects @(''r#') when no raw lifetime follows,
      and so does this condition:
      when a raw lifetime follows, maximal munch makes it the lexeme.")
    (xdoc::p
@@ -625,8 +625,8 @@ multi-line */")))
    (xdoc::p
     "A lifetime lexeme (see @(tsee lifetime-lexeme-cst-p)),
      raw or not,
-     must not be immediately followed by @('\\'') (U+0027).
-     rustc reads such text, e.g. @('\\'ab\\''),
+     must not be immediately followed by @(''') (U+0027).
+     rustc reads such text, e.g. @(''ab''),
      as a character literal with more than one character,
      and rejects it.")
    (xdoc::p
@@ -636,8 +636,8 @@ multi-line */")))
      (\"not immediately followed by '\");
      read as a restriction on the candidate lexemes,
      it would let maximal munch pick a shorter lifetime instead:
-     @('\\'ab\\' \\'') would lex as
-     the lifetime @('\\'a') followed by the byte literal @('b\\' \\''),
+     @(''ab' '') would lex as
+     the lifetime @(''a') followed by the byte literal @('b' ''),
      which rustc rejects."))
   (implies (lifetime-lexeme-cst-p tree)
            (not (prefixp (list #x27) (nat-list-fix rest-input))))) ; '

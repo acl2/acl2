@@ -135,53 +135,14 @@
      That the grammar and the side conditions describe
      the inputs that rustc lexes is not something to prove:
      it is tested, by comparing the lexer and the tokenizer
-     with rustc on the same inputs.")
-   (xdoc::p
-    "The comparison is with the lexing stage of rustc alone.
-     rustc rejects some inputs while lexing them,
-     and others only later, in its parser or after it.
-     An input of the first kind, like @('0b12') or @('1e'),
-     must fail here.
-     An input of the second kind must lex here:
-     for example a string literal with a suffix, like @('\"a\"b'),
-     or an integer literal too large for every integer type.")
-   (xdoc::p
-    "To observe that stage,
-     we give rustc the input as the arguments of
-     a macro that only counts its arguments.
-     Then the tokens of the input never reach rustc's parser:
-     rustc reports an error exactly when its lexer finds one,
-     and otherwise the count says how many tokens the input has.
-     So an input should lex and tokenize here
-     exactly when rustc accepts it in that position,
-     and into the same number of tokens.
-     Two things need care in the comparison.
-     rustc's lexer also groups the tokens by their delimiters
-     (see @(see token-trees)), which ours does not do yet;
-     so rustc rejects an input whose delimiters do not balance,
-     and it counts a delimited group as one argument.
-     And rustc turns each doc comment into an attribute
-     before the macro receives it,
-     so a doc comment counts as the tokens of that attribute.")
-   (xdoc::p
-    "The tests that come with this library,
-     in the directory @('tests'),
-     check for each of their inputs whether it lexes
-     and into how many lexemes or tokens;
-     some of them are transcribed from the tests of rustc 1.87.0.
-     At this time of writing, we have also compared
-     the lexer and the tokenizer with rustc 1.87.0,
-     on about 188,000 generated short inputs,
-     in the editions 2021 and 2024,
-     and on 1,400 source files of published crates,
-     with scripts that are not part of this library.
-     They agree, except on inputs with forms that are not covered yet:
-     block doc comments, carriage returns in doc comments,
-     non-ASCII identifiers,
-     and the forms that only edition 2024 reserves.
-     See @(see related-lexer-descriptions)
-     for other descriptions of Rust's lexical structure,
-     one of which we have run on the same inputs."))
+     with rustc on the same inputs.
+     The comparison is with the lexing stage of rustc alone:
+     an input that rustc rejects while lexing it,
+     like @('0b12') or @('1e'), must fail here;
+     and an input that rustc rejects only later,
+     like @('\"a\"b'), a string literal with a suffix, must lex here.
+     See @(see differential-testing)
+     for how the comparison is made and what it has found."))
   :order-subtopics t
   :default-parent t)
 
@@ -1287,7 +1248,7 @@
      since its @('r') would otherwise lex
      as the identifier of a shorter lifetime;
      then a single quote followed by an identifier or keyword;
-     then the placeholder lifetime @('\\'_').
+     then the placeholder lifetime @(''_').
      The side conditions [SC8] and [SC12] on what may follow
      are checked by @(tsee lex-token)."))
   (b* ((input (nat-list-fix input))
@@ -3073,7 +3034,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This excludes @('\\\\0') and @('\\\\x00'),
+    "This excludes @('\\0') and @('\\x00'),
      which would put a NUL inside a C string."))
   (b* (((mv tree1 input1) (abnf::parse-schars "\\x" input))
        ((when (not (reserrp tree1)))
@@ -3314,7 +3275,7 @@
     "Applied to the characters of a @('unicode-escape'),
      this yields the escaped value:
      the other characters are
-     @('\\\\'), @('u'), @('{'), @('_'), and @('}'),
+     @('\\'), @('u'), @('{'), @('_'), and @('}'),
      none of which is a hexadecimal digit."))
   (b* (((when (endp nats)) (lnfix acc))
        (c (lnfix (car nats)))
@@ -5328,7 +5289,7 @@
     "After lexing a (non-raw) identifier or keyword,
      or a lone underscore,
      the reserved prefix side condition [SC8] applies:
-     if the next character is @('#'), @('\\''), or @('\"'),
+     if the next character is @('#'), @('''), or @('\"'),
      the input is rejected
      (e.g. @('foo#bar'), @('_x#'), and @('_#') do not lex
      in the supported editions).
@@ -5354,13 +5315,13 @@
     "After lexing a lifetime,
      the side condition [SC12] applies:
      if the next character is a single quote, the input is rejected
-     (e.g. @('\\'ab\\''), which rustc reads as
+     (e.g. @(''ab''), which rustc reads as
      a character literal with two characters).
      So does the lifetime case of [SC8]:
      if the lifetime is not raw and the next character is @('#'),
-     the input is rejected (e.g. @('\\'a#'), and also @('\\'r#1'),
-     which is the lifetime @('\\'r') followed by @('#')).
-     The text of a raw lifetime starts with @('\\'r#'),
+     the input is rejected (e.g. @(''a#'), and also @(''r#1'),
+     which is the lifetime @(''r') followed by @('#')).
+     The text of a raw lifetime starts with @(''r#'),
      which the text of no other lifetime does."))
   (b* ((input (nat-list-fix input))
        ((mv nat? &) (abnf::parse-next input))

@@ -22,6 +22,7 @@
 (include-book "extra-grammatical-restrictions")
 (include-book "lexer")
 (include-book "tokenizer")
+(include-book "differential-testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,7 +53,7 @@
      (including raw strings and C strings),
      punctuation, and delimiters.
      The lexer and the tokenizer are tested against rustc
-     (see @(see lexer)),
+     (see @(see differential-testing)),
      and @(see related-lexer-descriptions) relates our grammar
      to other descriptions of Rust's lexical structure.
      Still to come are

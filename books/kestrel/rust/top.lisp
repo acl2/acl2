@@ -51,7 +51,7 @@
                  "Miri")
     " as a planned testing oracle.
      For the syntax track, the testing oracle is rustc itself
-     (see @(see rust$::lexer)).")
+     (see @(see rust$::differential-testing)).")
    (xdoc::p
     "The library is organized in two tracks,
      following the "
