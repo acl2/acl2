@@ -9,9 +9,9 @@
 //! Write what the Unicode crates that rustc uses say about every code point,
 //! in the format of ../../dump.lisp, for comparison with the ACL2 library.
 //!
-//! This one source file is built by two Cargo packages, v16.0.0 and v17.0.0
-//! in this directory, which pin the versions of the crates that implement
-//! that version of Unicode.  Usage:
+//! This one source file is built by one Cargo package for each version of
+//! Unicode (v16.0.0, v17.0.0 and so on, in this directory), which pins the
+//! versions of the crates that implement that version of Unicode.  Usage:
 //!
 //!     oracle VERSION code-points > FILE
 //!     oracle VERSION pairs PAIRS-FILE

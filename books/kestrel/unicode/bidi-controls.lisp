@@ -16,8 +16,10 @@
 
 (include-book "data/v16.0.0/prop-list")
 (include-book "data/v17.0.0/prop-list")
+(include-book "data/v18.0.0/prop-list")
 (include-book "data/v16.0.0/derived-bidi-class")
 (include-book "data/v17.0.0/derived-bidi-class")
+(include-book "data/v18.0.0/derived-bidi-class")
 
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
@@ -82,7 +84,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *bidi-control-v16.0.0*
-                :v17.0.0 *bidi-control-v17.0.0*)
+                :v17.0.0 *bidi-control-v17.0.0*
+                :v18.0.0 *bidi-control-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -118,7 +121,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *bidi-formatting-class-v16.0.0*
-                :v17.0.0 *bidi-formatting-class-v17.0.0*)
+                :v17.0.0 *bidi-formatting-class-v17.0.0*
+                :v18.0.0 *bidi-formatting-class-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

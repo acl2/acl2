@@ -68,6 +68,7 @@
      the constructor for Unicode 16.0.0 is @('(version-v16.0.0)')."))
   (:v16.0.0 ())
   (:v17.0.0 ())
+  (:v18.0.0 ())
   :pred versionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,4 +78,5 @@
   :short "The usual name of a version of the Unicode Standard."
   (version-case ver
                 :v16.0.0 "16.0.0"
-                :v17.0.0 "17.0.0"))
+                :v17.0.0 "17.0.0"
+                :v18.0.0 "18.0.0"))

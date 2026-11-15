@@ -22,6 +22,7 @@
 
 (defconst *v16* (version-v16.0.0))
 (defconst *v17* (version-v17.0.0))
+(defconst *v18* (version-v18.0.0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,6 +85,12 @@
 
 (test (not (xid-start-p #x088F *v16*)))
 (test (xid-start-p #x088F *v17*))
+(test (xid-start-p #x088F *v18*))
+
+; And U+0558 was added in Unicode 18.0.0.
+
+(test (not (xid-start-p #x0558 *v17*)))
+(test (xid-start-p #x0558 *v18*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

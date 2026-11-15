@@ -15,6 +15,7 @@
 
 (include-book "data/v16.0.0/derived-normalization-props")
 (include-book "data/v17.0.0/derived-normalization-props")
+(include-book "data/v18.0.0/derived-normalization-props")
 
 (include-book "std/util/defconsts" :dir :system)
 
@@ -73,7 +74,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *full-composition-exclusion-v16.0.0*
-                :v17.0.0 *full-composition-exclusion-v17.0.0*)
+                :v17.0.0 *full-composition-exclusion-v17.0.0*
+                :v18.0.0 *full-composition-exclusion-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -245,6 +247,23 @@
                 (all-code-points)
                 *canonical-decomposition-mapping-v17.0.0*
                 *full-composition-exclusion-v17.0.0*
+                0))))
+
+  ;; Unicode 18.0.0:
+
+  (defconsts *composition-v18.0.0*
+    (primary-composites (all-code-points)
+                        *canonical-decomposition-mapping-v18.0.0*
+                        *full-composition-exclusion-v18.0.0*
+                        (treemap::empty)))
+
+  (assert-event
+   (and (composition-mapp *composition-v18.0.0*)
+        (equal (treemap::size *composition-v18.0.0*)
+               (primary-composite-count
+                (all-code-points)
+                *canonical-decomposition-mapping-v18.0.0*
+                *full-composition-exclusion-v18.0.0*
                 0)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,7 +280,8 @@
      that compose to precomposed Hangul syllables."))
   (version-case ver
                 :v16.0.0 *composition-v16.0.0*
-                :v17.0.0 *composition-v17.0.0*)
+                :v17.0.0 *composition-v17.0.0*
+                :v18.0.0 *composition-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
