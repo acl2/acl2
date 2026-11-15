@@ -16,6 +16,7 @@
 (include-book "cursor-defs")
 (include-book "entry-defs")
 (include-book "before-after-defs")
+(include-book "from-cursor-defs")
 (include-book "begin-end-defs")
 (include-book "seek-min-max-defs")
 (include-book "next-prev-defs")
@@ -35,6 +36,7 @@
 (local (include-book "step"))
 (local (include-book "seek-min-max"))
 (local (include-book "next-prev"))
+(local (include-book "partition"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,6 +179,22 @@
            (< (prevs (prev cursor))
               (prevs cursor)))
   :rule-classes :linear)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-upper-bound-linear
+  (<= (nexts cursor)
+      (cardinality (from-cursor cursor)))
+  :rule-classes :linear
+  :enable (nexts
+           cardinality-of-from-cursor))
+
+(defrule prevs-upper-bound-linear
+  (<= (prevs cursor)
+      (cardinality (from-cursor cursor)))
+  :rule-classes :linear
+  :enable (prevs
+           cardinality-of-from-cursor))
 
 ;;;;;;;;;;;;;;;;;;;;
 
