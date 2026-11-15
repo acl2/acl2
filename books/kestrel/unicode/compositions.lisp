@@ -31,7 +31,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The normalization forms C and KC replace
+    "Normalization Forms C and KC
+     (NFC and NFKC: see @(see normalization)) replace
      certain pairs of code points by single code points.
      A pair is replaced by a code point
      if that code point is a primary composite [Unicode, D114]

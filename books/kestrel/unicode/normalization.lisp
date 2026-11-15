@@ -42,19 +42,32 @@
      There are four forms:")
    (xdoc::ul
     (xdoc::li
-     "NFD replaces each code point by its canonical decomposition
+     "Normalization Form D (NFD), which is canonical decomposition,
+      replaces each code point by its canonical decomposition
       (see @(see decompositions))
       and puts the combining marks in a canonical order
       (see @(see canonical-ordering)).")
     (xdoc::li
-     "NFC does what NFD does and then recombines
+     "Normalization Form C (NFC), which is
+      canonical decomposition followed by canonical composition,
+      does what NFD does and then recombines
       the code points that compose
       (see @(see canonical-composition)).")
     (xdoc::li
-     "NFKD and NFKC are like NFD and NFC,
+     "Normalization Form KD (NFKD), which is compatibility decomposition,
+      and Normalization Form KC (NFKC), which is
+      compatibility decomposition followed by canonical composition,
+      are like NFD and NFC,
       but they use the compatibility decompositions,
       which lose some distinctions (of font, width, and so on)
       between sequences that are not canonically equivalent."))
+   (xdoc::p
+    "These are the names and the abbreviations of [UAX #15, Table 1].
+     The letter D is for the two decomposed forms,
+     and the letter C for the two composed forms.
+     The letter K stands for compatibility:
+     it is a K because C already stands for composition
+     [UAX #15, Section 1.2].")
    (xdoc::p
     "Programming languages that allow Unicode identifiers
      usually say that two identifiers are the same
@@ -775,8 +788,12 @@
 (define nfd ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
-  :short "Normalization Form D (canonical decomposition)
+  :short "Normalization Form D (NFD), which is canonical decomposition,
           of a list of code points, in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see normalization) for the names of the four forms."))
   (canonical-order (decompose cps nil ver) ver)
 
   ///
@@ -812,9 +829,13 @@
 (define nfc ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
-  :short "Normalization Form C
-          (canonical decomposition, then canonical composition)
+  :short "Normalization Form C (NFC), which is
+          canonical decomposition followed by canonical composition,
           of a list of code points, in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see normalization) for the names of the four forms."))
   (canonical-compose (nfd cps ver) ver)
 
   ///
@@ -840,8 +861,13 @@
 (define nfkd ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
-  :short "Normalization Form KD (compatibility decomposition)
+  :short "Normalization Form KD (NFKD), which is compatibility decomposition,
           of a list of code points, in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The letter K stands for compatibility.
+     See @(see normalization) for the names of the four forms."))
   (canonical-order (decompose cps t ver) ver)
 
   ///
@@ -882,9 +908,14 @@
 (define nfkc ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
-  :short "Normalization Form KC
-          (compatibility decomposition, then canonical composition)
+  :short "Normalization Form KC (NFKC), which is
+          compatibility decomposition followed by canonical composition,
           of a list of code points, in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The letter K stands for compatibility.
+     See @(see normalization) for the names of the four forms."))
   (canonical-compose (nfkd cps ver) ver)
 
   ///
