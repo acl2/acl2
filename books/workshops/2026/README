@@ -52,15 +52,21 @@ coglio-jurgensen/
 Ruben Gamboa
 A Mechanical Proof of Stirling's Approximation in ACL2(r)
 
+[books]/nonstd/stirling/
+
 ------------------------------
 
 Ruben Gamboa
 An Alternative Proof in ACL2(r) of Euler's Solution to the Basel Problem
 
+[books]/nonstd/basel/
+
 ------------------------------
 
 Ruben Gamboa
 Towards Formalizing the Semantics of Lifting Argument Frames When Evaluating Remora Expressions
+
+gamboa-remora-lifting/
 
 ------------------------------
 
