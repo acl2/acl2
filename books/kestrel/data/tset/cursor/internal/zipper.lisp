@@ -406,11 +406,7 @@
 (defrule zip-plug-of-irr-zip
   (equal (zip-plug (irr-zip))
          nil)
-  :enable (zip-plug
-           irr-zip
-           zip-fix
-           zip->path
-           zip->focus))
+  :enable irr-zip)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -36,6 +36,30 @@
 ;; A zipper is determined by its tree, whether it is at a hole, and what
 ;; follows it. The tree need not be a search tree.
 
+(defruledl zip-uniqueness-when-zip-at-end-p
+  (implies (and (zip-at-end-p zip1)
+                (equal (zip-plug zip1) (zip-plug zip2))
+                (equal (tree-empty-p (zip->focus zip1))
+                       (tree-empty-p (zip->focus zip2)))
+                (equal (zip-after zip1) (zip-after zip2)))
+           (equal (equal (zip-fix zip1) (zip-fix zip2))
+                  t))
+  :use ((:instance zip-end-of-zip-plug-when-zip-at-end-p (zip zip1))
+        (:instance zip-end-of-zip-plug-when-zip-at-end-p (zip zip2)))
+  :enable zip-at-end-p-becomes-not-consp-of-zip-after)
+
+(defruledl zip-uniqueness-when-equal-of-zip-step-forward
+  (implies (and (not (zip-at-end-p zip1))
+                (equal (tree-empty-p (zip->focus zip1))
+                       (tree-empty-p (zip->focus zip2)))
+                (equal (zip-after zip1) (zip-after zip2))
+                (equal (zip-step-forward zip1) (zip-step-forward zip2)))
+           (equal (equal (zip-fix zip1) (zip-fix zip2))
+                  t))
+  :use ((:instance zip-step-backward-of-zip-step-forward (zip zip1))
+        (:instance zip-step-backward-of-zip-step-forward (zip zip2)))
+  :enable zip-at-end-p-becomes-not-consp-of-zip-after)
+
 (local
   (define zip-position-induction ((zip1 zipp)
                                   (zip2 zipp))
@@ -58,22 +82,10 @@
                 (equal (zip-after zip1) (zip-after zip2)))
            (equal (zip-fix zip1) (zip-fix zip2)))
   :rule-classes nil
-  :hints (("Goal"
-           :induct (zip-position-induction zip1 zip2)
-           :in-theory (enable zip-at-end-p-becomes-not-consp-of-zip-after))
-          (and stable-under-simplificationp
-               '(:use ((:instance zip-step-backward-of-zip-step-forward
-                                  (zip zip1))
-                       (:instance zip-step-backward-of-zip-step-forward
-                                  (zip zip2))
-                       (:instance zip-end-of-zip-plug-when-zip-at-end-p
-                                  (zip zip1))
-                       (:instance zip-end-of-zip-plug-when-zip-at-end-p
-                                  (zip zip2)))
-                 :cases ((tree-empty-p (zip->focus zip1)))
-                 :in-theory (e/d (zip-at-end-p-becomes-not-consp-of-zip-after)
-                                 (zip-step-backward-of-zip-step-forward
-                                  zip-end-of-zip-plug-when-zip-at-end-p))))))
+  :induct (zip-position-induction zip1 zip2)
+  :enable (zip-after-of-zip-step-forward
+           zip-uniqueness-when-zip-at-end-p
+           zip-uniqueness-when-equal-of-zip-step-forward))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

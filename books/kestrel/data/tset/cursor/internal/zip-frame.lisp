@@ -281,8 +281,7 @@
                   frame))
   :enable (zip-frame
            zip-frame->elem
-           zip-frame->sibling
-           zip-frame-p))
+           zip-frame->sibling))
 
 (defrule zip-frame-of-nil-and-accessors-when-not-from-left
   (implies (and (zip-frame-p frame)
@@ -293,8 +292,7 @@
                   frame))
   :enable (zip-frame
            zip-frame->elem
-           zip-frame->sibling
-           zip-frame-p))
+           zip-frame->sibling))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

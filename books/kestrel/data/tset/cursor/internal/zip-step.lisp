@@ -27,7 +27,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Library extensions
+
+(defruledl zip-of-focus-and-nil-when-path-not-consp
+  (implies (not (consp (zip->path zip)))
+           (equal (zip (zip->focus zip) nil)
+                  (zip-fix zip)))
+  :enable (zip
+           zip->focus
+           zip-fix
+           irr-zip))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (local (xdoc::set-default-parents zipper))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-begin-p ((zip zipp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check whether the zipper is at the first hole."
+  (and (tree-empty-p (zip->focus zip))
+       (zip-path-no-right-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-end-p ((zip zipp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check whether the zipper is at the last hole."
+  (and (tree-empty-p (zip->focus zip))
+       (zip-path-no-left-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-min-p ((zip zipp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check whether the zipper is at the first element."
+  (and (not (tree-empty-p (zip->focus zip)))
+       (tree-empty-p (tree->left (zip->focus zip)))
+       (zip-path-no-right-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-at-max-p ((zip zipp))
+  :type-prescription :none
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check whether the zipper is at the last element."
+  (and (not (tree-empty-p (zip->focus zip)))
+       (tree-empty-p (tree->right (zip->focus zip)))
+       (zip-path-no-left-frames-p (zip->path zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-at-begin-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-begin-p zip0)
+                  (zip-at-begin-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-begin-p)
+
+(defrule zip-at-end-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-end-p zip0)
+                  (zip-at-end-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-end-p)
+
+(defrule zip-at-min-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-min-p zip0)
+                  (zip-at-min-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-min-p)
+
+(defrule zip-at-max-p-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-at-max-p zip0)
+                  (zip-at-max-p zip1)))
+  :rule-classes :congruence
+  :enable zip-at-max-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -107,26 +192,40 @@
              (zip-path-no-right-frames-p (zip->path zip))))
   :enable zip-step-backward)
 
+(defrule zip-step-forward-when-zip-at-end-p
+  (implies (zip-at-end-p zip)
+           (equal (zip-step-forward zip)
+                  (zip-fix zip)))
+  :enable (zip-step-forward
+           zip-at-end-p))
+
+(defrule zip-step-backward-when-zip-at-begin-p
+  (implies (zip-at-begin-p zip)
+           (equal (zip-step-backward zip)
+                  (zip-fix zip)))
+  :enable (zip-step-backward
+           zip-at-begin-p))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule zip-step-backward-of-zip-step-forward
-  (implies (not (and (tree-empty-p (zip->focus zip))
-                     (zip-path-no-left-frames-p (zip->path zip))))
+  (implies (not (zip-at-end-p zip))
            (equal (zip-step-backward (zip-step-forward zip))
                   (zip-fix zip)))
   :enable (zip-step-forward
            zip-step-backward
+           zip-at-end-p
            zip-ascend-to-right-frame-of-zip-descend-leftmost-hole
            zip-ascend-to-right-frame-of-zip-descend-right
            zip-descend-rightmost-hole-of-descend-left-of-ascend-to-left-frame))
 
 (defrule zip-step-forward-of-zip-step-backward
-  (implies (not (and (tree-empty-p (zip->focus zip))
-                     (zip-path-no-right-frames-p (zip->path zip))))
+  (implies (not (zip-at-begin-p zip))
            (equal (zip-step-forward (zip-step-backward zip))
                   (zip-fix zip)))
   :enable (zip-step-forward
            zip-step-backward
+           zip-at-begin-p
            zip-ascend-to-left-frame-of-zip-descend-rightmost-hole
            zip-ascend-to-left-frame-of-zip-descend-left
            zip-descend-leftmost-hole-of-descend-right-of-ascend-to-right-frame))
@@ -239,92 +338,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-at-begin-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is at the first hole."
-  (and (tree-empty-p (zip->focus zip))
-       (zip-path-no-right-frames-p (zip->path zip)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-at-end-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is at the last hole."
-  (and (tree-empty-p (zip->focus zip))
-       (zip-path-no-left-frames-p (zip->path zip)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-at-min-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is at the first element."
-  (and (not (tree-empty-p (zip->focus zip)))
-       (tree-empty-p (tree->left (zip->focus zip)))
-       (zip-path-no-right-frames-p (zip->path zip)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define zip-at-max-p ((zip zipp))
-  :type-prescription :none
-  :returns (yes/no booleanp :rule-classes :type-prescription)
-  :short "Check whether the zipper is at the last element."
-  (and (not (tree-empty-p (zip->focus zip)))
-       (tree-empty-p (tree->right (zip->focus zip)))
-       (zip-path-no-left-frames-p (zip->path zip)))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip-at-begin-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-begin-p zip0)
-                  (zip-at-begin-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-begin-p)
-
-(defrule zip-at-end-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-end-p zip0)
-                  (zip-at-end-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-end-p)
-
-(defrule zip-at-min-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-min-p zip0)
-                  (zip-at-min-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-min-p)
-
-(defrule zip-at-max-p-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-at-max-p zip0)
-                  (zip-at-max-p zip1)))
-  :rule-classes :congruence
-  :enable zip-at-max-p)
-
-(defrule zip-step-forward-when-zip-at-end-p
-  (implies (zip-at-end-p zip)
-           (equal (zip-step-forward zip)
-                  (zip-fix zip)))
-  :enable (zip-step-forward
-           zip-at-end-p))
-
-(defrule zip-step-backward-when-zip-at-begin-p
-  (implies (zip-at-begin-p zip)
-           (equal (zip-step-backward zip)
-                  (zip-fix zip)))
-  :enable (zip-step-backward
-           zip-at-begin-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define zip-begin ((tree treep))
   :type-prescription :none
   :returns (zip zipp)
@@ -387,22 +400,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrulel zip->path-when-not-consp
-  (implies (not (consp (zip->path zip)))
-           (equal (zip->path zip)
-                  nil)))
-
-(defrulel zip-of-focus-and-nil-when-path-not-consp
-  (implies (not (consp (zip->path zip)))
-           (equal (zip (zip->focus zip) nil)
-                  (zip-fix zip)))
-  :enable (zip
-           zip->focus
-           zip->path
-           zip-fix
-           zipp
-           irr-zip))
-
 (defruledl zip-root-of-zip-plug-becomes-zip-ascend-to-left-frame
   (implies (zip-path-no-left-frames-p (zip->path zip))
            (equal (zip-root (zip-plug zip))
@@ -411,7 +408,8 @@
   :enable (zip-ascend-to-left-frame
            zip-path-no-left-frames-p
            zip-root
-           zip-plug))
+           zip-plug
+           zip-of-focus-and-nil-when-path-not-consp))
 
 (defruledl zip-root-of-zip-plug-becomes-zip-ascend-to-right-frame
   (implies (zip-path-no-right-frames-p (zip->path zip))
@@ -421,7 +419,8 @@
   :enable (zip-ascend-to-right-frame
            zip-path-no-right-frames-p
            zip-root
-           zip-plug))
+           zip-plug
+           zip-of-focus-and-nil-when-path-not-consp))
 
 (defruledl zip-rightmost-hole-of-ascend-to-left-frame-when-no-left-frames
   (implies (zip-path-no-left-frames-p (zip->path zip))

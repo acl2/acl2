@@ -76,6 +76,19 @@
            zip-plug
            zip-frame-plug))
 
+(defrule zip->focus-of-zip-descend-left
+  (equal (zip->focus (zip-descend-left zip))
+         (tree->left (zip->focus zip)))
+  :enable zip-descend-left)
+
+(defrule zip->path-of-zip-descend-left
+  (equal (zip->path (zip-descend-left zip))
+         (cons (zip-frame t
+                          (tree->head (zip->focus zip))
+                          (tree->right (zip->focus zip)))
+               (zip->path zip)))
+  :enable zip-descend-left)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-right ((zip zipp))
@@ -109,25 +122,10 @@
            zip-plug
            zip-frame-plug))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip->focus-of-zip-descend-left
-  (equal (zip->focus (zip-descend-left zip))
-         (tree->left (zip->focus zip)))
-  :enable zip-descend-left)
-
 (defrule zip->focus-of-zip-descend-right
   (equal (zip->focus (zip-descend-right zip))
          (tree->right (zip->focus zip)))
   :enable zip-descend-right)
-
-(defrule zip->path-of-zip-descend-left
-  (equal (zip->path (zip-descend-left zip))
-         (cons (zip-frame t
-                          (tree->head (zip->focus zip))
-                          (tree->right (zip->focus zip)))
-               (zip->path zip)))
-  :enable zip-descend-left)
 
 (defrule zip->path-of-zip-descend-right
   (equal (zip->path (zip-descend-right zip))
@@ -227,6 +225,31 @@
   :induct t
   :enable zip-descend-leftmost)
 
+(defrule zip-descend-leftmost-when-tree-empty-p-of-left-of-focus
+  (implies (tree-empty-p (tree->left (zip->focus zip)))
+           (equal (zip-descend-leftmost zip)
+                  (zip-fix zip)))
+  :enable zip-descend-leftmost)
+
+(defrule tree-empty-p-of-tree->left-of-focus-of-zip-descend-leftmost
+  (tree-empty-p
+    (tree->left (zip->focus (zip-descend-leftmost zip))))
+  :induct t
+  :enable zip-descend-leftmost)
+
+(defrule tree-empty-p-of-focus-of-zip-descend-leftmost
+  (equal (tree-empty-p (zip->focus (zip-descend-leftmost zip)))
+         (tree-empty-p (zip->focus zip)))
+  :induct t
+  :enable zip-descend-leftmost)
+
+(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost
+  (equal (zip-path-no-right-frames-p
+           (zip->path (zip-descend-leftmost zip)))
+         (zip-path-no-right-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-leftmost)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-rightmost ((zip zipp))
@@ -258,6 +281,31 @@
   :induct t
   :enable zip-descend-rightmost)
 
+(defrule zip-descend-rightmost-when-tree-empty-p-of-right-of-focus
+  (implies (tree-empty-p (tree->right (zip->focus zip)))
+           (equal (zip-descend-rightmost zip)
+                  (zip-fix zip)))
+  :enable zip-descend-rightmost)
+
+(defrule tree-empty-p-of-tree->right-of-focus-of-zip-descend-rightmost
+  (tree-empty-p
+    (tree->right (zip->focus (zip-descend-rightmost zip))))
+  :induct t
+  :enable zip-descend-rightmost)
+
+(defrule tree-empty-p-of-focus-of-zip-descend-rightmost
+  (equal (tree-empty-p (zip->focus (zip-descend-rightmost zip)))
+         (tree-empty-p (zip->focus zip)))
+  :induct t
+  :enable zip-descend-rightmost)
+
+(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost
+  (equal (zip-path-no-left-frames-p
+           (zip->path (zip-descend-rightmost zip)))
+         (zip-path-no-left-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-rightmost)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-leftmost-hole ((zip zipp))
@@ -277,6 +325,40 @@
     (zip-descend-leftmost-hole (zip-descend-left zip)))
   :measure (acl2-count (zip->focus zip)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-descend-leftmost-hole-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-descend-leftmost-hole zip0)
+                  (zip-descend-leftmost-hole zip1)))
+  :rule-classes :congruence
+  :expand ((zip-descend-leftmost-hole zip0)
+           (zip-descend-leftmost-hole zip1)))
+
+(defrule zip-plug-of-zip-descend-leftmost-hole
+  (equal (zip-plug (zip-descend-leftmost-hole zip))
+         (zip-plug zip))
+  :induct t
+  :enable zip-descend-leftmost-hole)
+
+(defrule zip-descend-leftmost-hole-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-descend-leftmost-hole zip)
+                  (zip-fix zip)))
+  :enable zip-descend-leftmost-hole)
+
+(defrule tree-empty-p-of-focus-of-zip-descend-leftmost-hole
+  (tree-empty-p (zip->focus (zip-descend-leftmost-hole zip)))
+  :induct t
+  :enable zip-descend-leftmost-hole)
+
+(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost-hole
+  (equal (zip-path-no-right-frames-p
+           (zip->path (zip-descend-leftmost-hole zip)))
+         (zip-path-no-right-frames-p (zip->path zip)))
+  :induct t
+  :enable zip-descend-leftmost-hole)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-rightmost-hole ((zip zipp))
@@ -294,14 +376,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-descend-leftmost-hole-when-zip-equiv-congruence
-  (implies (zip-equiv zip0 zip1)
-           (equal (zip-descend-leftmost-hole zip0)
-                  (zip-descend-leftmost-hole zip1)))
-  :rule-classes :congruence
-  :expand ((zip-descend-leftmost-hole zip0)
-           (zip-descend-leftmost-hole zip1)))
-
 (defrule zip-descend-rightmost-hole-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
            (equal (zip-descend-rightmost-hole zip0)
@@ -310,15 +384,27 @@
   :expand ((zip-descend-rightmost-hole zip0)
            (zip-descend-rightmost-hole zip1)))
 
-(defrule zip-plug-of-zip-descend-leftmost-hole
-  (equal (zip-plug (zip-descend-leftmost-hole zip))
-         (zip-plug zip))
-  :induct t
-  :enable zip-descend-leftmost-hole)
-
 (defrule zip-plug-of-zip-descend-rightmost-hole
   (equal (zip-plug (zip-descend-rightmost-hole zip))
          (zip-plug zip))
+  :induct t
+  :enable zip-descend-rightmost-hole)
+
+(defrule zip-descend-rightmost-hole-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-descend-rightmost-hole zip)
+                  (zip-fix zip)))
+  :enable zip-descend-rightmost-hole)
+
+(defrule tree-empty-p-of-focus-of-zip-descend-rightmost-hole
+  (tree-empty-p (zip->focus (zip-descend-rightmost-hole zip)))
+  :induct t
+  :enable zip-descend-rightmost-hole)
+
+(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost-hole
+  (equal (zip-path-no-left-frames-p
+           (zip->path (zip-descend-rightmost-hole zip)))
+         (zip-path-no-left-frames-p (zip->path zip)))
   :induct t
   :enable zip-descend-rightmost-hole)
 
@@ -362,6 +448,13 @@
   :induct t
   :enable zip-ascend-to-left-frame)
 
+(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-left-frame
+  (implies (not (zip-path-no-left-frames-p (zip->path zip)))
+           (not (tree-empty-p (zip->focus (zip-ascend-to-left-frame zip)))))
+  :induct t
+  :enable (zip-ascend-to-left-frame
+           zip-path-no-left-frames-p))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-right-frame ((zip zipp))
@@ -396,65 +489,16 @@
   :induct t
   :enable zip-ascend-to-right-frame)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip-descend-leftmost-when-tree-empty-p-of-left-of-focus
-  (implies (tree-empty-p (tree->left (zip->focus zip)))
-           (equal (zip-descend-leftmost zip)
-                  (zip-fix zip)))
-  :enable zip-descend-leftmost)
-
-(defrule zip-descend-rightmost-when-tree-empty-p-of-right-of-focus
-  (implies (tree-empty-p (tree->right (zip->focus zip)))
-           (equal (zip-descend-rightmost zip)
-                  (zip-fix zip)))
-  :enable zip-descend-rightmost)
-
-(defrule zip-descend-leftmost-hole-when-tree-empty-p-of-focus
-  (implies (tree-empty-p (zip->focus zip))
-           (equal (zip-descend-leftmost-hole zip)
-                  (zip-fix zip)))
-  :enable zip-descend-leftmost-hole)
-
-(defrule zip-descend-rightmost-hole-when-tree-empty-p-of-focus
-  (implies (tree-empty-p (zip->focus zip))
-           (equal (zip-descend-rightmost-hole zip)
-                  (zip-fix zip)))
-  :enable zip-descend-rightmost-hole)
-
-(defrule tree-empty-p-of-tree->left-of-focus-of-zip-descend-leftmost
-  (tree-empty-p
-    (tree->left (zip->focus (zip-descend-leftmost zip))))
+(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-right-frame
+  (implies (not (zip-path-no-right-frames-p (zip->path zip)))
+           (not (tree-empty-p (zip->focus (zip-ascend-to-right-frame zip)))))
   :induct t
-  :enable zip-descend-leftmost)
+  :enable (zip-ascend-to-right-frame
+           zip-path-no-right-frames-p))
 
-(defrule tree-empty-p-of-tree->right-of-focus-of-zip-descend-rightmost
-  (tree-empty-p
-    (tree->right (zip->focus (zip-descend-rightmost zip))))
-  :induct t
-  :enable zip-descend-rightmost)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-empty-p-of-focus-of-zip-descend-leftmost
-  (equal (tree-empty-p (zip->focus (zip-descend-leftmost zip)))
-         (tree-empty-p (zip->focus zip)))
-  :induct t
-  :enable zip-descend-leftmost)
-
-(defrule tree-empty-p-of-focus-of-zip-descend-rightmost
-  (equal (tree-empty-p (zip->focus (zip-descend-rightmost zip)))
-         (tree-empty-p (zip->focus zip)))
-  :induct t
-  :enable zip-descend-rightmost)
-
-(defrule tree-empty-p-of-focus-of-zip-descend-leftmost-hole
-  (tree-empty-p (zip->focus (zip-descend-leftmost-hole zip)))
-  :induct t
-  :enable zip-descend-leftmost-hole)
-
-(defrule tree-empty-p-of-focus-of-zip-descend-rightmost-hole
-  (tree-empty-p (zip->focus (zip-descend-rightmost-hole zip)))
-  :induct t
-  :enable zip-descend-rightmost-hole)
+;; How the moves relate to one another.
 
 (defruled zip-descend-leftmost-hole-becomes-descend-left-of-leftmost
   (implies (not (tree-empty-p (zip->focus zip)))
@@ -472,49 +516,7 @@
   :enable (zip-descend-rightmost
            zip-descend-rightmost-hole))
 
-(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost
-  (equal (zip-path-no-right-frames-p
-           (zip->path (zip-descend-leftmost zip)))
-         (zip-path-no-right-frames-p (zip->path zip)))
-  :induct t
-  :enable zip-descend-leftmost)
-
-(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost
-  (equal (zip-path-no-left-frames-p
-           (zip->path (zip-descend-rightmost zip)))
-         (zip-path-no-left-frames-p (zip->path zip)))
-  :induct t
-  :enable zip-descend-rightmost)
-
-(defrule zip-path-no-right-frames-p-of-path-of-zip-descend-leftmost-hole
-  (equal (zip-path-no-right-frames-p
-           (zip->path (zip-descend-leftmost-hole zip)))
-         (zip-path-no-right-frames-p (zip->path zip)))
-  :induct t
-  :enable zip-descend-leftmost-hole)
-
-(defrule zip-path-no-left-frames-p-of-path-of-zip-descend-rightmost-hole
-  (equal (zip-path-no-left-frames-p
-           (zip->path (zip-descend-rightmost-hole zip)))
-         (zip-path-no-left-frames-p (zip->path zip)))
-  :induct t
-  :enable zip-descend-rightmost-hole)
-
-(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-left-frame
-  (implies (not (zip-path-no-left-frames-p (zip->path zip)))
-           (not (tree-empty-p (zip->focus (zip-ascend-to-left-frame zip)))))
-  :induct t
-  :enable (zip-ascend-to-left-frame
-           zip-path-no-left-frames-p))
-
-(defrule not-tree-empty-p-of-focus-of-zip-ascend-to-right-frame
-  (implies (not (zip-path-no-right-frames-p (zip->path zip)))
-           (not (tree-empty-p (zip->focus (zip-ascend-to-right-frame zip)))))
-  :induct t
-  :enable (zip-ascend-to-right-frame
-           zip-path-no-right-frames-p))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled zip-descend-left-of-zip-ascend-one-when-from-left
   (implies (and (consp (zip->path zip))
@@ -538,7 +540,6 @@
            (equal (zip-descend-rightmost-hole (zip-ascend-one zip))
                   (zip-descend-rightmost-hole zip)))
   :enable (zip-descend-rightmost-hole
-           zip-frame-plug
            zip-descend-right-of-zip-ascend-one-when-not-from-left))
 
 (defruled zip-descend-leftmost-hole-of-zip-ascend-one-when-from-left
@@ -547,10 +548,9 @@
            (equal (zip-descend-leftmost-hole (zip-ascend-one zip))
                   (zip-descend-leftmost-hole zip)))
   :enable (zip-descend-leftmost-hole
-           zip-frame-plug
            zip-descend-left-of-zip-ascend-one-when-from-left))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;
 
 (defruled zip-ascend-to-right-frame-of-zip-descend-leftmost-hole
   (equal (zip-ascend-to-right-frame (zip-descend-leftmost-hole zip))

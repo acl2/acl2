@@ -173,48 +173,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The search keeps the nearest value before the focus below the sought value,
-;; and the nearest value after the focus above it.
+;; A zipper brackets a value when the nearest value before the focus subtree
+;; is below it, and the nearest value after is above it. The search keeps the
+;; sought value bracketed.
 
-(defruledl <<-of-car-of-last-of-zip-path-before-of-zip-seek
-  (implies (and (consp (zip-path-before (zip->path (zip-seek x zip))))
-                (or (not (consp (zip-path-before (zip->path zip))))
-                    (<< (car (last (zip-path-before (zip->path zip)))) x)))
-           (<< (car (last (zip-path-before (zip->path (zip-seek x zip))))) x))
+(local
+  (define zip-brackets-p
+    (x
+     (zip zipp))
+    :type-prescription :none
+    :returns (yes/no booleanp :rule-classes :type-prescription)
+    :verify-guards nil
+    (let ((before (zip-path-before (zip->path zip)))
+          (after (zip-path-after (zip->path zip))))
+      (and (or (not (consp before))
+               (<< (car (last before)) x))
+           (or (not (consp after))
+               (<< x (car after)))))))
+
+(defrulel zip-brackets-p-of-zip-root
+  (zip-brackets-p x (zip-root tree))
+  :enable zip-brackets-p)
+
+(defrulel zip-brackets-p-of-zip-seek
+  (implies (zip-brackets-p x zip)
+           (zip-brackets-p x (zip-seek x zip)))
   :induct (zip-seek x zip)
   :enable (zip-seek
+           zip-brackets-p
            zip-value
            data::<<-rules))
 
-(defruledl <<-of-arg1-and-car-of-zip-path-after-of-zip-seek
-  (implies (and (consp (zip-path-after (zip->path (zip-seek x zip))))
-                (or (not (consp (zip-path-after (zip->path zip))))
-                    (<< x (car (zip-path-after (zip->path zip))))))
-           (<< x (car (zip-path-after (zip->path (zip-seek x zip))))))
-  :induct (zip-seek x zip)
-  :enable (zip-seek
-           zip-value
-           data::<<-rules))
+(defruledl <<-of-car-of-last-of-zip-before-when-zip-brackets-p
+  (implies (and (zip-brackets-p x zip)
+                (tree-empty-p (zip->focus zip))
+                (consp (zip-before zip)))
+           (<< (car (last (zip-before zip))) x))
+  :enable (zip-brackets-p
+           zip-before))
 
-(defruledl <<-of-car-of-last-of-zip-before-of-zip-seek
-  (implies (and (not (tree-search-in x (zip->focus zip)))
-                (consp (zip-before (zip-seek x zip)))
-                (or (not (consp (zip-path-before (zip->path zip))))
-                    (<< (car (last (zip-path-before (zip->path zip)))) x)))
-           (<< (car (last (zip-before (zip-seek x zip)))) x))
-  :enable (zip-before
-           tree->left-when-tree-empty-p
-           <<-of-car-of-last-of-zip-path-before-of-zip-seek))
-
-(defruledl <<-of-arg1-and-car-of-zip-after-of-zip-seek
-  (implies (and (not (tree-search-in x (zip->focus zip)))
-                (consp (zip-after (zip-seek x zip)))
-                (or (not (consp (zip-path-after (zip->path zip))))
-                    (<< x (car (zip-path-after (zip->path zip))))))
-           (<< x (car (zip-after (zip-seek x zip)))))
-  :enable (zip-after
-           tree->right-when-tree-empty-p
-           <<-of-arg1-and-car-of-zip-path-after-of-zip-seek))
+(defruledl <<-of-arg1-and-car-of-zip-after-when-zip-brackets-p
+  (implies (and (zip-brackets-p x zip)
+                (tree-empty-p (zip->focus zip))
+                (consp (zip-after zip)))
+           (<< x (car (zip-after zip))))
+  :enable (zip-brackets-p
+           zip-after))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -233,16 +237,13 @@
 (defruledl in-of-zip-oset-before-of-zip-seek-when-not-tree-search-in
   (implies (and (bstp (zip-plug (zip-seek x zip)))
                 (not (tree-search-in x (zip->focus zip)))
-                (or (not (consp (zip-path-before (zip->path zip))))
-                    (<< (car (last (zip-path-before (zip->path zip)))) x))
-                (or (not (consp (zip-path-after (zip->path zip))))
-                    (<< x (car (zip-path-after (zip->path zip))))))
+                (zip-brackets-p x zip))
            (equal (set::in y (zip-oset-before (zip-seek x zip)))
                   (and (tree-in y (zip-plug (zip-seek x zip)))
                        (<< y x))))
   :enable (tree-in-of-zip-plug-when-tree-empty-p-of-focus
-           <<-of-car-of-last-of-zip-before-of-zip-seek
-           <<-of-arg1-and-car-of-zip-after-of-zip-seek
+           <<-of-car-of-last-of-zip-before-when-zip-brackets-p
+           <<-of-arg1-and-car-of-zip-after-when-zip-brackets-p
            data::<<-when-member-equal-and-<<-of-car-of-last
            data::<<-when-member-equal-and-<<-of-arg1-and-car
            data::<<-rules
@@ -253,16 +254,13 @@
 (defruledl in-of-zip-oset-after-of-zip-seek-when-not-tree-search-in
   (implies (and (bstp (zip-plug (zip-seek x zip)))
                 (not (tree-search-in x (zip->focus zip)))
-                (or (not (consp (zip-path-before (zip->path zip))))
-                    (<< (car (last (zip-path-before (zip->path zip)))) x))
-                (or (not (consp (zip-path-after (zip->path zip))))
-                    (<< x (car (zip-path-after (zip->path zip))))))
+                (zip-brackets-p x zip))
            (equal (set::in y (zip-oset-after (zip-seek x zip)))
                   (and (tree-in y (zip-plug (zip-seek x zip)))
                        (<< x y))))
   :enable (tree-in-of-zip-plug-when-tree-empty-p-of-focus
-           <<-of-car-of-last-of-zip-before-of-zip-seek
-           <<-of-arg1-and-car-of-zip-after-of-zip-seek
+           <<-of-car-of-last-of-zip-before-when-zip-brackets-p
+           <<-of-arg1-and-car-of-zip-after-when-zip-brackets-p
            data::<<-when-member-equal-and-<<-of-car-of-last
            data::<<-when-member-equal-and-<<-of-arg1-and-car
            data::<<-rules

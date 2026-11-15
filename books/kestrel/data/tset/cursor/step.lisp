@@ -204,7 +204,6 @@
   :enable (step-forward
            step-backward
            endp-becomes-zip-at-end-p
-           zip-at-end-p
            break-abstraction))
 
 (defrule step-forward-of-step-backward
@@ -214,7 +213,6 @@
   :enable (step-forward
            step-backward
            beginp-becomes-zip-at-begin-p
-           zip-at-begin-p
            break-abstraction))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
