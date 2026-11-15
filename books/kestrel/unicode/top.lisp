@@ -22,6 +22,7 @@
 (include-book "decompositions")
 (include-book "compositions")
 (include-book "normalization")
+(include-book "identifier-closure")
 (include-book "quick-check")
 (include-book "utf-8")
 
@@ -59,6 +60,9 @@
       and the algorithms for Hangul syllables:
       see @(see normalization).")
     (xdoc::li
+     "The proof that normalizing an identifier gives an identifier:
+      see @(see identifier-closure).")
+    (xdoc::li
      "The @('Pattern_White_Space') property,
       which defines white space:
       see @(see pattern-white-space).")
@@ -89,8 +93,8 @@
     (xdoc::li
      "@('kestrel/unicode/code-points') for the code points and scalar values.")
     (xdoc::li
-     "@('kestrel/unicode/xid') for @(tsee xid-start-p)
-      and @(tsee xid-continue-p).")
+     "@('kestrel/unicode/xid') for @(tsee xid-start-p),
+      @(tsee xid-continue-p) and @(tsee default-identifier-p).")
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p).")
@@ -103,6 +107,10 @@
       @(tsee nfkd) and @(tsee nfkc), and for what they are made of.
       This is the largest part.")
     (xdoc::li
+     "@('kestrel/unicode/identifier-closure') for the theorems
+      that normalizing an identifier gives an identifier.
+      It loads the previous two.")
+    (xdoc::li
      "@('kestrel/unicode/quick-check') for the quick check properties.")
     (xdoc::li
      "@('kestrel/unicode/utf-8') for the theorems that connect this library
@@ -110,7 +118,9 @@
    (xdoc::p
     "A model of a language whose identifiers follow [UAX #31]
      typically needs @('xid');
-     @('normalization') if it normalizes or compares identifiers;
+     @('normalization') if it normalizes or compares identifiers,
+     and then @('identifier-closure') for the theorems
+     that what it normalizes is still an identifier;
      and @('pattern-white-space') and @('bidi-controls')
      if its white space or the characters that it rejects
      are defined by those properties.
@@ -180,6 +190,7 @@
                     versions
                     xid
                     normalization
+                    identifier-closure
                     pattern-white-space
                     bidi-controls
                     tables))
