@@ -82,5 +82,47 @@
       "sha256": "f44e5ceaf40edc1fe06ea0404e8bebc7d356dcc38aac076543b6874008a06e3e",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedDecompositionType.txt"
     }
+  },
+  "18.0.0": {
+    "CompositionExclusions.txt": {
+      "sha256": "c759b100e9ae8960ae6b50fc5765950a7581fd9f30d4ef95f68f25a6d97e818e",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/CompositionExclusions.txt"
+    },
+    "DerivedCoreProperties.txt": {
+      "sha256": "09c928886a178fcafd93c29e4bd59073a058e5a100b716d425cb563ab50f68c9",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/DerivedCoreProperties.txt"
+    },
+    "DerivedNormalizationProps.txt": {
+      "sha256": "98ac7f67d985fe781e317f6182e885e94cabb0c314769e6dd73e48b226931ccd",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/DerivedNormalizationProps.txt"
+    },
+    "NormalizationTest.txt": {
+      "sha256": "25a50d816764b04abfb4a646d3eb2b2a803284c3873d9a06757b94fe4513dde3",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/NormalizationTest.txt"
+    },
+    "PropList.txt": {
+      "sha256": "f438f532e8737bb8a2702126cdf9c4af5e357c58c7acf9d9eb2fc7c1a1d955d6",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/PropList.txt"
+    },
+    "PropertyValueAliases.txt": {
+      "sha256": "06c4c8eaf7b0bf34abe73b113da1215bd784ac254d4c223600b90267caa4bbbd",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/PropertyValueAliases.txt"
+    },
+    "UnicodeData.txt": {
+      "sha256": "0736451de439ae7baf1425136617da495e09ee5afbe6e394374db7009ea08950",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
+    },
+    "extracted/DerivedBidiClass.txt": {
+      "sha256": "d9e23222522551348ea1ccfbb4f62efbf98982afb95840f8959c08ed992c5607",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedBidiClass.txt"
+    },
+    "extracted/DerivedCombiningClass.txt": {
+      "sha256": "ef6b2611cfb660dba3f6b458b9eb4b05f44ed2417302ee7749d7f0f348793121",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedCombiningClass.txt"
+    },
+    "extracted/DerivedDecompositionType.txt": {
+      "sha256": "0941d968cf73472500ab3eb807c02d85e6d7510832a2be7e5d21bd6c08e96e92",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    }
   }
 }

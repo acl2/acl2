@@ -15,6 +15,7 @@
 
 (include-book "data/v16.0.0/prop-list")
 (include-book "data/v17.0.0/prop-list")
+(include-book "data/v18.0.0/prop-list")
 
 (acl2::controlled-configuration)
 
@@ -51,7 +52,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *pattern-white-space-v16.0.0*
-                :v17.0.0 *pattern-white-space-v17.0.0*)
+                :v17.0.0 *pattern-white-space-v17.0.0*
+                :v18.0.0 *pattern-white-space-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

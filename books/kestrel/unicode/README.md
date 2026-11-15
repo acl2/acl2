@@ -155,7 +155,8 @@ decodes its input with `[books]/unicode`.
 
 Every function whose result depends on the Unicode Character Database takes
 the version as an argument, of type `version`.  The supported versions are
-`(version-v16.0.0)` and `(version-v17.0.0)`.  There is no default version,
+`(version-v16.0.0)`, `(version-v17.0.0)` and `(version-v18.0.0)`.  There is
+no default version,
 and nothing means "latest": adding a version never changes the result of an
 existing call.  Which version a use needs is for that use to say, and it
 need not be tied to a release of the language being modeled.
@@ -252,28 +253,28 @@ be written in full.  The script needs only the Python standard library.
 
 ### Adding a version
 
-For example 18.0.0:
+For example 19.0.0 (this is how 18.0.0 was added):
 
 1. Generate the tables and record the SHA-256 of the inputs:
-   `python3 tools/generate-ucd-books.py 18.0.0 UCD_DIR --fetch --pin`.
-2. In `versions.lisp`, add `(:v18.0.0 ())` to the type `version`, and a line
+   `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
+2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, and a line
    to `version-string`.
 3. In each book that selects tables by version (`xid`,
    `pattern-white-space`, `bidi-controls`, `combining-classes`,
    `decompositions`, `compositions`, `quick-check`), add the `include-book`
-   of the new data book and a `:v18.0.0` line to each selector;
-   `grep -n v17.0.0 *.lisp` finds every place.  In `decompositions` and
+   of the new data book and a `:v19.0.0` line to each selector;
+   `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions` and
    `compositions`, also copy the block that defines and checks the computed
    tables.
-4. In `tests/`, copy `normalization-test-v17.0.0.lisp` and
-   `quick-check-v17.0.0.lisp`, changing the version.
+4. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
+   `quick-check-v18.0.0.lisp`, changing the version.
 5. Certify `top` and `tests/*`.  This checks the invariants of the new
    tables, re-proves for the new version the theorems listed above (if one
    fails, that is a real change in Unicode to look at), and runs the
    conformance test.
 6. For the comparison with other implementations, add
-   `validation/rust-oracle/v18.0.0/Cargo.toml` with the versions of the
-   crates that implement Unicode 18.0.0.
+   `validation/rust-oracle/v19.0.0/Cargo.toml` with the versions of the
+   crates that implement Unicode 19.0.0.
 
 Nothing else changes: no definition, and no theorem statement.
 
@@ -286,7 +287,8 @@ there is no formal specification to prove that against.  The evidence is:
 
 - `normalization-test-v<version>`: **all of `NormalizationTest.txt`**, for
   each version: all the invariants for NFC, NFD, NFKC and NFKD on every line
-  of every part (19,965 lines for 16.0.0, 20,034 for 17.0.0), and the
+  of every part (19,965 lines for 16.0.0, 20,034 for 17.0.0, 20,171 for
+  18.0.0), and the
   requirement that every code point not listed in Part 1 is unchanged by the
   four forms, checked for all the code points, assigned or not.
 - `quick-check-v<version>`: for every code point, the `NF*_Quick_Check`
@@ -341,6 +343,13 @@ Notes:
   pair; for the Hangul syllables that column is compared with NFD instead.
 - As a control, comparing the 16.0.0 output of the library with the 17.0.0
   oracle reports 4,647 code points that differ in `XID_Start`.
+- Unicode 18.0.0 was compared in the same way, on 2026-11-14, with
+  `unicode-ident` 1.0.27, `unicode-normalization` 0.1.26 and rustc's lexer
+  (`ra-ap-rustc_lexer` 0.184.0), with no differences.  No Python with
+  Unicode 18.0.0 was available; so for 18.0.0 `Bidi_Control`, the explicit
+  formatting classes and `Decomposition_Mapping` have not been compared
+  with another implementation (the first two are proved to be the same as
+  in the other versions).
 
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
 interpreter with the right version of Unicode):
@@ -349,6 +358,7 @@ interpreter with the right version of Unicode):
 cert.pl validation/dump
 validation/run.sh 16.0.0 /tmp/unicode-validation python3.14
 validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
+validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
 
 ## Performance

@@ -15,6 +15,7 @@
 
 (include-book "data/v16.0.0/derived-combining-class")
 (include-book "data/v17.0.0/derived-combining-class")
+(include-book "data/v18.0.0/derived-combining-class")
 
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
@@ -56,7 +57,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *canonical-combining-class-v16.0.0*
-                :v17.0.0 *canonical-combining-class-v17.0.0*)
+                :v17.0.0 *canonical-combining-class-v17.0.0*
+                :v18.0.0 *canonical-combining-class-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

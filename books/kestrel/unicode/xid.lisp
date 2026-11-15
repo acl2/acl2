@@ -15,6 +15,7 @@
 
 (include-book "data/v16.0.0/derived-core-properties")
 (include-book "data/v17.0.0/derived-core-properties")
+(include-book "data/v18.0.0/derived-core-properties")
 
 (acl2::controlled-configuration)
 
@@ -57,7 +58,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *xid-start-v16.0.0*
-                :v17.0.0 *xid-start-v17.0.0*)
+                :v17.0.0 *xid-start-v17.0.0*
+                :v18.0.0 *xid-start-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -69,7 +71,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *xid-continue-v16.0.0*
-                :v17.0.0 *xid-continue-v17.0.0*)
+                :v17.0.0 *xid-continue-v17.0.0*
+                :v18.0.0 *xid-continue-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
