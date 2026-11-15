@@ -16,7 +16,7 @@ validated.
 |------|----------|
 | `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
 | `versions` | The supported versions of Unicode, as a type. |
-| `xid` | `XID_Start` and `XID_Continue`. |
+| `xid` | `XID_Start` and `XID_Continue`, and the default identifiers of UAX #31. |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
@@ -24,6 +24,7 @@ validated.
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
 | `compositions` | `Full_Composition_Exclusion`, and the pairs that compose. |
 | `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`. |
+| `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers. |
 | `quick-check` | The `NF*_Quick_Check` properties (used here only to cross-check normalization). |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
@@ -106,6 +107,15 @@ over the tables, and so re-checked whenever a version is added:
   gives the decomposed form.
 - `nfc-of-nfc`, `nfkc-of-nfkc`, `nfc-of-nfkc`: normalizing a second time to
   a composed form changes nothing.
+- `default-identifier-p-of-nfc` (and the same for the other three forms):
+  normalizing an identifier gives an identifier, where an identifier is a
+  code point with `XID_Start` followed by code points with `XID_Continue`.
+  This is the closure under normalization of UAX #31, Section 5.1.3.  For
+  `nfd` and `nfc` the theorems are equalities: a list is an identifier
+  exactly when its form is.  The same theorems hold for
+  `xid-continue-listp`, the lists of code points with `XID_Continue`.
+- `canonical-combining-class-when-xid-start-p`: a code point with
+  `XID_Start` is a starter.
 
 Not proved: the four relations that go from a canonical form to a
 compatibility form, namely that `nfkd` of `nfd`, `nfkd` of `nfc`, `nfkc` of
@@ -121,15 +131,17 @@ supported version, and nothing else of this library.
 | To get | Include | Books of this library that it loads | Tables that it loads |
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
-| `xid-start-p`, `xid-continue-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `xid-start-p`, `xid-continue-p`, `default-identifier-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
 
 A front end for a language whose identifiers follow UAX #31 typically needs
-`xid`; `normalization` if it normalizes or compares identifiers;
+`xid`; `normalization` if it normalizes or compares identifiers, and then
+`identifier-closure` to know that what it normalizes is still an identifier;
 `pattern-white-space` and `bidi-controls` if its white space or the
 characters it rejects are defined by those properties; and `utf-8` if it
 decodes its input with `[books]/unicode`.
