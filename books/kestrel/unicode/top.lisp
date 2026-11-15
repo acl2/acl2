@@ -96,7 +96,8 @@
       for @(tsee pattern-white-space-p).")
     (xdoc::li
      "@('kestrel/unicode/bidi-controls') for @(tsee bidi-control-p),
-      @(tsee bidi-explicit-formatting-p) and @(tsee bidi-formatting-class).")
+      @(tsee bidi-explicit-formatting-p)
+      and @(tsee bidi-explicit-formatting-class).")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc), and for what they are made of.

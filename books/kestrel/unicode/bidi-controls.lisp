@@ -55,7 +55,7 @@
       of [UAX #9, Sections 2.1 to 2.5]:
       the embeddings, overrides and isolates, and their terminators.
       These are defined by their @('Bidi_Class'),
-      which @(tsee bidi-formatting-class) returns.
+      which @(tsee bidi-explicit-formatting-class) returns.
       We take the classes from the file
       @('extracted/DerivedBidiClass.txt')
       of the Unicode Character Database.
@@ -111,7 +111,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bidi-formatting-class-map ((ver versionp))
+(define bidi-formatting-classes ((ver versionp))
   :returns (map bidi-formatting-class-mapp)
   :short "The map from the explicit directional formatting characters
           to their bidirectional classes,
@@ -123,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bidi-formatting-class ((cp code-point-p) (ver versionp))
+(define bidi-explicit-formatting-class ((cp code-point-p) (ver versionp))
   :returns (class? bidi-formatting-class-option-p)
   :short "The bidirectional class of a code point,
           if it is an explicit directional formatting character,
@@ -137,7 +137,7 @@
      otherwise it is @('nil').
      So this is the @('Bidi_Class') property
      restricted to the explicit directional formatting characters."))
-  (bidi-formatting-class-map-lookup cp (bidi-formatting-class-map ver))
+  (bidi-formatting-class-map-lookup cp (bidi-formatting-classes ver))
   :hooks (:fix)
 
   ///
@@ -168,13 +168,13 @@
      (class-ok x map)))
 
   (defrulel class-ok-listp-of-all-code-points
-    (class-ok-listp (all-code-points) (bidi-formatting-class-map ver))
-    :enable (bidi-formatting-class-map
+    (class-ok-listp (all-code-points) (bidi-formatting-classes ver))
+    :enable (bidi-formatting-classes
              (:e all-code-points))
     :disable class-ok-listp-of-cons)
 
-  (defruled bidi-formatting-class-alt-def
-    (equal (bidi-formatting-class cp ver)
+  (defruled bidi-explicit-formatting-class-alt-def
+    (equal (bidi-explicit-formatting-class cp ver)
            (case (code-point-fix cp)
              (#x202A (bidi-formatting-class-lre)) ; LEFT-TO-RIGHT EMBEDDING
              (#x202B (bidi-formatting-class-rle)) ; RIGHT-TO-LEFT EMBEDDING
@@ -190,7 +190,7 @@
     :use (:instance class-ok-when-member-equal-of-class-ok-listp
           (acl2::a (code-point-fix cp))
           (x (all-code-points))
-          (map (bidi-formatting-class-map ver)))))
+          (map (bidi-formatting-classes ver)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -199,7 +199,7 @@
   :short "Check if a code point is
           an explicit directional formatting character,
           in a version of Unicode."
-  (and (bidi-formatting-class cp ver) t)
+  (and (bidi-explicit-formatting-class cp ver) t)
   :hooks (:fix)
 
   ///
@@ -211,7 +211,7 @@
                       (<= cp #x202E))
                  (and (<= #x2066 cp) ; LRI, RLI, FSI, PDI
                       (<= cp #x2069)))))
-    :enable (bidi-formatting-class-alt-def
+    :enable (bidi-explicit-formatting-class-alt-def
              code-point-p))
 
   (defrule bidi-control-p-when-bidi-explicit-formatting-p
