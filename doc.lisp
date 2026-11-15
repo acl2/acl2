@@ -35667,12 +35667,18 @@ Proof efficiency
   memoizing.  Perhaps ACL2 users will contribute further
   documentation on which system functions to memoize for efficiency.
 
+  See [induction-coarse-v-fine-grained] for how to control induction
+  schemes to speed up proofs.
+
   The following may be helpful at the level of book certification, and
   are discussed in :doc certify-book-debug.
 
     (set-serialize-character-system nil)
     (set-bad-lisp-consp-memoize nil)
     (set-inhibit-output-lst '(proof-tree event))
+
+  See also [fast-cert] for a way to speed up book certification during
+  development of a set of books.
 
 
 Programming efficiency
@@ -107659,13 +107665,12 @@ Bug Fixes From AI via Eric Smith
   Fixed a soundness bug in [tau] related to properly encoding the
   assumption that something is non-[30m[47mNIL[0m[0m when it is also assumed to be
   not equal to one or more numeric constants.  See [community-books]
-  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first.lisp[0m[0m and
-  [30m[47msystem/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp[0m[0m.
+  [30m[47msystem/tests/tau-neg-evgs-nil-first.lisp[0m[0m and
+  [30m[47msystem/tests/tau-neg-evgs-nil-first-lower-bound.lisp[0m[0m.
 
   Fixed a soundness bug in [tau] related to failing to detect that
   adding a new constraint to a tau produces a contradiction.  See
-  [community-books]
-  [30m[47msystem/tests/S-199-tau-bound-overwrites-pos-evg.lisp[0m[0m.
+  [community-books] [30m[47msystem/tests/tau-bound-overwrites-pos-evg.lisp[0m[0m.
 
   Fixed a [tau] bug leading to a hard error, manifested when a tau that
   asserts its subject is a particular constant is extended to include
@@ -107804,15 +107809,14 @@ Other Bug Fixes
   printed.  This can prevent a raw Lisp error during evaluation.
   Thanks to Warren Hunt for reporting this bug.
 
-  Applied fixes from Eric McCarthy for the [sharp-f-reader].
-
   Applied fixes from Eric McCarthy for the [sharp-f-reader] (Pull
   Request #2086), [sharp-u-reader] (Pull Request #2087), and
   [sharp-d-reader] (Pull Request #2088).
 
-  Avoid clearing standard input --- specifically, [30m[47m[*standard-oi*][0m[0m ---
-  there is a reader error while reading other than [30m[47m*standard-oi*[0m[0m.
-  This change closes PR #2099 and includes the tests from that PR in
+  When there is a reader error, ACL2 formerly cleared the input stream
+  unconditionally.  Now, that is done only when [30m[47m[standard-oi][0m[0m is its
+  initial value, that is, the value of [30m[47m[*standard-oi*][0m[0m.  This change
+  closes PR #2099 and includes the tests from that PR in
   [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
   McCarthy and AI for that PR.
 

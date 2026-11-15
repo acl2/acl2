@@ -3801,10 +3801,10 @@
 ; make sure that everything in the signature's hyp is satisfied by the actuals.
 
 ; The example just described is
-; books/system/tests/S-200-tau-implies-disabled-exec.lisp.  Related examples by
+; books/system/tests/tau-implies-disabled-exec.lisp.  Related examples by
 ; Claude on the same directory are
-; S-200-tau-implies-pos-evg-ignores-interval.lisp
-; S-200-tau-implies-pos-evg-ignores-recognizers.lisp
+; tau-implies-pos-evg-ignores-interval.lisp
+; tau-implies-pos-evg-ignores-recognizers.lisp
 
     (if (access tau tau1 :pos-evg)
         (and (equal (access tau tau2 :pos-evg)
@@ -4112,8 +4112,8 @@
 ; collect-<?-x-k, and its counterpart, collect-<?-k-x, having to do with our
 ; failure to remember that neg-evgs is only ``almost'' lexordered (see the top
 ; of this comment).  Those bugs were exploited to prove nil in
-; S-198-tau-neg-evgs-nil-first.lisp and
-; S-198-tau-neg-evgs-nil-first-lower-bound.lisp.
+; books/system/tests/tau-neg-evgs-nil-first.lisp and
+; books/system/tests/tau-neg-evgs-nil-first-lower-bound.lisp.
 
   (cond ((endp neg-evgs) nil)
         ((eq (car (car neg-evgs)) nil)
@@ -4501,7 +4501,7 @@
 ; earlier version of this function we forgot to check that whether tau already
 ; had a :pos-evg that was different.  Claude found this bug and we fixed it by
 ; adding the code below that tests :pos-evg.  See
-; S-199-tau-bound-overwrites-pos-evg.lisp.
+; books/system/tests/tau-bound-overwrites-pos-evg.lisp.
 
                     (let ((pos-evg (access tau tau :pos-evg)))
                       (cond
@@ -4720,7 +4720,7 @@
 ; The original tau now has a (possibly new) :interval in it.  If the tau has a
 ; :pos-evg, we make sure that evg is in the interval.  If not, we signal a
 ; contradiction.  In ACL2 Version 8.7 we failed to make this check.  Claude
-; pointed it out in books/system/tests/S-199-tau-combine-hard-error.lisp.
+; pointed it out in books/system/tests/tau-combine-hard-error.lisp.
 
             (cond
              ((or (eq tau1 *tau-contradiction*)

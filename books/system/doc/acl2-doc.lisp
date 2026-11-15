@@ -32281,6 +32281,9 @@ ld) and @(tsee include-book)"
  functions to consider memoizing.  Perhaps ACL2 users will contribute further
  documentation on which system functions to memoize for efficiency.</p>
 
+ <p>See @(see induction-coarse-v-fine-grained) for how to control induction
+ schemes to speed up proofs.</p>
+
  <p>The following may be helpful at the level of book certification, and are
  discussed in :doc certify-book-debug.</p>
 
@@ -32289,6 +32292,9 @@ ld) and @(tsee include-book)"
  (set-bad-lisp-consp-memoize nil)
  (set-inhibit-output-lst '(proof-tree event))
  })
+
+ <p>See also @(see fast-cert) for a way to speed up book certification during
+ development of a set of books.</p>
 
  <h3>Programming efficiency</h3>
 
@@ -110770,13 +110776,13 @@ it."
  <p>Fixed a soundness bug in @(see tau) related to properly encoding the
  assumption that something is non-@('NIL') when it is also assumed to be not
  equal to one or more numeric constants.  See @(see community-books)
- @('system/tests/S-198-tau-neg-evgs-nil-first.lisp') and
- @('system/tests/S-198-tau-neg-evgs-nil-first-lower-bound.lisp').</p>
+ @('system/tests/tau-neg-evgs-nil-first.lisp') and
+ @('system/tests/tau-neg-evgs-nil-first-lower-bound.lisp').</p>
 
  <p>Fixed a soundness bug in @(see tau) related to failing to detect that
  adding a new constraint to a tau produces a contradiction.  See @(see
  community-books)
- @('system/tests/S-199-tau-bound-overwrites-pos-evg.lisp').</p>
+ @('system/tests/tau-bound-overwrites-pos-evg.lisp').</p>
 
  <p>Fixed a @(see tau) bug leading to a hard error, manifested when a tau that
  asserts its subject is a particular constant is extended to include an
@@ -110915,17 +110921,16 @@ it."
  printed.  This can prevent a raw Lisp error during evaluation.  Thanks to
  Warren Hunt for reporting this bug.</p>
 
- <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader).</p>
-
  <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader) (Pull
  Request #2086), @(see sharp-u-reader) (Pull Request #2087), and @(see
  sharp-d-reader) (Pull Request #2088).</p>
 
- <p>Avoid clearing standard input &mdash; specifically, @(tsee *standard-oi*)
- &mdash; there is a reader error while reading other than @('*standard-oi*').
- This change closes PR #2099 and includes the tests from that PR in @(see
- community-books) @('system/tests/reader-error*.*'); thanks to Eric McCarthy
- and AI for that PR.</p>
+ <p>When there is a reader error, ACL2 formerly cleared the input stream
+ unconditionally.  Now, that is done only when @(tsee standard-oi) is its
+ initial value, that is, the value of @(tsee *standard-oi*).  This change
+ closes PR #2099 and includes the tests from that PR in @(see community-books)
+ @('system/tests/reader-error*.*'); thanks to Eric McCarthy and AI for that
+ PR.</p>
 
  <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder).
  The following example shows why.</p>
