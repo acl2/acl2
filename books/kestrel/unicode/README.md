@@ -71,8 +71,8 @@ over the tables, and so re-checked whenever a version is added:
 - The normalization forms map lists of scalar values to lists of scalar
   values.
 - `pattern-white-space-p-alt-def`, `bidi-control-p-alt-def`,
-  `bidi-formatting-class-alt-def`: these properties are the same eleven,
-  twelve and nine code points in every supported version.
+  `bidi-explicit-formatting-class-alt-def`: these properties are the same
+  eleven, twelve and nine code points in every supported version.
 - Composing the decomposition of a Hangul syllable gives the syllable back
   (checked for all 11,172 syllables).
 - `composition-of-decomposition-mapping` and
@@ -102,7 +102,7 @@ supported version, and nothing else of this library.
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
 | `xid-start-p`, `xid-continue-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
-| `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
+| `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |

@@ -86,7 +86,7 @@
        (state (dump-flag (xid-continue-p cp ver) channel state))
        (state (dump-flag (pattern-white-space-p cp ver) channel state))
        (state (dump-flag (bidi-control-p cp ver) channel state))
-       (class (bidi-formatting-class cp ver))
+       (class (bidi-explicit-formatting-class cp ver))
        (state (princ$ ";" channel state))
        (state (princ$ (if class
                           (symbol-name (bidi-formatting-class-kind class))

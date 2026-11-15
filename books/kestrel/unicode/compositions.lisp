@@ -249,7 +249,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define compositions ((ver versionp))
+(define canonical-compositions ((ver versionp))
   :returns (map composition-mapp)
   :short "The map from pairs of code points
           to the primary composites they compose to,
@@ -280,7 +280,7 @@
      that is canonically equivalent to the two code points in this order;
      it is @('nil') if there is none."))
   (or (hangul-composition first second)
-      (composition-map-lookup first second (compositions ver)))
+      (composition-map-lookup first second (canonical-compositions ver)))
   :hooks (:fix)
 
   ///
@@ -342,10 +342,10 @@
     (pair-ok-listp (all-code-points)
                    (canonical-mappings ver)
                    (full-composition-exclusion-ranges ver)
-                   (compositions ver))
+                   (canonical-compositions ver))
     :enable (canonical-mappings
              full-composition-exclusion-ranges
-             compositions
+             canonical-compositions
              (:e all-code-points))
     :disable pair-ok-listp-of-cons)
 
@@ -364,7 +364,7 @@
                     (x (all-code-points))
                     (mappings (canonical-mappings ver))
                     (exclusions (full-composition-exclusion-ranges ver))
-                    (map (compositions ver))))
+                    (map (canonical-compositions ver))))
 
   (defrule composition-of-decomposition-mapping
     (b* (((mv canonical mapping) (decomposition-mapping cp ver)))
@@ -442,13 +442,13 @@
     :induct (primary-composites cps mappings exclusions map)
     :enable (entry-ok primary-composites))
 
-  (defruledl compositions-is-primary-composites
-    (equal (compositions ver)
+  (defruledl canonical-compositions-is-primary-composites
+    (equal (canonical-compositions ver)
            (primary-composites (all-code-points)
                                (canonical-mappings ver)
                                (full-composition-exclusion-ranges ver)
                                (treemap::empty)))
-    :enable (compositions
+    :enable (canonical-compositions
              canonical-mappings
              full-composition-exclusion-ranges
              (:e all-code-points)
@@ -456,7 +456,9 @@
     :disable primary-composites)
 
   (defruled canonical-mapping-of-composition-map-lookup
-    (b* ((cp (composition-map-lookup first second (compositions ver))))
+    (b* ((cp (composition-map-lookup first
+                                     second
+                                     (canonical-compositions ver))))
       (implies cp
                (and (equal (decomposition-map-lookup cp
                                                      (canonical-mappings ver))
@@ -466,7 +468,7 @@
     :enable (composition-map-lookup
              entry-ok
              full-composition-exclusion-p)
-    :use (compositions-is-primary-composites
+    :use (canonical-compositions-is-primary-composites
           (:instance entry-ok-of-primary-composites
                      (pair (code-point-pair first second))
                      (map (treemap::empty))
@@ -582,8 +584,9 @@
              second-ok)
     :use (canonical-mapping-of-composition-map-lookup
           (:instance second-ok-when-member-equal-of-second-ok-listp
-                     (acl2::a (composition-map-lookup first
-                                                      second
-                                                      (compositions ver)))
+                     (acl2::a (composition-map-lookup
+                               first
+                               second
+                               (canonical-compositions ver)))
                      (x (all-code-points))
                      (mappings (canonical-mappings ver))))))
