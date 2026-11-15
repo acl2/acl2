@@ -94,6 +94,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Identifiers.
+
+(test (default-identifier-p (list (char-code #\x) (char-code #\1)) *v16*))
+(test (not (default-identifier-p (list (char-code #\1) (char-code #\x))
+                                 *v16*)))
+(test (not (default-identifier-p (list (char-code #\a) (char-code #\-))
+                                 *v16*)))
+(test (not (default-identifier-p nil *v16*)))
+
+; An underscore can continue an identifier but cannot start one.
+
+(test (not (default-identifier-p (list (char-code #\_) (char-code #\x))
+                                 *v16*)))
+(test (xid-continue-listp (list (char-code #\_) (char-code #\x)) *v16*))
+(test (xid-continue-listp nil *v16*))
+
+; An identifier is still one after it is normalized.
+; Here the two LATIN SMALL LETTER E WITH ACUTE are decomposed,
+; and the letter s and its two combining marks are composed.
+
+(test (default-identifier-p (nfd '(#x00E9 #x0074 #x00E9) *v16*) *v16*))
+(test (default-identifier-p (nfc '(#x0073 #x0323 #x0307) *v16*) *v16*))
+
+; The XID properties leave out the code points
+; that would make this fail [UAX #31, Section 5.1].
+; U+0E33 THAI CHARACTER SARA AM is a letter,
+; but its NFKC form starts with a combining mark:
+; it can continue an identifier and cannot start one.
+; The NFKC form of U+037A GREEK YPOGEGRAMMENI starts with a space:
+; it can do neither.
+
+(test (not (xid-start-p #x0E33 *v16*)))
+(test (xid-continue-p #x0E33 *v16*))
+(test (equal (nfkc '(#x0E33) *v16*) '(#x0E4D #x0E32)))
+(test (not (xid-continue-p #x037A *v16*)))
+(test (equal (nfkc '(#x037A) *v16*) '(#x0020 #x0345)))
+
+; Something that is not an identifier can have an NFKC form that is one,
+; but not an NFC form that is one:
+; the NFKC form of U+2122 TRADE MARK SIGN is TM.
+
+(test (not (default-identifier-p '(#x2122) *v16*)))
+(test (not (default-identifier-p (nfc '(#x2122) *v16*) *v16*)))
+(test (equal (nfkc '(#x2122) *v16*)
+             (list (char-code #\T) (char-code #\M))))
+(test (default-identifier-p (nfkc '(#x2122) *v16*) *v16*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Pattern_White_Space.
 
 (test (pattern-white-space-p (char-code #\Space) *v16*))

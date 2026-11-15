@@ -32,14 +32,16 @@
     "These are the properties that the default identifier syntax
      of [UAX #31] recommends for programming languages:
      an identifier consists of a code point with @('XID_Start')
-     followed by any number of code points with @('XID_Continue').
+     followed by any number of code points with @('XID_Continue')
+     (see @(tsee default-identifier-p)).
      (Languages adjust this;
      many also let an identifier start with an underscore,
      which has @('XID_Continue') but not @('XID_Start').)
      Unlike @('ID_Start') and @('ID_Continue'),
      the @('XID') properties are closed under
      the Unicode normalization forms:
-     normalizing an identifier gives an identifier.")
+     normalizing an identifier gives an identifier,
+     which is proved in @(see identifier-closure).")
    (xdoc::p
     "Both are derived properties.
      We take them from the file @('DerivedCoreProperties.txt')
@@ -238,3 +240,72 @@
           (acl2::a cp)
           (x (integers-from-to 0 #x7F))
           (ranges (xid-continue-ranges ver)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist xid-continue-listp (x ver)
+  :guard (and (code-point-listp x)
+              (versionp ver))
+  :short "Check if all the code points of a list
+          have the @('XID_Continue') property,
+          in a version of Unicode."
+  (xid-continue-p x ver)
+
+  ///
+
+  (fty::deffixequiv xid-continue-listp
+    :args ((x code-point-listp) (ver versionp))
+    :hints (("Goal"
+             :induct (xid-continue-listp x ver)
+             :in-theory (enable xid-continue-listp))))
+
+  (defruled scalar-value-listp-when-xid-continue-listp
+    (implies (and (xid-continue-listp cps ver)
+                  (code-point-listp cps))
+             (scalar-value-listp cps))
+    :induct t
+    :enable xid-continue-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define default-identifier-p ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of code points is a default identifier,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the identifier syntax of [UAX #31, UAX31-D1]
+     with the lexical classes of [UAX #31, UAX31-R1-1]:
+     a code point that has @('XID_Start'),
+     followed by any number of code points that have @('XID_Continue').
+     There are no medial code points."))
+  (and (consp cps)
+       (xid-start-p (car cps) ver)
+       (xid-continue-listp (cdr cps) ver))
+  :hooks (:fix)
+
+  ///
+
+  (defrule default-identifier-p-of-cons
+    (equal (default-identifier-p (cons cp cps) ver)
+           (and (xid-start-p cp ver)
+                (xid-continue-listp cps ver))))
+
+  (defrule default-identifier-p-of-append
+    (equal (default-identifier-p (append cps1 cps2) ver)
+           (if (consp cps1)
+               (and (default-identifier-p cps1 ver)
+                    (xid-continue-listp cps2 ver))
+             (default-identifier-p cps2 ver))))
+
+  (defrule xid-continue-listp-when-default-identifier-p
+    (implies (default-identifier-p cps ver)
+             (xid-continue-listp cps ver))
+    :rule-classes (:rewrite :forward-chaining))
+
+  (defruled scalar-value-listp-when-default-identifier-p
+    (implies (and (default-identifier-p cps ver)
+                  (code-point-listp cps))
+             (scalar-value-listp cps))
+    :enable scalar-value-listp-when-xid-continue-listp))
