@@ -89,10 +89,25 @@ over the tables, and so re-checked whenever a version is added:
   a decomposed form changes nothing.
 - `nfc-of-nfd`, `nfkc-of-nfkd`, `nfc-of-nfkd`: composing after decomposing
   again is the same as composing.
+- `decomposition-when-decomposition-mapping`: the decomposition of a code
+  point is the decomposition of its decomposition mapping, which is how the
+  standard defines the full decompositions.
+- `decomposition-of-composition`: the decomposition of the code point that
+  two code points compose to is the decomposition of the first one followed
+  by the decomposition of the second one.
+- `canonical-order-of-decompose-of-canonical-compose`: canonical composition
+  can be undone.  If a list is fully decomposed and canonically ordered,
+  decomposing its canonical composition and putting the result in canonical
+  order gives the list back.
+- `nfd-of-nfc`, `nfkd-of-nfkc`, `nfd-of-nfkc`: decomposing a composed form
+  gives the decomposed form.
+- `nfc-of-nfc`, `nfkc-of-nfkc`, `nfc-of-nfkc`: normalizing a second time to
+  a composed form changes nothing.
 
-Not proved: that `nfd` of `nfc` is `nfd` (decomposing undoes canonical
-composition), and so that `nfc` and `nfkc` are idempotent.  The conformance
-tests check these on the test data.
+Not proved: the four relations that go from a canonical form to a
+compatibility form, namely that `nfkd` of `nfd`, `nfkd` of `nfc`, `nfkc` of
+`nfd` and `nfkc` of `nfc` are `nfkd`, `nfkd`, `nfkc` and `nfkc` of the
+original list.  The conformance tests check these on the test data.
 
 ### Including only what you need
 

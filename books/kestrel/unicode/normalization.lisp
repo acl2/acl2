@@ -453,6 +453,323 @@
              canonical-compose-from-starter-when-all-below-300)
     :expand (canonical-compose cps ver)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection canonical-composition-theorems
+  :short "Theorems about canonical composition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Canonical composition can be undone:
+     if a list of code points is fully decomposed and canonically ordered,
+     then decomposing its canonical composition
+     and putting the result in canonical order
+     gives the list back.
+     This holds for the canonical decompositions
+     and for the compatibility decompositions.")
+   (xdoc::p
+    "The reason is this.
+     When the last starter composes with a code point,
+     the decomposition of the composite
+     is the decomposition of the starter followed by that code point
+     (see @(see decomposition-of-composition)).
+     The code point was after the code points that had not composed;
+     these are non-starters whose classes are lower than its own,
+     since it was not blocked,
+     so canonical ordering puts it back after them.")
+   (xdoc::p
+    "We prove, for @(tsee canonical-compose-from-starter),
+     that the decomposition of its result,
+     after any list of code points,
+     has the same canonical order as
+     the decomposition of the starter,
+     the code points that have not composed
+     and the code points still to be processed,
+     after the same list.
+     This holds if the code points that have not composed
+     and the ones still to be processed are fully decomposed,
+     the latter are canonically ordered,
+     the former are non-starters
+     whose classes do not exceed the @('last-ccc') argument,
+     and that argument does not exceed the class of the next code point,
+     unless the next code point is a starter.
+     These conditions hold when the function is called on
+     a list that is fully decomposed and canonically ordered,
+     and each recursive call preserves them."))
+
+  ;; Check that a code point is a non-starter whose class is below a bound,
+  ;; and that all the code points of a list are.
+
+  (local
+   (define non-starter-below-p ((cp code-point-p) (bound natp) (ver versionp))
+     :returns (yes/no booleanp)
+     (b* ((ccc (canonical-combining-class cp ver)))
+       (and (not (equal ccc 0))
+            (< ccc bound)))
+     :hooks nil))
+
+  (local
+   (std::deflist non-starters-below-p (x bound ver)
+     :guard (and (code-point-listp x)
+                 (natp bound)
+                 (versionp ver))
+     (non-starter-below-p x bound ver)))
+
+  (defrulel non-starters-below-p-when-below-smaller
+    (implies (and (non-starters-below-p x bound1 ver)
+                  (<= bound1 bound2))
+             (non-starters-below-p x bound2 ver))
+    :induct (non-starters-below-p x bound1 ver)
+    :enable (non-starters-below-p
+             non-starter-below-p))
+
+  ;; Two non-starters of different classes
+  ;; can be put in front of a list in either order.
+
+  (defruledl canonical-order-insert-of-canonical-order-insert
+    (implies (and (not (equal (canonical-combining-class cp1 ver) 0))
+                  (< (canonical-combining-class cp1 ver)
+                     (canonical-combining-class cp2 ver)))
+             (equal (canonical-order-insert
+                     cp1
+                     (canonical-order-insert cp2 cps ver)
+                     ver)
+                    (canonical-order-insert
+                     cp2
+                     (canonical-order-insert cp1 cps ver)
+                     ver)))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :induct (canonical-order-insert cp1 cps ver)
+    :enable canonical-order-insert)
+
+  ;; A code point that is followed by non-starters of lower classes
+  ;; can be moved after them without changing the canonical order:
+  ;; at the start of the list, after one list, and after two lists.
+
+  (defrulel canonical-order-of-cons-of-append-when-non-starters-below-p
+    (implies (non-starters-below-p cps1
+                                   (canonical-combining-class cp ver)
+                                   ver)
+             (equal (canonical-order (cons cp (append cps1 cps2)) ver)
+                    (canonical-order (append cps1 (cons cp cps2)) ver)))
+    :induct (non-starters-below-p cps1
+                                  (canonical-combining-class cp ver)
+                                  ver)
+    :enable (non-starters-below-p
+             non-starter-below-p
+             canonical-order
+             canonical-order-insert-of-canonical-order-insert))
+
+  (defrulel canonical-order-of-append-of-cons-of-append
+    (implies (non-starters-below-p cps1
+                                   (canonical-combining-class cp ver)
+                                   ver)
+             (equal (canonical-order
+                     (append cps (cons cp (append cps1 cps2)))
+                     ver)
+                    (canonical-order
+                     (append cps (append cps1 (cons cp cps2)))
+                     ver)))
+    :induct (canonical-order cps ver)
+    :enable canonical-order)
+
+  (defrulel canonical-order-of-append-of-append-of-cons-of-append
+    (implies (non-starters-below-p cps1
+                                   (canonical-combining-class cp ver)
+                                   ver)
+             (equal (canonical-order
+                     (append cps
+                             (append cps0 (cons cp (append cps1 cps2))))
+                     ver)
+                    (canonical-order
+                     (append cps
+                             (append cps0 (append cps1 (cons cp cps2))))
+                     ver)))
+    :induct (canonical-order cps ver)
+    :enable canonical-order)
+
+  ;; What holds of the arguments of CANONICAL-COMPOSE-FROM-STARTER
+  ;; other than the starter, when it is called by CANONICAL-COMPOSE
+  ;; on a list that is fully decomposed and canonically ordered.
+
+  (local
+   (define compose-state-p ((pending code-point-listp)
+                            (last-ccc natp)
+                            (cps code-point-listp)
+                            (compat booleanp)
+                            (ver versionp))
+     :returns (yes/no booleanp)
+     (and (undecomposable-listp pending compat ver)
+          (undecomposable-listp cps compat ver)
+          (canonically-ordered-p cps ver)
+          (non-starters-below-p pending (+ 1 last-ccc) ver)
+          (or (endp pending)
+              (endp cps)
+              (equal (canonical-combining-class (car cps) ver) 0)
+              (<= last-ccc (canonical-combining-class (car cps) ver))))
+     :hooks nil))
+
+  ;; What it says about the code points.
+
+  (defrulel compose-state-p-forward
+    (implies (compose-state-p pending last-ccc cps compat ver)
+             (and (undecomposable-listp pending compat ver)
+                  (undecomposable-listp cps compat ver)
+                  (non-starters-below-p pending (+ 1 last-ccc) ver)))
+    :rule-classes :forward-chaining
+    :enable compose-state-p)
+
+  ;; It holds again at each of the three recursive calls:
+  ;; when the next code point composes with the starter,
+  ;; when it is a new starter,
+  ;; and when it is added to the code points that have not composed.
+
+  (defrulel compose-state-p-after-composing
+    (implies (and (compose-state-p pending last-ccc cps compat ver)
+                  (consp cps)
+                  (or (not (consp pending))
+                      (< last-ccc
+                         (canonical-combining-class (car cps) ver))))
+             (compose-state-p pending last-ccc (cdr cps) compat ver))
+    :enable (compose-state-p
+             canonically-ordered-p))
+
+  (defrulel compose-state-p-after-new-starter
+    (implies (and (compose-state-p pending last-ccc cps compat ver)
+                  (consp cps))
+             (compose-state-p nil 0 (cdr cps) compat ver))
+    :enable compose-state-p)
+
+  (defrulel compose-state-p-after-not-composing
+    (implies (and (compose-state-p pending last-ccc cps compat ver)
+                  (consp cps)
+                  (not (equal (canonical-combining-class (car cps) ver) 0)))
+             (compose-state-p (cons (car cps) pending)
+                              (canonical-combining-class (car cps) ver)
+                              (cdr cps)
+                              compat
+                              ver))
+    :enable (compose-state-p
+             canonically-ordered-p
+             non-starter-below-p))
+
+  ;; The induction: as in CANONICAL-COMPOSE-FROM-STARTER,
+  ;; with a list of code points that come before the result.
+  ;; When a new starter is found,
+  ;; the old starter and the code points that did not compose
+  ;; are added to that list.
+
+  (local
+   (defun compose-induction (prefix starter pending last-ccc cps compat ver)
+     (declare (xargs :measure (acl2-count cps)))
+     (b* (((when (atom cps)) (list prefix starter pending last-ccc compat))
+          (cp (car cps))
+          (ccc (canonical-combining-class cp ver))
+          (blocked (and (consp pending)
+                        (>= last-ccc ccc)))
+          (composite (and (not blocked)
+                          (composition starter cp ver)))
+          ((when composite)
+           (compose-induction prefix
+                              composite
+                              pending
+                              last-ccc
+                              (cdr cps)
+                              compat
+                              ver))
+          ((when (equal ccc 0))
+           (compose-induction (append prefix
+                                      (decomposition starter compat ver)
+                                      (rev pending))
+                              cp
+                              nil
+                              0
+                              (cdr cps)
+                              compat
+                              ver)))
+       (compose-induction prefix
+                          starter
+                          (cons cp pending)
+                          ccc
+                          (cdr cps)
+                          compat
+                          ver))))
+
+  (defrulel canonical-order-of-append-of-decompose-of-compose-from-starter
+    (implies (and (code-point-p starter)
+                  (code-point-listp pending)
+                  (natp last-ccc)
+                  (code-point-listp cps)
+                  (compose-state-p pending last-ccc cps compat ver))
+             (equal (canonical-order
+                     (append prefix
+                             (decompose
+                              (canonical-compose-from-starter starter
+                                                              pending
+                                                              last-ccc
+                                                              cps
+                                                              ver)
+                              compat
+                              ver))
+                     ver)
+                    (canonical-order
+                     (append prefix
+                             (decomposition starter compat ver)
+                             (rev pending)
+                             cps)
+                     ver)))
+    :induct (compose-induction prefix starter pending last-ccc cps compat ver)
+    :expand ((:free (pending)
+              (canonical-compose-from-starter starter pending last-ccc cps ver))
+             (canonical-compose-from-starter starter pending last-ccc nil ver))
+    :enable (decompose
+             decomposition-when-undecomposable-p))
+
+  (defrulel canonical-order-of-decompose-of-canonical-compose-from-starter
+    (implies (and (undecomposable-p starter compat ver)
+                  (undecomposable-listp cps compat ver)
+                  (canonically-ordered-p cps ver))
+             (equal (canonical-order
+                     (decompose
+                      (canonical-compose-from-starter starter nil 0 cps ver)
+                      compat
+                      ver)
+                     ver)
+                    (canonical-order (cons starter cps) ver)))
+    :use (:instance
+          canonical-order-of-append-of-decompose-of-compose-from-starter
+          (prefix nil)
+          (starter (code-point-fix starter))
+          (pending nil)
+          (last-ccc 0)
+          (cps (code-point-list-fix cps)))
+    :enable (compose-state-p
+             decomposition-when-undecomposable-p)
+    :disable canonical-order-of-append-of-decompose-of-compose-from-starter)
+
+  (defrulel canonical-order-of-decompose-of-canonical-compose-lemma
+    (implies (and (undecomposable-listp cps compat ver)
+                  (canonically-ordered-p cps ver))
+             (equal (canonical-order
+                     (decompose (canonical-compose cps ver) compat ver)
+                     ver)
+                    (canonical-order cps ver)))
+    :induct (canonical-compose cps ver)
+    :enable (canonical-compose
+             canonical-order
+             canonically-ordered-p
+             decompose
+             decomposition-when-undecomposable-p)
+    :disable canonical-order-when-canonically-ordered-p)
+
+  (defrule canonical-order-of-decompose-of-canonical-compose
+    (implies (and (undecomposable-listp cps compat ver)
+                  (canonically-ordered-p cps ver))
+             (equal (canonical-order
+                     (decompose (canonical-compose cps ver) compat ver)
+                     ver)
+                    (code-point-list-fix cps)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nfd ((cps code-point-listp) (ver versionp))
@@ -476,7 +793,13 @@
 
   (defrule nfd-of-nfd
     (equal (nfd (nfd cps ver) ver)
-           (nfd cps ver))))
+           (nfd cps ver)))
+
+  (defrule nfd-of-canonical-compose
+    (implies (and (undecomposable-listp cps nil ver)
+                  (canonically-ordered-p cps ver))
+             (equal (nfd (canonical-compose cps ver) ver)
+                    (code-point-list-fix cps)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -496,6 +819,14 @@
 
   (defrule nfc-of-nfd
     (equal (nfc (nfd cps ver) ver)
+           (nfc cps ver)))
+
+  (defrule nfd-of-nfc
+    (equal (nfd (nfc cps ver) ver)
+           (nfd cps ver)))
+
+  (defrule nfc-of-nfc
+    (equal (nfc (nfc cps ver) ver)
            (nfc cps ver))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -529,7 +860,13 @@
     :enable nfd
     :disable nfkd
     :use (undecomposable-listp-of-nfkd
-          canonically-ordered-p-of-nfkd)))
+          canonically-ordered-p-of-nfkd))
+
+  (defrule nfkd-of-canonical-compose
+    (implies (and (undecomposable-listp cps t ver)
+                  (canonically-ordered-p cps ver))
+             (equal (nfkd (canonical-compose cps ver) ver)
+                    (code-point-list-fix cps)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -553,6 +890,23 @@
 
   (defrule nfc-of-nfkd
     (equal (nfc (nfkd cps ver) ver)
+           (nfkc cps ver))
+    :enable nfc)
+
+  (defrule nfkd-of-nfkc
+    (equal (nfkd (nfkc cps ver) ver)
+           (nfkd cps ver)))
+
+  (defrule nfkc-of-nfkc
+    (equal (nfkc (nfkc cps ver) ver)
+           (nfkc cps ver)))
+
+  (defrule nfd-of-nfkc
+    (equal (nfd (nfkc cps ver) ver)
+           (nfkd cps ver)))
+
+  (defrule nfc-of-nfkc
+    (equal (nfc (nfkc cps ver) ver)
            (nfkc cps ver))
     :enable nfc))
 
