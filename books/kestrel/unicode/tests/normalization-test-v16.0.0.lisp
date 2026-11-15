@@ -17,17 +17,24 @@
 
 ; Run all of the normalization conformance test of Unicode 16.0.0
 ; (NormalizationTest.txt), as described in the book normalization-test.
-; If this fails, evaluate the call of RUN-NORMALIZATION-TEST
-; to see the lines and the code points that fail.
+; If an assertion fails, evaluate its call
+; to see the lines or the code points that fail.
 
-(assert-event (normalization-test-p *normalization-test-v16.0.0*))
-
-(assert-event
- (equal (run-normalization-test *normalization-test-v16.0.0*
-                                (version-v16.0.0))
-        (list nil
-              nil
-              (normalization-test-count *normalization-test-v16.0.0*))))
+; Requirement 1: no line fails.
 
 (assert-event
- (< 19000 (normalization-test-count *normalization-test-v16.0.0*)))
+ (equal (normalization-test-failures *normalization-test-v16.0.0*
+                                     (version-v16.0.0))
+        nil))
+
+; Requirement 2: no code point that Part 1 does not list fails.
+
+(assert-event
+ (equal (normalization-test-unlisted-failures *normalization-test-v16.0.0*
+                                              (version-v16.0.0))
+        nil))
+
+; The number of lines, so that an empty test does not pass unnoticed.
+
+(assert-event
+ (< 19000 (normalization-test-line-count *normalization-test-v16.0.0*)))

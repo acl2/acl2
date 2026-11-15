@@ -351,16 +351,15 @@
 
   (defruled composition-of-canonical-mapping
     (b* ((mapping (decomposition-map-lookup cp (canonical-mappings ver))))
-      (implies (and (code-point-p cp)
-                    (equal (len mapping) 2)
+      (implies (and (equal (len mapping) 2)
                     (not (full-composition-exclusion-p cp ver)))
                (equal (composition (first mapping) (second mapping) ver)
-                      cp)))
+                      (code-point-fix cp))))
     :enable (composition
              full-composition-exclusion-p
              pair-ok)
     :use (:instance pair-ok-when-member-equal-of-pair-ok-listp
-                    (acl2::a cp)
+                    (acl2::a (code-point-fix cp))
                     (x (all-code-points))
                     (mappings (canonical-mappings ver))
                     (exclusions (full-composition-exclusion-ranges ver))
@@ -368,12 +367,11 @@
 
   (defrule composition-of-decomposition-mapping
     (b* (((mv canonical mapping) (decomposition-mapping cp ver)))
-      (implies (and (code-point-p cp)
-                    canonical
+      (implies (and canonical
                     (equal (len mapping) 2)
                     (not (full-composition-exclusion-p cp ver)))
                (equal (composition (first mapping) (second mapping) ver)
-                      cp)))
+                      (code-point-fix cp))))
     :enable (decomposition-mapping
              composition
              hangul-composition-of-hangul-syllable-decomposition-mapping)
@@ -581,6 +579,7 @@
              hangul-composition-when-not-hangul-v-p-and-not-hangul-t-p
              hangul-v-p
              hangul-t-p
+             code-point-fix
              second-ok)
     :use (canonical-mapping-of-composition-map-lookup
           (:instance second-ok-when-member-equal-of-second-ok-listp

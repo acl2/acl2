@@ -807,33 +807,46 @@ def book_normalization_test(version, sources):
     parts = parse_normalization_test(source)
     book = Book(version, "normalization-test",
                 "The normalization conformance test, NormalizationTest.txt.",
-                [source], ["code-points"])
+                [source], ["tests/normalization-test-types"],
+                ["std/util/defconsts"])
     book.comment(
-        "The value of the constant below is a list with one element per\n"
-        "part of the test file: the number of the part, followed by the\n"
-        "tests of that part, in file order.  Each test is the list of the\n"
-        "five columns of a line of the file (source, NFC, NFD, NFKC,\n"
-        "NFKD), each column being a list of code points.\n"
+        "The value of the constant below is the list of the parts of the\n"
+        "test file, in file order.  Each part has its number and its\n"
+        "lines, in file order.  Each line has the five columns of a line\n"
+        "of the file (source, NFC, NFD, NFKC, NFKD), each column being a\n"
+        "list of code points.\n"
         "The book ../../tests/normalization-test-v%s runs the tests.\n"
         "%s"
         % (version,
-           "\n".join("Part %d: %d tests." % (n, len(tests))
+           "\n".join("Part %d: %d lines." % (n, len(tests))
                      for n, tests in parts)))
+    book.comment()
+    book.comment(
+        "The constant is introduced with DEFCONSTS, which evaluates the\n"
+        "form when this book is certified and records the value, so that\n"
+        "the thousands of calls below are not compiled.")
     book.blank()
+    const = book.constant("normalization-test")
     lines = book.lines
-    lines.append("(defconst %s" % book.constant("normalization-test"))
-    lines.append("  '(")
+    lines.append("(defconsts %s" % const)
+    lines.append("  (list")
     for number, tests in parts:
-        lines.append("    (%d" % number)
+        lines.append("   (normalization-test-part")
+        lines.append("    %d" % number)
+        lines.append("    (list")
         for columns in tests:
-            lines.append("     (%s)" % " ".join(
-                "(%s)" % " ".join(hexcp(cp) for cp in column)
+            lines.append("     (normalization-test-line %s)" % " ".join(
+                "'(%s)" % " ".join(hexcp(cp) for cp in column)
                 for column in columns))
-        lines[-1] += ")"
+        lines[-1] += "))"
     lines[-1] += "))"
     lines.append("")
-    book.assert_equal("(len %s)" % book.constant("normalization-test"),
-                      len(parts))
+    book.assert_equal("(len %s)" % const, len(parts))
+    for number, tests in parts:
+        lines.append("(assert-event")
+        lines.append(" (equal (len (normalization-test-part->lines")
+        lines.append("              (nth %d %s)))" % (number, const))
+        lines.append("        %d))" % len(tests))
     return book
 
 

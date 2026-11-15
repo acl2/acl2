@@ -53,8 +53,9 @@ utilities for UTF-8 and UTF-16 (this library uses its surrogate recognizers).
 
 All the functions are in logic mode with guards verified.  Their arguments
 and results have fixtypes: code points, scalar values, lists of those,
-versions, ranges, and maps.  The property functions take a code point; the
-normalization functions take a list of code points.
+precomposed Hangul syllables, versions, ranges, and maps.  The property
+functions take a code point; the normalization functions take a list of
+code points.
 
 Some theorems that hold in every supported version, proved by evaluation
 over the tables, and so re-checked whenever a version is added:
@@ -74,7 +75,9 @@ over the tables, and so re-checked whenever a version is added:
   `bidi-explicit-formatting-class-alt-def`: these properties are the same
   eleven, twelve and nine code points in every supported version.
 - Composing the decomposition of a Hangul syllable gives the syllable back
-  (checked for all 11,172 syllables).
+  (checked for all 11,172 syllables).  The Hangul functions take a
+  `hangul-syllable`, which is a fixtype, so their theorems have no
+  hypotheses.
 - `composition-of-decomposition-mapping` and
   `decomposition-mapping-of-composition`: composing two code points and
   taking the canonical decomposition mapping of a code point are inverses
@@ -211,7 +214,10 @@ are tree maps (`fty::deftreemap`) from code points to values, or, for
 composition, from pairs of code points (`fty::defprod code-point-pair`) to
 scalar values.  Every table that is not built with typed constructors is
 checked against the recognizer of its type, by evaluation, in the book
-that defines it.
+that defines it.  The conformance test vectors are typed too: a line of
+`NormalizationTest.txt` is a `normalization-test-line`, a product with one
+field per column (`tests/normalization-test-types`), and the generated
+books build the lines with its constructor.
 
 ### Where the bytes came from
 
@@ -289,7 +295,8 @@ there is no formal specification to prove that against.  The evidence is:
   which are computed from other files.
 - `properties`: examples.
 
-Each of the two exhaustive tests takes about a minute per version.
+The conformance test takes about ten seconds per version, and the
+quick-check test about twenty.
 
 ### Comparison with independent implementations (`validation/`)
 
