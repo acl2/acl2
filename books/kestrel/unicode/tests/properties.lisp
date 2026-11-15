@@ -104,15 +104,15 @@
 ; Bidirectional controls.
 
 (test (bidi-control-p #x202E *v16*)) ; RIGHT-TO-LEFT OVERRIDE
-(test (equal (bidi-formatting-class #x202E *v16*)
+(test (equal (bidi-explicit-formatting-class #x202E *v16*)
              (bidi-formatting-class-rlo)))
 (test (bidi-explicit-formatting-p #x2066 *v16*)) ; LEFT-TO-RIGHT ISOLATE
-(test (equal (bidi-formatting-class #x2069 *v17*)
+(test (equal (bidi-explicit-formatting-class #x2069 *v17*)
              (bidi-formatting-class-pdi)))
 (test (bidi-control-p #x200F *v16*)) ; RIGHT-TO-LEFT MARK is a control ...
 (test (not (bidi-explicit-formatting-p #x200F *v16*))) ; ... but not explicit
 (test (not (bidi-control-p (char-code #\a) *v16*)))
-(test (not (bidi-formatting-class (char-code #\a) *v16*)))
+(test (not (bidi-explicit-formatting-class (char-code #\a) *v16*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
