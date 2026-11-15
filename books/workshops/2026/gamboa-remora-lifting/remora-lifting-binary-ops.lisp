@@ -1,74 +1,7 @@
 (in-package "REMORA")
 
 (include-book "kestrel/remora/top" :dir :system)
-;; (include-book "std/omaps/submap" :dir :system)
 (local (include-book "arithmetic-5/top" :dir :system))
-
-#|
-(parse-from-string "(entry (main) (+ 3 4))")
-->
-((IMPORTS)
- (DECLS (:ENTRY "main" NIL NIL
-                (:APPN (:VAR "+")
-                       ((:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\3)))))
-                        (:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\4))))))))))
-
-(file->decls (parse-from-string "(entry (main) (+ 3 4))"))
-->
-((:ENTRY "main" NIL NIL
-         (:APPN (:VAR "+")
-                ((:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\3)))))
-                 (:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\4)))))))))
-
-(decl-entry->expr (car (file->decls (parse-from-string "(entry (main) (+ 3 4))"))))
-->
-(:APPN (:VAR "+")
-       ((:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\3)))))
-        (:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\4)))))))
-
-(expr-appn->fun (decl-entry->expr (car (file->decls (parse-from-string "(entry (main) (+ 3 4))")))))
-->
-(:VAR "+")
-
-(expr-appn->args (decl-entry->expr (car (file->decls (parse-from-string "(entry (main) (+ 3 4))")))))
-->
-((:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\3)))))
- (:ATOM (:BASE (:INT ((SIGN?) (DIGITS #\4))))))
-
-;;; Gets binding from environment or NIL if not bound
-(defun get-var-value (var denv)
-  (b* ((var+val (omap::assoc var (denv->expr-vars denv)))
-       ((unless var+val) nil))
-    (cdr var+val)))
-|#
-
-(defconst *program-full*
-  "(entry (main)
-          (let ((fun (@dotpr (&t) ($n) (v [Int $n]) (w [Int $n]) : [Int])
-                  (@reduce (Int) ((- $n 1) []) + (* v w)))
-                (fun (@norm (&t) ($n) (v [Int $n]) : Int)
-                  (@dotpr (&t) ($n) (v v))))
-            (@dotpr (Int) (3) [1 2 3])))")
-
-(defconst *program*
-  "(entry (main)
-          (* [[1 2 3] [4 5 6]] 2))")
-
-(defconst *expr*
-  (decl-entry->expr (car (file->decls (parse-from-string *program*)))))
-
-(eval-expr *expr* (init-expr-denv) 10000)
-
-(defconst *program-2*
-  "(entry (main)
-          (* [[1 2 3] [4 5 6]] [2 3]))")
-
-(defconst *expr-2*
-  (decl-entry->expr (car (file->decls (parse-from-string *program-2*)))))
-
-(eval-expr *expr-2* (init-expr-denv) 10000)
-
-
 
 ;;; Checks whether the given environment extends
 ;;; the initial Remora dynamic environment without
