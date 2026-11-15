@@ -11,10 +11,12 @@
 (in-package "UNICODE")
 
 (include-book "versions")
-(include-book "range-maps")
+(include-book "maps")
 
 (include-book "data/v16.0.0/derived-combining-class")
 (include-book "data/v17.0.0/derived-combining-class")
+
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
 (acl2::controlled-configuration)
 
@@ -47,57 +49,76 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define canonical-combining-class-map ((ver versionp))
-  :returns (map ccc-range-map-p)
+  :returns (map combining-class-mapp)
   :short "The map from the code points
           whose @('Canonical_Combining_Class') is not 0
           to their classes,
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *canonical-combining-class-v16.0.0*
-                :v17.0.0 *canonical-combining-class-v17.0.0*))
+                :v17.0.0 *canonical-combining-class-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define canonical-combining-class ((cp natp) (ver versionp))
-  :returns (ccc natp :rule-classes :type-prescription)
+(define canonical-combining-class ((cp code-point-p) (ver versionp))
+  :returns (ccc ubyte8p)
   :short "The @('Canonical_Combining_Class') of a code point,
           in a version of Unicode."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The class of a natural number that is not a code point is 0."))
-  (b* ((ccc (range-map-lookup cp (canonical-combining-class-map ver))))
-    (if ccc
-        (mbe :logic (nfix ccc) :exec ccc)
-      0))
-  :guard-hints (("Goal"
-                 :use (:instance
-                       ccc-value-p-of-range-map-lookup-when-ccc-range-map-p
-                       (map (canonical-combining-class-map ver)))
-                 :in-theory
-                 (e/d (ccc-value-p nfix)
-                      (ccc-value-p-of-range-map-lookup-when-ccc-range-map-p))))
+  (combining-class-map-lookup cp (canonical-combining-class-map ver))
+  :hooks (:fix)
 
   ///
+
+  (defrule natp-of-canonical-combining-class
+    (natp (canonical-combining-class cp ver))
+    :rule-classes :type-prescription)
+
+  ;; We prove the next two theorems
+  ;; by checking them on every code point, for each version.
+
+  (local
+   (define class-ok ((cp code-point-p) (map combining-class-mapp))
+     :returns (yes/no booleanp)
+     (b* ((ccc (combining-class-map-lookup cp map)))
+       (and (<= ccc 254)
+            (or (>= (code-point-fix cp) #x300)
+                (equal ccc 0))))))
+
+  (local
+   (std::deflist class-ok-listp (x map)
+     :guard (and (code-point-listp x)
+                 (combining-class-mapp map))
+     (class-ok x map)))
+
+  (defrulel class-ok-listp-of-all-code-points
+    (class-ok-listp (all-code-points) (canonical-combining-class-map ver))
+    :enable (canonical-combining-class-map
+             (:e all-code-points))
+    :disable class-ok-listp-of-cons)
 
   (defrule canonical-combining-class-upper-bound
     (<= (canonical-combining-class cp ver) 254)
     :rule-classes :linear
-    :use (:instance ccc-value-p-of-range-map-lookup-when-ccc-range-map-p
-                    (map (canonical-combining-class-map ver)))
-    :enable (ccc-value-p nfix)
-    :disable ccc-value-p-of-range-map-lookup-when-ccc-range-map-p)
+    :enable class-ok
+    :use (:instance class-ok-when-member-equal-of-class-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (map (canonical-combining-class-map ver))))
 
   (defruled canonical-combining-class-when-below-300
-    (implies (< (nfix cp) #x300)
+    (implies (< (code-point-fix cp) #x300)
              (equal (canonical-combining-class cp ver)
                     0))
-    :enable (canonical-combining-class-map
-             range-map-lookup-when-below-first)))
+    :enable class-ok
+    :use (:instance class-ok-when-member-equal-of-class-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (map (canonical-combining-class-map ver)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define starter-p ((cp natp) (ver versionp))
+(define starter-p ((cp code-point-p) (ver versionp))
   :returns (yes/no booleanp)
   :short "Check if a code point is a starter, in a version of Unicode."
   :long
@@ -105,10 +126,11 @@
    (xdoc::p
     "That is, if its @('Canonical_Combining_Class') is 0 [Unicode, D107]."))
   (equal (canonical-combining-class cp ver) 0)
+  :hooks (:fix)
 
   ///
 
   (defruled starter-p-when-below-300
-    (implies (< (nfix cp) #x300)
+    (implies (< (code-point-fix cp) #x300)
              (starter-p cp ver))
     :enable canonical-combining-class-when-below-300))

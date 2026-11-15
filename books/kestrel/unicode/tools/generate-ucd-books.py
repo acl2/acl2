@@ -392,28 +392,12 @@ def to_ranges(has):
     return ranges
 
 
-def to_range_map(value, default):
-    """The maximal ranges (lo, hi, v) on which value is v, for v != default."""
-    ranges = []
-    cp = 0
-    while cp < NUM_CP:
-        v = value[cp]
-        if v != default:
-            lo = cp
-            while cp + 1 < NUM_CP and value[cp + 1] == v:
-                cp += 1
-            ranges.append((lo, cp, v))
-        cp += 1
-    return ranges
-
-
 def check_ranges(ranges):
-    """Sorted, disjoint and not adjacent: the form ACL2 will check again."""
+    """Sorted, disjoint and not adjacent: the maximal ranges of a set."""
     previous_hi = -2
-    for r in ranges:
-        lo, hi = r[0], r[1]
+    for lo, hi in ranges:
         assert 0 <= lo <= hi <= MAX_CP
-        assert previous_hi + 1 < lo or (len(r) == 3 and previous_hi < lo)
+        assert previous_hi + 1 < lo
         previous_hi = hi
 
 
@@ -427,7 +411,8 @@ def hexcp(cp):
 class Book:
     """The text of one generated book."""
 
-    def __init__(self, version, name, title, sources, includes):
+    def __init__(self, version, name, title, sources, includes,
+                 system_includes=()):
         self.version = version
         self.name = name
         self.lines = []
@@ -470,6 +455,10 @@ class Book:
             out('(include-book "../../%s")' % include)
         if includes:
             out("")
+        for include in system_includes:
+            out('(include-book "%s" :dir :system)' % include)
+        if system_includes:
+            out("")
 
     def comment(self, text=""):
         for line in text.split("\n"):
@@ -485,33 +474,54 @@ class Book:
     def constant(self, name):
         return "*%s-v%s*" % (name, self.version)
 
-    def defconst(self, name, items):
-        """Emit a constant whose value is the list of the given item texts."""
-        const = self.constant(name)
-        self.lines.append("(defconst %s" % const)
-        if not items:
-            self.lines.append("  nil)")
-        else:
-            self.lines.append("  '(%s" % items[0])
-            for item in items[1:]:
-                self.lines.append("    %s" % item)
-            self.lines[-1] += "))"
-        self.lines.append("")
-        return const
-
-    def range_set(self, name, has, what):
+    def range_list(self, name, has, what):
+        """Emit a constant whose value is the list of the maximal ranges
+        of the code points cp with has[cp] true."""
         ranges = to_ranges(has)
         check_ranges(ranges)
         self.comment("%s: %d ranges, %d code points."
                      % (what, len(ranges), sum(has)))
         self.blank()
-        const = self.defconst(
-            name, ["(%s . %s)" % (hexcp(lo), hexcp(hi))
-                   for lo, hi in ranges])
-        self.assert_holds("(range-set-p %s)" % const)
-        self.assert_equal("(len %s)" % const, len(ranges))
-        self.assert_equal("(range-set-count %s)" % const, sum(has))
+        const = self.constant(name)
+        self.lines.append("(defconst %s" % const)
+        if not ranges:
+            self.lines.append("  nil)")
+        else:
+            items = ["(range %s %s)" % (hexcp(lo), hexcp(hi))
+                     for lo, hi in ranges]
+            self.lines.append("  (list %s" % items[0])
+            for item in items[1:]:
+                self.lines.append("        %s" % item)
+            self.lines[-1] += "))"
         self.blank()
+        self.assert_equal("(len %s)" % const, len(ranges))
+        self.assert_equal("(range-list-size %s)" % const, sum(has))
+        self.blank()
+
+    def tree_map(self, name, entries, quoted, recognizer):
+        """Emit a constant whose value is the tree map with the given
+        entries, which are the texts of the pairs of an alist: either
+        the elements of a quoted list, or forms to evaluate."""
+        const = self.constant(name)
+        self.lines.append("(defconsts %s" % const)
+        self.lines.append("  (treemap::update-from-alist")
+        if not entries:
+            self.lines.append("   nil")
+        elif quoted:
+            self.lines.append("   '(%s" % entries[0])
+            for entry in entries[1:]:
+                self.lines.append("     %s" % entry)
+            self.lines[-1] += ")"
+        else:
+            self.lines.append("   (list %s" % entries[0])
+            for entry in entries[1:]:
+                self.lines.append("         %s" % entry)
+            self.lines[-1] += ")"
+        self.lines.append("   (treemap::empty)))")
+        self.blank()
+        self.assert_holds("(%s %s)" % (recognizer, const))
+        self.assert_equal("(treemap::size %s)" % const, len(entries))
+        return const
 
     def assert_holds(self, form):
         """Emit an assertion that FORM is true."""
@@ -541,12 +551,12 @@ def book_derived_core_properties(version, sources):
     parsed = parse_property_file(source)
     book = Book(version, "derived-core-properties",
                 "Properties from DerivedCoreProperties.txt.",
-                [source], ["range-sets"])
+                [source], ["ranges"])
     xid_start = binary_property(source, parsed, "XID_Start")
     xid_continue = binary_property(source, parsed, "XID_Continue")
-    book.range_set("xid-start", xid_start, "XID_Start")
+    book.range_list("xid-start", xid_start, "XID_Start")
     book.rule()
-    book.range_set("xid-continue", xid_continue, "XID_Continue")
+    book.range_list("xid-continue", xid_continue, "XID_Continue")
     return book
 
 
@@ -555,12 +565,12 @@ def book_prop_list(version, sources):
     parsed = parse_property_file(source)
     book = Book(version, "prop-list",
                 "Properties from PropList.txt.",
-                [source], ["range-sets"])
-    book.range_set("pattern-white-space",
+                [source], ["ranges"])
+    book.range_list("pattern-white-space",
                    binary_property(source, parsed, "Pattern_White_Space"),
                    "Pattern_White_Space")
     book.rule()
-    book.range_set("bidi-control",
+    book.range_list("bidi-control",
                    binary_property(source, parsed, "Bidi_Control"),
                    "Bidi_Control")
     return book
@@ -599,26 +609,21 @@ def book_derived_combining_class(version, sources):
     book = Book(version, "derived-combining-class",
                 "Canonical_Combining_Class,"
                 " from extracted/DerivedCombiningClass.txt.",
-                [source], ["range-maps"])
+                [source], ["maps"], ["std/util/defconsts"])
     ccc = combining_classes(sources)
-    ranges = to_range_map(ccc, 0)
-    check_ranges(ranges)
+    entries = [(cp, c) for cp, c in enumerate(ccc) if c != 0]
     book.comment(
-        "The ranges of code points whose Canonical_Combining_Class\n"
-        "is not 0 (Not_Reordered), each with its class.\n"
-        "All the code points that are not in these ranges have class 0:\n"
+        "The map from the code points whose Canonical_Combining_Class\n"
+        "is not 0 (Not_Reordered) to their classes.\n"
+        "All the code points that are not in the map have class 0:\n"
         "that is the file's @missing default, and the generator checks\n"
         "that the code points the file lists with class 0 are not here.\n"
-        "%d ranges, %d code points, %d distinct classes."
-        % (len(ranges), sum(1 for c in ccc if c != 0),
-           len(set(c for c in ccc if c != 0))))
+        "%d code points, %d distinct classes."
+        % (len(entries), len(set(c for _, c in entries))))
     book.blank()
-    const = book.defconst(
-        "canonical-combining-class",
-        ["((%s . %s) . %d)" % (hexcp(lo), hexcp(hi), v)
-         for lo, hi, v in ranges])
-    book.assert_holds("(ccc-range-map-p %s)" % const)
-    book.assert_equal("(len %s)" % const, len(ranges))
+    book.tree_map("canonical-combining-class",
+                  ["(%s . %d)" % (hexcp(cp), c) for cp, c in entries],
+                  True, "combining-class-mapp")
     return book
 
 
@@ -626,7 +631,7 @@ def book_unicode_data(version, sources):
     source = sources["UnicodeData.txt"]
     book = Book(version, "unicode-data",
                 "Decomposition mappings, from UnicodeData.txt.",
-                [source], ["nat-maps"])
+                [source], ["maps"], ["std/util/defconsts"])
     ccc, decomposition, listed = parse_unicode_data(source)
 
     # Cross-check: field 3 against extracted/DerivedCombiningClass.txt.
@@ -673,12 +678,13 @@ def book_unicode_data(version, sources):
 
     book.comment(
         "This file has the Decomposition_Mapping property (field 5 of\n"
-        "UnicodeData.txt), in two tables: one for the canonical mappings\n"
+        "UnicodeData.txt), in two maps: one for the canonical mappings\n"
         "(the ones without a <tag>) and one for the compatibility\n"
         "mappings (the ones with a <tag>; the tag is not recorded here).\n"
-        "Each entry is a list: a code point, then the code points of its\n"
-        "mapping.  The mappings are as in the file: they are not expanded\n"
-        "recursively.  A code point that is in neither table has no\n"
+        "Each map is built from an alist whose entries are lists:\n"
+        "a code point, then the code points of its mapping.\n"
+        "The mappings are as in the file: they are not expanded\n"
+        "recursively.  A code point that is in neither map has no\n"
         "decomposition mapping (that is, it maps to itself), with the\n"
         "exception of the Hangul syllables U+AC00..U+D7A3, whose canonical\n"
         "decompositions are given by an algorithm, not by the file.\n"
@@ -688,17 +694,15 @@ def book_unicode_data(version, sources):
     book.comment("Canonical decomposition mappings: %d entries."
                  % len(canonical))
     book.blank()
-    const = book.defconst("canonical-decomposition", items(canonical))
-    book.assert_holds("(decomposition-map-p %s)" % const)
-    book.assert_equal("(len %s)" % const, len(canonical))
+    book.tree_map("canonical-decomposition-mapping", items(canonical),
+                  True, "decomposition-mapp")
     book.blank()
     book.rule()
     book.comment("Compatibility decomposition mappings: %d entries."
                  % len(compatibility))
     book.blank()
-    const = book.defconst("compatibility-decomposition", items(compatibility))
-    book.assert_holds("(decomposition-map-p %s)" % const)
-    book.assert_equal("(len %s)" % const, len(compatibility))
+    book.tree_map("compatibility-decomposition-mapping",
+                  items(compatibility), True, "decomposition-mapp")
     return book
 
 
@@ -732,14 +736,14 @@ def book_derived_normalization_props(version, sources):
     parsed = parse_property_file(source)
     book = Book(version, "derived-normalization-props",
                 "Properties from DerivedNormalizationProps.txt.",
-                [source], ["range-sets"])
+                [source], ["ranges"])
 
     fce = binary_property(source, parsed, "Full_Composition_Exclusion")
     if fce != full_composition_exclusion_from_primary_data(sources):
         die("Full_Composition_Exclusion in DerivedNormalizationProps.txt"
             " differs from the one computed from CompositionExclusions.txt"
             " and UnicodeData.txt")
-    book.range_set("full-composition-exclusion", fce,
+    book.range_list("full-composition-exclusion", fce,
                    "Full_Composition_Exclusion")
 
     # The quick check properties.  Their default, from the @missing
@@ -757,7 +761,7 @@ def book_derived_normalization_props(version, sources):
         for v, word in [("N", "no"), ("M", "maybe")]:
             if v in values:
                 book.rule()
-                book.range_set("%s-%s" % (name, word),
+                book.range_list("%s-%s" % (name, word),
                                [x == v for x in value],
                                "%s=%s" % (prop, word.capitalize()))
     return book
@@ -768,37 +772,33 @@ def book_derived_bidi_class(version, sources):
     aliases = parse_value_aliases(sources["PropertyValueAliases.txt"])
     book = Book(version, "derived-bidi-class",
                 "Part of Bidi_Class, from extracted/DerivedBidiClass.txt.",
-                [source], ["range-maps"])
+                [source], ["maps"], ["std/util/defconsts"])
     value = enumerated_property(source, parse_property_file(source))
     short = {}
     for v in set(value):
         if ("bc", v) not in aliases:
             die("%s: unknown Bidi_Class %r" % (source.relpath, v))
         short[v] = aliases[("bc", v)][0]
-    # None is the 'default' here: we keep only the nine classes of interest.
-    keep = [short[v] if short[v] in BIDI_EXPLICIT_FORMATTING else None
-            for v in value]
-    ranges = to_range_map(keep, None)
-    check_ranges(ranges)
-    if set(v for _, _, v in ranges) != set(BIDI_EXPLICIT_FORMATTING):
+    # We keep only the nine classes of interest.
+    entries = [(cp, short[v]) for cp, v in enumerate(value)
+               if short[v] in BIDI_EXPLICIT_FORMATTING]
+    if set(v for _, v in entries) != set(BIDI_EXPLICIT_FORMATTING):
         die("%s: some explicit formatting class has no code points"
             % source.relpath)
     book.comment(
-        "The code points whose Bidi_Class is one of the classes of the\n"
-        "explicit directional formatting characters (UAX #9, Sections 2.1\n"
-        "to 2.5), each with its class as a keyword:\n"
+        "The map from the code points whose Bidi_Class is one of the\n"
+        "classes of the explicit directional formatting characters\n"
+        "(UAX #9, Sections 2.1 to 2.5) to their classes:\n"
         "LRE, RLE, LRO, RLO, PDF, LRI, RLI, FSI, PDI.\n"
         "The other values of Bidi_Class are not in this file.\n"
         "The classes are read from the derived file, honoring its\n"
         "@missing lines.\n"
-        "%d ranges." % len(ranges))
+        "%d code points." % len(entries))
     book.blank()
-    const = book.defconst(
-        "bidi-explicit-formatting",
-        ["((%s . %s) . :%s)" % (hexcp(lo), hexcp(hi), v.lower())
-         for lo, hi, v in ranges])
-    book.assert_holds("(bidi-formatting-range-map-p %s)" % const)
-    book.assert_equal("(len %s)" % const, len(ranges))
+    book.tree_map("bidi-formatting-class",
+                  ["(cons %s (bidi-formatting-class-%s))"
+                   % (hexcp(cp), v.lower()) for cp, v in entries],
+                  False, "bidi-formatting-class-mapp")
     return book
 
 

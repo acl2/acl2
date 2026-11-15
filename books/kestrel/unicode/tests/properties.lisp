@@ -78,7 +78,6 @@
 (test (not (xid-continue-p #x1F600 *v16*))) ; GRINNING FACE
 (test (not (xid-continue-p #xD800 *v16*)))
 (test (not (xid-continue-p #x10FFFF *v16*)))
-(test (not (xid-continue-p #x110000 *v16*)))
 
 ; The version matters:
 ; U+088F ARABIC LETTER NOON WITH RING ABOVE was added in Unicode 17.0.0.
@@ -105,9 +104,11 @@
 ; Bidirectional controls.
 
 (test (bidi-control-p #x202E *v16*)) ; RIGHT-TO-LEFT OVERRIDE
-(test (equal (bidi-formatting-class #x202E *v16*) :rlo))
+(test (equal (bidi-formatting-class #x202E *v16*)
+             (bidi-formatting-class-rlo)))
 (test (bidi-explicit-formatting-p #x2066 *v16*)) ; LEFT-TO-RIGHT ISOLATE
-(test (equal (bidi-formatting-class #x2069 *v17*) :pdi))
+(test (equal (bidi-formatting-class #x2069 *v17*)
+             (bidi-formatting-class-pdi)))
 (test (bidi-control-p #x200F *v16*)) ; RIGHT-TO-LEFT MARK is a control ...
 (test (not (bidi-explicit-formatting-p #x200F *v16*))) ; ... but not explicit
 (test (not (bidi-control-p (char-code #\a) *v16*)))
@@ -205,9 +206,15 @@
 
 ; Quick checks.
 
-(test (equal (nfc-quick-check (char-code #\a) *v16*) :yes))
-(test (equal (nfc-quick-check #x0301 *v16*) :maybe))
-(test (equal (nfc-quick-check #x212B *v16*) :no))
-(test (equal (nfd-quick-check #x00E9 *v16*) :no))
-(test (equal (nfd-quick-check #x0301 *v16*) :yes))
-(test (equal (nfkc-quick-check #xFB01 *v16*) :no))
+(test (equal (nfc-quick-check (char-code #\a) *v16*)
+             (quick-check-value-yes)))
+(test (equal (nfc-quick-check #x0301 *v16*)
+             (quick-check-value-maybe)))
+(test (equal (nfc-quick-check #x212B *v16*)
+             (quick-check-value-no)))
+(test (equal (nfd-quick-check #x00E9 *v16*)
+             (quick-check-value-no)))
+(test (equal (nfd-quick-check #x0301 *v16*)
+             (quick-check-value-yes)))
+(test (equal (nfkc-quick-check #xFB01 *v16*)
+             (quick-check-value-no)))

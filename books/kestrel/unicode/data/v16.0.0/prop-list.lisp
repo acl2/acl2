@@ -25,31 +25,29 @@
 
 (in-package "UNICODE")
 
-(include-book "../../range-sets")
+(include-book "../../ranges")
 
 ; Pattern_White_Space: 5 ranges, 11 code points.
 
 (defconst *pattern-white-space-v16.0.0*
-  '((#x0009 . #x000D)
-    (#x0020 . #x0020)
-    (#x0085 . #x0085)
-    (#x200E . #x200F)
-    (#x2028 . #x2029)))
+  (list (range #x0009 #x000D)
+        (range #x0020 #x0020)
+        (range #x0085 #x0085)
+        (range #x200E #x200F)
+        (range #x2028 #x2029)))
 
-(assert-event (range-set-p *pattern-white-space-v16.0.0*))
 (assert-event (equal (len *pattern-white-space-v16.0.0*) 5))
-(assert-event (equal (range-set-count *pattern-white-space-v16.0.0*) 11))
+(assert-event (equal (range-list-size *pattern-white-space-v16.0.0*) 11))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Bidi_Control: 4 ranges, 12 code points.
 
 (defconst *bidi-control-v16.0.0*
-  '((#x061C . #x061C)
-    (#x200E . #x200F)
-    (#x202A . #x202E)
-    (#x2066 . #x2069)))
+  (list (range #x061C #x061C)
+        (range #x200E #x200F)
+        (range #x202A #x202E)
+        (range #x2066 #x2069)))
 
-(assert-event (range-set-p *bidi-control-v16.0.0*))
 (assert-event (equal (len *bidi-control-v16.0.0*) 4))
-(assert-event (equal (range-set-count *bidi-control-v16.0.0*) 12))
+(assert-event (equal (range-list-size *bidi-control-v16.0.0*) 12))

@@ -12,9 +12,8 @@
 
 (include-book "code-points")
 (include-book "versions")
-(include-book "range-sets")
-(include-book "range-maps")
-(include-book "nat-maps")
+(include-book "ranges")
+(include-book "maps")
 (include-book "xid")
 (include-book "pattern-white-space")
 (include-book "bidi-controls")
@@ -120,8 +119,9 @@
      to import their names into another package,
      the file that defines that package has to include
      @('kestrel/unicode/portcullis') first.
-     The property functions take any natural number,
-     so they apply to the code points of another library as they are.
+     The property functions take code points,
+     so a model that has its own type of code points or scalar values
+     needs a theorem that its values are code points of this library.
      See the file @('README.md') for more.")
    (xdoc::h3 "Versions")
    (xdoc::p
@@ -143,9 +143,9 @@
      See the file @('README.md') for how to regenerate the tables
      and how to add a version.")
    (xdoc::p
-    "The tables are sorted lists of ranges of code points,
-     or sorted alists,
-     with invariants that are checked when the books are certified:
+    "The tables are lists of ranges of code points,
+     or tree maps from code points to values,
+     with fixtypes that are checked when the books are certified:
      see @(see tables).")
    (xdoc::h3 "Representation")
    (xdoc::p
@@ -192,36 +192,28 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The data of this library is in tables of three kinds:")
+    "The data of this library is in tables of two kinds:")
    (xdoc::ul
     (xdoc::li
-     "Sets of code points, for the binary properties:
-      see @(see range-sets).")
+     "Lists of ranges of code points, for the binary properties:
+      see @(see ranges).")
     (xdoc::li
-     "Maps from code points to values that many code points share,
-      for the enumerated and numeric properties:
-      see @(see range-maps).")
-    (xdoc::li
-     "Maps from natural numbers to values:
-      see @(see nat-maps)."))
+     "Maps from code points to values, for the other properties:
+      see @(see maps)."))
    (xdoc::p
-    "Each kind has a recognizer,
-     which includes the invariant that the table is sorted
-     and has no overlapping or duplicate entries.
-     Every generated table is checked against its recognizer
+    "Both kinds are fixtypes:
+     a range is a product of two code points,
+     and the maps are @(see treemap::treemap)s
+     whose keys and values have fixtypes.
+     Every generated table is built with the constructors of its type,
      in the book that defines it,
      and the tables that are computed from the generated ones
-     are checked in the same way.
-     For each table, and each kind of table,
-     there is a function that selects the table of a version of Unicode,
-     with a theorem that says that the result satisfies the recognizer;
-     the lookup functions are verified against those theorems.")
+     are checked against the recognizers of their types.
+     For each table
+     there is a function that selects the table of a version of Unicode
+     and that returns a value of the type.")
    (xdoc::p
-    "Lookups are linear in the size of the table in the worst case,
-     but they stop early, thanks to the sorting:
-     they are fast for small code points, in particular for ASCII.
-     Faster structures could replace the lists, behind the same functions,
-     if a use needs them."))
-  :order-subtopics (range-sets
-                    range-maps
-                    nat-maps))
+    "Membership in a list of ranges takes time linear in the number of ranges.
+     A lookup in a map takes time logarithmic in the size of the map."))
+  :order-subtopics (ranges
+                    maps))

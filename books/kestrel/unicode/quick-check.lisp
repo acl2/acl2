@@ -11,7 +11,7 @@
 (in-package "UNICODE")
 
 (include-book "versions")
-(include-book "range-sets")
+(include-book "ranges")
 
 (include-book "data/v16.0.0/derived-normalization-props")
 (include-book "data/v17.0.0/derived-normalization-props")
@@ -57,80 +57,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define quick-check-value-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize the values of the quick check properties."
-  (and (member-eq x '(:yes :no :maybe)) t))
+(fty::deftagsum quick-check-value
+  :short "Fixtype of the values of the quick check properties."
+  (:yes ())
+  (:no ())
+  (:maybe ())
+  :pred quick-check-value-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nfd-quick-check-no-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfd-quick-check-no-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFD_Quick_Check') is `no',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfd-quick-check-no-v16.0.0*
-                :v17.0.0 *nfd-quick-check-no-v17.0.0*))
+                :v17.0.0 *nfd-quick-check-no-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nfc-quick-check-no-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfc-quick-check-no-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFC_Quick_Check') is `no',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfc-quick-check-no-v16.0.0*
-                :v17.0.0 *nfc-quick-check-no-v17.0.0*))
+                :v17.0.0 *nfc-quick-check-no-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nfc-quick-check-maybe-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfc-quick-check-maybe-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFC_Quick_Check') is `maybe',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfc-quick-check-maybe-v16.0.0*
-                :v17.0.0 *nfc-quick-check-maybe-v17.0.0*))
+                :v17.0.0 *nfc-quick-check-maybe-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nfkd-quick-check-no-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfkd-quick-check-no-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFKD_Quick_Check') is `no',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkd-quick-check-no-v16.0.0*
-                :v17.0.0 *nfkd-quick-check-no-v17.0.0*))
+                :v17.0.0 *nfkd-quick-check-no-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nfkc-quick-check-no-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfkc-quick-check-no-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFKC_Quick_Check') is `no',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkc-quick-check-no-v16.0.0*
-                :v17.0.0 *nfkc-quick-check-no-v17.0.0*))
+                :v17.0.0 *nfkc-quick-check-no-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define nfkc-quick-check-maybe-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define nfkc-quick-check-maybe-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           whose @('NFKC_Quick_Check') is `maybe',
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkc-quick-check-maybe-v16.0.0*
-                :v17.0.0 *nfkc-quick-check-maybe-v17.0.0*))
+                :v17.0.0 *nfkc-quick-check-maybe-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nfd-quick-check ((cp natp) (ver versionp))
+(define nfd-quick-check ((cp code-point-p) (ver versionp))
   :returns (value quick-check-value-p)
   :short "The @('NFD_Quick_Check') of a code point,
           in a version of Unicode."
@@ -138,22 +146,27 @@
   (xdoc::topstring
    (xdoc::p
     "For this form the value is never `maybe'."))
-  (cond ((in-range-set-p cp (nfd-quick-check-no-set ver)) :no)
-        (t :yes)))
+  (cond ((code-point-in-ranges-p cp (nfd-quick-check-no-ranges ver))
+         (quick-check-value-no))
+        (t (quick-check-value-yes)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nfc-quick-check ((cp natp) (ver versionp))
+(define nfc-quick-check ((cp code-point-p) (ver versionp))
   :returns (value quick-check-value-p)
   :short "The @('NFC_Quick_Check') of a code point,
           in a version of Unicode."
-  (cond ((in-range-set-p cp (nfc-quick-check-no-set ver)) :no)
-        ((in-range-set-p cp (nfc-quick-check-maybe-set ver)) :maybe)
-        (t :yes)))
+  (cond ((code-point-in-ranges-p cp (nfc-quick-check-no-ranges ver))
+         (quick-check-value-no))
+        ((code-point-in-ranges-p cp (nfc-quick-check-maybe-ranges ver))
+         (quick-check-value-maybe))
+        (t (quick-check-value-yes)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nfkd-quick-check ((cp natp) (ver versionp))
+(define nfkd-quick-check ((cp code-point-p) (ver versionp))
   :returns (value quick-check-value-p)
   :short "The @('NFKD_Quick_Check') of a code point,
           in a version of Unicode."
@@ -161,15 +174,20 @@
   (xdoc::topstring
    (xdoc::p
     "For this form the value is never `maybe'."))
-  (cond ((in-range-set-p cp (nfkd-quick-check-no-set ver)) :no)
-        (t :yes)))
+  (cond ((code-point-in-ranges-p cp (nfkd-quick-check-no-ranges ver))
+         (quick-check-value-no))
+        (t (quick-check-value-yes)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define nfkc-quick-check ((cp natp) (ver versionp))
+(define nfkc-quick-check ((cp code-point-p) (ver versionp))
   :returns (value quick-check-value-p)
   :short "The @('NFKC_Quick_Check') of a code point,
           in a version of Unicode."
-  (cond ((in-range-set-p cp (nfkc-quick-check-no-set ver)) :no)
-        ((in-range-set-p cp (nfkc-quick-check-maybe-set ver)) :maybe)
-        (t :yes)))
+  (cond ((code-point-in-ranges-p cp (nfkc-quick-check-no-ranges ver))
+         (quick-check-value-no))
+        ((code-point-in-ranges-p cp (nfkc-quick-check-maybe-ranges ver))
+         (quick-check-value-maybe))
+        (t (quick-check-value-yes)))
+  :hooks (:fix))
