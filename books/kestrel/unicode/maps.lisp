@@ -123,11 +123,20 @@
    (xdoc::p
     "These are nine of the values of the @('Bidi_Class') property
      [UAX #9, Table 4]:
-     the classes of the embeddings (@('LRE') and @('RLE')),
-     of the overrides (@('LRO') and @('RLO')),
-     of the character that ends them (@('PDF')),
-     of the isolates (@('LRI'), @('RLI') and @('FSI')),
-     and of the character that ends those (@('PDI'))."))
+     the classes of the embeddings
+     (@('LRE'), Left-to-Right Embedding,
+     and @('RLE'), Right-to-Left Embedding),
+     of the overrides
+     (@('LRO'), Left-to-Right Override,
+     and @('RLO'), Right-to-Left Override),
+     of the character that ends them
+     (@('PDF'), Pop Directional Format),
+     of the isolates
+     (@('LRI'), Left-to-Right Isolate,
+     @('RLI'), Right-to-Left Isolate,
+     and @('FSI'), First Strong Isolate),
+     and of the character that ends those
+     (@('PDI'), Pop Directional Isolate)."))
   (:lre ())
   (:rle ())
   (:lro ())
