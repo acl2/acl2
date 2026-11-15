@@ -526,6 +526,21 @@
              (scalar-value-listp (decompose cps compat ver)))
     :induct t)
 
+  (defrule consp-of-decompose
+    (equal (consp (decompose cps compat ver))
+           (consp cps))
+    :induct t)
+
+  (defrule decompose-under-iff
+    (iff (decompose cps compat ver)
+         (consp cps)))
+
+  (defrule decompose-of-append
+    (equal (decompose (append cps1 cps2) compat ver)
+           (append (decompose cps1 compat ver)
+                   (decompose cps2 compat ver)))
+    :induct (decompose cps1 compat ver))
+
   (defruled decompose-when-all-below-a0
     (implies (and (code-point-listp cps)
                   (code-points-below-p cps #xA0))
@@ -543,14 +558,21 @@
           in a version of Unicode."
   (equal (decomposition cp compat ver)
          (list (code-point-fix cp)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled decomposition-when-undecomposable-p
+    (implies (undecomposable-p cp compat ver)
+             (equal (decomposition cp compat ver)
+                    (list (code-point-fix cp))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define undecomposable-listp ((cps code-point-listp)
-                              (compat booleanp)
-                              (ver versionp))
-  :returns (yes/no booleanp)
+(std::deflist undecomposable-listp (x compat ver)
+  :guard (and (code-point-listp x)
+              (booleanp compat)
+              (versionp ver))
   :short "Check if every code point of a list is its own
           canonical or compatibility decomposition,
           in a version of Unicode."
@@ -559,30 +581,15 @@
    (xdoc::p
     "That is, check if the list is fully decomposed:
      decomposing it leaves it unchanged."))
-  (or (endp cps)
-      (and (undecomposable-p (car cps) compat ver)
-           (undecomposable-listp (cdr cps) compat ver)))
-  :hooks nil ; done below
+  (undecomposable-p x compat ver)
 
   ///
 
   (fty::deffixequiv undecomposable-listp
+    :args ((x code-point-listp) (compat booleanp) (ver versionp))
     :hints (("Goal"
-             :induct (undecomposable-listp cps compat ver)
-             :expand ((undecomposable-listp (code-point-list-fix cps)
-                                            compat
-                                            ver))
+             :induct (undecomposable-listp x compat ver)
              :in-theory (enable undecomposable-listp))))
-
-  (defrule undecomposable-listp-when-not-consp
-    (implies (not (consp cps))
-             (undecomposable-listp cps compat ver)))
-
-  (defrule undecomposable-listp-of-append
-    (equal (undecomposable-listp (append cps1 cps2) compat ver)
-           (and (undecomposable-listp cps1 compat ver)
-                (undecomposable-listp cps2 compat ver)))
-    :induct t)
 
   (defrule decompose-when-undecomposable-listp
     (implies (undecomposable-listp cps compat ver)
@@ -733,3 +740,128 @@
              (undecomposable-listp cps nil ver))
     :induct t
     :enable undecomposable-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decomposition-of-decomposition-mapping
+  :short "The decomposition of a code point
+          is the decomposition of its decomposition mapping."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is how the standard defines the full decompositions:
+     by applying the decomposition mappings recursively
+     [Unicode, D68] [Unicode, D65].
+     A canonical mapping is expanded in both kinds of decomposition;
+     a compatibility mapping only in the compatibility decomposition.")
+   (xdoc::p
+    "We prove it by checking it on every code point,
+     for each table of mappings and each table of decompositions
+     of each version."))
+
+  (defrulel true-listp-of-decomposition-map-lookup
+    (scalar-value-listp (decomposition-map-lookup cp map))
+    :rule-classes ((:type-prescription
+                    :corollary (true-listp (decomposition-map-lookup cp map)))))
+
+  ;; The decomposition of a list of code points,
+  ;; with a given table of decompositions.
+
+  (local
+   (define decompose-with ((cps scalar-value-listp) (full decomposition-mapp))
+     :returns (new-cps true-listp :hints (("Goal" :induct t)))
+     (b* (((when (endp cps)) nil)
+          (cp (scalar-value-fix (car cps))))
+       (append (if (hangul-syllable-p cp)
+                   (hangul-syllable-decomposition cp)
+                 (or (decomposition-map-lookup cp full)
+                     (list cp)))
+               (decompose-with (cdr cps) full)))
+     :hooks nil))
+
+  (defrulel decompose-with-of-canonical-decompositions
+    (implies (scalar-value-listp cps)
+             (equal (decompose-with cps (canonical-decompositions ver))
+                    (decompose cps nil ver)))
+    :induct t
+    :enable (decompose-with
+             decompose
+             decomposition))
+
+  (defrulel decompose-with-of-compatibility-decompositions
+    (implies (scalar-value-listp cps)
+             (equal (decompose-with cps (compatibility-decompositions ver))
+                    (decompose cps t ver)))
+    :induct t
+    :enable (decompose-with
+             decompose
+             decomposition))
+
+  ;; What is checked for a code point,
+  ;; with a table of mappings and a table of decompositions.
+
+  (local
+   (define equation-ok ((cp code-point-p)
+                        (mappings decomposition-mapp)
+                        (full decomposition-mapp))
+     :returns (yes/no booleanp)
+     (b* ((cp (code-point-fix cp))
+          (mapping (if (hangul-syllable-p cp)
+                       (hangul-syllable-decomposition-mapping cp)
+                     (decomposition-map-lookup cp mappings))))
+       (or (not mapping)
+           (equal (if (hangul-syllable-p cp)
+                      (hangul-syllable-decomposition cp)
+                    (decomposition-map-lookup cp full))
+                  (decompose-with mapping full))))
+     :hooks nil))
+
+  (local
+   (std::deflist equation-ok-listp (x mappings full)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp mappings)
+                 (decomposition-mapp full))
+     (equation-ok x mappings full)))
+
+  (defrulel equation-ok-listp-of-all-code-points-when-canonical
+    (equation-ok-listp (all-code-points)
+                       (canonical-mappings ver)
+                       (if compat
+                           (compatibility-decompositions ver)
+                         (canonical-decompositions ver)))
+    :enable (canonical-mappings
+             canonical-decompositions
+             compatibility-decompositions
+             (:e all-code-points))
+    :disable equation-ok-listp-of-cons)
+
+  (defrulel equation-ok-listp-of-all-code-points-when-compatibility
+    (equation-ok-listp (all-code-points)
+                       (compatibility-mappings ver)
+                       (compatibility-decompositions ver))
+    :enable (compatibility-mappings
+             compatibility-decompositions
+             (:e all-code-points))
+    :disable equation-ok-listp-of-cons)
+
+  (defruled decomposition-when-decomposition-mapping
+    (b* (((mv canonical mapping) (decomposition-mapping cp ver)))
+      (implies (and mapping
+                    (or canonical compat))
+               (equal (decomposition cp compat ver)
+                      (decompose mapping compat ver))))
+    :enable (decomposition-mapping
+             decomposition
+             equation-ok)
+    :use ((:instance equation-ok-when-member-equal-of-equation-ok-listp
+                     (acl2::a (code-point-fix cp))
+                     (x (all-code-points))
+                     (mappings (canonical-mappings ver))
+                     (full (if compat
+                               (compatibility-decompositions ver)
+                             (canonical-decompositions ver))))
+          (:instance equation-ok-when-member-equal-of-equation-ok-listp
+                     (acl2::a (code-point-fix cp))
+                     (x (all-code-points))
+                     (mappings (compatibility-mappings ver))
+                     (full (compatibility-decompositions ver))))))
