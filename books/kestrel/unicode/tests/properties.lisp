@@ -157,6 +157,11 @@
 ; and U+D558 is the syllable HA.
 
 (test (hangul-syllable-p #xD55C))
+(test (hangul-syllable-p #xAC00)) ; the first syllable
+(test (hangul-syllable-p #xD7A3)) ; the last syllable
+(test (not (hangul-syllable-p #xD7A4)))
+(test (hangul-lv-syllable-p #xD558))
+(test (not (hangul-lv-syllable-p #xD55C)))
 (test (equal (hangul-syllable-decomposition #xD55C) '(#x1112 #x1161 #x11AB)))
 (test (equal (hangul-syllable-decomposition-mapping #xD55C) '(#xD558 #x11AB)))
 (test (equal (hangul-syllable-decomposition #xD558) '(#x1112 #x1161)))

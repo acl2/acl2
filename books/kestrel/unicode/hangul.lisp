@@ -75,85 +75,146 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-syllable-p ((cp code-point-p))
+(define hangul-syllable-p (x)
   :returns (yes/no booleanp)
-  :short "Check if a code point is a precomposed Hangul syllable."
-  (b* ((cp (code-point-fix cp)))
-    (and (<= *hangul-s-base* cp)
-         (< cp (+ *hangul-s-base* *hangul-s-count*))))
+  :short "Recognize precomposed Hangul syllables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the code points
+     from @('SBase') to @('SBase + SCount - 1'),
+     i.e. from @('#xAC00') to @('#xD7A3').
+     They are scalar values."))
+  (and (code-point-p x)
+       (<= *hangul-s-base* x)
+       (< x (+ *hangul-s-base* *hangul-s-count*)))
 
   ///
 
   (defrule scalar-value-p-when-hangul-syllable-p
-    (implies (and (hangul-syllable-p cp)
-                  (code-point-p cp))
-             (scalar-value-p cp))
+    (implies (hangul-syllable-p x)
+             (scalar-value-p x))
     :enable scalar-value-p-alt-def
-    :disable scalar-value-p))
+    :disable scalar-value-p)
+
+  (defrule natp-when-hangul-syllable-p
+    (implies (hangul-syllable-p x)
+             (natp x))
+    :rule-classes :compound-recognizer))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-l-p ((cp code-point-p))
-  :returns (yes/no booleanp)
-  :short "Check if a code point is a leading consonant
-          that the Hangul syllable algorithms use."
-  (b* ((cp (code-point-fix cp)))
-    (and (<= *hangul-l-base* cp)
-         (< cp (+ *hangul-l-base* *hangul-l-count*)))))
+(std::deffixer hangul-syllable-fix
+  :short "Fixer for @(tsee hangul-syllable-p)."
+  :pred hangul-syllable-p
+  :body-fix #xAC00)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-v-p ((cp code-point-p))
-  :returns (yes/no booleanp)
-  :short "Check if a code point is a vowel
-          that the Hangul syllable algorithms use."
-  (b* ((cp (code-point-fix cp)))
-    (and (<= *hangul-v-base* cp)
-         (< cp (+ *hangul-v-base* *hangul-v-count*)))))
+(defsection hangul-syllable
+  :short "Fixtype of precomposed Hangul syllables."
+  (fty::deffixtype hangul-syllable
+    :pred hangul-syllable-p
+    :fix hangul-syllable-fix
+    :equiv hangul-syllable-equiv
+    :define t)
+
+  (defrule hangul-syllable-fix-bounds
+    (and (<= #xAC00 (hangul-syllable-fix x))
+         (<= (hangul-syllable-fix x) #xD7A3))
+    :rule-classes :linear
+    :enable (hangul-syllable-fix
+             hangul-syllable-p)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-t-p ((cp code-point-p))
+(fty::defoption hangul-syllable-option
+  hangul-syllable
+  :short "Fixtype of optional precomposed Hangul syllables."
+  :pred hangul-syllable-option-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hangul-l-p (x)
   :returns (yes/no booleanp)
-  :short "Check if a code point is a trailing consonant
+  :short "Recognize the leading consonants
           that the Hangul syllable algorithms use."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The code point @('TBase') itself is not a trailing consonant:
-     the index 0 stands for the absence of a trailing consonant."))
-  (b* ((cp (code-point-fix cp)))
-    (and (< *hangul-t-base* cp)
-         (< cp (+ *hangul-t-base* *hangul-t-count*)))))
+    "These are the code points
+     from @('LBase') to @('LBase + LCount - 1'),
+     i.e. from @('#x1100') to @('#x1112')."))
+  (and (code-point-p x)
+       (<= *hangul-l-base* x)
+       (< x (+ *hangul-l-base* *hangul-l-count*))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-lv-syllable-p ((cp code-point-p))
+(define hangul-v-p (x)
   :returns (yes/no booleanp)
-  :short "Check if a code point is a precomposed Hangul syllable
+  :short "Recognize the vowels
+          that the Hangul syllable algorithms use."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the code points
+     from @('VBase') to @('VBase + VCount - 1'),
+     i.e. from @('#x1161') to @('#x1175')."))
+  (and (code-point-p x)
+       (<= *hangul-v-base* x)
+       (< x (+ *hangul-v-base* *hangul-v-count*))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hangul-t-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the trailing consonants
+          that the Hangul syllable algorithms use."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the code points
+     from @('TBase + 1') to @('TBase + TCount - 1'),
+     i.e. from @('#x11A8') to @('#x11C2').
+     The code point @('TBase') itself is not a trailing consonant:
+     the index 0 stands for the absence of a trailing consonant."))
+  (and (code-point-p x)
+       (< *hangul-t-base* x)
+       (< x (+ *hangul-t-base* *hangul-t-count*))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define hangul-lv-syllable-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the precomposed Hangul syllables
           without trailing consonant."
-  (b* ((cp (code-point-fix cp)))
-    (and (hangul-syllable-p cp)
-         (equal (mod (- cp *hangul-s-base*) *hangul-t-count*) 0)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the precomposed syllables whose @('TIndex') is 0."))
+  (and (hangul-syllable-p x)
+       (equal (mod (- x *hangul-s-base*) *hangul-t-count*) 0))
 
   ///
 
   (defrule hangul-syllable-p-when-hangul-lv-syllable-p
-    (implies (hangul-lv-syllable-p cp)
-             (hangul-syllable-p cp))))
+    (implies (hangul-lv-syllable-p x)
+             (hangul-syllable-p x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-syllable-decomposition ((s code-point-p))
-  :guard (hangul-syllable-p s)
+(define hangul-syllable-decomposition ((s hangul-syllable-p))
   :returns (jamos true-listp :rule-classes :type-prescription)
   :short "The full canonical decomposition of a precomposed Hangul syllable."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the list of the leading consonant, of the vowel,
-     and of the trailing consonant if there is one."))
-  (b* ((s-index (- (code-point-fix s) *hangul-s-base*))
+     and of the trailing consonant if there is one.
+     They are scalar values:
+     see @(see hangul-theorems)."))
+  (b* ((s-index (- (hangul-syllable-fix s) *hangul-s-base*))
        (l (+ *hangul-l-base* (floor s-index *hangul-n-count*)))
        (v (+ *hangul-v-base* (floor (mod s-index *hangul-n-count*)
                                     *hangul-t-count*)))
@@ -171,8 +232,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define hangul-syllable-decomposition-mapping ((s code-point-p))
-  :guard (hangul-syllable-p s)
+(define hangul-syllable-decomposition-mapping ((s hangul-syllable-p))
   :returns (mapping true-listp :rule-classes :type-prescription)
   :short "The canonical decomposition mapping
           of a precomposed Hangul syllable."
@@ -188,7 +248,7 @@
      gives its full decomposition;
      see @(tsee hangul-syllable-decomposition).
      Normalization uses the full decomposition directly."))
-  (b* ((s (code-point-fix s))
+  (b* ((s (hangul-syllable-fix s))
        (s-index (- s *hangul-s-base*))
        (t-index (mod s-index *hangul-t-count*)))
     (if (equal t-index 0)
@@ -218,7 +278,9 @@
    (xdoc::p
     "A leading consonant and a vowel compose to an LV syllable.
      An LV syllable and a trailing consonant compose to an LVT syllable.
-     For any other pair of code points, the result is @('nil')."))
+     For any other pair of code points, the result is @('nil').
+     That the result is an optional precomposed syllable
+     is one of the @(see hangul-theorems)."))
   (b* ((first (code-point-fix first))
        (second (code-point-fix second)))
     (cond ((and (hangul-l-p first)
@@ -239,7 +301,10 @@
     (implies (and (not (hangul-v-p second))
                   (not (hangul-t-p second)))
              (equal (hangul-composition first second)
-                    nil))))
+                    nil))
+    :enable (hangul-v-p
+             hangul-t-p
+             code-point-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -263,7 +328,14 @@
      for an LV syllable it is the decomposition;
      for an LVT syllable it is
      the LV syllable that the first two jamo of the decomposition compose to,
-     followed by the third jamo.")
+     followed by the third jamo.
+     Conversely, two code points that compose
+     are the decomposition mapping of the syllable they compose to.")
+   (xdoc::p
+    "The functions that take a syllable fix it,
+     so the theorems about them have no hypotheses;
+     where a theorem says that the syllable is obtained back,
+     it is @('(hangul-syllable-fix s)') that is obtained.")
    (xdoc::p
     "There are only 11,172 precomposed syllables,
      so we prove the facts about each of them by checking them all,
@@ -272,11 +344,11 @@
      @('hangul-syllable-facts-p') says what is checked
      for one syllable."))
 
-  (define hangul-syllable-facts-p ((s code-point-p))
-    :guard (hangul-syllable-p s)
+  (define hangul-syllable-facts-p ((s hangul-syllable-p))
     :returns (yes/no booleanp)
     :parents nil
-    (b* ((jamos (hangul-syllable-decomposition s))
+    (b* ((s (hangul-syllable-fix s))
+         (jamos (hangul-syllable-decomposition s))
          ((unless (and (scalar-value-listp jamos)
                        (or (equal (len jamos) 2)
                            (equal (len jamos) 3))))
@@ -300,17 +372,16 @@
                        (equal (len mapping) 2)
                        (equal (hangul-composition (first mapping)
                                                   (second mapping))
-                              (code-point-fix s))))
+                              s)))
           nil))
       (if (equal (len jamos) 3)
           (b* ((tt (third jamos)))
             (and (hangul-t-p tt)
-                 (equal (hangul-composition lv tt) (code-point-fix s))
+                 (equal (hangul-composition lv tt) s)
                  (equal mapping (list lv tt))))
-        (and (equal lv (code-point-fix s))
+        (and (equal lv s)
              (equal mapping jamos))))
-    :guard-hints (("Goal" :in-theory (enable len)))
-    :hooks nil)
+    :guard-hints (("Goal" :in-theory (enable len))))
 
   (define hangul-syllable-facts-below-p ((n natp))
     :guard (<= n *hangul-s-count*)
@@ -332,80 +403,70 @@
                (hangul-syllable-facts-p (+ *hangul-s-base* i)))
       :induct t))
 
-  (defruled hangul-syllable-facts-p-when-hangul-syllable-p
-    (implies (hangul-syllable-p s)
-             (hangul-syllable-facts-p (code-point-fix s)))
-    :enable hangul-syllable-p
+  (defruled hangul-syllable-facts-p-holds
+    (hangul-syllable-facts-p s)
     :use (:instance hangul-syllable-facts-p-when-below
                     (n *hangul-s-count*)
-                    (i (- (code-point-fix s) *hangul-s-base*))))
+                    (i (- (hangul-syllable-fix s) *hangul-s-base*))))
 
   (defrule scalar-value-listp-of-hangul-syllable-decomposition
-    (implies (hangul-syllable-p s)
-             (scalar-value-listp (hangul-syllable-decomposition s)))
-    :use hangul-syllable-facts-p-when-hangul-syllable-p
+    (scalar-value-listp (hangul-syllable-decomposition s))
+    :use hangul-syllable-facts-p-holds
     :enable hangul-syllable-facts-p)
 
   (defruled hangul-syllable-decomposition-jamos
-    (implies (hangul-syllable-p s)
-             (b* ((jamos (hangul-syllable-decomposition s)))
-               (and (hangul-l-p (first jamos))
-                    (hangul-v-p (second jamos))
-                    (or (equal (len jamos) 2)
-                        (and (equal (len jamos) 3)
-                             (hangul-t-p (third jamos)))))))
-    :use hangul-syllable-facts-p-when-hangul-syllable-p
+    (b* ((jamos (hangul-syllable-decomposition s)))
+      (and (hangul-l-p (first jamos))
+           (hangul-v-p (second jamos))
+           (or (equal (len jamos) 2)
+               (and (equal (len jamos) 3)
+                    (hangul-t-p (third jamos))))))
+    :use hangul-syllable-facts-p-holds
     :enable hangul-syllable-facts-p)
 
   (defruled hangul-composition-of-hangul-syllable-decomposition
-    (implies (and (hangul-syllable-p s)
-                  (code-point-p s))
-             (b* ((jamos (hangul-syllable-decomposition s))
-                  (lv (hangul-composition (first jamos) (second jamos))))
-               (equal (if (equal (len jamos) 3)
-                          (hangul-composition lv (third jamos))
-                        lv)
-                      s)))
-    :use hangul-syllable-facts-p-when-hangul-syllable-p
+    (b* ((jamos (hangul-syllable-decomposition s))
+         (lv (hangul-composition (first jamos) (second jamos))))
+      (equal (if (equal (len jamos) 3)
+                 (hangul-composition lv (third jamos))
+               lv)
+             (hangul-syllable-fix s)))
+    :use hangul-syllable-facts-p-holds
     :enable hangul-syllable-facts-p)
 
   (defrule scalar-value-listp-of-hangul-syllable-decomposition-mapping
-    (implies (hangul-syllable-p s)
-             (scalar-value-listp (hangul-syllable-decomposition-mapping s)))
-    :use hangul-syllable-facts-p-when-hangul-syllable-p
+    (scalar-value-listp (hangul-syllable-decomposition-mapping s))
+    :use hangul-syllable-facts-p-holds
     :enable hangul-syllable-facts-p)
 
   (defruled hangul-syllable-decomposition-mapping-alt-def
-    (implies (hangul-syllable-p s)
-             (equal (hangul-syllable-decomposition-mapping s)
-                    (b* ((jamos (hangul-syllable-decomposition s)))
-                      (if (equal (len jamos) 3)
-                          (list (hangul-composition (first jamos)
-                                                    (second jamos))
-                                (third jamos))
-                        jamos))))
-    :use (hangul-syllable-facts-p-when-hangul-syllable-p
+    (equal (hangul-syllable-decomposition-mapping s)
+           (b* ((jamos (hangul-syllable-decomposition s)))
+             (if (equal (len jamos) 3)
+                 (list (hangul-composition (first jamos)
+                                           (second jamos))
+                       (third jamos))
+               jamos)))
+    :use (hangul-syllable-facts-p-holds
           scalar-value-listp-of-hangul-syllable-decomposition)
     :enable hangul-syllable-facts-p
     :disable scalar-value-listp-of-hangul-syllable-decomposition)
 
   (defruled hangul-composition-of-hangul-syllable-decomposition-mapping
-    (implies (and (hangul-syllable-p s)
-                  (code-point-p s))
-             (b* ((mapping (hangul-syllable-decomposition-mapping s)))
-               (equal (hangul-composition (first mapping) (second mapping))
-                      s)))
-    :use (hangul-syllable-facts-p-when-hangul-syllable-p
+    (b* ((mapping (hangul-syllable-decomposition-mapping s)))
+      (equal (hangul-composition (first mapping) (second mapping))
+             (hangul-syllable-fix s)))
+    :use (hangul-syllable-facts-p-holds
           scalar-value-listp-of-hangul-syllable-decomposition-mapping)
     :enable hangul-syllable-facts-p
     :disable scalar-value-listp-of-hangul-syllable-decomposition-mapping)
 
-  (defrule hangul-syllable-p-of-hangul-composition
-    (implies (hangul-composition first second)
-             (hangul-syllable-p (hangul-composition first second)))
-    :use (:instance hangul-syllable-facts-p-when-hangul-syllable-p
+  (defrule hangul-syllable-option-p-of-hangul-composition
+    (hangul-syllable-option-p (hangul-composition first second))
+    :use (:instance hangul-syllable-facts-p-holds
                     (s (code-point-fix first)))
-    :enable (hangul-composition
+    :enable (hangul-syllable-option-p
+             hangul-composition
              hangul-syllable-facts-p
              hangul-syllable-p
              hangul-lv-syllable-p
@@ -414,22 +475,20 @@
              hangul-t-p
              code-point-p))
 
-  (defrule code-point-p-of-hangul-composition
+  (defrule hangul-syllable-p-of-hangul-composition
     (implies (hangul-composition first second)
-             (code-point-p (hangul-composition first second)))
-    :enable (hangul-composition
-             hangul-syllable-p
-             hangul-lv-syllable-p
-             hangul-l-p
-             hangul-v-p
-             hangul-t-p
-             code-point-p))
+             (hangul-syllable-p (hangul-composition first second)))
+    :use hangul-syllable-option-p-of-hangul-composition
+    :enable hangul-syllable-option-p
+    :disable hangul-syllable-option-p-of-hangul-composition)
 
   (defrule scalar-value-p-of-hangul-composition
     (implies (hangul-composition first second)
-             (scalar-value-p (hangul-composition first second)))
-    :use hangul-syllable-p-of-hangul-composition
-    :disable hangul-syllable-p-of-hangul-composition)
+             (scalar-value-p (hangul-composition first second))))
+
+  (defrule code-point-p-of-hangul-composition
+    (implies (hangul-composition first second)
+             (code-point-p (hangul-composition first second))))
 
   (defrule scalar-value-option-p-of-hangul-composition
     (scalar-value-option-p (hangul-composition first second))
