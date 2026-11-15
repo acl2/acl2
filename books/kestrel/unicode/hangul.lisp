@@ -12,6 +12,8 @@
 
 (include-book "code-points")
 
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+
 (acl2::controlled-configuration)
 
 (local (in-theory (enable nfix natp fix)))
@@ -431,4 +433,70 @@
 
   (defrule scalar-value-option-p-of-hangul-composition
     (scalar-value-option-p (hangul-composition first second))
-    :enable scalar-value-option-p))
+    :enable scalar-value-option-p)
+
+  ;; The converse of the composition of the decomposition mapping:
+  ;; if two code points compose,
+  ;; they are the decomposition mapping of the syllable they compose to.
+  ;; We prove it by checking every pair of code points
+  ;; whose first one is from the first leading consonant to the last syllable
+  ;; and whose second one is from the first vowel
+  ;; to the last trailing consonant;
+  ;; every pair that composes is one of these.
+
+  (local
+   (define pair-ok ((first code-point-p) (second code-point-p))
+     :returns (yes/no booleanp)
+     (b* ((s (hangul-composition first second)))
+       (or (not s)
+           (equal (hangul-syllable-decomposition-mapping s)
+                  (list (code-point-fix first)
+                        (code-point-fix second)))))
+     :hooks nil))
+
+  (local
+   (std::deflist pair-ok-listp (x first)
+     :guard (and (code-point-listp x)
+                 (code-point-p first))
+     (pair-ok first x)))
+
+  (local
+   (define pairs-ok ((first code-point-p) (seconds code-point-listp))
+     :returns (yes/no booleanp)
+     (pair-ok-listp seconds first)
+     :hooks nil))
+
+  (local
+   (std::deflist pairs-ok-listp (x seconds)
+     :guard (and (code-point-listp x)
+                 (code-point-listp seconds))
+     (pairs-ok x seconds)))
+
+  (defrulel pairs-ok-listp-of-all-firsts-and-seconds
+    (pairs-ok-listp (integers-from-to #x1100 #xD7A3)
+                    (integers-from-to #x1161 #x11C2)))
+
+  (defrule hangul-syllable-decomposition-mapping-of-hangul-composition
+    (implies (hangul-composition first second)
+             (equal (hangul-syllable-decomposition-mapping
+                     (hangul-composition first second))
+                    (list (code-point-fix first)
+                          (code-point-fix second))))
+    :enable (pair-ok
+             pairs-ok
+             hangul-composition
+             hangul-syllable-p
+             hangul-lv-syllable-p
+             hangul-l-p
+             hangul-v-p
+             hangul-t-p)
+    :disable ((:e integers-from-to))
+    :use ((:instance pairs-ok-when-member-equal-of-pairs-ok-listp
+                     (acl2::a (code-point-fix first))
+                     (x (integers-from-to #x1100 #xD7A3))
+                     (seconds (integers-from-to #x1161 #x11C2)))
+          (:instance pair-ok-when-member-equal-of-pair-ok-listp
+                     (acl2::a (code-point-fix second))
+                     (x (integers-from-to #x1161 #x11C2))
+                     (first (code-point-fix first)))
+          pairs-ok-listp-of-all-firsts-and-seconds)))

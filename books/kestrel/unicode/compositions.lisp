@@ -295,54 +295,7 @@
   (defrule code-point-p-of-composition
     (implies (composition first second ver)
              (code-point-p (composition first second ver)))
-    :disable composition)
-
-  ;; We prove the next theorem by checking, for each version,
-  ;; that the second code point of every pair in the map
-  ;; is not below #x300.
-  ;; The check is that the map has a type like the one above,
-  ;; but whose keys are restricted to such pairs.
-
-  (local
-   (define later-pair-p (x)
-     :returns (yes/no booleanp)
-     (and (code-point-pair-p x)
-          (<= #x300 (code-point-pair->second x)))))
-
-  (local
-   (std::deffixer later-pair-fix
-     :pred later-pair-p
-     :body-fix (code-point-pair 0 #x300)))
-
-  (local
-   (fty::deffixtype later-pair
-     :pred later-pair-p
-     :fix later-pair-fix
-     :equiv later-pair-equiv
-     :define t))
-
-  (local
-   (fty::deftreemap later-composition-map
-     :key-type later-pair
-     :val-type scalar-value
-     :pred later-composition-mapp))
-
-  (defrulel later-composition-mapp-of-compositions
-    (later-composition-mapp (compositions ver))
-    :enable compositions)
-
-  (defruled composition-when-second-below-300
-    (implies (< (code-point-fix second) #x300)
-             (equal (composition first second ver)
-                    nil))
-    :enable (hangul-composition-when-not-hangul-v-p-and-not-hangul-t-p
-             hangul-v-p
-             hangul-t-p
-             composition-map-lookup
-             later-pair-p)
-    :use (:instance not-in-later-composition-mapp-when-not-later-pair-p
-                    (acl2::a (code-point-pair first second))
-                    (x (compositions ver)))))
+    :disable composition))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,3 +378,212 @@
              composition
              hangul-composition-of-hangul-syllable-decomposition-mapping)
     :use composition-of-canonical-mapping))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decomposition-mapping-of-composition
+  :short "If two code points compose,
+          they are the canonical decomposition mapping
+          of the code point they compose to."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the converse of
+     @(see composition-of-decomposition-mapping).
+     Together they say that composing two code points
+     and taking the canonical decomposition mapping of a code point
+     are inverses of each other,
+     on the pairs that compose
+     and on the primary composites and precomposed Hangul syllables.")
+   (xdoc::p
+    "For the pairs in the table,
+     this is a property of the way the table is built:
+     @(tsee primary-composites) only adds a pair
+     that is the mapping of the code point that it adds it with.
+     We prove that by induction,
+     and we check, by evaluation, for each version,
+     that the table is the result of @(tsee primary-composites)."))
+
+  ;; A pair that is in a map of compositions
+  ;; is the mapping of the code point it is associated with there,
+  ;; and that code point is not excluded:
+
+  (local
+   (define entry-ok ((pair code-point-pair-p)
+                     (map composition-mapp)
+                     (mappings decomposition-mapp)
+                     (exclusions range-listp))
+     :returns (yes/no booleanp)
+     (b* (((mv in? cp) (treemap::lookup? (code-point-pair-fix pair)
+                                         (composition-map-fix map))))
+       (or (not in?)
+           (and (equal (decomposition-map-lookup cp mappings)
+                       (list (code-point-pair->first pair)
+                             (code-point-pair->second pair)))
+                (not (code-point-in-ranges-p cp exclusions)))))
+     :hooks nil))
+
+  (defrulel equal-of-list-of-two-when-len-2
+    (implies (and (scalar-value-listp x)
+                  (equal (len x) 2))
+             (equal (equal x (list a b))
+                    (and (equal (first x) a)
+                         (equal (second x) b))))
+    :expand ((len x)
+             (len (cdr x))
+             (len (cddr x))))
+
+  (defrulel entry-ok-of-primary-composites
+    (implies (entry-ok pair map mappings exclusions)
+             (entry-ok pair
+                       (primary-composites cps mappings exclusions map)
+                       mappings
+                       exclusions))
+    :induct (primary-composites cps mappings exclusions map)
+    :enable (entry-ok primary-composites))
+
+  (defruledl compositions-is-primary-composites
+    (equal (compositions ver)
+           (primary-composites (all-code-points)
+                               (canonical-mappings ver)
+                               (full-composition-exclusion-ranges ver)
+                               (treemap::empty)))
+    :enable (compositions
+             canonical-mappings
+             full-composition-exclusion-ranges
+             (:e all-code-points)
+             (:e treemap::empty))
+    :disable primary-composites)
+
+  (defruled canonical-mapping-of-composition-map-lookup
+    (b* ((cp (composition-map-lookup first second (compositions ver))))
+      (implies cp
+               (and (equal (decomposition-map-lookup cp
+                                                     (canonical-mappings ver))
+                           (list (code-point-fix first)
+                                 (code-point-fix second)))
+                    (not (full-composition-exclusion-p cp ver)))))
+    :enable (composition-map-lookup
+             entry-ok
+             full-composition-exclusion-p)
+    :use (compositions-is-primary-composites
+          (:instance entry-ok-of-primary-composites
+                     (pair (code-point-pair first second))
+                     (map (treemap::empty))
+                     (cps (all-code-points))
+                     (mappings (canonical-mappings ver))
+                     (exclusions (full-composition-exclusion-ranges ver)))))
+
+  ;; No precomposed Hangul syllable is in the table of the canonical mappings,
+  ;; or has the Full_Composition_Exclusion property.
+  ;; We check the first on every code point, for each version;
+  ;; the second is a fact about ranges.
+
+  (local
+   (define syllable-ok ((cp code-point-p) (mappings decomposition-mapp))
+     :returns (yes/no booleanp)
+     (or (not (hangul-syllable-p cp))
+         (not (decomposition-map-lookup cp mappings)))
+     :hooks nil))
+
+  (local
+   (std::deflist syllable-ok-listp (x mappings)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp mappings))
+     (syllable-ok x mappings)))
+
+  (defrulel syllable-ok-listp-of-all-code-points
+    (syllable-ok-listp (all-code-points) (canonical-mappings ver))
+    :enable (canonical-mappings
+             (:e all-code-points))
+    :disable syllable-ok-listp-of-cons)
+
+  (defrulel no-canonical-mapping-when-hangul-syllable-p
+    (implies (hangul-syllable-p cp)
+             (equal (decomposition-map-lookup cp (canonical-mappings ver))
+                    nil))
+    :enable syllable-ok
+    :use (:instance syllable-ok-when-member-equal-of-syllable-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (mappings (canonical-mappings ver))))
+
+  (defrulel hangul-syllables-disjoint-from-full-composition-exclusions
+    (ranges-disjoint-from-ranges-p (list (range #xAC00 #xD7A3))
+                                   (full-composition-exclusion-ranges ver))
+    :enable full-composition-exclusion-ranges)
+
+  (defrulel not-full-composition-exclusion-p-when-hangul-syllable-p
+    (implies (hangul-syllable-p cp)
+             (not (full-composition-exclusion-p cp ver)))
+    :enable (full-composition-exclusion-p
+             hangul-syllable-p
+             code-point-in-range-p)
+    :use (hangul-syllables-disjoint-from-full-composition-exclusions
+          (:instance
+           not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
+           (xs (list (range #xAC00 #xD7A3)))
+           (ys (full-composition-exclusion-ranges ver)))))
+
+  (defrule decomposition-mapping-of-composition
+    (b* ((cp (composition first second ver))
+         ((mv canonical mapping) (decomposition-mapping cp ver)))
+      (implies cp
+               (and canonical
+                    (equal mapping
+                           (list (code-point-fix first)
+                                 (code-point-fix second)))
+                    (not (full-composition-exclusion-p cp ver)))))
+    :enable (composition
+             decomposition-mapping)
+    :use canonical-mapping-of-composition-map-lookup)
+
+  ;; A consequence, used for the code points below #xA0:
+  ;; two code points do not compose if the second one is below #x300.
+  ;; We check, on every code point, for each version,
+  ;; that the second code point of a canonical mapping of two code points
+  ;; is not below #x300;
+  ;; the vowels and the trailing consonants of Hangul are not either.
+
+  (defrulel rationalp-when-code-point-p
+    (implies (code-point-p x)
+             (rationalp x))
+    :enable code-point-p)
+
+  (local
+   (define second-ok ((cp code-point-p) (mappings decomposition-mapp))
+     :returns (yes/no booleanp)
+     (b* ((mapping (decomposition-map-lookup cp mappings)))
+       (or (not (equal (len mapping) 2))
+           (<= #x300 (code-point-fix (second mapping)))))
+     :hooks nil
+     :guard-hints (("Goal" :in-theory (enable len)))))
+
+  (local
+   (std::deflist second-ok-listp (x mappings)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp mappings))
+     (second-ok x mappings)))
+
+  (defrulel second-ok-listp-of-all-code-points
+    (second-ok-listp (all-code-points) (canonical-mappings ver))
+    :enable (canonical-mappings
+             (:e all-code-points))
+    :disable second-ok-listp-of-cons)
+
+  (defruled composition-when-second-below-300
+    (implies (< (code-point-fix second) #x300)
+             (equal (composition first second ver)
+                    nil))
+    :enable (composition
+             hangul-composition-when-not-hangul-v-p-and-not-hangul-t-p
+             hangul-v-p
+             hangul-t-p
+             second-ok)
+    :use (canonical-mapping-of-composition-map-lookup
+          (:instance second-ok-when-member-equal-of-second-ok-listp
+                     (acl2::a (composition-map-lookup first
+                                                      second
+                                                      (compositions ver)))
+                     (x (all-code-points))
+                     (mappings (canonical-mappings ver))))))
