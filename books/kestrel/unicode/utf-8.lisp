@@ -51,10 +51,16 @@
     :induct t
     :enable (acl2::ustring? scalar-value-listp uchar?-is-scalar-value-p))
 
+  (defrulel scalar-value-listp-when-ustring?
+    (implies (acl2::ustring? x)
+             (scalar-value-listp x))
+    :enable ustring?-is-scalar-value-listp)
+
+  (defrulel utf8-partition-when-utf8=>ustring-does-not-fail
+    (implies (not (equal (acl2::utf8=>ustring bytes) 'acl2::fail))
+             (mv-nth 0 (acl2::utf8-partition bytes)))
+    :enable acl2::utf8=>ustring)
+
   (defrule scalar-value-listp-of-utf8=>ustring
     (implies (not (equal (acl2::utf8=>ustring bytes) 'acl2::fail))
-             (scalar-value-listp (acl2::utf8=>ustring bytes)))
-    :use (:instance acl2::ustring?-of-utf8=>ustring-when-utf8-partition
-                    (acl2::x bytes))
-    :enable (acl2::utf8=>ustring ustring?-is-scalar-value-listp)
-    :disable acl2::ustring?-of-utf8=>ustring-when-utf8-partition))
+             (scalar-value-listp (acl2::utf8=>ustring bytes)))))

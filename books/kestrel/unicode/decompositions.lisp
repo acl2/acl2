@@ -453,10 +453,10 @@
   ///
 
   (defrule true-listp-of-decomposition
-    (true-listp (decomposition cp compat ver))
-    :rule-classes :type-prescription
-    :use code-point-listp-of-decomposition
-    :disable (decomposition code-point-listp-of-decomposition))
+    (code-point-listp (decomposition cp compat ver))
+    :rule-classes ((:type-prescription
+                    :corollary (true-listp (decomposition cp compat ver))))
+    :disable decomposition)
 
   (defrule consp-of-decomposition
     (consp (decomposition cp compat ver))
@@ -669,16 +669,13 @@
     (undecomposable-listp (decomposition cp compat ver) compat ver)
     :enable (decomposition
              closed-ok
-             undecomposable-listp
              undecomposable-p)
-    :use ((:instance closed-ok-when-member-equal-of-closed-ok-listp
-                     (acl2::a (code-point-fix cp))
-                     (x (all-code-points))
-                     (full (if compat
-                               (compatibility-decompositions ver)
-                             (canonical-decompositions ver))))
-          (:instance undecomposable-listp-when-no-entries-p
-                     (cps (decomposition cp compat ver)))))
+    :use (:instance closed-ok-when-member-equal-of-closed-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (full (if compat
+                              (compatibility-decompositions ver)
+                            (canonical-decompositions ver)))))
 
   (defrule undecomposable-listp-of-decompose
     (undecomposable-listp (decompose cps compat ver) compat ver)
