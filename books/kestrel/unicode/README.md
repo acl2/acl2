@@ -75,10 +75,21 @@ over the tables, and so re-checked whenever a version is added:
   twelve and nine code points in every supported version.
 - Composing the decomposition of a Hangul syllable gives the syllable back
   (checked for all 11,172 syllables).
-- `composition-of-decomposition-mapping`: composing the canonical
-  decomposition mapping of a primary composite gives the primary composite
-  back.  The converse, and the theorems that relate `nfd` and `nfc`, are
-  not proved yet; the conformance tests check them on the test data.
+- `composition-of-decomposition-mapping` and
+  `decomposition-mapping-of-composition`: composing two code points and
+  taking the canonical decomposition mapping of a code point are inverses
+  of each other, on the pairs that compose and on the primary composites
+  and precomposed Hangul syllables.
+- `undecomposable-listp-of-nfd`, `canonically-ordered-p-of-nfd`: the result
+  of `nfd` is fully decomposed and in canonical order; the same for `nfkd`.
+- `nfd-of-nfd`, `nfkd-of-nfkd`, `nfd-of-nfkd`: normalizing a second time to
+  a decomposed form changes nothing.
+- `nfc-of-nfd`, `nfkc-of-nfkd`, `nfc-of-nfkd`: composing after decomposing
+  again is the same as composing.
+
+Not proved: that `nfd` of `nfc` is `nfd` (decomposing undoes canonical
+composition), and so that `nfc` and `nfkc` are idempotent.  The conformance
+tests check these on the test data.
 
 ### Including only what you need
 
