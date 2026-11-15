@@ -491,3 +491,203 @@
                     cps))
     :induct t
     :enable (code-points-below-p decomposition-when-below-a0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define undecomposable-p ((cp code-point-p) (compat booleanp) (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if a code point is its own
+          canonical or compatibility decomposition,
+          in a version of Unicode."
+  (equal (decomposition cp compat ver)
+         (list (code-point-fix cp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define undecomposable-listp ((cps code-point-listp)
+                              (compat booleanp)
+                              (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if every code point of a list is its own
+          canonical or compatibility decomposition,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the list is fully decomposed:
+     decomposing it leaves it unchanged."))
+  (or (endp cps)
+      (and (undecomposable-p (car cps) compat ver)
+           (undecomposable-listp (cdr cps) compat ver)))
+  :hooks nil ; done below
+
+  ///
+
+  (fty::deffixequiv undecomposable-listp
+    :hints (("Goal"
+             :induct (undecomposable-listp cps compat ver)
+             :expand ((undecomposable-listp (code-point-list-fix cps)
+                                            compat
+                                            ver))
+             :in-theory (enable undecomposable-listp))))
+
+  (defrule undecomposable-listp-when-not-consp
+    (implies (not (consp cps))
+             (undecomposable-listp cps compat ver)))
+
+  (defrule undecomposable-listp-of-append
+    (equal (undecomposable-listp (append cps1 cps2) compat ver)
+           (and (undecomposable-listp cps1 compat ver)
+                (undecomposable-listp cps2 compat ver)))
+    :induct t)
+
+  (defrule decompose-when-undecomposable-listp
+    (implies (undecomposable-listp cps compat ver)
+             (equal (decompose cps compat ver)
+                    (code-point-list-fix cps)))
+    :induct t
+    :enable (decompose
+             undecomposable-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decompositions-are-fully-decomposed
+  :short "The decomposition of a code point, and of a list of code points,
+          is fully decomposed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is what makes the decompositions of [Unicode, D68] and [Unicode, D65]
+     full decompositions:
+     no code point of a decomposition can be decomposed further.
+     So decomposing a second time changes nothing.")
+   (xdoc::p
+    "For the decomposition of a code point,
+     we prove it by checking it on every code point,
+     for each of the two tables of each version."))
+
+  (local
+   (define no-entries-p ((cps scalar-value-listp) (full decomposition-mapp))
+     :returns (yes/no booleanp)
+     (or (endp cps)
+         (b* ((cp (scalar-value-fix (car cps))))
+           (and (not (hangul-syllable-p cp))
+                (not (decomposition-map-lookup cp full))
+                (no-entries-p (cdr cps) full))))
+     :hooks nil))
+
+  (local
+   (define closed-ok ((cp code-point-p) (full decomposition-mapp))
+     :returns (yes/no booleanp)
+     (b* ((cp (code-point-fix cp)))
+       (no-entries-p (if (hangul-syllable-p cp)
+                         (hangul-syllable-decomposition cp)
+                       (decomposition-map-lookup cp full))
+                     full))
+     :hooks nil))
+
+  (local
+   (std::deflist closed-ok-listp (x full)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp full))
+     (closed-ok x full)))
+
+  (defrulel closed-ok-listp-of-all-code-points
+    (closed-ok-listp (all-code-points)
+                     (if compat
+                         (compatibility-decompositions ver)
+                       (canonical-decompositions ver)))
+    :enable (canonical-decompositions
+             compatibility-decompositions
+             (:e all-code-points))
+    :disable closed-ok-listp-of-cons)
+
+  (defrulel undecomposable-listp-when-no-entries-p
+    (implies (and (scalar-value-listp cps)
+                  (no-entries-p cps
+                                (if compat
+                                    (compatibility-decompositions ver)
+                                  (canonical-decompositions ver))))
+             (undecomposable-listp cps compat ver))
+    :induct t
+    :enable (undecomposable-listp
+             undecomposable-p
+             decomposition
+             no-entries-p))
+
+  (defrule undecomposable-listp-of-decomposition
+    (undecomposable-listp (decomposition cp compat ver) compat ver)
+    :enable (decomposition
+             closed-ok
+             undecomposable-listp
+             undecomposable-p)
+    :use ((:instance closed-ok-when-member-equal-of-closed-ok-listp
+                     (acl2::a (code-point-fix cp))
+                     (x (all-code-points))
+                     (full (if compat
+                               (compatibility-decompositions ver)
+                             (canonical-decompositions ver))))
+          (:instance undecomposable-listp-when-no-entries-p
+                     (cps (decomposition cp compat ver)))))
+
+  (defrule undecomposable-listp-of-decompose
+    (undecomposable-listp (decompose cps compat ver) compat ver)
+    :induct t
+    :enable decompose)
+
+  (defrule decompose-of-decompose
+    (equal (decompose (decompose cps compat ver) compat ver)
+           (decompose cps compat ver)))
+
+  ;; A code point that is its own compatibility decomposition
+  ;; is its own canonical decomposition.
+  ;; We check, on every code point, for each version,
+  ;; that a code point in the table of the canonical decompositions
+  ;; is in the table of the compatibility decompositions,
+  ;; with a decomposition other than itself.
+
+  (local
+   (define keys-ok ((cp code-point-p)
+                    (canonical decomposition-mapp)
+                    (compat decomposition-mapp))
+     :returns (yes/no booleanp)
+     (b* ((full (decomposition-map-lookup cp compat)))
+       (or (not (decomposition-map-lookup cp canonical))
+           (and full
+                (not (equal full (list (code-point-fix cp)))))))
+     :hooks nil))
+
+  (local
+   (std::deflist keys-ok-listp (x canonical compat)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp canonical)
+                 (decomposition-mapp compat))
+     (keys-ok x canonical compat)))
+
+  (defrulel keys-ok-listp-of-all-code-points
+    (keys-ok-listp (all-code-points)
+                   (canonical-decompositions ver)
+                   (compatibility-decompositions ver))
+    :enable (canonical-decompositions
+             compatibility-decompositions
+             (:e all-code-points))
+    :disable keys-ok-listp-of-cons)
+
+  (defrule undecomposable-p-when-compatibility
+    (implies (undecomposable-p cp t ver)
+             (undecomposable-p cp nil ver))
+    :enable (undecomposable-p
+             decomposition
+             keys-ok)
+    :use (:instance keys-ok-when-member-equal-of-keys-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (canonical (canonical-decompositions ver))
+                    (compat (compatibility-decompositions ver))))
+
+  (defrule undecomposable-listp-when-compatibility
+    (implies (undecomposable-listp cps t ver)
+             (undecomposable-listp cps nil ver))
+    :induct t
+    :enable undecomposable-listp))

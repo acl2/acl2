@@ -186,6 +186,95 @@
     :enable (code-points-below-p
              canonical-combining-class-when-below-300)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define canonically-ordered-p ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of code points is in canonical order."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if it has no reorderable pair [Unicode, D108]:
+     no two adjacent code points such that
+     the canonical combining class of the first one
+     is greater than the one of the second one,
+     and the latter is not 0."))
+  (or (endp cps)
+      (endp (cdr cps))
+      (b* ((ccc1 (canonical-combining-class (car cps) ver))
+           (ccc2 (canonical-combining-class (cadr cps) ver)))
+        (and (or (<= ccc1 ccc2)
+                 (equal ccc2 0))
+             (canonically-ordered-p (cdr cps) ver))))
+  :hooks nil ; done below
+
+  ///
+
+  (fty::deffixequiv canonically-ordered-p
+    :hints (("Goal"
+             :induct (canonically-ordered-p cps ver)
+             :expand ((canonically-ordered-p (code-point-list-fix cps) ver))
+             :in-theory (enable canonically-ordered-p)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection canonical-order-theorems
+  :short "Theorems about canonical ordering."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result of @(tsee canonical-order) is in canonical order.
+     A list that is in canonical order is left unchanged.
+     So putting a list in canonical order a second time changes nothing.")
+   (xdoc::p
+    "Canonical ordering only moves code points,
+     so a fully decomposed list stays fully decomposed."))
+
+  (defrulel canonically-ordered-p-of-canonical-order-insert
+    (implies (and (canonically-ordered-p cps ver)
+                  (not (equal (canonical-combining-class cp ver) 0)))
+             (canonically-ordered-p (canonical-order-insert cp cps ver) ver))
+    :induct (canonical-order-insert cp cps ver)
+    :enable (canonical-order-insert
+             canonically-ordered-p)
+    :expand ((canonical-order-insert cp (cdr cps) ver)))
+
+  (defrule canonically-ordered-p-of-canonical-order
+    (canonically-ordered-p (canonical-order cps ver) ver)
+    :induct t
+    :enable (canonical-order
+             canonically-ordered-p))
+
+  (defrule canonical-order-when-canonically-ordered-p
+    (implies (canonically-ordered-p cps ver)
+             (equal (canonical-order cps ver)
+                    (code-point-list-fix cps)))
+    :induct t
+    :enable (canonical-order
+             canonical-order-insert
+             canonically-ordered-p))
+
+  (defrule canonical-order-of-canonical-order
+    (equal (canonical-order (canonical-order cps ver) ver)
+           (canonical-order cps ver)))
+
+  (defrulel undecomposable-listp-of-canonical-order-insert
+    (implies (and (undecomposable-p cp compat ver1)
+                  (undecomposable-listp cps compat ver1))
+             (undecomposable-listp (canonical-order-insert cp cps ver)
+                                   compat
+                                   ver1))
+    :induct t
+    :enable (canonical-order-insert
+             undecomposable-listp))
+
+  (defrule undecomposable-listp-of-canonical-order
+    (implies (undecomposable-listp cps compat ver1)
+             (undecomposable-listp (canonical-order cps ver) compat ver1))
+    :induct t
+    :enable (canonical-order
+             undecomposable-listp)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ canonical-composition
@@ -377,7 +466,17 @@
 
   (defrule scalar-value-listp-of-nfd
     (implies (scalar-value-listp cps)
-             (scalar-value-listp (nfd cps ver)))))
+             (scalar-value-listp (nfd cps ver))))
+
+  (defrule undecomposable-listp-of-nfd
+    (undecomposable-listp (nfd cps ver) nil ver))
+
+  (defrule canonically-ordered-p-of-nfd
+    (canonically-ordered-p (nfd cps ver) ver))
+
+  (defrule nfd-of-nfd
+    (equal (nfd (nfd cps ver) ver)
+           (nfd cps ver))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -393,7 +492,11 @@
 
   (defrule scalar-value-listp-of-nfc
     (implies (scalar-value-listp cps)
-             (scalar-value-listp (nfc cps ver)))))
+             (scalar-value-listp (nfc cps ver))))
+
+  (defrule nfc-of-nfd
+    (equal (nfc (nfd cps ver) ver)
+           (nfc cps ver))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -408,7 +511,25 @@
 
   (defrule scalar-value-listp-of-nfkd
     (implies (scalar-value-listp cps)
-             (scalar-value-listp (nfkd cps ver)))))
+             (scalar-value-listp (nfkd cps ver))))
+
+  (defrule undecomposable-listp-of-nfkd
+    (undecomposable-listp (nfkd cps ver) t ver))
+
+  (defrule canonically-ordered-p-of-nfkd
+    (canonically-ordered-p (nfkd cps ver) ver))
+
+  (defrule nfkd-of-nfkd
+    (equal (nfkd (nfkd cps ver) ver)
+           (nfkd cps ver)))
+
+  (defrule nfd-of-nfkd
+    (equal (nfd (nfkd cps ver) ver)
+           (nfkd cps ver))
+    :enable nfd
+    :disable nfkd
+    :use (undecomposable-listp-of-nfkd
+          canonically-ordered-p-of-nfkd)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -424,7 +545,16 @@
 
   (defrule scalar-value-listp-of-nfkc
     (implies (scalar-value-listp cps)
-             (scalar-value-listp (nfkc cps ver)))))
+             (scalar-value-listp (nfkc cps ver))))
+
+  (defrule nfkc-of-nfkd
+    (equal (nfkc (nfkd cps ver) ver)
+           (nfkc cps ver)))
+
+  (defrule nfc-of-nfkd
+    (equal (nfc (nfkd cps ver) ver)
+           (nfkc cps ver))
+    :enable nfc))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
