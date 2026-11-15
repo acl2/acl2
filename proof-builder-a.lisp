@@ -1384,22 +1384,33 @@
 (defun pc-main (term raw-term event-name rule-classes instr-list
                      quit-conditions pc-print-prompt-and-instr-flg
                      in-verify-flg state)
-  (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
-          (state-global-let*
-           ((in-verify-flg
-             (cond ((eq in-verify-flg :same)
+  (let ((saved-in-verify-flg (f-get-global 'in-verify-flg state)))
+    (pprogn (install-initial-state-stack term raw-term event-name rule-classes)
+
+; It is tempting to use state-global-let* here to bind in-verify-flg, rather
+; than to set it back to saved-in-verify-flg near the end (below).  However, AI
+; has found that when we did that (git commit hash a09905b04a), the mechanism
+; no longer worked for returning to the proof-builder after a raw Lisp error.
+; That's because by the time we reached ld-read-eval-print after continuing
+; from our-abort, in-verify-flg was no longer non-nil, because of the
+; state-global-let*.  Now, in-verify-flg doesn't get reset in that case,
+; because we don't reach the setting below of 'in-verify-flg to
+; saved-in-verify-flg -- so ld-read-eval-print can put us back into the
+; proof-builder.
+
+            (cond ((eq in-verify-flg :same)
 
 ; We use the value :same in state-from-instructions.  In that case, we are
 ; already in the proof-builder and we don't want to mess with in-verify-flg
 ; when we run the given instructions.
 
-                    (f-get-global 'in-verify-flg state))
-                   (t
-                    (assert$
-                     (eq (f-get-global 'in-verify-flg state) nil)
-                     (or in-verify-flg t))))))
-           (pc-main1 instr-list quit-conditions pc-print-prompt-and-instr-flg
-                     state))))
+                   state)
+                  (t (f-put-global 'in-verify-flg (or in-verify-flg t) state)))
+            (mv-let (erp result state)
+              (pc-main1 instr-list quit-conditions
+                        pc-print-prompt-and-instr-flg state)
+              (pprogn (f-put-global 'in-verify-flg saved-in-verify-flg state)
+                      (mv erp result state))))))
 
 (defun pc-top (raw-term event-name rule-classes instr-list quit-conditions
                         in-verify-flg state)

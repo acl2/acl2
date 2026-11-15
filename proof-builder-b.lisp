@@ -4954,6 +4954,18 @@
                    (t (value (cons clause-list (state-stack)))))))))))))
 
 (defun proof-builder-cl-proc (cl instr-list state)
+
+; This function leads to a call of pc-main, which calls
+; install-initial-state-stack.  Should we be concerned that a surrounding
+; proof-builder state is thus lost?  The answer is no, and here's why.
+
+; We expect this function to be called as a (trusted) clause-processor, by
+; apply-top-hints-clause, which calls eval-clause-processor.  Consider the case
+; where the proof builder issues a PROVE command with :HINTS that invoke the
+; proof-builder via an :INSTRUCTIONS hint.  The existing proof-builder state
+; (state-stack, etc.) is saved and restored by the use of
+; protect-system-state-global in eval-clause-processor.
+
   (mv-let (erp clause-list/state-stack state)
     (proof-builder-cl-proc-1 cl instr-list state)
     (cond (erp (mv erp clause-list/state-stack state nil))

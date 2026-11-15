@@ -36347,8 +36347,8 @@
 ; check.
 
                (msg "In the attempt to apply ~x0 to ~&1, the definition of ~
-                     ~x2 has has ~x3 applied to a call of ~x4.  This is ~
-                     illegal.  See :DOC memoize-partial."
+                     ~x2 has ~x3 applied to a call of ~x4.  This is illegal.  ~
+                     See :DOC memoize-partial."
                     'memoize-partial fns-limit fn 'ec-call fn1))
               (t (memoize-partial-translations-msg-bodies
                   (cdr tail) fns-limit limit wrld)))))
@@ -36379,7 +36379,8 @@
           (limit (car (last (formals fn wrld)))))
      (or (and (getpropc fn 'loop$-recursion nil wrld) ; no mutual-recursion
 ; See books/system/tests/memoize-partial-loop-flet-capture.lisp.
-              (msg "~x0 was defined with xargs :loop$-recursion t."))
+              (msg "~x0 was defined with xargs :loop$-recursion t."
+                   fn))
          (memoize-partial-translations-msg-formals
           fns-limit limit fn wrld)
          (memoize-partial-translations-msg-bodies
