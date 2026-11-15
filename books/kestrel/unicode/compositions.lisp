@@ -609,3 +609,29 @@
                                (canonical-compositions ver)))
                      (x (all-code-points))
                      (mappings (canonical-mappings ver))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decomposition-of-composition
+  :short "The decomposition of the code point that two code points compose to
+          is the decomposition of the first one
+          followed by the decomposition of the second one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two code points are
+     the canonical decomposition mapping of their composite
+     (see @(see decomposition-mapping-of-composition)),
+     and the decomposition of a code point
+     is the decomposition of its mapping
+     (see @(see decomposition-of-decomposition-mapping)).
+     This holds for the canonical decompositions
+     and for the compatibility decompositions."))
+
+  (defrule decomposition-of-composition
+    (implies (composition first second ver)
+             (equal (decomposition (composition first second ver) compat ver)
+                    (append (decomposition first compat ver)
+                            (decomposition second compat ver))))
+    :enable (decomposition-when-decomposition-mapping
+             decompose)))
