@@ -16,6 +16,7 @@
 
 (include-book "data/v16.0.0/unicode-data")
 (include-book "data/v17.0.0/unicode-data")
+(include-book "data/v18.0.0/unicode-data")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "std/util/defconsts" :dir :system)
@@ -89,7 +90,8 @@
     "The map does not have the precomposed Hangul syllables."))
   (version-case ver
                 :v16.0.0 *canonical-decomposition-mapping-v16.0.0*
-                :v17.0.0 *canonical-decomposition-mapping-v17.0.0*)
+                :v17.0.0 *canonical-decomposition-mapping-v17.0.0*
+                :v18.0.0 *canonical-decomposition-mapping-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -101,7 +103,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *compatibility-decomposition-mapping-v16.0.0*
-                :v17.0.0 *compatibility-decomposition-mapping-v17.0.0*)
+                :v17.0.0 *compatibility-decomposition-mapping-v17.0.0*
+                :v18.0.0 *compatibility-decomposition-mapping-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -357,7 +360,44 @@
                (+ (treemap::size
                    *canonical-decomposition-mapping-v17.0.0*)
                   (treemap::size
-                   *compatibility-decomposition-mapping-v17.0.0*))))))
+                   *compatibility-decomposition-mapping-v17.0.0*)))))
+
+  ;; Unicode 18.0.0:
+
+  (defconsts *canonical-decomposition-v18.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v18.0.0*
+                         (treemap::empty)
+                         (treemap::empty)))
+
+  (defconsts *compatibility-decomposition-v18.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v18.0.0*
+                         *compatibility-decomposition-mapping-v18.0.0*
+                         (treemap::empty)))
+
+  (assert-event
+   (and (decomposition-mapp *canonical-decomposition-v18.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *canonical-decomposition-v18.0.0*
+         *canonical-decomposition-mapping-v18.0.0*
+         (treemap::empty))
+        (equal (treemap::size *canonical-decomposition-v18.0.0*)
+               (treemap::size *canonical-decomposition-mapping-v18.0.0*))))
+
+  (assert-event
+   (and (decomposition-mapp *compatibility-decomposition-v18.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *compatibility-decomposition-v18.0.0*
+         *canonical-decomposition-mapping-v18.0.0*
+         *compatibility-decomposition-mapping-v18.0.0*)
+        (equal (treemap::size *compatibility-decomposition-v18.0.0*)
+               (+ (treemap::size
+                   *canonical-decomposition-mapping-v18.0.0*)
+                  (treemap::size
+                   *compatibility-decomposition-mapping-v18.0.0*))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -368,7 +408,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *canonical-decomposition-v16.0.0*
-                :v17.0.0 *canonical-decomposition-v17.0.0*)
+                :v17.0.0 *canonical-decomposition-v17.0.0*
+                :v18.0.0 *canonical-decomposition-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -380,7 +421,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *compatibility-decomposition-v16.0.0*
-                :v17.0.0 *compatibility-decomposition-v17.0.0*)
+                :v17.0.0 *compatibility-decomposition-v17.0.0*
+                :v18.0.0 *compatibility-decomposition-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

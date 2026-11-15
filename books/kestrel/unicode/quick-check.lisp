@@ -15,6 +15,7 @@
 
 (include-book "data/v16.0.0/derived-normalization-props")
 (include-book "data/v17.0.0/derived-normalization-props")
+(include-book "data/v18.0.0/derived-normalization-props")
 
 (acl2::controlled-configuration)
 
@@ -73,7 +74,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfd-quick-check-no-v16.0.0*
-                :v17.0.0 *nfd-quick-check-no-v17.0.0*)
+                :v17.0.0 *nfd-quick-check-no-v17.0.0*
+                :v18.0.0 *nfd-quick-check-no-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -85,7 +87,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfc-quick-check-no-v16.0.0*
-                :v17.0.0 *nfc-quick-check-no-v17.0.0*)
+                :v17.0.0 *nfc-quick-check-no-v17.0.0*
+                :v18.0.0 *nfc-quick-check-no-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -97,7 +100,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfc-quick-check-maybe-v16.0.0*
-                :v17.0.0 *nfc-quick-check-maybe-v17.0.0*)
+                :v17.0.0 *nfc-quick-check-maybe-v17.0.0*
+                :v18.0.0 *nfc-quick-check-maybe-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -109,7 +113,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkd-quick-check-no-v16.0.0*
-                :v17.0.0 *nfkd-quick-check-no-v17.0.0*)
+                :v17.0.0 *nfkd-quick-check-no-v17.0.0*
+                :v18.0.0 *nfkd-quick-check-no-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -121,7 +126,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkc-quick-check-no-v16.0.0*
-                :v17.0.0 *nfkc-quick-check-no-v17.0.0*)
+                :v17.0.0 *nfkc-quick-check-no-v17.0.0*
+                :v18.0.0 *nfkc-quick-check-no-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +139,8 @@
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *nfkc-quick-check-maybe-v16.0.0*
-                :v17.0.0 *nfkc-quick-check-maybe-v17.0.0*)
+                :v17.0.0 *nfkc-quick-check-maybe-v17.0.0*
+                :v18.0.0 *nfkc-quick-check-maybe-v18.0.0*)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
