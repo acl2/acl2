@@ -27,9 +27,13 @@
                             defxdoc+
                             high-surrogatep
                             impossible
+                            integers-from-to
                             lnfix
                             low-surrogatep
                             nat
                             nat-list
                             nat-list-fix
-                            pos)))
+                            pos
+                            ubyte8
+                            ubyte8-fix
+                            ubyte8p)))

@@ -88,7 +88,10 @@
        (state (dump-flag (bidi-control-p cp ver) channel state))
        (class (bidi-formatting-class cp ver))
        (state (princ$ ";" channel state))
-       (state (princ$ (if class (symbol-name class) "-") channel state))
+       (state (princ$ (if class
+                          (symbol-name (bidi-formatting-class-kind class))
+                        "-")
+                      channel state))
        (state (princ$ ";" channel state))
        (state (princ$ (canonical-combining-class cp ver) channel state))
        (state (dump-flag (full-composition-exclusion-p cp ver) channel state))
@@ -132,12 +135,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun pair-key-firsts-and-seconds (map firsts seconds)
-  (cond ((endp map) (mv firsts seconds))
-        (t (pair-key-firsts-and-seconds
-            (cdr map)
-            (cons (mod (car (car map)) #x110000) firsts)
-            (cons (floor (car (car map)) #x110000) seconds)))))
+; The first and the second code points of the canonical decomposition
+; mappings of the primary composites among the code points of a list.
+
+(defun composing-firsts-and-seconds (cps ver firsts seconds)
+  (cond ((endp cps) (mv firsts seconds))
+        (t (b* ((cp (car cps))
+                (mapping (decomposition-map-lookup cp
+                                                   (canonical-mappings ver)))
+                (composes (and (equal (len mapping) 2)
+                               (not (full-composition-exclusion-p cp ver)))))
+             (composing-firsts-and-seconds
+              (cdr cps)
+              ver
+              (if composes (cons (first mapping) firsts) firsts)
+              (if composes (cons (second mapping) seconds) seconds))))))
 
 (defun nats-from (start step count)
   (cond ((zp count) nil)
@@ -176,7 +188,7 @@
         (prog2$ (er hard? 'dump-pairs "Cannot open ~x0." filename)
                 state))
        ((mv firsts seconds)
-        (pair-key-firsts-and-seconds (composition-map ver) nil nil))
+        (composing-firsts-and-seconds (all-code-points) ver nil nil))
        (firsts (append
                 (remove-duplicates firsts)
                 ;; the leading consonants and the LV syllables:

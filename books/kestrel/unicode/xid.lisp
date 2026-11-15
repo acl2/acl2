@@ -11,7 +11,7 @@
 (in-package "UNICODE")
 
 (include-book "versions")
-(include-book "range-sets")
+(include-book "ranges")
 
 (include-book "data/v16.0.0/derived-core-properties")
 (include-book "data/v17.0.0/derived-core-properties")
@@ -43,48 +43,52 @@
      of the Unicode Character Database, for each supported version;
      we do not recompute them from the properties they derive from.")
    (xdoc::p
-    "The functions are defined on all natural numbers,
-     and are false on those that are not code points.
-     No surrogate has either property,
+    "No surrogate has either property,
      so a code point that has one of them is a scalar value."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xid-start-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points that have the @('XID_Start') property,
+(define xid-start-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
+          that have the @('XID_Start') property,
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *xid-start-v16.0.0*
-                :v17.0.0 *xid-start-v17.0.0*))
+                :v17.0.0 *xid-start-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define xid-continue-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points that have the @('XID_Continue') property,
+(define xid-continue-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
+          that have the @('XID_Continue') property,
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *xid-continue-v16.0.0*
-                :v17.0.0 *xid-continue-v17.0.0*))
+                :v17.0.0 *xid-continue-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define xid-start-p ((cp natp) (ver versionp))
+(define xid-start-p ((cp code-point-p) (ver versionp))
   :returns (yes/no booleanp)
   :short "Check if a code point has the @('XID_Start') property,
           in a version of Unicode."
-  (in-range-set-p cp (xid-start-set ver)))
+  (code-point-in-ranges-p cp (xid-start-ranges ver))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define xid-continue-p ((cp natp) (ver versionp))
+(define xid-continue-p ((cp code-point-p) (ver versionp))
   :returns (yes/no booleanp)
   :short "Check if a code point has the @('XID_Continue') property,
           in a version of Unicode."
-  (in-range-set-p cp (xid-continue-set ver)))
+  (code-point-in-ranges-p cp (xid-continue-ranges ver))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,36 +108,39 @@
     "These are proved by evaluation on the tables, for each version:
      so adding a version checks them for that version."))
 
-  (defrule xid-start-set-subset-of-xid-continue-set
-    (range-set-subset-p (xid-start-set ver) (xid-continue-set ver))
-    :enable (xid-start-set xid-continue-set))
+  (defrule xid-start-ranges-within-xid-continue-ranges
+    (ranges-within-ranges-p (xid-start-ranges ver)
+                            (xid-continue-ranges ver))
+    :enable (xid-start-ranges xid-continue-ranges))
 
-  (defrule xid-continue-set-subset-of-scalar-values
-    (range-set-subset-p (xid-continue-set ver) *scalar-value-range-set*)
-    :enable xid-continue-set)
+  (defrule xid-continue-ranges-within-scalar-value-ranges
+    (ranges-within-ranges-p (xid-continue-ranges ver)
+                            (scalar-value-ranges))
+    :enable (xid-continue-ranges (:e scalar-value-ranges)))
 
   (defrule xid-continue-p-when-xid-start-p
     (implies (xid-start-p cp ver)
              (xid-continue-p cp ver))
-    :enable (xid-start-p xid-continue-p)
-    :use (:instance in-range-set-p-when-range-set-subset-p
-                    (sub (xid-start-set ver))
-                    (sup (xid-continue-set ver))))
+    :enable (xid-start-p
+             xid-continue-p)
+    :use (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
+                    (subs (xid-start-ranges ver))
+                    (sups (xid-continue-ranges ver))))
 
   (defrule scalar-value-p-when-xid-continue-p
     (implies (and (xid-continue-p cp ver)
-                  (natp cp))
+                  (code-point-p cp))
              (scalar-value-p cp))
     :rule-classes (:rewrite :forward-chaining)
     :enable (xid-continue-p
-             scalar-value-p-when-in-scalar-value-range-set)
-    :use (:instance in-range-set-p-when-range-set-subset-p
-                    (sub (xid-continue-set ver))
-                    (sup *scalar-value-range-set*)))
+             scalar-value-p-when-code-point-in-scalar-value-ranges)
+    :use (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
+                    (subs (xid-continue-ranges ver))
+                    (sups (scalar-value-ranges))))
 
   (defrule scalar-value-p-when-xid-start-p
     (implies (and (xid-start-p cp ver)
-                  (natp cp))
+                  (code-point-p cp))
              (scalar-value-p cp))
     :rule-classes (:rewrite :forward-chaining)
     :use (xid-continue-p-when-xid-start-p
@@ -141,8 +148,23 @@
     :disable (xid-continue-p-when-xid-start-p
               scalar-value-p-when-xid-continue-p))
 
+  ;; The ASCII code points that have, and that do not have, XID_Start:
+
+  (defrulel ascii-letters-within-xid-start-ranges
+    (ranges-within-ranges-p (list (range #x41 #x5A)
+                                  (range #x61 #x7A))
+                            (xid-start-ranges ver))
+    :enable xid-start-ranges)
+
+  (defrulel ascii-non-letters-disjoint-from-xid-start-ranges
+    (ranges-disjoint-from-ranges-p (list (range #x00 #x40)
+                                         (range #x5B #x60)
+                                         (range #x7B #x7F))
+                                   (xid-start-ranges ver))
+    :enable xid-start-ranges)
+
   (defruled xid-start-p-when-ascii
-    (implies (and (natp cp)
+    (implies (and (code-point-p cp)
                   (< cp #x80))
              (equal (xid-start-p cp ver)
                     (or (and (<= (char-code #\A) cp)
@@ -150,13 +172,42 @@
                         (and (<= (char-code #\a) cp)
                              (<= cp (char-code #\z))))))
     :enable (xid-start-p
-             xid-start-set
-             in-range-set-p
-             not-in-range-set-p-when-below-first
-             nfix))
+             code-point-in-range-p
+             code-point-p)
+    :use (ascii-letters-within-xid-start-ranges
+          ascii-non-letters-disjoint-from-xid-start-ranges
+          (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
+                     (subs (list (range #x41 #x5A)
+                                 (range #x61 #x7A)))
+                     (sups (xid-start-ranges ver)))
+          (:instance
+           not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
+           (xs (list (range #x00 #x40)
+                     (range #x5B #x60)
+                     (range #x7B #x7F)))
+           (ys (xid-start-ranges ver)))))
+
+  ;; The ASCII code points that have, and that do not have, XID_Continue:
+
+  (defrulel ascii-letters-digits-underscore-within-xid-continue-ranges
+    (ranges-within-ranges-p (list (range #x30 #x39)
+                                  (range #x41 #x5A)
+                                  (range #x5F #x5F)
+                                  (range #x61 #x7A))
+                            (xid-continue-ranges ver))
+    :enable xid-continue-ranges)
+
+  (defrulel ascii-others-disjoint-from-xid-continue-ranges
+    (ranges-disjoint-from-ranges-p (list (range #x00 #x2F)
+                                         (range #x3A #x40)
+                                         (range #x5B #x5E)
+                                         (range #x60 #x60)
+                                         (range #x7B #x7F))
+                                   (xid-continue-ranges ver))
+    :enable xid-continue-ranges)
 
   (defruled xid-continue-p-when-ascii
-    (implies (and (natp cp)
+    (implies (and (code-point-p cp)
                   (< cp #x80))
              (equal (xid-continue-p cp ver)
                     (or (and (<= (char-code #\0) cp)
@@ -167,7 +218,21 @@
                         (and (<= (char-code #\a) cp)
                              (<= cp (char-code #\z))))))
     :enable (xid-continue-p
-             xid-continue-set
-             in-range-set-p
-             not-in-range-set-p-when-below-first
-             nfix)))
+             code-point-in-range-p
+             code-point-p)
+    :use (ascii-letters-digits-underscore-within-xid-continue-ranges
+          ascii-others-disjoint-from-xid-continue-ranges
+          (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
+                     (subs (list (range #x30 #x39)
+                                 (range #x41 #x5A)
+                                 (range #x5F #x5F)
+                                 (range #x61 #x7A)))
+                     (sups (xid-continue-ranges ver)))
+          (:instance
+           not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
+           (xs (list (range #x00 #x2F)
+                     (range #x3A #x40)
+                     (range #x5B #x5E)
+                     (range #x60 #x60)
+                     (range #x7B #x7F)))
+           (ys (xid-continue-ranges ver))))))
