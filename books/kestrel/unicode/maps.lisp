@@ -73,12 +73,13 @@
   ///
 
   (defrule natp-of-combining-class-map-lookup
-    (natp (combining-class-map-lookup cp map))
-    :rule-classes :type-prescription
-    :use ubyte8p-of-combining-class-map-lookup
-    :enable (ubyte8p unsigned-byte-p natp)
-    :disable (combining-class-map-lookup
-              ubyte8p-of-combining-class-map-lookup)))
+    (ubyte8p (combining-class-map-lookup cp map))
+    :rule-classes ((:type-prescription
+                    :corollary (natp (combining-class-map-lookup cp map))
+                    :hints (("Goal" :in-theory (enable ubyte8p
+                                                       unsigned-byte-p
+                                                       natp)))))
+    :disable combining-class-map-lookup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -344,70 +344,88 @@
      @('hangul-syllable-facts-p') says what is checked
      for one syllable."))
 
-  (define hangul-syllable-facts-p ((s hangul-syllable-p))
-    :returns (yes/no booleanp)
-    :parents nil
-    (b* ((s (hangul-syllable-fix s))
-         (jamos (hangul-syllable-decomposition s))
-         ((unless (and (scalar-value-listp jamos)
-                       (or (equal (len jamos) 2)
-                           (equal (len jamos) 3))))
-          nil)
-         (l (first jamos))
-         (v (second jamos))
-         ((unless (and (hangul-l-p l)
-                       (hangul-v-p v)))
-          nil)
-         (lv (hangul-composition l v))
-         ((unless (and lv
-                       (code-point-p lv)
-                       (hangul-lv-syllable-p lv)))
-          nil)
-         ((unless (implies (hangul-lv-syllable-p s)
-                           (<= (+ s *hangul-t-count*)
-                               (+ *hangul-s-base* *hangul-s-count*))))
-          nil)
-         (mapping (hangul-syllable-decomposition-mapping s))
-         ((unless (and (scalar-value-listp mapping)
-                       (equal (len mapping) 2)
-                       (equal (hangul-composition (first mapping)
-                                                  (second mapping))
-                              s)))
-          nil))
-      (if (equal (len jamos) 3)
-          (b* ((tt (third jamos)))
-            (and (hangul-t-p tt)
-                 (equal (hangul-composition lv tt) s)
-                 (equal mapping (list lv tt))))
-        (and (equal lv s)
-             (equal mapping jamos))))
-    :guard-hints (("Goal" :in-theory (enable len))))
+  (local
+   (define hangul-syllable-facts-p ((s hangul-syllable-p))
+     :returns (yes/no booleanp)
+     (b* ((s (hangul-syllable-fix s))
+          (jamos (hangul-syllable-decomposition s))
+          ((unless (and (scalar-value-listp jamos)
+                        (or (equal (len jamos) 2)
+                            (equal (len jamos) 3))))
+           nil)
+          (l (first jamos))
+          (v (second jamos))
+          ((unless (and (hangul-l-p l)
+                        (hangul-v-p v)))
+           nil)
+          (lv (hangul-composition l v))
+          ((unless (and lv
+                        (code-point-p lv)
+                        (hangul-lv-syllable-p lv)))
+           nil)
+          ((unless (implies (hangul-lv-syllable-p s)
+                            (<= (+ s *hangul-t-count*)
+                                (+ *hangul-s-base* *hangul-s-count*))))
+           nil)
+          (mapping (hangul-syllable-decomposition-mapping s))
+          ((unless (and (scalar-value-listp mapping)
+                        (equal (len mapping) 2)
+                        (equal (hangul-composition (first mapping)
+                                                   (second mapping))
+                               s)))
+           nil))
+       (if (equal (len jamos) 3)
+           (b* ((tt (third jamos)))
+             (and (hangul-t-p tt)
+                  (equal (hangul-composition lv tt) s)
+                  (equal mapping (list lv tt))))
+         (and (equal lv s)
+              (equal mapping jamos))))
+     :guard-hints (("Goal" :in-theory (enable len)))))
 
-  (define hangul-syllable-facts-below-p ((n natp))
-    :guard (<= n *hangul-s-count*)
-    :returns (yes/no booleanp)
-    :parents nil
-    (or (zp n)
-        (and (hangul-syllable-facts-p (+ *hangul-s-base* (1- n)))
-             (hangul-syllable-facts-below-p (1- n))))
-    :guard-hints (("Goal" :in-theory (enable hangul-syllable-p
-                                             code-point-p)))
-    :hooks nil
+  ;; We check the facts on the code points from #xAC00 to #xD7A3.
+  ;; If the check holds for a syllable, so do the facts.
+  ;; (This rule has to come before the check is evaluated:
+  ;; after that, its hypothesis would rewrite to true.)
 
-    ///
+  (local
+   (define syllable-facts-ok ((cp code-point-p))
+     :returns (yes/no booleanp)
+     (or (not (hangul-syllable-p cp))
+         (hangul-syllable-facts-p cp))
+     :hooks nil))
 
-    (defruled hangul-syllable-facts-p-when-below
-      (implies (and (hangul-syllable-facts-below-p n)
-                    (natp i)
-                    (< i (nfix n)))
-               (hangul-syllable-facts-p (+ *hangul-s-base* i)))
-      :induct t))
+  (defrulel hangul-syllable-facts-p-when-syllable-facts-ok
+    (implies (syllable-facts-ok (hangul-syllable-fix s))
+             (hangul-syllable-facts-p s))
+    :enable syllable-facts-ok)
 
-  (defruled hangul-syllable-facts-p-holds
+  (local
+   (std::deflist syllable-facts-ok-listp (x)
+     :guard (code-point-listp x)
+     (syllable-facts-ok x)))
+
+  (defrulel syllable-facts-ok-listp-of-all-syllables
+    (syllable-facts-ok-listp (integers-from-to #xAC00 #xD7A3)))
+
+  (defrulel member-equal-of-all-syllables
+    (iff (member-equal cp (integers-from-to #xAC00 #xD7A3))
+         (hangul-syllable-p cp))
+    :enable (hangul-syllable-p code-point-p natp)
+    :disable ((:e integers-from-to)))
+
+  ;; The check holds for a syllable by the rule, generated by DEFLIST,
+  ;; that an element of a list on which the check holds passes the check.
+  ;; The list is a free variable of that rule:
+  ;; ACL2 binds it to the list of the syllables,
+  ;; because it looks for bindings also among the rules without variables,
+  ;; here SYLLABLE-FACTS-OK-LISTP-OF-ALL-SYLLABLES
+  ;; (see :DOC FREE-VARIABLES-EXAMPLES-REWRITE).
+  ;; So the facts follow without hints.
+
+  (defruledl hangul-syllable-facts-p-holds
     (hangul-syllable-facts-p s)
-    :use (:instance hangul-syllable-facts-p-when-below
-                    (n *hangul-s-count*)
-                    (i (- (hangul-syllable-fix s) *hangul-s-base*))))
+    :disable ((:e integers-from-to)))
 
   (defrule scalar-value-listp-of-hangul-syllable-decomposition
     (scalar-value-listp (hangul-syllable-decomposition s))
@@ -447,19 +465,15 @@
                                            (second jamos))
                        (third jamos))
                jamos)))
-    :use (hangul-syllable-facts-p-holds
-          scalar-value-listp-of-hangul-syllable-decomposition)
-    :enable hangul-syllable-facts-p
-    :disable scalar-value-listp-of-hangul-syllable-decomposition)
+    :use hangul-syllable-facts-p-holds
+    :enable hangul-syllable-facts-p)
 
   (defruled hangul-composition-of-hangul-syllable-decomposition-mapping
     (b* ((mapping (hangul-syllable-decomposition-mapping s)))
       (equal (hangul-composition (first mapping) (second mapping))
              (hangul-syllable-fix s)))
-    :use (hangul-syllable-facts-p-holds
-          scalar-value-listp-of-hangul-syllable-decomposition-mapping)
-    :enable hangul-syllable-facts-p
-    :disable scalar-value-listp-of-hangul-syllable-decomposition-mapping)
+    :use hangul-syllable-facts-p-holds
+    :enable hangul-syllable-facts-p)
 
   (defrule hangul-syllable-option-p-of-hangul-composition
     (hangul-syllable-option-p (hangul-composition first second))
@@ -477,10 +491,7 @@
 
   (defrule hangul-syllable-p-of-hangul-composition
     (implies (hangul-composition first second)
-             (hangul-syllable-p (hangul-composition first second)))
-    :use hangul-syllable-option-p-of-hangul-composition
-    :enable hangul-syllable-option-p
-    :disable hangul-syllable-option-p-of-hangul-composition)
+             (hangul-syllable-p (hangul-composition first second))))
 
   (defrule scalar-value-p-of-hangul-composition
     (implies (hangul-composition first second)
