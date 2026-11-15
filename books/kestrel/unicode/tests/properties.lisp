@@ -68,8 +68,9 @@
 (test (not (xid-start-p #x0301 *v16*))) ; COMBINING ACUTE ACCENT
 (test (xid-continue-p #x0301 *v16*))
 
-; ZWNJ and ZWJ have XID_Continue
-; (it is UTS #39, not UAX #31, that restricts them).
+; ZERO WIDTH JOINER (and ZERO WIDTH NON-JOINER) have XID_Continue;
+; it is Unicode Technical Standard #39, Unicode Security Mechanisms,
+; not UAX #31, that restricts them.
 
 (test (not (xid-start-p #x200D *v16*))) ; ZERO WIDTH JOINER
 (test (xid-continue-p #x200D *v16*))
@@ -96,17 +97,17 @@
 
 ; Identifiers.
 
-(test (default-identifier-p (list (char-code #\x) (char-code #\1)) *v16*))
-(test (not (default-identifier-p (list (char-code #\1) (char-code #\x))
-                                 *v16*)))
-(test (not (default-identifier-p (list (char-code #\a) (char-code #\-))
-                                 *v16*)))
-(test (not (default-identifier-p nil *v16*)))
+(test (xid-identifier-p (list (char-code #\x) (char-code #\1)) *v16*))
+(test (not (xid-identifier-p (list (char-code #\1) (char-code #\x))
+                             *v16*)))
+(test (not (xid-identifier-p (list (char-code #\a) (char-code #\-))
+                             *v16*)))
+(test (not (xid-identifier-p nil *v16*)))
 
 ; An underscore can continue an identifier but cannot start one.
 
-(test (not (default-identifier-p (list (char-code #\_) (char-code #\x))
-                                 *v16*)))
+(test (not (xid-identifier-p (list (char-code #\_) (char-code #\x))
+                             *v16*)))
 (test (xid-continue-listp (list (char-code #\_) (char-code #\x)) *v16*))
 (test (xid-continue-listp nil *v16*))
 
@@ -114,8 +115,8 @@
 ; Here the two LATIN SMALL LETTER E WITH ACUTE are decomposed,
 ; and the letter s and its two combining marks are composed.
 
-(test (default-identifier-p (nfd '(#x00E9 #x0074 #x00E9) *v16*) *v16*))
-(test (default-identifier-p (nfc '(#x0073 #x0323 #x0307) *v16*) *v16*))
+(test (xid-identifier-p (nfd '(#x00E9 #x0074 #x00E9) *v16*) *v16*))
+(test (xid-identifier-p (nfc '(#x0073 #x0323 #x0307) *v16*) *v16*))
 
 ; The XID properties leave out the code points
 ; that would make this fail [UAX #31, Section 5.1].
@@ -135,11 +136,11 @@
 ; but not an NFC form that is one:
 ; the NFKC form of U+2122 TRADE MARK SIGN is TM.
 
-(test (not (default-identifier-p '(#x2122) *v16*)))
-(test (not (default-identifier-p (nfc '(#x2122) *v16*) *v16*)))
+(test (not (xid-identifier-p '(#x2122) *v16*)))
+(test (not (xid-identifier-p (nfc '(#x2122) *v16*) *v16*)))
 (test (equal (nfkc '(#x2122) *v16*)
              (list (char-code #\T) (char-code #\M))))
-(test (default-identifier-p (nfkc '(#x2122) *v16*) *v16*))
+(test (xid-identifier-p (nfkc '(#x2122) *v16*) *v16*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

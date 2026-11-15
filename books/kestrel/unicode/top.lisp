@@ -51,10 +51,12 @@
       see @(see code-points).")
     (xdoc::li
      "The @('XID_Start') and @('XID_Continue') properties,
-      which define identifiers:
+      where @('ID') is short for `identifier',
+      and the identifiers that they define:
       see @(see xid).")
     (xdoc::li
-     "The normalization forms NFD, NFC, NFKD and NFKC,
+     "The four normalization forms, which are
+      Normalization Forms D, C, KD and KC (NFD, NFC, NFKD and NFKC),
       with what they are made of:
       decompositions, combining classes, composition exclusions,
       and the algorithms for Hangul syllables:
@@ -94,7 +96,7 @@
      "@('kestrel/unicode/code-points') for the code points and scalar values.")
     (xdoc::li
      "@('kestrel/unicode/xid') for @(tsee xid-start-p),
-      @(tsee xid-continue-p) and @(tsee default-identifier-p).")
+      @(tsee xid-continue-p) and @(tsee xid-identifier-p).")
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p).")

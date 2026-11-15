@@ -25,6 +25,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
+    "UTF-8 is the encoding form of the Unicode Standard
+     that represents each scalar value by one to four bytes
+     [Unicode, Section 3.9];
+     UTF is short for Unicode Transformation Format.")
+   (xdoc::p
     "This library does not have its own UTF-8 decoder and encoder:
      the library @(see acl2::unicode) has verified ones.
      That library calls `Unicode characters'

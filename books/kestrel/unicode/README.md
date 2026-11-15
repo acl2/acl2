@@ -10,13 +10,30 @@ what a maintainer needs: where things are, where the data comes from, how to
 regenerate it, how to add a Unicode version, and how the library was
 validated.
 
+## Abbreviations
+
+- NFD, NFC, NFKD, NFKC: Normalization Forms D, C, KD and KC (UAX #15,
+  Table 1).  D is for the two decomposed forms and C for the two composed
+  forms; K stands for compatibility, because C already stands for
+  composition.
+- `XID_Start`, `XID_Continue`: `ID` is short for identifier.  UAX #31
+  derives these two properties from `ID_Start` and `ID_Continue` with the
+  modifications of its Section 5.1, which are there so that normalizing an
+  identifier gives an identifier.  The letter X marks the properties that
+  have those modifications; the Unicode documents do not say what it stands
+  for.  An XID identifier is a code point with `XID_Start` followed by code
+  points with `XID_Continue`.
+- UAX: Unicode Standard Annex.  UAX #15 is Unicode Normalization Forms,
+  UAX #31 is Unicode Identifiers and Syntax.
+- UCD: Unicode Character Database.
+
 ## What is here
 
 | Book | Contents |
 |------|----------|
 | `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
 | `versions` | The supported versions of Unicode, as a type. |
-| `xid` | `XID_Start` and `XID_Continue`, and the default identifiers of UAX #31. |
+| `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31). |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
@@ -107,8 +124,8 @@ over the tables, and so re-checked whenever a version is added:
   gives the decomposed form.
 - `nfc-of-nfc`, `nfkc-of-nfkc`, `nfc-of-nfkc`: normalizing a second time to
   a composed form changes nothing.
-- `default-identifier-p-of-nfc` (and the same for the other three forms):
-  normalizing an identifier gives an identifier, where an identifier is a
+- `xid-identifier-p-of-nfc` (and the same for the other three forms):
+  normalizing an XID identifier gives an XID identifier, that is, a
   code point with `XID_Start` followed by code points with `XID_Continue`.
   This is the closure under normalization of UAX #31, Section 5.1.3.  For
   `nfd` and `nfc` the theorems are equalities: a list is an identifier
@@ -131,7 +148,7 @@ supported version, and nothing else of this library.
 | To get | Include | Books of this library that it loads | Tables that it loads |
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
-| `xid-start-p`, `xid-continue-p`, `default-identifier-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `xid-start-p`, `xid-continue-p`, `xid-identifier-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |

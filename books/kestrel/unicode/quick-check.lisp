@@ -27,8 +27,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For each normalization form there is a property,
-     e.g. @('NFC_Quick_Check'),
+    "For each normalization form
+     (NFD, NFC, NFKD and NFKC: see @(see normalization))
+     there is a property, e.g. @('NFC_Quick_Check'),
      that says whether a code point may occur in a text in that form:
      yes, no, or maybe
      [UAX #15, Section 9].

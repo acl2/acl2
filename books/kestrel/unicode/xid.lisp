@@ -25,23 +25,34 @@
 
 (defxdoc+ xid
   :parents (unicode)
-  :short "The @('XID_Start') and @('XID_Continue') properties."
+  :short "The @('XID_Start') and @('XID_Continue') properties,
+          and the identifiers that they define."
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are the properties that the default identifier syntax
-     of [UAX #31] recommends for programming languages:
+    "In these names, @('ID') is short for `identifier'.
+     [UAX #31] has the properties @('ID_Start') and @('ID_Continue'),
+     of the code points that can start an identifier
+     and of the code points that can continue one.
+     It derives @('XID_Start') and @('XID_Continue') from those two
+     with the modifications of [UAX #31, Section 5.1],
+     which are there so that normalizing an identifier gives an identifier
+     (this is proved in @(see identifier-closure)).
+     So the letter @('X') marks the two properties
+     that have those modifications;
+     the Unicode documents do not say what it stands for.
+     Like [UAX #31], we write @('XID')
+     for @('XID_Start') and @('XID_Continue') together.")
+   (xdoc::p
+    "[UAX #31] recommends the @('XID') properties
+     for the identifiers of programming languages.
+     In its default identifier syntax,
      an identifier consists of a code point with @('XID_Start')
      followed by any number of code points with @('XID_Continue')
-     (see @(tsee default-identifier-p)).
-     (Languages adjust this;
+     (see @(tsee xid-identifier-p)).
+     Languages adjust this;
      many also let an identifier start with an underscore,
-     which has @('XID_Continue') but not @('XID_Start').)
-     Unlike @('ID_Start') and @('ID_Continue'),
-     the @('XID') properties are closed under
-     the Unicode normalization forms:
-     normalizing an identifier gives an identifier,
-     which is proved in @(see identifier-closure).")
+     which has @('XID_Continue') but not @('XID_Start').")
    (xdoc::p
     "Both are derived properties.
      We take them from the file @('DerivedCoreProperties.txt')
@@ -85,6 +96,11 @@
   :returns (yes/no booleanp)
   :short "Check if a code point has the @('XID_Start') property,
           in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the code point can start an identifier.
+     See @(see xid) for the name of the property."))
   (code-point-in-ranges-p cp (xid-start-ranges ver))
   :hooks (:fix))
 
@@ -94,6 +110,12 @@
   :returns (yes/no booleanp)
   :short "Check if a code point has the @('XID_Continue') property,
           in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the code point can continue an identifier;
+     the code points that can start one can also continue one.
+     See @(see xid) for the name of the property."))
   (code-point-in-ranges-p cp (xid-continue-ranges ver))
   :hooks (:fix))
 
@@ -107,7 +129,7 @@
    (xdoc::p
     "Every code point that can start an identifier can continue one.
      Every code point that can continue an identifier is a scalar value.
-     Among the ASCII code points,
+     Among the ASCII code points, which are those below @('#x80'),
      the ones that can start an identifier are the letters,
      and the ones that can continue an identifier are
      the letters, the digits and the underscore.")
@@ -249,6 +271,11 @@
   :short "Check if all the code points of a list
           have the @('XID_Continue') property,
           in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if each of them can continue an identifier.
+     See @(see xid) for the name of the property."))
   (xid-continue-p x ver)
 
   ///
@@ -268,18 +295,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define default-identifier-p ((cps code-point-listp) (ver versionp))
+(define xid-identifier-p ((cps code-point-listp) (ver versionp))
   :returns (yes/no booleanp)
-  :short "Check if a list of code points is a default identifier,
+  :short "Check if a list of code points is an @('XID') identifier,
           in a version of Unicode."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the identifier syntax of [UAX #31, UAX31-D1]
-     with the lexical classes of [UAX #31, UAX31-R1-1]:
+    "By @('XID') identifier we mean an identifier
+     that is made of code points with the @('XID') properties:
      a code point that has @('XID_Start'),
      followed by any number of code points that have @('XID_Continue').
-     There are no medial code points."))
+     This is the default identifier syntax of [UAX #31, UAX31-D1]
+     with the lexical classes of [UAX #31, UAX31-R1-1];
+     there are no medial code points.")
+   (xdoc::p
+    "In @('XID'), @('ID') is short for `identifier',
+     and the letter @('X') distinguishes these two properties
+     from @('ID_Start') and @('ID_Continue'),
+     from which they are derived
+     so that normalizing an identifier gives an identifier:
+     see @(see xid)."))
   (and (consp cps)
        (xid-start-p (car cps) ver)
        (xid-continue-listp (cdr cps) ver))
@@ -287,25 +323,25 @@
 
   ///
 
-  (defrule default-identifier-p-of-cons
-    (equal (default-identifier-p (cons cp cps) ver)
+  (defrule xid-identifier-p-of-cons
+    (equal (xid-identifier-p (cons cp cps) ver)
            (and (xid-start-p cp ver)
                 (xid-continue-listp cps ver))))
 
-  (defrule default-identifier-p-of-append
-    (equal (default-identifier-p (append cps1 cps2) ver)
+  (defrule xid-identifier-p-of-append
+    (equal (xid-identifier-p (append cps1 cps2) ver)
            (if (consp cps1)
-               (and (default-identifier-p cps1 ver)
+               (and (xid-identifier-p cps1 ver)
                     (xid-continue-listp cps2 ver))
-             (default-identifier-p cps2 ver))))
+             (xid-identifier-p cps2 ver))))
 
-  (defrule xid-continue-listp-when-default-identifier-p
-    (implies (default-identifier-p cps ver)
+  (defrule xid-continue-listp-when-xid-identifier-p
+    (implies (xid-identifier-p cps ver)
              (xid-continue-listp cps ver))
     :rule-classes (:rewrite :forward-chaining))
 
-  (defruled scalar-value-listp-when-default-identifier-p
-    (implies (and (default-identifier-p cps ver)
+  (defruled scalar-value-listp-when-xid-identifier-p
+    (implies (and (xid-identifier-p cps ver)
                   (code-point-listp cps))
              (scalar-value-listp cps))
     :enable scalar-value-listp-when-xid-continue-listp))
