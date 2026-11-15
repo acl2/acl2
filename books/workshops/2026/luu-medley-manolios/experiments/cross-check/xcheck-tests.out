@@ -1,0 +1,873 @@
+This is SBCL 2.6.4, an implementation of ANSI Common Lisp.
+More information about SBCL is available at <http://www.sbcl.org/>.
+
+SBCL is free software, provided as is, with absolutely no warranty.
+It is mostly in the public domain; some portions are provided under
+BSD-style licenses.  See the CREDITS and COPYING files in the
+distribution for more information.
+
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+ +   built September 2, 2026  12:24:28.                                 +
+ +   (Git commit hash: 98c07036d7bb67c747cdd916a3000aa1b7f4beb7)        +
+ + Copyright (C) 2026, Regents of the University of Texas.              +
+ + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
+ + you are welcome to redistribute it under certain conditions.  For    +
+ + details, see the LICENSE file distributed with ACL2.                 +
+ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Project-dir-alist:
+((:SYSTEM . "/Users/quanluutm/Documents/acl2-copy/books/")).
+Type :help for help.
+Type (quit) to quit completely out of ACL2.
+
+ACL2 !>Note (from clause-processors/equality): disabling DISJOIN, DISJOIN2,
+CONJOIN and CONJOIN2.
+
+
+ACL2 Observation in NON-LINEAR-ARITHMETIC:  To turn on non-linear arithmetic,
+execute :
+
+(SET-DEFAULT-HINTS '((NONLINEARP-DEFAULT-HINT STABLE-UNDER-SIMPLIFICATIONP
+                                              HIST PSPV)))
+
+or :
+
+(SET-DEFAULT-HINTS
+     '((NONLINEARP-DEFAULT-HINT++ ID
+                                  STABLE-UNDER-SIMPLIFICATIONP HIST NIL)))
+
+See the README for more about non-linear arithmetic and general information
+about using this library.
+
+Summary
+Form:  ( INCLUDE-BOOK "xcheck-defs" ...)
+Rules: NIL
+Time:  1.23 seconds (prove: 0.00, print: 0.00, other: 1.23)
+ "/Users/quanluutm/Documents/FM-Research-at-Northeastern/matmul-paper-2026/xcheck/xcheck-defs.lisp"
+ACL2 !>
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/builtin-combinators.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/defdata-util.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/tau-characterization.
+
+TTAG NOTE (for included book): Adding ttag :DEFDATA-ATTACH from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.
+
+TTAG NOTE (for included book): Adding ttag :DEFDATA-ATTACH from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/base.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/sig.
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "random-state-basis1"
+...):  After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp":
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "random-state" ...): 
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "var-book" ...):  After
+processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "base" ...):  After processing
+the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/base.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "acl2s/defdata/top" ...):
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/top.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/base.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+Summary
+Form:  ( INCLUDE-BOOK "acl2s/defdata/top" ...)
+Rules: NIL
+Warnings:  Uncertified
+Time:  0.45 seconds (prove: 0.00, print: 0.00, other: 0.45)
+ "/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/top.lisp"
+ACL2 !>
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/tau-characterization.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/defdata-util.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/utilities.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/type.
+
+TTAG NOTE (for included book): Adding ttag :EV-FNCALL-W-OK from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/builtin-combinators.
+
+TTAG NOTE (for included book): Adding ttag :ACL2S-TIMEOUT from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/with-timeout.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/fixers-greedy.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/top.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/sig.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/select.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/callback.
+
+TTAG NOTE (for included book): Adding ttag :T from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/prove-cgen.
+
+TTAG NOTE (for included book): Adding ttag :DEFDATA-ATTACH from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/top.
+
+TTAG NOTE (for included book): Adding ttag :DEFDATA-ATTACH from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/base.
+
+TTAG NOTE (for included book): Adding ttag :DEFDATA-ATTACH from book /Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "simple-search" ...):
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "incremental-search" ...):
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "cgen-search" ...):  After
+processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp"
+ so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "callback" ...):  After
+processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/callback.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp"
+ so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "prove-cgen" ...):  After
+processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/prove-cgen.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/callback.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp"
+ so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "fixers-greedy" ...):
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/fixers-greedy.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/prove-cgen.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/callback.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp"
+ so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+ACL2 Warning [Uncertified] in ( INCLUDE-BOOK "acl2s/cgen/top" ...):
+After processing the events in the book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/top.lisp":
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/fixers-greedy.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/top.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/base.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/var-book.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/prove-cgen.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/callback.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/cgen-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/incremental-search.lisp"
+ so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/simple-search.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state.lisp"
+so book recertification is probably required;
+-- its certificate requires the uncertified book 
+"/Users/quanluutm/Documents/acl2-copy/books/acl2s/defdata/random-state-basis1.lisp"
+ so book recertification is probably required;
+-- its certificate requires the book "/Users/quanluutm/Documents/acl2-
+copy/books/ihs/basic-definitions.lisp" with certificate annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book hash ((:BOOK-LENGTH . 34269) (:BOOK-WRITE-DATE . 3987005306)),
+but we have included a version of "basic-definitions" with certificate
+annotations
+  ((:SKIPPED-PROOFSP) (:AXIOMSP) (:TTAGS))
+and book-hash ((:BOOK-LENGTH . 34311) (:BOOK-WRITE-DATE . 3997354929)),
+so book recertification is probably required.
+
+
+Summary
+Form:  ( INCLUDE-BOOK "acl2s/cgen/top" ...)
+Rules: NIL
+Warnings:  Uncertified
+Time:  0.31 seconds (prove: 0.00, print: 0.00, other: 0.31)
+ "/Users/quanluutm/Documents/acl2-copy/books/acl2s/cgen/top.lisp"
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':NUM-TRIALS
+          '(ACL2S::ACL2S-PARAM-INFO% 300
+                                     (AND (NATP VALUE) (< VALUE 1000000000))
+                                     NIL))
+
+
+ACL2 !>>(VALUE-TRIPLE '300)
+ 300
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':CGEN-SINGLE-TEST-TIMEOUT
+          '(ACL2S::ACL2S-PARAM-INFO% 0 (AND (RATIONALP VALUE) (<= 0 VALUE))
+                                     NIL))
+
+
+ACL2 !>>(VALUE-TRIPLE '0)
+ 0
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':CGEN-LOCAL-TIMEOUT
+          '(ACL2S::ACL2S-PARAM-INFO% 0 (AND (RATIONALP VALUE) (<= 0 VALUE))
+                                     NIL))
+
+
+ACL2 !>>(VALUE-TRIPLE '0)
+ 0
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':CGEN-TIMEOUT
+          '(ACL2S::ACL2S-PARAM-INFO% 7200
+                                     (AND (RATIONALP VALUE) (<= 0 VALUE))
+                                     NIL))
+
+
+ACL2 !>>(VALUE-TRIPLE '7200)
+ 7200
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':PRINT-CGEN-SUMMARY
+          '(ACL2S::ACL2S-PARAM-INFO% T (BOOLEANP VALUE)
+                                     NIL))
+
+The event ( TABLE ACL2S-DEFAULTS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
+
+ACL2 !>>(VALUE-TRIPLE 'T)
+ T
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':NUM-WITNESSES
+          '(ACL2S::ACL2S-PARAM-INFO% 3 (NATP VALUE)
+                                     NIL))
+
+The event ( TABLE ACL2S-DEFAULTS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
+
+ACL2 !>>(VALUE-TRIPLE '3)
+ 3
+ACL2 !>
+
+ACL2 !>>(TABLE ACL2S-DEFAULTS-TABLE
+          ':NUM-COUNTEREXAMPLES
+          '(ACL2S::ACL2S-PARAM-INFO% 3 (NATP VALUE)
+                                     NIL))
+
+The event ( TABLE ACL2S-DEFAULTS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
+
+ACL2 !>>(VALUE-TRIPLE '3)
+ 3
+ACL2 !> Predicate events...
+Form:  ( DEFUN SEEDP ...)
+Form:  ( IN-THEORY (DISABLE* ...))
+Form:  ( IN-THEORY (ENABLE ...))
+Form:  ( TABLE RULESET-TABLE ...)
+Form:  ( MAKE-EVENT (LET* ...))
+ Tau characterization events...
+Defdata/Note: SEEDP relatively complete for Tau.
+Form:  ( DEFTHM DEF=>SEED ...)
+Form:  ( DEFTHM SEED=>DEF ...)
+ Enumerator events...
+Form:  ( DEFUN NTH-SEED-BUILTIN ...)
+Form:  ( DEFUN NTH-SEED/ACC-BUILTIN ...)
+Form:  ( PROGN (SET-BOGUS-DEFUN-HINTS-OK T) ...)
+Form:  ( ENCAPSULATE NIL (LOGIC) ...)
+Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+ Registering type...
+Form:  ( DEFUN NTH-SEED ...)
+Form:  ( ENCAPSULATE (((NTH-SEED * ...) ...) ...) ...)
+Form:  ( DEFUN NTH-SEED/ACC ...)
+Form:  ( ENCAPSULATE (((NTH-SEED/ACC * ...) ...) ...) ...)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( DEFATTACH (NTH-SEED NTH-SEED-BUILTIN) ...)
+Form:  ( DEFATTACH (NTH-SEED/ACC NTH-SEED/ACC-BUILTIN) ...)
+Form:  ( TABLE DEFDATA::TYPE-METADATA-TABLE ...)
+Form:  ( PROGN (LOCAL ...) ...)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (LOGIC) ...)
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+Form:  ( MAKE-EVENT (DEFDATA::REGISTER-TYPE-FN ...))
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (WITH-OUTPUT :ON ...) ...)
+Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+Form:  ( PROGN (ENCAPSULATE NIL ...) ...)
+Time:  0.05 seconds (prove: 0.00, print: 0.00, other: 0.04)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (WITH-OUTPUT :OFF ...) ...)
+Time:  0.07 seconds (prove: 0.00, print: 0.00, other: 0.07)
+ T
+ACL2 !> Predicate events...
+Form:  ( DEFUN SEED2P ...)
+Form:  ( IN-THEORY (DISABLE* ...))
+Form:  ( IN-THEORY (ENABLE ...))
+Form:  ( TABLE RULESET-TABLE ...)
+Form:  ( MAKE-EVENT (LET* ...))
+ Tau characterization events...
+ (SEED2P V1) <= body -- not complete. 
+Reasons: 
+("Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule")
+
+ (SEED2P V1) => body -- not complete. 
+Reasons: 
+("The formula fails to fit any of the forms for acceptable :TAU-SYSTEM rules."
+ "Nesting i.e. (P (f ... (g x1 ...) ...) not allowed in conclusion of signature rule")
+
+Form:  ( DEFTHM SEED2=>DEF ...)
+ Enumerator events...
+Form:  ( DEFUN NTH-SEED2-BUILTIN ...)
+Form:  ( DEFUN NTH-SEED2/ACC-BUILTIN ...)
+Form:  ( PROGN (SET-BOGUS-DEFUN-HINTS-OK T) ...)
+Form:  ( ENCAPSULATE NIL (LOGIC) ...)
+Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+ Registering type...
+Form:  ( DEFUN NTH-SEED2 ...)
+Form:  ( ENCAPSULATE (((NTH-SEED2 * ...) ...) ...) ...)
+Form:  ( DEFUN NTH-SEED2/ACC ...)
+Form:  ( ENCAPSULATE (((NTH-SEED2/ACC * ...) ...) ...) ...)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( DEFATTACH (NTH-SEED2 NTH-SEED2-BUILTIN) ...)
+Form:  ( DEFATTACH (NTH-SEED2/ACC NTH-SEED2/ACC-BUILTIN) ...)
+Form:  ( TABLE DEFDATA::TYPE-METADATA-TABLE ...)
+Form:  ( PROGN (LOCAL ...) ...)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (LOGIC) ...)
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+Form:  ( MAKE-EVENT (DEFDATA::REGISTER-TYPE-FN ...))
+Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (WITH-OUTPUT :ON ...) ...)
+Time:  0.02 seconds (prove: 0.00, print: 0.00, other: 0.02)
+Form:  ( PROGN (ENCAPSULATE NIL ...) ...)
+Time:  0.04 seconds (prove: 0.00, print: 0.00, other: 0.04)
+
+TTAG NOTE: Adding ttag :DEFDATA-ATTACH from the top level loop.
+Form:  ( ENCAPSULATE NIL (WITH-OUTPUT :OFF ...) ...)
+Time:  0.06 seconds (prove: 0.00, print: 0.00, other: 0.05)
+ T
+ACL2 !>
+Summary
+Form:  ( DEFUN RANK-HISTOGRAM ...)
+Rules: NIL
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ RANK-HISTOGRAM
+ACL2 !>
+Summary
+Form:  ( DEFUN COUNT-CORRECT-PERTURBED ...)
+Rules: NIL
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ COUNT-CORRECT-PERTURBED
+ACL2 !>
+Summary
+Form:  ( DEFUN COUNT-CORRECT-TRIPLES ...)
+Rules: NIL
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ COUNT-CORRECT-TRIPLES
+ACL2 !>
+Summary
+Form:  ( DEFUN COUNT-MOVE-KINDS ...)
+Rules: NIL
+Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+ COUNT-MOVE-KINDS
+ACL2 !>((9 . 42)
+ (10 . 46)
+ (11 . 48)
+ (13 . 50)
+ (14 . 51)
+ (8 . 15)
+ (12 . 48))
+ACL2 !>((30 . 9)
+ (32 . 13)
+ (31 . 16)
+ (33 . 39)
+ (29 . 11)
+ (28 . 12))
+ACL2 !>(:CORRECT-AMONG-300-PERTURBED-N2 76)
+ACL2 !>(:CORRECT-AMONG-300-RANDOM-TRIPLE-LISTS-N2 0)
+ACL2 !>(:MOVE-KINDS-OF-300-RANDOM-MOVES-N2 (((:PLUS 1) . 86)
+                                     ((:PLUS 2) . 81)
+                                     ((:PLUS 0) . 79)
+                                     ((:FLIP 0) . 19)
+                                     ((:FLIP 1) . 22)
+                                     ((:FLIP 2) . 13)))
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 292 (292 unique)
+satisfied the hypotheses, and found 0 counterexamples and 292 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 48))
+ -- ((S 2))
+ -- ((S 777))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 292 (292 unique)
+satisfied the hypotheses, and found 0 counterexamples and 292 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 725))
+ -- ((S 4))
+ -- ((S 988))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 298 (298 unique)
+satisfied the hypotheses, and found 0 counterexamples and 298 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 428))
+ -- ((S 34))
+ -- ((S 120))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 298 (298 unique)
+satisfied the hypotheses, and found 0 counterexamples and 298 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 315))
+ -- ((S 831))
+ -- ((S 516))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 283 (283 unique)
+satisfied the hypotheses, and found 0 counterexamples and 283 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 3))
+ -- ((S 606))
+ -- ((S 5))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 300 (300 unique)
+satisfied the hypotheses, and found 0 counterexamples and 300 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 884))
+ -- ((S 262))
+ -- ((S 864))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 45 examples across 1 subgoals, of which 45 (45 unique) satisfied
+the hypotheses, and found 3 counterexamples and 42 witnesses.
+
+**We falsified the conjecture. Here are counterexamples:**
+ [found in : "top"]
+ -- ((S 648))
+ -- ((S 791))
+ -- ((S 503))
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 814))
+ -- ((S 48))
+ -- ((S 280))
+
+Test? found a counterexample.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 281 (281 unique)
+satisfied the hypotheses, and found 0 counterexamples and 281 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((SP '(1 1)))
+ -- ((SP '(59 6)))
+ -- ((SP '(957 2)))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 299 (299 unique)
+satisfied the hypotheses, and found 0 counterexamples and 299 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((SP '(342 13)))
+ -- ((SP '(12 43)))
+ -- ((SP '(4 1)))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 300 (300 unique)
+satisfied the hypotheses, and found 0 counterexamples and 300 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 149))
+ -- ((S 976))
+ -- ((S 345))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 297 (297 unique)
+satisfied the hypotheses, and found 0 counterexamples and 297 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 34))
+ -- ((S 46))
+ -- ((S 69))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 277 (277 unique)
+satisfied the hypotheses, and found 0 counterexamples and 277 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 2))
+ -- ((S 7))
+ -- ((S 3))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 290 (290 unique)
+satisfied the hypotheses, and found 0 counterexamples and 290 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 102))
+ -- ((S 3))
+ -- ((S 855))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 294 (294 unique)
+satisfied the hypotheses, and found 0 counterexamples and 294 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((S 50))
+ -- ((S 62))
+ -- ((S 1))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 279 (279 unique)
+satisfied the hypotheses, and found 0 counterexamples and 279 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((SP '(9 5)))
+ -- ((SP '(1 0)))
+ -- ((SP '(2 0)))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>
+TTAG NOTE: Adding ttag :CGEN-TESTING-DRIVER-LOOP from the top level loop.
+
+**Summary of Cgen/testing**
+We tested 300 examples across 1 subgoals, of which 300 (300 unique)
+satisfied the hypotheses, and found 0 counterexamples and 300 witnesses.
+
+Cases in which the conjecture is true include:
+ [found in : "top"]
+ -- ((SP '(183 9)))
+ -- ((SP '(25 6)))
+ -- ((SP '(357 33)))
+
+Test? succeeded. No counterexamples were found.
+ACL2 !>Bye.
