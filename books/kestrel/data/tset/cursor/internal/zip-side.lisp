@@ -344,6 +344,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define zip-value ((zip zipp))
+  :type-prescription :none
+  :guard (not (tree-empty-p (zip->focus zip)))
+  :short "The value of the element the zipper is at."
+  (tree-element->val (tree->head (zip->focus zip)))
+  :inline t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-value-when-zip-equiv-congruence
+  (implies (zip-equiv zip0 zip1)
+           (equal (zip-value zip0)
+                  (zip-value zip1)))
+  :rule-classes :congruence
+  :enable zip-value)
+
+(defruled zip-value-when-tree-empty-p-of-focus
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-value zip)
+                  nil))
+  :enable (zip-value
+           irr-tree-element))
+
+(defrule zip-value-when-tree-empty-p-of-focus-cheap
+  (implies (tree-empty-p (zip->focus zip))
+           (equal (zip-value zip)
+                  nil))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by zip-value-when-tree-empty-p-of-focus)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define zip-before ((zip zipp))
   :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)

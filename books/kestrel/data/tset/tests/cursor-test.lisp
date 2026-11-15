@@ -105,5 +105,4 @@
   (let ((cursor (seek x set)))
     (cursor-count (if (entryp cursor)
                       cursor
-                    (step-forward cursor))))
-  :guard-hints (("Goal" :in-theory (enable endp))))
+                    (step-forward cursor)))))

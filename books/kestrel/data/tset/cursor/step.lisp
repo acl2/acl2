@@ -30,6 +30,7 @@
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
+(local (include-book "../set"))
 (local (include-book "../insert"))
 (local (include-book "../delete"))
 (local (include-book "../extensionality"))
@@ -38,10 +39,12 @@
 (local (include-book "before-after"))
 (local (include-book "internal/before-after"))
 (local (include-book "from-cursor"))
+(local (include-book "begin-end"))
 (local (include-book "internal/begin-end"))
 
 (local (include-book "internal/zipper"))
 (local (include-book "internal/zip-step"))
+(local (include-book "internal/zip-side"))
 (local (include-book "internal/zip-order"))
 (local (include-book "internal/zip-step-side"))
 
@@ -282,6 +285,12 @@
            entryp
            break-abstraction))
 
+(defrule endp-of-step-forward
+  (equal (endp (step-forward cursor))
+         (emptyp (after cursor)))
+  :cases ((entryp cursor))
+  :enable endp)
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule entryp-of-step-backward
@@ -348,6 +357,12 @@
            step-backward
            entryp
            break-abstraction))
+
+(defrule beginp-of-step-backward
+  (equal (beginp (step-backward cursor))
+         (emptyp (before cursor)))
+  :cases ((entryp cursor))
+  :enable beginp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

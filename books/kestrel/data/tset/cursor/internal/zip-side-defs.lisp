@@ -27,6 +27,7 @@
           zip-tree-after
           zip-path-before
           zip-path-after
+          zip-value
           zip-before
           zip-after
           zip-oset-before

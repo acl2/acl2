@@ -5,6 +5,7 @@
 ; Author: Grant Jurgensen (grant@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "TSET")
 
 (include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
@@ -13,6 +14,7 @@
 (include-book "zip-frame-defs")
 (include-book "zipper-defs")
 (include-book "zip-move-defs")
+(include-book "zip-side-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "zip-seek"))

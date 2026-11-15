@@ -12,6 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 
 (include-book "cursor-defs")
+(include-book "internal/zip-side-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -20,6 +21,7 @@
 (local (include-book "cursor"))
 
 (local (include-book "internal/zipper"))
+(local (include-book "internal/zip-side"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

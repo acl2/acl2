@@ -27,7 +27,6 @@
           zip-frame-plug
           zip-path-plug
           zip-plug
-          zip-root
-          zip-value))
+          zip-root))
 
 (defequiv zip-equiv)
