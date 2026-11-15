@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 ;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-(in-theory (disable rb rb-1 rml-size))
+(in-theory (disable rb rb-1 rml-size wb wb-1 wml-size))
 
 (defthm mv-nth-0-of-rb-1-of-xw
   (implies (not (equal :mem fld))
@@ -577,7 +577,7 @@
            (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 n addr2 w value x86))))
                   (mv-nth 1 (rvm08 addr x86))))
   :hints (("Goal" :induct (wb-1-induct n addr2 value x86)
-           :in-theory (disable rvm08 wvm08))))
+           :in-theory (e/d (wb-1) (rvm08 wvm08)))))
 
 (defthm mv-nth-1-of-rb-1-of-mv-nth-1-of-wb-1-disjoint
   (implies (or (<= (+ n2 addr2) addr)
