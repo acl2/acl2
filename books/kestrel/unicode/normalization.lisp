@@ -791,6 +791,12 @@
   (defrule canonically-ordered-p-of-nfd
     (canonically-ordered-p (nfd cps ver) ver))
 
+  (defrule nfd-when-undecomposable-listp-and-canonically-ordered-p
+    (implies (and (undecomposable-listp cps nil ver)
+                  (canonically-ordered-p cps ver))
+             (equal (nfd cps ver)
+                    (code-point-list-fix cps))))
+
   (defrule nfd-of-nfd
     (equal (nfd (nfd cps ver) ver)
            (nfd cps ver)))
@@ -850,6 +856,12 @@
   (defrule canonically-ordered-p-of-nfkd
     (canonically-ordered-p (nfkd cps ver) ver))
 
+  (defrule nfkd-when-undecomposable-listp-and-canonically-ordered-p
+    (implies (and (undecomposable-listp cps t ver)
+                  (canonically-ordered-p cps ver))
+             (equal (nfkd cps ver)
+                    (code-point-list-fix cps))))
+
   (defrule nfkd-of-nfkd
     (equal (nfkd (nfkd cps ver) ver)
            (nfkd cps ver)))
@@ -857,10 +869,7 @@
   (defrule nfd-of-nfkd
     (equal (nfd (nfkd cps ver) ver)
            (nfkd cps ver))
-    :enable nfd
-    :disable nfkd
-    :use (undecomposable-listp-of-nfkd
-          canonically-ordered-p-of-nfkd))
+    :disable nfkd)
 
   (defrule nfkd-of-canonical-compose
     (implies (and (undecomposable-listp cps t ver)
@@ -944,20 +953,17 @@
                     cps))
     :enable (nfd
              decompose-when-all-below-a0
-             canonical-order-when-all-below-300)
-    :use (:instance code-points-below-p-when-below-smaller
-                    (bound1 #xA0)
-                    (bound2 #x300)))
+             canonical-order-when-all-below-300
+             code-points-below-p-when-below-smaller))
 
   (defrule nfc-when-all-below-a0
     (implies (and (code-point-listp cps)
                   (code-points-below-p cps #xA0))
              (equal (nfc cps ver)
                     cps))
-    :enable (nfc canonical-compose-when-all-below-300)
-    :use (:instance code-points-below-p-when-below-smaller
-                    (bound1 #xA0)
-                    (bound2 #x300)))
+    :enable (nfc
+             canonical-compose-when-all-below-300
+             code-points-below-p-when-below-smaller))
 
   (defrule nfkd-when-all-below-a0
     (implies (and (code-point-listp cps)
@@ -966,17 +972,14 @@
                     cps))
     :enable (nfkd
              decompose-when-all-below-a0
-             canonical-order-when-all-below-300)
-    :use (:instance code-points-below-p-when-below-smaller
-                    (bound1 #xA0)
-                    (bound2 #x300)))
+             canonical-order-when-all-below-300
+             code-points-below-p-when-below-smaller))
 
   (defrule nfkc-when-all-below-a0
     (implies (and (code-point-listp cps)
                   (code-points-below-p cps #xA0))
              (equal (nfkc cps ver)
                     cps))
-    :enable (nfkc canonical-compose-when-all-below-300)
-    :use (:instance code-points-below-p-when-below-smaller
-                    (bound1 #xA0)
-                    (bound2 #x300))))
+    :enable (nfkc
+             canonical-compose-when-all-below-300
+             code-points-below-p-when-below-smaller)))

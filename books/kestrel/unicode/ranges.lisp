@@ -195,91 +195,12 @@
   ///
 
   (defruled code-point-in-ranges-p-when-ranges-within-ranges-p
-    (implies (and (ranges-within-ranges-p subs sups)
-                  (code-point-in-ranges-p cp subs))
+    (implies (and (code-point-in-ranges-p cp subs)
+                  (ranges-within-ranges-p subs sups))
              (code-point-in-ranges-p cp sups))
     :induct t
     :enable (code-point-in-ranges-p
              code-point-in-ranges-p-when-range-within-ranges-p)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define range-disjoint-from-range-p ((x range-p) (y range-p))
-  :returns (yes/no booleanp)
-  :short "Check if two ranges have no code point in common."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the case when one of the two ranges ends
-     before the other one starts,
-     and also when one of the two has no code points."))
-  (b* (((range x) x)
-       ((range y) y))
-    (or (< x.max x.min)
-        (< y.max y.min)
-        (< x.max y.min)
-        (< y.max x.min)))
-  :hooks (:fix)
-
-  ///
-
-  (defruled not-code-point-in-range-p-when-range-disjoint-from-range-p
-    (implies (and (range-disjoint-from-range-p x y)
-                  (code-point-in-range-p cp x))
-             (not (code-point-in-range-p cp y)))
-    :enable code-point-in-range-p))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define range-disjoint-from-ranges-p ((x range-p) (ys range-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a range has no code point in common
-          with any of the ranges of a list."
-  (cond ((endp ys) t)
-        (t (and (range-disjoint-from-range-p x (car ys))
-                (range-disjoint-from-ranges-p x (cdr ys)))))
-  :hooks (:fix)
-
-  ///
-
-  (defruled not-code-point-in-ranges-p-when-range-disjoint-from-ranges-p
-    (implies (and (range-disjoint-from-ranges-p x ys)
-                  (code-point-in-range-p cp x))
-             (not (code-point-in-ranges-p cp ys)))
-    :induct t
-    :enable (code-point-in-ranges-p
-             not-code-point-in-range-p-when-range-disjoint-from-range-p)))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define ranges-disjoint-from-ranges-p ((xs range-listp) (ys range-listp))
-  :returns (yes/no booleanp)
-  :short "Check if no range of a list has a code point in common
-          with any of the ranges of another list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If this is the case,
-     no code point is in both lists of ranges: see the theorem.
-     Together with @(tsee ranges-within-ranges-p),
-     this lets us prove, by evaluation on the tables,
-     which code points of some part of the codespace have a property:
-     the ones in some ranges do,
-     and the ones in the other ranges of that part do not."))
-  (cond ((endp xs) t)
-        (t (and (range-disjoint-from-ranges-p (car xs) ys)
-                (ranges-disjoint-from-ranges-p (cdr xs) ys))))
-  :hooks (:fix)
-
-  ///
-
-  (defruled not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
-    (implies (and (ranges-disjoint-from-ranges-p xs ys)
-                  (code-point-in-ranges-p cp xs))
-             (not (code-point-in-ranges-p cp ys)))
-    :induct t
-    :enable (code-point-in-ranges-p
-             not-code-point-in-ranges-p-when-range-disjoint-from-ranges-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

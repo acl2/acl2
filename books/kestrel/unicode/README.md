@@ -85,6 +85,9 @@ over the tables, and so re-checked whenever a version is added:
   and precomposed Hangul syllables.
 - `undecomposable-listp-of-nfd`, `canonically-ordered-p-of-nfd`: the result
   of `nfd` is fully decomposed and in canonical order; the same for `nfkd`.
+- `nfd-when-undecomposable-listp-and-canonically-ordered-p`, and the same
+  for `nfkd`: a list that is fully decomposed and in canonical order is its
+  own decomposed form.
 - `nfd-of-nfd`, `nfkd-of-nfkd`, `nfd-of-nfkd`: normalizing a second time to
   a decomposed form changes nothing.
 - `nfc-of-nfd`, `nfkc-of-nfkd`, `nfc-of-nfkd`: composing after decomposing

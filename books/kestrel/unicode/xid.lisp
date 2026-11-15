@@ -17,6 +17,8 @@
 (include-book "data/v17.0.0/derived-core-properties")
 (include-book "data/v18.0.0/derived-core-properties")
 
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -124,11 +126,10 @@
   (defrule xid-continue-p-when-xid-start-p
     (implies (xid-start-p cp ver)
              (xid-continue-p cp ver))
+    :rule-classes (:rewrite :forward-chaining)
     :enable (xid-start-p
-             xid-continue-p)
-    :use (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
-                    (subs (xid-start-ranges ver))
-                    (sups (xid-continue-ranges ver))))
+             xid-continue-p
+             code-point-in-ranges-p-when-ranges-within-ranges-p))
 
   (defrule scalar-value-p-when-xid-continue-p
     (implies (and (xid-continue-p cp ver)
@@ -136,35 +137,40 @@
              (scalar-value-p cp))
     :rule-classes (:rewrite :forward-chaining)
     :enable (xid-continue-p
-             scalar-value-p-when-code-point-in-scalar-value-ranges)
-    :use (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
-                    (subs (xid-continue-ranges ver))
-                    (sups (scalar-value-ranges))))
+             scalar-value-p-when-code-point-in-scalar-value-ranges
+             code-point-in-ranges-p-when-ranges-within-ranges-p))
 
   (defrule scalar-value-p-when-xid-start-p
     (implies (and (xid-start-p cp ver)
                   (code-point-p cp))
              (scalar-value-p cp))
-    :rule-classes (:rewrite :forward-chaining)
-    :use (xid-continue-p-when-xid-start-p
-          scalar-value-p-when-xid-continue-p)
-    :disable (xid-continue-p-when-xid-start-p
-              scalar-value-p-when-xid-continue-p))
+    :rule-classes (:rewrite :forward-chaining))
 
-  ;; The ASCII code points that have, and that do not have, XID_Start:
+  ;; The ASCII code points that have, and that do not have, XID_Start.
+  ;; We check each of the 128 ASCII code points, for each version.
 
-  (defrulel ascii-letters-within-xid-start-ranges
-    (ranges-within-ranges-p (list (range #x41 #x5A)
-                                  (range #x61 #x7A))
-                            (xid-start-ranges ver))
-    :enable xid-start-ranges)
+  (local
+   (define ascii-start-ok ((cp code-point-p) (ranges range-listp))
+     :returns (yes/no booleanp)
+     (b* ((cp (code-point-fix cp)))
+       (equal (code-point-in-ranges-p cp ranges)
+              (or (and (<= (char-code #\A) cp)
+                       (<= cp (char-code #\Z)))
+                  (and (<= (char-code #\a) cp)
+                       (<= cp (char-code #\z))))))
+     :hooks nil))
 
-  (defrulel ascii-non-letters-disjoint-from-xid-start-ranges
-    (ranges-disjoint-from-ranges-p (list (range #x00 #x40)
-                                         (range #x5B #x60)
-                                         (range #x7B #x7F))
-                                   (xid-start-ranges ver))
-    :enable xid-start-ranges)
+  (local
+   (std::deflist ascii-start-ok-listp (x ranges)
+     :guard (and (code-point-listp x)
+                 (range-listp ranges))
+     (ascii-start-ok x ranges)))
+
+  (defrulel ascii-start-ok-listp-of-ascii
+    (ascii-start-ok-listp (integers-from-to 0 #x7F)
+                          (xid-start-ranges ver))
+    :enable xid-start-ranges
+    :disable ascii-start-ok-listp-of-cons)
 
   (defruled xid-start-p-when-ascii
     (implies (and (code-point-p cp)
@@ -175,39 +181,42 @@
                         (and (<= (char-code #\a) cp)
                              (<= cp (char-code #\z))))))
     :enable (xid-start-p
-             code-point-in-range-p
+             ascii-start-ok
              code-point-p)
-    :use (ascii-letters-within-xid-start-ranges
-          ascii-non-letters-disjoint-from-xid-start-ranges
-          (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
-                     (subs (list (range #x41 #x5A)
-                                 (range #x61 #x7A)))
-                     (sups (xid-start-ranges ver)))
-          (:instance
-           not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
-           (xs (list (range #x00 #x40)
-                     (range #x5B #x60)
-                     (range #x7B #x7F)))
-           (ys (xid-start-ranges ver)))))
+    :disable ((:e integers-from-to))
+    :use (:instance ascii-start-ok-when-member-equal-of-ascii-start-ok-listp
+                    (acl2::a cp)
+                    (x (integers-from-to 0 #x7F))
+                    (ranges (xid-start-ranges ver))))
 
-  ;; The ASCII code points that have, and that do not have, XID_Continue:
+  ;; The ASCII code points that have, and that do not have, XID_Continue.
+  ;; We check each of the 128 ASCII code points, for each version.
 
-  (defrulel ascii-letters-digits-underscore-within-xid-continue-ranges
-    (ranges-within-ranges-p (list (range #x30 #x39)
-                                  (range #x41 #x5A)
-                                  (range #x5F #x5F)
-                                  (range #x61 #x7A))
-                            (xid-continue-ranges ver))
-    :enable xid-continue-ranges)
+  (local
+   (define ascii-continue-ok ((cp code-point-p) (ranges range-listp))
+     :returns (yes/no booleanp)
+     (b* ((cp (code-point-fix cp)))
+       (equal (code-point-in-ranges-p cp ranges)
+              (or (and (<= (char-code #\0) cp)
+                       (<= cp (char-code #\9)))
+                  (and (<= (char-code #\A) cp)
+                       (<= cp (char-code #\Z)))
+                  (equal cp (char-code #\_))
+                  (and (<= (char-code #\a) cp)
+                       (<= cp (char-code #\z))))))
+     :hooks nil))
 
-  (defrulel ascii-others-disjoint-from-xid-continue-ranges
-    (ranges-disjoint-from-ranges-p (list (range #x00 #x2F)
-                                         (range #x3A #x40)
-                                         (range #x5B #x5E)
-                                         (range #x60 #x60)
-                                         (range #x7B #x7F))
-                                   (xid-continue-ranges ver))
-    :enable xid-continue-ranges)
+  (local
+   (std::deflist ascii-continue-ok-listp (x ranges)
+     :guard (and (code-point-listp x)
+                 (range-listp ranges))
+     (ascii-continue-ok x ranges)))
+
+  (defrulel ascii-continue-ok-listp-of-ascii
+    (ascii-continue-ok-listp (integers-from-to 0 #x7F)
+                             (xid-continue-ranges ver))
+    :enable xid-continue-ranges
+    :disable ascii-continue-ok-listp-of-cons)
 
   (defruled xid-continue-p-when-ascii
     (implies (and (code-point-p cp)
@@ -221,21 +230,11 @@
                         (and (<= (char-code #\a) cp)
                              (<= cp (char-code #\z))))))
     :enable (xid-continue-p
-             code-point-in-range-p
+             ascii-continue-ok
              code-point-p)
-    :use (ascii-letters-digits-underscore-within-xid-continue-ranges
-          ascii-others-disjoint-from-xid-continue-ranges
-          (:instance code-point-in-ranges-p-when-ranges-within-ranges-p
-                     (subs (list (range #x30 #x39)
-                                 (range #x41 #x5A)
-                                 (range #x5F #x5F)
-                                 (range #x61 #x7A)))
-                     (sups (xid-continue-ranges ver)))
-          (:instance
-           not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
-           (xs (list (range #x00 #x2F)
-                     (range #x3A #x40)
-                     (range #x5B #x5E)
-                     (range #x60 #x60)
-                     (range #x7B #x7F)))
-           (ys (xid-continue-ranges ver))))))
+    :disable ((:e integers-from-to))
+    :use (:instance
+          ascii-continue-ok-when-member-equal-of-ascii-continue-ok-listp
+          (acl2::a cp)
+          (x (integers-from-to 0 #x7F))
+          (ranges (xid-continue-ranges ver)))))
