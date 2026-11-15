@@ -16,3 +16,4 @@
 (include-book "zip-order")
 (include-book "zip-step-side")
 (include-book "zip-uniqueness")
+(include-book "zip-seek")

@@ -172,3 +172,34 @@
   :induct (last l)
   :enable (last
            setp-of-cdr-when-osetp))
+
+;; An element of an oset is below whatever its last element is below, and above
+;; whatever its first element is above.
+
+(defrulel <<-of-car-when-<<-of-car-of-last
+  (implies (and (setp l)
+                (<< (car (last l)) y))
+           (<< (car l) y))
+  :induct (last l)
+  :enable (last
+           setp
+           <<-rules))
+
+(defruled <<-when-member-equal-and-<<-of-car-of-last
+  (implies (and (member-equal x l)
+                (setp l)
+                (<< (car (last l)) y))
+           (<< x y))
+  :induct (last l)
+  :enable (last
+           setp-of-cdr-when-osetp))
+
+(defruled <<-when-member-equal-and-<<-of-arg1-and-car
+  (implies (and (member-equal y l)
+                (setp l)
+                (<< x (car l)))
+           (<< x y))
+  :induct (member-equal y l)
+  :enable (member-equal
+           setp
+           <<-rules))

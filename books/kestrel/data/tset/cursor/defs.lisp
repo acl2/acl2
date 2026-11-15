@@ -15,5 +15,6 @@
 (include-book "begin-end-defs")
 (include-book "step-defs")
 (include-book "seek-min-max-defs")
+(include-book "seek-defs")
 (include-book "next-prev-defs")
 (include-book "nexts-prevs-defs")

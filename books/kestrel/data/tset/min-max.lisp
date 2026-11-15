@@ -21,6 +21,7 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
 
+(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
 (local (include-book "internal/tree"))
@@ -107,6 +108,26 @@
                   (not (equal (min set) x))))
   :enable (min
            in))
+
+(defruled <<-of-min-when-in-and-<<
+  (implies (and (in y set)
+                (<< y x))
+           (<< (min set) x))
+  :cases ((equal (min set) y))
+  :use (:instance acl2::<<-transitive
+                  (x (min set))
+                  (y y)
+                  (z x)))
+
+(defruled <<-when-in-and-<<-of-arg1-and-min
+  (implies (and (in y set)
+                (<< x (min set)))
+           (<< x y))
+  :cases ((equal (min set) y))
+  :use (:instance acl2::<<-transitive
+                  (x x)
+                  (y (min set))
+                  (z y)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -226,6 +247,26 @@
                   (not (equal (max set) x))))
   :enable (max
            in))
+
+(defruled <<-of-arg1-and-max-when-in-and-<<
+  (implies (and (in y set)
+                (<< x y))
+           (<< x (max set)))
+  :cases ((equal (max set) y))
+  :use (:instance acl2::<<-transitive
+                  (x x)
+                  (y y)
+                  (z (max set))))
+
+(defruled <<-when-in-and-<<-of-max
+  (implies (and (in y set)
+                (<< (max set) x))
+           (<< y x))
+  :cases ((equal (max set) y))
+  :use (:instance acl2::<<-transitive
+                  (x y)
+                  (y (max set))
+                  (z x)))
 
 ;;;;;;;;;;;;;;;;;;;;
 

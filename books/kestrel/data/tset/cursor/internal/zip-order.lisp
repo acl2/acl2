@@ -138,6 +138,19 @@
            data::<<-rules)
   :disable member-equal-of-tree-in-order-under-iff)
 
+(defruled not-member-equal-of-zip-before-when-member-equal-of-zip-after
+  (implies (and (member-equal x (zip-after zip))
+                (bstp (zip-plug zip)))
+           (not (member-equal x (zip-before zip))))
+  :cases ((tree-empty-p (zip->focus zip)))
+  :enable data::not-member-equal-of-prefix-when-osetp-of-append)
+
+(defruled not-member-equal-of-zip-after-when-member-equal-of-zip-before
+  (implies (and (member-equal x (zip-before zip))
+                (bstp (zip-plug zip)))
+           (not (member-equal x (zip-after zip))))
+  :enable not-member-equal-of-zip-before-when-member-equal-of-zip-after)
+
 (defruled <<-when-member-equal-of-zip-before-and-zip-after
   (implies (and (member-equal x (zip-before zip))
                 (member-equal y (zip-after zip))

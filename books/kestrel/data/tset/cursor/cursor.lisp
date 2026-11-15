@@ -66,7 +66,11 @@
       @(tsee next). It does not hold of @(tsee begin), which is a hole.")
    (xdoc::p
      "To traverse in the reverse order, use @(tsee seek-max), @(tsee prev), and
-      @(tsee prevs), with @(tsee beginp) in the guard.")))
+      @(tsee prevs), with @(tsee beginp) in the guard.")
+   (xdoc::p
+     "To traverse only the elements at or above a value, start from the @(tsee
+      seek) of that value, taking one @(tsee step-forward) if it is at a
+      hole.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

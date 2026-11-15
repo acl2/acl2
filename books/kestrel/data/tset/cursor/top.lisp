@@ -17,6 +17,7 @@
 (include-book "begin-end")
 (include-book "step")
 (include-book "seek-min-max")
+(include-book "seek")
 (include-book "next-prev")
 (include-book "nexts-prevs")
 (include-book "partition")

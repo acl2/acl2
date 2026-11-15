@@ -80,3 +80,30 @@
   :rule-classes :congruence
   :induct (any-evenp set0)
   :enable any-evenp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk over the elements at or above a value. It starts from the seek of
+;; the value, stepping forward once if that is at a hole.
+
+(define cursor-count ((cursor cursorp))
+  :type-prescription :none
+  :guard (or (entryp cursor)
+             (endp cursor))
+  :returns (count natp :rule-classes :type-prescription)
+  (if (entryp cursor)
+      (+ 1 (cursor-count (next cursor)))
+    0)
+  :measure (nexts cursor)
+  :verify-guards :after-returns)
+
+(define count-from
+  (x
+   (set setp))
+  :type-prescription :none
+  :returns (count natp :rule-classes :type-prescription)
+  (let ((cursor (seek x set)))
+    (cursor-count (if (entryp cursor)
+                      cursor
+                    (step-forward cursor))))
+  :guard-hints (("Goal" :in-theory (enable endp))))
