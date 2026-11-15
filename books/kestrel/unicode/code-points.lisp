@@ -12,6 +12,7 @@
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
+(include-book "kestrel/utilities/integers-from-to" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -222,6 +223,55 @@
              (code-point-listp x))
     :induct t
     :enable code-point-listp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption scalar-value-option
+  scalar-value
+  :short "Fixtype of optional Unicode scalar values."
+  :pred scalar-value-option-p)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define all-code-points ()
+  :returns (cps code-point-listp)
+  :short "The list of all the code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are 1,114,112 code points.
+     A statement about all the code points
+     that does not follow from the definitions alone,
+     because it depends on the tables
+     generated from the Unicode Character Database,
+     can be proved by checking it,
+     by evaluation, on each element of this list.
+     The executable counterpart of this function is disabled
+     so that the list does not end up in a formula
+     unless a proof asks for it."))
+  (integers-from-to 0 #x10FFFF)
+
+  :prepwork
+  ((defrulel code-point-listp-of-integers-from-to
+     (implies (and (natp min)
+                   (integerp max)
+                   (<= max #x10FFFF))
+              (code-point-listp (integers-from-to min max)))
+     :induct t
+     :enable (integers-from-to
+              code-point-p
+              natp
+              ifix)))
+
+  ///
+
+  (in-theory (disable (:e all-code-points)))
+
+  (defrule member-equal-of-all-code-points
+    (iff (member-equal cp (all-code-points))
+         (code-point-p cp))
+    :enable (code-point-p natp)
+    :disable ((:e integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

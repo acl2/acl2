@@ -26,7 +26,8 @@ validated.
 | `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`. |
 | `quick-check` | The `NF*_Quick_Check` properties (used here only to cross-check normalization). |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
-| `range-sets`, `range-maps`, `nat-maps` | The representations of the tables, with their invariants. |
+| `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
+| `maps` | The fixtypes of the tree maps from code points to values, which represent the other properties. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
@@ -50,9 +51,10 @@ utilities for UTF-8 and UTF-16 (this library uses its surrogate recognizers).
 (unicode::nfc '(#x0073 #x0307 #x0323) (unicode::version-v16.0.0)) ; (#x1E69)
 ```
 
-All the functions are in logic mode with guards verified.  The property
-functions take any natural number (and are false, or 0, beyond `#x10FFFF`);
-the normalization functions take lists of code points.
+All the functions are in logic mode with guards verified.  Their arguments
+and results have fixtypes: code points, scalar values, lists of those,
+versions, ranges, and maps.  The property functions take a code point; the
+normalization functions take a list of code points.
 
 Some theorems that hold in every supported version, proved by evaluation
 over the tables, and so re-checked whenever a version is added:
@@ -73,6 +75,10 @@ over the tables, and so re-checked whenever a version is added:
   twelve and nine code points in every supported version.
 - Composing the decomposition of a Hangul syllable gives the syllable back
   (checked for all 11,172 syllables).
+- `composition-of-decomposition-mapping`: composing the canonical
+  decomposition mapping of a primary composite gives the primary composite
+  back.  The converse, and the theorems that relate `nfd` and `nfc`, are
+  not proved yet; the conformance tests check them on the test data.
 
 ### Including only what you need
 
@@ -83,11 +89,11 @@ supported version, and nothing else of this library.
 | To get | Include | Books of this library that it loads | Tables that it loads |
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
-| `xid-start-p`, `xid-continue-p` | `xid` | `code-points`, `versions`, `range-sets` | `derived-core-properties` |
-| `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `range-sets` | `prop-list` |
-| `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-formatting-class` | `bidi-controls` | `code-points`, `versions`, `range-sets`, `range-maps` | `prop-list`, `derived-bidi-class` |
-| `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `range-sets`, `range-maps`, `nat-maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
-| `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `range-sets` | `derived-normalization-props` |
+| `xid-start-p`, `xid-continue-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
+| `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
+| `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
 
 A front end for a language whose identifiers follow UAX #31 typically needs
@@ -117,14 +123,13 @@ decodes its input with `[books]/unicode`.
   place: a function from its own configuration (the edition of the
   language, the release of the compiler being modeled) to a `version`,
   whose result it passes down.
-- **Types.**  The property functions take any natural number, so they
-  apply to another library's code points or scalar values as they are.  The
-  normalization functions take a `code-point-listp`, and return a
+- **Types.**  The functions take code points (`code-point-p`) and lists of
+  them (`code-point-listp`), and the normalization functions return a
   `scalar-value-listp` when given one.  A front end with its own type of
-  scalar values needs a theorem that a list of them is a
-  `scalar-value-listp`, and the converse to get the result back;
-  `scalar-value-p-alt-def` (a scalar value is a natural number below
-  `#xD800`, or from `#xE000` to `#x10FFFF`) makes both easy to prove.
+  scalar values needs a theorem that its values are scalar values of this
+  library, and the converse to get results back; `scalar-value-p-alt-def`
+  (a scalar value is a natural number below `#xD800`, or from `#xE000` to
+  `#x10FFFF`) makes both easy to prove.
 - **Small sets.**  `Pattern_White_Space` and the bidirectional controls are
   a few code points, the same in all the supported versions.  A front end
   that lists them in its own grammar or lexer can keep its list and prove
@@ -188,10 +193,14 @@ further) and the table of the pairs that compose (from the canonical
 mappings and `Full_Composition_Exclusion`).  The Hangul syllables are
 handled by the arithmetic of the standard, not by tables.
 
-The tables are sorted lists of disjoint ranges, or sorted alists.  That
-invariant is part of the recognizer of each kind of table, and every table
-is checked against its recognizer, by evaluation, in the book that defines
-it.
+The tables are fixtypes.  A binary property is a list of ranges of code
+points (`fty::defprod range`, `fty::deflist range-list`); the generated
+books build these lists with the constructor of ranges.  The other tables
+are tree maps (`fty::deftreemap`) from code points to values, or, for
+composition, from pairs of code points (`fty::defprod code-point-pair`) to
+scalar values.  Every table that is not built with typed constructors is
+checked against the recognizer of its type, by evaluation, in the book
+that defines it.
 
 ### Where the bytes came from
 
@@ -326,10 +335,10 @@ validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
 
 ## Performance
 
-Lookups stop early in the sorted tables, so they are fast for small code
-points (ASCII in particular) and linear in the size of the table for large
-ones; the largest tables have a few thousand entries.  That is adequate for
-lexing; faster structures can be put behind the same functions if needed.
+Lookups in the maps (combining classes, decompositions, compositions) take
+time logarithmic in the size of the map.  Membership in a list of ranges
+(the binary properties, such as `XID_Start`) takes time linear in the
+number of ranges, which is a few hundred for the largest properties.
 The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.

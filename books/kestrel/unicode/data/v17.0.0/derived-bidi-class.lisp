@@ -25,27 +25,31 @@
 
 (in-package "UNICODE")
 
-(include-book "../../range-maps")
+(include-book "../../maps")
 
-; The code points whose Bidi_Class is one of the classes of the
-; explicit directional formatting characters (UAX #9, Sections 2.1
-; to 2.5), each with its class as a keyword:
+(include-book "std/util/defconsts" :dir :system)
+
+; The map from the code points whose Bidi_Class is one of the
+; classes of the explicit directional formatting characters
+; (UAX #9, Sections 2.1 to 2.5) to their classes:
 ; LRE, RLE, LRO, RLO, PDF, LRI, RLI, FSI, PDI.
 ; The other values of Bidi_Class are not in this file.
 ; The classes are read from the derived file, honoring its
 ; @missing lines.
-; 9 ranges.
+; 9 code points.
 
-(defconst *bidi-explicit-formatting-v17.0.0*
-  '(((#x202A . #x202A) . :lre)
-    ((#x202B . #x202B) . :rle)
-    ((#x202C . #x202C) . :pdf)
-    ((#x202D . #x202D) . :lro)
-    ((#x202E . #x202E) . :rlo)
-    ((#x2066 . #x2066) . :lri)
-    ((#x2067 . #x2067) . :rli)
-    ((#x2068 . #x2068) . :fsi)
-    ((#x2069 . #x2069) . :pdi)))
+(defconsts *bidi-formatting-class-v17.0.0*
+  (treemap::update-from-alist
+   (list (cons #x202A (bidi-formatting-class-lre))
+         (cons #x202B (bidi-formatting-class-rle))
+         (cons #x202C (bidi-formatting-class-pdf))
+         (cons #x202D (bidi-formatting-class-lro))
+         (cons #x202E (bidi-formatting-class-rlo))
+         (cons #x2066 (bidi-formatting-class-lri))
+         (cons #x2067 (bidi-formatting-class-rli))
+         (cons #x2068 (bidi-formatting-class-fsi))
+         (cons #x2069 (bidi-formatting-class-pdi)))
+   (treemap::empty)))
 
-(assert-event (bidi-formatting-range-map-p *bidi-explicit-formatting-v17.0.0*))
-(assert-event (equal (len *bidi-explicit-formatting-v17.0.0*) 9))
+(assert-event (bidi-formatting-class-mapp *bidi-formatting-class-v17.0.0*))
+(assert-event (equal (treemap::size *bidi-formatting-class-v17.0.0*) 9))

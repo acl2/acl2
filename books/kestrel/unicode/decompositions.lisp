@@ -11,7 +11,7 @@
 (in-package "UNICODE")
 
 (include-book "versions")
-(include-book "nat-maps")
+(include-book "maps")
 (include-book "hangul")
 
 (include-book "data/v16.0.0/unicode-data")
@@ -22,7 +22,7 @@
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/lists/append" :dir :system))
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
 (acl2::controlled-configuration)
 
@@ -72,14 +72,14 @@
      in order to be admitted.
      We check, by evaluation, that the bound was large enough,
      i.e. that no code point in the tables can be decomposed further:
-     see @(tsee full-decomposition-map-closed-p)."))
+     see @(tsee full-decompositions-closed-p)."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define canonical-decomposition-map ((ver versionp))
-  :returns (map decomposition-map-p)
+(define canonical-mappings ((ver versionp))
+  :returns (map decomposition-mapp)
   :short "The map from code points
           to their canonical decomposition mappings,
           in a version of Unicode."
@@ -88,269 +88,25 @@
    (xdoc::p
     "The map does not have the precomposed Hangul syllables."))
   (version-case ver
-                :v16.0.0 *canonical-decomposition-v16.0.0*
-                :v17.0.0 *canonical-decomposition-v17.0.0*))
+                :v16.0.0 *canonical-decomposition-mapping-v16.0.0*
+                :v17.0.0 *canonical-decomposition-mapping-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define compatibility-decomposition-map ((ver versionp))
-  :returns (map decomposition-map-p)
+(define compatibility-mappings ((ver versionp))
+  :returns (map decomposition-mapp)
   :short "The map from code points
           to their compatibility decomposition mappings,
           in a version of Unicode."
   (version-case ver
-                :v16.0.0 *compatibility-decomposition-v16.0.0*
-                :v17.0.0 *compatibility-decomposition-v17.0.0*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define expand-decomposition ((cps scalar-value-listp)
-                              (canonical decomposition-map-p)
-                              (compat decomposition-map-p)
-                              (depth natp))
-  :returns (expansion scalar-value-listp
-                      :hyp (and (scalar-value-listp cps)
-                                (decomposition-map-p canonical)
-                                (decomposition-map-p compat))
-                      :hints (("Goal" :induct t)))
-  :short "Replace the code points of a list by their decompositions,
-          repeatedly."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each code point that is a precomposed Hangul syllable
-     is replaced by its decomposition into jamo.
-     Each code point that has a mapping in one of the two given maps
-     is replaced by the expansion of that mapping.
-     The other code points are left alone.")
-   (xdoc::p
-    "The first map is for the canonical mappings
-     and the second one is for the compatibility mappings;
-     no code point has both.
-     Passing an empty second map gives canonical decompositions.")
-   (xdoc::p
-    "The depth bounds the recursion on the mappings:
-     at depth 0, a code point is left alone even if it has a mapping.
-     So the result is fully decomposed only if the depth is large enough;
-     @(tsee fully-decomposed-p) is used to check that it is."))
-  (b* (((when (endp cps)) nil)
-       (cp (car cps))
-       (rest (expand-decomposition (cdr cps) canonical compat depth))
-       ((when (zp depth)) (cons cp rest))
-       ((when (hangul-syllable-p cp))
-        (append (hangul-syllable-decomposition cp) rest))
-       (mapping (or (nat-map-lookup cp canonical)
-                    (nat-map-lookup cp compat)))
-       ((unless mapping) (cons cp rest)))
-    (append (expand-decomposition mapping canonical compat (1- depth))
-            rest))
-  :measure (acl2::two-nats-measure depth (len cps))
-  :hooks nil
-  :verify-guards :after-returns)
+                :v16.0.0 *compatibility-decomposition-mapping-v16.0.0*
+                :v17.0.0 *compatibility-decomposition-mapping-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection decomposition-expansion-depth
-  :short "The depth to which mappings are expanded
-          to compute the full decompositions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "In the supported versions of Unicode, a depth of 3 is enough.
-     If a future version needs more than the depth we use,
-     the check that the tables are fully decomposed will fail
-     when this book is certified,
-     and this constant will have to be increased."))
-
-  (defconst *decomposition-expansion-depth* 8))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define full-decomposition-map ((entries decomposition-map-p)
-                                (canonical decomposition-map-p)
-                                (compat decomposition-map-p))
-  :returns (full true-listp :rule-classes :type-prescription)
-  :short "Expand all the mappings of a map."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The result associates each code point of the map
-     with the expansion of its mapping.
-     See @(tsee expand-decomposition) for the other two arguments."))
-  (cond ((endp entries) nil)
-        (t (cons (cons (car (car entries))
-                       (expand-decomposition (cdr (car entries))
-                                             canonical
-                                             compat
-                                             *decomposition-expansion-depth*))
-                 (full-decomposition-map (cdr entries) canonical compat))))
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable decomposition-map-p
-                                           decomposition-map-entries-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define nat-map-put-all ((entries nat-map-p) (map nat-map-p))
-  :returns (new-map nat-map-p
-                    :hyp (and (nat-map-p entries)
-                              (nat-map-p map))
-                    :hints (("Goal"
-                             :induct t
-                             :in-theory (enable cdar-when-nat-map-p))))
-  :short "Add all the entries of a nat map to another nat map."
-  (cond ((endp entries) map)
-        (t (nat-map-put-all (cdr entries)
-                            (nat-map-put (car (car entries))
-                                         (cdr (car entries))
-                                         map))))
-  :hooks nil
-  :verify-guards :after-returns
-  :guard-hints (("Goal" :in-theory (enable cdar-when-nat-map-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define fully-decomposed-p ((cps scalar-value-listp)
-                            (canonical decomposition-map-p)
-                            (compat decomposition-map-p))
-  :returns (yes/no booleanp)
-  :short "Check that no code point of a list
-          is a precomposed Hangul syllable or has a mapping."
-  (or (endp cps)
-      (and (not (hangul-syllable-p (car cps)))
-           (not (nat-map-lookup (car cps) canonical))
-           (not (nat-map-lookup (car cps) compat))
-           (fully-decomposed-p (cdr cps) canonical compat)))
-  :hooks nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define full-decomposition-map-closed-p ((full decomposition-map-p)
-                                         (canonical decomposition-map-p)
-                                         (compat decomposition-map-p))
-  :returns (yes/no booleanp)
-  :short "Check that all the values of a map of full decompositions
-          are fully decomposed."
-  (or (endp full)
-      (and (fully-decomposed-p (cdr (car full)) canonical compat)
-           (full-decomposition-map-closed-p (cdr full) canonical compat)))
-  :hooks nil
-  :guard-hints (("Goal" :in-theory (enable decomposition-map-p
-                                           decomposition-map-entries-p))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defsection full-decomposition-tables
-  :short "The tables of the full decompositions, for each version."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For each version there are two tables.
-     The first one has the canonical decompositions
-     of the code points that have canonical mappings.
-     The second one has the compatibility decompositions
-     of the code points that have mappings of either kind.
-     Neither has the precomposed Hangul syllables.")
-   (xdoc::p
-    "For each table we check that it has the type of the decomposition maps,
-     in particular that it is sorted,
-     and that it is fully decomposed.")
-   (xdoc::p
-    "The tables are defined with @(tsee defconsts), not @(tsee defconst):
-     they are computed when this book is certified
-     and kept in its certificate,
-     so they are not computed again each time the book is included."))
-
-  ;; Unicode 16.0.0:
-
-  (defconsts *canonical-full-decomposition-v16.0.0*
-    (full-decomposition-map *canonical-decomposition-v16.0.0*
-                            *canonical-decomposition-v16.0.0*
-                            nil))
-
-  (defconsts *compatibility-full-decomposition-v16.0.0*
-    (full-decomposition-map
-     (nat-map-put-all *compatibility-decomposition-v16.0.0*
-                      *canonical-decomposition-v16.0.0*)
-     *canonical-decomposition-v16.0.0*
-     *compatibility-decomposition-v16.0.0*))
-
-  (assert-event
-   (and (decomposition-map-p *canonical-full-decomposition-v16.0.0*)
-        (full-decomposition-map-closed-p
-         *canonical-full-decomposition-v16.0.0*
-         *canonical-decomposition-v16.0.0*
-         nil)
-        (equal (len *canonical-full-decomposition-v16.0.0*)
-               (len *canonical-decomposition-v16.0.0*))))
-
-  (assert-event
-   (and (decomposition-map-p *compatibility-full-decomposition-v16.0.0*)
-        (full-decomposition-map-closed-p
-         *compatibility-full-decomposition-v16.0.0*
-         *canonical-decomposition-v16.0.0*
-         *compatibility-decomposition-v16.0.0*)
-        (equal (len *compatibility-full-decomposition-v16.0.0*)
-               (+ (len *canonical-decomposition-v16.0.0*)
-                  (len *compatibility-decomposition-v16.0.0*)))))
-
-  ;; Unicode 17.0.0:
-
-  (defconsts *canonical-full-decomposition-v17.0.0*
-    (full-decomposition-map *canonical-decomposition-v17.0.0*
-                            *canonical-decomposition-v17.0.0*
-                            nil))
-
-  (defconsts *compatibility-full-decomposition-v17.0.0*
-    (full-decomposition-map
-     (nat-map-put-all *compatibility-decomposition-v17.0.0*
-                      *canonical-decomposition-v17.0.0*)
-     *canonical-decomposition-v17.0.0*
-     *compatibility-decomposition-v17.0.0*))
-
-  (assert-event
-   (and (decomposition-map-p *canonical-full-decomposition-v17.0.0*)
-        (full-decomposition-map-closed-p
-         *canonical-full-decomposition-v17.0.0*
-         *canonical-decomposition-v17.0.0*
-         nil)
-        (equal (len *canonical-full-decomposition-v17.0.0*)
-               (len *canonical-decomposition-v17.0.0*))))
-
-  (assert-event
-   (and (decomposition-map-p *compatibility-full-decomposition-v17.0.0*)
-        (full-decomposition-map-closed-p
-         *compatibility-full-decomposition-v17.0.0*
-         *canonical-decomposition-v17.0.0*
-         *compatibility-decomposition-v17.0.0*)
-        (equal (len *compatibility-full-decomposition-v17.0.0*)
-               (+ (len *canonical-decomposition-v17.0.0*)
-                  (len *compatibility-decomposition-v17.0.0*))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define canonical-full-decomposition-map ((ver versionp))
-  :returns (map decomposition-map-p)
-  :short "The map from the code points that have canonical mappings
-          to their canonical decompositions,
-          in a version of Unicode."
-  (version-case ver
-                :v16.0.0 *canonical-full-decomposition-v16.0.0*
-                :v17.0.0 *canonical-full-decomposition-v17.0.0*))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define compatibility-full-decomposition-map ((ver versionp))
-  :returns (map decomposition-map-p)
-  :short "The map from the code points that have mappings
-          to their compatibility decompositions,
-          in a version of Unicode."
-  (version-case ver
-                :v16.0.0 *compatibility-full-decomposition-v16.0.0*
-                :v17.0.0 *compatibility-full-decomposition-v17.0.0*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define decomposition-mapping ((cp natp) (ver versionp))
+(define decomposition-mapping ((cp code-point-p) (ver versionp))
   :returns (mv (canonical booleanp)
                (mapping scalar-value-listp))
   :short "The @('Decomposition_Mapping') of a code point,
@@ -372,37 +128,285 @@
    (xdoc::p
     "This function is not used by normalization,
      which uses @(tsee decomposition) instead."))
-  (b* ((cp (lnfix cp))
+  (b* ((cp (code-point-fix cp))
        ((when (hangul-syllable-p cp))
         (mv t (hangul-syllable-decomposition-mapping cp)))
-       (canonical (nat-map-lookup cp (canonical-decomposition-map ver)))
+       (canonical (decomposition-map-lookup cp (canonical-mappings ver)))
        ((when canonical) (mv t canonical)))
-    (mv nil (nat-map-lookup cp (compatibility-decomposition-map ver)))))
+    (mv nil (decomposition-map-lookup cp (compatibility-mappings ver))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decomposition-expansion-depth
+  :short "The depth to which mappings are expanded
+          to compute the full decompositions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In the supported versions of Unicode, a depth of 3 is enough.
+     If a future version needs more than the depth we use,
+     the check that the tables are fully decomposed will fail
+     when this book is certified,
+     and this constant will have to be increased."))
+
+  (defconst *decomposition-expansion-depth* 8))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define expand-decomposition ((cps scalar-value-listp)
+                              (canonical decomposition-mapp)
+                              (compat decomposition-mapp)
+                              (depth natp))
+  :returns (expansion scalar-value-listp :hints (("Goal" :induct t)))
+  :short "Replace the code points of a list by their decompositions,
+          repeatedly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each code point that is a precomposed Hangul syllable
+     is replaced by its decomposition into jamo.
+     Each code point that has a mapping in one of the two given maps
+     is replaced by the expansion of that mapping.
+     The other code points are left alone.")
+   (xdoc::p
+    "The first map is for the canonical mappings
+     and the second one is for the compatibility mappings;
+     no code point has both.
+     Passing an empty second map gives canonical decompositions.")
+   (xdoc::p
+    "The depth bounds the recursion on the mappings:
+     at depth 0, a code point is left alone even if it has a mapping.
+     So the result is fully decomposed only if the depth is large enough;
+     @(tsee fully-decomposed-p) is used to check that it is."))
+  (b* (((when (endp cps)) nil)
+       (cp (scalar-value-fix (car cps)))
+       (rest (expand-decomposition (cdr cps) canonical compat depth))
+       ((when (zp depth)) (cons cp rest))
+       ((when (hangul-syllable-p cp))
+        (append (hangul-syllable-decomposition cp) rest))
+       (mapping (or (decomposition-map-lookup cp canonical)
+                    (decomposition-map-lookup cp compat)))
+       ((unless mapping) (cons cp rest)))
+    (append (expand-decomposition mapping canonical compat (1- depth))
+            rest))
+  :measure (acl2::two-nats-measure depth (len cps))
+  :hooks nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fully-decomposed-p ((cps scalar-value-listp)
+                            (canonical decomposition-mapp)
+                            (compat decomposition-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that no code point of a list
+          is a precomposed Hangul syllable or has a mapping."
+  (b* (((when (endp cps)) t)
+       (cp (scalar-value-fix (car cps))))
+    (and (not (hangul-syllable-p cp))
+         (not (decomposition-map-lookup cp canonical))
+         (not (decomposition-map-lookup cp compat))
+         (fully-decomposed-p (cdr cps) canonical compat)))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define full-decompositions ((cps code-point-listp)
+                             (canonical decomposition-mapp)
+                             (compat decomposition-mapp)
+                             (full decomposition-mapp))
+  :returns (new-full decomposition-mapp :hints (("Goal" :induct t)))
+  :short "Add to a map the full decompositions
+          of the code points of a list that have mappings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each code point of the list that has a mapping
+     is associated, in the resulting map,
+     with the expansion of its mapping.
+     See @(tsee expand-decomposition)
+     for the two maps of mappings."))
+  (b* ((full (decomposition-map-fix full))
+       ((when (endp cps)) full)
+       (cp (code-point-fix (car cps)))
+       (mapping (or (decomposition-map-lookup cp canonical)
+                    (decomposition-map-lookup cp compat)))
+       (full (if mapping
+                 (treemap::update cp
+                                  (expand-decomposition
+                                   mapping
+                                   canonical
+                                   compat
+                                   *decomposition-expansion-depth*)
+                                  full)
+               full)))
+    (full-decompositions (cdr cps) canonical compat full))
+  :hooks nil
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define full-decompositions-closed-p ((cps code-point-listp)
+                                      (full decomposition-mapp)
+                                      (canonical decomposition-mapp)
+                                      (compat decomposition-mapp))
+  :returns (yes/no booleanp)
+  :short "Check that the full decompositions, in a map,
+          of the code points of a list
+          are fully decomposed."
+  (b* (((when (endp cps)) t))
+    (and (fully-decomposed-p (decomposition-map-lookup (car cps) full)
+                             canonical
+                             compat)
+         (full-decompositions-closed-p (cdr cps) full canonical compat)))
+  :hooks nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection decomposition-tables
+  :short "The tables of the full decompositions, for each version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each version there are two tables.
+     The first one has the canonical decompositions
+     of the code points that have canonical mappings.
+     The second one has the compatibility decompositions
+     of the code points that have mappings of either kind.
+     Neither has the precomposed Hangul syllables.")
+   (xdoc::p
+    "For each table we check that it has the type of the decomposition maps,
+     that it has as many code points as the mappings it is computed from,
+     and that it is fully decomposed.")
+   (xdoc::p
+    "The tables are defined with @(tsee defconsts), not @(tsee defconst):
+     they are computed when this book is certified
+     and kept in its certificate,
+     so they are not computed again each time the book is included."))
+
+  ;; Unicode 16.0.0:
+
+  (defconsts *canonical-decomposition-v16.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v16.0.0*
+                         (treemap::empty)
+                         (treemap::empty)))
+
+  (defconsts *compatibility-decomposition-v16.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v16.0.0*
+                         *compatibility-decomposition-mapping-v16.0.0*
+                         (treemap::empty)))
+
+  (assert-event
+   (and (decomposition-mapp *canonical-decomposition-v16.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *canonical-decomposition-v16.0.0*
+         *canonical-decomposition-mapping-v16.0.0*
+         (treemap::empty))
+        (equal (treemap::size *canonical-decomposition-v16.0.0*)
+               (treemap::size *canonical-decomposition-mapping-v16.0.0*))))
+
+  (assert-event
+   (and (decomposition-mapp *compatibility-decomposition-v16.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *compatibility-decomposition-v16.0.0*
+         *canonical-decomposition-mapping-v16.0.0*
+         *compatibility-decomposition-mapping-v16.0.0*)
+        (equal (treemap::size *compatibility-decomposition-v16.0.0*)
+               (+ (treemap::size
+                   *canonical-decomposition-mapping-v16.0.0*)
+                  (treemap::size
+                   *compatibility-decomposition-mapping-v16.0.0*)))))
+
+  ;; Unicode 17.0.0:
+
+  (defconsts *canonical-decomposition-v17.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v17.0.0*
+                         (treemap::empty)
+                         (treemap::empty)))
+
+  (defconsts *compatibility-decomposition-v17.0.0*
+    (full-decompositions (all-code-points)
+                         *canonical-decomposition-mapping-v17.0.0*
+                         *compatibility-decomposition-mapping-v17.0.0*
+                         (treemap::empty)))
+
+  (assert-event
+   (and (decomposition-mapp *canonical-decomposition-v17.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *canonical-decomposition-v17.0.0*
+         *canonical-decomposition-mapping-v17.0.0*
+         (treemap::empty))
+        (equal (treemap::size *canonical-decomposition-v17.0.0*)
+               (treemap::size *canonical-decomposition-mapping-v17.0.0*))))
+
+  (assert-event
+   (and (decomposition-mapp *compatibility-decomposition-v17.0.0*)
+        (full-decompositions-closed-p
+         (all-code-points)
+         *compatibility-decomposition-v17.0.0*
+         *canonical-decomposition-mapping-v17.0.0*
+         *compatibility-decomposition-mapping-v17.0.0*)
+        (equal (treemap::size *compatibility-decomposition-v17.0.0*)
+               (+ (treemap::size
+                   *canonical-decomposition-mapping-v17.0.0*)
+                  (treemap::size
+                   *compatibility-decomposition-mapping-v17.0.0*))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define canonical-decompositions ((ver versionp))
+  :returns (map decomposition-mapp)
+  :short "The map from the code points that have canonical mappings
+          to their canonical decompositions,
+          in a version of Unicode."
+  (version-case ver
+                :v16.0.0 *canonical-decomposition-v16.0.0*
+                :v17.0.0 *canonical-decomposition-v17.0.0*)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define compatibility-decompositions ((ver versionp))
+  :returns (map decomposition-mapp)
+  :short "The map from the code points that have mappings
+          to their compatibility decompositions,
+          in a version of Unicode."
+  (version-case ver
+                :v16.0.0 *compatibility-decomposition-v16.0.0*
+                :v17.0.0 *compatibility-decomposition-v17.0.0*)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define decomposition ((cp code-point-p) (compat booleanp) (ver versionp))
-  :returns (cps code-point-listp
-                :hints (("Goal" :in-theory (enable code-point-fix
-                                                   code-point-p))))
+  :returns (cps code-point-listp)
   :short "The canonical or compatibility decomposition of a code point,
           in a version of Unicode."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the full decomposition:
-     canonical if the flag is @('nil'), compatibility otherwise.
+     canonical [Unicode, D68] if the flag is @('nil'),
+     compatibility [Unicode, D65] otherwise.
      A code point that has no decomposition
      is returned as a list of one element."))
   (b* ((cp (code-point-fix cp))
        ((when (hangul-syllable-p cp)) (hangul-syllable-decomposition cp))
-       (full (nat-map-lookup cp
-                             (if compat
-                                 (compatibility-full-decomposition-map ver)
-                               (canonical-full-decomposition-map ver)))))
+       (full (decomposition-map-lookup
+              cp
+              (if compat
+                  (compatibility-decompositions ver)
+                (canonical-decompositions ver)))))
     (or full
         (list cp)))
-  :guard-hints (("Goal" :in-theory (enable code-point-p)))
+  :hooks (:fix)
 
   ///
 
@@ -420,27 +424,58 @@
     (implies (scalar-value-p cp)
              (scalar-value-listp (decomposition cp compat ver))))
 
+  ;; We prove the next theorem
+  ;; by checking it on every code point, for each version.
+
+  (local
+   (define maps-ok ((cp code-point-p)
+                    (canonical decomposition-mapp)
+                    (compat decomposition-mapp))
+     :returns (yes/no booleanp)
+     (or (>= (code-point-fix cp) #xA0)
+         (and (not (decomposition-map-lookup cp canonical))
+              (not (decomposition-map-lookup cp compat))))))
+
+  (local
+   (std::deflist maps-ok-listp (x canonical compat)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp canonical)
+                 (decomposition-mapp compat))
+     (maps-ok x canonical compat)))
+
+  (defrulel maps-ok-listp-of-all-code-points
+    (maps-ok-listp (all-code-points)
+                   (canonical-decompositions ver)
+                   (compatibility-decompositions ver))
+    :enable (canonical-decompositions
+             compatibility-decompositions
+             (:e all-code-points))
+    :disable maps-ok-listp-of-cons)
+
   (defruled decomposition-when-below-a0
     (implies (and (code-point-p cp)
                   (< cp #xA0))
              (equal (decomposition cp compat ver)
                     (list cp)))
     :enable (hangul-syllable-p
-             canonical-full-decomposition-map
-             compatibility-full-decomposition-map
-             nat-map-lookup-when-below-first
-             nfix)))
+             maps-ok)
+    :use (:instance maps-ok-when-member-equal-of-maps-ok-listp
+                    (acl2::a cp)
+                    (x (all-code-points))
+                    (canonical (canonical-decompositions ver))
+                    (compat (compatibility-decompositions ver)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define decompose ((cps code-point-listp) (compat booleanp) (ver versionp))
-  :returns (new-cps code-point-listp)
+  :returns (new-cps code-point-listp :hints (("Goal" :induct t)))
   :short "Replace the code points of a list by their
           canonical or compatibility decompositions,
           in a version of Unicode."
   (cond ((endp cps) nil)
         (t (append (decomposition (car cps) compat ver)
                    (decompose (cdr cps) compat ver))))
+  :hooks (:fix)
 
   ///
 

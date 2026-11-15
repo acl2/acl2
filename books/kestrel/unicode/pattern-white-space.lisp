@@ -11,7 +11,7 @@
 (in-package "UNICODE")
 
 (include-book "versions")
-(include-book "range-sets")
+(include-book "ranges")
 
 (include-book "data/v16.0.0/prop-list")
 (include-book "data/v17.0.0/prop-list")
@@ -44,28 +44,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pattern-white-space-set ((ver versionp))
-  :returns (set range-set-p)
-  :short "The set of the code points
+(define pattern-white-space-ranges ((ver versionp))
+  :returns (ranges range-listp)
+  :short "The ranges of the code points
           that have the @('Pattern_White_Space') property,
           in a version of Unicode."
   (version-case ver
                 :v16.0.0 *pattern-white-space-v16.0.0*
-                :v17.0.0 *pattern-white-space-v17.0.0*))
+                :v17.0.0 *pattern-white-space-v17.0.0*)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pattern-white-space-p ((cp natp) (ver versionp))
+(define pattern-white-space-p ((cp code-point-p) (ver versionp))
   :returns (yes/no booleanp)
   :short "Check if a code point has the @('Pattern_White_Space') property,
           in a version of Unicode."
-  (in-range-set-p cp (pattern-white-space-set ver))
+  (code-point-in-ranges-p cp (pattern-white-space-ranges ver))
+  :hooks (:fix)
 
   ///
 
   (defruled pattern-white-space-p-alt-def
     (equal (pattern-white-space-p cp ver)
-           (b* ((cp (nfix cp)))
+           (b* ((cp (code-point-fix cp)))
              (or (and (<= #x0009 cp) ; CHARACTER TABULATION, LINE FEED,
                       (<= cp #x000D)) ; LINE TABULATION, FORM FEED,
                                       ; CARRIAGE RETURN
@@ -75,12 +77,13 @@
                  (equal cp #x200F) ; RIGHT-TO-LEFT MARK
                  (equal cp #x2028) ; LINE SEPARATOR
                  (equal cp #x2029)))) ; PARAGRAPH SEPARATOR
-    :enable (pattern-white-space-set in-range-set-p))
+    :enable (pattern-white-space-ranges
+             code-point-in-range-p))
 
   (defrule scalar-value-p-when-pattern-white-space-p
     (implies (and (pattern-white-space-p cp ver)
-                  (natp cp))
+                  (code-point-p cp))
              (scalar-value-p cp))
     :rule-classes (:rewrite :forward-chaining)
-    :enable (pattern-white-space-p-alt-def scalar-value-p-alt-def nfix)
+    :enable (pattern-white-space-p-alt-def scalar-value-p-alt-def)
     :disable (pattern-white-space-p scalar-value-p)))
