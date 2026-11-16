@@ -17,6 +17,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 (local (include-book "std/lists/rev" :dir :system))
+(local (include-book "std/lists/sets" :dir :system)) ; for DEFLIST theorems
 
 (acl2::controlled-configuration)
 
@@ -89,6 +90,15 @@
      they are not tail recursive,
      and the canonical ordering of a run of @('n') combining marks
      takes time proportional to the square of @('n').")
+   (xdoc::p
+    "Applying one of the four forms to the result of another one
+     gives one of the four forms of the original list.
+     The form that is applied last says whether the result is composed,
+     and the result is a compatibility form if either of the two is.
+     For example, the NFC form of the NFKD form of a list
+     is the NFKC form of the list.
+     These are sixteen theorems, with names like @('nfc-of-nfkd'):
+     see @(tsee nfd), @(tsee nfc), @(tsee nfkd) and @(tsee nfkc).")
    (xdoc::p
     "The functions are validated in two ways,
      neither of which is a proof:
@@ -241,7 +251,26 @@
      So putting a list in canonical order a second time changes nothing.")
    (xdoc::p
     "Canonical ordering only moves code points,
-     so a fully decomposed list stays fully decomposed."))
+     so a fully decomposed list stays fully decomposed.")
+   (xdoc::p
+    "Two non-starters of different classes
+     can be put in front of a list in either order."))
+
+  (defruled canonical-order-insert-of-canonical-order-insert
+    (implies (and (not (equal (canonical-combining-class cp1 ver) 0))
+                  (< (canonical-combining-class cp1 ver)
+                     (canonical-combining-class cp2 ver)))
+             (equal (canonical-order-insert
+                     cp1
+                     (canonical-order-insert cp2 cps ver)
+                     ver)
+                    (canonical-order-insert
+                     cp2
+                     (canonical-order-insert cp1 cps ver)
+                     ver)))
+    :rule-classes ((:rewrite :loop-stopper nil))
+    :induct (canonical-order-insert cp1 cps ver)
+    :enable canonical-order-insert)
 
   (defrulel canonically-ordered-p-of-canonical-order-insert
     (implies (and (canonically-ordered-p cps ver)
@@ -287,6 +316,245 @@
     :induct t
     :enable (canonical-order
              undecomposable-listp)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection canonical-ordering-before-decomposition
+  :short "Putting a list of code points in canonical order
+          before decomposing it
+          does not change the canonical order of its decomposition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, decomposing the canonical order of a list
+     and decomposing the list
+     give two lists that have the same canonical order.
+     This holds for the canonical decompositions
+     and for the compatibility decompositions.")
+   (xdoc::p
+    "The reason is this.
+     Canonical ordering moves a non-starter
+     past non-starters of lower classes.
+     Every code point in the decomposition of a non-starter
+     has the class of that non-starter;
+     we prove this by checking it on every code point,
+     for each table of decompositions of each version.
+     So, when a non-starter has moved past another one,
+     the decompositions of the two are in the other order,
+     but they consist of non-starters of two different classes,
+     and canonical ordering does not depend on
+     the order of non-starters of different classes.")
+   (xdoc::p
+    "In the proof we use
+     the canonical order of a list followed by another list
+     as a function of the first list
+     and of the canonical order of the second one."))
+
+  ;; Put a list of code points in canonical order
+  ;; in front of a list that is in canonical order.
+  ;; The canonical order of two lists, one after the other,
+  ;; is this function of the first list
+  ;; and of the canonical order of the second list.
+
+  (local
+   (define canonical-order-onto ((cps code-point-listp)
+                                 (ordered code-point-listp)
+                                 (ver versionp))
+     :returns (new-cps code-point-listp)
+     (b* (((when (endp cps)) (code-point-list-fix ordered))
+          (cp (code-point-fix (car cps)))
+          (rest (canonical-order-onto (cdr cps) ordered ver)))
+       (if (equal (canonical-combining-class cp ver) 0)
+           (cons cp rest)
+         (canonical-order-insert cp rest ver)))
+     :measure (len cps)
+     :verify-guards :after-returns))
+
+  (defruledl canonical-order-of-append
+    (equal (canonical-order (append cps1 cps2) ver)
+           (canonical-order-onto cps1 (canonical-order cps2 ver) ver))
+    :induct (canonical-order cps1 ver)
+    :enable (canonical-order
+             canonical-order-onto))
+
+  ;; Check that a code point has a given class,
+  ;; and that all the code points of a list do,
+  ;; with a table of classes.
+
+  (local
+   (define class-is-p ((cp code-point-p)
+                       (class natp)
+                       (map combining-class-mapp))
+     :returns (yes/no booleanp)
+     (equal (combining-class-map-lookup cp map)
+            (lnfix class))
+     :hooks nil))
+
+  (local
+   (std::deflist classes-are-p (x class map)
+     :guard (and (code-point-listp x)
+                 (natp class)
+                 (combining-class-mapp map))
+     (class-is-p x class map)))
+
+  (defrulel class-is-p-of-canonical-combining-class-map
+    (implies (natp class)
+             (equal (class-is-p cp class (canonical-combining-class-map ver))
+                    (equal (canonical-combining-class cp ver) class)))
+    :enable (class-is-p
+             canonical-combining-class))
+
+  ;; Every code point in the decomposition of a non-starter
+  ;; has the class of the non-starter.
+
+  (local
+   (define class-kept-ok ((cp code-point-p)
+                          (full decomposition-mapp)
+                          (map combining-class-mapp))
+     :returns (yes/no booleanp)
+     (b* ((cp (code-point-fix cp))
+          (class (combining-class-map-lookup cp map)))
+       (or (equal class 0)
+           (classes-are-p (if (hangul-syllable-p cp)
+                              (hangul-syllable-decomposition cp)
+                            (decomposition-map-lookup cp full))
+                          class
+                          map)))
+     :hooks nil))
+
+  (local
+   (std::deflist class-kept-ok-listp (x full map)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp full)
+                 (combining-class-mapp map))
+     (class-kept-ok x full map)))
+
+  (defrulel class-kept-ok-listp-of-all-code-points
+    (class-kept-ok-listp (all-code-points)
+                         (if compat
+                             (compatibility-decompositions ver)
+                           (canonical-decompositions ver))
+                         (canonical-combining-class-map ver))
+    :enable (canonical-decompositions
+             compatibility-decompositions
+             canonical-combining-class-map
+             (:e all-code-points))
+    :disable class-kept-ok-listp-of-cons)
+
+  (defrulel classes-are-p-of-decomposition
+    (implies (< 0 (canonical-combining-class cp ver))
+             (classes-are-p (decomposition cp compat ver)
+                            (canonical-combining-class cp ver)
+                            (canonical-combining-class-map ver)))
+    :enable (decomposition
+             canonical-combining-class
+             class-kept-ok
+             class-is-p)
+    :use (:instance class-kept-ok-when-member-equal-of-class-kept-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (full (if compat
+                              (compatibility-decompositions ver)
+                            (canonical-decompositions ver)))
+                    (map (canonical-combining-class-map ver))))
+
+  ;; A non-starter can be put in front of an ordered list
+  ;; before or after non-starters of one lower class.
+
+  (defrulel canonical-order-onto-of-canonical-order-insert
+    (implies (and (classes-are-p cps
+                                 class
+                                 (canonical-combining-class-map ver))
+                  (natp class)
+                  (not (equal class 0))
+                  (< class (canonical-combining-class cp ver)))
+             (equal (canonical-order-onto
+                     cps
+                     (canonical-order-insert cp ordered ver)
+                     ver)
+                    (canonical-order-insert
+                     cp
+                     (canonical-order-onto cps ordered ver)
+                     ver)))
+    :induct (canonical-order-onto cps ordered ver)
+    :enable (canonical-order-onto
+             canonical-order-insert-of-canonical-order-insert))
+
+  ;; Non-starters of one class and non-starters of another class
+  ;; can be put in front of an ordered list in either order.
+
+  (defruledl canonical-order-onto-of-canonical-order-onto
+    (implies (and (classes-are-p cps1
+                                 class1
+                                 (canonical-combining-class-map ver))
+                  (classes-are-p cps2
+                                 class2
+                                 (canonical-combining-class-map ver))
+                  (natp class1)
+                  (natp class2)
+                  (not (equal class1 0))
+                  (< class1 class2))
+             (equal (canonical-order-onto
+                     cps1
+                     (canonical-order-onto cps2 ordered ver)
+                     ver)
+                    (canonical-order-onto
+                     cps2
+                     (canonical-order-onto cps1 ordered ver)
+                     ver)))
+    :induct (canonical-order-onto cps2 ordered ver)
+    :enable canonical-order-onto)
+
+  ;; So can the decompositions of two non-starters of different classes.
+
+  (defrulel canonical-order-onto-of-decomposition-of-decomposition
+    (implies (and (not (equal (canonical-combining-class cp1 ver) 0))
+                  (< (canonical-combining-class cp1 ver)
+                     (canonical-combining-class cp2 ver)))
+             (equal (canonical-order-onto
+                     (decomposition cp1 compat ver)
+                     (canonical-order-onto (decomposition cp2 compat ver)
+                                           ordered
+                                           ver)
+                     ver)
+                    (canonical-order-onto
+                     (decomposition cp2 compat ver)
+                     (canonical-order-onto (decomposition cp1 compat ver)
+                                           ordered
+                                           ver)
+                     ver)))
+    :use (:instance canonical-order-onto-of-canonical-order-onto
+                    (cps1 (decomposition cp1 compat ver))
+                    (cps2 (decomposition cp2 compat ver))
+                    (class1 (canonical-combining-class cp1 ver))
+                    (class2 (canonical-combining-class cp2 ver))))
+
+  ;; Decomposing a list in which a code point has moved to its place
+  ;; gives the same canonical order as
+  ;; decomposing the code point and the list.
+
+  (defrulel canonical-order-of-decompose-of-canonical-order-insert
+    (equal (canonical-order
+            (decompose (canonical-order-insert cp cps ver) compat ver)
+            ver)
+           (canonical-order
+            (append (decomposition cp compat ver)
+                    (decompose cps compat ver))
+            ver))
+    :induct (canonical-order-insert cp cps ver)
+    :enable (canonical-order-insert
+             decompose
+             canonical-order-of-append))
+
+  (defrule canonical-order-of-decompose-of-canonical-order
+    (equal (canonical-order
+            (decompose (canonical-order cps ver) compat ver)
+            ver)
+           (canonical-order (decompose cps compat ver) ver))
+    :induct (canonical-order cps ver)
+    :enable (canonical-order
+             decompose
+             canonical-order-of-append)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -535,25 +803,6 @@
     :induct (non-starters-below-p x bound1 ver)
     :enable (non-starters-below-p
              non-starter-below-p))
-
-  ;; Two non-starters of different classes
-  ;; can be put in front of a list in either order.
-
-  (defruledl canonical-order-insert-of-canonical-order-insert
-    (implies (and (not (equal (canonical-combining-class cp1 ver) 0))
-                  (< (canonical-combining-class cp1 ver)
-                     (canonical-combining-class cp2 ver)))
-             (equal (canonical-order-insert
-                     cp1
-                     (canonical-order-insert cp2 cps ver)
-                     ver)
-                    (canonical-order-insert
-                     cp2
-                     (canonical-order-insert cp1 cps ver)
-                     ver)))
-    :rule-classes ((:rewrite :loop-stopper nil))
-    :induct (canonical-order-insert cp1 cps ver)
-    :enable canonical-order-insert)
 
   ;; A code point that is followed by non-starters of lower classes
   ;; can be moved after them without changing the canonical order:
@@ -901,7 +1150,22 @@
     (implies (and (undecomposable-listp cps t ver)
                   (canonically-ordered-p cps ver))
              (equal (nfkd (canonical-compose cps ver) ver)
-                    (code-point-list-fix cps)))))
+                    (code-point-list-fix cps))))
+
+  (defrule nfkd-of-nfd
+    (equal (nfkd (nfd cps ver) ver)
+           (nfkd cps ver))
+    :enable nfd)
+
+  ;; NFC has the same NFD form as the list,
+  ;; and the theorem just proved says that
+  ;; the NFKD form of a list is that of its NFD form.
+
+  (defrule nfkd-of-nfc
+    (equal (nfkd (nfc cps ver) ver)
+           (nfkd cps ver))
+    :use (:instance nfkd-of-nfd (cps (nfc cps ver)))
+    :disable nfkd))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -948,7 +1212,15 @@
   (defrule nfc-of-nfkc
     (equal (nfc (nfkc cps ver) ver)
            (nfkc cps ver))
-    :enable nfc))
+    :enable nfc)
+
+  (defrule nfkc-of-nfd
+    (equal (nfkc (nfd cps ver) ver)
+           (nfkc cps ver)))
+
+  (defrule nfkc-of-nfc
+    (equal (nfkc (nfc cps ver) ver)
+           (nfkc cps ver))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

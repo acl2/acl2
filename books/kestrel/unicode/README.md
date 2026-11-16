@@ -124,6 +124,16 @@ over the tables, and so re-checked whenever a version is added:
   gives the decomposed form.
 - `nfc-of-nfc`, `nfkc-of-nfkc`, `nfc-of-nfkc`: normalizing a second time to
   a composed form changes nothing.
+- `decompose-of-canonical-decompose`: decomposing a list canonically first
+  makes no difference to its decomposition.
+- `canonical-order-of-decompose-of-canonical-order`: putting a list in
+  canonical order before decomposing it does not change the canonical order
+  of its decomposition.
+- `nfkd-of-nfd`, `nfkd-of-nfc`, `nfkc-of-nfd`, `nfkc-of-nfc`: normalizing to
+  a canonical form first makes no difference to the compatibility forms.
+  With these, all sixteen ways of applying one form after another are
+  covered: the form applied last says whether the result is composed, and
+  the result is a compatibility form if either of the two is.
 - `xid-identifier-p-of-nfc` (and the same for the other three forms):
   normalizing an XID identifier gives an XID identifier, that is, a
   code point with `XID_Start` followed by code points with `XID_Continue`.
@@ -133,11 +143,6 @@ over the tables, and so re-checked whenever a version is added:
   `xid-continue-listp`, the lists of code points with `XID_Continue`.
 - `canonical-combining-class-when-xid-start-p`: a code point with
   `XID_Start` is a starter.
-
-Not proved: the four relations that go from a canonical form to a
-compatibility form, namely that `nfkd` of `nfd`, `nfkd` of `nfc`, `nfkc` of
-`nfd` and `nfkc` of `nfc` are `nfkd`, `nfkd`, `nfkc` and `nfkc` of the
-original list.  The conformance tests check these on the test data.
 
 ### Including only what you need
 
