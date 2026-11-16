@@ -16,7 +16,7 @@
 ;; This book is for things that mix x86isa notions with our notions.  Pure x86
 ;; theorems should go in support-x86.lisp.
 
-(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; reduce?
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; reduce? for x86isa::RB-RB-SUBSET
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for get-one-byte-prefix-array-code
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "flags") ; reduce?
@@ -26,8 +26,9 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
-(include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "kestrel/utilities/myif" :dir :system)
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
+(include-book "kestrel/utilities/myif-def" :dir :system)
+(local (include-book "kestrel/utilities/myif" :dir :system))
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
@@ -497,12 +498,6 @@
                            (m 63)
                            (x (acl2::bvchop 64 k))))))
 
-
-
-
-
-
-
 ;todo: improve axe to handle the form of the original rule
 ;or now we just expand !flgi-undefined
 ;; (DEFTHM X86P-OF-!FLGI-UNDEFINED-eric
@@ -692,9 +687,6 @@
                   (if test
                       (cons tp x)
                     (cons ep x)))))
-
-
-
 
 
 ;; ;drop?
