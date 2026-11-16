@@ -32,7 +32,7 @@
 
 (include-book "def-fgl-rewrite")
 (include-book "centaur/fty/database" :dir :system)
-
+(include-book "clause-processors/generalize" :dir :system) ;; for new-symbol
 
 (defxdoc fgl-fty-support
   :parents (fgl::fgl)
@@ -182,7 +182,7 @@ removing definitions and adding supporting rewrite rules."
       nil
     (append (fgl-cons-rule-defs-for-product (car products))
             (fgl-cons-rule-defs-for-products (cdr products)))))
-     
+
 
 (define fgl-cons-rule-ctor-of-field-rules (products)
   (if (atom products)
@@ -209,7 +209,7 @@ removing definitions and adding supporting rewrite rules."
             defopen-events
             `((in-theory (disable . ,names))
               (fgl::add-fgl-rewrites . ,names)))))
-       
+
 
 (define def-fgl-cons-rules-for-fty-sum-fn (sumname wrld)
   (b* (((mv & sum) (search-deftypes-table sumname (get-flextypes wrld)))
@@ -458,7 +458,7 @@ accessors applied to cons structures.</p>")
       nil
     (cons (fgl-fty-merge-field-arg then-last-test else-last-test (car vars1) (car vars2) (car merges))
           (fgl-fty-merge-field-args then-last-test else-last-test (cdr vars1) (cdr vars2) (cdr merges)))))
-  
+
 
 (define fgl-fty-splitter-merge-args (then-last-test else-last-test tree-1 tree-2 pkg)
   (case (tag tree-1)
@@ -558,7 +558,7 @@ accessors applied to cons structures.</p>")
          (cond ((eq prod.kind kind1) (flexprod-fields->names prod.fields))
                ((eq prod.kind kind2) (flexprod-fields-acc-calls prod.fields xvar))
                (t (make-list (len prod.fields) :initial-element nil)))))))
-  
+
 
 (define fgl-fty-splitter-tree-merge-ctor-with-kind-thms (sum prod field-merges tree subtree splitter-name)
   (case (tag subtree)
@@ -594,7 +594,7 @@ accessors applied to cons structures.</p>")
            (concatenate 'string (symbol-name var) "." (symbol-name (flexprod-field->name (car fields))))
            pkg)
           (fgl-fty-dotted-field-vars var (cdr fields) pkg))))
-  
+
 (define fgl-fty-merge-constants-splitter-args (xkind ykind tree pkg)
   (case (tag tree)
     (:branch (b* (((fgl-fty-splitter-branch tree))
@@ -649,9 +649,9 @@ accessors applied to cons structures.</p>")
            `(,splitter-name
              . ,(fgl-fty-merge-constants-splitter-args xkind prod.kind tree splitter-name)))
         . ,(fgl-fty-merge-constants-body-prods2 xkind (cdr prods) tree splitter-name)))))
-                   
-                                                                      
-                                                                      
+
+
+
 
 (define fgl-fty-merge-constants-body-prods1 (casemacro prods all-prods tree splitter-name)
   (if (atom prods)
@@ -660,7 +660,7 @@ accessors applied to cons structures.</p>")
       `(,prod.kind
         (,casemacro y . ,(fgl-fty-merge-constants-body-prods2 prod.kind all-prods tree splitter-name))
         . ,(fgl-fty-merge-constants-body-prods1 casemacro (cdr prods) all-prods tree splitter-name)))))
-                          
+
 
 (define fgl-fty-merge-constants-body (casemacro prods tree splitter-name)
   `(,casemacro x
@@ -671,7 +671,7 @@ accessors applied to cons structures.</p>")
 
 (define fgl-fty-sum-splitter (splitter-name
                               prod-tree ;; Cons tree whose leaves are kind symbols of the products, describing how the cases are split.
-                                        ;; Can be nil, in which case it defaults to (:kind1 :kind2 ... :kindn-1 . :kindn)
+                              ;; Can be nil, in which case it defaults to (:kind1 :kind2 ... :kindn-1 . :kindn)
                               field-merges ;; Elements of the form (prod-kind field-name merge-function) or just (field-name merge-function).
                               hints ;; for the main splitter merge theorem
                               sum
@@ -741,7 +741,7 @@ accessors applied to cons structures.</p>")
        
 
        ,@(fgl-fty-splitter-tree-merge-splitter-with-kind-thms if-name sum tree tree splitter-name)
-    
+       
        ,@(fgl-fty-splitter-tree-merge-ctors-with-kind-thms sum tree tree splitter-name)
 
        (fgl::def-fgl-branch-merge ,(intern-in-package-of-symbol
@@ -775,7 +775,7 @@ accessors applied to cons structures.</p>")
 
 (defmacro def-fgl-fty-sum-splitter (splitter-name sumname &rest args)
   `(make-event (def-fgl-fty-sum-splitter-fn ',splitter-name ',sumname ',args (w state))))
-                                          
+
 
 (defxdoc def-fgl-fty-sum-splitter
   :parents (fgl-fty-support)

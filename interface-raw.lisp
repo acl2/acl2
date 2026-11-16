@@ -1149,7 +1149,10 @@
                        ((tbl-get ('quote st) parent (create-st))
                         `(or ,(oneify `(,tbl-get ',st ,parent nil)
                                       fns w program-p)
-                             (,create-st)))
+                             (if (live-stobjp ,parent)
+                                 (,create-st)
+                               ,(oneify `(,create-st)
+                                        fns w program-p))))
                        (& (er hard 'oneified-stobj-let-actuals
                               "Implementation error: unexpected stobj-let ~
                                actual, ~x0.  Please contact the ACL2 ~

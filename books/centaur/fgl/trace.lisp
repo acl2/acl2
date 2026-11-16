@@ -31,7 +31,7 @@
 (in-package "FGL")
 
 (include-book "interp-st")
-(include-book "binder-rules")
+(include-book "rules")
 (include-book "fancy-ev")
 (local (include-book "tools/trivial-ancestors-check" :dir :System))
 
@@ -43,29 +43,29 @@
          (implies (trace-alist-p x)
                   (true-listp (assoc key x)))))
 
-(define fgl-rule-tracespec ((rule fgl-generic-rule-p)
-                                           interp-st state)
+(define fgl-rule-tracespec ((rule fgl-rule-p)
+                            interp-st state)
   (declare (ignorable state))
   :returns (tracespec true-listp :rule-classes :type-prescription)
-  (assoc-equal (fgl-generic-rule->rune rule)
+  (assoc-equal (fgl-rule->rune rule)
                (interp-st->trace-alist interp-st)))
 
 ;; (encapsulate
 ;;   (((fgl-rewrite-trace-cond * * * * * interp-st state) => (mv * interp-st state)
 ;;     :formals (rule tracespec fn args bindings interp-st state)
-;;     :guard (and (fgl-generic-rule-p rule)
+;;     :guard (and (fgl-rule-p rule)
 ;;                 (true-listp tracespec)
 ;;                 (pseudo-fnsym-p fn)
 ;;                 (fgl-objectlist-p args)
 ;;                 (fgl-object-bindings-p bindings)
 ;;                 (interp-st-bfrs-ok interp-st))))
 
-  
-  
+
+
 ;;   (set-ignore-ok t)
 ;;   (set-irrelevant-formals-ok t)
 
-;;   (define fgl-rewrite-trace-cond ((rule fgl-generic-rule-p)
+;;   (define fgl-rewrite-trace-cond ((rule fgl-rule-p)
 ;;                                   (tracespec true-listp)
 ;;                                   (fn pseudo-fnsym-p)
 ;;                                   (args fgl-objectlist-p)
@@ -128,18 +128,17 @@
          :rule-classes :type-prescription))
 
 (defconst *traceeval-common-inputs*
-  '((rule fgl-generic-rule-p)
+  '((rule fgl-rule-p)
     (fn pseudo-fnsym-p)
-    (bindings fgl-object-bindings-p)
     (tracep)
     (interp-st interp-st-bfrs-ok)
     (state)))
 
 (defconst *traceeval-common-bindings*
   '`((depth . ,(lnfix depth))
-     (rune . ,(fgl-generic-rune-fix rune))
+     (rune . ,(fgl-rune-fix rune))
      (fn . ,(pseudo-fnsym-fix fn))
-     (args . ,(fgl-objectlist-fix args))
+     (args . ,(fgl-arglist-fix args))
      (bindings . ,(fgl-object-bindings-fix bindings))
      . ,(fgl-object-bindings-fix bindings)))
 
@@ -180,7 +179,7 @@
 ;;                                       val trace-alist interp-st)))
 ;;                        (mv val interp-st state)))
 ;;                    (t body))))
-                    
+
 ;;     `(define ,name (,@formals
 ;;                     . ,*traceeval-common-inputs*)
 ;;        :returns (mv val new-interp-st new-state)
@@ -206,10 +205,11 @@
 ;;   :push t)
 
 (define interp-st-rewrite-args (interp-st)
-  :returns (args fgl-objectlist-p)
-  (and (< 0 (interp-st-scratch-len interp-st))
-       (let ((scratch (interp-st-top-scratch interp-st)))
-         (scratchobj-case scratch :fgl-objlist scratch.val :otherwise nil))))
+  :returns (args fgl-arglist-p)
+  ;; Rule frames have their own scratch stack; arguments are saved by the caller.
+  (and (< 0 (interp-st-full-scratch-len interp-st))
+       (let ((scratch (interp-st-nth-scratch 0 interp-st)))
+         (scratchobj-case scratch :fgl-arglist scratch.val :otherwise nil))))
 
 (local (acl2::use-trivial-ancestors-check))
 
@@ -222,8 +222,9 @@
          ((unless tracespec) (mv nil interp-st state))
          (trace-alist (interp-st->trace-alist interp-st))
          (depth (+ 1 (interp-st->trace-depth interp-st)))
-         (rune (fgl-generic-rule->rune rule))
+         (rune (fgl-rule->rune rule))
          (args (interp-st-rewrite-args interp-st))
+         (bindings (interp-st-bindings interp-st))
          (interp-st (update-interp-st->tracespecs
                      (cons tracespec (interp-st->tracespecs interp-st))
                      interp-st))
@@ -262,10 +263,11 @@
      (b* (((unless tracep) (mv interp-st state))
           (tracespec (car (interp-st->tracespecs interp-st)))
           (depth (interp-st->trace-depth interp-st))
+          (bindings (interp-st-bindings interp-st))
           ((mv interp-st state)
            (b* (((unless tracespec)
                  (mv interp-st state))
-                (rune (fgl-generic-rule->rune rule))
+                (rune (fgl-rule->rune rule))
                 ((unless (equal (car tracespec) rune))
                  (raise "Unexpected tracespec ~x0 for rule ~x1~%" tracespec rune)
                  (mv interp-st state))
@@ -322,7 +324,7 @@
       (mv tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
-      
+
 
 
 
@@ -358,68 +360,11 @@
                                     . ,*traceeval-common-inputs*)
     :returns (mv new-interp-st new-state)
     (if (not (interp-st->errmsg interp-st))
-        (fgl-trace-success-output result rule fn bindings tracep interp-st state)
-      (fgl-trace-failure-output nil rule fn bindings tracep interp-st state))
+        (fgl-trace-success-output result rule fn tracep interp-st state)
+      (fgl-trace-failure-output nil rule fn tracep interp-st state))
     ///
     (make-event `(progn . ,*fancy-ev-primitive-thms*))))
 
-
-;; Meta rules: five trace events -- entry (shared with rewriting), eval
-;; success, eval failure, (RHS rewriting) success, (RHS rewriting) failure.
-(def-trace-output fgl-trace-meta-eval-success-output ((rhs pseudo-termp))
-  :key :on-eval-success
-  :ev-bindings (`(rhs . ,(pseudo-term-fix rhs)))
-  :description "trace eval-success term")
-
-
-
-(def-trace-output fgl-trace-meta-eval-failure-output ()
-  :key :on-eval-failure
-  :ev-bindings (`(errmsg . ,(interp-st->errmsg interp-st)))
-  :description "trace eval-failure term"
-  :default (msg "~x0 evaluation failed~@1~%"
-                rune
-                (let ((errmsg (interp-st->errmsg interp-st)))
-                  (cond ((msgp errmsg) (msg " with error ~@0" errmsg))
-                        (errmsg (msg " with error ~x0" errmsg))
-                        (t ""))))
-  :direction :exit)
-
-(def-trace-output fgl-trace-meta-success-output ((result fgl-object-p)
-                                                 (rhs pseudo-termp))
-  :key :on-success
-  :ev-bindings (`(result . ,(fgl-object-fix result))
-                `(rhs . ,(pseudo-term-fix rhs)))
-  :description "trace success term"
-  :default (msg "~x0 success: ~x1~%" rune result)
-  :direction :exit)
-
-(def-trace-output fgl-trace-meta-failure-output ((rhs pseudo-termp))
-  :key :on-failure
-  :ev-bindings (`(rhs . ,(pseudo-term-fix rhs))
-                `(errmsg . ,(interp-st->errmsg interp-st)))
-  :description "trace failure term"
-  :default (msg "~x0 failed: (~@1)~%"
-                rune
-                (let ((errmsg (interp-st->errmsg interp-st)))
-                  (cond ((msgp errmsg) errmsg)
-                        (errmsg (msg "~x0" errmsg))
-                        (t "aborted"))))
-  :direction :exit)
-
-
-(make-event
- `(define fgl-trace-finish-meta ((successp)
-                                 (result fgl-object-p)
-                                 (rhs pseudo-termp)
-                                 . ,*traceeval-common-inputs*)
-    :returns (mv new-interp-st new-state)
-    (if (and successp (not (interp-st->errmsg interp-st)))
-        (fgl-trace-meta-success-output result rhs rule fn bindings tracep interp-st state)
-      (fgl-trace-meta-failure-output rhs rule fn bindings tracep interp-st state))
-    ///
-    (make-event `(progn . ,*fancy-ev-primitive-thms*))))
- 
 
 (defxdoc fgl-rewrite-tracing
   :parents (fgl)
@@ -429,7 +374,9 @@
 <p>FGL allows attempts at applying rewrite rules to be traced using a
 configurable tracing function.  By default, a basic tracing function is
 provided such that the user only needs to set up some state global variables to
-enable and use it.</p>
+enable and use it. Rule tracing covers rewrite applications, including
+applications constructed by metafunctions. To trace execution of a metafunction
+or primitive itself, use ACL2's @(see acl2::trace$) on that function.</p>
 
 <h3>Basic Tracing</h3>
 
@@ -474,8 +421,8 @@ state globals:</p>
                       restore-rules
                       state)
   :mode :program
-  (b* (((unless (fgl-generic-rune-p rune))
-        (er soft 'fgl-trace "Rune must satisfy ~x0" 'fgl-generic-rune-p))
+  (b* (((unless (fgl-rune-p rune))
+        (er soft 'fgl-trace "Rune must satisfy ~x0" 'fgl-rune-p))
        ((er trans-keyvals) (fgl-trace-translate-keyvals rune keyvals state))
        (entry (cons rune
                     (append trans-keyvals
@@ -484,7 +431,7 @@ state globals:</p>
        (state (f-put-global ':fgl-trace-rule-alist
                             (cons entry old-alist) state)))
     (value entry)))
-       
+
 
 
 (defmacro fgl-trace (rune
@@ -492,8 +439,6 @@ state globals:</p>
                      (cond 'nil cond-p)
                      (on-entry 'nil on-entry-p)
                      (on-relieve-hyp 'nil on-relieve-hyp-p)
-                     (on-eval-success 'nil on-eval-success-p)
-                     (on-eval-failure 'nil on-eval-failure-p)
                      (on-success 'nil on-success-p)
                      (on-failure 'nil on-failure-p)
                      (restore-rules 'nil))
@@ -501,13 +446,11 @@ state globals:</p>
                  (list . ,(append (and cond-p `(:cond ',cond))
                                   (and on-entry-p `(:on-entry ',on-entry))
                                   (and on-relieve-hyp-p `(:on-relieve-hyp ',on-relieve-hyp))
-                                  (and on-eval-success-p `(:on-eval-success ',on-eval-success))
-                                  (and on-eval-failure-p `(:on-eval-failure ',on-eval-failure))
                                   (and on-success-p `(:on-success ',on-success))
                                   (and on-failure-p `(:on-failure ',on-failure))))
                  ,restore-rules
                  state))
-        
+
 
 
 (defxdoc fgl-trace
@@ -521,11 +464,10 @@ traced and what output will be printed.</p>
 @({
  (fgl-trace (:formula logext-to-logapp)
    :cond (fgl-object-case n :g-integer)
-   :on-entry (list 'logext-to-logapp n x)
+   :on-entry (msg \"logext-to-logapp: n=~x0 x=~x1\" n x)
    :on-success (msg \"~x0 success: n=~x1 x=~x2 result=~x3\" 'logext-to-logapp n x result)
-   :on-failure (msg \"~x0 failure: hyp ~x1 errmsg ~x2\" 'logext-to-logapp failed-hyp errmsg)
-   :restore-rules t
-   :location state)
+   :on-failure (msg \"~x0 failure: hyp ~x1 errmsg ~x2\" 'logext-to-logapp hyp errmsg)
+   :restore-rules t)
  })
 
 <p>See @(see fgl-untrace) and @(see fgl-untrace-all) to remove traces from rules.</p>
@@ -543,7 +485,7 @@ following ways:</p>
 
 <h3>Arguments</h3>
 
-<p>The first argument is a rune satisfying @('fgl-generic-rune-p'). The rest of
+<p>The first argument is a rune satisfying @('fgl-rune-p'). The rest of
 the arguments are optional keyword/value pairs among the following:</p>
 
 <ul>
@@ -560,8 +502,7 @@ printed (same as if the keyword was not provided), or a @(see acl2::msg)
 object, in which case it is printed with the @('~@') formatting directive.</li>
 
 <li>@(':on-relieve-hyp relieve-expr'): If provided, after each successful
-relieving of a hypothesis (for a rewrite rule) or after successfully evaluating
-the metafunction (for a meta rule), @('relieve-expr') is evaluated and may
+relieving of a hypothesis, @('relieve-expr') is evaluated and may
 cause some output to be printed. (By default no output is printed in this case,
 unlike for entry, success, and failure.) The expression may use the standard
 trace variables as well as @('hyp') (see below). The resulting object should either
@@ -571,45 +512,26 @@ directive.</li>
 
 <li>@(':on-success success-expr'): If provided, @('success-expr') is evaluated
 when the rule has been applied successfully. The expression may use the
-standard trace variables as well as @('result') and additionally @('rhs') if
-the rule is a meta rule (see below).  The resulting object should either be
+standard trace variables as well as @('result').  The resulting object should either be
 @('nil'), in which case nothing is printed, @(':default'), in which case the
 default success message is printed (same as if the keyword was not provided),
 or a @(see acl2::msg) object, in which case it is printed with the @('~@')
 formatting directive.</li>
 
 <li>@(':on-failure failure-expr'): If provided, @('failure-expr') is evaluated
-when the application of the rule has failed. For a rewrite rule, this may be
-either because of an unrelieved hypothesis or an error or abort. For a meta
-rule, this is due to an error or abort in rewriting the RHS; a failure in
-applying the metafunction instead results in the eval-failure
-condition (below).  The expression may use the standard trace variables as well
-as @('errmsg') and @('hyp') and additionally @('rhs') if the rule is a meta
-rule (see below).  The resulting object should either be @('nil'), in which
-case nothing is printed, @(':default'), in which case the default failure
-message is printed (same as if the keyword was not provided), or a @(see
-acl2::msg) object, in which case it is printed with the @('~@') formatting
-directive.</li>
-
-<li>@(':on-eval-success success-expr'): If provided, and if the rule is a meta
-rule, @('success-expr') is evaluated when the metafunction has been
-successfully executed, before the resulting RHS term is rewritten.  The
-expression may use the standard trace variables as well as @('rhs') (see
-below).  The resulting object should either be @('nil')/@(':default'), in which
-case nothing is printed, or a @(see acl2::msg) object, in which case it is
-printed with the @('~@') formatting directive.</li>
-
-<li>@(':on-eval-failure failure-expr'): If provided, and if the rule is a meta
-rule, @('failure-expr') is evaluated when the metafunction has been
-unsuccessfully executed.  The expression may use the standard trace variables
-as well as @('errmsg') (see below).  The resulting object should either be
-@('nil')/@(':default'), in which case nothing is printed, or a @(see acl2::msg)
-object, in which case it is printed with the @('~@') formatting directive.</li>
+when the application of the rule has failed. This may be either because of an
+unrelieved hypothesis or an error or abort.  The expression may use the
+standard trace variables as well as @('errmsg') and @('hyp').  The resulting object should
+either be @('nil'), in which case nothing is printed, @(':default'), in which
+case the default failure message is printed (same as if the keyword was not
+provided), or a @(see acl2::msg) object, in which case it is printed with the
+@('~@') formatting directive.</li>
 
 <li>@(':restore-rules restorep'): If provided and @('restorep') is nonnil,
 whenever an application of the rule is traced the current trace rules are
-backed up at the start and restored at the end of tracing (albeit before
-evaluating the success or failure expressions). This is useful if you want a
+backed up at the start and restored at the end of tracing, after evaluating
+the success or failure expressions. Changes to trace rules made by these
+expressions are also undone. This is useful if you want a
 trace of one rule to cause tracing of another rule; see @(see
 fgl-advanced-tracing).</li>
 
@@ -630,15 +552,13 @@ traced (i.e. its cond expression evaluates to nil).</li>
 
 <li>@('rune'): the name of the traced rule.</li>
 
-<li>@('fn'), @('args'): the function and arguments (FGL objects) of the
+<li>@('fn'), @('args'): the function and arguments (FGL arglist) of the
 object being rewritten.</li>
 
 <li>@('bindings'): The substitution under which the rule is being applied. At
 any point in applying a rewrite rule, this is the unifying substitution plus
-any free variable bindings that have been added. When applying a meta or
-primitive rule, the bindings are initially empty. For a meta rule, after
-evaluating the metafunction, it is populated with the bindings returned by the
-metafunction (for a primitive, it remains empty).</li>
+any free variable bindings that have been added. Trace functions read these
+bindings directly from the current interpreter frame.</li>
 </ul>
 
 <p>The following variables can be used in some situations:</p>
@@ -655,11 +575,7 @@ case, this is the index of the latest hypothesis relieved, and in the
 otherwise NIL.</li>
 
 <li>@('errmsg'): The error message ending application of the rule, or NIL if
-none, available in @(':on-failure') and @(':on-eval-failure') cases.</li>
-
-<li>@('rhs'): the computed RHS term returned by a metafunction, available in
-the @(':on-eval-success') and metafunctions' @(':on-success') and
-@(':on-failure') cases.</li>
+none, available in the @(':on-failure') case.</li>
 
 </ul>
 
@@ -681,8 +597,8 @@ upon beginning application of the rule) after the rule is finished.</p>
 
 
 (define fgl-untrace-fn (rune state)
-  (b* (((unless (fgl-generic-rune-p rune))
-        (mv (msg "Rune must satisfy ~x0" 'fgl-generic-rune-p) nil state))
+  (b* (((unless (fgl-rune-p rune))
+        (mv (msg "Rune must satisfy ~x0" 'fgl-rune-p) nil state))
        (old-alist (my-get-global :fgl-trace-rule-alist state))
        (state (f-put-global ':fgl-trace-rule-alist
                             (acl2::hons-remove-assoc rune old-alist)
@@ -712,5 +628,5 @@ upon beginning application of the rule) after the rule is finished.</p>
   :parents (fgl-rewrite-tracing)
   :short "Remove all trace settings for FGL rules"
   :long "<p>See @(see fgl-trace) for details about tracing rules.</p>")
-  
+
 

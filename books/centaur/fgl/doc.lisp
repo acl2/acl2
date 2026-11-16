@@ -231,31 +231,37 @@ works (depending what rules are installed):</p>
 
 (defxdoc fgl-correctness-of-binding-free-variables
   :parents (fgl)
-  :short "Discussion of the logical justification for the @(see bind-var) feature."
-  :long "<p>FGL's @(see bind-var) feature can be used to bind a free variable
-in a rewrite rule to some arbitrary value.  Here we discuss how the correctness
-of that feature may be formalized.  Note we discuss this with respect to
-@('bind-var'), but it applies to binder functions generally.</p>
+  :short "Logical justification for binding free variables during FGL rewriting."
+  :long "<p>FGL rewrite and meta rules can bind previously unbound variables in
+function-call arguments. The @(see bind-var) function is one application of
+this mechanism. Here we explain its logical justification and the effect on
+the interpreter's correctness statement.</p>
 
 <h3>Requirements and Basic Idea</h3>
 
-<p>First we describe the requirements for using the @('bind-var') feature.  We
-must first have a rewrite rule containing a call of bind-var in either the RHS
-or a hyp.  Then, if and when symbolic execution reaches the call of bind-var,
-it must be the case that the first argument of @('bind-var') is a variable that
-is not yet bound in the current frame (this is checked in the interpreter).  If
-this is the case, the interpreter may add a binding for that variable to any
-object; in particular, it interprets the second argument of @('bind-var') under
-the trivial equivalence @(see unequiv) (meaning that the value returned is
-not important for soundness) and binds it to that value.</p>
+<p>For example, a call @('(bind-var var form)') in a rewrite rule's RHS or
+hypothesis can bind @('var') when it is absent from both the current major and
+minor bindings. The second argument is interpreted under the trivial
+equivalence @(see unequiv), as specified by the congruence rule for
+@('bind-var'). An ordinary rewrite rule, registered with
+@(':arg-modes (:unbound)'), then binds @('var') to that result. Note that there
+is no special case for @('bind-var') in the FGL rewriter; none of these
+capabilities are unique to bind-var.</p>
 
-<p>The justification for this is essentially that all free variables in a
-theorem are universally quantified.  When we apply a rewrite rule, we start
-with the free variables of the LHS bound to the unifying substitution.  We are
-free to bind any other variables that are mentioned in the theorem to whatever
-values we want, because the unifying substitution contains all variables of the
-LHS, so extending the unifying substitution to include additional variables
-won't change the value of the LHS under that substitution.</p>
+<p>All free variables in a theorem are universally quantified. For an ordinary
+rule application whose LHS variables have been bound by unification, additional
+variables can be assigned any values that satisfy the hypotheses without
+changing the value of the instantiated LHS.</p>
+
+<p>More generally, a rule may accept unbound arguments at any direct argument
+position of its LHS function. Unification matches the bound arguments and
+records a reverse substitution from each unbound variable in the caller to
+the corresponding LHS term in the rule's namespace. After relieving the
+hypotheses, FGL interprets those terms under equality and the rule's RHS under
+the caller's equivalence context. On success, it adds the resulting variable
+bindings to the caller's major frame and returns the RHS result. These new
+bindings and the result satisfy the original call under its equivalence
+context. See @(see binder-rules) for the argument modes and matching rules.</p>
 
 <h3>Technical Problem and Solutions</h3>
 <p>There is a technical problem with this when these free variables appear
@@ -275,10 +281,11 @@ if we have a rewrite rule like this:</p>
   (bar x) x b)
  })
 
-<p>We interpret the arguments of a lambda or function call before the body, and
-normally if we encounter an unbound variable during symbolic execution we
-produce an error.  Therefore, we would run into an error when we process the
-argument @('b') of the lambda call.  To avoid this and get the intended
+<p>We interpret the arguments of a lambda before its body, and an unbound
+variable in a lambda argument would produce an error. Ordinary function calls
+can retain direct unbound arguments for binding by rewrite rules, but lambda
+application uses a list of symbolic objects. Therefore, we would run into an
+error when we process the argument @('b') of the lambda call. To avoid this and get the intended
 behavior of binding @('b') when we arrive at its @('bind-var') form, we
 preprocess lambdas to remove bindings of variables to themselves, instead
 carrying forward the existing bindings from the outer context into the lambda
@@ -320,7 +327,7 @@ and output symbolic objects and various invariants of the interpreter state.
 The main complication that we will discuss is that, rather than just an input
 to the rewriter as would be the case in a typical rewriter, the relevant
 bindings are changed (extended) by the rewriter as it (potentially) adds
-variable bindings to the major frame due to @('bind-var').  So the statement we
+variable bindings to the major frame through rewrite or meta rules. So the statement we
 want (again, very approximately) is:</p>
 
 @({
@@ -377,13 +384,18 @@ bindings resulting from rewriting the second term.</p>")
 ;; <p>We'll skip past most of the hypotheses and focus on one particular conclusion:</p>
 
 ;; @({
-;;  (fgl-ev-context-equiv-forall-extensions
-;;   (interp-st->equiv-contexts interp-st)
-;;   (fgl-object-eval xobj env new-logicman)
-;;   x
-;;   eval-alist)
+;;  (and (fgl-ev-context-equiv-forall-extensions
+;;        (interp-st->equiv-contexts interp-st) x eval-alist)
+;;       (equal (fgl-ev-context-fix (interp-st->equiv-contexts interp-st)
+;;                                  (fgl-object-eval xobj env new-logicman))
+;;              (fgl-ev-context-fix (interp-st->equiv-contexts interp-st)
+;;                                  (fgl-ev x eval-alist))))
 ;;  })
 
+;; <p>The first conjunct says that evaluating the term under any extension of
+;; @('eval-alist') preserves its value up to the current equivalence contexts.
+;; The second relates the value at @('eval-alist') to the returned symbolic object.</p>
+;;
 ;; <p>Here the @('xobj') is the symbolic object returned from @('fgl-interp-term'),
 ;; @('new-logicman') is the logicman field of the resulting interpreter state
 ;; after executing @('fgl-interp-term'), @('x') is the input term, and
@@ -454,7 +466,7 @@ bindings resulting from rewriting the second term.</p>")
   :parents (fgl)
   :short "Outline of the way the FGL interpreter works."
   :long
-"
+  "
 
 <p>The FGL interpreter is called by the FGL clause processor in order to try
 and turn the theorem term into an equivalent Boolean formula, which then can
@@ -510,181 +522,151 @@ from interpreting the body.</li>
 <li>When it is a function call, it deals with a few special cases, described
 next, and then the generic function call case.  In the generic case, it first
 recursively interprets the arguments of the function, then calls
-@('fgl-interp-fncall'), described below, on the function and symbolic objects
-resulting from the arguments.</li>
+@('fgl-interp-fncall'), described below, on the function and an argument list
+containing symbolic objects or direct unbound variables.</li>
 
 </ul>
 
 <h3>Interpreting Function Calls -- Special Cases</h3>
 
-<p>The special cases of function calls include @('if'), @('return-last'),
-@('bind-var'), @('abort-rewrite'), @('fgl-sat-check'), @('syntax-interp-fn'),
-@('assume'), @('narrow-equiv'), and @('fgl-interp-obj'). Each of these requires
-special treatment of the arguments, rather than just recursively interpreting
-them:</p>
+<p>Some functions need control over argument interpretation. These include
+@('if'), @('return-last'), @('abort-rewrite'), @('syntax-interp-fn'),
+@('assume-fn'), @('narrow-equiv'), @('fgl-time-fn'), @('fgl-interp-obj'),
+@('disallow-boolean-var-intro'), @('handle-error-fn'), @('fgl-hide'),
+@('trigger-constraints'), @('conditionalize1'), and @('conditionalize2').
+The public macros for some of these functions hide their internal names.</p>
 
 <ul>
+<li>For @('if'), FGL interprets the test as a Boolean function, interprets each
+reachable branch under the appropriate path condition, and merges the branch
+results with @('fgl-interp-merge-branches').</li>
 
-<li>For @('if') terms, the test is recursively interpreted and coerced to a
-Boolean function using @('fgl-interp-test').  Then, unless a syntactic analysis
-shows that the path condition implies the test's negation, we recursively
-interpret the \"then\" branch with @('fgl-interp-term-equivs') and with the test
-conjoined to the path condition, and unless the syntactic analysis shows the
-path condition implies the test, we recursively interpret the \"else\" branch
-with the negated test conjoined to the path condition.  If both branches were
-interpreted, we then attempt to merge the results from the two branches into a
-single symbolic object using @('fgl-interp-merge-branches'), described
-below.</li>
+<li>For @('return-last'), FGL supports timing a term through @('time$');
+otherwise it interprets only the last argument. In particular, use
+@('fgl-prog2') if the first form of a @('prog2$') is to be interpreted for
+side effects.</li>
 
-<li>For @('return-last'), we provide special support for @('time$'), allowing
-it to time the symbolic interpretation of the enclosed term.  Otherwise, we
-simply interpret the last argument.  Note this means that @('prog2$') might not
-function as expected -- if you intend the first argument to @('prog2$') to be
-interpreted in FGL for side effects, you should instead bind it to an ignored
-variable or else use an equivalent two-argument function instead.</li>
+<li>For @('abort-rewrite'), FGL records an @(':abort-rewrite') error. The
+current rule application catches this error and fails.</li>
 
-<li>For @('bind-var'), we bind the first argument, which must be a variable
-that is not yet bound in the current major or minor frame, to the result of
-interpreting the second argument under the @('unequiv') equivalence relation.
-Under this equivalence relation, every object is equivalent to every other
-object; this is sort of an \"anything goes\" mode which allows certain behavior
-that would normally be unsound.  This is allowable in this context because
-@('bind-var') logically just returns its first argument (the variable), so the
-second argument is irrelevant.  It is allowable to bind anything to the
-variable if it is not yet bound **** </li>
+<li>For @('syntax-interp-fn'), FGL requires an @('unequiv') context and a
+quoted term as the second argument. It evaluates the first argument with
+@('fancy-ev'), using the current bindings as an environment of FGL symbolic
+objects. The @(see syntax-interp) and @(see syntax-bind) macros produce this
+form.</li>
 
-<li>For @('binder'), the argument must be a function call whose first argument
-is a variable, and that variable must be free in the current stack frame.  The
-rest of that function's arguments are recursively interpreted, and then binder
-rewrite/meta rules are applied to choose a binding for the free variable based
-on the rest of the arguments.</li>
+<li>For @('assume-fn'), FGL requires an @('unequiv') context, interprets a
+condition, and interprets the body with that condition assumed. See
+@(see assume) for its arguments and handling of unreachable paths.</li>
 
-<li>For @('abort-rewrite'), the interpreter returns @('nil') and inserts a
-special error keyword in the interpreter state's @('errmsg') field, which will
-get caught when returning from the current major stack frame.</li>
+<li>For @('narrow-equiv'), FGL interprets the first argument as a concrete list
+of equivalence contexts, checks that they refine the current contexts, and
+interprets the second argument under those contexts.</li>
 
-<li>For @('fgl-sat-check'), we use @('fgl-interp-test') to coerce the second
-argument (the condition to be tested) to a Boolean function, and
-@('fgl-interp-term-equivs') to interpret the first argument (params).  We then
-call @('interp-st-sat-check'), an attachable function which calls SAT and
-returns NIL if the input Boolean formula is unsat.</li>
+<li>For @('fgl-time-fn'), FGL interprets the first argument as a timing format
+specifier and times interpretation of the second argument.</li>
 
-<li>For @('syntax-interp-fn'), we check that the second argument is a quoted
-term (this is true for calls generated by the @('syntax-interp') and
-@('syntax-bind') macros) and that we're in an @('unequiv') equivalence
-context.  If so, we evaluate the first argument using @('fancy-ev'), with the
-current variable bindings from the symbolic interpreter passed in as the
-evaluation environment.  For example, if a variable @('x') is bound to a
-symbolic integer in our current interpreter frame, then @('x') will be bound to
-the @(see fgl-object) representation of that symbolic integer when evaluating
-the @('syntax-interp') term.  This is similar to ACL2's @(see syntaxp)
-behavior, but the syntaxp term operates on FGL object syntax rather than ACL2
-term syntax.</li>
+<li>For @('fgl-interp-obj'), FGL requires an @('unequiv') context, interprets
+the argument as a concrete ACL2 term, and then interprets that term.</li>
 
-<li>For @('assume'), we first check that we're in an @('unequiv') equivalence
-context.  Then we interpret the first and second arguments as if they were the
-@('test') and @('then') branches of an @('if'); in particular, the Boolean
-formula resulting from the @('test') is conjoined onto the path condition (that
-is, assumed) when symbolically executing the @('then') branch.  We then simply
-return the result from the @('then') branch.</li>
+<li>For @('disallow-boolean-var-intro'), FGL interprets the argument with the
+introduction of new Boolean variables disabled. For @('handle-error-fn'), it
+can catch a specified error and interpret a recovery term. See
+@(see disallow-boolean-var-intro) and @(see handle-error).</li>
 
-<li>For @('narrow-equiv'), we interpret the first argument.  If its result is a
-concrete object whose value satisfies @('equiv-contexts-p') and those
-equivalence contexts are a refinement (narrowing) of the interpreter state's
-current equiv-contexts, then we set the interpreter state's equiv-contexts
-field to that object while interpreting the second argument.  This can be used
-to (conditionally) exit an @('unequiv') context.</li>
+<li>For @('fgl-hide'), FGL interprets the argument with rewriting hidden.
+For @('trigger-constraints'), it interprets the argument and adds applicable
+Boolean constraints.</li>
 
-<li>For @('fgl-time-fn'), we interpret the first argument and use that as a
-@('time$') format specifier for timing the interpretation of the second
-argument, returning the result from the second argument.</li>
-
-<li>For @('fgl-prog2'), we interpret the first argument under the
-@('unequiv') equivalence context, discarding the result; then interpret the
-second argument under the current equivalence context and return its result.</li>
-
-<li>For @('fgl-interp-obj'), we first check that we're in an @('unequiv')
-equivalence context.  Then we interpret the first argument.  If its result is a
-concrete object whose value satisfies @('pseudo-term-p'), then we interpret
-that term and return its result.</li>
-
+<li>The @('conditionalize1') and @('conditionalize2') forms implement the
+special argument handling needed by @(see conditionalize).</li>
 </ul>
+
+<p>@('bind-var') is handled by ordinary congruence and rewrite rules. The
+obsolete @('binder') function is an ordinary identity function. SAT checks
+are provided by registered rules and primitives; they are not a special case
+of @('fgl-interp-fncall-special'). Likewise, @('fgl-prog2') uses ordinary
+argument interpretation with its first argument under @('unequiv').</p>
 
 <h3>Interpreting Function Calls -- Generic Case</h3>
 
-<p>Generic function calls are run by @('fgl-interp-fncall') after reducing the
-arguments to a list of symbolic objects.  This looks up the <see topic='@(url
-fgl-function-mode)'>function mode</see> of the function and, depending on the
-restrictions encoded in that mode, may do some or all of the following:</p>
+<p>For an ordinary function call, @('fgl-interp-arglist') interprets arguments
+from left to right under their argument equivalence contexts. A direct
+variable absent from the major and minor bindings is retained as an unbound
+@(see fgl-arg), while other arguments produce symbolic objects. Afterward,
+FGL replaces any retained variables that were bound while interpreting later
+arguments. The resulting @(see fgl-arglist) is passed through any requested
+IF splitting and then to @('fgl-interp-fncall').</p>
 
+<p>Subject to the function's @(see fgl-function-mode), processing proceeds as
+follows:</p>
 <ul>
-
-<li>If all the arguments are explicit, i.e. symbolic objects of the @(see
-g-concrete) kind, then try to execute the function using @(see
-magic-ev-fncall).  If it runs successfuly, return the result as a
-@('g-concrete') object.</li>
-
-<li>Otherwise try applying each of the rules enabled for that function in the
-@('fgl-rewrite-rules') table using @('fgl-rewrite-try-rule').  These may be
-rewrite, meta, or primitive rules. If any of those rules succeeds, return the
-symbolic object produced by recursively interpreting the RHS of the rule under
-the unifying substitution.</li>
-
-<li>Otherwise try executing a primitive associated with that function; see
-@(see fgl-primitive-and-meta-rules).  If successful, return the value from that primitive.</li>
-
-<li>Otherwise, if there exists a rule with rune @('(:definition fnname)'), or
-if there are rewrite/definition rules for that function listed in the
-@('fgl-definition-rules') table, then try rewriting the call using those
-rules.</li>
-
-<li>Finally, if none of the above were successful, produce the object
-@('(g-apply fnname args)').</li>
-
+<li>If every argument is bound and concrete, try concrete execution. On
+success, return the result as a @('g-concrete') object.</li>
+<li>Otherwise, try the function's registered rewrite, meta, and primitive
+rules in priority order. Disabled rules and rules whose argument modes do not
+match are skipped. Primitives additionally require all arguments to be bound.
+A successful rewrite or meta rule can supply bindings for unbound arguments
+and return a separate RHS result.</li>
+<li>If no rule succeeds and all arguments are bound, return
+@('(g-apply fnname objects)'), where @('objects') is the converted object
+list. If an argument remains unbound, abort the current rewrite instead.</li>
 </ul>
 
-<p>This completes the overview of how a term is interpreted and turned into
-either a symbolic object (@(see fgl-object)) or Boolean formula.  Next we
-describe three subroutines that we skipped describing above:
-@('fgl-rewrite-try-rule'), which attempts to apply a rewrite rule;
-@('fgl-interp-simplify-if-test'), which coerces a symbolic object into a Boolean
-formula; and @('fgl-interp-merge-branches'), which merges two branches of an IF
-test.  This will also lead us to discuss @('fgl-interp-add-constraints'), which
-adds Boolean constraints according to a set of rules activated when introducing
-a new Boolean variable representing some term.</p>
+<p>The @('fgl-rewrite-rules') database maps triggering functions to lists of
+@(see fgl-ruledata) tuples containing a rune, priority, argument modes, and
+enabled status. Lower priorities are tried first. For a defined function with
+no explicit database entry, FGL supplies its definitional formula as a default
+rewrite rule with priority 10. Definition expansion therefore uses the same
+rule path; there is no separate definition-rule table or primitive fallback
+phase. See @(see add-fgl-rewrites) for registration and removal behavior.</p>
+
+<p>The next sections describe rule application,
+@('fgl-interp-simplify-if-test'), which converts a symbolic object to a Boolean
+formula, and @('fgl-interp-merge-branches'), which combines IF branch results.
+They also discuss @('fgl-interp-add-constraints'), which adds Boolean
+constraints when a term is assigned a Boolean variable.</p>
 
 <h3>Applying Rewrite Rules</h3>
 
-<p>@('fgl-rewrite-try-rule') takes a rule, a function name, and a list of
-arguments which are FGL symbolic objects.  The rule may be a rewrite, meta, or
-primitive rule.  For a primitive rule, the primitive function indicated by the
-rule is run on the function and arguments, and we return the object it produces
-if successful.  For a meta rule, the metafunction indicated is run, and if
-successful we recursively interpret the term returned under the bindings
-returned.  For a rewrite rule, we first try to unify the LHS of the rule with
-the input function/arguments.  If successful, we then try to relieve the hyps
-of the rule by calling @('fgl-interp-test') on each one and checking that the
-result is (syntactically) constant-true.  We also check @('syntaxp') and
-@('bind-free') hyps, the latter of which might extend the unifying substitution
-with some free variable bindings.</p>
+<p>@('fgl-rewrite-try-rule') takes a rule and a function name, with the target
+@(see fgl-arglist) saved on the scratch stack. It first checks the rule's
+enabled status and argument modes. Each mode describes a direct argument:
+@(':bound') requires a symbolic object, @(':unbound') requires an unbound
+variable, and @(':either') accepts either. Omitted modes mean @(':bound').</p>
 
-<p>If the hypotheses are all relieved, then we recurs on the conclusion using
-@('fgl-interp-term') and return the result unless there were errors recorded in
-the interpreter state.  Errors are passed up to the caller except for the
-special error produced by @('abort-rewrite'), which only causes the current
-rule application to fail.</p>
+<p>For a rewrite rule, FGL checks the equivalence context and unifies the LHS
+with the target function and arguments. Bound arguments are matched against
+symbolic objects. For each unbound target variable, the unifier records the
+corresponding LHS term in a reverse substitution. If a target variable occurs
+in several unbound positions, their LHS terms must be identical; otherwise
+unification fails.</p>
 
-<p>During this process, various helper functions are also called to support
-tracing (see @(see fgl-rewrite-tracing)) and accumulated-persistence-style
-profiling, but none of these are logically relevant.</p>
+<p>FGL pushes a rule frame with the unifying substitution and relieves the
+hypotheses. Ordinary hypotheses must rewrite to true; @('syntaxp'),
+@('bind-free'), and binding hypotheses receive their usual special handling.
+These steps may extend the rule frame's variable bindings. Next, FGL interprets
+the reverse-substitution terms under equality to obtain the caller's new
+bindings, and interprets the RHS under the caller's equivalence context.
+Only if the application succeeds are the new bindings added to the caller's
+major frame. The returned object is the RHS result, which need not equal any
+one of the newly bound objects.</p>
 
-<p>Application of binder rules is similar, but with slightly different logical
-contracts for the rules and very slightly different behavior.  For binder
-rules, we unify the argument list with the argument list of the LHS of the
-rule, omitting the initial argument of the LHS which must be the variable to be
-bound.  Binder rules also specify the equivalence context under which the RHS
-must be rewritten.</p>
+<p>A meta rule produces the hypotheses, reverse substitution, rule bindings,
+and RHS instead of obtaining them from LHS unification. It then uses the same
+hypothesis relief and rule application machinery. A primitive rule requires
+bound arguments and returns an object directly. See
+@(see fgl-primitive-and-meta-rules) for these interfaces.</p>
 
+<p>An @(':abort-rewrite') error fails the candidate and allows another rule to
+be tried. Other uncaught errors stop interpretation. A failed candidate does
+not add its reverse-substitution bindings to the caller. Tracing (see
+@(see fgl-rewrite-tracing)) and profiling record these rule attempts.</p>
+
+<p>The legacy binder registration forms select ordinary rules with default
+argument modes @('(:unbound)'). There is no separate binder rule engine or
+separate RHS equivalence field; binding hypotheses determine their own
+interpretation context in the usual way.</p>
 
 <h3>Simplifying IF Tests</h3>
 
@@ -857,42 +839,59 @@ it to be reinitialized).</li>
 (defxdoc binder-rules
   :parents (fgl-rewrite-rules)
   :short "Determining free variable bindings using rewriting"
-  :long "<p>A binder rewrite rule can be created from a theorem with the following form:</p>
+  :long "<p>Binding rewrite rules are ordinary FGL rewrite rules that permit
+unbound variables in specified direct arguments of their LHS function call.
+Use @(':arg-modes') when registering a rule to choose @(':bound'),
+@(':unbound'), or @(':either') for each position. Omitted positions require
+bound arguments. @(see def-fgl-brewrite) and @(see add-fgl-brewrite) are
+compatibility forms defaulting to @('(:unbound)'), so the first argument must
+be unbound and the rest bound. They use the same runes and database as other
+rewrite rules.</p>
 
+<p>A typical first-argument binding rule has the form:</p>
 @({
- (implies (and hypotheses
-               (rhs-equiv var rhs-form))
-          (equiv (binder-function var args)
-                 var))
+ (def-fgl-brewrite my-binding-rule
+   (implies (and hypotheses
+                 (rhs-equiv var rhs-form))
+            (equiv (binding-function var args) var)))
  })
 
-<p>Here @('var') cannot be used in hypotheses, args, or rhs-form, and
-@('equiv') and @('rhs-equiv') are both equivalence relations.</p>
+<p>If @('var') is unbound in the rule frame when its binding hypothesis is
+reached, that hypothesis interprets @('rhs-form') under @('rhs-equiv') and
+binds @('var') to the result. The hypothesis is processed by ordinary
+hypothesis relief; it is not removed from the rule or stored as a separate
+binder RHS.</p>
 
-<p>Such a rule is used as follows. If the FGL rewriter encounters a form
-@('(binder-function free-var actuals)') where free-var is unbound, it first
-rewrites the actuals, then may attempt to apply the rule as follows:</p>
+<p>When interpreting @('(binding-function free-var actuals)'), FGL matches the
+bound arguments and records that the caller's @('free-var') corresponds to
+the rule's @('var'). It relieves the hypotheses, interprets @('var') under
+equality to obtain the new caller binding, and interprets the rule's RHS under
+the caller's equivalence context. On success it installs the new binding and
+returns the RHS result. Failure leaves that caller binding unassigned.</p>
 
-<ul>
-<li>Check that the current equivalence context allows rewriting under
-@('equiv'), or else abort the attempt.</li>
-<li>Unify @('args') with the results of rewriting @('actuals') to get the
-initial set of variable bindings, or abort the attempt if they don't
-unify.</li>
-<li>Push a new rewrite stack frame containing the initial bindings.</li>
-<li>Relieve @('hypotheses') under the bindings exactly as with any other
-rewrite rule, perhaps extending the variable bindings, or abort if relieving
-any hypothesis fails.</li>
-<li>Rewrite @('rhs-form') under the bindings in a @('rhs-equiv') equivalence
-context. The attempt succeeds unless this causes an abort or error.</li>
-<li>Pop the rewrite stack back to the outer context.</li>
-<li>Bind @('free-var') to the result from rewriting @('rhs-form') and replace
-the @('binder-function') call with that same result.</li>
-</ul>
+<p>The general mechanism supports multiple unbound arguments, any argument
+position, arbitrary LHS terms at those positions, and an RHS different from
+the new bindings. A repeated unbound target variable is allowed only when its
+positions correspond to identical LHS terms. Unbound variables nested inside
+other arguments are handled when those inner calls are interpreted, not as
+unbound positions of the outer call.</p>
 
-<p>See also @(see binder-functions).</p>
+<p>For an example with an unbound second argument and a distinct RHS:</p>
+@({
+ (defun bind-second (x y)
+   (if (equal y (+ 1 x)) (cons x y) nil))
 
-")
+ (def-fgl-rewrite bind-second-rule
+   (implies (equal y (+ 1 x))
+            (equal (bind-second x y) (cons x y)))
+   :arg-modes (:bound :unbound))
+ })
+<p>With @('a') unbound, interpreting @('(bind-second k a)') binds @('a') to
+the interpreted @('(+ 1 k)') and returns the interpreted @('cons') term.</p>
+
+<p>See also @(see binder-functions), @(see add-fgl-rewrites), and
+@(see fgl-correctness-of-binding-free-variables).</p>")
+
 
 (defxdoc binder-functions
   :parents (fgl-rewrite-rules)
@@ -927,12 +926,12 @@ bound to @('(+ 1 x)'):</p>
                    free-var)))
  })
 
-<p>When interpreted as a <see topic='@(url binder-rules)'>binder rule</see>, this
-has no hypotheses (so it can apply whenever bind-var is called on a free
-variable and an argument that unifies with @('(foo x)')), and it rewrites to
-@('(+ 1 x)'), meaning when it is applied, that free variable will be bound to
-the object resulting from rewriting @('(+ 1 x)') and this same object will be
-returned from the @('bind-var') form.</p>
+<p>This rule requires the first target argument to be unbound and matches the
+second argument against @('(foo x)'). Its hypothesis
+@('(equal free-var (+ 1 x))') is a binding hypothesis: it interprets
+@('(+ 1 x)') under equality and binds the rule variable @('free-var'). The
+reverse substitution then supplies this value for the caller's unbound
+argument. The RHS @('free-var') returns the same object.</p>
 
 <p>A slightly less simple example: @('check-equal') is a binder function that
 is Boolean-valued and may only return T if its second and third arguments are equal:</p>
@@ -1018,10 +1017,10 @@ that are enabled for use in ACL2, because not all good ACL2 rewrite rules are
 good FGL rewrite rules, and
 vice versa.  A particularly important difference is that @(see syntaxp) and
 @(see bind-free) forms receive <see topic='@(url fgl-object)'>FGL symbolic
-objects</see> as their inputs, rather than ACL2 terms.  FGL rewrite rules also
-allow special constructs @(see bind-var), @(see binder), and @(see syntax-bind)
-which allow free variables to be bound as with @(see bind-free), but in the RHS
-of the rewrite rule rather than in the hyps.  They additionally support a form
+objects</see> as their inputs, rather than ACL2 terms. FGL rewrite and meta
+rules can also bind unbound arguments of function calls, including calls in a
+rule's RHS; @(see bind-var) and @(see syntax-bind) use this facility. See
+@(see binder-rules) for argument modes and examples. They additionally support a form
 @(see abort-rewrite) which causes the application of the rule to be aborted
 when encountered in the RHS, similarly to if a hypothesis was not relieved.</p>
 
@@ -1063,8 +1062,8 @@ then else)') where @('then') is a function call.  Generally, @('test') and
 
 <h3>Binding Free Variables</h3>
 
-<p>There are several ways in which variables not present in the LHS of the rule
-can become bound:</p>
+<p>Variables unbound in the current rewrite frame can acquire bindings through
+hypotheses or function calls, including calls in a rule's RHS:</p>
 
 <ul>
 
@@ -1072,9 +1071,10 @@ can become bound:</p>
 variables' values as FGL objects and must bind new variables to FGL
 objects (see @(see fgl-object)), rather than ACL2 terms.</li>
 
-<li>Binder functions: see @(see bind-var), @(see binder), and @(see
-syntax-bind).  Binder functions can also determine the values to be assigned to
-the free variables using rewriting; see @(see binder-rules).</li>
+<li>Function calls with unbound arguments: ordinary rewrite and meta rules can
+supply bindings for direct arguments that are unbound variables. Registration
+argument modes determine which positions may or must be unbound; see
+@(see binder-rules). This includes @(see bind-var) and @(see syntax-bind).</li>
 
 <li>Equivalence-based binding hypotheses: a hypothesis of the form @('(equiv
 free-var form)') where equiv is a known equivalence relation and free-var is a
@@ -1093,6 +1093,13 @@ assumed in the path condition. If so, we add the unifying subsitution to the
 current variable bindings.</li>
 
 </ul>
+
+<p>When a call has multiple unbound arguments, each distinct variable is bound
+through the rule's reverse substitution. Repeated occurrences must match the
+same LHS term. Bindings from a failed candidate are not installed in the
+caller. The caller's existing bindings are preserved, and a call that cannot
+resolve its unbound arguments aborts instead of returning a @('g-apply')
+containing unbound variables.</p>
 
 <h3>Advanced Features</h3>
 
@@ -1607,7 +1614,7 @@ frames you're most interested in by looking at the debug info, and then examine
 those frames closer by indexing into the stack with @('nth') etc.</p>
 
 <p>It may be useful to set a lower recursion limit for the FGL interpreter.
-The default is 10000, but it may help to catch runaway rule applications to
+The default is 1000000, but it may help to catch runaway rule applications to
 limit it to 1000 or less.  This can be adjusted by setting the state global
 @(':fgl-reclimit').</p>
 
@@ -1637,39 +1644,58 @@ other rules, happen during a top-level attempted application of the rule.</p>
   :short "Adding fast-executing primitive routines to FGL."
   :long "
 
-<p>FGL is geared toward doing most reasoning via rewrite rules.  But sometimes
-rewrite rules aren't fast enough or are otherwise inadequate for something we
-want to do.  For these cases, FGL supports two kinds of custom reasoning
-procedures, \"metafunctions\" and \"primitives\".  Metafunctions are more
-general than primitives and we will mostly discuss them here.  A metafunction
-takes a function and argument list as input and produces a term and binding
-alist as output.  A primitive is a specialization of a metafunction that
-produces a symbolic object as output rather than a term and binding alist.
-When applying a metafunction, the term returned is symbolically interpreted
-under the returned bindings, whereas when applying a primitive the symbolic
-object is returned directly.</p>
+<p>FGL supports custom reasoning procedures called metafunctions and
+primitives. A metafunction constructs a rule application: hypotheses, a reverse
+substitution for unbound arguments, symbolic object bindings, and an RHS term.
+The interpreter relieves the hypotheses and interprets the returned terms. A
+primitive instead requires bound arguments and returns a symbolic object
+directly.</p>
 
-<p>A metafunction is a function that takes a function name @('f'), argument
-list (symbolic objects), interpreter state, and state, and returns @('(mv
-successp rhs-term bindings interp-st state)'), where successp is a flag
-indicating whether the answer is valid.  If so, @('rhs-term') must evaluate
-under the evaluation of @('bindings') to @('f') of the evaluations of the
-arguments.  The returned @('interp-st') must satisfy several constraints
-showing that it was not invalidly modified; usually, all a primitive should do
-with the @('interp-st') is build new gates onto the @('aignet') of its
-@('logicman') (see @(see fgl-interpreter-state)).  Primitives take the same inputs but
-return @('(mv successp obj interp-st state)'), where the evaluation of @('obj')
-must equal @('f') of the evaluations of the arguments.</p>
+<p>The full metafunction interface takes a function name, an @(see fgl-arglist),
+interpreter state, and ACL2 state, and returns:</p>
+@({
+ (mv successp rhs hyps rev-subst bindings interp-st state)
+ })
+<p>On success, @('rhs') is a pseudo-term, @('hyps') is a list of pseudo-terms,
+@('bindings') is an FGL object bindings alist, and @('rev-subst') maps each
+unbound input variable to a pseudo-term in the namespace of those bindings.
+Its keys must cover exactly the distinct unbound input variables, without
+duplicates. After relieving @('hyps'), FGL interprets the reverse-substitution
+terms under equality and the RHS under the caller's equivalence context.
+The reverse-substitution values are installed in the caller only on success.</p>
 
-<p>New metafunctions can be defined with the form @('def-fgl-meta') and new
-primitives with @('def-fgl-primitive').  However, before the newly defined
-metafunctions/primitives may be used, they must be installed into the current
-metafunction and primitive dispatcher function using @('install-fgl-metafns').
-This creates a new function that wraps all existing metafunctions into a case
-statement, and attaches it to the stub @('fgl-meta-fncall-stub').  It also
-creates a similar dispatcher function for primitives and another one for binder
-meta rules (see @(see binder)).</p>
+<p>The semantic contract requires the returned RHS to agree with the input
+function call in the current equivalence context whenever the hypotheses hold.
+For this comparison, bound input arguments evaluate as symbolic objects and
+unbound input arguments take the values of their reverse-substitution terms.
+The contract applies under extensions of the evaluated returned bindings.
+Both metafunctions and primitives must also preserve the required interpreter
+state invariants; see @(see fgl-interpreter-state).</p>
 
+<p>A primitive takes a function name, an FGL object list, interpreter state,
+and ACL2 state, returning @('(mv successp obj interp-st state)'). On success,
+@('obj') must agree with the input call in the current equivalence context.
+It cannot bind unbound input arguments.</p>
+
+<p>Use @('def-fgl-meta') or @('def-fgl-primitive') to define these procedures.
+The macros support abbreviated return lists and supply omitted results with
+defaults. In particular, the default @('def-fgl-meta') return list remains
+@('(successp rhs bindings interp-st state)'), with empty hypotheses and
+reverse substitution. When using @(':origfn') and named formals, the ordinary
+abbreviation converts bound arguments to objects; including @('rev-subst')
+in @(':returns') selects the argument interface that retains unbound
+variables.</p>
+
+<p>@('def-fgl-binder-meta') adapts the legacy first-argument binding interface
+to an ordinary metafunction. Registration through @('add-fgl-binder-meta')
+defaults to @(':arg-modes (:unbound)'). There is no separate binder dispatcher.</p>
+
+<p>Before use, install the defined procedures with @('install-fgl-metafns').
+It creates dispatchers attached to @('fgl-meta-fncall-stub') and
+@('fgl-primitive-fncall-stub'), together with a combined formula checker.
+Registration in the ordinary rewrite database selects the trigger function,
+priority, argument modes, and enabled status; see @(see add-fgl-meta),
+@(see add-fgl-primitive), and @(see add-fgl-rewrites).</p>
 
 <h3>Example</h3>
 
@@ -1805,7 +1831,7 @@ involving SAT checks and a mix of logical and extralogical code.</p>
 
 <h3>Basic Example</h3> 
 
-<p> Suppose we want to check whether several conditions are satisfiable,
+<p> Suppose we want to check whether several conditions are valid,
 summarize the results in an object and pretty-print that summary. </p>
 
 @({
@@ -1813,7 +1839,7 @@ summarize the results in an object and pretty-print that summary. </p>
  (defun my-test-condition (n x) ...)
 
  ;; Iterate from M-1 down to 0 testing each condition and collect a list of the
- ;; indices of all those that were invalid.
+ ;; indices of all those that were not proved valid.
  (def-fgl-program test-my-conditions (m x)
    (if (zp m)
        nil
@@ -1826,13 +1852,13 @@ summarize the results in an object and pretty-print that summary. </p>
                                     testcond))
             ;; Note: validity-check-result is syntactically T if the validity
             ;; check was successful.  If not, it's some symbolic truth value
-            ;; represented as a g-boolean object.
+            ;; represented as NIL or a non-constant g-boolean object.
             (valid (syntax-interp (eq validity-check-result t))))
         (if valid
             (test-my-conditions next-m x)
           (cons next-m (test-my-conditions next-m x))))))
 
- ;; Summarize the list of non-valid condition indices.
+ ;; Summarize the list of condition indices that were not proved valid.
  (defun my-print-test-condition-results (indices-list) ...)
 
  ;; Run a fake proof in which the conditions are tested.
@@ -1862,7 +1888,9 @@ some other symbolic Boolean object: either @('nil') or a non-constant
 @('g-boolean') object.  To check whether the condition was found to be always
 true, we check whether the object resulting from @('fgl-validity-check') is
 syntactically @('t').  We collect the indices of those conditions that are not
-constant-true.</p>
+constant-true. This list includes conditions for which the solver failed or
+reached a resource limit; it does not establish that those conditions are
+invalid.</p>
 
 <p>Note that the body for @('test-my-conditions') above could not exist if
 @('test-my-conditions') were to be interpreted under @('equal') rather than
@@ -1954,7 +1982,7 @@ there exists another triple that is missing from the list.</p>
   :parents (fgl-internals)
   :short "Description of FGL's interpreter state object."
   :long
-"<p>The FGL interpreter state is a stobj containing, as the name suggests,
+  "<p>The FGL interpreter state is a stobj containing, as the name suggests,
 essentially the entire state of the FGL interpreter.  We list and describe
 several of the major components of this object.</p>
 
@@ -2105,7 +2133,7 @@ derivation errors.</li>
 @('interp-st-counterex-bindings/print-errors') but uses the bindings of the top stack
 frame (i.e. the rewrite rule from which this function is called).</li>
 
-<li>@('interp-st-counterex-prev-stack-bindings/print-errors'): like
+<li>@('interp-st-counterex-stack-prev-bindings/print-errors'): like
 @('interp-st-counterex-stack-bindings/print-errors') but uses the bindings of
 the next-to-top stack frame (i.e. the caller of the rewrite rule from which
 this function is called).</li>

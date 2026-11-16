@@ -76,7 +76,7 @@
            (mv nil nil interp-st state)))
   (local (in-theory (enable fancy-ev-primitive)))
   (make-event (cons 'progn *fancy-ev-primitive-thms*)))
-   
+
 (define fancy-ev-definition ((fn pseudo-fnsym-p) state)
   :returns (mv ok
                (formals symbol-listp)
@@ -124,8 +124,8 @@
               (mv (msg "Programming error: the ~x0 property of ~x1 is not a quoted constant as expected." 'acl2::const x) nil)))
           (mv nil const))))
     (mv nil (pseudo-term-var x))))
-            
-       
+
+
 (define fancy-translate-wrld-okp ((wrld plist-worldp))
   :returns (ok)
   (and (symbol-alistp
@@ -194,7 +194,7 @@
      (implies (and (symbol-listp x)
                    (symbol-listp y))
               (symbol-listp (append x y))))
-  
+   
    (defthm pseudo-termp-of-make-lambda-term
      (implies (and (symbol-listp formals)
                    (pseudo-term-listp actuals)
@@ -205,8 +205,8 @@
              :do-not-induct t)))))
 
 (define mv-nth-list ((mv-var symbolp)
-                        (i natp)
-                        (max natp))
+                     (i natp)
+                     (max natp))
   :measure (nfix (- (nfix max) (nfix i)))
   :guard (<= i max)
   :returns (terms pseudo-term-listp :hyp (symbolp mv-var))
@@ -243,7 +243,7 @@
                            acl2::genvar
                            acl2::make-lambda-term
                            last)))
-           
+
 (with-output
   :evisc (:gag-mode '(nil 7 10 nil))
   (defines fancy-ev
@@ -424,7 +424,7 @@ hard-errp/aokp flags from the term are ignored).</p>
               (t
                (mv "impossible" nil interp-st state)))))
         (mv nil (list errmsg val 'interp-st 'state) interp-st state)))
-                
+    
 
     (define fancy-ev-list ((x pseudo-term-listp)
                            (alist symbol-alistp)
@@ -442,9 +442,9 @@ hard-errp/aokp flags from the term are ignored).</p>
         (mv nil (cons first rest) interp-st state)))
 
     (define fancy-translate (x
-                                 (reclimit natp)
-                                 (interp-st interp-st-bfrs-ok)
-                                 state hard-errp aokp)
+                             (reclimit natp)
+                             (interp-st interp-st-bfrs-ok)
+                             state hard-errp aokp)
       :measure (list reclimit 11 (acl2-count x))
       :returns (mv errmsg (val pseudo-termp) new-interp-st new-state)
       :parents (fancy-ev)
@@ -463,11 +463,11 @@ objects, and many other complications.</p>"
           (fancy-translate1 x reclimit interp-st state hard-errp aokp)
         (mv (msg "Programming error: world didn't satisfy ~x0" 'fancy-translate-wrld-okp)
             nil interp-st state)))
-          
+    
     (define fancy-translate1 (x
-                             (reclimit natp)
-                             (interp-st interp-st-bfrs-ok)
-                             state hard-errp aokp)
+                              (reclimit natp)
+                              (interp-st interp-st-bfrs-ok)
+                              state hard-errp aokp)
       :guard (fancy-translate-wrld-okp (w state))
       :measure (list reclimit 10 (acl2-count x))
       :returns (mv errmsg (val pseudo-termp) new-interp-st new-state)
@@ -550,7 +550,7 @@ objects, and many other complications.</p>"
              ((mv err rest interp-st state)
               (fancy-translate-args (cdr x) reclimit interp-st state hard-errp aokp)))
           (mv err (and (not err) (cons first rest)) interp-st state))))
-      
+    
 
     (define fancy-translate-let (x
                                  (reclimit natp)
@@ -618,11 +618,11 @@ objects, and many other complications.</p>"
              (acl2::make-lambda-term
               vars mv-nth-lst trans-body))
             interp-st state)))
-                               
-           
-           
-                  
-           
+    
+    
+    
+    
+    
     ///
     (local (in-theory (disable acl2::member-of-cons member (tau-system) pseudo-termp pseudo-term-listp
                                fancy-ev fancy-ev-fncall fancy-ev-list
@@ -749,10 +749,10 @@ objects, and many other complications.</p>"
           (,@(if (consp (cdr stobjs-out))
                  `((mv . ,out-bindings))
                out-bindings)
-             (mbe :logic (,fn . ,call-formals)
-                  :exec (if ,guard
-                            (,fn . ,call-formals)
-                          (ec-call (,fn . ,call-formals))))))
+           (mbe :logic (,fn . ,call-formals)
+                :exec (if ,guard
+                          (,fn . ,call-formals)
+                        (ec-call (,fn . ,call-formals))))))
        (mv t (list . ,results) interp-st state))))
 
 (defun fancy-ev-check-primitive-fn (fn guard state)
@@ -921,7 +921,6 @@ objects, and many other complications.</p>"
                  (:debug-info     . t)
                  (:debug-stack    . (major-stack-p debug-stack))
                  (:rewrite-rules  . (alistp rewrite-rules))
-                 (:binder-rules   . (alistp binder-rules))
                  (:branch-merge-rules . (alistp branch-merge-rules))
                  (:congruence-rules . (true-listp congruence-rules))
                  (:id-congruence-rules . (true-listp id-congruence-rules))))))

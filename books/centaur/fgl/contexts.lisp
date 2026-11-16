@@ -45,11 +45,11 @@
 
 (local (defun equiv-ev-fgl-ev-functional-subst-hint-fn (formula world other-hints subst)
          `(,@other-hints
-             :use ((:instance
-                    (:functional-instance ,formula
-                     . ,(let ((a (table-alist 'equiv-ev-fgl-ev-functional-subst world)))
-                          (pairlis$ (strip-cars a) (pairlis$ (strip-cdrs a) nil))))
-                    . ,subst)))))
+           :use ((:instance
+                  (:functional-instance ,formula
+                   . ,(let ((a (table-alist 'equiv-ev-fgl-ev-functional-subst world)))
+                        (pairlis$ (strip-cars a) (pairlis$ (strip-cdrs a) nil))))
+                  . ,subst)))))
 
 (local (defmacro equiv-ev-fgl-ev-functional-subst-hint (formula &key other-hints subst)
          `(equiv-ev-fgl-ev-functional-subst-hint-fn ',formula world ',other-hints ',subst)))
@@ -72,9 +72,9 @@
   (if (atom ctx)
       (equal x y)
     (or (and (fgl-ev (pseudo-term-fncall (car ctx)
-                                           (list (pseudo-term-quote x)
-                                                 (pseudo-term-quote y)))
-                       nil)
+                                         (list (pseudo-term-quote x)
+                                               (pseudo-term-quote y)))
+                     nil)
              t)
         (fgl-ev-context-equiv-base (cdr ctx) x y)))
   ///
@@ -138,7 +138,7 @@
             cmr::equiv-ev-context-equiv-witness)))
 
   (define fgl-ev-context-equiv ((ctx equiv-contextsp)
-                                  x y)
+                                x y)
     (let ((trace (fgl-ev-context-equiv-witness ctx x y)))
       (and (equal (car trace) x)
            (equal (car (last trace)) y)
@@ -151,21 +151,21 @@
 
 
 (define fgl-ev-context-equiv-list ((contexts equiv-contextslist-p)
-                                    (x true-listp)
-                                    (y true-listp))
+                                   (x true-listp)
+                                   (y true-listp))
   (if (atom contexts)
       (acl2::nth-equiv-exec x y)
     (and (fgl-ev-context-equiv (car contexts) (car x) (car y))
          (fgl-ev-context-equiv-list (cdr contexts) (cdr x) (cdr y))))
-    ///
-    (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-context-equiv-list fgl-ev-context-equiv-list)
-    (local (equiv-ev-fgl-ev-record-functional-subst
-            fgl-ev-context-equiv-list-func-inst
-            cmr::equiv-ev-context-equiv-list))
+  ///
+  (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-context-equiv-list fgl-ev-context-equiv-list)
+  (local (equiv-ev-fgl-ev-record-functional-subst
+          fgl-ev-context-equiv-list-func-inst
+          cmr::equiv-ev-context-equiv-list))
 
-    (defthm fgl-ev-context-equiv-list-of-nil
-      (equal (fgl-ev-context-equiv-list nil x y)
-             (acl2::nth-equiv x y))))
+  (defthm fgl-ev-context-equiv-list-of-nil
+    (equal (fgl-ev-context-equiv-list nil x y)
+           (acl2::nth-equiv x y))))
 
 
 
@@ -193,8 +193,8 @@
                           (equal (len args1) (nfix arity))
                           (equal (len args2) (nfix arity)))
                      (fgl-ev-context-equiv ctx
-                                             (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
-                                             (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
+                                           (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
+                                           (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
     :rewrite :direct)
 
   (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-congruence-correct-p1-witness
@@ -216,9 +216,9 @@
 
 
   (define fgl-ev-congruence-correct-p-witness ((ctx equiv-contextsp)
-                                         (fn pseudo-fnsym-p)
-                                         (arg-ctxs equiv-contextslist-p)
-                                         (arity natp))
+                                               (fn pseudo-fnsym-p)
+                                               (arg-ctxs equiv-contextslist-p)
+                                               (arity natp))
     :returns (mv (args1 true-listp :rule-classes :type-prescription)
                  (args2 true-listp :rule-classes :type-prescription))
     (b* (((mv args1 args2) (ec-call (fgl-ev-congruence-correct-p1-witness
@@ -241,14 +241,14 @@
            (equal (len args2) (nfix arity)))))
 
   (define fgl-ev-congruence-correct-p ((ctx equiv-contextsp)
-                                         (fn pseudo-fnsym-p)
-                                         (arg-ctxs equiv-contextslist-p)
-                                         (arity natp))
+                                       (fn pseudo-fnsym-p)
+                                       (arg-ctxs equiv-contextslist-p)
+                                       (arity natp))
     (b* (((mv args1 args2) (fgl-ev-congruence-correct-p-witness ctx fn arg-ctxs arity)))
       (implies (fgl-ev-context-equiv-list arg-ctxs args1 args2)
                (fgl-ev-context-equiv ctx
-                                       (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
-                                       (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
+                                     (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
+                                     (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
     ///
     (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-congruence-correct-p fgl-ev-congruence-correct-p)
     (local (equiv-ev-fgl-ev-record-functional-subst
@@ -261,11 +261,11 @@
     (and (<= (len rule.arg-contexts) rule.arity)
          (ec-call (fgl-ev-congruence-correct-p (list rule.equiv-req)
                                                rule.fn rule.arg-contexts rule.arity))))
-    ///
-    (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-congruence-rule-correct-p fgl-ev-congruence-rule-correct-p)
-    (local (equiv-ev-fgl-ev-record-functional-subst
-            fgl-ev-congruence-rule-correct-p-func-inst
-            cmr::equiv-ev-congruence-rule-correct-p)))
+  ///
+  (add-equiv-ev-fgl-ev-functional-subst cmr::equiv-ev-congruence-rule-correct-p fgl-ev-congruence-rule-correct-p)
+  (local (equiv-ev-fgl-ev-record-functional-subst
+          fgl-ev-congruence-rule-correct-p-func-inst
+          cmr::equiv-ev-congruence-rule-correct-p)))
 
 
 (defthm fgl-ev-congruence-correct-p-of-join-equiv-contextslists
@@ -380,49 +380,49 @@
 (defsection fgl-ev-context-equiv
   (defthm fgl-ev-context-equiv-self
     (fgl-ev-context-equiv contexts x x)
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-reflexive
-          :subst ((ctx contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-reflexive
+            :subst ((ctx contexts)))))
 
   (defthm fgl-ev-context-equiv-symmetric
     (implies (fgl-ev-context-equiv contexts x y)
              (fgl-ev-context-equiv contexts y x))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-symmetric
-          :subst ((ctx contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-symmetric
+            :subst ((ctx contexts)))))
 
   (defthm fgl-ev-context-equiv-trans
     (implies (and (fgl-ev-context-equiv contexts x y)
                   (fgl-ev-context-equiv contexts y z))
              (fgl-ev-context-equiv contexts x z))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-transitive
-          :subst ((ctx contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-transitive
+            :subst ((ctx contexts)))))
 
   (defthmd fgl-ev-context-equiv-of-singleton
     (implies (fgl-ev-theoremp (cmr::equiv-rel-term equiv))
              (iff (fgl-ev-context-equiv (list equiv) x y)
                   (fgl-ev (pseudo-term-fncall equiv (list (pseudo-term-quote x)
-                                                            (pseudo-term-quote y)))
-                            nil)))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-of-singleton
-          :subst ((equiv equiv)))))
+                                                          (pseudo-term-quote y)))
+                          nil)))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-of-singleton
+            :subst ((equiv equiv)))))
 
   (defthmd fgl-ev-context-equiv-when-singleton
     (implies (fgl-ev (pseudo-term-fncall equiv (list (pseudo-term-quote x)
-                                                       (pseudo-term-quote y)))
-                       nil)
+                                                     (pseudo-term-quote y)))
+                     nil)
              (fgl-ev-context-equiv (list equiv) x y))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-when-singleton
-          :subst ((equiv equiv)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-when-singleton
+            :subst ((equiv equiv)))))
 
   (defthm fgl-ev-context-equiv-equal
     (equal (fgl-ev-context-equiv nil x y)
            (equal x y))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-equal)))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-equal)))
 
   (defthm fgl-ev-context-equiv-iff
     (equal (fgl-ev-context-equiv '(iff) x y)
@@ -443,9 +443,9 @@
     (implies (and (fgl-ev-context-equiv (list equiv) x y)
                   (member (pseudo-fnsym-fix equiv) (equiv-contexts-fix ctx)))
              (fgl-ev-context-equiv ctx x y))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-by-singleton
-          :subst ((equiv equiv)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-by-singleton
+            :subst ((equiv equiv)))))
 
   (defthm fgl-ev-context-equiv-when-member-iff
     (implies (and (member 'iff (equiv-contexts-fix contexts))
@@ -468,45 +468,45 @@
   
   (defthm fgl-ev-context-fix-equiv
     (fgl-ev-context-equiv contexts x (fgl-ev-context-fix contexts x))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-fix-equiv
-          :subst ((contexts contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-fix-equiv
+            :subst ((contexts contexts)))))
 
   (defthm fgl-ev-context-fix-strengthen
     (implies (fgl-ev-context-equiv contexts x y)
              (equal (fgl-ev-context-fix contexts x) (fgl-ev-context-fix contexts y)))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-fix-strengthen
-          :subst ((contexts contexts))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-fix-strengthen
+            :subst ((contexts contexts))))
     :rule-classes nil)
 
   (defthm fgl-ev-context-fix-equiv-rev
     (fgl-ev-context-equiv contexts (fgl-ev-context-fix contexts x) x)
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-fix-equiv-rev
-          :subst ((contexts contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-fix-equiv-rev
+            :subst ((contexts contexts)))))
 
   (defthmd equal-of-fgl-ev-context-fix
     (iff (equal (fgl-ev-context-fix contexts x) (fgl-ev-context-fix contexts y))
          (fgl-ev-context-equiv contexts x y))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equal-of-equiv-ev-context-fix
-          :subst ((contexts contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equal-of-equiv-ev-context-fix
+            :subst ((contexts contexts)))))
 
   (defthmd fgl-ev-context-equiv-is-equal-of-fixes
     (iff (fgl-ev-context-equiv contexts x y)
          (equal (fgl-ev-context-fix contexts x) (fgl-ev-context-fix contexts y)))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-equiv-is-equal-of-fixes
-          :subst ((contexts contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-equiv-is-equal-of-fixes
+            :subst ((contexts contexts)))))
 
 
   (defthm fgl-ev-context-fix-of-fgl-ev-context-fix
     (equal (fgl-ev-context-fix contexts (fgl-ev-context-fix contexts x))
            (fgl-ev-context-fix contexts x))
-  :hints((equiv-ev-fgl-ev-functional-subst-hint
-          cmr::equiv-ev-context-fix-of-equiv-ev-context-fix
-          :subst ((contexts contexts)))))
+    :hints((equiv-ev-fgl-ev-functional-subst-hint
+            cmr::equiv-ev-context-fix-of-equiv-ev-context-fix
+            :subst ((contexts contexts)))))
 
   (defthm fgl-ev-context-fix-under-fgl-ev-context-equiv-1
     (equal (fgl-ev-context-equiv contexts (fgl-ev-context-fix contexts x) y)
@@ -682,8 +682,8 @@
                           (equal (len args1) (nfix arity))
                           (equal (len args2) (nfix arity)))
                      (fgl-ev-context-equiv ctx
-                                             (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
-                                             (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
+                                           (fgl-ev (pseudo-term-fncall fn (kwote-lst args1)) nil)
+                                           (fgl-ev (pseudo-term-fncall fn (kwote-lst args2)) nil))))
     :rewrite :direct)
 
   (in-theory (disable fgl-ev-argcontext-congruence-correct-p1
@@ -691,9 +691,9 @@
 
 
   (define fgl-ev-argcontext-congruence-correct-p-witness ((ctx equiv-contextsp)
-                                                           (fn pseudo-fnsym-p)
-                                                           (arg-ctxs equiv-argcontexts-p)
-                                                           (arity natp))
+                                                          (fn pseudo-fnsym-p)
+                                                          (arg-ctxs equiv-argcontexts-p)
+                                                          (arity natp))
     :returns (mv (args1 true-listp :rule-classes :type-prescription)
                  (args2 true-listp :rule-classes :type-prescription))
     (b* (((mv args1 args2) (ec-call (fgl-ev-argcontext-congruence-correct-p1-witness
@@ -783,3 +783,66 @@
                     (fgl-ev-argcontext-congruence-correct-p ctx fn arg-ctxs2 arity)
                     (<= (len arg-ctxs) (nfix arity)))
                (fgl-ev-argcontext-congruence-correct-p ctx fn arg-ctxs arity)))))
+
+
+;; Context selection and refinement used by the interpreter.
+
+(define fgl-interp-or-test-equiv-contexts ((contexts equiv-contextsp))
+  :returns (new-contexts equiv-contextsp)
+  (cond ((member-eq 'unequiv (equiv-contexts-fix contexts)) '(unequiv))
+        ((member-eq 'iff (equiv-contexts-fix contexts)) '(iff))))
+
+(define fgl-interp-or-test-already-rewrittenp ((contexts equiv-contextsp))
+  (or (member-eq 'unequiv (equiv-contexts-fix contexts))
+      (member-eq 'iff (equiv-contexts-fix contexts))))
+
+(define fgl-interp-test-equiv-contexts ((contexts equiv-contextsp))
+  :returns (new-contexts equiv-contextsp)
+  (if (member-eq 'unequiv (equiv-contexts-fix contexts))
+      '(unequiv)
+    '(iff)))
+
+(define fgl-interp-lambda-arglist-equiv-contexts ((contexts equiv-contextsp))
+  :returns (new-contexts equiv-contextsp)
+  (and (member-eq 'unequiv (equiv-contexts-fix contexts))
+       '(unequiv)))
+
+(define fgl-interp-equiv-refinementp ((equiv pseudo-fnsym-p)
+                                      (contexts equiv-contextsp))
+  :hooks ((:fix :args (contexts)))
+  (b* (;; (equiv (pseudo-fnsym-fix equiv))  BOZO we don't fix this because it messes up some stuff
+       (contexts (equiv-contexts-fix contexts)))
+    (or (eq equiv 'equal)
+        (member-eq equiv contexts)
+        (member-eq 'unequiv contexts))))
+
+(define equiv-contexts-coarsening-p ((x equiv-contextsp)
+                                     (y equiv-contextsp))
+  :returns (coarseningp)
+  (b* ((x (equiv-contexts-fix x))
+       (y (equiv-contexts-fix y))
+       ((when (eq y nil)) t) ;; y is the finest equiv context
+       ((when (member 'unequiv x)) t) ;; x is the coarsest equiv context
+       ((when (equal x y)) t))
+    nil)
+  ///
+  ;; (local (in-theory (disable equiv-contexts-fix-under-iff)))
+  (local (defthm not-equiv-contexts-fix
+           (implies (not (consp y))
+                    (cmr::equiv-contexts-equiv y nil))
+           :rule-classes :forward-chaining))
+
+  (defthm fgl-ev-context-equiv-when-coarsening-p
+    (implies (and (equiv-contexts-coarsening-p x y)
+                  (equal (fgl-ev-context-fix y a)
+                         (fgl-ev-context-fix y b)))
+             (equal (equal (fgl-ev-context-fix x a)
+                           (fgl-ev-context-fix x b))
+                    t))))
+
+(define equiv-contexts-from-equiv ((equiv pseudo-fnsym-p))
+  :returns (contexts equiv-contextsp)
+  (b* ((equiv (pseudo-fnsym-fix equiv)))
+    (if (eq equiv 'equal)
+        nil
+      (list equiv))))

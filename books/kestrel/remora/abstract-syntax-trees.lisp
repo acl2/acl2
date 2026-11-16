@@ -34,28 +34,14 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
-     based on
-     [thesis] (Figure 4.1),
-     [arxiv] (Figure 1),
-     [esop] (Figure 6),
-     and primarily [impl].
-     These ASTs are consistent with the "
+    "We define fixtypes for abstract syntax trees (ASTs) for Remora,
+     based on the "
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
-    ", which is derived from [impl];
-     the relation between these ASTs and the grammar
+    "; the relation between these ASTs and the grammar
      is formalized in @(see syntax-abstraction).")
    (xdoc::p
-    "We use the term `ispace' to refer to what [thesis] calls `index';
-     [impl] also uses `ispace'.
-     The rationale for `ispace' is that it denotes an index space,
-     i.e. a space where indices range;
-     one index over a dimension, zero or more indices over a shape.")
-   (xdoc::p
-    "These ASTs preserve much of the concrete syntax information,
-     so they include both core and non-core constructs.
-     We have defined a characterization of core ASTs
-     and a desugaring transformation from all ASTs to core ASTs.
+    "These ASTs preserve much of the concrete syntax information.
+     In particular, they include both core constructs and sugar.
      The ASTs in [impl] are more abstracted than ours;
      they contain less sugar.")
    (xdoc::p
@@ -90,12 +76,7 @@
      can decode the string with @(tsee acl2::utf8=>ustring).
      String equality on names is byte-wise,
      which agrees with code-point-sequence equality,
-     given the assumption that the strings are well-formed UTF-8.")
-   (xdoc::p
-    "The fixtypes for our ASTs do not enforce certain restrictions,
-     such as the non-emptiness of certain lists.
-     We can enforce these restrictions via separate predicates,
-     but we state them in the documentation of the AST fixtypes."))
+     given the assumption that the strings are well-formed UTF-8."))
   :order-subtopics t
   :default-parent t)
 

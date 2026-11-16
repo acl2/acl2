@@ -43,12 +43,12 @@
 ;; containing that rule name and the (top-level -- i.e. major-frame) bindings
 ;; for the listed variables.
 
-(fty::defoption maybe-fgl-generic-rune fgl-generic-rune-p)
+(fty::defoption maybe-fgl-rune fgl-rune-p)
 
 (defprod backtrace-spec
   :parents (backtrace)
   :short "Specification of what to collect in an FGL backtrace"
-  ((rune maybe-fgl-generic-rune-p "FGL rule name to match, or NIL to match only the bottom (goal) frame.")
+  ((rune maybe-fgl-rune-p "FGL rule name to match, or NIL to match only the bottom (goal) frame.")
    (vars pseudo-var-list-p "List of variables of that rule to collect."))
   :layout :list)
 
@@ -60,19 +60,19 @@
   :parents (backtrace)
   :short "Datatype for FGL backtrace frames"
   ((index natp :rule-classes :type-prescription "Stack frame number")
-   (rune maybe-fgl-generic-rune-p "Name of the rule applied at the frame")
+   (rune maybe-fgl-rune-p "Name of the rule applied at the frame")
    (objs fgl-object-bindings-p "Selected symbolic object bindings"))
   :layout :list)
 
 (fty::deflist backtrace :elt-type backtrace-frame :true-listp t
   :parents (backtraces))
 
-(define backtrace-speclist-find ((rune maybe-fgl-generic-rune-p)
+(define backtrace-speclist-find ((rune maybe-fgl-rune-p)
                                  (x backtrace-speclist-p))
   :returns (spec (iff (backtrace-spec-p spec) spec))
   (if (atom x)
       nil
-    (if (equal (maybe-fgl-generic-rune-fix rune)
+    (if (equal (maybe-fgl-rune-fix rune)
                (backtrace-spec->rune (car x)))
         (backtrace-spec-fix (car x))
       (backtrace-speclist-find rune (cdr x)))))
@@ -100,7 +100,7 @@
                    :exec (eql n (stack-frames stack))))
         nil)
        (rule (stack-nth-frame-rule n stack))
-       (rune (and rule (fgl-generic-rule->rune rule)))
+       (rune (and rule (fgl-rule->rune rule)))
        (spec (backtrace-speclist-find rune specs))
        ((unless spec)
         (stack-backtrace-aux (1+ (lnfix n)) specs stack))
@@ -136,7 +136,7 @@
                    :exec (eql n (stack-frames stack))))
         nil)
        (rule (stack-nth-frame-rule n stack))
-       (rune (and rule (fgl-generic-rule->rune rule)))
+       (rune (and rule (fgl-rule->rune rule)))
        (spec (backtrace-speclist-find rune specs))
        ((unless spec)
         (stack-backtrace-top-aux (1+ (lnfix n)) specs stack))
@@ -182,7 +182,7 @@ of a list of rule specifications"
                    :exec (eql n (stack-frames stack))))
         nil)
        (rule (stack-nth-frame-rule n stack))
-       (rune (and rule (fgl-generic-rule->rune rule)))
+       (rune (and rule (fgl-rule->rune rule)))
        (bindings (stack-nth-frame-bindings n stack)))
     (cons (backtrace-frame n rune bindings)
           (stack-full-backtrace-aux (1+ (lnfix n)) stack))))
@@ -228,11 +228,11 @@ of a list of rule specifications"
       nil
     (g-cons (backtrace-frame-to-obj (car x))
             (backtrace-to-obj (cdr x)))))
-   
+
 (fancy-ev-add-primitive backtrace-to-obj (backtrace-p x))
 
 (define stack-find-top-rule-frame-aux ((n natp)
-                                       (rune maybe-fgl-generic-rune-p)
+                                       (rune maybe-fgl-rune-p)
                                        (stack))
   :guard (<= n (stack-frames stack))
   :returns (index acl2::maybe-natp :rule-classes :type-prescription)
@@ -240,9 +240,9 @@ of a list of rule specifications"
   (b* (((when (mbe :logic (zp (- (stack-frames stack) (nfix n)))
                    :exec (eql n (stack-frames stack))))
         nil)
-       ((when (equal (maybe-fgl-generic-rune-fix rune)
+       ((when (equal (maybe-fgl-rune-fix rune)
                      (b* ((rule (stack-nth-frame-rule n stack)))
-                       (and rule (fgl-generic-rule->rune rule)))))
+                       (and rule (fgl-rule->rune rule)))))
         (lnfix n)))
     (stack-find-top-rule-frame-aux (1+ (lnfix n)) rune stack))
   ///
@@ -251,7 +251,7 @@ of a list of rule specifications"
              (< index (stack-frames stack)))
     :rule-classes :linear))
 
-(define stack-find-top-rule-frame ((rune maybe-fgl-generic-rune-p)
+(define stack-find-top-rule-frame ((rune maybe-fgl-rune-p)
                                    stack)
   :returns (index acl2::maybe-natp :rule-classes :type-prescription)
   (stack-find-top-rule-frame-aux 0 rune stack)
@@ -261,14 +261,14 @@ of a list of rule specifications"
              (< index (stack-frames stack)))
     :rule-classes :linear))
 
-(define stack-top-rule-frame-bindings ((rune maybe-fgl-generic-rune-p)
+(define stack-top-rule-frame-bindings ((rune maybe-fgl-rune-p)
                                        stack)
   :returns (bindings fgl-object-bindings-p)
   (b* ((index (stack-find-top-rule-frame rune stack)))
     (and index
          (stack-nth-frame-bindings index stack))))
 
-(define interp-st-stack-top-frame-bindings ((rune maybe-fgl-generic-rune-p)
+(define interp-st-stack-top-frame-bindings ((rune maybe-fgl-rune-p)
                                             interp-st)
   :returns (bindings fgl-object-bindings-p)
   (stobj-let ((stack (interp-st->stack interp-st)))
@@ -276,7 +276,7 @@ of a list of rule specifications"
              (stack-top-rule-frame-bindings rune stack)
              bindings))
 
-(fancy-ev-add-primitive interp-st-stack-top-frame-bindings (maybe-fgl-generic-rune-p rune))
+(fancy-ev-add-primitive interp-st-stack-top-frame-bindings (maybe-fgl-rune-p rune))
 
 
 

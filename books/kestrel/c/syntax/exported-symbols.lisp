@@ -119,6 +119,8 @@
     make-expr-tycompat
     make-expr-offsetof
     make-expr-va-arg
+    make-expr-convertvector
+    make-expr-bit-cast
     expr-extension
 
     expr-listp

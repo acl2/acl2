@@ -11,23 +11,25 @@
 ; See [books]/kestrel/c/syntax/grammar.lisp for background.
 
 ; This file contains grammar rules for expressions
-; in the C23 dialects with extensions.
+; in the C17 dialects with Clang extensions (with and without CHERI extensions).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Since C23 already includes empty compound literals,
-; we do not need to add them here to postfix expressions, unlike C17.
+; [CLE] does not seem to mention empty compound literals for C17,
+; but Clang accepts them, like GCC does.
 
 primary-expression = primary-expression-std
-                   / primary-expression-ext
+                   / primary-expression-gcc-clang
+                   / primary-expression-clang
 
 postfix-expression = postfix-expression-std
-                   / postfix-expression-c23
+                   / postfix-expression-c17
+                   / "(" type-name ")" "{" "}"
 
 unary-expression = unary-expression-std
-                 / unary-expression-ext
+                 / unary-expression-gcc-clang
 
 conditional-expression = conditional-expression-std
-                       / conditional-expression-ext
+                       / conditional-expression-gcc-clang
 
 ; TODO: add other kinds of expressions

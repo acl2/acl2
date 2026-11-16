@@ -115,7 +115,9 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg))
+                    :va-arg
+                    :convertvector
+                    :bit-cast))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,6 +155,8 @@
                     :tycompat
                     :offsetof
                     :va-arg
+                    :convertvector
+                    :bit-cast
                     :extension))
        t))
 
@@ -278,6 +282,8 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
+   :convertvector (expr-priority-primary)
+   :bit-cast (expr-priority-primary)
    :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1725,10 +1731,15 @@
        (xdoc::li
         "@('__builtin_types_compatible_p'),
          @('__builtin_va_arg'),
-         and @('__builtin_offset_of')
+         @('__builtin_offsetof'), and
+         @('__builtin_convertvector')
          are all GCC extensions.
          The GCC manual does not indicate whether they yield lvalues.
          Experiments with GCC indicate that they do not.")
+       (xdoc::li
+        "@('__builtin_bit_cast') is a Clang extension,
+         which we did not find documented in [CLE].
+         Experiments with Clang indicate that it does not yield an lvalue.")
        (xdoc::li
         "The remaining cases &mdash;
          constant expressions and function calls &mdash;
@@ -1762,6 +1773,8 @@
      :tycompat nil
      :offsetof nil
      :va-arg nil
+     :convertvector nil
+     :bit-cast nil
      :extension (expr-syntactic-lvalue-p expr.expr)
      :cast/call-ambig nil
      :cast/mul-ambig nil

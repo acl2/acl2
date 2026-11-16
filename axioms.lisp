@@ -1515,27 +1515,6 @@
 
        (error "Unrecognized op in push-wormhole-undo-formi, ~s." op)))))
 
-; The following symbol is the property under which we store Common
-; Lisp streams on the property lists of channels.
-
-(defconstant *open-input-channel-key*
-  'acl2_invisible::|Open Input Channel Key|)
-
-; The following symbol is the property under which we store the types
-; of Common Lisp streams on the property lists of channels.
-
-(defconstant *open-input-channel-type-key*
-  'acl2_invisible::|Open Input Channel Type Key|)
-
-(defconstant *open-output-channel-key*
-  'acl2_invisible::|Open Output Channel Key|)
-
-(defconstant *open-output-channel-type-key*
-  'acl2_invisible::|Open Output Channel Type Key|)
-
-(defconstant *non-existent-stream*
-  'acl2_invisible::|A Non-Existent Stream|)
-
 ; We get ready to handle errors in such a way that they return to the
 ; top level logic loop if we are under it.
 
@@ -15063,7 +15042,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
      (illegal-to-certify-message . nil))
    `((in-local-flg . nil)
      (in-prove-flg . nil)
-     (in-verify-flg . nil)           ; value can be set to the ld-level
+     (in-verify-flg . nil) ; value can be t, nil, or (in verify) the ld-level
      (including-uncertified-p . nil) ; valid only during include-book
      (inhibit-er-hard . nil)
      (inhibit-output-lst . (summary)) ; Without this setting, initialize-acl2
@@ -17947,20 +17926,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                               (state-p state))))
   (prog2$ (check-null-or-natp n 'print-right-margin)
           (f-put-global 'print-right-margin n state)))
-
-#-acl2-loop-only
-(defmacro get-input-stream-from-channel (channel)
-  (list 'get
-        channel
-        (list 'quote *open-input-channel-key*)
-        (list 'quote *non-existent-stream*)))
-
-#-acl2-loop-only
-(defmacro get-output-stream-from-channel (channel)
-  (list 'get
-        channel
-        (list 'quote *open-output-channel-key*)
-        (list 'quote *non-existent-stream*)))
 
 (defun raw-print-vars-alist (print-control-defaults-tail)
 
@@ -21775,6 +21740,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #-acl2-loop-only
 (defvar *last-sys-call-status* 0)
 
+(defun in-verify (state)
+  (declare (xargs :stobjs state))
+  (natp (f-get-global 'in-verify-flg state)))
+
 (defun sys-call (command-string args)
   (declare (xargs :guard (and (stringp command-string)
                               (string-listp args))))
@@ -21783,7 +21752,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   #-acl2-loop-only
   (cond
    ((or (f-get-global 'in-prove-flg *the-live-state*)
-        (f-get-global 'in-verify-flg *the-live-state*))
+        (in-verify *the-live-state*))
 
 ; We use (er hard ...) rather than (er hard! ...) to avoid a distracting error
 ; when reasoning about calls of sys-call on concrete data during a proof.  We
@@ -22897,7 +22866,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     defthm-fn1 ; calls install-event
     defuns-fn0 ; calls defuns-fn1
     ld-read-eval-print ; calls maybe-add-command-landmark
+    ld-read-eval-print-simple ; calls maybe-add-command-landmark
     ld-loop ; calls ld-read-eval-print
+    ld-loop-simple ; calls ld-read-eval-print-simple
     ld-fn-body ; calls ld-loop
     ld-fn0 ld-fn1 ; both call ld-fn-body
 
@@ -22951,6 +22922,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     pc-single-step-primitive
     pc-single-step
     pc-top pc-main pc-main-loop pc-main1 install-initial-state-stack
+    state-from-instructions state-stack-from-instructions
     assign-event-name-and-rule-classes
     save-fn
     ))
