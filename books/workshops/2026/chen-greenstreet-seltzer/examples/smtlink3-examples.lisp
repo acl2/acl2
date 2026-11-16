@@ -8,6 +8,8 @@
 (include-book "hints/hint-wrapper" :dir :system)
 (include-book "smtlink3-hint")
 
+; cert_param: (uses-smtlink)
+
 (value-triple (tshell-ensure))
 (add-default-hints '((hint-wrapper-hint clause)))
 (add-default-hints '((SMT::SMT-computed-hint clause)))
