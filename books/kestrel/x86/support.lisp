@@ -16,7 +16,7 @@
 ;; This book is for things that mix x86isa notions with our notions.  Pure x86
 ;; theorems should go in support-x86.lisp.
 
-(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; reduce?
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for get-one-byte-prefix-array-code
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "flags") ; reduce?
@@ -62,36 +62,32 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
-;; todo: localize
+;; todo: localize some of these?
+
 (in-theory (disable ACL2::ZP-WHEN-GT-0   ;slow
                     ACL2::ZP-WHEN-INTEGERP ;slow
                     ACL2::SLICE-TOO-HIGH-IS-0 ;slow
                     mv-nth
                     acl2::posp-redefinition ; todo yuck, from books/std/basic/arith-equivs
-                    ))
 
-(in-theory (disable x86isa::rme08))
+                    ;;try to get my rule to fire:
+                    ;;rb-in-terms-of-nth-and-pos
+                    ;;rb-in-terms-of-rb-subset-p
+                    ;;combine-bytes-rb-in-terms-of-rb-subset-p
+                    x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE
+
+                    x86isa::rme08 ; more?
+                    ))
 
 (local (in-theory (disable ;ACL2::SMALL-INT-HACK ;slow
-                           )))
-
- ;try to get my rule to fire:
-(in-theory (disable ;rb-in-terms-of-nth-and-pos
-                    ;rb-in-terms-of-rb-subset-p
-                    ;combine-bytes-rb-in-terms-of-rb-subset-p
-            ))
-
-(in-theory (disable wb))
-(in-theory (disable x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE))
+                   ;; slow:
+                   DEFAULT-CDR
+                   ;;ACL2::CONSP-OF-ASSOC-EQUAL
+                   alistp
+                   ;;assoc-list
+                   )))
 
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
-
-;slow:
-(in-theory (disable DEFAULT-CDR
-                    ;ACL2::CONSP-OF-ASSOC-EQUAL
-                    alistp
-                    ;assoc-list
-                    ))
 
 (local (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2)))
 

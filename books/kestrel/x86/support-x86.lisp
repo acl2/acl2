@@ -16,10 +16,9 @@
 
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
-(include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
-;; We used to include projects/x86isa/proofs/utilities/app-view/user-level-memory-utils
-;; here.  These two forms mimic the global theory changes it made, which
-;; books that include this one may rely on:
+;(include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
+(include-book "projects/x86isa/machine/segmentation" :dir :system) ; for segment-base-and-bounds
+(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for alignment-checking-enabled-p
 ;(include-book "projects/x86isa/machine/state" :dir :system)
 ;(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
 ;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
@@ -51,15 +50,19 @@
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
 
+;; We used to include projects/x86isa/proofs/utilities/app-view/user-level-memory-utils
+;; here.  These two forms mimic the global theory changes it made, which
+;; books that include this one may rely on:
 (in-theory (disable canonical-address-p program-at unsigned-byte-p signed-byte-p))
-(in-theory (e/d (ea-to-la
-                 rme08 rime08 wme08 wime08)
+(in-theory (e/d (;ea-to-la
+                 ;rme08 rime08 wme08 wime08
+                 )
                 (las-to-pas
                  xr-fault-wb-in-system-level-marking-view
                  xr-fault-wb-in-sys-view)))
 
 (in-theory (disable
-                    x86isa::write-user-rflags-and-xw
+ ;                   x86isa::write-user-rflags-and-xw
                    ))
 
 ;why?

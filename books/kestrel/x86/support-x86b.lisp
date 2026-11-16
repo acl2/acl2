@@ -176,7 +176,9 @@
            :in-theory (e/d ( ;xw
                             add-to-*ip
                             get-prefixes
-                            rml08)
+                            rml08
+                            rme08 ; todo
+                            )
                            (;acl2::unsigned-byte-p-from-bounds
                             ;acl2::bvchop-identity
                             ;x86isa::part-install-width-low-becomes-bvcat-32
@@ -200,7 +202,8 @@
   :hints (("Goal" :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
                   :in-theory (e/d (get-prefixes
                                    add-to-*ip
-                                   rml08)
+                                   rml08
+                                   rme08)
                                   (;;acl2::unsigned-byte-p-from-bounds
                                    ;;acl2::bvchop-identity
                                    ;;x86isa::part-install-width-low-becomes-bvcat-32
