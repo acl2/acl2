@@ -15,7 +15,6 @@
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
 (include-book "kestrel/utilities/defopeners" :dir :system)
-(include-book "support-x86") ; todo
 
 ;; some of these are for symbolic execution:
 (in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
@@ -207,7 +206,7 @@
                                   (;;acl2::unsigned-byte-p-from-bounds
                                    ;;acl2::bvchop-identity
                                    ;;x86isa::part-install-width-low-becomes-bvcat-32
-                                   combine-bytes-when-singleton ;for speed
+                                   ;combine-bytes-when-singleton ;for speed
                                    x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
                                    ;;x86isa::part-select-width-low-becomes-slice ;for speed
                                    ACL2::ZP-OPEN
