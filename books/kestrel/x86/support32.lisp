@@ -3314,6 +3314,7 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
+                                     wml-size
                                      x86isa::wml48
                                      x86isa::wml80
                                      x86isa::wml128
@@ -3669,12 +3670,13 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml-size nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (disable x86isa::wml08
-                                      x86isa::wml16
-                                      x86isa::wml32
-                                      x86isa::wml48
-                                      x86isa::wml64
-                                      ea-to-la))))
+  :hints (("Goal" :in-theory (e/d (wml-size)
+                                  (x86isa::wml08
+                                   x86isa::wml16
+                                   x86isa::wml32
+                                   x86isa::wml48
+                                   x86isa::wml64
+                                   ea-to-la)))))
 
 (defthm mv-nth-1-of-wme-size
   (implies (and (segment-is-32-bitsp seg-reg x86)

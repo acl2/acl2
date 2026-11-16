@@ -1,7 +1,7 @@
 ; Rules about memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,7 +25,7 @@
 ;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
-(in-theory (disable rb rb-1 rml-size))
+(in-theory (disable rb rb-1 rml-size wb wb-1 wml-size))
 
 (defthm mv-nth-0-of-rb-1-of-xw
   (implies (not (equal :mem fld))
@@ -324,3 +324,273 @@
                       (wb 64 lin-addr :w val x86)
                     (mv 'wml512 x86))))
   :hints (("Goal" :in-theory (enable wml512))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Rules about reading part of the value returned by RB-1 or RB.  Since bytes
+;; are read in little-endian order, the low bytes of a read are a shorter read
+;; at the same address, and the high bytes are a read at a later address.
+
+(defthm rb-1-when-zp
+  (implies (zp n)
+           (equal (rb-1 n addr r-x x86)
+                  (mv nil 0 x86)))
+  :hints (("Goal" :in-theory (enable rb-1))))
+
+(defthm mv-nth-1-of-rb-1-when-not-canonical-address-p
+  (implies (not (canonical-address-p addr))
+           (equal (mv-nth 1 (rb-1 n addr r-x x86))
+                  0))
+  :hints (("Goal" :in-theory (enable rb-1))))
+
+(local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/ash" :dir :system))
+(local (include-book "kestrel/bv/intro" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/logtail" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+(local
+ (defthm ash-of-8-becomes-bvcat
+   (implies (and (unsigned-byte-p size rest)
+                 (natp size))
+            (equal (ash rest 8)
+                   (acl2::bvcat size rest 8 0)))
+   :hints (("Goal" :use (:instance acl2::ash-becomes-bvcat (acl2::x rest) (acl2::amt 8) (acl2::xsize size))
+            :in-theory (e/d (acl2::unsigned-byte-p-forced) (acl2::ash-becomes-bvcat))))))
+
+(local
+ (defthm logior-of-bvcat-of-0
+   (implies (and (unsigned-byte-p 8 byte)
+                 (natp size))
+            (equal (logior byte (acl2::bvcat size rest 8 0))
+                   (acl2::bvcat size rest 8 byte)))
+   :hints (("Goal" :use (:instance acl2::logior-becomes-bvor-when-unsigned-byte-p-arg1
+                                   (acl2::size (+ 8 size)) (acl2::x byte) (acl2::y (acl2::bvcat size rest 8 0)))
+            :in-theory (disable acl2::logior-becomes-bvor-when-unsigned-byte-p-arg1)))))
+
+(local
+ (defthm logior-of-ash-8-becomes-bvcat
+   (implies (and (unsigned-byte-p 8 byte)
+                 (unsigned-byte-p size rest)
+                 (natp size))
+            (equal (logior byte (ash rest 8))
+                   (acl2::bvcat size rest 8 byte)))))
+
+(local
+ (defthm logtail-when-unsigned-byte-p-8
+   (implies (and (unsigned-byte-p 8 x)
+                 (<= 8 n)
+                 (integerp n))
+            (equal (logtail n x)
+                   0))))
+
+;; Unrolls rb-1 by one byte, expressing the result using bvcat.  Used in :use
+;; hints below, because as a rewrite rule it can loop.
+(local
+ (defthmd mv-nth-1-of-rb-1-unroll
+   (implies (posp n)
+            (equal (mv-nth 1 (rb-1 n addr r-x x86))
+                   (if (canonical-address-p addr)
+                       (acl2::bvcat (* 8 (+ -1 n))
+                                    (mv-nth 1 (rb-1 (+ -1 n) (+ 1 addr) r-x x86))
+                                    8
+                                    (mv-nth 1 (rvm08 addr x86)))
+                     0)))
+   :hints (("Goal" :expand (rb-1 n addr r-x x86)
+            :use (:instance logior-of-ash-8-becomes-bvcat
+                            (byte (mv-nth 1 (rvm08 addr x86)))
+                            (rest (mv-nth 1 (rb-1 (+ -1 n) (+ 1 addr) r-x x86)))
+                            (size (* 8 (+ -1 n))))
+            :in-theory (disable rvm08 logior-of-ash-8-becomes-bvcat)))))
+
+(local
+ (defun rb-1-double-induct (n n2 addr)
+   (if (or (zp n) (zp n2))
+       (list n n2 addr)
+     (rb-1-double-induct (+ -1 n) (+ -1 n2) (+ 1 addr)))))
+
+;; The low N bytes of a read of N2 bytes.
+(local
+ (defthm bvchop-of-mv-nth-1-of-rb-1-helper
+   (implies (and (<= n n2)
+                 (natp n)
+                 (natp n2))
+            (equal (acl2::bvchop (* 8 n) (mv-nth 1 (rb-1 n2 addr r-x x86)))
+                   (mv-nth 1 (rb-1 n addr r-x x86))))
+   :hints (("Goal" :induct (rb-1-double-induct n n2 addr)
+            :in-theory (disable rb-1 rvm08))
+           ("Subgoal *1/2" :use ((:instance mv-nth-1-of-rb-1-unroll)
+                                 (:instance mv-nth-1-of-rb-1-unroll (n n2)))
+            :in-theory (disable rb-1 rvm08 acl2::bvcat-equal-rewrite acl2::bvcat-equal-rewrite-alt)))))
+
+(local
+ (defthm not-signed-byte-p-48-of-+-when-not-signed-byte-p-48-of-+-of-1
+   (implies (and (not (signed-byte-p 48 (+ 1 addr)))
+                 (signed-byte-p 48 addr)
+                 (posp k))
+            (not (signed-byte-p 48 (+ k addr))))
+   :hints (("Goal" :in-theory (enable signed-byte-p)))))
+
+;; All but the low K bytes of a read.
+(local
+ (defthm logtail-of-mv-nth-1-of-rb-1-helper
+   (implies (and (canonical-address-p addr)
+                 (natp k))
+            (equal (logtail (* 8 k) (mv-nth 1 (rb-1 n addr r-x x86)))
+                   (mv-nth 1 (rb-1 (- n k) (+ k addr) r-x x86))))
+   :hints (("Goal" :induct (rb-1-double-induct k n addr)
+            :in-theory (disable rb-1 rvm08))
+           ("Subgoal *1/2" :cases ((canonical-address-p (+ 1 addr)))
+            :use ((:instance mv-nth-1-of-rb-1-unroll)
+                  (:instance not-signed-byte-p-48-of-+-when-not-signed-byte-p-48-of-+-of-1))
+            :in-theory (disable rb-1 rvm08 acl2::bvcat-equal-rewrite acl2::bvcat-equal-rewrite-alt)))))
+
+;; Taking the low bytes of a read gives a shorter read.
+(defthm bvchop-of-mv-nth-1-of-rb-1
+  (implies (and (integerp (/ size 8)) ; size is a multiple of 8
+                (<= size (* 8 n))
+                (integerp n))
+           (equal (acl2::bvchop size (mv-nth 1 (rb-1 n addr r-x x86)))
+                  (mv-nth 1 (rb-1 (/ size 8) addr r-x x86))))
+  :hints (("Goal" :use (:instance bvchop-of-mv-nth-1-of-rb-1-helper
+                                  (n (/ size 8))
+                                  (n2 n))
+           :in-theory (disable bvchop-of-mv-nth-1-of-rb-1-helper rb-1))))
+
+;; Dropping the low bytes of a read gives a read at a later address.
+(defthm logtail-of-mv-nth-1-of-rb-1
+  (implies (and (integerp (/ pos 8)) ; pos is a multiple of 8
+                (natp pos)
+                (canonical-address-p addr))
+           (equal (logtail pos (mv-nth 1 (rb-1 n addr r-x x86)))
+                  (mv-nth 1 (rb-1 (- n (/ pos 8)) (+ (/ pos 8) addr) r-x x86))))
+  :hints (("Goal" :use (:instance logtail-of-mv-nth-1-of-rb-1-helper
+                                  (k (/ pos 8)))
+           :in-theory (disable logtail-of-mv-nth-1-of-rb-1-helper rb-1))))
+
+;; Taking some of the bytes of a read gives a shorter read, possibly at a later address.
+(local
+ (defthm slice-of-mv-nth-1-of-rb-1-helper
+   (implies (and (<= high-bytes n)
+                 (natp low-bytes)
+                 (integerp high-bytes)
+                 (integerp n)
+                 (canonical-address-p addr))
+            (equal (acl2::slice (+ -1 (* 8 high-bytes)) (* 8 low-bytes) (mv-nth 1 (rb-1 n addr r-x x86)))
+                   (mv-nth 1 (rb-1 (- high-bytes low-bytes) (+ low-bytes addr) r-x x86))))
+   :hints (("Goal" :cases ((< high-bytes low-bytes))
+            :use (:instance bvchop-of-mv-nth-1-of-rb-1-helper
+                            (n (- high-bytes low-bytes))
+                            (n2 (- n low-bytes))
+                            (addr (+ low-bytes addr)))
+            :in-theory (e/d (acl2::slice) (rb-1 bvchop-of-mv-nth-1-of-rb-1-helper bvchop-of-mv-nth-1-of-rb-1))))))
+
+(defthm slice-of-mv-nth-1-of-rb-1
+  (implies (and (integerp (/ low 8)) ; low is a multiple of 8
+                (integerp (/ (+ 1 high) 8)) ; high+1 is a multiple of 8
+                (< high (* 8 n))
+                (natp low)
+                (integerp n)
+                (canonical-address-p addr))
+           (equal (acl2::slice high low (mv-nth 1 (rb-1 n addr r-x x86)))
+                  (mv-nth 1 (rb-1 (- (/ (+ 1 high) 8) (/ low 8)) (+ (/ low 8) addr) r-x x86))))
+  :hints (("Goal" :use (:instance slice-of-mv-nth-1-of-rb-1-helper
+                                  (low-bytes (/ low 8))
+                                  (high-bytes (/ (+ 1 high) 8)))
+           :in-theory (disable slice-of-mv-nth-1-of-rb-1-helper rb-1))))
+
+;; Versions of the above for RB, which is RB-1 in the app-view:
+
+(defthm bvchop-of-mv-nth-1-of-rb
+  (implies (and (integerp (/ size 8)) ; size is a multiple of 8
+                (<= size (* 8 n))
+                (integerp n)
+                (app-view x86))
+           (equal (acl2::bvchop size (mv-nth 1 (rb n addr r-x x86)))
+                  (mv-nth 1 (rb (/ size 8) addr r-x x86))))
+  :hints (("Goal" :in-theory (enable rb))))
+
+(defthm logtail-of-mv-nth-1-of-rb
+  (implies (and (integerp (/ pos 8)) ; pos is a multiple of 8
+                (natp pos)
+                (canonical-address-p addr)
+                (app-view x86))
+           (equal (logtail pos (mv-nth 1 (rb n addr r-x x86)))
+                  (mv-nth 1 (rb (- n (/ pos 8)) (+ (/ pos 8) addr) r-x x86))))
+  :hints (("Goal" :in-theory (enable rb))))
+
+(defthm slice-of-mv-nth-1-of-rb
+  (implies (and (integerp (/ low 8)) ; low is a multiple of 8
+                (integerp (/ (+ 1 high) 8)) ; high+1 is a multiple of 8
+                (< high (* 8 n))
+                (natp low)
+                (integerp n)
+                (canonical-address-p addr)
+                (app-view x86))
+           (equal (acl2::slice high low (mv-nth 1 (rb n addr r-x x86)))
+                  (mv-nth 1 (rb (- (/ (+ 1 high) 8) (/ low 8)) (+ (/ low 8) addr) r-x x86))))
+  :hints (("Goal" :in-theory (enable rb))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reading memory that was not written by a write.
+
+(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+
+;; Distinct canonical addresses are distinct after chopping to 48 bits.
+(local
+ (defthm equal-of-bvchop-48-and-bvchop-48-when-signed-byte-p-48
+   (implies (and (signed-byte-p 48 a)
+                 (signed-byte-p 48 b))
+            (equal (equal (acl2::bvchop 48 a) (acl2::bvchop 48 b))
+                   (equal a b)))
+   :hints (("Goal" :cases ((and (< a 0) (< b 0))
+                           (and (< a 0) (<= 0 b))
+                           (and (<= 0 a) (< b 0)))
+            :in-theory (enable acl2::bvchop signed-byte-p acl2::mod-sum-cases)))))
+
+(defthm mv-nth-1-of-rvm08-of-mv-nth-1-of-wvm08-diff
+  (implies (not (equal addr addr2))
+           (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wvm08 addr2 val x86))))
+                  (mv-nth 1 (rvm08 addr x86))))
+  :hints (("Goal" :in-theory (enable rvm08 wvm08))))
+
+(local
+ (defun wb-1-induct (n addr value x86)
+   (declare (xargs :stobjs x86 :verify-guards nil))
+   (if (zp n)
+       (mv nil x86)
+     (if (not (canonical-address-p addr))
+         (mv t x86)
+       (mv-let (flg0 x86)
+         (wvm08 addr (loghead 8 value) x86)
+         (if flg0
+             (mv flg0 x86)
+           (wb-1-induct (1- n) (1+ addr) (logtail 8 value) x86)))))))
+
+(defthm mv-nth-1-of-rvm08-of-mv-nth-1-of-wb-1-disjoint
+  (implies (or (< addr addr2)
+               (<= (+ n addr2) addr))
+           (equal (mv-nth 1 (rvm08 addr (mv-nth 1 (wb-1 n addr2 w value x86))))
+                  (mv-nth 1 (rvm08 addr x86))))
+  :hints (("Goal" :induct (wb-1-induct n addr2 value x86)
+           :in-theory (e/d (wb-1) (rvm08 wvm08)))))
+
+(defthm mv-nth-1-of-rb-1-of-mv-nth-1-of-wb-1-disjoint
+  (implies (or (<= (+ n2 addr2) addr)
+               (<= (+ n addr) addr2))
+           (equal (mv-nth 1 (rb-1 n addr r-x (mv-nth 1 (wb-1 n2 addr2 w value x86))))
+                  (mv-nth 1 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :induct (rb-1 n addr r-x x86)
+           :in-theory (e/d (rb-1) (rvm08 wb-1)))))
+
+(defthm mv-nth-1-of-rb-of-mv-nth-1-of-wb-disjoint
+  (implies (and (or (<= (+ n2 addr2) addr)
+                    (<= (+ n addr) addr2))
+                (app-view x86))
+           (equal (mv-nth 1 (rb n addr r-x (mv-nth 1 (wb n2 addr2 w value x86))))
+                  (mv-nth 1 (rb n addr r-x x86))))
+  :hints (("Goal" :in-theory (e/d (rb wb) (rb-1 wb-1)))))
