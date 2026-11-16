@@ -4409,34 +4409,34 @@
 ; domain, squeeze both the initial lower and upper bounds of the interval.
 
           (mv-let
-           (lo-rel lo hi-rel hi)
-           (if (and (not (eq domain domain0))
-                    (eq domain 'INTEGERP))
-               (mv nil (squeeze-k nil lo-rel0 lo0) nil (squeeze-k t hi-rel0 hi0))
-               (mv lo-rel0 lo0 hi-rel0 hi0))
+            (lo-rel lo hi-rel hi)
+            (if (and (not (eq domain domain0))
+                     (eq domain 'INTEGERP))
+                (mv nil (squeeze-k nil lo-rel0 lo0) nil (squeeze-k t hi-rel0 hi0))
+                (mv lo-rel0 lo0 hi-rel0 hi0))
 
 ; If the more restrictive domain is INTEGERP, squeeze the new bound.
 
-           (mv-let
-            (rel k)
-            (if (eq domain 'INTEGERP)
-                (mv nil (squeeze-k upper-boundp rel k))
-                (mv rel k))
+            (mv-let
+              (rel k)
+              (if (eq domain 'INTEGERP)
+                  (mv nil (squeeze-k upper-boundp rel k))
+                  (mv rel k))
 
 ; Now we set lo, lo-rel, hi-rel, and hi to the most restrictive bounds we have.
 
-            (mv-let
-             (lo-rel lo)
-             (if (and (not upper-boundp)
-                      (lower-bound-> rel k lo-rel lo))
-                 (mv rel k)
-                 (mv lo-rel lo))
-             (mv-let
-              (hi-rel hi)
-              (if (and upper-boundp
-                       (upper-bound-< rel k hi-rel hi))
-                  (mv rel k)
-                  (mv hi-rel hi))
+              (mv-let
+                (lo-rel lo)
+                (if (and (not upper-boundp)
+                         (lower-bound-> rel k lo-rel lo))
+                    (mv rel k)
+                    (mv lo-rel lo))
+                (mv-let
+                  (hi-rel hi)
+                  (if (and upper-boundp
+                           (upper-bound-< rel k hi-rel hi))
+                      (mv rel k)
+                      (mv hi-rel hi))
 
 ; Note that we might have changed either or both of the bounds.  For example,
 ; if we changed the domain to INTEGERP, we might have moved both bounds.  In
@@ -4447,48 +4447,48 @@
 ; However, it is possible that we can do further adjustment via the neg-evgs,
 ; and we might have to adjust either or both of the bounds.
 
-              (mv-let
-               (new-lo-rel new-lo new-neg-evgs)
-               (if (and (equal lo-rel lo-rel0)
-                        (equal lo lo0))
-                   (mv lo-rel lo neg-evgs)
-                   (adjust-lower-bound-with-neg-evgs domain lo-rel lo neg-evgs))
-               (mv-let
-                (new-hi-rel new-hi new-neg-evgs)
-                (if (and (equal hi-rel hi-rel0)
-                         (equal hi hi0))
-                    (mv hi-rel hi new-neg-evgs)
-                    (adjust-upper-bound-with-neg-evgs domain hi-rel hi
-                                                      new-neg-evgs))
+                  (mv-let
+                    (new-lo-rel new-lo new-neg-evgs)
+                    (if (and (equal lo-rel lo-rel0)
+                             (equal lo lo0))
+                        (mv lo-rel lo neg-evgs)
+                        (adjust-lower-bound-with-neg-evgs domain lo-rel lo neg-evgs))
+                    (mv-let
+                      (new-hi-rel new-hi new-neg-evgs)
+                      (if (and (equal hi-rel hi-rel0)
+                               (equal hi hi0))
+                          (mv hi-rel hi new-neg-evgs)
+                          (adjust-upper-bound-with-neg-evgs domain hi-rel hi
+                                                            new-neg-evgs))
 
 ; So now the new, best bounds are given by new-lo-rel, new-lo, new-hi-rel, and
 ; new-hi, and the neg-evgs by new-neg-evgs.  Next we bind new-domain to
 ; ACL2-NUMBERP if it was completely unrestricted and the interval does not
 ; include 0; otherwise it is domain, as before.
 
-                (let ((new-domain
-                       (if (and (null domain)
-                                (or (positive-lower-boundp new-lo-rel new-lo)
-                                    (negative-upper-boundp new-hi-rel new-hi)))
-                           'acl2-numberp
-                           domain)))
+                      (let ((new-domain
+                             (if (and (null domain)
+                                      (or (positive-lower-boundp new-lo-rel new-lo)
+                                          (negative-upper-boundp new-hi-rel new-hi)))
+                                 'acl2-numberp
+                                 domain)))
 
 ; Even if the domain has been changed to ACL2-NUMBERP, we need not further
 ; filter the :neg-evgs: they will have been filtered by the adjustments to
 ; accommodate the interval bounds which are away from 0.  It remains only to
 ; see if this interval is empty or a singleton.
 
-                  (cond
-                   ((and (eq  new-domain domain0)
-                         (eq  new-lo-rel lo-rel0)
-                         (eql new-lo lo0)
-                         (eq  new-hi-rel hi-rel0)
-                         (eql new-hi hi0))
-                    tau)
-                   ((empty-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi)
-                    *tau-contradiction*)
-                   ((and new-domain
-                         (singleton-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi))
+                        (cond
+                         ((and (eq  new-domain domain0)
+                               (eq  new-lo-rel lo-rel0)
+                               (eql new-lo lo0)
+                               (eq  new-hi-rel hi-rel0)
+                               (eql new-hi hi0))
+                          tau)
+                         ((empty-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi)
+                          *tau-contradiction*)
+                         ((and new-domain
+                               (singleton-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi))
 
 ; If the interval is a singleton, e.g., new-hi <= x <= new-hi, then if the
 ; domain is non-nil, we know the tau is the identity, i.e., new-hi should
@@ -4503,28 +4503,38 @@
 ; adding the code below that tests :pos-evg.  See
 ; books/system/tests/tau-bound-overwrites-pos-evg.lisp.
 
-                    (let ((pos-evg (access tau tau :pos-evg)))
-                      (cond
-                       (pos-evg
+; BUT WAIT again! What if its a singleton interval with a non-nil domain (so
+; we're inclined to think the subject is new-hi, but what if new-hi is in
+; neg-evgs?  Thanks again Claude, see
+; books/system/tests/tau-singleton-ignores-neg-evgs-signature.lisp and
+; books/system/tests/tau-singleton-ignores-neg-evgs.lisp.
+
+                          (let ((pos-evg (access tau tau :pos-evg))
+                                (new-pos-evg (cons new-hi nil)))
+                            (cond
+                             (pos-evg
 ; There is a pos-evg in this tau.
-                        (if (equal (car pos-evg) new-hi)
+                              (if (equal (car pos-evg) new-hi)
 ; New-hi already is the :pos-evg, so we don't change anything
-                            tau
+                                  tau
 ; Otherwise, we have two different constants each of which is equal to the
 ; subject of the tau.  This is a contradiction.
-                            *tau-contradiction*))
-                       (t 
-; There's no known :pos-evg, so change it to new-hi.  Remember we have to put it
-; in a singleton list.
-                        (set-tau-pos-evg tau (cons new-hi nil) ens wrld)))))
-                   (t (change tau tau
-                              :interval (make tau-interval
-                                              :domain new-domain
-                                              :lo new-lo
-                                              :lo-rel new-lo-rel
-                                              :hi-rel new-hi-rel
-                                              :hi new-hi)
-                              :neg-evgs new-neg-evgs))))))))))))))
+                                  *tau-contradiction*))
+                             ((member-neg-evgs new-pos-evg
+                                               (access tau tau :neg-evgs))
+                              *tau-contradiction*)
+                             (t 
+; There's no known :pos-evg and new-pos-evg (i.e., new-hi) is not in neg-evgs,
+; so change :pos-evg.
+                              (set-tau-pos-evg tau new-pos-evg ens wrld)))))
+                         (t (change tau tau
+                                    :interval (make tau-interval
+                                                    :domain new-domain
+                                                    :lo new-lo
+                                                    :lo-rel new-lo-rel
+                                                    :hi-rel new-hi-rel
+                                                    :hi new-hi)
+                                    :neg-evgs new-neg-evgs))))))))))))))
 
 (defun add-to-tau1 (sign recog tau ens wrld)
 
@@ -7297,6 +7307,7 @@
        (case-match concl
          (('BOOLEANP (f v))
           (and (symbolp f)
+               (not (eq f 'NOT))
                (symbolp v)))
          (& nil))))
 

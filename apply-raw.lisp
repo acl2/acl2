@@ -389,19 +389,22 @@
 ; etags.  But they're really part of the progn!
 
 (defun raw-apply-for-badged-fn (fn arity args)
-  (cond
-   ((and (eq (symbol-class fn (w *the-live-state*)) :program)
-         (not (f-get-global 'safe-mode *the-live-state*)))
-    (state-free-global-let*
-     ((safe-mode t))
-     (apply (*1*-symbol fn)
-            (if (= arity (length args))
-                args
-                (take arity args)))))
-   (t (apply (*1*-symbol fn)
-             (if (= arity (length args))
-                 args
-                 (take arity args))))))
+  (let ((args (true-list-fix args)))
+; In V8.7, our failure to fix args to a true-listp allowed Claude to prove nil.
+; See books/system/tests/apply-string-args-take.lisp.
+    (cond
+     ((and (eq (symbol-class fn (w *the-live-state*)) :program)
+           (not (f-get-global 'safe-mode *the-live-state*)))
+      (state-free-global-let*
+       ((safe-mode t))
+       (apply (*1*-symbol fn)
+              (if (= arity (length args))
+                  args
+                  (take arity args)))))
+     (t (apply (*1*-symbol fn)
+               (if (= arity (length args))
+                   args
+                   (take arity args)))))))
 
 (defun doppelganger-apply$-userfn (fn args)
 

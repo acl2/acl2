@@ -110834,6 +110834,29 @@ it."
  @('system/tests/fake-warrant-defpkg.lisp') and
  @('system/tests/fake-warrant-name-import.lisp').</p>
 
+ <p>Fixed a @(see tau) bug leading to a proof of @('nil') manifested when a
+ singleton tau interval is derived that includes one of the constants known not
+ to be in the tau.  See @(see community-books)
+ @('system/tests/tau-singleton-ignores-neg-evgs-signature.lisp') and
+ @('system/tests/tau-singleton-ignores-neg-evgs.lisp').</p>
+
+ <p>Fixed a @(see tau) bug leading to a proof of @('nil') manifested when
+ @('(booleanp (not x))') is proved as rule, tricking tau into classifying
+ @('not') as a tau predicate instead of only treating it as negation. See @(see
+ community-book) @('system/tests/tau-not-recognizer-conjunctive.lisp').</p>
+
+ <p>Fixed a soundness bug in the implementation of @(tsee apply$) for badged
+ @(':')@(tsee program) mode functions applied to the wrong number of arguments.
+ The original implementation failed to check that the list of arguments was a
+ @(tsee true-listp).  See @(see community-book)
+ @('system/tests/apply-string-args-take.lisp').</p>
+
+ <p>Fixed a soundness bug in @(tsee defwarrant) allowing it to issue a warrant
+ for some functions calling constrained functions whose constraints depend on
+ @(tsee apply$).  See @(see community-books)
+ @('system/tests/apply-equivalence-witness-g1-warrant.lisp') and
+ @('system/tests/defwarrant-constrained-callee.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
