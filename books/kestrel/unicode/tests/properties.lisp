@@ -264,6 +264,43 @@
 (test (equal (nfd '(#x16D6A) *v16*) '(#x16D63 #x16D67 #x16D67)))
 (test (equal (nfd '(#x16D6A) *v17*) '(#x16D63 #x16D67 #x16D67)))
 
+; Being in Normalization Form C.
+; A letter and a mark that compose are not in that form,
+; and the letter that they compose to is.
+; A letter and a mark that do not compose are in that form.
+; U+212B ANGSTROM SIGN is not: its form is U+00C5.
+; Marks that are not in canonical order are not in that form.
+
+(test (not (nfc-memberp '(#x0065 #x0301) *v16*)))
+(test (nfc-memberp '(#x00E9) *v16*))
+(test (nfc-memberp '(#x0071 #x0301) *v16*))
+(test (not (nfc-memberp '(#x212B) *v16*)))
+(test (nfc-memberp '(#x00C5) *v16*))
+(test (not (nfc-memberp '(#x0071 #x0307 #x0323) *v16*)))
+(test (nfc-memberp '(#x0071 #x0323 #x0307) *v16*))
+(test (nfc-memberp '(#x66 #x6F #x6F) *v17*))
+(test (nfc-memberp nil *v17*))
+
+; Being in the other three forms.
+; U+00E9 LATIN SMALL LETTER E WITH ACUTE is in NFC and NFKC,
+; and its decomposition is in NFD and NFKD.
+; U+00B5 MICRO SIGN is in NFD and NFC;
+; its compatibility decomposition, U+03BC GREEK SMALL LETTER MU,
+; is in all four forms.
+
+(test (not (nfd-memberp '(#x00E9) *v16*)))
+(test (nfd-memberp '(#x0065 #x0301) *v16*))
+(test (nfkc-memberp '(#x00E9) *v16*))
+(test (nfkd-memberp '(#x0065 #x0301) *v16*))
+(test (nfd-memberp '(#x00B5) *v16*))
+(test (nfc-memberp '(#x00B5) *v16*))
+(test (not (nfkd-memberp '(#x00B5) *v16*)))
+(test (not (nfkc-memberp '(#x00B5) *v16*)))
+(test (nfkd-memberp '(#x03BC) *v16*))
+(test (nfkc-memberp '(#x03BC) *v16*))
+(test (nfd-memberp '(#x03BC) *v16*))
+(test (nfc-memberp '(#x03BC) *v16*))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Quick checks.

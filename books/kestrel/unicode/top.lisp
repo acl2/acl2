@@ -106,7 +106,10 @@
       and @(tsee bidi-explicit-formatting-class).")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
-      @(tsee nfkd) and @(tsee nfkc), and for what they are made of.
+      @(tsee nfkd) and @(tsee nfkc),
+      for the predicates that say that a list is in one of these forms,
+      such as @(tsee nfc-memberp),
+      and for what the forms are made of.
       This is the largest part.")
     (xdoc::li
      "@('kestrel/unicode/identifier-closure') for the theorems
