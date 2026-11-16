@@ -12,9 +12,6 @@
 ;; verified
 (include-book "verified/computed-hints")
 (include-book "verified/process")
-(include-book "verified/add-hypo-cp")
-(include-book "verified/expand-cp")
-(include-book "verified/reorder-hypotheses")
 (include-book "verified/term-rewrite")
 (include-book "verified/tterm-triv-cp")
 (include-book "verified/ti-bottom-up")
