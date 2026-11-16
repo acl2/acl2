@@ -40,7 +40,7 @@ validated.
 | `combining-classes` | `Canonical_Combining_Class`. |
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
 | `compositions` | `Full_Composition_Exclusion`, and the pairs that compose. |
-| `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`. |
+| `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp`. |
 | `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers. |
 | `quick-check` | The `NF*_Quick_Check` properties (used here only to cross-check normalization). |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
@@ -124,6 +124,14 @@ over the tables, and so re-checked whenever a version is added:
   gives the decomposed form.
 - `nfc-of-nfc`, `nfkc-of-nfkc`, `nfc-of-nfkc`: normalizing a second time to
   a composed form changes nothing.
+- `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp` say that a
+  list is in the form (`isNFD` and so on in UAX #15), that is, that the form
+  leaves it unchanged.  `nfc-memberp-of-nfc` (and the same for the other
+  three): the form of a list is in that form.  `nfd-memberp-of-nfkd`,
+  `nfc-memberp-of-nfkc`: the NFKD form of a list is in NFD, and the NFKC
+  form is in NFC.  `nfd-memberp-when-nfkd-memberp`,
+  `nfc-memberp-when-nfkc-memberp`: so a list that is in NFKD is in NFD, and
+  a list that is in NFKC is in NFC.
 - `decompose-of-canonical-decompose`: decomposing a list canonically first
   makes no difference to its decomposition.
 - `canonical-order-of-decompose-of-canonical-order`: putting a list in
@@ -156,7 +164,7 @@ supported version, and nothing else of this library.
 | `xid-start-p`, `xid-continue-p`, `xid-identifier-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
-| `nfd`, `nfc`, `nfkd`, `nfkc` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| `nfd`, `nfc`, `nfkd`, `nfkc`, and `nfd-memberp` and the other three | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |

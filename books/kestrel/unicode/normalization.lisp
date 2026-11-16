@@ -100,6 +100,13 @@
      These are sixteen theorems, with names like @('nfc-of-nfkd'):
      see @(tsee nfd), @(tsee nfc), @(tsee nfkd) and @(tsee nfkc).")
    (xdoc::p
+    "A list of code points is in one of the four forms
+     if that form of the list is the list itself:
+     see @(tsee nfd-memberp), @(tsee nfc-memberp),
+     @(tsee nfkd-memberp) and @(tsee nfkc-memberp).
+     These predicates are with the forms,
+     so they need no book that the forms do not need.")
+   (xdoc::p
     "The functions are validated in two ways,
      neither of which is a proof:
      by running the whole of the conformance test
@@ -1075,6 +1082,41 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define nfd-memberp ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if a list of code points
+          is in Normalization Form D (NFD),
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A list of code points is in Normalization Form D
+     if putting it in that form leaves it unchanged.
+     This is @('isNFD') in [UAX #15, Section 2, Table 3].
+     The lists that are in that form are the members of NFD,
+     which is where the name of this predicate comes from."))
+  (equal (nfd cps ver)
+         (code-point-list-fix cps))
+  :hooks (:fix)
+
+  ///
+
+  (defrule nfd-when-nfd-memberp
+    (implies (nfd-memberp cps ver)
+             (equal (nfd cps ver)
+                    (code-point-list-fix cps))))
+
+  (defrule nfd-memberp-of-nfd
+    (nfd-memberp (nfd cps ver) ver))
+
+  (defrule nfd-memberp-when-undecomposable-listp-and-canonically-ordered-p
+    (implies (and (undecomposable-listp cps nil ver)
+                  (canonically-ordered-p cps ver))
+             (nfd-memberp cps ver))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define nfc ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
@@ -1104,6 +1146,36 @@
   (defrule nfc-of-nfc
     (equal (nfc (nfc cps ver) ver)
            (nfc cps ver))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define nfc-memberp ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if a list of code points
+          is in Normalization Form C (NFC),
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A list of code points is in Normalization Form C
+     if putting it in that form leaves it unchanged.
+     This is @('isNFC') in [UAX #15, Section 2, Table 3].
+     The lists that are in that form are the members of NFC,
+     which is where the name of this predicate comes from."))
+  (equal (nfc cps ver)
+         (code-point-list-fix cps))
+  :hooks (:fix)
+
+  ///
+
+  (defrule nfc-when-nfc-memberp
+    (implies (nfc-memberp cps ver)
+             (equal (nfc cps ver)
+                    (code-point-list-fix cps))))
+
+  (defrule nfc-memberp-of-nfc
+    (nfc-memberp (nfc cps ver) ver)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1169,6 +1241,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(define nfkd-memberp ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if a list of code points
+          is in Normalization Form KD (NFKD),
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A list of code points is in Normalization Form KD
+     if putting it in that form leaves it unchanged.
+     This is @('isNFKD') in [UAX #15, Section 2, Table 3].
+     The lists that are in that form are the members of NFKD,
+     which is where the name of this predicate comes from.")
+   (xdoc::p
+    "The letter K stands for compatibility.
+     See @(see normalization) for the names of the four forms."))
+  (equal (nfkd cps ver)
+         (code-point-list-fix cps))
+  :hooks (:fix)
+
+  ///
+
+  (defrule nfkd-when-nfkd-memberp
+    (implies (nfkd-memberp cps ver)
+             (equal (nfkd cps ver)
+                    (code-point-list-fix cps))))
+
+  (defrule nfkd-memberp-of-nfkd
+    (nfkd-memberp (nfkd cps ver) ver))
+
+  (defrule nfkd-memberp-when-undecomposable-listp-and-canonically-ordered-p
+    (implies (and (undecomposable-listp cps t ver)
+                  (canonically-ordered-p cps ver))
+             (nfkd-memberp cps ver)))
+
+  ;; The NFKD form of a list is in NFD.
+  ;; So a list that is in NFKD is in NFD.
+  ;; (The first theorem is disabled in the proof of the second one,
+  ;; because as a rule it would rewrite its own instance to true.)
+
+  (defrule nfd-memberp-of-nfkd
+    (nfd-memberp (nfkd cps ver) ver)
+    :enable nfd-memberp)
+
+  (defrule nfd-memberp-when-nfkd-memberp
+    (implies (nfkd-memberp cps ver)
+             (nfd-memberp cps ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :use nfd-memberp-of-nfkd
+    :disable nfd-memberp-of-nfkd))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define nfkc ((cps code-point-listp) (ver versionp))
   :returns (new-cps code-point-listp)
   :parents (normalization)
@@ -1222,6 +1348,55 @@
     (equal (nfkc (nfc cps ver) ver)
            (nfkc cps ver))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define nfkc-memberp ((cps code-point-listp) (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if a list of code points
+          is in Normalization Form KC (NFKC),
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A list of code points is in Normalization Form KC
+     if putting it in that form leaves it unchanged.
+     This is @('isNFKC') in [UAX #15, Section 2, Table 3].
+     The lists that are in that form are the members of NFKC,
+     which is where the name of this predicate comes from.")
+   (xdoc::p
+    "The letter K stands for compatibility.
+     See @(see normalization) for the names of the four forms."))
+  (equal (nfkc cps ver)
+         (code-point-list-fix cps))
+  :hooks (:fix)
+
+  ///
+
+  (defrule nfkc-when-nfkc-memberp
+    (implies (nfkc-memberp cps ver)
+             (equal (nfkc cps ver)
+                    (code-point-list-fix cps))))
+
+  (defrule nfkc-memberp-of-nfkc
+    (nfkc-memberp (nfkc cps ver) ver))
+
+  ;; The NFKC form of a list is in NFC.
+  ;; So a list that is in NFKC is in NFC.
+  ;; (The first theorem is disabled in the proof of the second one,
+  ;; because as a rule it would rewrite its own instance to true.)
+
+  (defrule nfc-memberp-of-nfkc
+    (nfc-memberp (nfkc cps ver) ver)
+    :enable nfc-memberp)
+
+  (defrule nfc-memberp-when-nfkc-memberp
+    (implies (nfkc-memberp cps ver)
+             (nfc-memberp cps ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :use nfc-memberp-of-nfkc
+    :disable nfc-memberp-of-nfkc))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection normalization-of-ascii
@@ -1233,6 +1408,8 @@
     "More precisely, in every supported version of Unicode,
      each of the four normalization forms
      maps a list of code points that are all below @('#xA0') to itself.
+     So such a list is in each of the four forms
+     (see @(tsee nfc-memberp) and the other three predicates).
      (For the canonical forms this is so up to @('#xC0'),
      but we do not need that.)
      The ASCII code points are those below @('#x80').")
@@ -1285,4 +1462,28 @@
                     cps))
     :enable (nfkc
              canonical-compose-when-all-below-300
-             code-points-below-p-when-below-smaller)))
+             code-points-below-p-when-below-smaller))
+
+  (defrule nfd-memberp-when-all-below-a0
+    (implies (and (code-point-listp cps)
+                  (code-points-below-p cps #xA0))
+             (nfd-memberp cps ver))
+    :enable nfd-memberp)
+
+  (defrule nfc-memberp-when-all-below-a0
+    (implies (and (code-point-listp cps)
+                  (code-points-below-p cps #xA0))
+             (nfc-memberp cps ver))
+    :enable nfc-memberp)
+
+  (defrule nfkd-memberp-when-all-below-a0
+    (implies (and (code-point-listp cps)
+                  (code-points-below-p cps #xA0))
+             (nfkd-memberp cps ver))
+    :enable nfkd-memberp)
+
+  (defrule nfkc-memberp-when-all-below-a0
+    (implies (and (code-point-listp cps)
+                  (code-points-below-p cps #xA0))
+             (nfkc-memberp cps ver))
+    :enable nfkc-memberp))
