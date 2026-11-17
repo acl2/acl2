@@ -16,7 +16,7 @@
 (include-book "../lookup-defs")
 (include-book "../delete-defs")
 (include-book "../min-max-defs")
-(include-book "../iter-defs")
+(include-book "../cursor/defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
@@ -29,7 +29,7 @@
 (local (include-book "../lookup"))
 (local (include-book "../delete"))
 (local (include-book "../min-max"))
-(local (include-book "../iter"))
+(local (include-book "../cursor/top"))
 
 (local (include-book "kestrel/data/tset/delete" :dir :system))
 (local (include-book "kestrel/data/tset/min-max" :dir :system))
@@ -57,19 +57,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define iter-any-evenp ((iter iterp))
-  (and (has-valuep iter)
-       (or (evenp (nfix (entry-val iter)))
-           (iter-any-evenp (next iter))))
-  :measure (nexts iter))
+;; A walk in the recommended style: it tests for an entry, and its guard says
+;; that any hole it is at is the end, which a walk from @(tsee seek-min) with
+;; @(tsee next) maintains.
 
-(defrule iter-any-evenp-when-iter-equiv-congruence
-  (implies (iter-equiv iter0 iter1)
-           (equal (iter-any-evenp iter0)
-                  (iter-any-evenp iter1)))
+(define cursor-any-evenp ((cursor cursorp))
+  :guard (or (entryp cursor)
+             (endp cursor))
+  (and (entryp cursor)
+       (or (evenp (nfix (entry-val cursor)))
+           (cursor-any-evenp (next cursor))))
+  :measure (nexts cursor))
+
+(defrule cursor-any-evenp-when-cursor-equiv-congruence
+  (implies (cursor-equiv cursor0 cursor1)
+           (equal (cursor-any-evenp cursor0)
+                  (cursor-any-evenp cursor1)))
   :rule-classes :congruence
-  :induct (iter-any-evenp iter0)
-  :enable iter-any-evenp)
+  :induct (cursor-any-evenp cursor0)
+  :enable cursor-any-evenp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -77,7 +83,7 @@
   (mbe :logic (and (not (emptyp map))
                    (or (evenp (nfix (min-val map)))
                        (any-evenp (delete (min-key map) map))))
-       :exec (iter-any-evenp (iter-min map)))
+       :exec (cursor-any-evenp (seek-min map)))
   :measure (size map)
   ;; Keep `size' and `min-key' folded, so the linear rule above fires on the
   ;; measure conjecture rather than the goal dropping to the key set.
@@ -87,13 +93,13 @@
   :verify-guards nil ;; Verified below
   ///
 
-  (defrule iter-any-evenp-becomes-any-evenp
-    (equal (iter-any-evenp iter)
-           (and (has-valuep iter)
-                (or (evenp (nfix (entry-val iter)))
-                    (any-evenp (after iter)))))
+  (defrule cursor-any-evenp-becomes-any-evenp
+    (equal (cursor-any-evenp cursor)
+           (and (entryp cursor)
+                (or (evenp (nfix (entry-val cursor)))
+                    (any-evenp (after cursor)))))
     :induct t
-    :enable (iter-any-evenp
+    :enable (cursor-any-evenp
              any-evenp))
 
   (verify-guards any-evenp))

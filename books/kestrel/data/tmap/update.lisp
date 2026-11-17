@@ -109,9 +109,9 @@
   :guard (and (consp (cdr list))
               (member-eq update
                          '(update$inline update-= update-eq update-eql)))
-  (cond ((endp (cddr list))
+  (cond ((acl2::endp (cddr list))
          (er hard? 'update "Missing value for key: ~x0." (first list)))
-        ((endp (cdddr list))
+        ((acl2::endp (cdddr list))
          (cons update list))
         (t
          (list update
@@ -338,7 +338,7 @@
   ((alist alistp)
    (map mapp))
   :returns (map$ mapp)
-  (if (endp alist)
+  (if (acl2::endp alist)
       (fix map)
     (update-from-alist-rev (rest alist)
                            (update (car (first alist))
@@ -414,7 +414,7 @@
    (xdoc::p
      "Time complexity: @($O(n\\log(n+m))$), where @($n$) is the size of the
       alist, and @($m$) is the size of the map."))
-  (mbe :logic (if (endp alist)
+  (mbe :logic (if (acl2::endp alist)
                   (fix map)
                 (update (car (first alist))
                         (cdr (first alist))
@@ -910,9 +910,9 @@
   (test
    (list true-listp))
   :guard (consp list)
-  (cond ((endp (cdr list))
+  (cond ((acl2::endp (cdr list))
          (er hard? 'map "Missing value for key: ~x0." (first list)))
-        ((endp (cddr list))
+        ((acl2::endp (cddr list))
          (cons 'singleton list))
         (t
          (list 'update

@@ -39,6 +39,7 @@
                                  difference
                                  double-containment
                                  emptyp
+                                 endp
                                  fix
                                  head
                                  tail

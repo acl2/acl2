@@ -252,6 +252,16 @@
   :induct t
   :enable tree-in-order)
 
+(defruled in-of-tree-key-set-becomes-assoc-equal-of-tree-in-order
+  (equal (tset::in key (tree-key-set tree))
+         (and (assoc-equal key (tree-in-order tree))
+              t))
+  :enable assoc-equal-of-tree-in-order-under-iff)
+
+(theory-invariant
+  (incompatible! (:rewrite assoc-equal-of-tree-in-order-under-iff)
+                 (:rewrite in-of-tree-key-set-becomes-assoc-equal-of-tree-in-order)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled assoc-equal-of-tree-in-order

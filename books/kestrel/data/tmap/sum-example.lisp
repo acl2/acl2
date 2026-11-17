@@ -14,6 +14,12 @@
 
 (include-book "defs")
 
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
+
+(local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 (local (include-book "top"))
 (local (include-book "kestrel/data/tset/delete" :dir :system))
 (local (include-book "kestrel/data/tset/min-max" :dir :system))
@@ -21,7 +27,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; An example of walking a @(see tmap) with an @(see iterator): summing the
+;; An example of walking a @(see tmap) with a @(see cursor): summing the
 ;; keys and the values together. Both halves of each entry are read, so the
 ;; walk exercises @(tsee entry-key) and @(tsee entry-val) rather than just one
 ;; of them.
@@ -58,33 +64,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The walk. It runs forward, so it maintains @(tsee before-firstp) as false:
-;; @(tsee iter-min) never lands there and neither does @(tsee next). Under that
-;; invariant having an entry and not being at the end are the same condition,
-;; which is what the @(tsee mbe) below records: the logical branch is the one
-;; the measure wants, and the executable branch is the cheap test.
+;; The walk. It tests for an entry, and its guard says that any hole it is at
+;; is the end, which a walk from @(tsee seek-min) with @(tsee next) maintains.
 
 (define sum-loop
-  ((iter iterp)
+  ((cursor cursorp)
    (acc acl2-numberp))
-  :type-prescription :none
-  :guard (not (before-firstp iter))
+  :guard (or (entryp cursor)
+             (endp cursor))
   :returns (result acl2-numberp :rule-classes :type-prescription)
   :parents (sum)
-  :short "Accumulate the entries from an @(see iterator) onward."
-  :measure (nexts iter)
-  (if (mbe :logic (not (has-valuep iter))
-           :exec (after-lastp iter))
+  :short "Accumulate the entries from a @(see cursor) onward."
+  :measure (nexts cursor)
+  (if (not (entryp cursor))
       (acl2::fix acc)
-    (sum-loop (next iter)
-              (+ (acl2::fix (entry-key iter))
-                 (acl2::fix (entry-val iter))
+    (sum-loop (next cursor)
+              (+ (acl2::fix (entry-key cursor))
+                 (acl2::fix (entry-val cursor))
                  acc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define sum ((map mapp))
-  :type-prescription :none
   :returns (result acl2-numberp :rule-classes :type-prescription)
   :parents (tmap)
   :short "The sum of the keys and values of a @(see tmap)."
@@ -94,8 +95,8 @@
      "Non-numeric keys and values contribute nothing.")
    (xdoc::p
      "Logically this repeatedly takes the least entry and deletes it, which is
-      the form a proof wants. It executes as a single forward walk with an
-      @(see iterator), at @($O(n)$) rather than @($O(n \\log(n))$)."))
+      the form a proof wants. It executes as a single forward walk with a
+      @(see cursor), at @($O(n)$) rather than @($O(n \\log(n))$)."))
   :measure (size map)
   ;; Keep `size' and `min-key' folded, so the linear rule above fires on the
   ;; measure conjecture rather than the goal dropping to the key set.
@@ -110,7 +111,7 @@
                 (+ (acl2::fix (min-key map))
                    (acl2::fix (min-val map))
                    (sum (delete (min-key map) map))))
-       :exec (sum-loop (iter-min map) 0)))
+       :exec (sum-loop (seek-min map) 0)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -134,59 +135,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The map an iterator has yet to walk. Where the loop stops there is nothing
-;; left, and that is exactly the position which has no entry and is not the
-;; rewound end.
-
-(defruled after-when-not-has-valuep-and-not-before-firstp
-  (implies (and (not (has-valuep iter))
-                (not (before-firstp iter)))
-           (equal (after iter)
-                  (empty)))
-  :use has-valuep-when-neither-end
-  :disable has-valuep-when-neither-end)
-
-;; The library's @('after-of-iter-min') supplies the other connection a
-;; walk's start needs: what a fresh iterator has left is everything but the
-;; entry it is at.
-
 ;; The loop invariant. What the loop returns is what it has already
-;; accumulated, plus the entry it is at, plus the sum of what is left.
+;; accumulated, plus the entry it is at, plus the sum of what is after it.
 ;;
 ;; The step case is where the two branches of the mbe meet: @(tsee
 ;; entry-key-of-next) says the key stepped onto is the least of what lay
-;; ahead, and @(tsee after-of-next-when-has-valuep) says what lies ahead loses
-;; exactly that entry. Those are the logical branch's @(tsee min-key) and
-;; @(tsee delete).
+;; ahead, and @(tsee after-of-next) says what lies ahead loses exactly that
+;; entry. Those are the logical branch's @(tsee min-key) and @(tsee delete).
 
 (defruled sum-loop-becomes-sum
-  (implies (not (before-firstp iter))
-           (equal (sum-loop iter acc)
-                  (+ (acl2::fix acc)
-                     (if (has-valuep iter)
-                         (+ (acl2::fix (entry-key iter))
-                            (acl2::fix (entry-val iter)))
-                       0)
-                     (sum (after iter)))))
-  :induct (sum-loop iter acc)
+  (equal (sum-loop cursor acc)
+         (+ (acl2::fix acc)
+            (if (entryp cursor)
+                (+ (acl2::fix (entry-key cursor))
+                   (acl2::fix (entry-val cursor))
+                   (sum (after cursor)))
+              0)))
+  :induct (sum-loop cursor acc)
   :enable (sum-loop
            sum-when-emptyp
-           after-when-not-has-valuep-and-not-before-firstp)
-  :expand ((sum (after iter))))
+           acl2::fix
+           default-+-1)
+  :expand ((sum (after cursor))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 ;; The walk computes the sum. This is what the mbe obligation reduces to.
 
-(defrule sum-loop-of-iter-min
-  (equal (sum-loop (iter-min map) 0)
+(defrule sum-loop-of-seek-min
+  (equal (sum-loop (seek-min map) 0)
          (sum map))
   :enable (sum-when-emptyp
-           sum-loop-becomes-sum
-           ;; Over the empty map the expansion still deletes the (degenerate)
-           ;; least key, which is not there to delete.
-           delete-when-not-in-of-keys
-           tset::in-of-arg1-and-empty)
+           sum-loop-becomes-sum)
   :expand ((sum map)))
 
 ;;;;;;;;;;;;;;;;;;;;

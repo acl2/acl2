@@ -103,7 +103,7 @@
               (consp (rest list))
               (member-eq update*
                          '(update*$inline update*-= update*-eq update*-eql)))
-  (if (endp (rest (rest list)))
+  (if (acl2::endp (rest (rest list)))
       (list update*
             (first list)
             (second list))

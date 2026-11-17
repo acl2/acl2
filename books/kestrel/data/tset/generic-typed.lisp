@@ -394,6 +394,12 @@
                              (genericp acl2-numberp)
                              (set-all-genericp set-all-acl2-numberp)))
 
+(defruled set-all-acl2-numberp-when-set-all-acl2-numberp-and-subset
+  (implies (and (set-all-acl2-numberp y)
+                (subset x y))
+           (set-all-acl2-numberp x))
+  :by set-all-acl2-numberp-when-subset-and-set-all-acl2-numberp)
+
 (defrule set-all-acl2-numberp-of-insert
   (equal (set-all-acl2-numberp (insert x set))
          (and (acl2-numberp x)
@@ -504,6 +510,12 @@
                              (genericp symbolp)
                              (set-all-genericp set-all-symbolp)))
 
+(defruled set-all-symbolp-when-set-all-symbolp-and-subset
+  (implies (and (set-all-symbolp y)
+                (subset x y))
+           (set-all-symbolp x))
+  :by set-all-symbolp-when-subset-and-set-all-symbolp)
+
 (defrule set-all-symbolp-of-insert
   (equal (set-all-symbolp (insert x set))
          (and (symbolp x)
@@ -613,6 +625,12 @@
   :use (:functional-instance set-all-genericp-when-subset-and-set-all-genericp
                              (genericp eqlablep)
                              (set-all-genericp set-all-eqlablep)))
+
+(defruled set-all-eqlablep-when-set-all-eqlablep-and-subset
+  (implies (and (set-all-eqlablep y)
+                (subset x y))
+           (set-all-eqlablep x))
+  :by set-all-eqlablep-when-subset-and-set-all-eqlablep)
 
 (defrule set-all-eqlablep-of-insert
   (equal (set-all-eqlablep (insert x set))

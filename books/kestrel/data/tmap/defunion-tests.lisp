@@ -21,6 +21,11 @@
 (include-book "kestrel/data/tmap/update-star" :dir :system)
 (include-book "kestrel/data/tmap/defunion" :dir :system)
 
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (controlled-configuration :hooks nil :type-prescription :none))
+
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *m1*
@@ -51,7 +56,6 @@
 ;; has positive values.
 
 (define set-all-posp ((set tset::setp))
-  :type-prescription :none
   (or (tset::emptyp set)
       (and (posp (tset::min set))
            (set-all-posp (tset::delete (tset::min set) set))))
@@ -76,7 +80,6 @@
 ;; A combination given as a function symbol.
 
 (define max-combine (key x y)
-  :type-prescription :none
   (declare (ignore key))
   (max (nfix x) (nfix y)))
 

@@ -388,13 +388,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A loop over a typed tmap. An iterator carries no key or value type, so
-;; the guards of symbol-name at (tmap::entry-key iter) and of nat-id at
-;; (tmap::entry-val iter) are discharged by the generated
-;; symbolp-of-entry-key-when-sym-nat-map-p-of-from-iter and
-;; natp-of-entry-val-when-sym-nat-map-p-of-from-iter, with no hints.
+;; A loop over a typed tmap. A cursor carries no key or value type, so the
+;; guards of symbol-name at (tmap::entry-key cursor) and of nat-id at
+;; (tmap::entry-val cursor) are discharged by the generated
+;; symbolp-of-entry-key-when-sym-nat-map-p-of-from-cursor and
+;; natp-of-entry-val-when-sym-nat-map-p-of-from-cursor, with no hints.
 
-(include-book "kestrel/data/tmap/iter" :dir :system)
+(include-book "kestrel/data/tmap/cursor/top" :dir :system)
 
 (must-succeed*
   (fty::deftmap sym-nat-map
@@ -404,16 +404,18 @@
   (define nat-id ((n natp))
     (mbe :logic (nfix n) :exec n))
 
-  (define sym-nat-map-loop ((iter tmap::iterp))
-    :guard (sym-nat-map-p (tmap::from-iter iter))
-    (if (tmap::has-valuep iter)
-        (cons (cons (symbol-name (tmap::entry-key iter))
-                    (nat-id (tmap::entry-val iter)))
-              (sym-nat-map-loop (tmap::next iter)))
-      nil)
-    :measure (tmap::nexts iter))
+  (define sym-nat-map-loop ((cursor tmap::cursorp))
+    :guard (and (sym-nat-map-p (tmap::from-cursor cursor))
+                (or (tmap::entryp cursor)
+                    (tmap::endp cursor)))
+    (if (not (tmap::entryp cursor))
+        nil
+      (cons (cons (symbol-name (tmap::entry-key cursor))
+                  (nat-id (tmap::entry-val cursor)))
+            (sym-nat-map-loop (tmap::next cursor))))
+    :measure (tmap::nexts cursor))
 
   (assert! (equal (sym-nat-map-loop
-                   (tmap::iter-min
+                   (tmap::seek-min
                     (tmap::update 'b 2 (tmap::update 'a 1 (tmap::empty)))))
                   '(("A" . 1) ("B" . 2)))))

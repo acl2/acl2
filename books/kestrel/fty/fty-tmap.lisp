@@ -461,7 +461,7 @@
        (vv (intern-in-package-of-symbol "V" x.name))
        (yv (intern-in-package-of-symbol "Y" x.name))
        (sv (intern-in-package-of-symbol "S" x.name))
-       (iterv (intern-in-package-of-symbol "ITER" x.name))
+       (cursorv (intern-in-package-of-symbol "CURSOR" x.name))
        (np (symbol-name x.pred))
        (nk (symbol-name x.key-type))
        (nv (symbol-name x.val-type))
@@ -525,12 +525,12 @@
        (key-of-entry-key-when-pred (intern-in-package-of-symbol
                                     (concatenate 'string
                                                  nk "-OF-ENTRY-KEY-WHEN-"
-                                                 np "-OF-FROM-ITER")
+                                                 np "-OF-FROM-CURSOR")
                                     x.pred))
        (val-of-entry-val-when-pred (intern-in-package-of-symbol
                                     (concatenate 'string
                                                  nv "-OF-ENTRY-VAL-WHEN-"
-                                                 np "-OF-FROM-ITER")
+                                                 np "-OF-FROM-CURSOR")
                                     x.pred))
        (alt-definition (intern-in-package-of-symbol
                         (concatenate 'string np "-ALT-DEFINITION") x.pred)))
@@ -878,36 +878,36 @@
                                     tmap::fix-when-mapp
                                     tmap::head-val$inline)
                  :do-not-induct t)))
-      ;; An iterator carries no key or value type, so a typed loop's guards at
-      ;; (tmap::entry-key iter) and (tmap::entry-val iter) are discharged
+      ;; A cursor carries no key or value type, so a typed loop's guards at
+      ;; (tmap::entry-key cursor) and (tmap::entry-val cursor) are discharged
       ;; from the type of the map walked.
       (defthm ,key-of-entry-key-when-pred
-        (implies (and (,x.pred (tmap::from-iter ,iterv))
-                      (tmap::has-valuep ,iterv))
-                 (,x.key-type (tmap::entry-key ,iterv)))
+        (implies (and (,x.pred (tmap::from-cursor ,cursorv))
+                      (tmap::entryp ,cursorv))
+                 (,x.key-type (tmap::entry-key ,cursorv)))
         :hints (("Goal"
                  :use ((:instance
                         (:functional-instance
                          tmap::genericp-of-entry-key-when-set-all-genericp-of-keys
                          (tset::genericp ,x.key-type)
                          (tset::set-all-genericp ,alt-keys))
-                        (tmap::iter ,iterv)))
+                        (tmap::cursor ,cursorv)))
                  :in-theory (enable ,pred-def
                                     ,keys-bridge
                                     ,alt-keys
                                     tmap::fix-when-mapp)
                  :do-not-induct t)))
       (defthm ,val-of-entry-val-when-pred
-        (implies (and (,x.pred (tmap::from-iter ,iterv))
-                      (tmap::has-valuep ,iterv))
-                 (,x.val-type (tmap::entry-val ,iterv)))
+        (implies (and (,x.pred (tmap::from-cursor ,cursorv))
+                      (tmap::entryp ,cursorv))
+                 (,x.val-type (tmap::entry-val ,cursorv)))
         :hints (("Goal"
                  :use ((:instance
                         (:functional-instance
                          tmap::genericp-of-entry-val-when-set-all-genericp-of-values
                          (tset::genericp ,x.val-type)
                          (tset::set-all-genericp ,alt-vals))
-                        (tmap::iter ,iterv)))
+                        (tmap::cursor ,cursorv)))
                  :in-theory (enable ,pred-def
                                     ,vals-bridge
                                     ,alt-vals

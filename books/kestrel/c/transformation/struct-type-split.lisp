@@ -16,7 +16,7 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system)
-(include-book "kestrel/data/tmap/iter-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 (include-book "kestrel/data/tmap/size-defs" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
@@ -725,22 +725,22 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define sts-check-completions-loop
-  ((iter tmap::iterp)
+  ((cursor tmap::cursorp)
    (struct-uid c$::uidp))
-  :guard (and (not (tmap::before-firstp iter))
-              (c$::type-completions-p (tmap::from-iter iter)))
+  :guard (and (c$::type-completions-p (tmap::from-cursor cursor))
+              (or (tmap::entryp cursor)
+                  (tmap::endp cursor)))
   :returns (er? maybe-msgp)
-  :short "Iterator loop implementing @(tsee sts-check-completions)."
-  :measure (tmap::nexts iter)
-  (b* (((when (mbe :logic (not (tmap::has-valuep iter))
-                   :exec (tmap::after-lastp iter)))
+  :short "Cursor loop implementing @(tsee sts-check-completions)."
+  :measure (tmap::nexts cursor)
+  (b* (((when (not (tmap::entryp cursor)))
         nil)
        (msg? (sts-check-completion-members
-               (tmap::entry-val iter)
+               (tmap::entry-val cursor)
                struct-uid
-               (c$::uid-equiv (tmap::entry-key iter) struct-uid)))
+               (c$::uid-equiv (tmap::entry-key cursor) struct-uid)))
        ((when msg?) msg?))
-    (sts-check-completions-loop (tmap::next iter) struct-uid)))
+    (sts-check-completions-loop (tmap::next cursor) struct-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -758,7 +758,7 @@
     "The logical definition walks the map
      by repeatedly removing its least key.
      The executable definition is a single forward pass
-     with an iterator (see @(tsee sts-check-completions-loop))."))
+     with a cursor (see @(tsee sts-check-completions-loop))."))
   :measure (tmap::size completions)
   :verify-guards nil
   (mbe :logic
@@ -773,30 +773,31 @@
             ((when msg?) msg?))
          (sts-check-completions (tmap::delete entry-uid completions)
                                 struct-uid))
-       :exec (sts-check-completions-loop (tmap::iter-min completions)
+       :exec (sts-check-completions-loop (tmap::seek-min completions)
                                          struct-uid))
 
   ///
 
   (defruled sts-check-completions-loop-becomes-sts-check-completions
-    (implies (not (tmap::before-firstp iter))
-             (equal (sts-check-completions-loop iter struct-uid)
-                    (if (tmap::has-valuep iter)
+    (implies (or (tmap::entryp cursor)
+                 (tmap::endp cursor))
+             (equal (sts-check-completions-loop cursor struct-uid)
+                    (if (tmap::entryp cursor)
                         (b* ((msg? (sts-check-completion-members
-                                     (tmap::entry-val iter)
+                                     (tmap::entry-val cursor)
                                      struct-uid
-                                     (c$::uid-equiv (tmap::entry-key iter)
+                                     (c$::uid-equiv (tmap::entry-key cursor)
                                                     struct-uid))))
                           (or msg?
-                              (sts-check-completions (tmap::after iter)
+                              (sts-check-completions (tmap::after cursor)
                                                      struct-uid)))
                       nil)))
-    :induct (sts-check-completions-loop iter struct-uid)
+    :induct (sts-check-completions-loop cursor struct-uid)
     :enable sts-check-completions-loop
-    :expand ((sts-check-completions (tmap::after iter) struct-uid)))
+    :expand ((sts-check-completions (tmap::after cursor) struct-uid)))
 
-  (defrule sts-check-completions-loop-of-iter-min
-    (equal (sts-check-completions-loop (tmap::iter-min completions)
+  (defrule sts-check-completions-loop-of-seek-min
+    (equal (sts-check-completions-loop (tmap::seek-min completions)
                                        struct-uid)
            (sts-check-completions completions struct-uid))
     :enable sts-check-completions-loop-becomes-sts-check-completions

@@ -24,6 +24,7 @@
 (include-book "kestrel/data/tmap/delete" :dir :system)
 (include-book "kestrel/data/tmap/restrict" :dir :system)
 (include-book "kestrel/data/tmap/generic-typed" :dir :system)
+(include-book "kestrel/data/tmap/cursor/generic-typed" :dir :system)
 (include-book "kestrel/data/tmap/generic-count" :dir :system)
 
 (include-book "kestrel/data/tset/set" :dir :system)

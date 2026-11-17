@@ -26,10 +26,11 @@
 (include-book "translation-unit-comparison")
 (include-book "types-compatibility")
 
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "kestrel/data/tmap/iter" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -8772,12 +8773,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-merge-externals-loop ((iter tmap::iterp)
+(define valid-merge-externals-loop ((cursor tmap::cursorp)
                                     (mstate valid-merge-statep)
                                     (ienv ienvp)
                                     (strict-merge booleanp))
-  :guard (and (not (tmap::before-firstp iter))
-              (valid-externalsp (tmap::from-iter iter)))
+  :guard (and (valid-externalsp (tmap::from-cursor cursor))
+              (or (tmap::entryp cursor)
+                  (tmap::endp cursor)))
   :returns (mv (erp maybe-msgp)
                (new-mstate valid-merge-statep))
   :short "Merge the information about identifiers with external linkage
@@ -8786,7 +8788,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The iterator goes through the information of the translation unit.
+    "The cursor goes through the information of the translation unit.
      An identifier not in the merged information so far is just added.
      Otherwise, the identifier has been declared
      in some previous translation unit,
@@ -8826,15 +8828,14 @@
      can be compared and composed."))
   (b* (((reterr) (irr-valid-merge-state))
        ((valid-merge-state mstate) mstate)
-       ((when (mbe :logic (not (tmap::has-valuep iter))
-                   :exec (tmap::after-lastp iter)))
+       ((when (not (tmap::entryp cursor)))
         (retok (valid-merge-state-fix mstate)))
-       (ident (tmap::entry-key iter))
-       ((valid-ext-info info) (tmap::entry-val iter))
+       (ident (tmap::entry-key cursor))
+       ((valid-ext-info info) (tmap::entry-val cursor))
        (prev? (tmap::lookup ident mstate.externals))
        ((unless prev?)
         (valid-merge-externals-loop
-         (tmap::next iter)
+         (tmap::next cursor)
          (change-valid-merge-state
           mstate
           :externals (tmap::update ident info mstate.externals))
@@ -8854,7 +8855,7 @@
                       in the translation units validated before."
                      ident info.type prev.type)
           (valid-merge-externals-loop
-           (tmap::next iter)
+           (tmap::next cursor)
            (change-valid-merge-state mstate :compatible-pairs compatible-pairs)
            ienv
            strict-merge)))
@@ -8872,7 +8873,7 @@
                                   (make-valid-ext-info :type type)
                                   mstate.externals))))
     (valid-merge-externals-loop
-     (tmap::next iter)
+     (tmap::next cursor)
      (make-valid-merge-state
       :externals externals
       :completions completions
@@ -8882,7 +8883,7 @@
       :next-uid-num next-uid-num)
      ienv
      strict-merge))
-  :measure (tmap::nexts iter))
+  :measure (tmap::nexts cursor))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -8912,7 +8913,7 @@
                                    (valid-merge-state->completions mstate)))
        (mstate (change-valid-merge-state mstate :completions completions)))
     (valid-merge-externals-loop
-     (tmap::iter-min (valid-externals-fix tu-externals))
+     (tmap::seek-min (valid-externals-fix tu-externals))
      mstate
      ienv
      strict-merge)))

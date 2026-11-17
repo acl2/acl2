@@ -8,34 +8,16 @@
 
 (in-package "TMAP")
 
-(include-book "internal/iter")
-(include-book "map-defs")
-(include-book "update-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "before-after-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "iter"))
+(local (include-book "begin-end"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (iterp
-          iter-min
-          iter-max
-          iter-fix
-          iter-equiv
-          after-lastp
-          before-firstp
-          has-valuep
-          from-iter
-          before
-          after
-          entry-key
-          entry-val
-          entry
-          next
-          prev
-          nexts
-          prevs
+  :names (beginp
+          endp
           ))
-
-(defequiv iter-equiv)

@@ -429,7 +429,7 @@
 (define tree-empty-p ((tree treep))
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check if a @(see tree) is empty."
-  (endp (tree-fix tree))
+  (acl2::endp (tree-fix tree))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
