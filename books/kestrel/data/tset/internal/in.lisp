@@ -20,7 +20,7 @@
 (include-book "heap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -35,7 +35,7 @@
 (define tree-in
   (x
    (tree treep))
-  :type-prescription (booleanp (tree-in x tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Determine if a value appears in the tree."
   :long
@@ -398,7 +398,7 @@
 (define tree-search-in
   (x
    (tree treep))
-  :type-prescription (booleanp (tree-search-in x tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree-in)
   :short "A performant variant of @(tsee tree-in) which uses a BST assumption."
   (if (tree-empty-p tree)
@@ -445,7 +445,6 @@
 (define acl2-number-tree-search-in
   ((x acl2-numberp)
    (tree acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
@@ -466,7 +465,6 @@
 (define symbol-tree-search-in
   ((x symbolp)
    (tree symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil
@@ -487,7 +485,6 @@
 (define eqlable-tree-search-in
   ((x eqlablep)
    (tree eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-in x tree)
        :exec (if (tree-empty-p tree)
                  nil

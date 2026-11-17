@@ -25,7 +25,7 @@
 (include-book "map-values-all-posp-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/arithmetic-light/fix" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
@@ -51,7 +51,6 @@
 ;; The cardinality of a bag's tree: the sum of the multiplicities at its nodes.
 
 (define tree-cardinality ((tree tmap::treep))
-  :type-prescription :none
   :guard (tree-all-vals-posp tree)
   :returns (cardinality natp :rule-classes :type-prescription)
   (if (tmap::tree-empty-p tree)

@@ -11,6 +11,9 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This is the unsigned version of acl2::the-fixnum.
@@ -21,7 +24,6 @@
 ;; acl2::fixnum-bound, which expands to a literal, so that the compiler sees
 ;; constant comparisons and can derive the fixnum type.
 (define fixnump (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (and (integerp x)
        (<= (- -1 (acl2::fixnum-bound)) x)
@@ -37,4 +39,6 @@
 (defrule signed-byte-p-when-fixnump
   (implies (fixnump x)
            (signed-byte-p *fixnum-bits* x))
-  :enable fixnump)
+  :enable (fixnump
+           signed-byte-p
+           integer-range-p))

@@ -24,7 +24,7 @@
 (include-book "internal/zip-seek-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 
@@ -89,7 +89,6 @@
 (define seek$inline
   (x
    (set setp))
-  :type-prescription :none
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
@@ -306,7 +305,6 @@
 (define seek-=
   ((x acl2-numberp)
    (set acl2-number-setp))
-  :type-prescription :none
   (mbe :logic (seek x set)
        :exec (acl2-number-zip-seek x (zip-root set)))
   :enabled t
@@ -318,7 +316,6 @@
 (define seek-eq
   ((x symbolp)
    (set symbol-setp))
-  :type-prescription :none
   (mbe :logic (seek x set)
        :exec (symbol-zip-seek x (zip-root set)))
   :enabled t
@@ -330,7 +327,6 @@
 (define seek-eql
   ((x eqlablep)
    (set eqlable-setp))
-  :type-prescription :none
   (mbe :logic (seek x set)
        :exec (eqlable-zip-seek x (zip-root set)))
   :enabled t

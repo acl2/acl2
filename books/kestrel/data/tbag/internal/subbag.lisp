@@ -22,7 +22,7 @@
 (include-book "map-values-all-posp-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -46,7 +46,6 @@
 
 (define tree-subbag-p ((x tmap::treep)
                        (y tmap::treep))
-  :type-prescription :none
   :guard (and (tree-all-vals-posp x)
               (tree-all-vals-posp y))
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -93,7 +92,6 @@
 
 (define tree-subbag-p-witness ((x tmap::treep)
                                (y tmap::treep))
-  :type-prescription :none
   (if (tmap::tree-empty-p x)
       nil
     (mv-let (assoc left right)

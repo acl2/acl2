@@ -32,7 +32,7 @@
 (include-book "internal/delete-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -59,7 +59,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-node (node (graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))
@@ -244,7 +243,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define delete-node! (node (graph graphp))
-  :type-prescription :none
   :guard (tset::subset (predecessors node graph)
                        (tset::set node))
   :parents (delete-node)

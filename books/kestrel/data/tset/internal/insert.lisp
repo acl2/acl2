@@ -24,7 +24,7 @@
 (include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
@@ -47,7 +47,6 @@
 (define tree-insert
   (x
    (tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Insert a value into the tree."
   :long
@@ -264,7 +263,6 @@
 (define tree-singleton
   (x
    (hash (unsigned-byte-p 32 hash)))
-  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (mv-let (inp tree)
@@ -283,7 +281,6 @@
   (x
    (hash (unsigned-byte-p 32 hash))
    (tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Insert a value into the tree, given its hash."
   :long
@@ -353,7 +350,6 @@
 (define acl2-number-tree-insert
   ((x acl2-numberp)
    (tree acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)
@@ -412,7 +408,6 @@
 (define symbol-tree-insert
   ((x symbolp)
    (tree symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)
@@ -471,7 +466,6 @@
 (define eqlable-tree-insert
   ((x eqlablep)
    (tree eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-insert x tree)
        :exec
        (if (tree-empty-p tree)

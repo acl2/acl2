@@ -26,7 +26,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
 (local (include-book "std/omaps/core" :dir :system))
@@ -48,7 +48,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define values ((map mapp))
-  :type-prescription :none
   :returns (values tset::setp)
   :parents (tmap)
   :short "Get the value @(see acl2::tset) from a @(see tmap)."

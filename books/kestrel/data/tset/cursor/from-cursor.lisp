@@ -20,10 +20,11 @@
 (include-book "before-after-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 
+(local (include-book "../internal/in"))
 (local (include-book "../internal/in-order"))
 (local (include-book "../set"))
 (local (include-book "../in"))
@@ -37,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-cursor ((cursor cursorp))
-  :type-prescription :none
   :returns (set setp
                 :hints (("Goal" :in-theory (enable* break-abstraction))))
   :parents (cursor)

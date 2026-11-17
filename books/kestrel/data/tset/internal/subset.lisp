@@ -21,7 +21,7 @@
 (include-book "split-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -36,7 +36,6 @@
 (define tree-subset-p
   ((x treep)
    (y treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Check if one tree is a subset of the other."
   :guard (bstp y)
@@ -311,7 +310,6 @@
 (define fast-tree-subset-p
   ((x treep)
    (y treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree-subset-p)
   :short "Fast subset check."
@@ -356,7 +354,6 @@
 (define acl2-number-fast-tree-subset-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec
@@ -379,7 +376,6 @@
 (define symbol-fast-tree-subset-p
   ((x symbol-treep)
    (y symbol-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec
@@ -402,7 +398,6 @@
 (define eqlable-fast-tree-subset-p
   ((x eqlable-treep)
    (y eqlable-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-subset-p x y)
        :exec

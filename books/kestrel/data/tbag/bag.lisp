@@ -20,7 +20,7 @@
 (include-book "internal/map-values-all-posp-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -38,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bagp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tbag)
   :short "Recognizer for @(see tbag)s."
@@ -52,7 +51,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
-  :type-prescription :none
   :returns (bag bagp)
   :parents (tbag)
   :short "The empty @(see tbag)."
@@ -66,7 +64,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((bag bagp))
-  :type-prescription :none
   :returns (bag$ bagp)
   :parents (tbag)
   :short "Fixer for @(see tbag)s."
@@ -162,7 +159,6 @@
 (define equiv
   ((x bagp)
    (y bagp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tbag)
   :short "Equivalence up to @(tsee fix)."
@@ -190,7 +186,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((bag bagp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tbag)
   :short "Check if a @(see tbag) is empty."

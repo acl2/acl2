@@ -27,7 +27,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/tset/hash" :dir :system))
@@ -57,7 +57,6 @@
   (key
    val
    (tree treep))
-  :type-prescription :none
   ;; TODO: tset definition should have guards/returns first like this.
   :returns (tree$ treep)
   :parents (implementation)
@@ -279,7 +278,6 @@
   (key
    (hash (unsigned-byte-p 32 hash))
    val)
-  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (tree-update key val nil)
@@ -296,7 +294,6 @@
    (hash (unsigned-byte-p 32 hash))
    val
    (tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Add a key/value pair to the tree, given the key's hash."
   :long
@@ -357,7 +354,6 @@
   ((key acl2-numberp)
    val
    (tree acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
@@ -405,7 +401,6 @@
   ((key symbolp)
    val
    (tree symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)
@@ -453,7 +448,6 @@
   ((key eqlablep)
    val
    (tree eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-update key val tree)
        :exec
        (if (tree-empty-p tree)

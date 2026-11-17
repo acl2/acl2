@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,7 +37,6 @@
 ;; comes out already sorted, and the edges out of a node are contiguous in it.
 
 (define edgep (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (graph)
   :short "Recognizer for the edges of a @(see graph)."
@@ -61,7 +60,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-edge ()
-  :type-prescription :none
   :returns (edge edgep
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   (list* nil nil nil))
@@ -74,7 +72,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge-fix ((edge edgep))
-  :type-prescription :none
   :returns (edge$ edgep)
   :parents (edgep)
   :short "Fixer for edges."
@@ -109,7 +106,6 @@
 (define edge-equiv
   ((x edgep)
    (y edgep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (edgep)
   :short "Equivalence of edges up to @(tsee edge-fix)."
@@ -137,7 +133,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->from ((edge edgep))
-  :type-prescription :none
   :parents (edgep)
   :short "The source of an edge."
   (car (edge-fix edge))
@@ -156,7 +151,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->to ((edge edgep))
-  :type-prescription :none
   :parents (edgep)
   :short "The target of an edge."
   (cadr (edge-fix edge))
@@ -175,7 +169,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge->label ((edge edgep))
-  :type-prescription :none
   :parents (edgep)
   :short "The label of an edge."
   (cddr (edge-fix edge))
@@ -194,7 +187,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge (from to label)
-  :type-prescription :none
   :returns (edge edgep :hints (("Goal" :in-theory (enable edgep))))
   :parents (edgep)
   :short "Construct an edge from its source, target, and label."

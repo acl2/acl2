@@ -30,7 +30,7 @@
 (include-book "internal/predecessors-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -59,7 +59,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predecessors (node (graph graphp))
-  :type-prescription :none
   :returns (predecessors tset::setp)
   :parents (graph)
   :short "The predecessors of a node of a @(see graph): the nodes with an edge
@@ -124,7 +123,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predecessors-of-set ((set tset::setp) (graph graphp))
-  :type-prescription :none
   :returns (predecessors tset::setp)
   :parents (graph)
   :short "The predecessors of the nodes in a set: the nodes with an edge to
@@ -315,7 +313,6 @@
   ((frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
-  :type-prescription :none
   :returns (closure tset::setp)
   :parents (predecessors+)
   :short "Expand nodes from a frontier, each at most once, adding a node's
@@ -437,7 +434,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define predecessors+ (node (graph graphp))
-  :type-prescription :none
   :returns (predecessors+ tset::setp)
   :parents (graph)
   :short "The nodes from which a node of a @(see graph) is reachable by a walk

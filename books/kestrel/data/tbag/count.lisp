@@ -24,7 +24,7 @@
 (include-book "bag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/in" :dir :system))
 (local (include-book "kestrel/data/tmap/map" :dir :system))
@@ -39,7 +39,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define count (x (bag bagp))
-  :type-prescription :none
   :returns (count natp
                   :rule-classes ((:rewrite) (:type-prescription))
                   :hints (("Goal" :in-theory (enable* break-abstraction))))
@@ -128,7 +127,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define in (x (bag bagp))
-  :type-prescription :none
   :parents (tbag)
   :short "Check if a value occurs in a @(see tbag)."
   :long

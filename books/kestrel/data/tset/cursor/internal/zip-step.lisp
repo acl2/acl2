@@ -18,7 +18,7 @@
 (include-book "zip-move-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../../internal/tree"))
 (local (include-book "zip-frame"))
@@ -45,7 +45,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-at-begin-p ((zip zipp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is at the first hole."
   (and (tree-empty-p (zip->focus zip))
@@ -55,7 +54,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-at-end-p ((zip zipp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is at the last hole."
   (and (tree-empty-p (zip->focus zip))
@@ -65,7 +63,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-at-min-p ((zip zipp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is at the first element."
   (and (not (tree-empty-p (zip->focus zip)))
@@ -76,7 +73,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-at-max-p ((zip zipp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the zipper is at the last element."
   (and (not (tree-empty-p (zip->focus zip)))
@@ -117,7 +113,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-step-forward ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move to the next position in order."
   :long
@@ -140,7 +135,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-step-backward ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move to the previous position in order."
   :long
@@ -266,7 +260,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-next ((zip zipp))
-  :type-prescription :none
   :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move from an element to the next element in order, or to the last
@@ -298,7 +291,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-prev ((zip zipp))
-  :type-prescription :none
   :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move from an element to the previous element in order, or to the
@@ -339,7 +331,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-begin ((tree treep))
-  :type-prescription :none
   :returns (zip zipp)
   :short "The zipper at the first hole of a tree."
   (zip-descend-leftmost-hole (zip-root tree))
@@ -348,7 +339,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-end ((tree treep))
-  :type-prescription :none
   :returns (zip zipp)
   :short "The zipper at the last hole of a tree."
   (zip-descend-rightmost-hole (zip-root tree))
@@ -461,7 +451,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-min ((tree treep))
-  :type-prescription :none
   :returns (zip zipp)
   :short "The zipper at the first element of a tree, or at its one hole if it
           is empty."
@@ -485,7 +474,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-max ((tree treep))
-  :type-prescription :none
   :returns (zip zipp)
   :short "The zipper at the last element of a tree, or at its one hole if it
           is empty."

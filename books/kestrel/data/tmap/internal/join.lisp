@@ -22,7 +22,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/tset/set" :dir :system))
@@ -70,7 +70,6 @@
 (define tree-join
   ((left treep)
    (right treep))
-  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Join two trees which have previously been @(see tree-split)."
@@ -229,7 +228,6 @@
   (split
    (left treep)
    (right treep))
-  :type-prescription :none
   (declare (ignore split))
   :returns (tree treep)
   :parents (implementation)

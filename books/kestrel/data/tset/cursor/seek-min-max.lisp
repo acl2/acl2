@@ -23,7 +23,7 @@
 (include-book "step-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../set"))
 (local (include-book "../min-max"))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-min ((set setp))
-  :type-prescription :none
   :returns (cursor cursorp)
   :parents (cursor)
   :short "Construct a @(see cursor) at the least entry of a @(see tset)."
@@ -63,7 +62,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-max ((set setp))
-  :type-prescription :none
   :returns (cursor cursorp)
   :parents (cursor)
   :short "Construct a @(see cursor) at the greatest entry of a @(see tset)."
@@ -101,7 +99,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define minp ((cursor cursorp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Check whether a @(see cursor) is at the least entry."
@@ -121,7 +118,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define maxp ((cursor cursorp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Check whether a @(see cursor) is at the greatest entry."

@@ -36,7 +36,7 @@
 (include-book "kestrel/data/tmap/restrict-defs" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -85,7 +85,6 @@
 ;; it is the function the generic laws are instantiated at.
 
 (define set-all-posp ((set tset::setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (posp (tset::min set))
@@ -243,7 +242,6 @@
 ;; recognizer executes.
 
 (define tree-all-vals-posp ((tree tmap::treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (posp (tmap::tree-element->val (tmap::tree->head tree)))
@@ -356,7 +354,6 @@
 ;; Time complexity: @($O(n)$).
 
 (define map-values-all-posp ((map tmap::mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-posp (tmap::values map))
        :exec (tree-all-vals-posp map))

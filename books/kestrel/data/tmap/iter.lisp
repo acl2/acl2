@@ -25,7 +25,7 @@
 (include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "submap"))
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
@@ -95,7 +95,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iterp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Recognizer for @(see iterator)s."
@@ -137,7 +136,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-min ((map mapp))
-  :type-prescription :none
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
@@ -165,7 +163,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-max ((map mapp))
-  :type-prescription :none
   :returns (iter iterp
                  :hints (("Goal" :in-theory (enable* iterp break-abstraction))))
   :parents (iterator)
@@ -195,7 +192,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-fix ((iter iterp))
-  :type-prescription :none
   :returns (iter$ iterp)
   :parents (iterator)
   :short "Fixer for @(see iterator)s."
@@ -282,7 +278,6 @@
 (define iter-equiv
   ((x iterp)
    (y iterp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Equivalence up to @(tsee iter-fix)."
@@ -310,7 +305,6 @@
 ;; direction stops at the one it is heading towards.
 
 (define after-lastp ((iter iterp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is after the last element."
@@ -320,7 +314,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define before-firstp ((iter iterp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) is before the first element."
@@ -337,7 +330,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define has-valuep ((iter iterp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (iterator)
   :short "Check whether an @(see iterator) has a value to read."
@@ -430,7 +422,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-iter ((iter iterp))
-  :type-prescription :none
   :returns (map mapp
                 :hints (("Goal"
                          :in-theory
@@ -580,7 +571,6 @@
            tree-iter-omap-after-becomes-tree-iter-after))
 
 (define before ((iter iterp))
-  :type-prescription :none
   :returns (map mapp)
   :parents (iterator)
   :short "The @(see tmap) of entries before an @(see iterator)."
@@ -612,7 +602,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define after ((iter iterp))
-  :type-prescription :none
   :returns (map mapp)
   :parents (iterator)
   :short "The @(see tmap) of entries after an @(see iterator)."
@@ -732,7 +721,6 @@
 ;; the paired form returns both.
 
 (define entry-key ((iter iterp))
-  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The key an @(see iterator) is at."
@@ -752,7 +740,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry-val ((iter iterp))
-  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The value an @(see iterator) is at."
@@ -772,7 +759,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry ((iter iterp))
-  :type-prescription :none
   :guard (has-valuep iter)
   :parents (iterator)
   :short "The @(tsee entry-key) and @(tsee entry-val)."
@@ -1265,7 +1251,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((iter iterp))
-  :type-prescription :none
   :guard (not (after-lastp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
@@ -1303,7 +1288,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prev ((iter iterp))
-  :type-prescription :none
   :guard (not (before-firstp iter))
   :returns (iter$ iterp
                   :hints (("Goal"
@@ -1623,7 +1607,6 @@
 ;; suitable measure for a walk that way.
 
 (define nexts ((iter iterp))
-  :type-prescription :none
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (iterator)
   :short "The number of @(tsee next) moves an @(see iterator) has left."
@@ -1633,7 +1616,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prevs ((iter iterp))
-  :type-prescription :none
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (iterator)
   :short "The number of @(tsee prev) moves an @(see iterator) has left."

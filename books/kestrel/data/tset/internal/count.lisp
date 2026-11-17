@@ -17,7 +17,7 @@
 (include-book "tree-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -30,7 +30,6 @@
 (define tree-nodes-count-acc
   ((tree treep)
    (acc natp))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (lnfix acc)
@@ -79,7 +78,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-nodes-count ((tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "The number of elements in a tree."
   :returns (count natp :rule-classes :type-prescription)

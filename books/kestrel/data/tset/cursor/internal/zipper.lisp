@@ -19,7 +19,7 @@
 (include-book "zip-frame-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../../internal/tree"))
 (local (include-book "../../internal/bst"))
@@ -57,7 +57,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zipp (x)
-  :type-prescription (booleanp (zipp x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for @(see zipper)s."
   :long
   (xdoc::topstring
@@ -82,7 +82,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-zip ()
-  :type-prescription :none
   :returns (zip zipp
                 :hints (("Goal" :in-theory (enable zipp))))
   :short "An irrelevant @(see zipper), used as the fixer's default."
@@ -102,7 +101,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-fix ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Fixer for @(see zipper)s."
   (mbe :logic (if (zipp zip)
@@ -141,7 +139,6 @@
 (define zip-equiv
   ((x zipp)
    (y zipp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee zip-fix)."
   (equal (zip-fix x)
@@ -168,7 +165,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->focus ((zip zipp))
-  :type-prescription :none
   :returns (focus treep
                   :hints (("Goal" :in-theory (enable zipp
                                                      zip-fix
@@ -192,7 +188,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip->path ((zip zipp))
-  :type-prescription :none
   :returns (path zip-frame-listp
                  :hints (("Goal" :in-theory (enable zipp
                                                     zip-fix
@@ -224,7 +219,6 @@
 (define zip
   ((focus treep)
    (path zip-frame-listp))
-  :type-prescription :none
   :returns (zip zipp
                 :hints (("Goal" :in-theory (enable zipp))))
   :short "Constructor for @(see zipper)s."
@@ -285,7 +279,6 @@
 (define zip-frame-plug
   ((frame zip-frame-p)
    (tree treep))
-  :type-prescription :none
   :returns (tree$ treep)
   :short "Rebuild the node of a frame, with the given tree in its hole."
   (if (zip-frame->from-left frame)
@@ -322,7 +315,6 @@
 (define zip-path-plug
   ((path zip-frame-listp)
    (tree treep))
-  :type-prescription :none
   :returns (tree$ treep)
   :short "Rebuild a tree by plugging it into a path, innermost frame first."
   (if (acl2::endp path)
@@ -376,7 +368,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-plug ((zip zipp))
-  :type-prescription :none
   :returns (tree treep)
   :short "Recover the whole tree from a zipper."
   :long
@@ -411,7 +402,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-root ((tree treep))
-  :type-prescription :none
   :returns (zip zipp)
   :short "The zipper focused on a whole tree, with an empty path."
   :long

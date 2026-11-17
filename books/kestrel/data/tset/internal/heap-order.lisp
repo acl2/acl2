@@ -21,7 +21,7 @@
 (include-book "../hash-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
@@ -59,11 +59,11 @@
    y
    (hash-x (unsigned-byte-p 32 hash-x))
    (hash-y (unsigned-byte-p 32 hash-y)))
-  :type-prescription (booleanp (heap<-with-hashes x y hash-x hash-y))
   :guard (mbe :logic (and (equal (hash x) hash-x)
                           (equal (hash y) hash-y))
               :exec (and (data::u32-equal (hash x) hash-x)
                          (data::u32-equal (hash y) hash-y)))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (declare (type (unsigned-byte 32) hash-x hash-y)
            (xargs :split-types t))
   :short "Variant of @(tsee heap<) which uses pre-computed hashes."
@@ -96,7 +96,7 @@
   :guard-hints (("Goal" :in-theory (enable data::u32-equal))))
 
 (define heap< (x y)
-  :type-prescription (booleanp (heap< x y))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents nil
   (let ((hash-x (hash x))
         (hash-y (hash y)))

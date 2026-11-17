@@ -15,7 +15,7 @@
 (include-book "internal/zip-side-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../internal/tree"))
 (local (include-book "cursor"))
@@ -26,7 +26,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entryp ((cursor cursorp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Check whether a @(see cursor) is at an entry, rather than a hole."
@@ -46,7 +45,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define entry ((cursor cursorp))
-  :type-prescription :none
   :guard (entryp cursor)
   :parents (cursor)
   :short "The entry a @(see cursor) is at."

@@ -17,7 +17,7 @@
 (include-book "../set-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../internal/tree"))
 (local (include-book "../set"))
@@ -75,7 +75,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursorp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Recognizer for @(see cursor)s."
@@ -115,7 +114,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define begin ((set setp))
-  :type-prescription :none
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
@@ -136,7 +134,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define end ((set setp))
-  :type-prescription :none
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
@@ -173,7 +170,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursor-fix ((cursor cursorp))
-  :type-prescription :none
   :returns (cursor$ cursorp)
   :parents (cursor)
   :short "Fixer for @(see cursor)s."
@@ -209,7 +205,6 @@
 (define cursor-equiv
   ((x cursorp)
    (y cursorp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (cursor)
   :short "Equivalence up to @(tsee cursor-fix)."

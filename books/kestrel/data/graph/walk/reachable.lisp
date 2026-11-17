@@ -33,7 +33,7 @@
 (include-book "walk-in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -106,7 +106,6 @@
    (frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (reachable+p)
   :short "Search from a frontier for a node, stopping when it is found."
@@ -176,7 +175,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reachable+p (from to (graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if there is a walk of at least one step from one node to
@@ -258,7 +256,6 @@
 
 (local
   (define set-all-reachable+p-sk (from (set tset::setp) graph)
-    :type-prescription :none
     :returns (yes/no booleanp :rule-classes :type-prescription)
     (or (tset::emptyp set)
         (and (reachable+p-sk from (tset::min set) graph)
@@ -552,7 +549,6 @@
 
 (local
   (define set-all-reachable+p-to ((set tset::setp) to graph)
-    :type-prescription :none
     :returns (yes/no booleanp :rule-classes :type-prescription)
     (or (tset::emptyp set)
         (and (reachable+p (tset::min set) to graph)

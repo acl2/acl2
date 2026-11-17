@@ -29,7 +29,7 @@
 (include-book "rlookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/cardinality" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -91,7 +91,6 @@
 (define submap$inline
   ((x mapp)
    (y mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tree-submap-p (fix x) (fix y))
        :exec (fast-tree-submap-p x y))
@@ -467,7 +466,6 @@
 (define submap-=
   ((x acl2-number-mapp)
    (y acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (acl2-number-fast-tree-submap-p x y))
   :enabled t
@@ -482,7 +480,6 @@
 (define submap-eq
   ((x symbol-mapp)
    (y symbol-mapp))
-  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (symbol-fast-tree-submap-p x y))
   :enabled t
@@ -497,7 +494,6 @@
 (define submap-eql
   ((x eqlable-mapp)
    (y eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (submap x y)
        :exec (eqlable-fast-tree-submap-p x y))
   :enabled t

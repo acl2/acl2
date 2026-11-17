@@ -18,7 +18,7 @@
 (include-book "../bag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -43,7 +43,6 @@
 
 ;; Remove the smallest element.
 (define min-delete-induction ((bag bagp))
-  :type-prescription :none
   (or (emptyp bag)
       (min-delete-induction
         (tmap::delete (tmap::min-key (fix bag)) (fix bag))))
@@ -57,7 +56,6 @@
 ;; Remove the smallest element of the first bag from both bags.
 (define min-delete-both-induction ((a bagp)
                                    (b bagp))
-  :type-prescription :none
   (if (emptyp a)
       (list a b)
     (let ((x (tmap::min-key (fix a))))

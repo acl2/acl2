@@ -25,7 +25,7 @@
 (include-book "walk-in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -42,7 +42,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-snoc ((walk walkp) to label)
-  :type-prescription :none
   :returns (walk$ walkp)
   :parents (walks)
   :short "Add a step to the end of a walk."

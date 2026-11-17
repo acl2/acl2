@@ -21,7 +21,7 @@
 (include-book "step-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/insert" :dir :system))
@@ -42,7 +42,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walkp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Recognizer for walks."
@@ -78,7 +77,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-walk ()
-  :type-prescription :none
   :returns (walk walkp
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   (cons nil nil))
@@ -91,7 +89,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-fix ((walk walkp))
-  :type-prescription :none
   :returns (walk$ walkp)
   :parents (walkp)
   :short "Fixer for walks."
@@ -125,7 +122,6 @@
 (define walk-equiv
   ((x walkp)
    (y walkp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walkp)
   :short "Equivalence of walks up to @(tsee walk-fix)."
@@ -153,7 +149,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk->start ((walk walkp))
-  :type-prescription :none
   :parents (walkp)
   :short "The node a walk starts at."
   (car (walk-fix walk))
@@ -172,7 +167,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk->steps ((walk walkp))
-  :type-prescription :none
   :returns (steps step-listp
                   :hints (("Goal" :in-theory (enable walk-fix
                                                      walkp
@@ -195,7 +189,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk (start (steps step-listp))
-  :type-prescription :none
   :returns (walk walkp :hints (("Goal" :in-theory (enable walkp))))
   :parents (walkp)
   :short "Construct a walk from its start and its steps."
@@ -254,7 +247,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-end ((walk walkp))
-  :type-prescription :none
   :parents (walkp)
   :short "The node a walk ends at."
   :long
@@ -288,7 +280,6 @@
 ;; The set of edges a list of steps follows, when taken from the given node.
 
 (define steps-edges (from (steps step-listp))
-  :type-prescription :none
   :returns (edges tset::setp)
   :parents (walk-edges)
   :short "The set of edges a list of steps follows, when taken from a node."
@@ -314,7 +305,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define walk-edges ((walk walkp))
-  :type-prescription :none
   :returns (edges tset::setp)
   :parents (walkp)
   :short "The set of edges a walk follows."

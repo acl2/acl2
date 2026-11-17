@@ -27,7 +27,7 @@
 (include-book "generic-typed")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/tset/hash" :dir :system))
@@ -68,7 +68,6 @@
 
   (local
     (define generic-combine (key x y)
-      :type-prescription :none
       (declare (ignore key x))
       y))
 
@@ -86,7 +85,6 @@
 (define tree-generic-union
   ((x treep)
    (y treep))
-  :type-prescription :none
   :returns (tree treep)
   (cond ((tree-empty-p x)
          (tree-fix y))
@@ -267,7 +265,6 @@
 (define generic-union
   ((x mapp)
    (y mapp))
-  :type-prescription :none
   :returns (map mapp
                 :hints (("Goal" :in-theory (enable mapp
                                                    fix

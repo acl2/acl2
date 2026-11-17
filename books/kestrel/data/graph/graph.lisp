@@ -19,7 +19,7 @@
 (include-book "internal/well-formed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tmap/map" :dir :system))
 
@@ -38,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define graphp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (graph)
   :short "Recognizer for @(see graph)s."
@@ -54,7 +53,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
-  :type-prescription :none
   :returns (graph graphp)
   :parents (graph)
   :short "The empty @(see graph)."
@@ -68,7 +66,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp)
   :parents (graph)
   :short "Fixer for @(see graph)s."
@@ -154,7 +151,6 @@
 (define equiv
   ((x graphp)
    (y graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (graph)
   :short "Equivalence up to @(tsee fix)."

@@ -24,7 +24,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -47,7 +47,6 @@
 ;; TODO: It may be slightly faster to MBE-in a version that avoids union by
 ;; using an accumulator.
 (define tree-val-set ((tree treep))
-  :type-prescription :none
   :returns (set tset::setp)
   (if (tree-empty-p tree)
       (tset::empty)

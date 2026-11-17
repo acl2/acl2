@@ -19,7 +19,7 @@
 (include-book "../iter-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -58,7 +58,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define iter-any-evenp ((iter iterp))
-  :type-prescription :none
   (and (has-valuep iter)
        (or (evenp (nfix (entry-val iter)))
            (iter-any-evenp (next iter))))
@@ -75,7 +74,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define any-evenp ((map mapp))
-  :type-prescription :none
   (mbe :logic (and (not (emptyp map))
                    (or (evenp (nfix (min-val map)))
                        (any-evenp (delete (min-key map) map))))

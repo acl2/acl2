@@ -20,7 +20,7 @@
 (include-book "graph-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tmap/map" :dir :system))
@@ -32,7 +32,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nodes ((graph graphp))
-  :type-prescription :none
   :returns (nodes tset::setp)
   :parents (graph)
   :short "The set of nodes of a @(see graph)."
@@ -92,7 +91,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((graph graphp))
-  :type-prescription :none
   :parents (graph)
   :short "Check if a @(see graph) has no nodes."
   :long
@@ -114,7 +112,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define node-in (node (graph graphp))
-  :type-prescription :none
   :parents (graph)
   :short "Check if a value is a node of a @(see graph)."
   :long

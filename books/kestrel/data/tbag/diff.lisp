@@ -24,7 +24,7 @@
 (include-book "sum-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/arithmetic-light/fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
@@ -64,7 +64,6 @@
 
 (define diff ((a bagp)
               (b bagp))
-  :type-prescription :none
   :returns (bag bagp
                 :hints (("Goal" :in-theory
                          (enable bagp-of-tree-diff-of-fix-and-fix))))

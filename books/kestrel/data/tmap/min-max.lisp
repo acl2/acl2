@@ -18,7 +18,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/min-max" :dir :system))
@@ -33,7 +33,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min-key ((map mapp))
-  :type-prescription :none
   :parents (min)
   :short "The minimum key of a @(see tmap) (with respect to @(tsee <<))."
   :long
@@ -53,7 +52,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min-val ((map mapp))
-  :type-prescription :none
   :parents (min)
   :short "The value associated with the @(tsee min-key) under a
           @(see tmap)."
@@ -75,7 +73,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min ((map mapp))
-  :type-prescription :none
   :parents (tmap)
   :short "The @(tsee min-key) and @(tsee min-val)."
   :long
@@ -98,7 +95,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max-key ((map mapp))
-  :type-prescription :none
   :parents (max)
   :short "The maximum key of a @(see tmap) (with respect to @(tsee <<))."
   :long
@@ -118,7 +114,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max-val ((map mapp))
-  :type-prescription :none
   :parents (max)
   :short "The value associated with the @(tsee max-key) under a
           @(see tmap)."
@@ -140,7 +135,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max ((map mapp))
-  :type-prescription :none
   :parents (tmap)
   :short "The @(tsee max-key) and @(tsee max-val)."
   :long

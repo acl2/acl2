@@ -16,7 +16,7 @@
 (include-book "zip-side-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -63,7 +63,6 @@
 (local
   (define zip-position-induction ((zip1 zipp)
                                   (zip2 zipp))
-    :type-prescription :none
     :verify-guards nil
     :enabled t
     (if (zip-at-end-p zip1)

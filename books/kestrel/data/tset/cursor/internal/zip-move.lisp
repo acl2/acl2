@@ -17,7 +17,7 @@
 (include-book "zipper-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -46,7 +46,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-left ((zip zipp))
-  :type-prescription :none
   :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move the focus to the left child, pushing a frame."
@@ -92,7 +91,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-right ((zip zipp))
-  :type-prescription :none
   :guard (not (tree-empty-p (zip->focus zip)))
   :returns (zip$ zipp)
   :short "Move the focus to the right child, pushing a frame."
@@ -138,7 +136,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-one ((zip zipp))
-  :type-prescription :none
   :guard (consp (zip->path zip))
   :returns (zip$ zipp)
   :short "Move the focus up to its parent, popping a frame."
@@ -193,7 +190,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-leftmost ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the leftmost element within it."
   :long
@@ -253,7 +249,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-rightmost ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the rightmost element within it."
   :long
@@ -309,7 +304,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-leftmost-hole ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the leftmost hole within it."
   :long
@@ -362,7 +356,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-descend-rightmost-hole ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to the rightmost hole within it."
   :long
@@ -411,7 +404,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-left-frame ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus up to the nearest ancestor that follows it."
   :long
@@ -458,7 +450,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-ascend-to-right-frame ((zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus up to the nearest ancestor that precedes it."
   :long

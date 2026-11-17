@@ -21,7 +21,7 @@
 (include-book "count-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tmap/internal/tree" :dir :system))
 (local (include-book "kestrel/data/tmap/internal/lookup" :dir :system))
@@ -39,7 +39,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((bag bagp))
-  :type-prescription :none
   :returns (cardinality natp
                         :rule-classes ((:rewrite) (:type-prescription)))
   :parents (tbag)

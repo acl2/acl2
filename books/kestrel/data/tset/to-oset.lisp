@@ -19,7 +19,7 @@
 (include-book "set-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
 
@@ -38,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define to-oset ((set setp))
-  :type-prescription :none
   :parents (tset)
   :short "Build an oset from a @(see tset)."
   :long

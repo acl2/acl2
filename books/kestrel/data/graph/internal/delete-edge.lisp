@@ -28,7 +28,7 @@
 (include-book "add-edge-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -63,7 +63,6 @@
 ;; rewriting.
 
 (define adjacency-delete-label (to label (adj tmap::mapp))
-  :type-prescription :none
   :guard (map-values-all-nonempty-setp adj)
   :returns (new-adj tmap::mapp)
   (b* ((labels (tset::delete
@@ -159,7 +158,6 @@
 ;; source to the target.
 
 (define adj-list-delete-edge (from to label (adjl adj-listp))
-  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (if (tmap::in from adjl)
       (tmap::update from

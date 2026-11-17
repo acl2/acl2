@@ -23,7 +23,7 @@
 (include-book "internal/add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/insert" :dir :system))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-node (node (graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))

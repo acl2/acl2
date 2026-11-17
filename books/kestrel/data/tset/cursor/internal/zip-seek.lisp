@@ -25,7 +25,7 @@
 (include-book "zip-side-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -54,7 +54,6 @@
 (define zip-seek
   (x
    (zip zipp))
-  :type-prescription :none
   :returns (zip$ zipp)
   :short "Move the focus to a value within it, or to the hole where the value
           would be."
@@ -113,7 +112,6 @@
 (define acl2-number-zip-seek
   ((x acl2-numberp)
    (zip zipp))
-  :type-prescription :none
   :guard (tree-all-acl2-numberp (zip->focus zip))
   (mbe :logic (zip-seek x zip)
        :exec (if (tree-empty-p (zip->focus zip))
@@ -134,7 +132,6 @@
 (define symbol-zip-seek
   ((x symbolp)
    (zip zipp))
-  :type-prescription :none
   :guard (tree-all-symbolp (zip->focus zip))
   (mbe :logic (zip-seek x zip)
        :exec (if (tree-empty-p (zip->focus zip))
@@ -155,7 +152,6 @@
 (define eqlable-zip-seek
   ((x eqlablep)
    (zip zipp))
-  :type-prescription :none
   :guard (tree-all-eqlablep (zip->focus zip))
   (mbe :logic (zip-seek x zip)
        :exec (if (tree-empty-p (zip->focus zip))
@@ -181,7 +177,6 @@
   (define zip-brackets-p
     (x
      (zip zipp))
-    :type-prescription :none
     :returns (yes/no booleanp :rule-classes :type-prescription)
     :verify-guards nil
     (let ((before (zip-path-before (zip->path zip)))

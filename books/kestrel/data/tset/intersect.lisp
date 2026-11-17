@@ -29,7 +29,7 @@
 (include-book "generic-typed-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
 
@@ -89,7 +89,6 @@
 (define intersect-macro-loop
   (intersect
    (list true-listp))
-  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list))
               (member-eq intersect
@@ -106,7 +105,6 @@
 
 (define intersect-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -139,7 +137,6 @@
 (define intersect$inline
   ((x setp)
    (y setp))
-  :type-prescription :none
   :returns (set setp
                 :hints (("Goal" :in-theory (enable setp
                                                    fix
@@ -590,7 +587,6 @@
 (define intersect-=
   ((x acl2-number-setp)
    (y acl2-number-setp))
-  :type-prescription :none
   (mbe :logic (intersect x y)
        :exec (acl2-number-tree-intersect x y))
   :enabled t
@@ -604,7 +600,6 @@
 (define intersect-eq
   ((x symbol-setp)
    (y symbol-setp))
-  :type-prescription :none
   (mbe :logic (intersect x y)
        :exec (symbol-tree-intersect x y))
   :enabled t
@@ -618,7 +613,6 @@
 (define intersect-eql
   ((x eqlable-setp)
    (y eqlable-setp))
-  :type-prescription :none
   (mbe :logic (intersect x y)
        :exec (eqlable-tree-intersect x y))
   :enabled t

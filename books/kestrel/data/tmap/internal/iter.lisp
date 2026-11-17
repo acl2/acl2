@@ -23,7 +23,7 @@
 (include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
@@ -74,7 +74,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-p (x)
-  :type-prescription (booleanp (tree-iter-p x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for @(see tree-iterator)s."
   :long
   (xdoc::topstring
@@ -113,7 +113,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-tree-iter ()
-  :type-prescription :none
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "An irrelevant @(see tree-iterator), used as the fixer's default."
@@ -153,7 +152,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-fix ((iter tree-iter-p))
-  :type-prescription :none
   :returns (iter$ tree-iter-p)
   :short "Fixer for @(see tree-iterator)s."
   (mbe :logic (if (tree-iter-p iter) iter (irr-tree-iter))
@@ -190,7 +188,7 @@
 (define tree-iter-equiv
   ((x tree-iter-p)
    (y tree-iter-p))
-  :type-prescription (booleanp (tree-iter-equiv x y))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee tree-iter-fix)."
   (equal (tree-iter-fix x)
          (tree-iter-fix y))
@@ -214,7 +212,6 @@
 ;; iterator.
 
 (define tree-iter-before-first ((tree treep))
-  :type-prescription :none
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "The iterator before the first element of a tree."
@@ -224,7 +221,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after-last ((tree treep))
-  :type-prescription :none
   :returns (iter tree-iter-p
                  :hints (("Goal" :in-theory (enable tree-iter-p))))
   :short "The iterator after the last element of a tree."
@@ -265,7 +261,6 @@
 ;; its own, to avoid running the full @(tsee zipp) check.
 
 (define tree-iter-before-first-p ((iter tree-iter-p))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator is before the first element."
   (eq (car (tree-iter-fix iter)) :before-first)
@@ -274,7 +269,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after-last-p ((iter tree-iter-p))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator is after the last element."
   (eq (car (tree-iter-fix iter)) :after-last)
@@ -283,7 +277,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-has-value-p ((iter tree-iter-p))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check whether the iterator has a value to read."
   :long
@@ -455,7 +448,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter->zip ((iter tree-iter-p))
-  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :returns (zip zipp)
   :short "Get the zipper of an iterator which is at an element."
@@ -494,7 +486,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-plug ((iter tree-iter-p))
-  :type-prescription :none
   :returns (tree treep)
   :short "Recover the tree an iterator is a position in."
   :long
@@ -599,7 +590,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-next ((iter tree-iter-p))
-  :type-prescription :none
   :guard (not (tree-iter-after-last-p iter))
   :returns (iter$ tree-iter-p)
   :short "Move the iterator to the next position."
@@ -645,7 +635,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-prev ((iter tree-iter-p))
-  :type-prescription :none
   :guard (not (tree-iter-before-first-p iter))
   :returns (iter$ tree-iter-p)
   :short "Move the iterator to the previous position."
@@ -790,7 +779,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-key ((iter tree-iter-p))
-  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The key at the iterator."
   (zip-key (tree-iter->zip iter))
@@ -808,7 +796,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-val ((iter tree-iter-p))
-  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The value at the iterator."
   (zip-val (tree-iter->zip iter))
@@ -826,7 +813,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-key+val ((iter tree-iter-p))
-  :type-prescription :none
   :guard (tree-iter-has-value-p iter)
   :short "The entry at the iterator, as a key-value pair."
   (zip-key+val (tree-iter->zip iter))
@@ -859,7 +845,6 @@
 ;; nothing to build.
 
 (define tree-iter-tree-before ((iter tree-iter-p))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements to the left of the iterator, as a tree."
   (cond ((tree-iter-before-first-p iter) nil)
@@ -869,7 +854,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-tree-after ((iter tree-iter-p))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements to the right of the iterator, as a tree."
   (cond ((tree-iter-after-last-p iter) nil)
@@ -953,7 +937,6 @@
 ;; zipper level.
 
 (define tree-iter-before ((iter tree-iter-p))
-  :type-prescription :none
   :returns (alist alistp)
   :short "The entries to the left of the iterator, in order."
   (tree-in-order (tree-iter-tree-before iter))
@@ -962,7 +945,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-after ((iter tree-iter-p))
-  :type-prescription :none
   :returns (alist alistp)
   :short "The entries to the right of the iterator, in order."
   (tree-in-order (tree-iter-tree-after iter))
@@ -1225,7 +1207,6 @@
 ;; end is not being approached, and the two then sum to @($n+1$) everywhere.
 
 (define tree-iter-nexts ((iter tree-iter-p))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   :short "The number of @(tsee tree-iter-next) moves before saturating."
   (if (tree-iter-after-last-p iter)
@@ -1236,7 +1217,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-prevs ((iter tree-iter-p))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   :short "The number of @(tsee tree-iter-prev) moves before saturating."
   (if (tree-iter-before-first-p iter)
@@ -1323,7 +1303,6 @@
 ;; zipper versions they wrap.
 
 (define tree-iter-omap-before ((iter tree-iter-p))
-  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries to the left of the iterator, as an omap."
   (tree-omap (tree-iter-tree-before iter)))
@@ -1331,7 +1310,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-omap-after ((iter tree-iter-p))
-  :type-prescription :none
   :returns (omap omap::mapp)
   :short "The entries to the right of the iterator, as an omap."
   (tree-omap (tree-iter-tree-after iter)))
@@ -1490,7 +1468,6 @@
 ;; walk in its own direction, landing on a value exactly when there is one.
 
 (define tree-iter-min ((tree treep))
-  :type-prescription :none
   :returns (iter tree-iter-p)
   :short "The tree iterator at the least element."
   (tree-iter-next (tree-iter-before-first tree))
@@ -1499,7 +1476,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-iter-max ((tree treep))
-  :type-prescription :none
   :returns (iter tree-iter-p)
   :short "The tree iterator at the greatest element."
   (tree-iter-prev (tree-iter-after-last tree))

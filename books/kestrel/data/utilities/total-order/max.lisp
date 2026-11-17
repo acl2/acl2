@@ -14,7 +14,7 @@
 (include-book "total-order-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -24,7 +24,6 @@
 
 (define max-<<-macro-loop
   ((list true-listp))
-  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list)))
   (if (endp (rest (rest list)))
@@ -41,7 +40,6 @@
   (max-<<-macro-loop (list* x y rst)))
 
 (define binary-max-<< (x y)
-  :type-prescription :none
   (if (<< x y)
       y
     x)

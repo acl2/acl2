@@ -23,7 +23,7 @@
 (include-book "sum-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/arithmetic-light/max" :dir :system))
 (local (include-book "kestrel/arithmetic-light/min" :dir :system))
@@ -58,7 +58,6 @@
 
 (define intersect ((a bagp)
                    (b bagp))
-  :type-prescription :none
   :returns (bag bagp
                 :hints (("Goal" :in-theory
                          (enable bagp-of-tree-intersect-of-fix-and-fix))))

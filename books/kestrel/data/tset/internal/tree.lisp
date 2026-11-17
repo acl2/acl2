@@ -18,7 +18,7 @@
 (include-book "../hash-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -43,7 +43,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element-p (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for a tree element."
   :long
@@ -68,7 +67,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-tree-element ()
-  :type-prescription :none
   :returns (elem tree-element-p)
   (cons (hash nil) nil))
 
@@ -83,7 +81,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element-fix ((elem tree-element-p))
-  :type-prescription :none
   :returns (elem$ tree-element-p)
   :short "Fixer for @(see tree-element-p)s."
   (mbe :logic (if (tree-element-p elem) elem (irr-tree-element))
@@ -120,7 +117,6 @@
 (define tree-element-equiv
   ((x tree-element-p)
    (y tree-element-p))
-  :type-prescription :none
   :short "Equivalence up to @(tsee tree-element-fix)."
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (equal (tree-element-fix x)
@@ -147,7 +143,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->val ((elem tree-element-p))
-  :type-prescription :none
   (cdr (tree-element-fix elem))
   :inline t)
 
@@ -172,7 +167,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element->hash ((elem tree-element-p))
-  :type-prescription :none
   :returns (hash (unsigned-byte-p 32 hash))
   (mbe :logic (hash (tree-element->val elem))
        :exec (car elem))
@@ -201,7 +195,6 @@
 (define tree-element
   ((hash (unsigned-byte-p 32 hash))
    x)
-  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   :returns (elem tree-element-p
@@ -281,7 +274,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element$ (x)
-  :type-prescription :none
   :returns (elem tree-element-p)
   (tree-element (hash x) x)
   :enabled t
@@ -290,7 +282,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define treep (x)
-  :type-prescription (booleanp (treep x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for @(see tree)s."
   (if (consp x)
       (and (tree-element-p (car x))
@@ -312,7 +304,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-fix ((tree treep))
-  :type-prescription :none
   :returns (tree$ treep)
   :short "Fixer for @(see tree)s."
   (mbe :logic (if (treep tree) tree nil)
@@ -357,7 +348,7 @@
 (define tree-equiv
   ((x treep)
    (y treep))
-  :type-prescription (booleanp (tree-equiv x y))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee tree-fix)."
   (equal (tree-fix x)
          (tree-fix y))
@@ -383,7 +374,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-empty-p ((tree treep))
-  :type-prescription (booleanp (tree-empty-p tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check if a @(see tree) is empty."
   (acl2::endp (tree-fix tree))
   :inline t)
@@ -445,7 +436,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->head ((tree treep))
-  :type-prescription :none
   :short "Get the root element of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -499,7 +489,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->left ((tree treep))
-  :type-prescription :none
   :short "Get the left subtree of the nonempty @(see tree)."
   :long
   (xdoc::topstring
@@ -576,7 +565,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree->right ((tree treep))
-  :type-prescription :none
   :returns (right treep
                   :hints (("Goal" :in-theory (enable tree-fix
                                                      treep))))
@@ -685,7 +673,6 @@
   ((head tree-element-p)
    (left treep)
    (right treep))
-  :type-prescription (consp (tree-node head left right))
   :returns (tree treep
                 :hints (("Goal" :in-theory (enable treep))))
   :short "Construct a nonempty @(see tree)."
@@ -694,6 +681,11 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
+
+(defrule tree-node-type-prescription
+  (consp (tree-node head left right))
+  :rule-classes :type-prescription
+  :enable tree-node)
 
 (defrule tree-node-when-tree-element-equiv-congruence
   (implies (tree-element-equiv head0 head1)
@@ -775,7 +767,6 @@
    (left treep)
    (right treep)
    (hint treep))
-  :type-prescription :none
   :returns (tree treep)
   :short "A variant of @(tsee tree-node) which reuses an existing node."
   :long
@@ -798,7 +789,6 @@
 
 (define tree-leaf
   ((head tree-element-p))
-  :type-prescription :none
   :returns (tree treep)
   :short "Construct a @(see tree) with a single node."
   :long
@@ -816,7 +806,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-induct (tree)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Induct over the structure of a binary tree."
   (or (tree-empty-p tree)
@@ -843,7 +832,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-bi-induct (x y)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Induct over the structure of two binary trees simultaneously."
   (or (tree-empty-p x)
@@ -859,7 +847,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-listp (x)
-  :type-prescription (booleanp (tree-listp x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for a true list of @(see tree)s."
   (if (consp x)
       (and (treep (first x))
@@ -903,7 +891,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-list-fix ((trees tree-listp))
-  :type-prescription :none
   :returns (trees$ tree-listp)
   (mbe :logic (if (tree-listp trees)
                   trees
@@ -980,7 +967,6 @@
 ;; Equality variants
 
 (define tree-all-acl2-numberp ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (acl2-numberp (tree-element->val (tree->head tree)))
@@ -1000,7 +986,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-symbolp ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (symbolp (tree-element->val (tree->head tree)))
@@ -1020,7 +1005,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-eqlablep ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (eqlablep (tree-element->val (tree->head tree)))
@@ -1043,19 +1027,16 @@
 ;; tree-all checks simultaneously.
 
 (define acl2-number-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-all-acl2-numberp x))
   :enabled t)
 
 (define symbol-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-all-symbolp x))
   :enabled t)
 
 (define eqlable-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-all-eqlablep x))
   :enabled t)

@@ -21,7 +21,7 @@
 (include-book "internal/edges-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -40,7 +40,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edges ((graph graphp))
-  :type-prescription :none
   :returns (edges tset::setp)
   :parents (graph)
   :short "The set of edges of a @(see graph)."
@@ -138,7 +137,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edges-from (node (graph graphp))
-  :type-prescription :none
   :returns (edges tset::setp)
   :parents (graph)
   :short "The edges out of a node of a @(see graph)."
@@ -173,7 +171,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edges-to (node (graph graphp))
-  :type-prescription :none
   :returns (edges tset::setp)
   :parents (graph)
   :short "The edges into a node of a @(see graph)."

@@ -26,7 +26,7 @@
 (include-book "keys-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
@@ -48,7 +48,6 @@
 (define tree-lookup
   (key
    (tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Lookup a key in the tree."
   :long
@@ -192,7 +191,6 @@
 (define tree-search-assoc
   (key
    (tree treep))
-  :type-prescription :none
   :parents (tree-lookup)
   :short "A performant variant of @(tsee tree-lookup) which uses a BST
           assumption."
@@ -268,7 +266,6 @@
 (define tree-search-lookup!
   (key
    (tree treep))
-  :type-prescription :none
   :guard (tree-search-assoc key tree)
   :parents (tree-lookup)
   :short "A performant variant of @(tsee tree-search-assoc) which also assumes
@@ -304,7 +301,6 @@
 (define acl2-number-tree-search-assoc
   ((key acl2-numberp)
    (tree acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-assoc key tree)
        :exec
        (if (tree-empty-p tree)
@@ -332,7 +328,6 @@
 (define symbol-tree-search-assoc
   ((key symbolp)
    (tree symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-assoc key tree)
        :exec
        (if (tree-empty-p tree)
@@ -365,7 +360,6 @@
 (define eqlable-tree-search-assoc
   ((key eqlablep)
    (tree eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-search-assoc key tree)
        :exec
        (if (tree-empty-p tree)
@@ -398,7 +392,6 @@
 (define acl2-number-tree-search-lookup!
   ((key acl2-numberp)
    (tree acl2-number-treep))
-  :type-prescription :none
   :guard (tree-search-assoc key tree)
   (mbe :logic (tree-search-lookup! key tree)
        :exec
@@ -422,7 +415,6 @@
 (define symbol-tree-search-lookup!
   ((key symbolp)
    (tree symbol-treep))
-  :type-prescription :none
   :guard (tree-search-assoc key tree)
   (mbe :logic (tree-search-lookup! key tree)
        :exec
@@ -446,7 +438,6 @@
 (define eqlable-tree-search-lookup!
   ((key eqlablep)
    (tree eqlable-treep))
-  :type-prescription :none
   :guard (tree-search-assoc key tree)
   (mbe :logic (tree-search-lookup! key tree)
        :exec

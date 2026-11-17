@@ -21,7 +21,7 @@
 (include-book "keys-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/cardinality" :dir :system))
 
@@ -35,7 +35,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define size ((map mapp))
-  :type-prescription :none
   :returns (size natp :rule-classes :type-prescription)
   :parents (tmap)
   :short "The number of key/value pairs in a @(see tmap)."

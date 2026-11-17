@@ -30,7 +30,7 @@
 (include-book "add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -69,7 +69,6 @@
 ;; and @($n$) the number of keys of the accumulator.
 
 (define adjacency-transpose (from (adj tmap::mapp) (acc tmap::mapp))
-  :type-prescription :none
   :guard (and (map-values-all-nonempty-setp adj)
               (map-values-all-adjacencyp acc))
   :returns (new-acc tmap::mapp)
@@ -164,7 +163,6 @@
 ;; nodes and @($m$) the number of (source, target) pairs with an edge.
 
 (define adj-list-transpose ((adjl adj-listp))
-  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (if (tmap::emptyp adjl)
       (tmap::empty)

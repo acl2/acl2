@@ -27,7 +27,7 @@
 (include-book "intersect-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -56,7 +56,6 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc true-listp))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       (llist-fix acc)
@@ -112,7 +111,6 @@
 
 (define tree-in-order
   ((tree treep))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Create an in-order list of values from a tree."
@@ -292,7 +290,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-oset ((tree treep))
-  :type-prescription :none
   :returns (oset set::setp)
   :verify-guards :after-returns
   :parents (implementation)

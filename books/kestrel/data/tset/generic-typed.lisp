@@ -26,7 +26,7 @@
 (include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -56,7 +56,6 @@
 ;; set. @('deftset') instantiates its laws for each fixer it generates.
 
 (define generic-fix (set)
-  :type-prescription :none
   (if (genericp set)
       set
     (empty)))
@@ -71,7 +70,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-all-genericp ((set setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (emptyp set)
       (and (genericp (min set))
@@ -170,7 +168,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-genericp ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tree-empty-p tree)
       (and (genericp (tree-element->val (tree->head tree)))
@@ -307,7 +304,6 @@
 (encapsulate ()
   (local
     (define set-all-acl2-numberp-alt (set)
-      :type-prescription :none
       (or (emptyp set)
           (and (acl2-numberp (min set))
                (set-all-acl2-numberp-alt (delete (min set) set))))
@@ -418,7 +414,6 @@
 (encapsulate ()
   (local
     (define set-all-symbolp-alt (set)
-      :type-prescription :none
       (or (emptyp set)
           (and (symbolp (min set))
                (set-all-symbolp-alt (delete (min set) set))))
@@ -529,7 +524,6 @@
 (encapsulate ()
   (local
     (define set-all-eqlablep-alt (set)
-      :type-prescription :none
       (or (emptyp set)
           (and (eqlablep (min set))
                (set-all-eqlablep-alt (delete (min set) set))))

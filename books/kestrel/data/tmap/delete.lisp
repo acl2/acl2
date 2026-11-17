@@ -27,7 +27,7 @@
 (include-book "values-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/omaps/core" :dir :system))
 (local (include-book "std/omaps/delete" :dir :system))
@@ -92,7 +92,6 @@
 (define delete-macro-loop
   (delete
    (list true-listp))
-  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list))
               (member-eq delete
@@ -108,7 +107,6 @@
 
 (define delete-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -141,7 +139,6 @@
 (define delete$inline
   (key
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable mapp
                                                     fix
@@ -364,7 +361,6 @@
 (define delete-=
   ((key acl2-numberp)
    (map acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (delete key map)
        :exec (acl2-number-tree-delete key map))
   :enabled t
@@ -378,7 +374,6 @@
 (define delete-eq
   ((key symbolp)
    (map symbol-mapp))
-  :type-prescription :none
   (mbe :logic (delete key map)
        :exec (symbol-tree-delete key map))
   :enabled t
@@ -392,7 +387,6 @@
 (define delete-eql
   ((key eqlablep)
    (map eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (delete key map)
        :exec (eqlable-tree-delete key map))
   :enabled t
@@ -405,7 +399,6 @@
 
 (define tail
   ((map mapp))
-  :type-prescription :none
   :guard (not (emptyp map))
   :parents (delete)
   :short "Remove the @(see head) from a nonempty @(see tmap)."

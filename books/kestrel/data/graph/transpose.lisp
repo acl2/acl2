@@ -24,7 +24,7 @@
 (include-book "internal/transpose-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/extensionality" :dir :system))
 
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transpose ((graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))

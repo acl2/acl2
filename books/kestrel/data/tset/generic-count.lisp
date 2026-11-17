@@ -22,7 +22,7 @@
 (include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
@@ -47,7 +47,6 @@
 
   (local
     (define generic-count (x)
-      :type-prescription :none
       (declare (ignore x))
       0))
 
@@ -59,7 +58,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-generic-count ((tree treep))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (if (tree-empty-p tree)
       0
@@ -142,7 +140,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define set-generic-count ((set setp))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (tree-generic-count (fix set))
   :guard-hints (("Goal" :in-theory (enable setp))))

@@ -35,7 +35,7 @@
 (include-book "heap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -68,7 +68,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-set ((tree treep))
-  :type-prescription :none
   :returns (set tset::setp)
   (if (tree-empty-p tree)
       (tset::empty)
@@ -438,7 +437,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-key-tree ((tree treep))
-  :type-prescription :none
   :returns (key-tree tset::treep)
   (if (tree-empty-p tree)
       nil
@@ -663,7 +661,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-acl2-numberp ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-acl2-numberp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -684,7 +681,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-symbolp ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-symbolp (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -705,7 +701,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-keys-eqlablep ((tree treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-eqlablep (tree-key-set tree))
        :exec (or (tree-empty-p tree)
@@ -766,19 +761,16 @@
 ;; tree-keys checks simultaneously.
 
 (define acl2-number-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-keys-acl2-numberp x))
   :enabled t)
 
 (define symbol-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-keys-symbolp x))
   :enabled t)
 
 (define eqlable-treep (x)
-  :type-prescription :none
   (and (treep x)
        (tree-keys-eqlablep x))
   :enabled t)

@@ -25,7 +25,7 @@
 (include-book "nexts-prevs-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -40,7 +40,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cursor-all-genericp ((cursor cursorp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :guard (or (entryp cursor)
              (endp cursor))

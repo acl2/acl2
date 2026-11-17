@@ -19,7 +19,7 @@
 (include-book "to-oset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
@@ -32,7 +32,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((set setp))
-  :type-prescription :none
   :returns (cardinality natp :rule-classes :type-prescription)
   :parents (tset)
   :short "The number of elements in a @(see tset)."

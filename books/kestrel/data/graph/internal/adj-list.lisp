@@ -24,7 +24,7 @@
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -62,7 +62,6 @@
 ;; it is the function the generic laws are instantiated at.
 
 (define set-all-nonempty-setp ((set tset::setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tset::setp (tset::min set))
@@ -79,7 +78,6 @@
 ;; recognizer executes.
 
 (define tree-all-vals-nonempty-setp ((tree tmap::treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (tset::setp
@@ -116,7 +114,6 @@
 ;; Time complexity: @($O(n)$).
 
 (define map-values-all-nonempty-setp ((map tmap::mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-nonempty-setp (tmap::values map))
        :exec (tree-all-vals-nonempty-setp map))
@@ -272,7 +269,6 @@
 ;; conjunction spelled out.
 
 (define set-all-adjacencyp ((set tset::setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tmap::mapp (tset::min set))
@@ -285,7 +281,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-all-vals-adjacencyp ((tree tmap::treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tmap::tree-empty-p tree)
       (and (tmap::mapp
@@ -319,7 +314,6 @@
 ;; and @($m$) the total number of targets over all adjacencies.
 
 (define map-values-all-adjacencyp ((map tmap::mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-adjacencyp (tmap::values map))
        :exec (tree-all-vals-adjacencyp map))
@@ -456,7 +450,6 @@
 ;; for its two conjuncts, and rules are stated over those.
 
 (define adj-listp (x)
-  :type-prescription :none
   (and (tmap::mapp x)
        (map-values-all-adjacencyp x))
   :enabled t)

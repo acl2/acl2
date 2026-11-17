@@ -32,7 +32,7 @@
 (include-book "restrict-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
@@ -77,7 +77,6 @@
 (define tree-in-order-acc
   ((tree treep)
    (acc alistp))
-  :type-prescription :none
   :returns (alist alistp)
   (if (tree-empty-p tree)
       (mbe :logic (if (alistp acc) acc nil)
@@ -154,7 +153,6 @@
 
 (define tree-in-order
   ((tree treep))
-  :type-prescription :none
   :returns (alist alistp)
   :parents (implementation)
   :short "Create an in-order alist of key-value pairs from a tree."
@@ -367,7 +365,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-omap ((tree treep))
-  :type-prescription :none
   :returns (omap omap::mapp)
   :verify-guards :after-returns
   :parents (implementation)

@@ -21,7 +21,7 @@
 (include-book "in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
@@ -40,7 +40,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-min ((tree treep))
-  :type-prescription :none
   (if (tree-empty-p tree)
       nil
     (if (tree-empty-p (tree->left tree))
@@ -140,7 +139,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-max ((tree treep))
-  :type-prescription :none
   (if (tree-empty-p tree)
       nil
     (if (tree-empty-p (tree->left tree))
@@ -309,7 +307,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-leftmost ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
       (tree-element->val (tree->head tree))
@@ -371,7 +368,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
       (tree-element->val (tree->head tree))

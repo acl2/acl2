@@ -25,7 +25,7 @@
 (include-book "reachable-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -79,7 +79,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cyclicp ((graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if a @(see graph) has a cycle."
@@ -152,7 +151,6 @@
 
 (local
   (define find-node-on-cycle ((set tset::setp) graph)
-    :type-prescription :none
     (b* (((when (tset::emptyp set))
           nil)
          (node (tset::min set))

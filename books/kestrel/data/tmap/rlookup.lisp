@@ -29,7 +29,7 @@
 (include-book "values-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/omaps/core" :dir :system))
 
@@ -55,7 +55,6 @@
 (define rlookup
   (val
    (map mapp))
-  :type-prescription :none
   :returns (keys tset::setp)
   :parents (tmap)
   :short "Lookup all keys associated to a value."

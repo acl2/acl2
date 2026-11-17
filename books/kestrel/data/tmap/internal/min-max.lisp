@@ -22,7 +22,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-leftmost ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->left tree))
       (tree-element->key+val (tree->head tree))
@@ -126,7 +125,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-rightmost ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   (if (tree-empty-p (tree->right tree))
       (tree-element->key+val (tree->head tree))

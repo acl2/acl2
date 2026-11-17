@@ -32,7 +32,7 @@
 (include-book "update-star-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 
@@ -107,7 +107,6 @@
 (define restrict$inline
   ((keys tset::setp)
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* mapp
                                                      tset::break-abstraction
@@ -448,7 +447,6 @@
 (define restrict-=
   ((keys tset::acl2-number-setp)
    (map acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (acl2-number-tree-restrict keys map))
   :enabled t
@@ -464,7 +462,6 @@
 (define restrict-eq
   ((keys tset::symbol-setp)
    (map symbol-mapp))
-  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (symbol-tree-restrict keys map))
   :enabled t
@@ -480,7 +477,6 @@
 (define restrict-eql
   ((keys tset::eqlable-setp)
    (map eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (restrict keys map)
        :exec (eqlable-tree-restrict keys map))
   :enabled t

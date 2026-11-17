@@ -16,7 +16,7 @@
 (include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -94,7 +94,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-bytes (st (bytes byte-listp))
-  :type-prescription :none
   :short "Fold the constrained step function over a byte list."
   :returns (st$ statep)
   (if (endp bytes)

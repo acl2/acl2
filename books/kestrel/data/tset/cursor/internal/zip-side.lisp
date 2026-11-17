@@ -21,7 +21,7 @@
 (include-book "zipper-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
@@ -80,7 +80,6 @@
 
 (define zip-path-tree-before ((path zip-frame-listp)
                               (acc treep))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements which precede the focus subtree, as a tree atop an
           accumulator."
@@ -99,7 +98,6 @@
 
 (define zip-path-tree-after ((path zip-frame-listp)
                              (acc treep))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements which follow the focus subtree, as a tree atop an
           accumulator."
@@ -135,7 +133,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-tree-before ((zip zipp))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements which precede the cursor, as a tree."
   :long
@@ -151,7 +148,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-tree-after ((zip zipp))
-  :type-prescription :none
   :returns (tree treep)
   :short "The elements which follow the cursor, as a tree."
   :long
@@ -183,7 +179,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-before ((path zip-frame-listp))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which precede the focus subtree, in order."
   (if (acl2::endp path)
@@ -199,7 +194,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-after ((path zip-frame-listp))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which follow the focus subtree, in order."
   (if (acl2::endp path)
@@ -345,7 +339,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-value ((zip zipp))
-  :type-prescription :none
   :guard (not (tree-empty-p (zip->focus zip)))
   :short "The value of the element the zipper is at."
   (tree-element->val (tree->head (zip->focus zip)))
@@ -377,7 +370,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-before ((zip zipp))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which precede the cursor, in order."
   (append (zip-path-before (zip->path zip))
@@ -386,7 +378,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-after ((zip zipp))
-  :type-prescription :none
   :returns (list true-listp :rule-classes :type-prescription)
   :short "The values which follow the cursor, in order."
   (append (tree-in-order (tree->right (zip->focus zip)))
@@ -460,7 +451,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-oset-before ((zip zipp))
-  :type-prescription :none
   :returns (oset set::setp)
   :short "The elements which precede the cursor, as an oset."
   (tree-oset (zip-tree-before zip)))
@@ -468,7 +458,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-oset-after ((zip zipp))
-  :type-prescription :none
   :returns (oset set::setp)
   :short "The elements which follow the cursor, as an oset."
   (tree-oset (zip-tree-after zip)))
@@ -555,7 +544,6 @@
   (define zip-path-tree-before-induction ((path zip-frame-listp)
                                           (tree treep)
                                           (acc treep))
-    :type-prescription :none
     :verify-guards nil
     :enabled t
     (if (acl2::endp path)
@@ -573,7 +561,6 @@
   (define zip-path-tree-after-induction ((path zip-frame-listp)
                                          (tree treep)
                                          (acc treep))
-    :type-prescription :none
     :verify-guards nil
     :enabled t
     (if (acl2::endp path)

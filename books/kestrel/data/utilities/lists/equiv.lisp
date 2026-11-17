@@ -13,7 +13,7 @@
 (include-book "std/lists/equiv" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/util/defredundant" :dir :system))
 
@@ -25,7 +25,6 @@
 (define list-equal
   ((x true-listp)
    (y true-listp))
-  :type-prescription :none
   (declare (xargs :split-types t)
            (type list x y))
   :returns (yes/no booleanp :rule-classes :type-prescription)

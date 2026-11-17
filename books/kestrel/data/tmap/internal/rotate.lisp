@@ -21,7 +21,7 @@
 ;; (include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -59,7 +59,6 @@
 
   (define rotate-left
     ((tree treep))
-    :type-prescription :none
     :short "Perform a left tree rotation."
     :long
     (xdoc::topstring
@@ -79,7 +78,6 @@
 
   (define rotate-right
     ((tree treep))
-    :type-prescription :none
     :short "Perform a right tree rotation."
     :long
     (xdoc::topstring
@@ -101,7 +99,6 @@
     ((head tree-element-p)
      (left treep)
      (right treep))
-    :type-prescription :none
     :short "Construct a node and perform a left rotation on it."
     :long
     (xdoc::topstring
@@ -123,7 +120,6 @@
     ((head tree-element-p)
      (left treep)
      (right treep))
-    :type-prescription :none
     :short "Construct a node and perform a right rotation on it."
     :long
     (xdoc::topstring

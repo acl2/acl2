@@ -24,7 +24,7 @@
 (include-book "in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/omaps/core" :dir :system))
 
@@ -105,7 +105,6 @@
   (key
    (map mapp)
    default)
-  :type-prescription :none
   (mbe :logic (if (tset::in key (keys map))
                   (tree-lookup key (fix map))
                 default)
@@ -230,7 +229,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-val ((map mapp))
-  :type-prescription :none
   :guard (not (emptyp map))
   :parents (tmap)
   :short "Get a value from the nonempty @(see tmap)."
@@ -253,7 +251,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head ((map mapp))
-  :type-prescription :none
   :guard (not (emptyp map))
   :returns (mv key value)
   :parents (tmap)
@@ -319,7 +316,6 @@
 (define lookup?$inline
   (key
    (map mapp))
-  :type-prescription :none
   (mbe :logic (mv (tset::in key (keys map))
                   (lookup key map))
        :exec (let ((assoc (tree-search-assoc key map)))
@@ -371,7 +367,6 @@
 (define lookup!$inline
   (key
    (map mapp))
-  :type-prescription :none
   :guard (in key map)
   (mbe :logic (lookup key map)
        :exec (tree-search-lookup! key map))
@@ -390,7 +385,6 @@
   ((key acl2-numberp)
    (map acl2-number-mapp)
    default)
-  :type-prescription :none
   (mbe :logic (lookup key map :default default)
        :exec (let ((assoc (acl2-number-tree-search-assoc key map)))
                (if (consp (the (or cons null) assoc))
@@ -408,7 +402,6 @@
   ((key symbolp)
    (map symbol-mapp)
    default)
-  :type-prescription :none
   (mbe :logic (lookup key map :default default)
        :exec (let ((assoc (symbol-tree-search-assoc key map)))
                (if (consp (the (or cons null) assoc))
@@ -426,7 +419,6 @@
   ((key eqlablep)
    (map eqlable-mapp)
    default)
-  :type-prescription :none
   (mbe :logic (lookup key map :default default)
        :exec (let ((assoc (eqlable-tree-search-assoc key map)))
                (if (consp (the (or cons null) assoc))
@@ -443,7 +435,6 @@
 (define lookup?-=
   ((key acl2-numberp)
    (map acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (lookup? key map)
        :exec (let ((assoc (acl2-number-tree-search-assoc key map)))
                (mv (consp (the (or cons null) assoc))
@@ -459,7 +450,6 @@
 (define lookup?-eq
   ((key symbolp)
    (map symbol-mapp))
-  :type-prescription :none
   (mbe :logic (lookup? key map)
        :exec (let ((assoc (symbol-tree-search-assoc key map)))
                (mv (consp (the (or cons null) assoc))
@@ -475,7 +465,6 @@
 (define lookup?-eql
   ((key eqlablep)
    (map eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (lookup? key map)
        :exec (let ((assoc (eqlable-tree-search-assoc key map)))
                (mv (consp (the (or cons null) assoc))
@@ -491,7 +480,6 @@
 (define lookup!-=
   ((key acl2-numberp)
    (map acl2-number-mapp))
-  :type-prescription :none
   :guard (in key map)
   (mbe :logic (lookup! key map)
        :exec (acl2-number-tree-search-lookup! key map))
@@ -506,7 +494,6 @@
 (define lookup!-eq
   ((key symbolp)
    (map symbol-mapp))
-  :type-prescription :none
   :guard (in key map)
   (mbe :logic (lookup! key map)
        :exec (symbol-tree-search-lookup! key map))
@@ -521,7 +508,6 @@
 (define lookup!-eql
   ((key eqlablep)
    (map eqlable-mapp))
-  :type-prescription :none
   :guard (in key map)
   (mbe :logic (lookup! key map)
        :exec (eqlable-tree-search-lookup! key map))

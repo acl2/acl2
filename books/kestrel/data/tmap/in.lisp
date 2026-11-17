@@ -22,7 +22,7 @@
 (include-book "keys-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -76,7 +76,6 @@
 (define in$inline
   (key
    (map mapp))
-  :type-prescription :none
   (mbe :logic (tset::in key (keys map))
        :exec (consp (the (or cons null) (tree-search-assoc key map))))
   :enabled t
@@ -91,7 +90,6 @@
 (define in-=
   ((key acl2-numberp)
    (map acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (in key map)
        :exec (consp (the (or cons null) (acl2-number-tree-search-assoc key map))))
   :enabled t
@@ -103,7 +101,6 @@
 (define in-eq
   ((key symbolp)
    (map symbol-mapp))
-  :type-prescription :none
   (mbe :logic (in key map)
        :exec (consp (the (or cons null) (symbol-tree-search-assoc key map))))
   :enabled t
@@ -115,7 +112,6 @@
 (define in-eql
   ((key eqlablep)
    (map eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (in key map)
        :exec (consp (the (or cons null) (eqlable-tree-search-assoc key map))))
   :enabled t

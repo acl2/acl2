@@ -15,7 +15,7 @@
 (include-book "../../internal/tree-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../../internal/tree"))
 
@@ -26,7 +26,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-p (x)
-  :type-prescription (booleanp (zip-frame-p x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for zipper path frames."
   :long
   (xdoc::topstring
@@ -56,7 +56,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-zip-frame ()
-  :type-prescription :none
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "An irrelevant path frame, used as the fixer's default."
@@ -73,7 +72,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-fix ((frame zip-frame-p))
-  :type-prescription :none
   :returns (frame$ zip-frame-p)
   :short "Fixer for @(see zip-frame-p)s."
   (mbe :logic (if (zip-frame-p frame)
@@ -112,7 +110,6 @@
 (define zip-frame-equiv
   ((x zip-frame-p)
    (y zip-frame-p))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Equivalence up to @(tsee zip-frame-fix)."
   (equal (zip-frame-fix x)
@@ -140,7 +137,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->from-left ((frame zip-frame-p))
-  :type-prescription :none
   :returns (from-left booleanp :rule-classes :type-prescription
                       :hints (("Goal" :in-theory (enable zip-frame-p
                                                          zip-frame-fix
@@ -161,7 +157,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->elem ((frame zip-frame-p))
-  :type-prescription :none
   :returns (elem tree-element-p
                  :hints (("Goal" :in-theory (enable zip-frame-p
                                                     zip-frame-fix
@@ -183,7 +178,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame->sibling ((frame zip-frame-p))
-  :type-prescription :none
   :returns (sibling treep
                     :hints (("Goal" :in-theory (enable zip-frame-p
                                                        zip-frame-fix
@@ -208,7 +202,6 @@
   ((from-left booleanp)
    (elem tree-element-p)
    (sibling treep))
-  :type-prescription :none
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "Constructor for @(see zip-frame-p)s."
@@ -297,7 +290,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-listp (x)
-  :type-prescription (booleanp (zip-frame-listp x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for lists of @(see zip-frame-p)s."
   :long
   (xdoc::topstring
@@ -339,7 +332,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-frame-list-fix ((path zip-frame-listp))
-  :type-prescription :none
   :returns (path$ zip-frame-listp)
   :short "Fixer for @(see zip-frame-listp)s."
   (mbe :logic (if (zip-frame-listp path) path nil)
@@ -357,7 +349,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-no-left-frames-p ((path zip-frame-listp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check that no frame of a path has the focus in its left child."
   :long
@@ -376,7 +367,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-no-right-frames-p ((path zip-frame-listp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Check that no frame of a path has the focus in its right child."
   :long

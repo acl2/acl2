@@ -23,7 +23,7 @@
 (include-book "in-order-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -167,7 +167,6 @@
   ((omap omap::mapp)
    (parent tree-element-p)
    (acc treep))
-  :type-prescription :none
   :returns (mv (omap$ omap::mapp)
                (acc$ treep))
   (if (omap::emptyp omap)
@@ -646,7 +645,6 @@
 (define tree-from-omap-acc
   ((omap omap::mapp)
    (acc treep))
-  :type-prescription :none
   :returns (tree treep)
   (if (omap::emptyp omap)
       (tree-fix acc)
@@ -743,7 +741,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-from-omap ((omap omap::mapp))
-  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Build a treap holding an omap's entries, in linear time."

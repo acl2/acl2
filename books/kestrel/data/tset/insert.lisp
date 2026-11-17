@@ -31,7 +31,7 @@
 (include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
 
@@ -96,7 +96,6 @@
 (define insert-macro-loop
   (insert
    (list true-listp))
-  :type-prescription :none
   :guard (and (consp (rest list))
               (member-eq insert
                          '(insert$inline insert-= insert-eq insert-eql)))
@@ -109,7 +108,6 @@
 
 (define insert-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -143,7 +141,6 @@
 (define insert$inline
   (x
    (set setp))
-  :type-prescription :none
   :returns (set$ setp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      setp
@@ -341,7 +338,6 @@
 (define singleton-with-hash
   (x
    (hash (unsigned-byte-p 32 hash)))
-  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (insert x (empty))
@@ -354,7 +350,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define singleton (x)
-  :type-prescription :none
   (mbe :logic (insert x (empty))
        :exec (tree-singleton x (hash x)))
   :enabled t
@@ -366,7 +361,6 @@
 (define insert-all
   ((list true-listp)
    (set setp))
-  :type-prescription :none
   :returns (set$ setp)
   :parents (insert)
   :short "Add a list of values to the set."
@@ -497,7 +491,6 @@
 
 (define from-list
   ((list true-listp))
-  :type-prescription :none
   :parents (tset)
   :short "Create a set from a list of values."
   :long
@@ -610,7 +603,6 @@
 
 (define set-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -645,7 +637,6 @@
            (:e emptyp$inline)))
 
 (define from-oset ((oset set::setp))
-  :type-prescription :none
   :parents (insert)
   :short "Build a @(see tset) from an oset."
   :long
@@ -794,7 +785,6 @@
 (define insert-=
   ((x acl2-numberp)
    (set acl2-number-setp))
-  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (acl2-number-tree-insert x set)
@@ -809,7 +799,6 @@
 (define insert-eq
   ((x symbolp)
    (set symbol-setp))
-  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (symbol-tree-insert x set)
@@ -824,7 +813,6 @@
   ((x eqlablep)
 
    (set eqlable-setp))
-  :type-prescription :none
   (mbe :logic (insert x set)
        :exec (mv-let (inp set$)
                      (eqlable-tree-insert x set)
@@ -842,7 +830,6 @@
   (x
    (hash (unsigned-byte-p 32 hash))
    (set setp))
-  :type-prescription :none
   :guard (mbe :logic (equal (hash x) hash)
               :exec (data::u32-equal (hash x) hash))
   (mbe :logic (insert x set)

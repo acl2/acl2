@@ -25,7 +25,7 @@
 (include-book "adj-list-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -51,7 +51,6 @@
 ;; visiting every node.
 
 (define adj-list-predecessors (to (adjl adj-listp))
-  :type-prescription :none
   :returns (preds tset::setp)
   (if (tmap::emptyp adjl)
       (tset::empty)

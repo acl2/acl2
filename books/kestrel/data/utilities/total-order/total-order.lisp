@@ -14,7 +14,7 @@
 (include-book "kestrel/utilities/polarity" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
@@ -116,7 +116,6 @@
 (define acl2-number-<<
   ((x acl2-numberp)
    (y acl2-numberp))
-  :type-prescription :none
   (mbe :logic (<< x y)
        :exec (if (complex/complex-rationalp x)
                  (and (complex/complex-rationalp y)
@@ -136,7 +135,6 @@
 (define symbol-<<
   ((x symbolp)
    (y symbolp))
-  :type-prescription :none
   (mbe :logic (<< x y)
        :exec (and (symbol< x y)
                   t))
@@ -148,7 +146,6 @@
 (define eqlable-<<
   ((x eqlablep)
    (y eqlablep))
-  :type-prescription :none
   (mbe :logic (<< x y)
        :exec (cond ((integerp x)
                     (cond ((integerp y) (< x y))

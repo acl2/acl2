@@ -22,7 +22,7 @@
 (include-book "lookup-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/internal/heap-order" :dir :system))
 (local (include-book "kestrel/data/tset/set" :dir :system))
@@ -47,7 +47,6 @@
 (define tree-split
   (key
    (tree treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Split a tree into two disjoint subtrees."
   :long
@@ -613,7 +612,6 @@
 (define acl2-number-tree-split
   ((key acl2-numberp)
    (tree acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)
@@ -654,7 +652,6 @@
 (define symbol-tree-split
   ((key symbolp)
    (tree symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)
@@ -694,7 +691,6 @@
 (define eqlable-tree-split
   ((key eqlablep)
    (tree eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-split key tree)
        :exec
        (if (tree-empty-p tree)

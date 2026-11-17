@@ -19,7 +19,7 @@
 (include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -39,7 +39,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min ((set setp))
-  :type-prescription :none
   :parents (tset)
   :short "The minimum element of a @(see tset) (with respect to
           @(tsee <<))."
@@ -181,7 +180,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define max ((set setp))
-  :type-prescription :none
   :parents (tset)
   :short "The maximum element of a @(see tset) (with respect to
           @(tsee <<))."

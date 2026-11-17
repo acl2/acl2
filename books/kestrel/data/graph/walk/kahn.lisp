@@ -30,7 +30,7 @@
 (include-book "../successors-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -78,7 +78,6 @@
 ;; left when there is none are those reachable from a cycle.
 
 (define kahn-remaining ((remaining tset::setp) (graph graphp))
-  :type-prescription :none
   :returns (remaining$ tset::setp)
   :parents (cyclicp)
   :short "The nodes Kahn's algorithm cannot remove, which are those reachable
@@ -115,7 +114,6 @@
 ;; The nodes removed, in the order of removal.
 
 (define kahn-order ((remaining tset::setp) (graph graphp))
-  :type-prescription :none
   :returns (order true-listp)
   :parents (topological-sort)
   :short "The nodes Kahn's algorithm removes, in the order of removal."
@@ -156,7 +154,6 @@
 ;; which reaches zero is deleted and its node added to the frontier.
 
 (define kahn-increment ((targets tset::setp) (counters tmap::mapp))
-  :type-prescription :none
   :returns (counters$ tmap::mapp)
   :parents (cyclicp)
   :short "Increment the counter of each node in a set."
@@ -192,7 +189,6 @@
   ((set tset::setp)
    (counters tmap::mapp)
    (graph graphp))
-  :type-prescription :none
   :returns (counters$ tmap::mapp)
   :parents (cyclicp)
   :short "Count, for each node, the nodes of a set with an edge to it."
@@ -236,7 +232,6 @@
   ((targets tset::setp)
    (frontier tset::setp)
    (counters tmap::mapp))
-  :type-prescription :none
   :returns (mv (frontier$ tset::setp)
                (counters$ tmap::mapp))
   :parents (cyclicp)
@@ -295,7 +290,6 @@
    (counters tmap::mapp)
    (order true-listp)
    (graph graphp))
-  :type-prescription :none
   :returns (mv (order$ true-listp
                        :hyp (true-listp order))
                (remaining$ tset::setp))
@@ -534,7 +528,6 @@
 ;; execute.
 
 (define kahn ((graph graphp))
-  :type-prescription :none
   :returns (mv (order true-listp)
                (remaining tset::setp))
   :parents (cyclicp)

@@ -30,7 +30,7 @@
 (include-book "cyclic-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -94,7 +94,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reachable+p-sortedp ((list true-listp) (graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-orderp)
   :short "Check if no node in a list reaches itself or an earlier node of the
@@ -168,7 +167,6 @@
   ((order true-listp)
    (seen tset::setp)
    (graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-orderp)
   :short "Check a list in one pass, keeping the set of nodes seen."
@@ -345,7 +343,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define topological-orderp ((order true-listp) (graph graphp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (topological-sort)
   :short "Check if a list is a topological order of a @(see graph)."
@@ -430,7 +427,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define topological-sort ((graph graphp))
-  :type-prescription :none
   :returns (mv (cyclicp booleanp)
                (order true-listp))
   :parents (walks)

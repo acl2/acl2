@@ -16,7 +16,7 @@
 (include-book "tree-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/data/tset/hash" :dir :system))
@@ -29,7 +29,6 @@
 (define heap<-with-tree-element
   ((x tree-element-p)
    (y tree-element-p))
-  :type-prescription :none
   (heap<-with-hashes (tree-element->key x)
                      (tree-element->key y)
                      (tree-element->hash x)
@@ -42,7 +41,6 @@
 (define heap<-all-l
   ((tree treep)
    x)
-  :type-prescription :none
   :parents (tree)
   :short "Check that all members of a tree are @(tsee heap<) some value."
   :returns (yes/no booleanp :rule-classes :type-prescription)
@@ -169,7 +167,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fast-nonempty-heapp ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (mv (heapp booleanp :rule-classes :type-prescription)
                (hash-max (unsigned-byte-p 32 hash-max)))
@@ -274,7 +271,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define heapp ((tree treep))
-  :type-prescription (booleanp (heapp tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree)
   :short "Check the max heap property."
   (or (tree-empty-p tree)

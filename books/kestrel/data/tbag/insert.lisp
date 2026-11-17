@@ -22,7 +22,7 @@
 (include-book "subbag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -38,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert-many (x (n natp) (bag bagp))
-  :type-prescription :none
   :returns (bag$ bagp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      nat-equiv))))
@@ -155,7 +154,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define insert (x (bag bagp))
-  :type-prescription :none
   :returns (bag$ bagp)
   :parents (tbag)
   :short "Add an occurrence of a value to a @(see tbag)."

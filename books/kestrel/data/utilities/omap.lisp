@@ -12,7 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (include-book "std/omaps/core" :dir :system)
 
@@ -85,7 +85,6 @@
 #!OMAP
 (define emptyp$inline
   ((map mapp))
-  :type-prescription :none
   (mbe :logic (emptyp map)
        :exec (null (the list map)))
   :enabled t
@@ -95,7 +94,6 @@
 #!OMAP
 (define tail$inline
   ((map mapp))
-  :type-prescription :none
   (mbe :logic (tail map)
        :exec (cdr (the list map)))
   :enabled t
@@ -105,7 +103,6 @@
 #!OMAP
 (define head$inline
   ((map mapp))
-  :type-prescription :none
   :guard (not (emptyp map))
   (mbe :logic (head map)
        :exec (mv (caar map) (cdar map)))

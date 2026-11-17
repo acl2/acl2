@@ -30,7 +30,7 @@
 (include-book "submap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "std/omaps/extensionality" :dir :system))
@@ -106,7 +106,6 @@
 (define update-macro-loop
   (update
    (list true-listp))
-  :type-prescription :none
   :guard (and (consp (cdr list))
               (member-eq update
                          '(update$inline update-= update-eq update-eql)))
@@ -123,7 +122,6 @@
 
 (define update-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -158,7 +156,6 @@
   (key
    val
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp
                  :hints (("Goal" :in-theory (enable* break-abstraction
                                                      mapp))))
@@ -317,7 +314,6 @@
   (key
    (hash (unsigned-byte-p 32 hash))
    val)
-  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (update key val (empty))
@@ -330,7 +326,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define singleton (key val)
-  :type-prescription :none
   (mbe :logic (update key val (empty))
        :exec (tree-singleton key (hash key) val))
   :enabled t
@@ -342,7 +337,6 @@
 (define update-from-alist-rev
   ((alist alistp)
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp)
   (if (endp alist)
       (fix map)
@@ -412,7 +406,6 @@
 (define update-from-alist
   ((alist alistp)
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an alist of key-value pairs to a @(see tmap)."
@@ -528,7 +521,6 @@
 
 (define from-alist
   ((alist alistp))
-  :type-prescription :none
   :parents (tmap)
   :short "Create a map from an alist of key-value pairs."
   :long
@@ -617,7 +609,6 @@
 (define update-from-omap
   ((omap omap::mapp)
    (map mapp))
-  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an omap of key-value pairs to a @(see tmap)."
@@ -727,7 +718,6 @@
 
 (define from-omap
   ((omap omap::mapp))
-  :type-prescription :none
   :parents (tmap)
   :short "Create a map from an omap."
   :long
@@ -919,7 +909,6 @@
 (define map-macro-loop
   (test
    (list true-listp))
-  :type-prescription :none
   :guard (consp list)
   (cond ((endp (cdr list))
          (er hard? 'map "Missing value for key: ~x0." (first list)))
@@ -935,7 +924,6 @@
 
 (define map-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -957,7 +945,6 @@
   ((key acl2-numberp)
    val
    (map acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (acl2-number-tree-update key val map))
   :enabled t
@@ -970,7 +957,6 @@
   ((key symbolp)
    val
    (map symbol-mapp))
-  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (symbol-tree-update key val map))
   :enabled t
@@ -982,7 +968,6 @@
   ((key eqlablep)
    val
    (map eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (update key val map)
        :exec (eqlable-tree-update key val map))
   :enabled t
@@ -998,7 +983,6 @@
    (hash (unsigned-byte-p 32 hash))
    val
    (map mapp))
-  :type-prescription :none
   :guard (mbe :logic (equal (hash key) hash)
               :exec (data::u32-equal (hash key) hash))
   (mbe :logic (update key val map)

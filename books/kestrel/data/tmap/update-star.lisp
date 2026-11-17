@@ -30,7 +30,7 @@
 (include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/omaps/core" :dir :system))
 
@@ -99,7 +99,6 @@
 (define update*-macro-loop
   (update*
    (list true-listp))
-  :type-prescription :none
   :guard (and (consp list)
               (consp (rest list))
               (member-eq update*
@@ -115,7 +114,6 @@
 
 (define update*-macro-fn
   ((list true-listp))
-  :type-prescription :none
   (mv-let (erp rest alist)
           (partition-rest-and-keyword-args list '(:test))
     (cond (erp
@@ -148,7 +146,6 @@
 (define update*$inline
   ((x mapp)
    (y mapp))
-  :type-prescription :none
   :returns (map mapp
                 :hints (("Goal" :in-theory (enable mapp
                                                    fix
@@ -377,7 +374,6 @@
 (define update*-=
   ((x acl2-number-mapp)
    (y acl2-number-mapp))
-  :type-prescription :none
   (mbe :logic (update* x y)
        :exec (acl2-number-tree-update* x y))
   :enabled t
@@ -391,7 +387,6 @@
 (define update*-eq
   ((x symbol-mapp)
    (y symbol-mapp))
-  :type-prescription :none
   (mbe :logic (update* x y)
        :exec (symbol-tree-update* x y))
   :enabled t
@@ -405,7 +400,6 @@
 (define update*-eql
   ((x eqlable-mapp)
    (y eqlable-mapp))
-  :type-prescription :none
   (mbe :logic (update* x y)
        :exec (eqlable-tree-update* x y))
   :enabled t

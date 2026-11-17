@@ -23,7 +23,7 @@
 (include-book "begin-end-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/oset" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
@@ -51,7 +51,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-forward ((cursor cursorp))
-  :type-prescription :none
   :returns (cursor$ cursorp
                     :hints (("Goal" :in-theory (enable* cursorp
                                                         break-abstraction))))
@@ -72,7 +71,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-backward ((cursor cursorp))
-  :type-prescription :none
   :returns (cursor$ cursorp
                     :hints (("Goal" :in-theory (enable* cursorp
                                                         break-abstraction))))

@@ -24,7 +24,7 @@
 (include-book "step-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../set"))
 (local (include-book "../delete"))
@@ -38,7 +38,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define next ((cursor cursorp))
-  :type-prescription :none
   :guard (entryp cursor)
   :returns (cursor$ cursorp)
   :parents (cursor)
@@ -62,7 +61,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prev ((cursor cursorp))
-  :type-prescription :none
   :guard (entryp cursor)
   :returns (cursor$ cursorp)
   :parents (cursor)

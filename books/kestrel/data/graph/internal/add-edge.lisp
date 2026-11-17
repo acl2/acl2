@@ -25,7 +25,7 @@
 (include-book "add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -59,7 +59,6 @@
 ;; source to the target.
 
 (define adj-list-add-edge (from to label (adjl adj-listp))
-  :type-prescription :none
   :returns (new-adjl tmap::mapp)
   (b* ((adj (tmap::lookup from adjl :default (tmap::empty)))
        (labels (tmap::lookup to adj :default (tset::empty))))

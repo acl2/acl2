@@ -19,7 +19,7 @@
 (include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -39,7 +39,6 @@
 (define tree-intersect
   ((x treep)
    (y treep))
-  :type-prescription :none
   :parents (implementation)
   :short "Take the intersection of two treaps."
   :long
@@ -184,7 +183,6 @@
 (define acl2-number-tree-intersect
   ((x acl2-number-treep)
    (y acl2-number-treep))
-  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -219,7 +217,6 @@
 (define symbol-tree-intersect
   ((x symbol-treep)
    (y symbol-treep))
-  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)
@@ -253,7 +250,6 @@
 (define eqlable-tree-intersect
   ((x eqlable-treep)
    (y eqlable-treep))
-  :type-prescription :none
   (mbe :logic (tree-intersect x y)
        :exec
        (cond ((or (tree-empty-p x)

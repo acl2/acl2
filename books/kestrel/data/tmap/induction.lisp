@@ -20,7 +20,7 @@
 (include-book "delete-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -47,7 +47,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-delete-induction (map)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)
@@ -60,7 +59,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define head-delete-bi-induction (x y)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp x)
@@ -75,7 +73,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define min-delete-induction (map)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)
@@ -88,7 +85,6 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define max-delete-induction (map)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (inductions)
   (or (emptyp map)

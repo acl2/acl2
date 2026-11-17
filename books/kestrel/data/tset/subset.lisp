@@ -25,7 +25,7 @@
 (include-book "cardinality-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
 
@@ -76,7 +76,6 @@
 (define subset$inline
   ((x setp)
    (y setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tree-subset-p (fix x) (fix y))
        :exec (fast-tree-subset-p x y))
@@ -340,7 +339,6 @@
 (define subset-=
   ((x acl2-number-setp)
    (y acl2-number-setp))
-  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (acl2-number-fast-tree-subset-p x y))
   :enabled t
@@ -354,7 +352,6 @@
 (define subset-eq
   ((x symbol-setp)
    (y symbol-setp))
-  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (symbol-fast-tree-subset-p x y))
   :enabled t
@@ -368,7 +365,6 @@
 (define subset-eql
   ((x eqlable-setp)
    (y eqlable-setp))
-  :type-prescription :none
   (mbe :logic (subset x y)
        :exec (eqlable-fast-tree-subset-p x y))
   :enabled t

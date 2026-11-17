@@ -23,7 +23,7 @@
 (include-book "edges-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -42,7 +42,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define adjacency (node (graph graphp))
-  :type-prescription :none
   :returns (adj tmap::mapp
                 :hints (("Goal" :in-theory (enable* break-abstraction))))
   :parents (graph)
@@ -91,7 +90,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define labels (from to (graph graphp))
-  :type-prescription :none
   :returns (labels tset::setp
                    :hints (("Goal" :in-theory (enable* adjacency
                                                        break-abstraction))))
@@ -148,7 +146,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge-in (from to label (graph graphp))
-  :type-prescription :none
   :parents (graph)
   :short "Check if a labeled edge is an edge of a @(see graph)."
   :long
@@ -171,7 +168,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define adjacency! (node (graph graphp))
-  :type-prescription :none
   :guard (node-in node graph)
   :parents (adjacency)
   :short "The targets of the edges out of a node of a @(see graph), with their

@@ -21,7 +21,7 @@
 (include-book "subbag-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/arithmetic-light/fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -64,7 +64,6 @@
 
 (define sum ((a bagp)
              (b bagp))
-  :type-prescription :none
   :returns (bag bagp
                 :hints (("Goal" :in-theory (enable* bagp
                                                     break-abstraction))))

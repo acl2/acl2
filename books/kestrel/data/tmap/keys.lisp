@@ -23,7 +23,7 @@
 (include-book "to-omap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
 (local (include-book "std/omaps/core" :dir :system))
@@ -43,7 +43,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define keys ((map mapp))
-  :type-prescription :none
   :returns (keys tset::setp)
   :parents (tmap)
   :short "Get the key @(see acl2::tset) from a @(see tmap)."
@@ -122,7 +121,6 @@
 ;; Variants matching the equality primitives
 
 (define map-keys-acl2-numberp ((map mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-acl2-numberp (keys map))
        :exec (tree-keys-acl2-numberp map))
@@ -134,7 +132,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-symbolp ((map mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-symbolp (keys map))
        :exec (tree-keys-symbolp map))
@@ -146,7 +143,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-eqlablep ((map mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (tset::set-all-eqlablep (keys map))
        :exec (tree-keys-eqlablep map))
@@ -161,7 +157,6 @@
 ;; simultaneously).
 
 (define acl2-number-mapp (x)
-  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee acl2-numberp)."
@@ -170,7 +165,6 @@
   :enabled t)
 
 (define symbol-mapp (x)
-  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee symbolp)."
@@ -179,7 +173,6 @@
   :enabled t)
 
 (define eqlable-mapp (x)
-  :type-prescription :none
   :parents (mapp)
   :short "Refinement of @(tsee mapp) to maps whose elements are recognized by
           @(tsee eqlablep)."

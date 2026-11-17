@@ -17,8 +17,9 @@
 (include-book "from-cursor-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
+(local (include-book "../internal/tree"))
 (local (include-book "../set"))
 (local (include-book "../extensionality"))
 (local (include-book "cursor"))

@@ -22,7 +22,7 @@
 (include-book "next-prev-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nexts ((cursor cursorp))
-  :type-prescription :none
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (cursor)
   :short "The number of entries at or after a @(see cursor)."
@@ -55,7 +54,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prevs ((cursor cursorp))
-  :type-prescription :none
   :returns (measure natp :rule-classes (:rewrite :type-prescription))
   :parents (cursor)
   :short "The number of entries at or before a @(see cursor)."

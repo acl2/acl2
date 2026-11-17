@@ -33,7 +33,7 @@
 (include-book "adjacency-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -62,7 +62,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define successors (node (graph graphp))
-  :type-prescription :none
   :returns (successors tset::setp)
   :parents (graph)
   :short "The successors of a node of a @(see graph): the nodes with an edge
@@ -193,7 +192,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define adjacentp (from to (graph graphp))
-  :type-prescription :none
   :parents (graph)
   :short "Check if there is an edge from one node of a @(see graph) to
           another."
@@ -215,7 +213,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define successors-of-set ((set tset::setp) (graph graphp))
-  :type-prescription :none
   :returns (successors tset::setp)
   :parents (graph)
   :short "The successors of the nodes in a set: the nodes with an edge from
@@ -332,7 +329,6 @@
   ((frontier tset::setp)
    (expanded tset::setp)
    (graph graphp))
-  :type-prescription :none
   :returns (closure tset::setp)
   :parents (successors+)
   :short "Expand nodes from a frontier, each at most once, and return the
@@ -451,7 +447,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define successors+ (node (graph graphp))
-  :type-prescription :none
   :returns (successors+ tset::setp)
   :parents (graph)
   :short "The nodes reachable from a node of a @(see graph) by a walk of at

@@ -18,7 +18,7 @@
 (include-book "internal/heap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -33,7 +33,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define mapp (x)
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Recognizer for @(see tmap)s."
@@ -100,7 +99,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define empty ()
-  :type-prescription :none
   :returns (map mapp)
   :parents (tmap)
   :short "The empty @(see tmap)."
@@ -139,7 +137,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fix ((map mapp))
-  :type-prescription :none
   :returns (map$ mapp)
   :parents (tmap)
   :short "Fixer for @(see tmap)s."
@@ -207,7 +204,6 @@
 (define equiv
   ((x mapp)
    (y mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Equivalence up to @(tsee fix)."
@@ -247,7 +243,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define emptyp ((map mapp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tmap)
   :short "Check if a @(see tmap) is empty."
@@ -316,7 +311,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define head-key ((map mapp))
-  :type-prescription :none
   :guard (not (emptyp map))
   :parents (tmap)
   :short "Get a key from the nonempty @(see tmap)."

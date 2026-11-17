@@ -23,7 +23,7 @@
 (include-book "split-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/in" :dir :system))
 (local (include-book "kestrel/data/tset/subset" :dir :system))
@@ -50,7 +50,6 @@
 (define tree-submap-p
   ((x treep)
    (y treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (implementation)
   :short "Check if one tree is a submap of the other."
@@ -479,7 +478,6 @@
 (define fast-tree-submap-p
   ((x treep)
    (y treep))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree-submap-p)
   :short "Fast submap check."
@@ -526,7 +524,6 @@
 (define acl2-number-fast-tree-submap-p
   ((x acl2-number-treep)
    (y acl2-number-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec
@@ -551,7 +548,6 @@
 (define symbol-fast-tree-submap-p
   ((x symbol-treep)
    (y symbol-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec
@@ -576,7 +572,6 @@
 (define eqlable-fast-tree-submap-p
   ((x eqlable-treep)
    (y eqlable-treep))
-  :type-prescription :none
   :guard (bstp y)
   (mbe :logic (fast-tree-submap-p x y)
        :exec

@@ -16,7 +16,7 @@
 (include-book "tree-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -28,7 +28,7 @@
 (define <<-all-l
   ((tree treep)
    x)
-  :type-prescription (booleanp (<<-all-l tree x))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree)
   :short "Check that all members of a tree are @(tsee <<) some value."
   (or (tree-empty-p tree)
@@ -39,7 +39,7 @@
 (define <<-all-r
   (x
    (tree treep))
-  :type-prescription (booleanp (<<-all-r x tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree)
   :short "Check that some value is @(tsee <<) all members of a tree."
   (or (tree-empty-p tree)
@@ -314,7 +314,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fast-bstp-nonempty ((tree treep))
-  :type-prescription :none
   :guard (not (tree-empty-p tree))
   :returns (mv bstp
                min
@@ -427,7 +426,7 @@
 
 (define bstp
   ((tree treep))
-  :type-prescription (booleanp (bstp tree))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (tree)
   :short "Check the binary search tree property."
   (or (tree-empty-p tree)

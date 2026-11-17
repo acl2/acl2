@@ -29,7 +29,7 @@
 (include-book "adj-list-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -76,7 +76,6 @@
 
 (define set-all-keys-subsetp ((set tset::setp)
                               (nodes tset::setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (or (tset::emptyp set)
       (and (tset::subset (tmap::keys (tset::min set)) nodes)
@@ -112,7 +111,6 @@
 
 (define tree-all-vals-keys-subsetp ((tree tmap::treep)
                                     (nodes tset::setp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :guard (tree-all-vals-adjacencyp tree)
   (or (tmap::tree-empty-p tree)
@@ -162,7 +160,6 @@
 
 (define map-values-all-keys-subsetp ((map tmap::mapp)
                                      (nodes tset::setp))
-  :type-prescription :none
   :guard (map-values-all-adjacencyp map)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (mbe :logic (set-all-keys-subsetp (tmap::values map) nodes)
@@ -304,7 +301,6 @@
 ;; nodes and @($m$) the number of (source, target) pairs with an edge.
 
 (define well-formedp ((adjl adj-listp))
-  :type-prescription :none
   :returns (yes/no booleanp :rule-classes :type-prescription)
   (map-values-all-keys-subsetp adjl (tmap::keys adjl))
   :inline t)

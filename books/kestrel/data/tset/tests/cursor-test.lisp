@@ -17,7 +17,7 @@
 (include-book "../cursor/defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -34,7 +34,6 @@
 ;; @(tsee next) maintains.
 
 (define cursor-any-evenp ((cursor cursorp))
-  :type-prescription :none
   :guard (or (entryp cursor)
              (endp cursor))
   (and (entryp cursor)
@@ -53,7 +52,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define any-evenp ((set setp))
-  :type-prescription :none
   (mbe :logic (and (not (emptyp set))
                    (or (evenp (nfix (min set)))
                        (any-evenp (delete (min set) set))))
@@ -87,7 +85,6 @@
 ;; the value, stepping forward once if that is at a hole.
 
 (define cursor-count ((cursor cursorp))
-  :type-prescription :none
   :guard (or (entryp cursor)
              (endp cursor))
   :returns (count natp :rule-classes :type-prescription)
@@ -100,7 +97,6 @@
 (define count-from
   (x
    (set setp))
-  :type-prescription :none
   :returns (count natp :rule-classes :type-prescription)
   (let ((cursor (seek x set)))
     (cursor-count (if (entryp cursor)
