@@ -6,4 +6,5 @@
 
 
 (include-book "../portcullis")
-; cert-flags: ? t :ttags :all :skip-proofs-okp t
+; cert-flags: ? t :ttags :all
+; cert-param: (uses-smtlink)

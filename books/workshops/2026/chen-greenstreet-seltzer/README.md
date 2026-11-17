@@ -7,7 +7,7 @@ Smtlink 3
 
 * Z3
 
-The default Smtlink configuration defaults to using whichever z3 binary exists in your path. Note that previous versions of Smtlink used Python to interact with Z3, so if you have an old *smtlink-config* file in your home directory, you should delete it, move it out of the way, or change *smt-cmd* to point to a Z3 executable.
+The default Smtlink configuration defaults to using whichever z3 binary exists in your path. If you have z3 in a location outside your path, copy *smtlink3-config* to your home directory and modify *smt-cmd* to point to a z3 executable.
 
 ### Build Smtlink
 
