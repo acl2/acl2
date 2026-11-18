@@ -12,7 +12,10 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+
 (include-book "../map-defs")
+(include-book "../min-max-defs")
 (include-book "../update-defs")
 (include-book "cursor-defs")
 (include-book "entry-defs")
@@ -36,6 +39,7 @@
 (local (include-book "../map"))
 (local (include-book "../keys"))
 (local (include-book "../lookup"))
+(local (include-book "../min-max"))
 (local (include-book "../update"))
 (local (include-book "../extensionality"))
 (local (include-book "cursor"))
@@ -120,6 +124,19 @@
            (tree-empty-p (zip->focus cursor)))
   :enable entryp)
 
+(defruledl in-of-keys-of-from-cursor-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (max-key (before cursor)) key))
+                (or (emptyp (after cursor))
+                    (<< key (min-key (after cursor)))))
+           (not (tset::in key (keys (from-cursor cursor)))))
+  :use (:instance entryp-of-seek
+                  (x key)
+                  (map (from-cursor cursor)))
+  :enable seek-of-from-cursor-when-not-entryp
+  :disable entryp-of-seek)
+
 (defruledl zip-update-hole-of-seek
   (implies (not (tset::in key (keys map)))
            (equal (zip-update-hole key val (seek key map))
@@ -133,19 +150,21 @@
    val
    (cursor cursorp))
   :guard (and (not (entryp cursor))
-              (equal (seek key (from-cursor cursor))
-                     cursor))
+              (or (emptyp (before cursor))
+                  (<< (max-key (before cursor)) key))
+              (or (emptyp (after cursor))
+                  (<< key (min-key (after cursor)))))
   :returns (cursor$ cursorp)
   :parents (cursor)
   :short "Add an entry at the hole a @(see cursor) is at."
   :long
   (xdoc::topstring
    (xdoc::p
-     "The key must belong at the hole: the cursor must be where a @(tsee seek)
-      of the key would leave it, as it is just after such a seek. The cursor
-      is left at the new entry, and @(tsee before) and @(tsee after) are
-      unchanged. The underlying map is as after an @(tsee update) of the
-      key.")
+     "The key must belong at the hole: above every key @(tsee before) the
+      cursor and below every key @(tsee after) it. This holds of the hole
+      which a @(tsee seek) of the key ends at. The cursor is left at the new
+      entry, and @(tsee before) and @(tsee after) are unchanged. The
+      underlying map is as after an @(tsee update) of the key.")
    (xdoc::p
      "Logically, this is the @(tsee seek) of the key in the updated map,
       wherever the cursor is.")
@@ -158,7 +177,9 @@
   :guard-hints
   (("Goal" :use (:instance zip-update-hole-of-seek
                            (map (from-cursor cursor)))
-           :in-theory (enable tree-empty-p-of-focus-when-not-entryp
+           :in-theory (enable seek-of-from-cursor-when-not-entryp
+                              in-of-keys-of-from-cursor-when-not-entryp
+                              tree-empty-p-of-focus-when-not-entryp
                               zipp-when-cursorp-forward-chaining))))
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -343,6 +343,58 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by seek-when-<<-of-max-key-and-arg1)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; After a search, the key is above every entry before the cursor and below
+;; every entry after it.
+
+(defrule <<-of-max-of-keys-of-before-of-seek
+  (implies (not (emptyp (before (seek x map))))
+           (<< (tset::max (keys (before (seek x map)))) x))
+  :use (:instance tset::in-of-max
+                  (set (keys (before (seek x map)))))
+  :disable tset::in-of-max)
+
+(defrule <<-of-arg1-and-min-of-keys-of-after-of-seek
+  (implies (not (emptyp (after (seek x map))))
+           (<< x (tset::min (keys (after (seek x map))))))
+  :use (:instance tset::in-of-min
+                  (set (keys (after (seek x map)))))
+  :disable tset::in-of-min)
+
+;; Conversely, a hole is where a search for any such key ends.
+
+(defruled seek-of-from-cursor-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (max-key (before cursor)) x))
+                (or (emptyp (after cursor))
+                    (<< x (min-key (after cursor)))))
+           (equal (seek x (from-cursor cursor))
+                  (cursor-fix cursor)))
+  :enable (cursor-extensionality
+           extensionality
+           entry-key-of-seek
+           in-of-keys-of-from-cursor-becomes-in-of-keys-of-before-or-entry-key-or-after
+           lookup-of-from-cursor-becomes-lookup-of-before-or-entry-val-or-after
+           tset::<<-when-in-and-<<-of-max
+           tset::<<-when-in-and-<<-of-arg1-and-min
+           data::<<-rules))
+
+;; The hypotheses are checked without rewriting, so they are stated on the key
+;; sets, as they appear once max-key and min-key have opened.
+
+(defrule seek-of-from-cursor-when-not-entryp-cheap
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (tset::max (keys (before cursor))) x))
+                (or (emptyp (after cursor))
+                    (<< x (tset::min (keys (after cursor))))))
+           (equal (seek x (from-cursor cursor))
+                  (cursor-fix cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
+  :enable seek-of-from-cursor-when-not-entryp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-=
@@ -387,4 +439,5 @@
   '(entry-key-of-seek
     seek-when-emptyp
     seek-when-<<-of-arg1-and-min-key
-    seek-when-<<-of-max-key-and-arg1))
+    seek-when-<<-of-max-key-and-arg1
+    seek-of-from-cursor-when-not-entryp))

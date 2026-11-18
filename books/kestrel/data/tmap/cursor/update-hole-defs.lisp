@@ -8,10 +8,14 @@
 
 (in-package "TMAP")
 
+(include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+
 (include-book "../map-defs")
+(include-book "../min-max-defs")
 (include-book "../update-defs")
 (include-book "cursor-defs")
 (include-book "entry-defs")
+(include-book "before-after-defs")
 (include-book "from-cursor-defs")
 (include-book "seek-defs")
 (include-book "internal/zip-update-hole-defs")
