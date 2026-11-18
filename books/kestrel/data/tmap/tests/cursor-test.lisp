@@ -14,6 +14,7 @@
 (include-book "../size-defs")
 (include-book "../keys-defs")
 (include-book "../lookup-defs")
+(include-book "../update-defs")
 (include-book "../delete-defs")
 (include-book "../min-max-defs")
 (include-book "../cursor/defs")
@@ -133,3 +134,27 @@
          (keys (from-cursor cursor)))
   :induct t
   :enable cursor-zero-all)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A change at one key which depends on what is there: count an occurrence of
+;; the key.
+
+(define bump
+  (key
+   (map mapp))
+  :returns (map$ mapp)
+  (let ((cursor (seek key map)))
+    (from-cursor
+      (if (entryp cursor)
+          (update-entry (+ 1 (nfix (entry-val cursor))) cursor)
+        (update-hole key 1 cursor)))))
+
+(defrule bump-becomes-update
+  (equal (bump key map)
+         (update key
+                 (if (tset::in key (keys map))
+                     (+ 1 (nfix (lookup key map)))
+                   1)
+                 map))
+  :enable bump)

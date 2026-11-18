@@ -75,7 +75,12 @@
       hole.")
    (xdoc::p
      "To replace the value of an entry in passing, use @(tsee
-      update-entry).")))
+      update-entry).")
+   (xdoc::p
+     "To change a map at one key, depending on what is there, start from the
+      @(tsee seek) of the key. At an entry, @(tsee update-entry) replaces the
+      value. At a hole, @(tsee update-hole) adds an entry. Then @(tsee
+      from-cursor) returns the changed map.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

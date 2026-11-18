@@ -441,4 +441,21 @@
                    (sym-nat-map-inc-loop
                     (tmap::seek-min
                      (tmap::update 'b 2 (tmap::update 'a 1 (tmap::empty))))))
-                  3)))
+                  3))
+
+  ;; A change at one key which depends on what is there. The cursor of a
+  ;; typed map is over a typed map, and stays so through either update.
+
+  (define sym-nat-map-bump ((key symbolp)
+                            (map sym-nat-map-p))
+    (let ((cursor (tmap::seek key map)))
+      (tmap::from-cursor
+        (if (tmap::entryp cursor)
+            (tmap::update-entry (+ 1 (nat-id (tmap::entry-val cursor)))
+                                cursor)
+          (tmap::update-hole key 1 cursor)))))
+
+  (assert! (equal (tmap::lookup
+                   'a
+                   (sym-nat-map-bump 'a (sym-nat-map-bump 'a (tmap::empty))))
+                  2)))

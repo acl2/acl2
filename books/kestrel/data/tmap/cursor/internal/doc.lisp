@@ -18,3 +18,4 @@
 (include-book "zip-uniqueness")
 (include-book "zip-seek")
 (include-book "zip-update-entry")
+(include-book "zip-update-hole")

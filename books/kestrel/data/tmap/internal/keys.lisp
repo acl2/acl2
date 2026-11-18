@@ -255,6 +255,29 @@
   :enable (<<-all-l
            <<-when-<<-all-l-and-in-of-tree-key-set))
 
+;; Likewise when the smaller tree may have one more key, itself within the
+;; bound.
+
+(defruled <<-all-r-when-subset-of-insert-of-tree-key-set
+  (implies (and (<<-all-r x tree)
+                (<< x key)
+                (tset::subset (tree-key-set sub)
+                              (tset::insert key (tree-key-set tree))))
+           (<<-all-r x sub))
+  :induct (<<-all-r x sub)
+  :enable (<<-all-r
+           <<-when-<<-all-r-and-in-of-tree-key-set))
+
+(defruled <<-all-l-when-subset-of-insert-of-tree-key-set
+  (implies (and (<<-all-l tree x)
+                (<< key x)
+                (tset::subset (tree-key-set sub)
+                              (tset::insert key (tree-key-set tree))))
+           (<<-all-l sub x))
+  :induct (<<-all-l sub x)
+  :enable (<<-all-l
+           <<-when-<<-all-l-and-in-of-tree-key-set))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule in-of-tree-key-set-tree->right-when-not-<<-of-tree->head
@@ -317,6 +340,15 @@
 (defruled heap<-all-l-when-subset-of-tree-key-sets
   (implies (and (heap<-all-l tree x)
                 (tset::subset (tree-key-set sub) (tree-key-set tree)))
+           (heap<-all-l sub x))
+  :induct (heap<-all-l sub x)
+  :enable heap<-all-l)
+
+(defruled heap<-all-l-when-subset-of-insert-of-tree-key-set
+  (implies (and (heap<-all-l tree x)
+                (heap< key x)
+                (tset::subset (tree-key-set sub)
+                              (tset::insert key (tree-key-set tree))))
            (heap<-all-l sub x))
   :induct (heap<-all-l sub x)
   :enable heap<-all-l)
