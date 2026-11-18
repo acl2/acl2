@@ -162,7 +162,7 @@
                   (equal (logapp n x y)
                          (ifix y)))
          :hints(("Goal" :in-theory (enable bitops::logapp**)))))
-    
+
 
 (def-fgl-meta logapp-expand
   (b* (((unless (fgl-object-case n :g-concrete))
@@ -189,7 +189,7 @@
 ;; (FGL::ADD-FGL-PRIMITIVE LOGAPP FGL::FGL-LOGAPP-PRIMITIVE)
 
 
-                           
+
 
 
 (def-fgl-primitive logapp (width lsbs msbs)
@@ -429,11 +429,6 @@
 
 (local (in-theory (disable iff-forall-extensions)))
 
-(local (defthm iff-forall-extensions-implies
-         (iff (iff-forall-extensions t hyp eval-alist)
-              (and (hide (iff-forall-extensions t hyp eval-alist))
-                   (fgl-ev hyp eval-alist)))
-         :hints (("goal" :expand ((:free (x) (hide x)))))))
 
 (def-fgl-meta equal-when-equal-functions
   (b* (((unless (and (fgl-object-case x :g-apply)
@@ -475,8 +470,6 @@
 
 ;; Turn the above rule off by default
 (remove-fgl-meta equal equal-when-equal-functions-with-validity-check)
-
-(local (in-theory (disable iff-forall-extensions-implies)))
 
 
 (define fgl-nice-4vec-call-p ((x fgl-object-p))
@@ -863,18 +856,18 @@
 (local (in-theory (disable g-concrete->val-type-when-not-syntactic-boolean
                            g-concrete->val-type-when-not-syntactic-cons
                            g-concrete->val-type-when-not-syntactic-integer)))
-       ;; ((when (gobj-syntactic-consp x))
-       ;;  (cond ((gobj-syntactic-consp y)
-       ;;         (b* (((mv ok car-equal
-       ;;         (stobj-let ((logicman (interp-st->logicman interp-st)))
-       ;;                    (ans logicman)
-       ;;                    (bfr-iff (gobj-syntactic-boolean->bool x)
-       ;;                             (gobj-syntactic-boolean->bool y))
-       ;;                    (mv t (mk-g-boolean ans) interp-st)))
-       ;;        ((fgl-object-case y '(:g-integer :g-concrete :g-cons))
-       ;;         (mv t nil interp-st))
-       ;;        (t (mv nil nil interp-st)))
-          
+;; ((when (gobj-syntactic-consp x))
+;;  (cond ((gobj-syntactic-consp y)
+;;         (b* (((mv ok car-equal
+;;         (stobj-let ((logicman (interp-st->logicman interp-st)))
+;;                    (ans logicman)
+;;                    (bfr-iff (gobj-syntactic-boolean->bool x)
+;;                             (gobj-syntactic-boolean->bool y))
+;;                    (mv t (mk-g-boolean ans) interp-st)))
+;;        ((fgl-object-case y '(:g-integer :g-concrete :g-cons))
+;;         (mv t nil interp-st))
+;;        (t (mv nil nil interp-st)))
+
 
 (def-fgl-primitive lognot (x)
   (b* (((mv xok x) (gobj-syntactic-integer-fix x))
@@ -1104,7 +1097,7 @@
 ;;                          (fgl-object-case x :g-integer)))
 ;;            (equal (logbitp n x)
 ;;                   (intcar (logtail n x)))))
-                  
+
 ;; (remove-fgl-rewrite int-less-than-0)
 ;; (add-fgl-definition int-less-than-0)
 

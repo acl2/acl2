@@ -1056,3 +1056,8 @@
   (implies (class-tablep class-table)
            (bound-to-a-non-interfacep "java.lang.ArrayIndexOutOfBoundsException" class-table))
   :hints (("Goal" :in-theory (enable class-tablep))))
+
+(defthm bound-to-a-non-interfacep-of-java.lang.ArrayStoreException
+  (implies (class-tablep class-table)
+           (bound-to-a-non-interfacep "java.lang.ArrayStoreException" class-table))
+  :hints (("Goal" :in-theory (enable class-tablep))))

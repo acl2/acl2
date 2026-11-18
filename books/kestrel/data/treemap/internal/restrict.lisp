@@ -57,7 +57,7 @@
 (define tree-restrict
   ((keys treeset::treep)
    (tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "Take the restriction of a map treap under a key set treap."
   :long
@@ -172,7 +172,8 @@
                        (treeset::in a (tree-key-set tree)))))
   ;; TODO: improve proof
   :induct t
-  :enable tree-restrict)
+  :enable (tree-restrict
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -211,7 +212,6 @@
   ;; TODO: improve proof
   :induct t
   :enable (tree-restrict
-           tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

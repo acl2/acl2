@@ -16,6 +16,7 @@
 (include-book "set-defs")
 (include-book "to-oset-defs")
 (include-book "in-defs")
+(include-book "subset-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil))
@@ -28,6 +29,7 @@
 (local (include-book "set"))
 (local (include-book "to-oset"))
 (local (include-book "in"))
+(local (include-book "subset"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,6 +88,11 @@
   :enable (min
            in
            emptyp))
+
+(defrule in-of-min-when-subset
+  (implies (and (not (emptyp set))
+                (subset set y))
+           (in (min set) y)))
 
 (defrule <<-of-arg1-and-min-when-in
   (implies (in x set)
@@ -206,6 +213,11 @@
   :enable (max
            in
            emptyp))
+
+(defrule in-of-max-when-subset
+  (implies (and (not (emptyp set))
+                (subset set y))
+           (in (max set) y)))
 
 (defrule <<-of-max-when-in
   (implies (in x set)

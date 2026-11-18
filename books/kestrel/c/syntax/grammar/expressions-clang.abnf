@@ -1,0 +1,36 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; See [books]/kestrel/c/syntax/grammar.lisp for background.
+
+; This file contains grammar rules for expressions in the Clang dialects.
+; These are not in GCC.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; As a Clang extension, we allow the following primary expressions:
+;
+; - Calls of '__builtin_bit_cast'.
+;   We did not find this documented in [CLE],
+;   but Clang accepts it.
+;   [GCCM:7.12](https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html)
+;   documents it, but only for C++; indeed, GCC does not accept it for C.
+;   Although normal function calls are postfix expressions,
+;   this is not a normal function because it takes a type name as an argument,
+;   and it always starts with a known identifier,
+;   so it seems reasonable that they are primary expressions.
+;   Although the expression arguments of function calls
+;   are normally assignment expressions,
+;   Clang accepts any expression here, e.g. '__builtin_bit_cast(int, a, b)'.
+
+primary-expression-clang = bit-cast-call
+
+bit-cast-call =
+    %s"__builtin_bit_cast" "(" type-name "," expression ")"

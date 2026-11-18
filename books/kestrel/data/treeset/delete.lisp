@@ -184,7 +184,8 @@
   (implies (not (in x set))
            (equal (delete x set)
                   (fix set)))
-  :enable extensionality)
+  :enable extensionality
+  :disable fix-when-setp)
 
 (defrule delete-when-not-in-cheap
   (implies (not (in x set))
@@ -192,6 +193,24 @@
                   (fix set)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-when-not-in)
+
+(defruled delete-when-emptyp
+  (implies (emptyp set)
+           (equal (delete x set)
+                  (empty)))
+  :enable delete-when-not-in)
+
+(defrule delete-when-emptyp-cheap
+  (implies (emptyp set)
+           (equal (delete x set)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-when-emptyp)
+
+(defrule delete-of-arg1-and-empty
+  (equal (delete x (empty))
+         (empty))
+  :enable delete-when-emptyp)
 
 (defrule equal-of-delete-and-arg2
   (equal (equal (delete x set) set)
@@ -428,3 +447,11 @@
                                             head
                                             tree-delete
                                             tree-join-at))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-extra-rules
+  '(delete-when-not-in
+    delete-when-emptyp
+    delete-of-insert-when-not-equal
+    ))

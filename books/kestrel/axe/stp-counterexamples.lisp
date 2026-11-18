@@ -596,7 +596,7 @@
                               (er hard? 'print-counterexample "Can't treat an array as signed when its elements are of width 0.")))
                         value))
                   value))
-         (- (cw "  Node ~x0: ~x1 is ~x2." nodenum expr value))
+         (- (cw "  Node ~x0: ~X12 is ~x3." nodenum expr (evisc-tuple 5 20 nil nil) value))
          ;; Print newline unless this is the last line:
          (- (and (consp (rest cex)) (cw "~%"))))
       (print-counterexample (rest cex) cut-nodenum-type-alist print-signedp dag-array-name dag-array))))

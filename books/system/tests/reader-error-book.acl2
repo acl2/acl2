@@ -1,0 +1,14 @@
+; See: https://github.com/acl2/acl2/issues/2099
+
+(include-book "tools/run-script" :dir :system)
+(run-script "reader-error")
+
+; A reader error in reader-error-input.lsp should not discard this form, or
+; the certify-book command that cert.pl sends after it.
+(defun after-run-script () t)
+
+; Help dependency scanner.
+#||
+(depends-on "reader-error-input.lsp")
+(depends-on "reader-error-log.txt")
+||#

@@ -57,7 +57,7 @@
   (key
    val
    (tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   ;; TODO: treeset definition should have guards/returns first like this.
   :returns (tree$ treep)
   :parents (implementation)
@@ -182,7 +182,6 @@
                     (tree-lookup x tree))))
   :induct (tree-update y val tree)
   :enable (tree-update
-           tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

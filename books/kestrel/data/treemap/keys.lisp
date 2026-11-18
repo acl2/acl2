@@ -121,7 +121,7 @@
 ;; Variants matching the equality primitives
 
 (define map-keys-acl2-numberp ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   (mbe :logic (treeset::set-all-acl2-numberp (keys map))
        :exec (tree-keys-acl2-numberp map))
@@ -139,7 +139,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-symbolp ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   (mbe :logic (treeset::set-all-symbolp (keys map))
        :exec (tree-keys-symbolp map))
@@ -157,7 +157,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define map-keys-eqlablep ((map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (yes/no booleanp)
   (mbe :logic (treeset::set-all-eqlablep (keys map))
        :exec (tree-keys-eqlablep map))

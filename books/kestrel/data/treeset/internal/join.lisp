@@ -60,7 +60,7 @@
 (define tree-join
   ((left treep)
    (right treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Join two trees which have previously been @(see tree-split)."
@@ -205,7 +205,7 @@
   (split
    (left treep)
    (right treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   (declare (ignore split))
   :returns (tree treep)
   :parents (implementation)

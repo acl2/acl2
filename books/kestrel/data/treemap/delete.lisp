@@ -210,6 +210,24 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by delete-when-not-in-of-keys)
 
+(defruled delete-when-emptyp
+  (implies (emptyp map)
+           (equal (delete key map)
+                  (empty)))
+  :enable delete-when-not-in-of-keys)
+
+(defrule delete-when-emptyp-cheap
+  (implies (emptyp map)
+           (equal (delete key map)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by delete-when-emptyp)
+
+(defrule delete-of-arg1-and-empty
+  (equal (delete key (empty))
+         (empty))
+  :enable delete-when-emptyp)
+
 (defrule equal-of-delete-and-arg2
   (equal (equal (delete key map) map)
          (and (mapp map)
@@ -245,6 +263,21 @@
   (equal (update key val (delete key map))
          (update key val map))
   :enable extensionality)
+
+;; A map is emptied by deleting a key exactly when it is empty or maps only
+;; that key.
+
+(defrule emptyp-of-delete
+  (equal (emptyp (delete key map))
+         (or (emptyp map)
+             (equal map (update key (lookup key map) (empty)))))
+  :use (:instance update-of-delete-same
+                  (val (lookup key map)))
+  :enable (update-redundant
+           delete-when-not-in-of-keys
+           delete-when-emptyp
+           emptyp-alt-definition)
+  :disable update-of-delete-same)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -384,3 +417,11 @@
                                             head-key
                                             tree-delete
                                             tree-join-at))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-extra-rules
+  '(delete-when-not-in-of-keys
+    delete-when-emptyp
+    delete-of-update-when-not-equal
+    ))

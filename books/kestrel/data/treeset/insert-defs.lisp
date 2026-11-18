@@ -28,6 +28,8 @@
           singleton
           insert-all
           from-list
+          set-macro-fn
+          set
           from-oset
           insert-=
           insert-eq

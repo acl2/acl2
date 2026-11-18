@@ -11,7 +11,6 @@
 (in-package "ACL2")
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
-(include-book "std/basic/defs" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/defmacro-plus" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -320,26 +319,17 @@
        which could be manually done as")
      (xdoc::codeblock
       "((mv erp val1 ... valN) (f ...))"
-      "((when erp) (reterr (impossible)))")
+      "(- (mbt (not erp)))")
      (xdoc::p
       "or, if @('N') is 0, as")
      (xdoc::codeblock
       "(erp (f ...))"
-      "((when erp) (reterr (impossible)))")
+      "(- (mbt (not erp)))")
      (xdoc::p
-      "where @(tsee impossible) logically returns @('nil')
-       and also engenders a guard obligation to show that @('nil') holds,
-       which is the case only when that code is provably unreachable.
-       The reason for wrapping it in @('reterr') is so that
-       the code returns one or more values of the appropriate types.
-       Although the @('nil') value of @(tsee impossible)
-       is at odds with @('reterr') because it normally indicates no error,
-       this is never actually executed,
-       because it must be provably unreachable under the guards.
-       The alternative @('(prog2$ (impossible) (reterr <not-nil>))')
-       is less robust because the code containing the snippet above
-       may be expected to return some specific type of error in @('erp'),
-       but @('nil') must be always a value of that type.")
+      "where the @(tsee mbt) call engenders a guard obligation
+       to show that @('erp') is @('nil'),
+       and has no effect on the code that follows,
+       because its value is discarded by the @('-') binder.")
 
      (xdoc::p
       "We provide a @(tsee b*) binder @(tsee patbind-noerp)
@@ -355,8 +345,9 @@
        that can be used as components of the @(tsee patbind-mv) binder.")
 
      (xdoc::p
-      "This binder assumes that @('reterr') is a local macro
-       introduced by a preceding @('reterr') binder (described above).")))
+      "This binder does not use @('reterr'):
+       it can be used also in code
+       that does not return error-value tuples.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -658,6 +649,5 @@
               `(mv erp ,@args)
             'erp)
          ,(car forms)))
-     (if erp
-         (reterr (impossible))
-       ,rest-expr)))
+     (prog2$ (mbt (not erp))
+             ,rest-expr)))

@@ -38,12 +38,14 @@
   (defconst *scratchobj-types*
     '((:fgl-obj fgl-object-p fgl-object-fix fgl-object 0)
       (:fgl-objlist fgl-objectlist-p fgl-objectlist-fix fgl-objectlist 1)
-      (:bfr t nil bfr 2)
-      (:bfrlist true-listp llist-fix bfrlist 3 :rule-classes :type-prescription)
-      (:cinst constraint-instance-p constraint-instance-fix constraint-instance 4)
-      (:cinstlist constraint-instancelist-p constraint-instancelist-fix constraint-instancelist 5)
-      (:fnsym pseudo-fnsym-p pseudo-fnsym-fix pseudo-fnsym 6)
-      (:formals pseudo-var-list-p pseudo-var-list-fix pseudo-var-list 7)))
+      (:fgl-arglist fgl-arglist-p fgl-arglist-fix fgl-arglist 2)
+      (:fgl-bindings fgl-object-bindings-p fgl-object-bindings-fix fgl-object-bindings 3)
+      (:bfr t nil bfr 4)
+      (:bfrlist true-listp llist-fix bfrlist 5 :rule-classes :type-prescription)
+      (:cinst constraint-instance-p constraint-instance-fix constraint-instance 6)
+      (:cinstlist constraint-instancelist-p constraint-instancelist-fix constraint-instancelist 7)
+      (:fnsym pseudo-fnsym-p pseudo-fnsym-fix pseudo-fnsym 8)
+      (:formals pseudo-var-list-p pseudo-var-list-fix pseudo-var-list 9)))
 
 
   (defun scratchobj-tmplsubst (tuple lastp)

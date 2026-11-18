@@ -1249,8 +1249,10 @@
    (xdoc::p
     "We reject
      @('__builtin_types_compatible_p'),
-     @('__builtin_offsetof'), and
-     @('__builtin_va_arg')
+     @('__builtin_offsetof'),
+     @('__builtin_va_arg'),
+     @('__builtin_convertvector'), and
+     @('__builtin_bit_cast')
      out of caution for now.")
    (xdoc::p
     "An expression preceded by @('__extension__') is safe iff
@@ -1413,6 +1415,8 @@
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
+   (expr :convertvector (sts-reject (expr-fix expr)))
+   (expr :bit-cast (sts-reject (expr-fix expr)))
    (type-spec :atomic (and (tyname-sts-safep type-spec.type
                                              spec
                                              vtable

@@ -327,6 +327,24 @@
 
 (test-parse
  parse-expression
+ "__builtin_bit_cast(unsigned int, x)"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (expr-case ast :bit-cast))
+
+(test-parse
+ parse-expression
+ "__builtin_bit_cast(int, a, b)"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)
+ :cond (and (expr-case ast :bit-cast)
+            (expr-case (expr-bit-cast->arg ast) :comma)))
+
+(test-parse-fail
+ parse-expression
+ "__builtin_bit_cast(unsigned int, x)"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-expression
  "({x = 0;})(x)"
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t)
  :cond (expr-case ast :funcall))

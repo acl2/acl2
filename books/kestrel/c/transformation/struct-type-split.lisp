@@ -2031,6 +2031,32 @@
                                    :type left-type)
                  nil
                  st))
+        :convertvector
+        (b* (((erp left-vec right-vec? st)
+              (expr-sts-split expr.vec st))
+             ((erp splitp left-type ?right-type st)
+              (tyname-sts-split expr.type st))
+             ((when (or right-vec? splitp))
+              (retmsg$ "Split is not supported in either operand ~
+                        of a __builtin_convertvector call.~%~@0"
+                       (context-msg-expr expr (sts-split-state->dialect st)))))
+          (retok (make-expr-convertvector :vec left-vec
+                                          :type left-type)
+                 nil
+                 st))
+        :bit-cast
+        (b* (((erp splitp left-type ?right-type st)
+              (tyname-sts-split expr.type st))
+             ((erp left-arg right-arg? st)
+              (expr-sts-split expr.arg st))
+             ((when (or splitp right-arg?))
+              (retmsg$ "Split is not supported in either operand ~
+                        of a __builtin_bit_cast call.~%~@0"
+                       (context-msg-expr expr (sts-split-state->dialect st)))))
+          (retok (make-expr-bit-cast :type left-type
+                                     :arg left-arg)
+                 nil
+                 st))
         :extension
         (b* (((erp left-expr right-expr? st)
               (expr-sts-split expr.expr st)))
@@ -2366,6 +2392,8 @@
         :float128
         (retok (type-spec-fix type-spec) nil nil st)
         :float128x
+        (retok (type-spec-fix type-spec) nil nil st)
+        :bf16
         (retok (type-spec-fix type-spec) nil nil st)
         :builtin-va-list
         (retok (type-spec-fix type-spec) nil nil st)
@@ -5467,7 +5495,8 @@
        ((unless (c$::trans-ensemble-unambp new-trans-units))
         (retmsg$ "Internal error: the transformed code is ambiguous."))
        ((erp new-trans-units)
-        (c$::valid-trans-ensemble new-trans-units code.ienv nil))
+        (c$::valid-trans-ensemble
+          new-trans-units code.ienv code.strict-merge nil))
        ;; TODO: remove once it is proved that validation produces
        ;; an annotated term.
        ((unless (c$::trans-ensemble-annop new-trans-units))

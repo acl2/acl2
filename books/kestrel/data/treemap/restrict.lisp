@@ -244,20 +244,23 @@
   :enable pick-a-point)
 
 (defrule submap-of-arg1-and-restrict
-  (equal (submap map (restrict keys map))
-         (treeset::subset (keys map) keys))
+  (equal (submap x (restrict keys map))
+         (and (submap x map)
+              (treeset::subset (keys x) keys)))
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar)
   :prep-lemmas
   ((defrule lemma
-     (implies (submap map (restrict keys map))
-              (treeset::subset (keys map) keys))
+     (implies (submap x (restrict keys map))
+              (treeset::subset (keys x) keys))
      ;; TODO: why isn't this inferred by forward-chaining?
      :use (:instance subset-of-keys
-                     (x map)
                      (y (restrict keys map)))
      :enable treeset::pick-a-point-polar
-     :disable subset-of-keys)))
+     :disable subset-of-keys)
+   (defrule lemma2
+     (implies (submap x (restrict keys map))
+              (submap x map)))))
 
 (defrule monotonicity-of-restrict
   (implies (and (treeset::subset keys0 keys1)

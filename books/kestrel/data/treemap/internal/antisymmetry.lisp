@@ -134,7 +134,8 @@
                                                   (tree->left y)))
                    (tree y)))
   :enable tree-submap-p-pick-a-point-polar
-  :disable tree-lookup-when->>-of-tree->head)
+  :disable (tree-lookup-when->>-of-tree->head
+            in-of-tree-key-set-when->>-of-tree->head))
 
 (defrule tree-submap-p-of-tree->left-tree->left-when-tree-submap-p-and-equal-tree->head-tree->head
   (implies (and (tree-submap-p x y)
@@ -168,7 +169,8 @@
                                                   (tree->right y)))
                    (tree y)))
   :enable tree-submap-p-pick-a-point-polar
-  :disable tree-lookup-when-<<-of-tree->head)
+  :disable (tree-lookup-when-<<-of-tree->head
+            in-of-tree-key-set-when-<<-of-tree->head))
 
 (defrule tree-submap-p-of-tree->right-tree->right-when-tree-submap-p-and-equal-tree->head-tree->head
   (implies (and (tree-submap-p x y)

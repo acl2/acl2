@@ -890,7 +890,7 @@
           (- (cw "(Applying tactic ~x0.~%" tactic))
           ((mv result info state)
            (apply-proof-tactic problem tactic rule-alist interpreted-function-alist monitor normalize-xors print max-conflicts call-stp-when-pruning counterexamplep print-cex-as-signedp state))
-          (- (cw ")~%"))
+          (- (cw "Finished tactic ~x0)~%" tactic)) ; matches "(Applying tactic"
           (info-acc (add-to-end info info-acc)))
        (if (eq *valid* result)
            (prog2$ (and (rest tactics) (cw "(Tactics not used: ~x0)~%" (rest tactics)))

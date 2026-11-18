@@ -488,3 +488,17 @@
   (implies (jvm::class-namep class-name)
            (acl2::bound-in-heap ad (acl2::init-ref-in-heap ad class-name class-table heap)))
   :hints (("Goal" :in-theory (enable acl2::init-ref-in-heap acl2::bound-in-heap))))
+
+;; Setting a field in an object should not give nil, because the object should
+;; at least have its class set.
+(defthm not-equal-of-nil-and-s-when-g-of-class
+  (implies (and (not (equal nil (g '(:special-data . :class) r)))
+                (not (equal k '(:special-data . :class))))
+           (not (equal nil (s k v r))))
+  :hints (("Goal"
+           :use (:instance clr-non-nil-when-g-of-some-other-address-is-non-nil
+                           (a2 k)
+                           (val r)
+                           (a1 '(:special-data . :class))
+                           (value (g '(:special-data . :class) r)))
+           :in-theory (disable clr-non-nil-when-g-of-some-other-address-is-non-nil g-iff-gen))))

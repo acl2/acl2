@@ -16,7 +16,7 @@
 ;; This book is for things that mix x86isa notions with our notions.  Pure x86
 ;; theorems should go in support-x86.lisp.
 
-(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; reduce? for x86isa::RB-RB-SUBSET
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for get-one-byte-prefix-array-code
 (include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "flags") ; reduce?
@@ -26,8 +26,9 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
-(include-book "kestrel/utilities/mv-nth" :dir :system)
-(include-book "kestrel/utilities/myif" :dir :system)
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
+(include-book "kestrel/utilities/myif-def" :dir :system)
+(local (include-book "kestrel/utilities/myif" :dir :system))
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
@@ -62,36 +63,32 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
-;; todo: localize
+;; todo: localize some of these?
+
 (in-theory (disable ACL2::ZP-WHEN-GT-0   ;slow
                     ACL2::ZP-WHEN-INTEGERP ;slow
                     ACL2::SLICE-TOO-HIGH-IS-0 ;slow
                     mv-nth
                     acl2::posp-redefinition ; todo yuck, from books/std/basic/arith-equivs
-                    ))
 
-(in-theory (disable x86isa::rme08))
+                    ;;try to get my rule to fire:
+                    ;;rb-in-terms-of-nth-and-pos
+                    ;;rb-in-terms-of-rb-subset-p
+                    ;;combine-bytes-rb-in-terms-of-rb-subset-p
+                    x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE
+
+                    x86isa::rme08 ; more?
+                    ))
 
 (local (in-theory (disable ;ACL2::SMALL-INT-HACK ;slow
-                           )))
-
- ;try to get my rule to fire:
-(in-theory (disable ;rb-in-terms-of-nth-and-pos
-                    ;rb-in-terms-of-rb-subset-p
-                    ;combine-bytes-rb-in-terms-of-rb-subset-p
-            ))
-
-(in-theory (disable wb))
-(in-theory (disable x86isa::WB-BY-WB-1-FOR-APP-VIEW-INDUCTION-RULE))
+                   ;; slow:
+                   DEFAULT-CDR
+                   ;;ACL2::CONSP-OF-ASSOC-EQUAL
+                   alistp
+                   ;;assoc-list
+                   )))
 
 ;(in-theory (enable create-canonical-address-list)) ;or rewrite it when the number of addrs is 1
-
-;slow:
-(in-theory (disable DEFAULT-CDR
-                    ;ACL2::CONSP-OF-ASSOC-EQUAL
-                    alistp
-                    ;assoc-list
-                    ))
 
 (local (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2)))
 
@@ -501,12 +498,6 @@
                            (m 63)
                            (x (acl2::bvchop 64 k))))))
 
-
-
-
-
-
-
 ;todo: improve axe to handle the form of the original rule
 ;or now we just expand !flgi-undefined
 ;; (DEFTHM X86P-OF-!FLGI-UNDEFINED-eric
@@ -696,9 +687,6 @@
                   (if test
                       (cons tp x)
                     (cons ep x)))))
-
-
-
 
 
 ;; ;drop?

@@ -101,8 +101,8 @@
 ;; to be defined is a field f:
 
 ;;   (fp x)      (feltp x f)
-;;   (fp+ x y)   (fadd x y f)
-;;   (fp* x y)   (fmul x y f)
+;;   (f+ x y)    (fadd x y f)
+;;   (f* x y)    (fmul x y f)
 ;;   (f0)        (fzero f)
 ;;   (f1)        (fone f)
 ;;   (f- x)      (fneg x f)
@@ -113,8 +113,8 @@
 ;; follows:
 
 ;;   (rp x)      (polyp x f)
-;;   (rp+ x y)   (padd x y f)
-;;   (rp* x y)   (pmul x y f)
+;;   (r+ x y)    (padd x y f)
+;;   (r* x y)    (pmul x y f)
 ;;   (r0)        (pzero f)
 ;;   (r1)        (pone f)
 ;;   (r- x)      (neg x f)
@@ -153,7 +153,7 @@
 ;; frecip, which is based on the greatest common divisor of poynomials x and y as follows: The gcd may be
 ;; expressed as a linear combination of polynomials rx + sy.  Since an element x of f is a polynomial of
 ;; degree less than that of p, the gcd of x and p is 1 and we have rx + sp = 1.  Thus, we define (frecip x f)
-;; to be the remainder (prem x p (cdr f)).
+;; to be the remainder (prem r p (cdr f)).
 
 ;; A few of the functions do not require mutual recursion.
 
@@ -215,6 +215,8 @@
 ;; The remaining functions to be defined form a mutually recursive clique.  Note that the final argument of
 ;; each of these functions is a field f, and whenever a function calls another function that appears below it,
 ;; f is replaced by (cdr f).  This observation is critical for the admissibility of the clique.
+;; (Note that the first 8 functions of the clique could be separated to form smaller cliques, but there is
+;; little to be gained by doing this.)
 
 ;; In our treatment of the greatest common divisor, in order to avoid name conflicts (with functions
 ;; pertaining to the gcd of integers, defined in "../numbers/euclid.lisp"), we use the names pgcd, r$, and s$
@@ -562,14 +564,14 @@
 ;; (4) As a consequence of the results of Step 3, we prove that each of the field axioms holds
 ;;     for an extension field.  These include the ring axioms, e.g.,
 
-;;     (defthmd fadd-closed-**
+;;     (defthm fadd-closed-**
 ;;       (implies (and (fieldp f) (consp f) (field-axioms-p (cdr f))
 ;;                     (feltp x f) (feltp y f))
 ;;                (feltp (fadd x y f))))
 
 ;;     as well as the 2 axioms pertaining to the reciprocal, e.g.,
 
-;;     (defthmd frecip-closed-**
+;;     (defthm feltp-frecip-**
 ;;       (implies (and (fieldp f) (consp f) (field-axioms-p (cdr f))
 ;;                     (feltp x f))
 ;;                (feltp (frecip x f) f))
@@ -597,12 +599,12 @@
 ;; (7) We remove the field-axioms-p hypothesis from the "*" lemmas of Steps 1 and 3:
 
 ;;     (defthm fadd-closed
-;;       (implies (and (feltp x f) (feltp y f))
+;;       (implies (and (fieldp f) (feltp x f) (feltp y f))
 ;;                (feltp (fadd x y f) f))
 
 ;;     (defthm padd-closed
 ;;       (implies (and (fieldp f) (polyp x f) (polyp y f))
-;;                (polyp (padd x y f))))
+;;                (polyp (padd x y f) f)))
 
 ;;     (defthmd degree-prem
 ;;       (implies (and (fieldp f)
@@ -1009,14 +1011,14 @@
 ;; arithmetic; and if f is Fp, they all reduce to trivial properties of the function mod, with the exception
 ;; of the following property of the reciprocal:
 
-;;   (fmul x (recip x f) f) = (fone f).
+;;   (fmul x (frecip x f) f) = (fone f).
 
 ;; But by Fermat's Theorem (see "../numbers/fermat.lisp"),
 
-;;   (fmul x (recip x f) f) = (mod (* x (mod (expt 2 (- p 2)) p)) p)
-;;                          = (mod (expt x (1- p)) p)
-;;			    = 1
-;;			    = (fone f).
+;;   (fmul x (frecip x f) f) = (mod (* x (mod (expt x (- p 2)) p)) p)
+;;                           = (mod (expt x (1- p)) p)
+;;			     = 1
+;;			     = (fone f).
 
 ;; Thus, all of the required theorems are easily proved:
 
@@ -1494,9 +1496,9 @@
 
 ;;   (pstrip (faddl (pstrip x f) y f) f) = (pstrip (faddl x y f) f).
 
-;; We nmay assume (car x) = (fzero f).  We consider 2 cases:
+;; We may assume (car x) = (fzero f).  We consider 2 cases:
 
-;; If (len x) <= (len y), then we can prove the stronger result (faddl (pstrip x f) x f) = (fadd x y f):
+;; If (len x) <= (len y), then we can prove the stronger result (faddl (pstrip x f) x f) = (faddl x y f):
 
 ;; If (len x) < (len y), then
 
@@ -1640,7 +1642,7 @@
 ;; Consequently,
 
 ;;   (padd (padd x y f) z f) = (pstrip (faddl (pstrip (faddl x y f) f) z f) f)
-;;                           = (pstrip (faddl (faddl x y f) x f) f)
+;;                           = (pstrip (faddl (faddl x y f) z f) f)
 
 ;; and by padd-comm-* and faddl-comm, 
 
@@ -2168,7 +2170,7 @@
   :hints (("Goal" :in-theory (enable polyp) :use (pshift-rewrite-1))))
 
 (defthmd pshift-pshift
-  (implies (and (fieldp f) (field-axioms-p f)
+  (implies (and (fieldp f)
                 (polyp x f) (natp k) (natp l))
            (equal (pshift (pshift x k f) l f)
 	          (pshift x (+ k l) f)))
@@ -3541,13 +3543,13 @@
 
 ;;    (monomial c k f) * x = (pshift (cmul c x f) k) = (append (cmul c x f) (fzero-list k f))
 
-;;    (monomial c k f) * (monomial d l f) = (append (cmul c (monomial d l f) f) (zero-list k f))
-;;                                        = (append (cmul c (cons d (zero-list l f)) f) (zero-list k f))
-;;                                        = (append (cons (fmul c d f) (cmul c (zero-list l f) f)) (zero-list k f))
-;;                                        = (append (cons (fmul c d f) (zero-list l f)) (zero-list k f))
-;;                                        = (cons (fmul c d f) (append (zero-list l f) (zero-list k f)))
-;;                                        = (cons (fmul c d f) (zero-list (+ l k) f))
-;;                                        = (cons (fmul d c f) (zero-list (+ k l) f))
+;;    (monomial c k f) * (monomial d l f) = (append (cmul c (monomial d l f) f) (fzero-list k f))
+;;                                        = (append (cmul c (cons d (fzero-list l f)) f) (fzero-list k f))
+;;                                        = (append (cons (fmul c d f) (cmul c (fzero-list l f) f)) (fzero-list k f))
+;;                                        = (append (cons (fmul c d f) (fzero-list l f)) (fzero-list k f))
+;;                                        = (cons (fmul c d f) (append (fzero-list l f) (fzero-list k f)))
+;;                                        = (cons (fmul c d f) (fzero-list (+ l k) f))
+;;                                        = (cons (fmul d c f) (fzero-list (+ k l) f))
 ;;                                        = (monomial d l f) * (monomial c k f)
 
 (defthmd pmul-monomials
@@ -3750,7 +3752,7 @@
 ;;			 = (cmul (car (cmul c x f)) y f)
 ;;			 = (pmul (cmul c x f) y f).
 
-;; We proceed by induction.  If (consp (car x)) and the claim holds with x <- (pstrip (cdr x) f), then
+;; We proceed by induction.  If (consp (cdr x)) and the claim holds with x <- (pstrip (cdr x) f), then
 
 ;;    (cmul c (x * y) f) = (cmul c (padd (pshift (cmul (car x) y f) (degree x) f)
 ;;                                       (pmul (pstrip (cdr x) f) y f))
@@ -3950,9 +3952,9 @@
 
 ;;    (pshift (pmul x y f) k f) = (pshift (cmul (car x) y f) k f)
 ;;                              = (cmul (car x) (pshift y k f) f)
-;;                              = (pmul x (pshift x y f) f)
+;;                              = (pmul x (pshift y k f) f)
 
-;; We proceed by induction.  If (consp (car x)), then
+;; We proceed by induction.  If (consp (cdr x)), then
 
 ;;    (pmul x y f) = (padd (pshift (cmul (car x) y f) (degree x) f)
 ;;                         (pmul (pstrip (cdr x) f) y f)
@@ -6638,7 +6640,7 @@
   :hints (("Goal" :use (cmul-cmul-*))))
 
 (defthmd cmul-nonzero
-  (implies (and (fieldp f) (field-axioms-p f)
+  (implies (and (fieldp f)
                 (feltp c f) (not (equal c (fzero f)))
 		(polyp x f) (not (equal x (pzero f))))
 	   (not (equal (cmul c x f) (pzero f))))
@@ -6715,7 +6717,7 @@
 		  (equal (car p) (car x))))))
 
 (defthmd padd-pshift
-  (implies (and (fieldp f) (field-axioms-p f)
+  (implies (and (fieldp f)
 		(polyp x f) (polyp y f) (natp k))		
 	   (equal (padd (pshift x k f) (pshift y k f) f)
 	          (if (equal (padd x y f) (pzero f))
@@ -6838,12 +6840,14 @@
 ;;---------------------
 
 (defthm pdivision
-  (implies (and (fieldp f) 
-                (polyp x f) (polyp y f) (>= (degree y) 1))
+  (implies (and (fieldp f)
+                (polyp x f) (polyp y f) (not (equal y (pzero f))))
 	   (mv-let (q r) (pdivide x y f)
 	     (and (polyp q f) (polyp r f)
 	          (equal x (padd (pmul y q f) r f))
-		  (< (degree r) (degree y)))))
+		  (if (pconstp y)
+		      (equal r (pzero f))
+		    (< (degree r) (degree y))))))
   :rule-classes ()
   :hints (("Goal" :use (pdivision-*))))
 
@@ -7200,14 +7204,14 @@
 (defthmd pgcd-monic
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
-                (not (equal x (pzero f))) (not (equal y (pzero f))))
+                (not (and (equal x (pzero f)) (equal y (pzero f)))))
            (monicp (pgcd x y f) f))
   :hints (("Goal" :use (pgcd-monic-*))))
 
 (defthmd pgcd-nonzero
   (implies (and (fieldp f) 
                 (polyp x f) (polyp y f)
-                (not (equal x (pzero f))) (not (equal y (pzero f))))
+                (not (and (equal x (pzero f)) (equal y (pzero f)))))
 	   (not (equal (pgcd x y f) (pzero f))))
   :hints (("Goal" :use (pgcd-nonzero-*))))
 

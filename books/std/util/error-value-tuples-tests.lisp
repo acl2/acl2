@@ -506,3 +506,33 @@
    (must-fail
     (verify-guards static-exclude-two-invalid
       :hints (("Goal" :in-theory (enable two-vals)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-zero-no-reterr ((x natp))
+  (b* (((noerp) (zero-vals x)))
+    :done)
+  :guard-hints (("Goal" :in-theory (enable zero-vals))))
+
+(assert-equal (static-exclude-zero-no-reterr 1)
+              :done)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-one-no-reterr ((x natp))
+  (b* (((noerp a) (one-val x)))
+    a)
+  :guard-hints (("Goal" :in-theory (enable one-val))))
+
+(assert-equal (static-exclude-one-no-reterr 1)
+              "okay")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define static-exclude-two-no-reterr ((x natp))
+  (b* (((noerp a b) (two-vals x)))
+    (mv a b))
+  :guard-hints (("Goal" :in-theory (enable two-vals))))
+
+(assert-equal (mv-list 2 (static-exclude-two-no-reterr 1))
+              (list "okay" 'okay))

@@ -12,6 +12,8 @@
 (include-book "hash/top")
 (include-book "treeset/doc")
 (include-book "treemap/doc")
+(include-book "treebag/doc")
+(include-book "graph/doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

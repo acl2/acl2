@@ -22,6 +22,8 @@
 (include-book "induction")
 (include-book "generic-typed")
 (include-book "generic-count")
+(include-book "generic-union")
+(include-book "defunion")
 (include-book "min-max")
 (include-book "update")
 (include-book "delete")

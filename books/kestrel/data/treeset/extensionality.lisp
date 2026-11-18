@@ -12,6 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/utilities/polarity" :dir :system)
+
 (include-book "set-defs")
 (include-book "in-defs")
 (include-book "subset-defs")
@@ -152,6 +154,16 @@
            equiv)
   :use ext-equal-becomes-equiv)
 
+(defruled extensionality-no-backchain-limit-polar
+  (implies (and (syntaxp (acl2::want-to-weaken (equal x y)))
+                (setp x)
+                (setp y))
+           (equal (equal x y)
+                  (let ((arbitrary-elem (ext-equal-witness x y)))
+                    (equal (in arbitrary-elem x)
+                           (in arbitrary-elem y)))))
+  :by extensionality-no-backchain-limit)
+
 (defruled extensionality
   (implies (and (setp x)
                 (setp y))
@@ -160,4 +172,15 @@
                     (equal (in arbitrary-elem x)
                            (in arbitrary-elem y)))))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
+  :by extensionality-no-backchain-limit)
+
+(defruled extensionality-polar
+  (implies (and (syntaxp (acl2::want-to-weaken (equal x y)))
+                (setp x)
+                (setp y))
+           (equal (equal x y)
+                  (let ((arbitrary-elem (ext-equal-witness x y)))
+                    (equal (in arbitrary-elem x)
+                           (in arbitrary-elem y)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1)))
   :by extensionality-no-backchain-limit)

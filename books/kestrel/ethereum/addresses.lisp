@@ -96,12 +96,7 @@
      corresponding to @($\\mathtt{ECDSAPUBKEY}(p_\\mathrm{r})$) in [YP:(284)].
      The function @($\\mathtt{ECDSAPUBKEY}$)
      returns an array of 64 bytes [YP:(277)],
-     which we obtain via @(tsee public-key-to-bytes).
-     Note that the hashed bytes are not
-     the SEC 1 uncompressed form of the public key,
-     which has an additional leading byte 4:
-     hashing that form would yield a different address,
-     for which nobody knows a private key.")
+     which we obtain via @(tsee public-key-to-bytes).")
    (xdoc::p
     "The function @(tsee private-key-to-address) calculates an address
      from a private key instead."))

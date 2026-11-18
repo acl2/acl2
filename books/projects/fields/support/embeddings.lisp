@@ -3692,7 +3692,7 @@
 (defun vdep-coeffs (l)
   (nth (1- (len l)) (row-reduce-mat (vcoord-mat l))))
 
-(defthmd vcomb-v0-if->-dim
+(defthmd vcomb-v0-if->-vdim
   (implies (and (posp m) (vlistnp l m) (> m (vdim)))
 	   (let ((c (vdep-coeffs l)))
 	     (and (flistnp c m)
@@ -3736,7 +3736,7 @@
 				     ero1 ero2 ero3 emat-ero1 emat-ero2 emat-ero3 clear-column-ops clear-emat-column-ops row-reduce-step-ops
 				     row-reduce-emat-step-ops row-ops-emat row-ops-mat elem-mat elem-emat apply-row-op apply-emat-row-op
 				     fmat* emat*)
-                  :use ((:functional-instance vcomb-v0-if->-dim
+                  :use ((:functional-instance vcomb-v0-if->-vdim
                           (f0 (lambda () (if (vdep-mac) (fzero f) (f0))))
                           (f1 (lambda () (if (vdep-mac) (fone f) (f1))))
                           (fp (lambda (x) (if (vdep-mac) (feltp x f) (fp x))))

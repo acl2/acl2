@@ -193,7 +193,7 @@
 (define tree-search-assoc
   (key
    (tree treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (tree-lookup)
   :short "A performant variant of @(tsee tree-lookup) which uses a BST
           assumption."
@@ -318,10 +318,13 @@
                    (t
                     (acl2-number-tree-search-assoc key (tree->right tree))))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable tree-search-assoc
-                                           acl2-number-tree-search-assoc
-                                           tree-element->key
-                                           tree-element->val))))
+  :guard-hints
+  (("Goal" :in-theory (e/d (tree-search-assoc
+                            acl2-number-tree-search-assoc
+                            tree-element->key
+                            tree-element->val)
+                           (acl2-numberp-of-tree->head-when-set-all-acl2-numberp))
+           :use acl2-numberp-of-tree->head-when-set-all-acl2-numberp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

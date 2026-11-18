@@ -1,0 +1,28 @@
+# Rust Library
+#
+# Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+#
+# Author: Eric McCarthy (bendyarm on GitHub)
+
+[package]
+name = "reference-driver"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# The Rust Reference's own interpreter of its grammar,
+# from the repository rust-lang/reference
+# at the commit that a Rust release pins.
+# The revision below is the one that Rust 1.100.0 pins;
+# to test the Reference of another release, change it in all three lines.
+# The interpreter reads the grammar from the Reference's sources,
+# in the checkout that cargo makes, each time this program runs.
+[dependencies]
+parser = { git = "https://github.com/rust-lang/reference", rev = "e24eecf97b0c9a6dbac67191098204dc8a190aaa" }
+grammar = { git = "https://github.com/rust-lang/reference", rev = "e24eecf97b0c9a6dbac67191098204dc8a190aaa" }
+diagnostics = { git = "https://github.com/rust-lang/reference", rev = "e24eecf97b0c9a6dbac67191098204dc8a190aaa" }
+serde_json = "1"
+
+[workspace]

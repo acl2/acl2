@@ -36,6 +36,7 @@
 (include-book "centaur/fty/basetypes" :dir :system)
 (include-book "syntax-bind") ;; for unequiv
 (include-book "rule-types")
+(include-book "centaur/meta/equivalence" :dir :system)
 (local (include-book "std/lists/append" :dir :system))
 (local (std::add-default-post-define-hook :fix))
 ;; (include-book "def-fgl-rewrite")
@@ -191,14 +192,16 @@
                   (pseudo-fnsym-p x))
          :hints(("Goal" :in-theory (enable pseudo-fnsym-p)))))
 
-(define fgl-rule-from-lemma ((fgl-rune fgl-rune-p) x)
+(define fgl-rule-from-lemma ((data fgl-ruledata-p) x)
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rule (implies (not errmsg) (fgl-rule-p rule))))
   (b* (((unless (pseudo-rewrite-rule-p x)) (mv (msg "Bad rewrite rule: ~x0" x) nil))
        ((acl2::rewrite-rule x))
        ((when (eq x.subclass 'acl2::meta))
         (mv (msg "Rule ~x0 is a :meta rule~%" x.rune) nil)))
-    (mv nil (make-fgl-rule-rewrite :rune fgl-rune
+    (mv nil (make-fgl-rule-rewrite :rune (fgl-ruledata->rune data)
+                                   :arg-modes (fgl-ruledata->arg-modes data)
+                                   :enabledp (fgl-ruledata->enabledp data)
                                    :rule (cmr::make-rewrite
                                           :hyps x.hyps
                                           :equiv x.equiv
@@ -212,12 +215,12 @@
     :hints(("Goal" :in-theory (enable fgl-rule-term
                                       cmr::rewrite-rule-term-alt-def)))))
 
-(define fgl-rules-from-lemmas ((fgl-rune fgl-rune-p) lemmas)
+(define fgl-rules-from-lemmas ((data fgl-ruledata-p) lemmas)
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   (b* (((when (atom lemmas)) (mv nil nil))
-       ((mv err rule) (fgl-rule-from-lemma fgl-rune (car lemmas)))
-       ((mv err2 rest) (fgl-rules-from-lemmas fgl-rune (cdr lemmas))))
+       ((mv err rule) (fgl-rule-from-lemma data (car lemmas)))
+       ((mv err2 rest) (fgl-rules-from-lemmas data (cdr lemmas))))
     (mv (or err err2)
         (if err rest (cons rule rest))))
   ///
@@ -229,12 +232,12 @@
                                       rules-ev-good-rewrite-rulesp
                                       rules-ev-theoremp)))))
 
-(define fgl-rules-from-rewrite (rune (fgl-rune fgl-rune-p) fn-lemma-map)
+(define fgl-rules-from-rewrite (rune (data fgl-ruledata-p) fn-lemma-map)
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   :guard-hints (("goal" :in-theory (enable pseudo-fnsym-p)))
   (b* ((rw (cdr (hons-get rune fn-lemma-map))))
-    (fgl-rules-from-lemmas fgl-rune rw))
+    (fgl-rules-from-lemmas data rw))
   ///
   (defret rules-ev-good-fgl-rule-p-of-<fn>
     (implies (rules-ev-good-rewrite-rule-alistp fn-lemma-map)
@@ -252,26 +255,28 @@
 
 
 
-(define fgl-rule-from-cmr-rewrite ((rune fgl-rune-p) (x cmr::rewrite-p))
+(define fgl-rule-from-cmr-rewrite ((data fgl-ruledata-p) (x cmr::rewrite-p))
   :returns (rule fgl-rule-p)
   (b* (((cmr::rewrite x)))
-    (make-fgl-rule-rewrite :rule (cmr::make-rewrite :hyps x.hyps
+    (make-fgl-rule-rewrite :arg-modes (fgl-ruledata->arg-modes data)
+                           :enabledp (fgl-ruledata->enabledp data)
+                           :rule (cmr::make-rewrite :hyps x.hyps
                                                     :lhs x.lhs
                                                     :rhs x.rhs
                                                     :equiv x.equiv)
-                           :rune rune))
+                           :rune (fgl-ruledata->rune data)))
   ///
   (defret rules-ev-ev-of-<fn>
     (equal (rules-ev (fgl-rule-term rule) env)
            (rules-ev (cmr::rewrite-term x) env))
     :hints(("Goal" :in-theory (enable fgl-rule-term cmr::rewrite-term)))))
 
-(define fgl-rules-from-cmr-rewrites ((rune fgl-rune-p) (x cmr::rewritelist-p))
+(define fgl-rules-from-cmr-rewrites ((data fgl-ruledata-p) (x cmr::rewritelist-p))
   :returns (rules fgl-rulelist-p)
   (if (atom x)
       nil
-    (cons (fgl-rule-from-cmr-rewrite rune (car x))
-          (fgl-rules-from-cmr-rewrites rune (cdr x))))
+    (cons (fgl-rule-from-cmr-rewrite data (car x))
+          (fgl-rules-from-cmr-rewrites data (cdr x))))
   ///
   (defret rules-ev-ev-of-<fn>
     (iff (rules-ev (conjoin (fgl-rulelist-terms rules)) env)
@@ -285,12 +290,12 @@
    :hints (("goal" :use rules-ev-falsify))))
 
 (define fgl-rules-from-formula ((form pseudo-termp)
-                                (fgl-rune fgl-rune-p)
+                                (data fgl-ruledata-p)
                                 (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   (b* (((mv err rewrites) (cmr::parse-rewrites-from-term form world)))
-    (mv err (fgl-rules-from-cmr-rewrites fgl-rune rewrites)))
+    (mv err (fgl-rules-from-cmr-rewrites data rewrites)))
   ///
 
   (defret rules-ev-good-fgl-rule-p-of-<fn>
@@ -302,42 +307,24 @@
 
 (local (in-theory (disable w)))
 
-(define fgl-rules-from-rune ((rune fgl-rune-p) (fn-lemma-map) (world plist-worldp))
+(define fgl-rules-from-ruledata ((data fgl-ruledata-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  :prepwork ((local (defthm fgl-rule-p-of-rune
-                      (implies (and (fgl-rune-p x)
-                                    (not (fgl-rune-case x :rewrite))
-                                    (not (fgl-rune-case x :definition))
-                                    (not (fgl-rune-case x :formula)))
-                               (and (fgl-rule-p x)
-                                    (equal (fgl-rule-kind x)
-                                           (fgl-rune-kind x))))
-                      :hints(("Goal" :in-theory (enable fgl-rune-p fgl-rule-p fgl-rune-kind fgl-rule-kind))))))
-  (fgl-rune-case rune
-    :rewrite (fgl-rules-from-rewrite `(:rewrite ,rune.name) rune fn-lemma-map)
-    :definition (fgl-rules-from-rewrite `(:definition ,rune.name) rune fn-lemma-map)
-    :formula (b* ((form (acl2::meta-extract-formula-w rune.name world))
-                  ((unless (pseudo-termp form))
-                   (mv (msg "Formula for ~x0 was not pseudo-termp: ~x1~%" rune.name form) nil)))
-               (fgl-rules-from-formula form rune world))
-    :otherwise (mv nil (list (fgl-rune-fix rune))))
+  (b* (((fgl-ruledata data)))
+    (fgl-rune-case data.rune
+      :rewrite (fgl-rules-from-rewrite data.rune data fn-lemma-map)
+      :definition (fgl-rules-from-rewrite data.rune data fn-lemma-map)
+      :formula (b* ((form (acl2::meta-extract-formula-w data.rune.name world))
+                    ((unless (pseudo-termp form))
+                     (mv (msg "Formula for ~x0 was not pseudo-termp: ~x1~%" data.rune.name form) nil)))
+                 (fgl-rules-from-formula form data world))
+      :primitive (mv nil (list (make-fgl-rule-primitive :name data.rune.name
+                                                        :arg-modes data.arg-modes
+                                                        :enabledp data.enabledp)))
+      :meta (mv nil (list (make-fgl-rule-meta :name data.rune.name
+                                              :arg-modes data.arg-modes
+                                              :enabledp data.enabledp)))))
   ///
-  (local (defthm fgl-rule-term-when-not-rewrite
-           (implies (not (fgl-rule-case x :rewrite))
-                    (equal (fgl-rule-term x) ''t))
-           :hints(("Goal" :in-theory (enable fgl-rule-term)))))
-
-  (local (defthm fgl-rule-p-of-rune-fix
-           (implies (and (not (fgl-rune-case x :rewrite))
-                         (not (fgl-rune-case x :definition))
-                         (not (fgl-rune-case x :formula)))
-                    (and (fgl-rule-p (fgl-rune-fix x))
-                         (equal (fgl-rule-kind (fgl-rune-fix x))
-                                (fgl-rune-kind x))))
-           :hints(("Goal" :use ((:instance fgl-rule-p-of-rune (x (fgl-rune-fix x))))
-                   :in-theory (disable fgl-rule-p-of-rune)))))
-
   (defret rules-ev-good-fgl-rules-p-of-<fn>
     (implies (and (rules-ev-good-rewrite-rule-alistp fn-lemma-map)
                   (rules-ev-meta-extract-global-facts)
@@ -347,15 +334,15 @@
                  '(:in-theory (enable rules-ev-good-fgl-rules-p)))
             (and stable-under-simplificationp
                  '(:in-theory (enable rules-ev-good-fgl-rule-p
-                                      rules-ev-theoremp))))))
+                                      fgl-rule-term rules-ev-theoremp))))))
 
-(define fgl-rules-from-runes ((runes fgl-rune-priolist-p) (fn-lemma-map) (world plist-worldp))
+(define fgl-rules-from-ruledata-list ((ruledata-list fgl-ruledata-list-p) (fn-lemma-map) (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* (((when (atom runes)) (mv nil nil))
-       ((mv errmsg1 rules1) (fgl-rules-from-rune (fgl-rune-prio->rune (car runes))
-                                                 fn-lemma-map world))
-       ((mv errmsg2 rest) (fgl-rules-from-runes (cdr runes) fn-lemma-map world)))
+  (b* (((when (atom ruledata-list)) (mv nil nil))
+       ((mv errmsg1 rules1) (fgl-rules-from-ruledata (car ruledata-list)
+                                                     fn-lemma-map world))
+       ((mv errmsg2 rest) (fgl-rules-from-ruledata-list (cdr ruledata-list) fn-lemma-map world)))
     (mv (or errmsg1 errmsg2) (append rules1 rest)))
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
@@ -388,34 +375,34 @@
 
 (defconst *fgl-default-definition-rewrite-priority* 10)
 
-(define fgl-rewrite-runes-from-lookup ((fn pseudo-fnsym-p)
-                                       (look) ;; the pair resulting from looking up the function
-                                       (world plist-worldp))
+(define fgl-rewrite-ruledata-from-lookup ((fn pseudo-fnsym-p)
+                                          (look) ;; the pair resulting from looking up the function
+                                          (world plist-worldp))
   (if (consp look)
       (cdr look)
     (if (eq (fgetprop (pseudo-fnsym-fix fn) 'acl2::unnormalized-body :none world) :none)
         nil
-      (list (fgl-rune-prio (fgl-rune-formula fn)
-                           *fgl-default-definition-rewrite-priority*)))))
+      (list (make-fgl-ruledata :rune (fgl-rune-formula fn)
+                               :prio *fgl-default-definition-rewrite-priority*)))))
 
-(define fgl-rewrite-runes-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
-  (fgl-rewrite-runes-from-lookup fn (hons-get (pseudo-fnsym-fix fn) alist) world))
-       
+(define fgl-rewrite-ruledata-lookup ((fn pseudo-fnsym-p) (alist) (world plist-worldp))
+  (fgl-rewrite-ruledata-from-lookup fn (hons-get (pseudo-fnsym-fix fn) alist) world))
+
 
 (define fgl-function-rules-from-lookup ((fn pseudo-fnsym-p)
                                         (look) ;; pair resulting from looking up the function in the table
                                         (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* ((runes (fgl-rewrite-runes-from-lookup fn look world))
-       ((unless (fgl-rune-priolist-p runes))
+  (b* ((ruledata-list (fgl-rewrite-ruledata-from-lookup fn look world))
+       ((unless (fgl-ruledata-list-p ruledata-list))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-rune-priolist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-ruledata-list-p)
             nil))
        (lemmas (fgetprop (pseudo-fnsym-fix fn) 'acl2::lemmas nil world))
        (map (map-rewrite-rules lemmas nil))
        ((mv err rules1)
-        (fgl-rules-from-runes runes map world)))
+        (fgl-rules-from-ruledata-list ruledata-list map world)))
     (mv err (fgl-rules-filter-leading-fnsym fn rules1)))
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
@@ -424,7 +411,7 @@
              (rules-ev-good-fgl-rules-p rules)))
 
   (memoize 'fgl-function-rules-from-lookup))
-  
+
 (define fgl-function-rules ((fn pseudo-fnsym-p)
                             (table)
                             (world plist-worldp))
@@ -473,22 +460,22 @@
              (rules-ev-good-fgl-rules-p new-x))
     :hints(("Goal" :in-theory (enable rules-ev-good-fgl-rules-p)))))
 
-(define fgl-branch-merge-runes-lookup ((fn pseudo-fnsym-p) (alist))
+(define fgl-branch-merge-ruledata-lookup ((fn pseudo-fnsym-p) (alist))
   (cdr (hons-get (pseudo-fnsym-fix fn) alist)))
 
 
 (define fgl-branch-merge-rules-from-lookup ((fn pseudo-fnsym-p)
-                                            (runes)
+                                            (ruledata-list)
                                             (world plist-worldp))
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
-  (b* (((unless (fgl-rune-priolist-p runes))
+  (b* (((unless (fgl-ruledata-list-p ruledata-list))
         (mv (msg "Error: entry for ~x0 in the ~x1 table did not satisfy ~x2~%"
-                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-rune-priolist-p)
+                 (pseudo-fnsym-fix fn) 'fgl-rewrite-rules 'fgl-ruledata-list-p)
             nil))
        (lemmas (fgetprop 'if 'acl2::lemmas nil world))
        (map (map-rewrite-rules-memo lemmas))
-       ((mv errmsg rules1) (fgl-rules-from-runes runes map world)))
+       ((mv errmsg rules1) (fgl-rules-from-ruledata-list ruledata-list map world)))
     (mv errmsg (fgl-rules-filter-branch-fnsym fn rules1)))
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
@@ -504,7 +491,7 @@
   :returns (mv (errmsg acl2::errmsg-type-p :rule-classes :type-prescription)
                (rules fgl-rulelist-p))
   (fgl-branch-merge-rules-from-lookup fn
-                                      (fgl-branch-merge-runes-lookup fn (make-fast-alist table))
+                                      (fgl-branch-merge-ruledata-lookup fn (make-fast-alist table))
                                       world)
   ///
   (defret rules-ev-good-fgl-rules-p-of-<fn>
@@ -519,4 +506,98 @@
 
 
 
+(local (acl2::def-functional-instance
+         rules-ev-equiv-rel-term-implies-reflexive
+         cmr::equiv-rel-term-implies-reflexive
+         ((cmr::equiv-ev rules-ev)
+          (cmr::equiv-ev-list rules-ev-list)
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))
+         :hints(("Goal" :in-theory (enable rules-ev-when-theoremp
+                                           rules-ev-of-fncall-args))
+                (and stable-under-simplificationp
+                     '(:in-theory (enable rules-ev-theoremp))))))
 
+(local (acl2::def-functional-instance
+         rules-ev-equiv-rel-term-implies-symmetric
+         cmr::equiv-rel-term-implies-symmetric
+         ((cmr::equiv-ev rules-ev)
+          (cmr::equiv-ev-list rules-ev-list)
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))))
+
+(local (acl2::def-functional-instance
+         rules-ev-equiv-rel-term-implies-transitive
+         cmr::equiv-rel-term-implies-transitive
+         ((cmr::equiv-ev rules-ev)
+          (cmr::equiv-ev-list rules-ev-list)
+          (cmr::equiv-ev-falsify rules-ev-falsify)
+          (cmr::equiv-ev-theoremp rules-ev-theoremp))))
+
+
+
+(define fgl-equivp ((fn pseudo-fnsym-p) (w plist-worldp))
+  (b* ((fn (pseudo-fnsym-fix fn)))
+    (or (eq fn 'equal)
+        (eq fn 'iff)
+        (eq fn 'unequiv)
+        (cmr::ensure-equiv-relationp fn w)))
+  ///
+
+  (local (acl2::def-functional-instance
+           rules-ev-ensure-equiv-relationp-correct
+           cmr::ensure-equiv-relationp-correct
+           ((cmr::equiv-ev rules-ev)
+            (cmr::equiv-ev-list rules-ev-list)
+            (cmr::equiv-ev-falsify rules-ev-falsify)
+            (cmr::equiv-ev-theoremp rules-ev-theoremp)
+            (cmr::equiv-ev-meta-extract-global-badguy rules-ev-meta-extract-global-badguy))
+           :hints((and stable-under-simplificationp
+                       '(:use rules-ev-meta-extract-global-badguy)))))
+
+  (defthm fgl-equivp-correct
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (fgl-equivp fn (w state)))
+             (rules-ev (cmr::equiv-rel-term fn) a))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable cmr::equiv-rel-term)))))
+
+  (defthm fgl-equivp-correct1
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (fgl-equivp fn (w state))
+                  (pseudo-fnsym-p fn))
+             (and (rules-ev (list fn x x) a)
+                  (implies (rules-ev (list fn x y) a)
+                           (rules-ev (list fn y x) a))
+                  (implies (and (rules-ev (list fn x y) a)
+                                (rules-ev (list fn y z) a))
+                           (rules-ev (list fn x z) a))))
+    :hints (("goal" :use ((:instance fgl-equivp-correct
+                           (a (rules-ev-falsify (cmr::equiv-rel-term fn)))))
+             :in-theory (disable fgl-equivp-correct
+                                 fgl-equivp))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable rules-ev-theoremp)))))
+
+
+  (defthm fgl-equivp-correct2
+    (implies (and (rules-ev-meta-extract-global-facts)
+                  (fgl-equivp fn (w state)))
+             (and (rules-ev (pseudo-term-fncall fn (list x x)) a)
+                  (implies (rules-ev (pseudo-term-fncall fn (list x y)) a)
+                           (rules-ev (pseudo-term-fncall fn (list y x)) a))
+                  (implies (and (rules-ev (pseudo-term-fncall fn (list x y)) a)
+                                (rules-ev (pseudo-term-fncall fn (list y z)) a))
+                           (rules-ev (pseudo-term-fncall fn (list x z)) a))))
+    :hints(("Goal" :in-theory (disable fgl-equivp))
+           (and stable-under-simplificationp
+                '(:in-theory (enable rules-ev-theoremp)))))
+
+  ;; Note: Ran into a case where cmr::ensure-equiv-relationp turned out to be
+  ;; very expensive.  There was a rule with a hyp (fgl::check-consp freevar x),
+  ;; which isn't an equiv relation but otherwise fits the criteria of
+  ;; check-equivbind-hyp and thus we were checking ensure-equiv-relationp over
+  ;; and over on it.  We clear the memoization table after exiting the
+  ;; interpreter in fgl-clause-proc-core, because it's unlikely we'll see the
+  ;; same world again.
+  (memoize 'fgl-equivp))

@@ -207,15 +207,10 @@
            (subset z (union y x)))
   :enable pick-a-point-polar)
 
-(defrule subset-of-union0
-  (equal (subset (union x y) x)
-         (subset y x))
-  :enable (acl2::equal-of-booleans-cheap
-           pick-a-point-polar))
-
-(defrule subset-of-union1
-  (equal (subset (union x y) y)
-         (subset x y))
+(defrule subset-of-union
+  (equal (subset (union x y) z)
+         (and (subset x z)
+              (subset y z)))
   :enable (acl2::equal-of-booleans-cheap
            pick-a-point-polar))
 

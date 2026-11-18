@@ -281,12 +281,12 @@
   :short "Transform a code ensemble."
   :returns (new-code code-ensemblep)
   (b* (((code-ensemble code) code))
-    (make-code-ensemble
+    (change-code-ensemble
+     code
      :trans-units (specialize-trans-ensemble code.trans-units
                                              target-fn
                                              target-param
-                                             const)
-     :ienv code.ienv)))
+                                             const))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

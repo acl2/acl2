@@ -339,7 +339,7 @@
 (define update-from-alist-rev
   ((alist alistp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   (if (endp alist)
       (fix map)
@@ -393,7 +393,6 @@
          (treeset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist-rev
-           treeset::insert-all
            strip-cars))
 
 (defrule lookup-of-update-from-alist-rev
@@ -410,7 +409,7 @@
 (define update-from-alist
   ((alist alistp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an alist of key-value pairs to a @(see treemap)."
@@ -474,7 +473,6 @@
          (treeset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist
-           treeset::insert-all
            strip-cars))
 
 (defrule lookup-of-update-from-alist
@@ -495,11 +493,39 @@
 (verify-guards update-from-alist$inline
   :hints (("Goal" :in-theory (enable update-from-alist))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled update-from-alist-when-not-consp
+  (implies (not (consp alist))
+           (equal (update-from-alist alist map)
+                  (fix map)))
+  :enable update-from-alist)
+
+(defrule update-from-alist-when-not-consp-cheap
+  (implies (not (consp alist))
+           (equal (update-from-alist alist map)
+                  (fix map)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by update-from-alist-when-not-consp)
+
+(defruled update-from-alist-when-consp
+  (implies (consp alist)
+           (equal (update-from-alist alist map)
+                  (update (car (car alist))
+                          (cdr (car alist))
+                          (update-from-alist (cdr alist) map))))
+  :enable update-from-alist)
+
+(defrule update-from-alist-of-cons
+  (equal (update-from-alist (cons pair alist) map)
+         (update (car pair) (cdr pair) (update-from-alist alist map)))
+  :enable update-from-alist)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define from-alist
   ((alist alistp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treemap)
   :short "Create a map from an alist of key-value pairs."
   :long
@@ -554,12 +580,41 @@
                     default)))
   :enable from-alist)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled from-alist-when-not-consp
+  (implies (not (consp alist))
+           (equal (from-alist alist)
+                  (empty)))
+  :enable from-alist)
+
+(defrule from-alist-when-not-consp-cheap
+  (implies (not (consp alist))
+           (equal (from-alist alist)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by from-alist-when-not-consp)
+
+(defruled from-alist-when-consp
+  (implies (consp alist)
+           (equal (from-alist alist)
+                  (update (car (car alist))
+                          (cdr (car alist))
+                          (from-alist (cdr alist)))))
+  :enable (from-alist
+           update-from-alist-when-consp))
+
+(defrule from-alist-of-cons
+  (equal (from-alist (cons pair alist))
+         (update (car pair) (cdr pair) (from-alist alist)))
+  :enable from-alist)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-from-omap
   ((omap omap::mapp)
    (map mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (map$ mapp)
   :parents (update)
   :short "Add an omap of key-value pairs to a @(see treemap)."
@@ -669,7 +724,7 @@
 
 (define from-omap
   ((omap omap::mapp))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (treemap)
   :short "Create a map from an omap."
   :long

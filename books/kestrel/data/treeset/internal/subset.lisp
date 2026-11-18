@@ -36,7 +36,7 @@
 (define tree-subset-p
   ((x treep)
    (y treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :parents (implementation)
   :short "Check if one tree is a subset of the other."
   :guard (bstp y)

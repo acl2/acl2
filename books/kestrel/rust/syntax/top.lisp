@@ -22,6 +22,7 @@
 (include-book "extra-grammatical-restrictions")
 (include-book "lexer")
 (include-book "tokenizer")
+(include-book "differential-testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,9 +45,23 @@
    (xdoc::p
     "This is work in progress.
      At this time of writing,
-     the lexical grammar covers a first slice
-     of Rust's lexical structure,
-     and the lexer and tokenizer are done for that slice.
+     the lexical grammar, lexer, and tokenizer cover
+     whitespace, comments (except block doc comments),
+     identifiers (ASCII-only for now), keywords, lifetimes,
+     integer and float literals,
+     character, byte, and string literals of all kinds
+     (including raw strings and C strings),
+     punctuation, and delimiters.
+     The lexer and the tokenizer are tested against rustc
+     (see @(see differential-testing)),
+     and @(see related-lexer-descriptions) relates our grammar
+     to other descriptions of Rust's lexical structure.
+     Still to come are
+     block doc comments,
+     Unicode identifiers and their normalization,
+     the edition 2024 reserved forms,
+     and the processing of the input file
+     (UTF-8 decoding, CRLF normalization, a leading shebang).
      Token trees have their representation,
      well-formedness, and flattening,
      but not yet the builder that groups tokens into trees.

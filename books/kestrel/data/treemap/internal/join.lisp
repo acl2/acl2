@@ -70,7 +70,7 @@
 (define tree-join
   ((left treep)
    (right treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   :returns (tree treep)
   :parents (implementation)
   :short "Join two trees which have previously been @(see tree-split)."
@@ -166,7 +166,6 @@
                     (tree-lookup key right))))
   :induct t
   :enable (tree-join
-           tree-lookup
            data::<<-rules
            <<-when-<<-all-l-and-in-of-tree-key-set
            <<-when-<<-all-r-and-in-of-tree-key-set))
@@ -230,7 +229,7 @@
   (split
    (left treep)
    (right treep))
-  (declare (xargs :type-prescription :none))
+  :type-prescription :none
   (declare (ignore split))
   :returns (tree treep)
   :parents (implementation)

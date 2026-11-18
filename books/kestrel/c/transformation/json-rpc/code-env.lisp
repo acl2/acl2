@@ -144,7 +144,8 @@
      which is thus not annotated, or not fully,
      e.g. because it contains new constructs.
      Before such an output is stored in the environment,
-     it is validated again, with the same implementation environment.
+     it is validated again,
+     with the same implementation environment and @('strict-merge') flag.
      This also refreshes any annotations that the transformation
      may have made out of date."))
   (b* (((reterr) (irr-ann-code-ensemble))
@@ -152,7 +153,8 @@
        ((unless (c$::trans-ensemble-unambp code.trans-units))
         (retmsg$ "Internal error: the transformed code is ambiguous."))
        ((erp trans-units)
-        (c$::valid-trans-ensemble code.trans-units code.ienv nil))
+        (c$::valid-trans-ensemble
+          code.trans-units code.ienv code.strict-merge nil))
        ;; TODO: remove once it is proved that validation produces
        ;; an annotated term.
        ((unless (c$::trans-ensemble-annop trans-units))

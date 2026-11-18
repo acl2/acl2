@@ -1,0 +1,8 @@
+(ld "cert.acl2")
+; From cert.acl2:
+; cert-flags: ? t :ttags :all
+
+; Matt K. mod: ACL2(p) certification using waterfall-parallelism failed twice
+; on 9/16/2018.  Although there was no clear error message, I am turning off
+; waterfall-parallelism to avoid the problem.
+(set-waterfall-parallelism nil)

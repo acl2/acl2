@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,110 +10,162 @@
 
 (in-package "C2C")
 
+(include-book "std/testing/assert-bang" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)
-(include-book "std/testing/must-succeed-star" :dir :system)
 
 (include-book "../../../syntax/input-files")
-(include-book "../../../syntax/output-files")
 
 (include-book "../../utilities/call-graph")
+(include-book "../../utilities/qualified-ident")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(acl2::must-succeed*
-  (c$::input-files
-    :const *test*
-    :files '("main.c" "file1.c"))
+(defconst *ienv-gcc*
+  (c$::ienv-default :dialect (c::make-dialect :std (c::standard-c17)
+                                              :gcc t)))
 
-  (defconst *call-graph*
-    (call-graph-trans-ensemble
-     (code-ensemble->trans-units *test*)))
+(c$::input-files :files '("a.c" "b.c" "calls.c" "recursion.c")
+                 :const *code*
+                 :ienv *ienv-gcc*)
 
-  (acl2::assert-equal
-    *call-graph*
-    '((((filepath?)
-        (ident "call_main"))
-       ((filepath?)
-        (ident "main")))
-      (((filepath?)
-        (ident "main"))
-       ((filepath? (c$::string . "main.c"))
-        (ident "foo")))
-      (((filepath? (c$::string . "file1.c"))
-        (ident "fibonacci"))
-       ((filepath? (c$::string . "file1.c"))
-        (ident "fibonacci")))
-      (((filepath? (c$::string . "file1.c"))
-        (ident "foo"))
-       ((filepath?)
-        (ident "call_main")))
-      (((filepath? (c$::string . "main.c"))
-        (ident "foo"))
-       nil
-       ((filepath?)
-        (ident "main")))))
+(defconst *ensemble*
+  (code-ensemble->trans-units *code*))
 
-  (defconst *reachable-from-main*
-    (call-graph-transitive-closure
-      (external-ident (ident "main"))
-      *call-graph*))
+(defconst *call-graph*
+  (trans-ensemble-call-graph *ensemble*))
 
-  (acl2::assert-equal
-    *reachable-from-main*
-    '(nil
-      ((filepath?)
-       (ident "main"))
-      ((filepath? (c$::string . "main.c"))
-       (ident "foo"))))
+(defun uid-of (qual-ident)
+  (declare (xargs :mode :program))
+  (mv-let (erp uid)
+    (resolve-qualified-ident qual-ident *ensemble*)
+    (if erp
+        (er hard? 'uid-of "~@0" erp)
+      uid)))
 
-  :with-output-off nil)
+(defun external-uid (name)
+  (declare (xargs :mode :program))
+  (uid-of (external-ident (ident name))))
+
+(defun internal-uid (file name)
+  (declare (xargs :mode :program))
+  (uid-of (qualified-ident (filepath file) (ident name))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Calls across translation units resolve to the same node. Static functions
+;; with the same name in different translation units are distinct nodes.
+
+(acl2::assert! (not (equal (internal-uid "a.c" "helper")
+                           (internal-uid "b.c" "helper"))))
+
+(acl2::assert-equal
+  (graph::successors (external-uid "entry") *call-graph*)
+  (treeset::set (internal-uid "a.c" "helper")
+                (external-uid "shared")))
+
+(acl2::assert-equal
+  (graph::successors (external-uid "shared") *call-graph*)
+  (treeset::set (internal-uid "b.c" "helper")))
+
+;; A defined function which calls nothing has no successors.
+
+(acl2::assert-equal
+  (graph::successors (external-uid "leaf") *call-graph*)
+  (treeset::empty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(acl2::must-succeed*
-  (c$::input-files
-    :const *test*
-    :files '("main2.c" "file1.c"))
+;; Parentheses, & and * around a function name still call that function.
 
-  (defconst *call-graph*
-    (call-graph-trans-ensemble
-     (code-ensemble->trans-units *test*)))
+(acl2::assert-equal
+  (graph::successors (external-uid "forms") *call-graph*)
+  (treeset::set (external-uid "leaf")))
 
-  (acl2::assert-equal
-    *call-graph*
-    '((((filepath?)
-        (ident "call_main"))
-       ((filepath?)
-        (ident "main")))
-      (((filepath?)
-        (ident "main"))
-       ((filepath? (c$::string . "main2.c"))
-        (ident "foo")))
-      (((filepath? (c$::string . "file1.c"))
-        (ident "fibonacci"))
-       ((filepath? (c$::string . "file1.c"))
-        (ident "fibonacci")))
-      (((filepath? (c$::string . "file1.c"))
-        (ident "foo"))
-       ((filepath?)
-        (ident "call_main")))
-      (((filepath? (c$::string . "main2.c"))
-        (ident "foo"))
-       nil
-       ((filepath?)
-        (ident "main")))))
+;; Calls through a pointer are not resolved, including through a global
+;; pointer, whose unique identifier has the same form as a function's, and
+;; through a parameter which shadows a function of the same name.
 
-  (defconst *reachable-from-main*
-    (call-graph-transitive-closure
-      (external-ident (ident "main"))
-      *call-graph*))
+(acl2::assert-equal
+  (graph::successors (external-uid "through_pointer") *call-graph*)
+  (treeset::set nil))
 
-  (acl2::assert-equal
-    *reachable-from-main*
-    '(nil
-      ((filepath?)
-       (ident "main"))
-      ((filepath? (c$::string . "main2.c"))
-       (ident "foo"))))
+(acl2::assert-equal
+  (graph::successors (external-uid "through_global_pointer") *call-graph*)
+  (treeset::set nil))
 
-  :with-output-off nil)
+(acl2::assert! (not (graph::node-in (external-uid "global_fp") *call-graph*)))
+
+(acl2::assert-equal
+  (graph::successors (external-uid "shadowed") *call-graph*)
+  (treeset::set nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Functions without a definition, including built-ins, have an edge to nil.
+
+(acl2::assert-equal
+  (graph::successors (external-uid "calls_undefined") *call-graph*)
+  (treeset::set (external-uid "undefined")))
+
+(acl2::assert-equal
+  (graph::successors (external-uid "undefined") *call-graph*)
+  (treeset::set nil))
+
+(acl2::assert-equal
+  (graph::successors (c$::uid-external (ident "__builtin_expect"))
+                     *call-graph*)
+  (treeset::set nil))
+
+;; A built-in which the validator does not know is still a direct call.
+
+(acl2::assert-equal
+  (graph::successors (external-uid "calls_unknown_builtin") *call-graph*)
+  (treeset::set (c$::uid-external (ident "__builtin_parity"))))
+
+;; Assembler statements may call anything.
+
+(acl2::assert-equal
+  (graph::successors (external-uid "with_asm") *call-graph*)
+  (treeset::set nil))
+
+;; Size expressions of variably modified parameters are evaluated on entry.
+
+(acl2::assert-equal
+  (graph::successors (external-uid "vla_param") *call-graph*)
+  (treeset::set (external-uid "size")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::assert-equal
+  (cg-calls-3p (external-uid "fact") (external-uid "fact") *call-graph*)
+  t)
+
+(acl2::assert-equal
+  (cg-calls-3p (external-uid "odd") (external-uid "odd") *call-graph*)
+  nil)
+
+;; A function without a definition may call anything.
+
+(acl2::assert-equal
+  (cg-calls-3p (external-uid "declared_only")
+               (external-uid "fact")
+               *call-graph*)
+  :unknown)
+
+(acl2::assert-equal
+  (cg-calls+-3p (external-uid "not_recursive")
+                (external-uid "fact")
+                *call-graph*)
+  t)
+
+(acl2::assert-equal
+  (cg-recursive-3p (external-uid "odd") *call-graph*)
+  t)
+
+(acl2::assert-equal
+  (cg-recursive-3p (external-uid "not_recursive") *call-graph*)
+  nil)
+
+(acl2::assert-equal
+  (cg-recursive-3p (external-uid "callback") *call-graph*)
+  :unknown)
