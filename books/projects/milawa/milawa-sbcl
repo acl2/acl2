@@ -1,6 +1,16 @@
 #!/bin/sh
 
-SBCL="sbcl"
+# Sizing comes from the environment, so one script works on any host:
+#
+#   MILAWA_SBCL                SBCL executable              (default: sbcl)
+#   MILAWA_SBCL_DYNAMIC_SPACE  heap size, in MB             (default: 32000)
+#   MILAWA_SBCL_CONTROL_STACK  control stack size, in MB    (default: 1024)
+#   SBCL_USER_ARGS             extra SBCL arguments, appended last
+#
+# The *binding* stack cannot be set here: it is a compile-time constant of the
+# SBCL runtime.
+
+SBCL="${MILAWA_SBCL:-sbcl}"
 
 if [ "$#" -ne "1" ]
 then
@@ -28,50 +38,6 @@ then
 	echo ""
 fi
 
-if [ -n "`hostname | grep nemesis`" ]
-then
-    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
-elif [ -n "`hostname | grep moros`" ]
-then
-    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
-elif [ -n "`hostname | grep jordan`" ]
-then
-    exec $SBCL --dynamic-space-size 2048 --control-stack-size 256 --noinform --core $1
-elif [ -n "`hostname | grep lhug`" ]
-then
-    exec $SBCL --dynamic-space-size 16384 --control-stack-size 1024 --noinform --core $1
-elif [ -n "`hostname | grep shadowfax`" ]
-then
-    exec $SBCL --dynamic-space-size 256 --control-stack-size 1024 --noinform --core $1
-elif [ -n "`hostname | grep warren`" ]
-then
-    exec $SBCL --dynamic-space-size 1800 --control-stack-size 256 --noinform --core $1
-else
-    echo "Error: host not yet configured."
-    echo ""
-    echo "What is this about?"
-    echo "  SBCL allows the amount of available heap and memory space to be "
-    echo "  configured via command-line parameters, --dynamic-space-size (for "
-    echo "  the size of the heap), and --control-stack-size (for the size of "
-    echo "  the control stack."
-    echo ""
-    echo "How to fix it?"
-    echo "  Before using milawa-sbcl, please determine the appropriate values "
-    echo "  for these parameters on this host, `hostname`.  Then, edit the "
-    echo "  milawa-sbcl script and add a section for your host, which invokes "
-    echo "  sbcl with the proper settings."
-    echo ""
-    echo "How to determine these settings?"
-    echo ""
-    echo "  Just run:"
-    echo "    sbcl --dynamic-space-size [N] --control-stack-size [M]"
-    echo ""
-    echo "  For your choice of N and M.  I don't know what the minimums are, "
-    echo "  but probably you want a control-stack of at least 256, and a "
-    echo "  dynamic space size of at least 1500.  More is better."
-    echo ""
-    echo "  At any rate, if sbcl dies with a message about 'cannot allocate "
-    echo "  memory', or says that the dynamic-space-size is too large, you "
-    echo "  will need to lower the settings."
-    echo ""
-fi
+exec "$SBCL" --dynamic-space-size "${MILAWA_SBCL_DYNAMIC_SPACE:-32000}" \
+             --control-stack-size "${MILAWA_SBCL_CONTROL_STACK:-1024}" \
+             --noinform $SBCL_USER_ARGS --core "$1"

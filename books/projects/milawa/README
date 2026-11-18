@@ -9,7 +9,7 @@ by Jared Davis for his Ph.D. dissertation.  For information about Milawa, see
 its web site (http://www.cs.utexas.edu/~jared/milawa/Web/).
 
 This directory contains the Milawa source code, which is now part of the ACL2
-Community Books project (https://code.google.com/p/acl2-books/).
+Community Books project (https://github.com/acl2/acl2).
 
 -------------------------------------------------------------------------------
 
@@ -17,28 +17,18 @@ Community Books project (https://code.google.com/p/acl2-books/).
 
 Milawa is not built during the "make" of the ordinary ACL2 Community Books,
 because building it takes several hours, requires a lot of memory and hard disk
-space, and requires both Clozure Common Lisp (CCL) and ACL2(h).
+space, and needs a Common Lisp with generous stack and heap settings.
 
 Instead, to build Milawa, you should:
 
-1. Build CCL and ACL2(h) according to the instructions in:
-       acl2-books/centaur/README.html
+1. Generate the ACL2 proofs (this is the long step).
 
-2. Then run these commands:
-
-     $ cd acl2-books/milawa/ACL2
+     $ cd $ACL2_COMMUNITY_BOOKS/projects/milawa/ACL2
      $ make -j <n>                 # n is how many jobs to run in parallel
-
-    Where <n> is appropriate for your computer, e.g.:
-
-     - As large as possible, but
-     - No more than your number of CPU cores, to avoid excessive
-       task switching overhead.
-     - No more than (Physical_Memory / 4 GB), to avoid death by swapping.
 
 A successful build should result in:
 
-  - Several new ACL2 images in acl2-books/milawa/ACL2/acl2-images/,
+  - Several new ACL2 images in books/projects/milawa/ACL2/acl2-images/,
     including one called "user-symmetry"
 
   - ACL2 certificates (.cert) or "ACL2 Milawa Provisional Certificates"
@@ -66,9 +56,30 @@ semantically true.  This theorem connects the logical semantics, down through
 the kernel's source code, through the Jitawa Lisp implementation, down to a
 formal HOL model of the x86 machine code!
 
-Since there are so many options for checking the proofs, we do not try to
-explain how to do carry this out in this README.  Instead, see the Milawa web
-site for instructions.
+1. Check the proofs with the standalone kernel, run this from the directory
+containing this README:
+
+     $ cd $ACL2_COMMUNITY_BOOKS/projects/milawa
+     $ make
+
+That builds base.<ext> with CCL and then runs final-checks.sh, which replays
+Proofs/<level>.events through the kernel, one level at a time.  This will also 
+take hours.  It is resumable: a level whose image already exists is skipped, and
+`make check-level L=<level>` redoes a single level.  The GNUmakefile derives
+the platform-specific image extension from `uname` and prints it.
+
+The kernel image can be built with other Lisps as well:
+
+     $ make LISP=sbcl
+     $ make LISP=cmucl
+     $ make LISP=clisp
+     $ make LISP=scl
+     $ make LISP=acl
+
+In each case `make` runs milawa-<lisp>, the launcher for the image that
+milawa.lsp produced.  To run final-checks.sh directly instead, use
+
+     $ ./final-checks.sh <lisp> <image-extension>
 
 -------------------------------------------------------------------------------
 
@@ -76,27 +87,41 @@ site for instructions.
 
 Files
 
-  Sources/milawa.lsp
+  milawa.lsp
     -- The core proof checker (complete and stand-alone), as of my
        dissertation
 
-  Sources/milawa2.lsp
+  milawa2.lsp
     -- Simplified version of milawa.lsp, for use with Magnus's
        verified Jitawa Lisp runtime
 
-  Sources/report-time.rb
+  GNUmakefile
+    -- Builds base.<ext> and runs the final checks
+
+  final-checks.sh
+    -- Replays Proofs/<level>.events through the standalone kernel
+
+  milawa-sbcl, milawa-ccl, milawa-cmucl, milawa-clisp, milawa-acl, milawa-scl
+    -- Launch a saved image under the corresponding Lisp.  Heap and stack
+       sizes come from the environment; see the top of each script.
+
+  report-time.rb
     -- Tool for seeing which events took longest to process
+
+  summarize-sizes.rb
+    -- Tool for summarizing proof sizes per level
 
 
 Subdirectories:
 
-  Sources/ACL2/
+  ACL2/
     -- Main directory: ACL2 proofs + User Interface + Bootstrapping
     -- Basically everything you want is here
 
-  Sources/Proofs/
+  Proofs/
     -- Proof files that have been generated during the bootstrapping
-       process.  These are the files for our "final checks".
+       process, plus the <level>.events manifest for each level.  These are
+       the files for our "final checks".
 
 
 -------------------------------------------------------------------------------
