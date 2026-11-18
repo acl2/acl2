@@ -73,7 +73,14 @@ STARTJOB=${STARTJOB:-bash}
 
 rm -f Makefile-features;
 # Don't fail here if ACL2 isn't built! Still want to be able to do "make clean" etc.
-ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp &> Makefile-features.out" || echo "*** Failed to run ACL2! ***" 1>&2
+# Note, the command string below must be POSIX sh, not bash: STARTJOB is
+# typically make's SHELL, i.e. /bin/sh, which on Debian/Ubuntu is dash.
+# In dash the bash-only redirect "&>" is parsed as "&" followed by ">",
+# which would run ACL2 in the background and return before the background
+# process has written Makefile-features and the .certdep files, which
+# can cause trouble for the next action.  This is especially a problem
+# in a docker build since the background process will get cut off.
+ACL2_CUSTOMIZATION=NONE $STARTJOB -c "$ACL2 < cert_features.lsp > Makefile-features.out 2>&1" || echo "*** Failed to run ACL2! ***" 1>&2
 
 
 search_ld_library_path () {
