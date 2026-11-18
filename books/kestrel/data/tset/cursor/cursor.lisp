@@ -70,7 +70,14 @@
    (xdoc::p
      "To traverse only the elements at or above a value, start from the @(tsee
       seek) of that value, taking one @(tsee step-forward) if it is at a
-      hole.")))
+      hole.")
+   (xdoc::p
+     "To remove an element in passing, use @(tsee delete-entry), which leaves
+      the cursor at a hole, and move on with @(tsee step-forward).")
+   (xdoc::p
+     "To add a value which a @(tsee seek) did not find, use @(tsee
+      insert-hole) at the hole where the seek ended. Then @(tsee from-cursor)
+      returns the changed set.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

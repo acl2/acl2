@@ -18,3 +18,5 @@
 (include-book "seek-defs")
 (include-book "next-prev-defs")
 (include-book "nexts-prevs-defs")
+(include-book "delete-entry-defs")
+(include-book "insert-hole-defs")

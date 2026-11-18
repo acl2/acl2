@@ -32,6 +32,7 @@
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
@@ -280,3 +281,129 @@
                        (<< x y))))
   :cases ((tree-in x tree))
   :enable in-of-zip-oset-after-of-zip-seek-when-not-tree-search-in)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-brackets-p
+  (x
+   (path zip-frame-listp))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check that a value is on the focus side of every frame of a path."
+  :long
+  (xdoc::topstring-p
+    "That is, the value is below the element of each frame entered to the left,
+     and above the element of each frame entered to the right. A search for
+     the value from the root would take this path.")
+  (or (acl2::endp path)
+      (and (if (zip-frame->from-left (first path))
+               (<< x (tree-element->val (zip-frame->elem (first path))))
+             (<< (tree-element->val (zip-frame->elem (first path))) x))
+           (zip-path-brackets-p x (rest path)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-path-brackets-p-when-not-consp-cheap
+  (implies (not (consp path))
+           (zip-path-brackets-p x path))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable zip-path-brackets-p)
+
+(defrule zip-path-brackets-p-of-path-of-zip-seek
+  (implies (zip-path-brackets-p x (zip->path zip))
+           (zip-path-brackets-p x (zip->path (zip-seek x zip))))
+  :induct (zip-seek x zip)
+  :enable (zip-seek
+           zip-path-brackets-p
+           zip-value
+           data::<<-rules))
+
+;; The elements of the focus are bracketed by the path, in a search tree.
+
+(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
+  (implies (bstp (zip-path-plug path tree))
+           (bstp tree))
+  :rule-classes :forward-chaining)
+
+(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
+  (implies (bstp (tree-node head left right))
+           (and (bstp left)
+                (bstp right)
+                (<<-all-l left (tree-element->val head))
+                (<<-all-r (tree-element->val head) right)))
+  :rule-classes :forward-chaining)
+
+(local
+  (define zip-path-plug-induction ((path zip-frame-listp)
+                                   (tree treep))
+    :verify-guards nil
+    :enabled t
+    (if (acl2::endp path)
+        tree
+      (zip-path-plug-induction (rest path)
+                               (zip-frame-plug (first path) tree)))))
+
+(defruled zip-path-brackets-p-when-tree-in
+  (implies (and (bstp (zip-path-plug path tree))
+                (tree-in x tree))
+           (zip-path-brackets-p x path))
+  :induct (zip-path-plug-induction path tree)
+  :expand ((zip-path-plug path tree))
+  :enable (zip-frame-plug
+           zip-path-brackets-p
+           <<-when-<<-all-l-and-tree-in
+           <<-when-<<-all-r-and-tree-in))
+
+(defrule zip-path-brackets-p-of-zip-value-and-path
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
+           (zip-path-brackets-p (zip-value zip) (zip->path zip)))
+  :use (:instance zip-path-brackets-p-when-tree-in
+                  (x (zip-value zip))
+                  (path (zip->path zip))
+                  (tree (zip->focus zip)))
+  :enable (zip-plug
+           zip-value))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; A search from the root for a value which a path brackets passes through the
+;; position of that path.
+
+(local
+  (define zip-ascend-induction ((zip zipp))
+    :verify-guards nil
+    :enabled t
+    (if (acl2::endp (zip->path zip))
+        zip
+      (zip-ascend-induction (zip-ascend-one zip)))
+    :measure (len (zip->path zip))))
+
+(defruledl zip-seek-of-zip-ascend-one
+  (implies (and (consp (zip->path zip))
+                (zip-path-brackets-p x (zip->path zip)))
+           (equal (zip-seek x (zip-ascend-one zip))
+                  (zip-seek x zip)))
+  :expand ((zip-seek x (zip-ascend-one zip))
+           (zip-path-brackets-p x (zip->path zip)))
+  :enable (zip-value
+           zip-frame-plug
+           zip-descend-left-of-zip-ascend-one-when-from-left
+           zip-descend-right-of-zip-ascend-one-when-not-from-left
+           data::<<-rules))
+
+(defrulel zip-of-focus-and-nil-when-not-consp-of-path
+  (implies (not (consp (zip->path zip)))
+           (equal (zip (zip->focus zip) nil)
+                  (zip-fix zip)))
+  :use zip-of-zip-accessors
+  :disable zip-of-zip-accessors)
+
+(defruled zip-seek-of-zip-root-of-zip-plug
+  (implies (zip-path-brackets-p x (zip->path zip))
+           (equal (zip-seek x (zip-root (zip-plug zip)))
+                  (zip-seek x zip)))
+  :induct (zip-ascend-induction zip)
+  :enable (zip-seek-of-zip-ascend-one
+           zip-path-brackets-p
+           zip-root
+           zip-plug))

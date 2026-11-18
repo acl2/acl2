@@ -180,6 +180,36 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defrule nexts-of-step-forward-when-entryp
+  (implies (entryp cursor)
+           (equal (nexts (step-forward cursor))
+                  (- (nexts cursor) 1)))
+  :enable nexts)
+
+(defrule nexts-of-step-forward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (nexts (step-forward cursor))
+                  (nexts cursor)))
+  :cases ((emptyp (after cursor)))
+  :enable (nexts
+           endp))
+
+(defrule prevs-of-step-backward-when-entryp
+  (implies (entryp cursor)
+           (equal (prevs (step-backward cursor))
+                  (- (prevs cursor) 1)))
+  :enable prevs)
+
+(defrule prevs-of-step-backward-when-not-entryp
+  (implies (not (entryp cursor))
+           (equal (prevs (step-backward cursor))
+                  (prevs cursor)))
+  :cases ((emptyp (before cursor)))
+  :enable (prevs
+           beginp))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defrule nexts-upper-bound-linear
   (<= (nexts cursor)
       (cardinality (from-cursor cursor)))

@@ -20,5 +20,7 @@
 (include-book "seek")
 (include-book "next-prev")
 (include-book "nexts-prevs")
+(include-book "delete-entry")
+(include-book "insert-hole")
 (include-book "partition")
 (include-book "generic-typed")

@@ -300,6 +300,54 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by seek-when-<<-of-max-and-arg1)
 
+;;;;;;;;;;;;;;;;;;;;
+
+;; After a search, the value is above every element before the cursor and
+;; below every element after it.
+
+(defrule <<-of-max-of-before-of-seek
+  (implies (not (emptyp (before (seek x set))))
+           (<< (max (before (seek x set))) x))
+  :use (:instance in-of-max
+                  (set (before (seek x set))))
+  :disable in-of-max)
+
+(defrule <<-of-arg1-and-min-of-after-of-seek
+  (implies (not (emptyp (after (seek x set))))
+           (<< x (min (after (seek x set)))))
+  :use (:instance in-of-min
+                  (set (after (seek x set))))
+  :disable in-of-min)
+
+;; Conversely, a hole is where a search for any such value ends.
+
+(defruled seek-of-from-cursor-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (max (before cursor)) x))
+                (or (emptyp (after cursor))
+                    (<< x (min (after cursor)))))
+           (equal (seek x (from-cursor cursor))
+                  (cursor-fix cursor)))
+  :enable (cursor-extensionality
+           extensionality
+           entry-of-seek
+           in-of-from-cursor-becomes-in-of-before-or-entry-or-after
+           <<-when-in-and-<<-of-max
+           <<-when-in-and-<<-of-arg1-and-min
+           data::<<-rules))
+
+(defrule seek-of-from-cursor-when-not-entryp-cheap
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (max (before cursor)) x))
+                (or (emptyp (after cursor))
+                    (<< x (min (after cursor)))))
+           (equal (seek x (from-cursor cursor))
+                  (cursor-fix cursor)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0 0)))
+  :by seek-of-from-cursor-when-not-entryp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define seek-=
@@ -341,4 +389,5 @@
   '(entry-of-seek
     seek-when-emptyp
     seek-when-<<-of-arg1-and-min
-    seek-when-<<-of-max-and-arg1))
+    seek-when-<<-of-max-and-arg1
+    seek-of-from-cursor-when-not-entryp))

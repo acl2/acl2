@@ -17,3 +17,5 @@
 (include-book "zip-step-side")
 (include-book "zip-uniqueness")
 (include-book "zip-seek")
+(include-book "zip-delete-entry")
+(include-book "zip-insert-hole")

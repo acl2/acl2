@@ -379,4 +379,35 @@
   (assert! (equal (nat-set-loop
                    (tset::seek-min
                     (tset::insert 2 (tset::insert 1 (tset::empty)))))
-                  '(1 2))))
+                  '(1 2)))
+
+  ;; Adding a value where a search for it ends, and a walk that removes
+  ;; elements. The set under the cursor stays typed, by the generated rules
+  ;; for tset::insert and tset::delete.
+
+  (define nat-set-insert-by-cursor ((x natp)
+                                    (set nat-set-p))
+    :returns (set$ nat-set-p :hyp :guard)
+    (let ((cursor (tset::seek x set)))
+      (tset::from-cursor (if (tset::entryp cursor)
+                             cursor
+                           (tset::insert-hole x cursor)))))
+
+  (define nat-set-drop-zeros-loop ((cursor tset::cursorp))
+    :guard (and (nat-set-p (tset::from-cursor cursor))
+                (or (tset::entryp cursor)
+                    (tset::endp cursor)))
+    (cond ((not (tset::entryp cursor))
+           (tset::from-cursor cursor))
+          ((equal (nat-id (tset::entry cursor)) 0)
+           (nat-set-drop-zeros-loop
+            (tset::step-forward (tset::delete-entry cursor))))
+          (t (nat-set-drop-zeros-loop (tset::next cursor))))
+    :measure (tset::nexts cursor))
+
+  (assert! (equal (nat-set-drop-zeros-loop
+                   (tset::seek-min
+                    (nat-set-insert-by-cursor
+                     0
+                     (nat-set-insert-by-cursor 1 (tset::empty)))))
+                  (tset::insert 1 (tset::empty)))))

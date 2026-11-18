@@ -9,9 +9,13 @@
 (in-package "TSET")
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 
 (include-book "../set-defs")
 (include-book "../cardinality-defs")
+(include-book "../in-defs")
+(include-book "../subset-defs")
+(include-book "../insert-defs")
 (include-book "../delete-defs")
 (include-book "../min-max-defs")
 (include-book "../cursor/defs")
@@ -23,6 +27,9 @@
 
 (local (include-book "../set"))
 (local (include-book "../cardinality"))
+(local (include-book "../in"))
+(local (include-book "../subset"))
+(local (include-book "../insert"))
 (local (include-book "../delete"))
 (local (include-book "../min-max"))
 (local (include-book "../cursor/top"))
@@ -102,3 +109,43 @@
     (cursor-count (if (entryp cursor)
                       cursor
                     (step-forward cursor)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Adding a value where a search for it ends.
+
+(define insert-by-cursor
+  (x
+   (set setp))
+  :returns (set$ setp)
+  (let ((cursor (seek x set)))
+    (from-cursor (if (entryp cursor)
+                     cursor
+                   (insert-hole x cursor)))))
+
+(defrule insert-by-cursor-becomes-insert
+  (equal (insert-by-cursor x set)
+         (insert x set))
+  :enable insert-by-cursor)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk which removes elements as it passes: drop the even ones. After a
+;; removal the cursor is at a hole, so the walk moves on with a single step.
+
+(define cursor-drop-evens ((cursor cursorp))
+  :guard (or (entryp cursor)
+             (endp cursor))
+  :returns (set setp)
+  (cond ((not (entryp cursor))
+         (from-cursor cursor))
+        ((evenp (nfix (entry cursor)))
+         (cursor-drop-evens (step-forward (delete-entry cursor))))
+        (t (cursor-drop-evens (next cursor))))
+  :measure (nexts cursor))
+
+(defrule subset-of-cursor-drop-evens
+  (subset (cursor-drop-evens cursor)
+          (from-cursor cursor))
+  :induct t
+  :enable cursor-drop-evens)
