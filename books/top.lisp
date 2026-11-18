@@ -113,12 +113,16 @@
 (include-book "ihs/math-lemmas" :dir :system)
 
 (include-book "centaur/bitops/top" :dir :system)
-(include-book "centaur/bitops/congruences" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/bitops/congruences" :dir :system)
+        :endif)
 (include-book "centaur/bitops/defaults" :dir :system)
 
 (include-book "centaur/acre/top" :dir :system)
 
-(include-book "centaur/bigmems/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/bigmems/top" :dir :system)
+        :endif)
 
 (include-book "centaur/bridge/top" :dir :system)
 
@@ -129,8 +133,10 @@
 (include-book "centaur/defrstobj/defrstobj" :dir :system)
 (include-book "centaur/defrstobj2/defrstobj" :dir :system)
 
-(include-book "centaur/esim/stv/stv-top" :dir :system)
-(include-book "centaur/esim/stv/stv-debug" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/esim/stv/stv-top" :dir :system)
+        (include-book "centaur/esim/stv/stv-debug" :dir :system)
+        :endif)
 (include-book "centaur/esim/esim-sexpr-correct" :dir :system)
 
 (include-book "centaur/getopt/top" :dir :system)
@@ -138,16 +144,22 @@
 (include-book "centaur/getopt/demo2" :dir :system)
 (include-book "centaur/bed/top" :dir :system)
 
-(include-book "centaur/gl/gl" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/gl/gl" :dir :system)
+        :endif)
 (include-book "centaur/gl/bfr-aig-bddify" :dir :system)
-(include-book "centaur/gl/gl-ttags" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/gl/gl-ttags" :dir :system)
+        :endif)
 (include-book "centaur/gl/gobject-type-thms" :dir :system)
 (include-book "centaur/gl/bfr-satlink" :dir :system)
 (include-book "centaur/gl/bfr-fraig-satlink" :dir :system)
 (include-book "centaur/gl/def-gl-rule" :dir :system)
 (include-book "centaur/gl/defthm-using-gl" :dir :system)
 
-(include-book "centaur/glmc/glmc" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/glmc/glmc" :dir :system)
+        :endif)
 (include-book "centaur/glmc/bfr-mcheck-abc" :dir :system)
 
 (include-book "centaur/satlink/top" :dir :system)
@@ -160,7 +172,9 @@
 
 (include-book "centaur/misc/top" :dir :system)
 (include-book "centaur/misc/smm" :dir :system)
-(include-book "centaur/misc/tailrec" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/misc/tailrec" :dir :system)
+        :endif)
 (include-book "centaur/misc/hons-remove-dups" :dir :system)
 (include-book "centaur/misc/seed-random" :dir :system)
 (include-book "centaur/misc/load-stobj" :dir :system)
@@ -168,11 +182,17 @@
 (include-book "centaur/misc/count-up" :dir :system)
 (include-book "centaur/misc/fast-alist-pop" :dir :system)
 (include-book "centaur/misc/spacewalk" :dir :system)
-(include-book "centaur/misc/dag-measure" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/misc/dag-measure" :dir :system)
+        :endif)
 (include-book "centaur/misc/alphanum-sort" :dir :system)
-(include-book "centaur/misc/try-gl-concls" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/misc/try-gl-concls" :dir :system)
+        :endif)
 
-(include-book "centaur/svl/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/svl/top" :dir :system)
+        :endif)
 
 ;; BOZO conflicts with something in 4v-sexpr?
 
@@ -181,7 +201,9 @@
 ;; (include-book "misc/sparsemap-impl")
 (include-book "centaur/misc/stobj-swap" :dir :system)
 
-(include-book "oslib/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "oslib/top" :dir :system)
+        :endif)
 
 (include-book "std/top" :dir :system)
 (include-book "std/basic/inductions" :dir :system)
@@ -196,12 +218,16 @@
 (include-book "centaur/ubdds/lite" :dir :system)
 (include-book "centaur/ubdds/param" :dir :system)
 
-(include-book "centaur/sv/top" :dir :system)
-(include-book "centaur/fgl/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/sv/top" :dir :system)
+        (include-book "centaur/fgl/top" :dir :system)
+        :endif)
 
 (ifdef "OS_HAS_GLUCOSE"
-       (include-book "centaur/sv/tutorial/alu" :dir :system)
-       (include-book "centaur/sv/tutorial/boothpipe" :dir :system)
+       (ifndef "ACL2_HAS_REALS"
+               (include-book "centaur/sv/tutorial/alu" :dir :system)
+               (include-book "centaur/sv/tutorial/boothpipe" :dir :system)
+               :endif)
 
        (ifdef "OS_HAS_ABC"
               (include-book "centaur/glmc/glmc-test" :dir :system)
@@ -235,7 +261,9 @@ book that depends on Glucose being installed.</p>")
 
 
 
-(include-book "centaur/esim/vcd/vcd" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/esim/vcd/vcd" :dir :system)
+        :endif)
 (include-book "centaur/esim/vcd/esim-snapshot" :dir :system)
 (include-book "centaur/esim/vcd/vcd-stub" :dir :system)
 ;; BOZO causes some error with redefinition?  Are we loading the right
@@ -247,11 +275,15 @@ book that depends on Glucose being installed.</p>")
 ;; Try to avoid some expensive type-prescription problems
 (in-theory (disable true-listp-append (:t append)))
 
-(include-book "centaur/vl/kit/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/vl/kit/top" :dir :system)
+        :endif)
 (include-book "centaur/vl/mlib/atts" :dir :system)
 
 (include-book "centaur/vl2014/doc" :dir :system)
-(include-book "centaur/vl2014/kit/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "centaur/vl2014/kit/top" :dir :system)
+        :endif)
 (include-book "centaur/vl2014/mlib/clean-concats" :dir :system)
 (include-book "centaur/vl2014/lint/use-set" :dir :system)
 (include-book "centaur/vl2014/transforms/clean-selects" :dir :system)
@@ -265,13 +297,17 @@ book that depends on Glucose being installed.</p>")
 
 ;; (include-book "centaur/vl2014/util/prefixp" :dir :system)
 
-(include-book "hacking/all" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "hacking/all" :dir :system)
+        :endif)
 (include-book "hints/consider-hint" :dir :system)
 (include-book "hints/hint-wrapper" :dir :system)
 
 (include-book "ordinals/e0-ordinal" :dir :system)
 
-(include-book "tools/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "tools/top" :dir :system)
+        :endif)
 
 (include-book "coi/util/rewrite-equiv" :dir :system)
 
@@ -296,13 +332,17 @@ book that depends on Glucose being installed.</p>")
 (include-book "arithmetic-5/top" :dir :system)
 (include-book "arithmetic/top" :dir :system)
 
-(include-book "rtl/rel11/lib/top" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "rtl/rel11/lib/top" :dir :system)
+        :endif)
 ; And books not included in lib/top:
-(include-book "rtl/rel11/lib/add" :dir :system)
-(include-book "rtl/rel11/lib/mult" :dir :system)
-(include-book "rtl/rel11/lib/div" :dir :system)
-(include-book "rtl/rel11/lib/srt" :dir :system)
-(include-book "rtl/rel11/lib/sqrt" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "rtl/rel11/lib/add" :dir :system)
+        (include-book "rtl/rel11/lib/mult" :dir :system)
+        (include-book "rtl/rel11/lib/div" :dir :system)
+        (include-book "rtl/rel11/lib/srt" :dir :system)
+        (include-book "rtl/rel11/lib/sqrt" :dir :system)
+        :endif)
 
 (include-book "centaur/fty/top" :dir :system)
 (include-book "centaur/fty/bitstruct" :dir :system)
@@ -336,7 +376,9 @@ book that depends on Glucose being installed.</p>")
 (include-book "misc/with-waterfall-parallelism" :dir :system)
 (include-book "misc/without-waterfall-parallelism" :dir :system)
 
-(include-book "make-event/proof-by-arith" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "make-event/proof-by-arith" :dir :system)
+        :endif)
 (include-book "make-event/eval-check" :dir :system)
 
 (include-book "centaur/memoize/old/profile" :dir :system)
@@ -348,13 +390,17 @@ book that depends on Glucose being installed.</p>")
 ; to a use of set-default-hints, which causes substantial world rollback into
 ; the portcullis commands before re-evaluating the rolled-back commands and
 ; then including the book.
-(include-book "acl2s/doc" :dir :system) ; no_port
+(ifndef "ACL2_HAS_REALS"
+        (include-book "acl2s/doc" :dir :system) ; no_port
+        :endif)
 
 (include-book "projects/top" :dir :system)
 
 ;(include-book "kestrel/top" :dir :system)
 (include-book "kestrel/alists-light/top" :dir :system)
-(include-book "kestrel/top-doc" :dir :system) ; for now
+(ifndef "ACL2_HAS_REALS"
+        (include-book "kestrel/top-doc" :dir :system) ; for now
+        :endif)
 
 (include-book "centaur/ipasir/ipasir-tools" :dir :system)
 
@@ -363,7 +409,9 @@ book that depends on Glucose being installed.</p>")
 (include-book "data-structures/top" :dir :system)
 (include-book "data-structures/memories/memory" :dir :system)
 
-(include-book "coi/documentation" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "coi/documentation" :dir :system)
+        :endif)
 (include-book "clause-processors/pseudo-term-fty" :dir :system)
 
 (include-book "std/util/defretgen" :dir :system)
@@ -393,7 +441,9 @@ book that depends on Glucose being installed.</p>")
 (include-book "system/f-put-global" :dir :system)
 (include-book "system/fancy-string-reader-test" :dir :system)
 (include-book "system/hl-nat-combine-onto" :dir :system)
-(include-book "system/obviously-equiv-terms" :dir :system)
+(ifndef "ACL2_HAS_REALS"
+        (include-book "system/obviously-equiv-terms" :dir :system)
+        :endif)
 ; Testing files:
 ; (include-book "system/optimize-check-aux" :dir :sysem)
 ; (include-book "system/optimize-check" :dir :system)

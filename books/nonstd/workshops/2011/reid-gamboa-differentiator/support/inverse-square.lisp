@@ -163,7 +163,7 @@
 	       (i-close (* 2 x) (* 2 y)))
     :hints (("Goal"
 	     :use ((:instance limited*small->small (x 2) (y (- x y))))
-	     :in-theory (enable-disable (i-close) (limited*small->small))))
+	     :in-theory (e/d (i-close) (limited*small->small))))
     ))
 
  (local

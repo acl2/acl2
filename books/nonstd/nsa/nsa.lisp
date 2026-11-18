@@ -20,10 +20,12 @@
 ;;; You would think this macro was included with ACL2!  I don't know
 ;;; how I lived without it!
 
-(defmacro enable-disable (enable-list disable-list)
-  (list 'union-theories
-	(cons 'disable disable-list)
-	`(quote ,enable-list)))
+; [2026-11-01] I replaced this with calls of E/D to resolve a name conflict in
+; books/top. -- David Taylor
+;; (defmacro enable-disable (enable-list disable-list)
+;;   (list 'union-theories
+;; 	(cons 'disable disable-list)
+;; 	`(quote ,enable-list)))
 
 ;;; These axioms from axioms.lisp are dangerous as :rewrite rules, so
 ;;; we disabled them there.  Here, we re-enable them, but only as
@@ -391,9 +393,9 @@
 			     (eps (+ (* x y-eps)
 				     (* y x-eps)
 				     (* x-eps y-eps)))))
-	    :in-theory (enable-disable (standards-are-limited)
-				       (standard+small->i-limited
-					i-small))))))
+	    :in-theory (e/d (standards-are-limited)
+			    (standard+small->i-limited
+			     i-small))))))
 
 (defthm i-limited-times
   (implies (and (i-limited x)
@@ -545,16 +547,16 @@
 		    t))
   :hints (("Goal"
 	   :use ((:instance i-close-limited))
-	   :in-theory (enable-disable (i-close i-small)
-				      (i-close-limited)))))
+	   :in-theory (e/d (i-close i-small)
+			   (i-close-limited)))))
 
 (defthm standard-part-close
   (implies (i-limited x)
 	   (i-close (standard-part x) x))
   :hints (("Goal"
 	   :use ((:instance i-small-non-standard-part))
-	   :in-theory (enable-disable (i-close i-small)
-				      (i-small-non-standard-part)))))
+	   :in-theory (e/d (i-close i-small)
+			   (i-small-non-standard-part)))))
 
 
 ;;; Now, we consider the special theory of i-small, i-limited, and
@@ -680,7 +682,7 @@
 		 (:instance large-if->-large
 			    (x x)
 			    (y b)))
-	   :in-theory (enable-disable (abs) (large-if->-large)))))
+	   :in-theory (e/d (abs) (large-if->-large)))))
 
 (in-theory (disable nsa-theory))
 
@@ -838,8 +840,8 @@
 	     )
 	    ("Subgoal 1"
 	     :use ((:instance small-are-limited (x (/ r))))
-	     :in-theory (enable-disable (i-small)
-					(small-are-limited))))))
+	     :in-theory (e/d (i-small)
+			     (small-are-limited))))))
 
  ;; Next is an important and trivial lemma.  I don't know why the
  ;; linear rewriting rules don't take care of this.  In any case, for
@@ -920,8 +922,8 @@
 	     :use ((:instance limited*small->small
 			      (x s)
 			      (y (/ (+ (* r r) (* s s))))))
-	     :in-theory (enable-disable (i-small i-large)
-					(limited*small->small))))))
+	     :in-theory (e/d (i-small i-large)
+			     (limited*small->small))))))
 
  ;; The same holds when 1/r is not infinitesimal, so we can multiply
  ;; both sides by r.  We consider the cases when x is positive and

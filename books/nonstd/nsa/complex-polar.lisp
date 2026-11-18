@@ -236,10 +236,10 @@
     :hints (("Goal"
              :use ((:instance sqrt-*-x-x (x x))
                    (:instance sqrt-*-x-x (x y)))
-             :in-theory (enable-disable (abs) (sqrt-*-x-x
-                                               sqrt-*
-                                               y-=-sqrt
-                                               sqrt-=-y))))
+             :in-theory (e/d (abs) (sqrt-*-x-x
+                                    sqrt-*
+                                    y-=-sqrt
+                                    sqrt-=-y))))
     :rule-classes nil))
  (local
   (defthm lemma-14
@@ -365,8 +365,8 @@
 	       (equal x 1))
     :hints (("Goal"
 	     :use ((:instance acl2-acos-exists (y x)))
-	     :in-theory (enable-disable (interval-definition-theory)
-					(acl2-acos-exists acl2-acos-unique))
+	     :in-theory (e/d (interval-definition-theory)
+			     (acl2-acos-exists acl2-acos-unique))
 	     ))
     :rule-classes nil))
 
@@ -400,8 +400,8 @@
              :use ((:instance acl2-acos-unique
                               (y 1)
                               (x 0)))
-	     :in-theory (enable-disable (interval-definition-theory)
-					(acl2-acos-unique))
+	     :in-theory (e/d (interval-definition-theory)
+			     (acl2-acos-unique))
 	     ))))
  (local
   (defthm lemma-2
@@ -410,8 +410,8 @@
              :use ((:instance acl2-acos-unique
                               (y -1)
                               (x (acl2-pi))))
-	     :in-theory (enable-disable (interval-definition-theory)
-					(acl2-acos-unique))))))
+	     :in-theory (e/d (interval-definition-theory)
+			     (acl2-acos-unique))))))
 
  (defthm anglepart-of-realp
   (implies (realp x)
@@ -422,5 +422,5 @@
   :hints (("Goal"
 	   :use ((:instance lemma-1)
 		 (:instance lemma-2))
-           :in-theory (enable-disable (abs) (lemma-1 lemma-2)))))
+           :in-theory (e/d (abs) (lemma-1 lemma-2)))))
  )

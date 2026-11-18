@@ -232,7 +232,7 @@
 (defthm abs-realpart-imagpart-<=-norm2
   (and (<= (abs (realpart x)) (norm2 x))
        (<= (abs (imagpart x)) (norm2 x)))
-  :hints (("Goal" :in-theory (enable-disable (abs) (norm2)))
+  :hints (("Goal" :in-theory (e/d (abs) (norm2)))
           ("Subgoal 2.2"
            :use ((:instance realpart-imagpart-<=-norm
                             (x (- x))))

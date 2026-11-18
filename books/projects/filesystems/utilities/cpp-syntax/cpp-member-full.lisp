@@ -67,6 +67,7 @@
                                       (e/d (c$::parstatep-of-read-token.new-parstate)
                                            (c$::token-kind-possibilities))))))
   :guard-hints (("Goal" :in-theory (disable c$::token-kind-possibilities)))
+  :parents (cpp-parser)
   :short "Read optional member-declaration specifiers and the first
           non-specifier token."
   (b* (((reterr) nil nil nil nil nil nil nil nil (irr-span) parstate)
@@ -194,6 +195,7 @@
                                             cpp-member-decl-method-iff-congruence-on-staticp
                                             cpp-member-decl-method-iff-congruence-on-virtualp))))))
   :guard-hints (("Goal" :in-theory (disable c$::token-kind-possibilities)))
+  :parents (cpp-parser)
   :short "Parse a C++ field or method, possibly with an inline body."
   (b* (((reterr) (irr-cpp-member-decl) (irr-span) parstate)
        ;; Read optional specifiers (virtual, explicit, constexpr, inline,
@@ -449,6 +451,7 @@
                                             parstatep-of-parse-cpp-member-field-or-method-full.new-parstate)
                                            (c$::token-kind-possibilities))))))
   :guard-hints (("Goal" :in-theory (disable c$::token-kind-possibilities)))
+  :parents (cpp-parser)
   :short "Parse one C++ class member declaration, allowing inline bodies."
   (b* (((reterr) (irr-cpp-member-decl) (irr-span) parstate)
        ((erp peek? peek-span parstate) (read-token parstate))
@@ -677,6 +680,7 @@
                (span spanp)
                (new-parstate parstatep :hyp (parstatep parstate)))
   :measure (parsize parstate)
+  :parents (cpp-parser)
   :short "Parse a sequence of C++ class member declarations until @('}')."
   (b* (((reterr) nil (irr-span) parstate)
        ((erp peek? peek-span parstate) (read-token parstate))
@@ -720,6 +724,7 @@
                              :hints (("Goal"
                                       :in-theory (disable c$::token-kind-possibilities)))))
   :guard-hints (("Goal" :in-theory (disable c$::token-kind-possibilities)))
+  :parents (cpp-parser)
   :short "Parse a C++ class specifier whose members may have inline bodies."
   (b* (((reterr) (irr-cpp-class-specifier) (irr-span) parstate)
        ((erp key key-span parstate) (parse-cpp-class-key parstate))

@@ -1038,7 +1038,7 @@
 		       (sumlist-norm (taylor-exp-list nterms2 0 x)))))
    :hints (("Goal"
 	    :use ((:instance exp-convergent-norm))
-	    :in-theory (enable-disable (i-close) (exp-convergent-norm)))))
+	    :in-theory (e/d (i-close) (exp-convergent-norm)))))
 
 ;; So now, we wish to use that to prove that the sumlist-norm of
 ;; exp-x-*-exp-y-n-3 is i-small.
@@ -1061,7 +1061,7 @@
 				      (x y)
 				      (y x)
 				      (z (- x2))))
-	      :in-theory (enable-disable (i-close i-small) (distributivity))))))
+	      :in-theory (e/d (i-close i-small) (distributivity))))))
 
   ;; The same theorem, but this time with x*y and x'*y' close.
 
@@ -1139,8 +1139,8 @@
 	      :use ((:instance limited*large->large
 			       (x 1/2)
 			       (y n)))
-	      :in-theory (enable-disable (i-small i-large)
-					 (limited*large->large))))))
+	      :in-theory (e/d (i-small i-large)
+			      (limited*large->large))))))
 
   ;; And so if N is large, so is next-integer(N/2).
 
@@ -1385,7 +1385,7 @@
 	    (equal (standard-part x) (standard-part y)))
    :hints (("Goal"
 	    :use ((:instance close-x-y->same-standard-part))
-	    :in-theory (enable-disable (i-close i-small) (close-x-y->same-standard-part))))))
+	    :in-theory (e/d (i-close i-small) (close-x-y->same-standard-part))))))
 
 ;; Now, exp-x-y-k-n is limited.
 

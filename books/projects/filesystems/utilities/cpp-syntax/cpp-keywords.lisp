@@ -20,7 +20,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define the C++ keywords — the keywords that C++ introduces
+    "We define the C++ keywords -- the keywords that C++ introduces
      beyond those already in C23.
      Note that many C++ keywords overlap with C23 keywords
      (e.g., @('bool'), @('true'), @('false'), @('nullptr'),

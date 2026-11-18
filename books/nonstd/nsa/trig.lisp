@@ -538,9 +538,9 @@
 			    (nterms (NFIX (+ -2 NTERMS)))
 			    (counter (+ COUNTER 2))
 			    (sign (- sign))))
-	   :in-theory (enable-disable (sign)
-				      (sign-car-taylor-sincos-list
-				       car-taylor-sincos-list))))
+	   :in-theory (e/d (sign)
+			   (sign-car-taylor-sincos-list
+			    car-taylor-sincos-list))))
   )
 
 ;; A simple rewrite rule: 1/(n+2)! = 1/(n+2) * 1/(n+1) * 1/n!
@@ -739,7 +739,7 @@
 	 (+ (i-large-integer) -4))
   :hints (("Goal"
 	   :use ((:instance 4-<-large-integer))
-	   :in-theory (enable-disable (abs) (4-<-large-integer)))))
+	   :in-theory (e/d (abs) (4-<-large-integer)))))
 
 ;; Another simple theorem!  4 < N-4
 
@@ -1253,8 +1253,8 @@
     :hints (("Goal"
 	     :use ((:instance sumlist-alternating-sequence-lemma)
 		   (:instance sumlist-alternating-sequence))
-	     :in-theory (enable-disable (abs)
-					(sumlist-alternating-sequence))))))
+	     :in-theory (e/d (abs)
+			     (sumlist-alternating-sequence))))))
 
 
  ;; And for 0<=x<=2 the Taylor approximation of sine starting with the
@@ -2282,8 +2282,8 @@
 	 (/ (- 1 (acl2-cosine x)) 2))
   :hints (("Goal"
 	   :use ((:instance cosine-2x (x (* 1/2 x))))
-	   :in-theory (enable-disable (cos**2->1-sin**2)
-				      (sine-2x cosine-2x)))))
+	   :in-theory (e/d (cos**2->1-sin**2)
+			   (sine-2x cosine-2x)))))
 
 ;; Similarly, we get the cosine of a half angle.
 
@@ -2293,8 +2293,8 @@
 	 (/ (+ 1 (acl2-cosine x)) 2))
   :hints (("Goal"
 	   :use ((:instance cosine-2x (x (* 1/2 x))))
-	   :in-theory (enable-disable (sin**2->1-cos**2)
-				      (sine-2x cosine-2x)))))
+	   :in-theory (e/d (sin**2->1-cos**2)
+			   (sine-2x cosine-2x)))))
 
 ;; Next, we consider sine(pi/4).  We know this is positive, because
 ;; it's in the first quadrant.
@@ -2650,13 +2650,13 @@
    :hints (("Goal"
 	    :cases ((equal (acl2-cosine x) 0)))
 	   ("Subgoal 2"
-	    :in-theory (enable-disable (cos**2->1-sin**2)
-				       (expt-4
-					expt-3
-					functional-commutativity-of-expt-/-base
-					expt-x*y^n
-					distributivity-of-expt-over-*
-					distributivity)))))
+	    :in-theory (e/d (cos**2->1-sin**2)
+			    (expt-4
+			     expt-3
+			     functional-commutativity-of-expt-/-base
+			     expt-x*y^n
+			     distributivity-of-expt-over-*
+			     distributivity)))))
  )
 
 ;; Another identity!  (sin+cot)/cos = tan + csc.
@@ -3260,16 +3260,16 @@
 (local
  (defthm limited-pi**28
    (i-limited (expt (m-pi) 28))
-   :hints (("Goal" :in-theory (enable-disable (standards-are-limited)
-					      (m-pi (m-pi)))))))
+   :hints (("Goal" :in-theory (e/d (standards-are-limited)
+				   (m-pi (m-pi)))))))
 
 ;; Likewise for m-pi+eps**26 is limited.
 
 (local
  (defthm limited-pi+eps**26
    (i-limited (expt (m-pi+eps) 26))
-   :hints (("Goal" :in-theory (enable-disable (standards-are-limited)
-					      (m-pi+eps (m-pi+eps)))))))
+   :hints (("Goal" :in-theory (e/d (standards-are-limited)
+				   (m-pi+eps (m-pi+eps)))))))
 
 ;; Some more unfortunate theorems.  This constant (obviously very
 ;; close to 0) is i-limited.

@@ -71,7 +71,7 @@
 	    (<= (norm (expt-2-n (+ -1 n)))
 		(norm (factorial n))))
    :hints (("Goal" :induct (factorial n)
-	    :in-theory (enable-disable (factorial) (norm-two))))))
+	    :in-theory (e/d (factorial) (norm-two))))))
 
 (local (in-theory (disable expt-2-n expt)))
 
@@ -655,11 +655,11 @@
 			    (y (- y x)))
 		 (:instance exp-of-infinitesimal
 			    (x (- y x))))
-	   :in-theory (enable-disable (i-close)
-				      (acl2-exp
-				       exp-sum
-				       lemma-35
-				       exp-of-infinitesimal)))
+	   :in-theory (e/d (i-close)
+			   (acl2-exp
+			    exp-sum
+			    lemma-35
+			    exp-of-infinitesimal)))
 	  ("Goal'4'"
 	   :use ((:instance lemma-37
 			    (x (acl2-exp (+ (- x) y)))

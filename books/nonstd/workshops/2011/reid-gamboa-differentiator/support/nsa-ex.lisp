@@ -111,7 +111,7 @@
                   (realp y) (<= 0 y)
                   (i-close (* x x) (* y y)))
              (i-close x y))
-    :hints (("Goal" :in-theory (enable-disable (i-close) (large-x-lemma))
+    :hints (("Goal" :in-theory (e/d (i-close) (large-x-lemma))
              :cases ((< x y)
                      (< y x)
                      (= x y)))

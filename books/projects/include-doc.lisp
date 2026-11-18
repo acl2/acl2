@@ -9,23 +9,50 @@
   '(progn
      (include-book "build/ifdef" :dir :system)
      (include-book "xdoc/top" :dir :system)
-     (include-book "milawa/doc")
-     (include-book "regex/regex-ui")
-     (include-book "leftist-trees/top")
-     (include-book "numbers/euler")
-     (include-book "sidekick/server")
-     (include-book "x86isa/doc")
+
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "abnf/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "aleo/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "bls12-377-curves/top")
+             :endif)
      (include-book "execloader/top")
      (include-book "farray/farray")
-     (include-book "sat/proof-checker-itp13/top")
-     (include-book "sat/proof-checker-array/top")
-     (include-book "sat/dimacs-reader/reader")
+     (include-book "fifo/fifo-list-based")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "filesystems/utilities/cpp-syntax/top")
+             :endif)
      (include-book "irv/top")
-     (include-book "rp-rewriter/top")
-     (include-book "taspi/taspi-xdoc")
-     (include-book "vescmul/doc")
-     (include-book "vwsim/vwsim-doc")
-
+     (include-book "leftist-trees/top")
+     (include-book "milawa/doc")
+     (include-book "numbers/euler")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "omp/top-doc")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "pfcs/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "poseidon/top")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "regex/regex-ui")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "rp-rewriter/top")
+             :endif)
+     (include-book "sat/dimacs-reader/reader")
+     (include-book "sat/proof-checker-array/top")
+     (include-book "sat/proof-checker-itp13/top")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "set-theory/doc")
+             :endif)
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "sidekick/server")
+             :endif)
      (include-book "smtlink/doc")
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/examples")
@@ -33,12 +60,14 @@
      (ifdef "OS_HAS_SMTLINK"
             (include-book "smtlink/examples/ringosc")
             :endif)
-     (include-book "pfcs/top")
-     (include-book "poseidon/top")
-     (include-book "aleo/top")
-     (include-book "abnf/top")
-     (include-book "bls12-377-curves/top")
-     (include-book "set-theory/doc")
+     (include-book "taspi/taspi-xdoc")
+     (include-book "vescmul/doc")
+     (include-book "vwsim/vwsim-doc")
+     (include-book "wp-gen/wp-gen")
+     (ifndef "ACL2_HAS_REALS"
+             (include-book "x86isa/doc")
+             :endif)
+
 
      (defxdoc projects
        :parents (top)

@@ -405,10 +405,10 @@
 		 (:instance close-x-y->same-standard-part
 			    (x (RCFN (STANDARD-PART X)))
 			    (y (RCFN X))))
-	   :in-theory (enable-disable (standards-are-limited)
-				      (rcfn-continuous
-				       rcfn-uniformly-continuous
-				       close-x-y->same-standard-part)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (rcfn-continuous
+			    rcfn-uniformly-continuous
+			    close-x-y->same-standard-part)))))
 
 ;; Next, we prove that (find-zero a b z) is in the range (a,b)
 
@@ -647,13 +647,13 @@
 			    (x x)
 			    (interval (rcfn-domain)))
 		 )
-	   :in-theory (enable-disable (standards-are-limited)
-				      (i-close-limited
-				       rcfn-continuous
-				       rcfn-standard-part
-				       standard-part-inside-interval
-                                       ;; added for v2-6:
-                                       rcfn-uniformly-continuous)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (i-close-limited
+			    rcfn-continuous
+			    rcfn-standard-part
+			    standard-part-inside-interval
+                            ;; added for v2-6:
+                            rcfn-uniformly-continuous)))))
 
 
 ;; We'll show that f(r+eps) >= z, so that the r found above is the

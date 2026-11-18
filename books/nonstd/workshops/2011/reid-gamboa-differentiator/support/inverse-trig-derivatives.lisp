@@ -22,15 +22,15 @@
                   (:instance sine-positive-in-pi/2-pi
                              (x (acl2-acos x)))
                   (:instance acl2-acos-exists (y x)))
-            :in-theory (enable-disable
-                        (interval-definition-theory)
-                        (sine-positive-in-0-pi/2
-                         sine-positive-in-pi/2-pi
-                         interval-definition-theory
-                         sine-2x
-                         sine-3x
-                         cosine-2x
-                         EQUAL-*-/-1))))))
+            :in-theory (e/d ()
+                            (sine-positive-in-0-pi/2
+                             sine-positive-in-pi/2-pi
+                             interval-definition-theory
+                             sine-2x
+                             sine-3x
+                             cosine-2x
+                             EQUAL-*-/-1)
+                            (interval-definition-theory))))))
 
 (local
  (defthm 1-cos*cos
@@ -158,7 +158,7 @@
 					  (* 1/2 (acl2-pi)))))
     :hints (("Goal"
 	     :use ((:instance acl2-acos-exists (y x)))
-	     :in-theory (enable-disable (interval-definition-theory) (acl2-acos-exists sine-acos-lemma))))
+	     :in-theory (e/d (interval-definition-theory) (acl2-acos-exists sine-acos-lemma))))
     ))
 
  (defthmd pi/2-acos-=-asin
@@ -187,7 +187,7 @@
                     (- (/ (acl2-pi) 2) (acl2-acos x))))
     :hints (("Goal" :use (:instance pi/2-acos-=-asin
                                     (x x))
-             :in-theory (enable-disable (interval-definition-theory) (pi/2-acos-=-asin))))
+             :in-theory (e/d (interval-definition-theory) (pi/2-acos-=-asin))))
     ))
 
  (local
