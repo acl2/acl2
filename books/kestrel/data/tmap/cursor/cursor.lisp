@@ -72,7 +72,10 @@
    (xdoc::p
      "To traverse only the entries at or above a key, start from the @(tsee
       seek) of that key, taking one @(tsee step-forward) if it is at a
-      hole.")))
+      hole.")
+   (xdoc::p
+     "To replace the value of an entry in passing, use @(tsee
+      cursor-update).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

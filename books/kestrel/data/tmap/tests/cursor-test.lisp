@@ -27,6 +27,7 @@
 (local (include-book "../size"))
 (local (include-book "../keys"))
 (local (include-book "../lookup"))
+(local (include-book "../update"))
 (local (include-book "../delete"))
 (local (include-book "../min-max"))
 (local (include-book "../cursor/top"))
@@ -34,6 +35,7 @@
 (local (include-book "kestrel/data/tset/delete" :dir :system))
 (local (include-book "kestrel/data/tset/min-max" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,3 +113,23 @@
   :rule-classes :congruence
   :induct (any-evenp map0)
   :enable any-evenp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk which replaces each value as it passes, and returns the map it ends
+;; with.
+
+(define cursor-zero-all ((cursor cursorp))
+  :guard (or (entryp cursor)
+             (endp cursor))
+  :returns (map mapp)
+  (if (not (entryp cursor))
+      (from-cursor cursor)
+    (cursor-zero-all (next (cursor-update 0 cursor))))
+  :measure (nexts cursor))
+
+(defrule keys-of-cursor-zero-all
+  (equal (keys (cursor-zero-all cursor))
+         (keys (from-cursor cursor)))
+  :induct t
+  :enable cursor-zero-all)

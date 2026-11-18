@@ -418,4 +418,27 @@
   (assert! (equal (sym-nat-map-loop
                    (tmap::seek-min
                     (tmap::update 'b 2 (tmap::update 'a 1 (tmap::empty)))))
-                  '(("A" . 1) ("B" . 2)))))
+                  '(("A" . 1) ("B" . 2))))
+
+  ;; A walk that replaces values. The map under the cursor stays typed, by
+  ;; the generated rule for tmap::update, so the guard of the recursive call
+  ;; needs no hints either.
+
+  (define sym-nat-map-inc-loop ((cursor tmap::cursorp))
+    :guard (and (sym-nat-map-p (tmap::from-cursor cursor))
+                (or (tmap::entryp cursor)
+                    (tmap::endp cursor)))
+    (if (not (tmap::entryp cursor))
+        (tmap::from-cursor cursor)
+      (sym-nat-map-inc-loop
+       (tmap::next
+        (tmap::cursor-update (+ 1 (nat-id (tmap::entry-val cursor)))
+                             cursor))))
+    :measure (tmap::nexts cursor))
+
+  (assert! (equal (tmap::lookup
+                   'b
+                   (sym-nat-map-inc-loop
+                    (tmap::seek-min
+                     (tmap::update 'b 2 (tmap::update 'a 1 (tmap::empty))))))
+                  3)))
