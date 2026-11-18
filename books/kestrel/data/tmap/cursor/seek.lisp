@@ -318,12 +318,15 @@
            tset::<<-when-in-and-<<-of-arg1-and-min
            data::<<-rules))
 
+;; The hypothesis of a cheap rule is checked without rewriting, so it is stated
+;; on the key set, as it appears once min-key or max-key has opened.
+
 (defrule seek-when-<<-of-arg1-and-min-key-cheap
-  (implies (<< x (min-key map))
+  (implies (<< x (tset::min (keys map)))
            (equal (seek x map)
                   (begin map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by seek-when-<<-of-arg1-and-min-key)
+  :enable seek-when-<<-of-arg1-and-min-key)
 
 (defruled seek-when-<<-of-max-key-and-arg1
   (implies (<< (max-key map) x)
@@ -337,11 +340,11 @@
            data::<<-rules))
 
 (defrule seek-when-<<-of-max-key-and-arg1-cheap
-  (implies (<< (max-key map) x)
+  (implies (<< (tset::max (keys map)) x)
            (equal (seek x map)
                   (end map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by seek-when-<<-of-max-key-and-arg1)
+  :enable seek-when-<<-of-max-key-and-arg1)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -380,9 +383,6 @@
            tset::<<-when-in-and-<<-of-max
            tset::<<-when-in-and-<<-of-arg1-and-min
            data::<<-rules))
-
-;; The hypotheses are checked without rewriting, so they are stated on the key
-;; sets, as they appear once max-key and min-key have opened.
 
 (defrule seek-of-from-cursor-when-not-entryp-cheap
   (implies (and (not (entryp cursor))
