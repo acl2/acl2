@@ -432,8 +432,8 @@
         (tmap::from-cursor cursor)
       (sym-nat-map-inc-loop
        (tmap::next
-        (tmap::cursor-update (+ 1 (nat-id (tmap::entry-val cursor)))
-                             cursor))))
+        (tmap::update-entry (+ 1 (nat-id (tmap::entry-val cursor)))
+                            cursor))))
     :measure (tmap::nexts cursor))
 
   (assert! (equal (tmap::lookup

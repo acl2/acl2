@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-update
+(define zip-update-entry
   (val
    (zip zipp))
   :guard (not (tree-empty-p (zip->focus zip)))
@@ -66,72 +66,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-update-when-zip-equiv-congruence
+(defrule zip-update-entry-when-zip-equiv-congruence
   (implies (zip-equiv zip0 zip1)
-           (equal (zip-update val zip0)
-                  (zip-update val zip1)))
+           (equal (zip-update-entry val zip0)
+                  (zip-update-entry val zip1)))
   :rule-classes :congruence
-  :enable zip-update)
+  :enable zip-update-entry)
 
-(defrule zip->path-of-zip-update
-  (equal (zip->path (zip-update val zip))
+(defrule zip->path-of-zip-update-entry
+  (equal (zip->path (zip-update-entry val zip))
          (zip->path zip))
-  :enable zip-update)
+  :enable zip-update-entry)
 
-(defrule tree-empty-p-of-focus-of-zip-update
-  (equal (tree-empty-p (zip->focus (zip-update val zip)))
+(defrule tree-empty-p-of-focus-of-zip-update-entry
+  (equal (tree-empty-p (zip->focus (zip-update-entry val zip)))
          (tree-empty-p (zip->focus zip)))
-  :enable zip-update)
+  :enable zip-update-entry)
 
-(defrule zip-key-of-zip-update
-  (equal (zip-key (zip-update val zip))
+(defrule zip-key-of-zip-update-entry
+  (equal (zip-key (zip-update-entry val zip))
          (zip-key zip))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-key))
 
-(defrule zip-val-of-zip-update
+(defrule zip-val-of-zip-update-entry
   (implies (not (tree-empty-p (zip->focus zip)))
-           (equal (zip-val (zip-update val zip))
+           (equal (zip-val (zip-update-entry val zip))
                   val))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-val))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule zip-tree-before-of-zip-update
-  (equal (zip-tree-before (zip-update val zip))
+(defrule zip-tree-before-of-zip-update-entry
+  (equal (zip-tree-before (zip-update-entry val zip))
          (zip-tree-before zip))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-tree-before))
 
-(defrule zip-tree-after-of-zip-update
-  (equal (zip-tree-after (zip-update val zip))
+(defrule zip-tree-after-of-zip-update-entry
+  (equal (zip-tree-after (zip-update-entry val zip))
          (zip-tree-after zip))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-tree-after))
 
-(defrule zip-omap-before-of-zip-update
-  (equal (zip-omap-before (zip-update val zip))
+(defrule zip-omap-before-of-zip-update-entry
+  (equal (zip-omap-before (zip-update-entry val zip))
          (zip-omap-before zip))
   :enable zip-omap-before
   :disable tree-omap-of-zip-tree-before)
 
-(defrule zip-omap-after-of-zip-update
-  (equal (zip-omap-after (zip-update val zip))
+(defrule zip-omap-after-of-zip-update-entry
+  (equal (zip-omap-after (zip-update-entry val zip))
          (zip-omap-after zip))
   :enable zip-omap-after
   :disable tree-omap-of-zip-tree-after)
 
-(defrule zip-before-of-zip-update
-  (equal (zip-before (zip-update val zip))
+(defrule zip-before-of-zip-update-entry
+  (equal (zip-before (zip-update-entry val zip))
          (zip-before zip))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-before))
 
-(defrule zip-after-of-zip-update
-  (equal (zip-after (zip-update val zip))
+(defrule zip-after-of-zip-update-entry
+  (equal (zip-after (zip-update-entry val zip))
          (zip-after zip))
-  :enable (zip-update
+  :enable (zip-update-entry
            zip-after))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -213,49 +213,49 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-key-set-of-focus-of-zip-update
-  (equal (tree-key-set (zip->focus (zip-update val zip)))
+(defrule tree-key-set-of-focus-of-zip-update-entry
+  (equal (tree-key-set (zip->focus (zip-update-entry val zip)))
          (tree-key-set (zip->focus zip)))
-  :enable (zip-update
+  :enable (zip-update-entry
            tree-key-set))
 
-(defrule bstp-of-focus-of-zip-update
-  (equal (bstp (zip->focus (zip-update val zip)))
+(defrule bstp-of-focus-of-zip-update-entry
+  (equal (bstp (zip->focus (zip-update-entry val zip)))
          (bstp (zip->focus zip)))
-  :enable (zip-update
+  :enable (zip-update-entry
            bstp))
 
-(defrule heapp-of-focus-of-zip-update
-  (equal (heapp (zip->focus (zip-update val zip)))
+(defrule heapp-of-focus-of-zip-update-entry
+  (equal (heapp (zip->focus (zip-update-entry val zip)))
          (heapp (zip->focus zip)))
-  :enable (zip-update
+  :enable (zip-update-entry
            heapp))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule tree-key-set-of-zip-plug-of-zip-update
-  (equal (tree-key-set (zip-plug (zip-update val zip)))
+(defrule tree-key-set-of-zip-plug-of-zip-update-entry
+  (equal (tree-key-set (zip-plug (zip-update-entry val zip)))
          (tree-key-set (zip-plug zip)))
   :use (:instance tree-key-set-of-zip-path-plug-when-equal-of-tree-key-sets
                   (path (zip->path zip))
                   (tree (zip->focus zip))
-                  (new (zip->focus (zip-update val zip))))
+                  (new (zip->focus (zip-update-entry val zip))))
   :enable zip-plug)
 
-(defrule bstp-of-zip-plug-of-zip-update
-  (equal (bstp (zip-plug (zip-update val zip)))
+(defrule bstp-of-zip-plug-of-zip-update-entry
+  (equal (bstp (zip-plug (zip-update-entry val zip)))
          (bstp (zip-plug zip)))
   :use (:instance bstp-of-zip-path-plug-when-equal-of-tree-key-sets
                   (path (zip->path zip))
                   (tree (zip->focus zip))
-                  (new (zip->focus (zip-update val zip))))
+                  (new (zip->focus (zip-update-entry val zip))))
   :enable zip-plug)
 
-(defrule heapp-of-zip-plug-of-zip-update
-  (equal (heapp (zip-plug (zip-update val zip)))
+(defrule heapp-of-zip-plug-of-zip-update-entry
+  (equal (heapp (zip-plug (zip-update-entry val zip)))
          (heapp (zip-plug zip)))
   :use (:instance heapp-of-zip-path-plug-when-equal-of-tree-key-sets
                   (path (zip->path zip))
                   (tree (zip->focus zip))
-                  (new (zip->focus (zip-update val zip))))
+                  (new (zip->focus (zip-update-entry val zip))))
   :enable zip-plug)

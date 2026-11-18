@@ -18,4 +18,4 @@
 (include-book "seek-defs")
 (include-book "next-prev-defs")
 (include-book "nexts-prevs-defs")
-(include-book "cursor-update-defs")
+(include-book "update-entry-defs")

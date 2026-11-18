@@ -75,7 +75,7 @@
       hole.")
    (xdoc::p
      "To replace the value of an entry in passing, use @(tsee
-      cursor-update).")))
+      update-entry).")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

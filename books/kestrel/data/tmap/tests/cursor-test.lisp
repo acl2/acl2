@@ -125,7 +125,7 @@
   :returns (map mapp)
   (if (not (entryp cursor))
       (from-cursor cursor)
-    (cursor-zero-all (next (cursor-update 0 cursor))))
+    (cursor-zero-all (next (update-entry 0 cursor))))
   :measure (nexts cursor))
 
 (defrule keys-of-cursor-zero-all

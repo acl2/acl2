@@ -8,14 +8,18 @@
 
 (in-package "TMAP")
 
-(include-book "../../internal/tree-defs")
-(include-book "zip-frame-defs")
-(include-book "zipper-defs")
+(include-book "../map-defs")
+(include-book "../update-defs")
+(include-book "cursor-defs")
+(include-book "entry-defs")
+(include-book "from-cursor-defs")
+(include-book "seek-defs")
+(include-book "internal/zip-update-entry-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
-(local (include-book "zip-update"))
+(local (include-book "update-entry"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (zip-update))
+  :names (update-entry))

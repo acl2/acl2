@@ -22,7 +22,7 @@
 (include-book "seek-min-max-defs")
 (include-book "seek-defs")
 (include-book "nexts-prevs-defs")
-(include-book "internal/zip-update-defs")
+(include-book "internal/zip-update-entry-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
@@ -46,49 +46,49 @@
 (local (include-book "nexts-prevs"))
 (local (include-book "internal/zipper"))
 (local (include-book "internal/zip-side"))
-(local (include-book "internal/zip-update"))
+(local (include-book "internal/zip-update-entry"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The view of a cursor whose zipper has had its value replaced.
 
-(defrulel cursorp-of-zip-update-of-cursor-fix
-  (cursorp (zip-update val (cursor-fix cursor)))
+(defrulel cursorp-of-zip-update-entry-of-cursor-fix
+  (cursorp (zip-update-entry val (cursor-fix cursor)))
   :use mapp-of-zip-plug-of-cursor-fix
   :enable (cursorp
            mapp)
   :disable mapp-of-zip-plug-of-cursor-fix)
 
-(defrulel entryp-of-zip-update-of-cursor-fix
-  (equal (entryp (zip-update val (cursor-fix cursor)))
+(defrulel entryp-of-zip-update-entry-of-cursor-fix
+  (equal (entryp (zip-update-entry val (cursor-fix cursor)))
          (entryp cursor))
   :enable entryp)
 
-(defrulel entry-key-of-zip-update-of-cursor-fix
-  (equal (entry-key (zip-update val (cursor-fix cursor)))
+(defrulel entry-key-of-zip-update-entry-of-cursor-fix
+  (equal (entry-key (zip-update-entry val (cursor-fix cursor)))
          (entry-key cursor))
   :enable entry-key)
 
-(defrulel entry-val-of-zip-update-of-cursor-fix
+(defrulel entry-val-of-zip-update-entry-of-cursor-fix
   (implies (entryp cursor)
-           (equal (entry-val (zip-update val (cursor-fix cursor)))
+           (equal (entry-val (zip-update-entry val (cursor-fix cursor)))
                   val))
   :enable (entry-val
            entryp))
 
-(defrulel before-of-zip-update-of-cursor-fix
-  (equal (before (zip-update val (cursor-fix cursor)))
+(defrulel before-of-zip-update-entry-of-cursor-fix
+  (equal (before (zip-update-entry val (cursor-fix cursor)))
          (before cursor))
   :enable before)
 
-(defrulel after-of-zip-update-of-cursor-fix
-  (equal (after (zip-update val (cursor-fix cursor)))
+(defrulel after-of-zip-update-entry-of-cursor-fix
+  (equal (after (zip-update-entry val (cursor-fix cursor)))
          (after cursor))
   :enable after)
 
-(defrulel from-cursor-of-zip-update-of-cursor-fix
+(defrulel from-cursor-of-zip-update-entry-of-cursor-fix
   (implies (entryp cursor)
-           (equal (from-cursor (zip-update val (cursor-fix cursor)))
+           (equal (from-cursor (zip-update-entry val (cursor-fix cursor)))
                   (update (entry-key cursor) val (from-cursor cursor))))
   :enable (extensionality
            in-of-keys-of-from-cursor-becomes-in-of-keys-of-before-or-entry-key-or-after
@@ -98,12 +98,12 @@
   (implies (entryp cursor)
            (equal (seek (entry-key cursor)
                         (update (entry-key cursor) val (from-cursor cursor)))
-                  (zip-update val (cursor-fix cursor))))
+                  (zip-update-entry val (cursor-fix cursor))))
   :enable cursor-extensionality-when-entryp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define cursor-update
+(define update-entry
   (val
    (cursor cursorp))
   :guard (entryp cursor)
@@ -122,7 +122,7 @@
                   (seek (entry-key cursor)
                         (update (entry-key cursor) val (from-cursor cursor)))
                 (cursor-fix cursor))
-       :exec (zip-update val (cursor-fix cursor)))
+       :exec (zip-update-entry val (cursor-fix cursor)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* seek-of-entry-key-and-update-of-from-cursor
                                             entryp
@@ -130,111 +130,111 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule cursor-update-when-cursor-equiv-congruence
+(defrule update-entry-when-cursor-equiv-congruence
   (implies (cursor-equiv cursor0 cursor1)
-           (equal (cursor-update val cursor0)
-                  (cursor-update val cursor1)))
+           (equal (update-entry val cursor0)
+                  (update-entry val cursor1)))
   :rule-classes :congruence
-  :enable cursor-update)
+  :enable update-entry)
 
-(defruled cursor-update-when-not-entryp
+(defruled update-entry-when-not-entryp
   (implies (not (entryp cursor))
-           (equal (cursor-update val cursor)
+           (equal (update-entry val cursor)
                   (cursor-fix cursor)))
-  :enable cursor-update)
+  :enable update-entry)
 
-(defrule cursor-update-when-not-entryp-cheap
+(defrule update-entry-when-not-entryp-cheap
   (implies (not (entryp cursor))
-           (equal (cursor-update val cursor)
+           (equal (update-entry val cursor)
                   (cursor-fix cursor)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :by cursor-update-when-not-entryp)
+  :by update-entry-when-not-entryp)
 
-(defruledl cursor-update-becomes-zip-update
-  (equal (cursor-update val cursor)
-         (zip-update val (cursor-fix cursor)))
-  :enable (cursor-update
+(defruledl update-entry-becomes-zip-update-entry
+  (equal (update-entry val cursor)
+         (zip-update-entry val (cursor-fix cursor)))
+  :enable (update-entry
            seek-of-entry-key-and-update-of-from-cursor
-           zip-update
+           zip-update-entry
            entryp
            break-abstraction))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule entryp-of-cursor-update
-  (equal (entryp (cursor-update val cursor))
+(defrule entryp-of-update-entry
+  (equal (entryp (update-entry val cursor))
          (entryp cursor))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
-(defrule before-of-cursor-update
-  (equal (before (cursor-update val cursor))
+(defrule before-of-update-entry
+  (equal (before (update-entry val cursor))
          (before cursor))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
-(defrule after-of-cursor-update
-  (equal (after (cursor-update val cursor))
+(defrule after-of-update-entry
+  (equal (after (update-entry val cursor))
          (after cursor))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
-(defrule entry-key-of-cursor-update
-  (equal (entry-key (cursor-update val cursor))
+(defrule entry-key-of-update-entry
+  (equal (entry-key (update-entry val cursor))
          (entry-key cursor))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
-(defrule entry-val-of-cursor-update
+(defrule entry-val-of-update-entry
   (implies (entryp cursor)
-           (equal (entry-val (cursor-update val cursor))
+           (equal (entry-val (update-entry val cursor))
                   val))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
-(defrule from-cursor-of-cursor-update
+(defrule from-cursor-of-update-entry
   (implies (entryp cursor)
-           (equal (from-cursor (cursor-update val cursor))
+           (equal (from-cursor (update-entry val cursor))
                   (update (entry-key cursor) val (from-cursor cursor))))
-  :enable cursor-update-becomes-zip-update)
+  :enable update-entry-becomes-zip-update-entry)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule beginp-of-cursor-update
-  (equal (beginp (cursor-update val cursor))
+(defrule beginp-of-update-entry
+  (equal (beginp (update-entry val cursor))
          (beginp cursor))
   :enable beginp)
 
-(defrule endp-of-cursor-update
-  (equal (endp (cursor-update val cursor))
+(defrule endp-of-update-entry
+  (equal (endp (update-entry val cursor))
          (endp cursor))
   :enable endp)
 
-(defrule minp-of-cursor-update
-  (equal (minp (cursor-update val cursor))
+(defrule minp-of-update-entry
+  (equal (minp (update-entry val cursor))
          (minp cursor))
   :enable minp)
 
-(defrule maxp-of-cursor-update
-  (equal (maxp (cursor-update val cursor))
+(defrule maxp-of-update-entry
+  (equal (maxp (update-entry val cursor))
          (maxp cursor))
   :enable maxp)
 
-(defrule nexts-of-cursor-update
-  (equal (nexts (cursor-update val cursor))
+(defrule nexts-of-update-entry
+  (equal (nexts (update-entry val cursor))
          (nexts cursor))
   :enable nexts)
 
-(defrule prevs-of-cursor-update
-  (equal (prevs (cursor-update val cursor))
+(defrule prevs-of-update-entry
+  (equal (prevs (update-entry val cursor))
          (prevs cursor))
   :enable prevs)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule cursor-update-of-cursor-update
-  (equal (cursor-update val1 (cursor-update val0 cursor))
-         (cursor-update val1 cursor))
+(defrule update-entry-of-update-entry
+  (equal (update-entry val1 (update-entry val0 cursor))
+         (update-entry val1 cursor))
   :cases ((entryp cursor))
   :enable cursor-extensionality-when-entryp)
 
-(defrule cursor-update-of-entry-val
-  (equal (cursor-update (entry-val cursor) cursor)
+(defrule update-entry-of-entry-val
+  (equal (update-entry (entry-val cursor) cursor)
          (cursor-fix cursor))
   :cases ((entryp cursor))
   :enable cursor-extensionality-when-entryp)

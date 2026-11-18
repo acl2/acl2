@@ -17,4 +17,4 @@
 (include-book "zip-step-side")
 (include-book "zip-uniqueness")
 (include-book "zip-seek")
-(include-book "zip-update")
+(include-book "zip-update-entry")

@@ -20,6 +20,6 @@
 (include-book "seek")
 (include-book "next-prev")
 (include-book "nexts-prevs")
-(include-book "cursor-update")
+(include-book "update-entry")
 (include-book "partition")
 (include-book "generic-typed")
