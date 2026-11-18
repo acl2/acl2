@@ -20,3 +20,4 @@
 (include-book "nexts-prevs-defs")
 (include-book "update-entry-defs")
 (include-book "update-hole-defs")
+(include-book "delete-entry-defs")

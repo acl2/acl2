@@ -22,5 +22,6 @@
 (include-book "nexts-prevs")
 (include-book "update-entry")
 (include-book "update-hole")
+(include-book "delete-entry")
 (include-book "partition")
 (include-book "generic-typed")

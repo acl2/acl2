@@ -19,3 +19,4 @@
 (include-book "zip-seek")
 (include-book "zip-update-entry")
 (include-book "zip-update-hole")
+(include-book "zip-delete-entry")

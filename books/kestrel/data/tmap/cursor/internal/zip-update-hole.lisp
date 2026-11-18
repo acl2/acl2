@@ -168,30 +168,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A path brackets a key when the key is on the focus side of every frame: below
-;; the element of a frame entered to the left, and above the element of a frame
-;; entered to the right. A search keeps the sought key bracketed.
-
-(local
-  (define zip-path-brackets-p
-    (key
-     (path zip-frame-listp))
-    :returns (yes/no booleanp :rule-classes :type-prescription)
-    :verify-guards nil
-    (or (acl2::endp path)
-        (and (if (zip-frame->from-left (first path))
-                 (<< key (tree-element->key (zip-frame->elem (first path))))
-               (<< (tree-element->key (zip-frame->elem (first path))) key))
-             (zip-path-brackets-p key (rest path))))))
-
-(defrulel zip-path-brackets-p-of-path-of-zip-seek
-  (implies (zip-path-brackets-p x (zip->path zip))
-           (zip-path-brackets-p x (zip->path (zip-seek x zip))))
-  :induct (zip-seek x zip)
-  :enable (zip-seek
-           zip-path-brackets-p
-           zip-key
-           data::<<-rules))
+;; The ascent keeps the key bracketed by the path.
 
 (defrulel zip-path-brackets-p-of-path-of-zip-ascend-while-lower
   (implies (zip-path-brackets-p x (zip->path zip))

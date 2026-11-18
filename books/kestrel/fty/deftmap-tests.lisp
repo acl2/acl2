@@ -458,4 +458,25 @@
   (assert! (equal (tmap::lookup
                    'a
                    (sym-nat-map-bump 'a (sym-nat-map-bump 'a (tmap::empty))))
-                  2)))
+                  2))
+
+  ;; A walk that removes entries. The map under the cursor stays typed, by
+  ;; the generated rule for tmap::delete.
+
+  (define sym-nat-map-drop-zeros-loop ((cursor tmap::cursorp))
+    :guard (and (sym-nat-map-p (tmap::from-cursor cursor))
+                (or (tmap::entryp cursor)
+                    (tmap::endp cursor)))
+    (cond ((not (tmap::entryp cursor))
+           (tmap::from-cursor cursor))
+          ((equal (nat-id (tmap::entry-val cursor)) 0)
+           (sym-nat-map-drop-zeros-loop
+            (tmap::step-forward (tmap::delete-entry cursor))))
+          (t (sym-nat-map-drop-zeros-loop (tmap::next cursor))))
+    :measure (tmap::nexts cursor))
+
+  (assert! (equal (tmap::keys
+                   (sym-nat-map-drop-zeros-loop
+                    (tmap::seek-min
+                     (tmap::update 'b 0 (tmap::update 'a 1 (tmap::empty))))))
+                  (tmap::keys (tmap::update 'a 1 (tmap::empty))))))

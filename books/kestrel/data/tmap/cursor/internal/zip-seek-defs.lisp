@@ -26,4 +26,5 @@
   :names (zip-seek
           acl2-number-zip-seek
           symbol-zip-seek
-          eqlable-zip-seek))
+          eqlable-zip-seek
+          zip-path-brackets-p))

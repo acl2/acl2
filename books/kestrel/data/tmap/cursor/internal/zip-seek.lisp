@@ -30,7 +30,9 @@
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
 (local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 (local (include-book "kestrel/data/tset/generic-typed" :dir :system))
 
 (local (include-book "kestrel/data/utilities/omap" :dir :system))
@@ -41,6 +43,7 @@
 
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 
 (local (include-book "../../internal/tree"))
@@ -312,3 +315,129 @@
   :enable (assoc-equal-of-zip-after-of-zip-seek-when-not-tree-search-assoc
            zip-omap-after-becomes-zip-after
            data::omap-assoc-becomes-assoc-equal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-brackets-p
+  (key
+   (path zip-frame-listp))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  :short "Check that a key is on the focus side of every frame of a path."
+  :long
+  (xdoc::topstring-p
+    "That is, the key is below the element of each frame entered to the left,
+     and above the element of each frame entered to the right. A search for
+     the key from the root would take this path.")
+  (or (acl2::endp path)
+      (and (if (zip-frame->from-left (first path))
+               (<< key (tree-element->key (zip-frame->elem (first path))))
+             (<< (tree-element->key (zip-frame->elem (first path))) key))
+           (zip-path-brackets-p key (rest path)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-path-brackets-p-when-not-consp-cheap
+  (implies (not (consp path))
+           (zip-path-brackets-p key path))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable zip-path-brackets-p)
+
+(defrule zip-path-brackets-p-of-path-of-zip-seek
+  (implies (zip-path-brackets-p x (zip->path zip))
+           (zip-path-brackets-p x (zip->path (zip-seek x zip))))
+  :induct (zip-seek x zip)
+  :enable (zip-seek
+           zip-path-brackets-p
+           zip-key
+           data::<<-rules))
+
+;; The keys of the focus are bracketed by the path, in a search tree.
+
+(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
+  (implies (bstp (zip-path-plug path tree))
+           (bstp tree))
+  :rule-classes :forward-chaining)
+
+(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
+  (implies (bstp (tree-node head left right))
+           (and (bstp left)
+                (bstp right)
+                (<<-all-l left (tree-element->key head))
+                (<<-all-r (tree-element->key head) right)))
+  :rule-classes :forward-chaining)
+
+(local
+  (define zip-path-plug-induction ((path zip-frame-listp)
+                                   (tree treep))
+    :verify-guards nil
+    :enabled t
+    (if (acl2::endp path)
+        tree
+      (zip-path-plug-induction (rest path)
+                               (zip-frame-plug (first path) tree)))))
+
+(defruled zip-path-brackets-p-when-in-of-tree-key-set
+  (implies (and (bstp (zip-path-plug path tree))
+                (tset::in key (tree-key-set tree)))
+           (zip-path-brackets-p key path))
+  :induct (zip-path-plug-induction path tree)
+  :expand ((zip-path-plug path tree))
+  :enable (zip-frame-plug
+           zip-path-brackets-p
+           <<-when-<<-all-l-and-in-of-tree-key-set
+           <<-when-<<-all-r-and-in-of-tree-key-set))
+
+(defrule zip-path-brackets-p-of-zip-key-and-path
+  (implies (and (bstp (zip-plug zip))
+                (not (tree-empty-p (zip->focus zip))))
+           (zip-path-brackets-p (zip-key zip) (zip->path zip)))
+  :use (:instance zip-path-brackets-p-when-in-of-tree-key-set
+                  (key (zip-key zip))
+                  (path (zip->path zip))
+                  (tree (zip->focus zip)))
+  :enable (zip-plug
+           zip-key))
+
+;;;;;;;;;;;;;;;;;;;;
+
+;; A search from the root for a key which a path brackets passes through the
+;; position of that path.
+
+(local
+  (define zip-ascend-induction ((zip zipp))
+    :verify-guards nil
+    :enabled t
+    (if (acl2::endp (zip->path zip))
+        zip
+      (zip-ascend-induction (zip-ascend-one zip)))
+    :measure (len (zip->path zip))))
+
+(defruledl zip-seek-of-zip-ascend-one
+  (implies (and (consp (zip->path zip))
+                (zip-path-brackets-p x (zip->path zip)))
+           (equal (zip-seek x (zip-ascend-one zip))
+                  (zip-seek x zip)))
+  :expand ((zip-seek x (zip-ascend-one zip))
+           (zip-path-brackets-p x (zip->path zip)))
+  :enable (zip-key
+           zip-frame-plug
+           zip-descend-left-of-zip-ascend-one-when-from-left
+           zip-descend-right-of-zip-ascend-one-when-not-from-left
+           data::<<-rules))
+
+(defrulel zip-of-focus-and-nil-when-not-consp-of-path
+  (implies (not (consp (zip->path zip)))
+           (equal (zip (zip->focus zip) nil)
+                  (zip-fix zip)))
+  :use zip-of-zip-accessors
+  :disable zip-of-zip-accessors)
+
+(defruled zip-seek-of-zip-root-of-zip-plug
+  (implies (zip-path-brackets-p x (zip->path zip))
+           (equal (zip-seek x (zip-root (zip-plug zip)))
+                  (zip-seek x zip)))
+  :induct (zip-ascend-induction zip)
+  :enable (zip-seek-of-zip-ascend-one
+           zip-path-brackets-p
+           zip-root
+           zip-plug))

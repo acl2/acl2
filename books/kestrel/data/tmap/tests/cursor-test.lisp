@@ -10,6 +10,8 @@
 
 (include-book "std/util/define" :dir :system)
 
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+
 (include-book "../map-defs")
 (include-book "../size-defs")
 (include-book "../keys-defs")
@@ -37,6 +39,7 @@
 (local (include-book "kestrel/data/tset/min-max" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
 (local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -158,3 +161,26 @@
                    1)
                  map))
   :enable bump)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A walk which removes entries as it passes: drop the entries with even
+;; values. After a removal the cursor is at a hole, so the walk moves on with
+;; a single step.
+
+(define cursor-drop-evens ((cursor cursorp))
+  :guard (or (entryp cursor)
+             (endp cursor))
+  :returns (map mapp)
+  (cond ((not (entryp cursor))
+         (from-cursor cursor))
+        ((evenp (nfix (entry-val cursor)))
+         (cursor-drop-evens (step-forward (delete-entry cursor))))
+        (t (cursor-drop-evens (next cursor))))
+  :measure (nexts cursor))
+
+(defrule subset-of-keys-of-cursor-drop-evens
+  (tset::subset (keys (cursor-drop-evens cursor))
+                (keys (from-cursor cursor)))
+  :induct t
+  :enable cursor-drop-evens)
