@@ -57,10 +57,14 @@
       the focus. Over a @(see tmap), the expected time is constant."))
   (let ((focus (zip->focus zip)))
     (if (mbt (not (tree-empty-p focus)))
-        (zip-seek (tree-element->key (tree->head focus))
-                  (zip (tree-join (tree->left focus)
-                                  (tree->right focus))
-                       (zip->path zip)))
+        (mbe :logic (zip-seek (tree-element->key (tree->head focus))
+                              (zip (tree-join (tree->left focus)
+                                              (tree->right focus))
+                                   (zip->path zip)))
+             :exec (zip-seek-loop (tree-element->key (tree->head focus))
+                                  (tree-join (tree->left focus)
+                                             (tree->right focus))
+                                  (zip->path zip)))
       (zip-fix zip))))
 
 ;;;;;;;;;;;;;;;;;;;;

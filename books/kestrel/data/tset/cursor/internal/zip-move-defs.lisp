@@ -26,4 +26,10 @@
           zip-descend-leftmost-hole
           zip-descend-rightmost-hole
           zip-ascend-to-left-frame
-          zip-ascend-to-right-frame))
+          zip-ascend-to-right-frame
+          zip-descend-leftmost-loop
+          zip-descend-rightmost-loop
+          zip-descend-leftmost-hole-loop
+          zip-descend-rightmost-hole-loop
+          zip-ascend-to-left-frame-loop
+          zip-ascend-to-right-frame-loop))

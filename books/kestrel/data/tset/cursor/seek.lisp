@@ -92,8 +92,10 @@
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
-  (zip-seek x (zip-root (fix set)))
-  :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
+  (mbe :logic (zip-seek x (zip-root (fix set)))
+       :exec (zip-seek-loop x set nil))
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root)))
 
   ///
   (add-macro-fn seek seek$inline))
@@ -354,10 +356,11 @@
   ((x acl2-numberp)
    (set acl2-number-setp))
   (mbe :logic (seek x set)
-       :exec (acl2-number-zip-seek x (zip-root set)))
+       :exec (acl2-number-zip-seek-loop x set nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             set-all-acl2-numberp
                                             seek))))
 
@@ -365,10 +368,11 @@
   ((x symbolp)
    (set symbol-setp))
   (mbe :logic (seek x set)
-       :exec (symbol-zip-seek x (zip-root set)))
+       :exec (symbol-zip-seek-loop x set nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             set-all-symbolp
                                             seek))))
 
@@ -376,10 +380,11 @@
   ((x eqlablep)
    (set eqlable-setp))
   (mbe :logic (seek x set)
-       :exec (eqlable-zip-seek x (zip-root set)))
+       :exec (eqlable-zip-seek-loop x set nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             set-all-eqlablep
                                             seek))))
 

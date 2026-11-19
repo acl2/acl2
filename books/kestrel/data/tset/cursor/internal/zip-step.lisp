@@ -125,12 +125,26 @@
    (xdoc::p
      "Time complexity: @($O(d)$) in the worst case -- @($O(\\log(n))$) over a
       @(see tset)."))
-  (cond ((not (tree-empty-p (zip->focus zip)))
-         (zip-descend-leftmost-hole (zip-descend-right zip)))
-        ((zip-path-no-left-frames-p (zip->path zip))
-         (zip-fix zip))
-        (t
-         (zip-ascend-to-left-frame zip))))
+  (mbe :logic (cond ((not (tree-empty-p (zip->focus zip)))
+                     (zip-descend-leftmost-hole (zip-descend-right zip)))
+                    ((zip-path-no-left-frames-p (zip->path zip))
+                     (zip-fix zip))
+                    (t
+                     (zip-ascend-to-left-frame zip)))
+       :exec (let ((focus (zip->focus zip))
+                   (path (zip->path zip)))
+               (cond ((not (tree-empty-p focus))
+                      (zip-descend-leftmost-hole-loop
+                        (tree->right focus)
+                        (cons (zip-frame nil
+                                         (tree->head focus)
+                                         (tree->left focus))
+                              path)))
+                     ((zip-path-no-left-frames-p path)
+                      zip)
+                     (t
+                      (zip-ascend-to-left-frame-loop focus path)))))
+  :guard-hints (("Goal" :in-theory (enable zip-descend-right))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -141,12 +155,26 @@
   (xdoc::topstring
    (xdoc::p
      "The mirror image of @(tsee zip-step-forward)."))
-  (cond ((not (tree-empty-p (zip->focus zip)))
-         (zip-descend-rightmost-hole (zip-descend-left zip)))
-        ((zip-path-no-right-frames-p (zip->path zip))
-         (zip-fix zip))
-        (t
-         (zip-ascend-to-right-frame zip))))
+  (mbe :logic (cond ((not (tree-empty-p (zip->focus zip)))
+                     (zip-descend-rightmost-hole (zip-descend-left zip)))
+                    ((zip-path-no-right-frames-p (zip->path zip))
+                     (zip-fix zip))
+                    (t
+                     (zip-ascend-to-right-frame zip)))
+       :exec (let ((focus (zip->focus zip))
+                   (path (zip->path zip)))
+               (cond ((not (tree-empty-p focus))
+                      (zip-descend-rightmost-hole-loop
+                        (tree->left focus)
+                        (cons (zip-frame t
+                                         (tree->head focus)
+                                         (tree->right focus))
+                              path)))
+                     ((zip-path-no-right-frames-p path)
+                      zip)
+                     (t
+                      (zip-ascend-to-right-frame-loop focus path)))))
+  :guard-hints (("Goal" :in-theory (enable zip-descend-left))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -276,17 +304,25 @@
       @(see tset) -- but @($O(1)$) amortized over a traversal, since each
       edge of the tree is crossed twice."))
   (mbe :logic (zip-step-forward (zip-step-forward zip))
-       :exec (cond ((not (tree-empty-p (tree->right (zip->focus zip))))
-                    (zip-descend-leftmost (zip-descend-right zip)))
-                   ((zip-path-no-left-frames-p (zip->path zip))
-                    (zip-descend-right zip))
-                   (t
-                    (zip-ascend-to-left-frame zip))))
+       :exec (let ((focus (zip->focus zip))
+                   (path (zip->path zip)))
+               (cond ((not (tree-empty-p (tree->right focus)))
+                      (zip-descend-leftmost-loop
+                        (tree->right focus)
+                        (cons (zip-frame nil
+                                         (tree->head focus)
+                                         (tree->left focus))
+                              path)))
+                     ((zip-path-no-left-frames-p path)
+                      (zip-descend-right zip))
+                     (t
+                      (zip-ascend-to-left-frame-loop focus path)))))
   :inline t
   :guard-hints
   (("Goal"
     :in-theory
-    (enable zip-step-forward-of-zip-step-forward-when-not-tree-empty-p))))
+    (enable zip-step-forward-of-zip-step-forward-when-not-tree-empty-p
+            zip-descend-right))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,17 +336,25 @@
    (xdoc::p
      "The mirror image of @(tsee zip-next)."))
   (mbe :logic (zip-step-backward (zip-step-backward zip))
-       :exec (cond ((not (tree-empty-p (tree->left (zip->focus zip))))
-                    (zip-descend-rightmost (zip-descend-left zip)))
-                   ((zip-path-no-right-frames-p (zip->path zip))
-                    (zip-descend-left zip))
-                   (t
-                    (zip-ascend-to-right-frame zip))))
+       :exec (let ((focus (zip->focus zip))
+                   (path (zip->path zip)))
+               (cond ((not (tree-empty-p (tree->left focus)))
+                      (zip-descend-rightmost-loop
+                        (tree->left focus)
+                        (cons (zip-frame t
+                                         (tree->head focus)
+                                         (tree->right focus))
+                              path)))
+                     ((zip-path-no-right-frames-p path)
+                      (zip-descend-left zip))
+                     (t
+                      (zip-ascend-to-right-frame-loop focus path)))))
   :inline t
   :guard-hints
   (("Goal"
     :in-theory
-    (enable zip-step-backward-of-zip-step-backward-when-not-tree-empty-p))))
+    (enable zip-step-backward-of-zip-step-backward-when-not-tree-empty-p
+            zip-descend-left))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -333,16 +377,20 @@
 (define zip-begin ((tree treep))
   :returns (zip zipp)
   :short "The zipper at the first hole of a tree."
-  (zip-descend-leftmost-hole (zip-root tree))
-  :inline t)
+  (mbe :logic (zip-descend-leftmost-hole (zip-root tree))
+       :exec (zip-descend-leftmost-hole-loop tree nil))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable zip-root))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-end ((tree treep))
   :returns (zip zipp)
   :short "The zipper at the last hole of a tree."
-  (zip-descend-rightmost-hole (zip-root tree))
-  :inline t)
+  (mbe :logic (zip-descend-rightmost-hole (zip-root tree))
+       :exec (zip-descend-rightmost-hole-loop tree nil))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable zip-root))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -461,12 +509,13 @@
   (mbe :logic (zip-step-forward (zip-begin tree))
        :exec (if (tree-empty-p tree)
                  (zip-root tree)
-               (zip-descend-leftmost (zip-root tree))))
+               (zip-descend-leftmost-loop tree nil)))
   :inline t
   :guard-hints
   (("Goal"
     :in-theory
     (enable zip-begin
+            zip-root
             zip-step-forward
             zip-descend-leftmost-hole-becomes-descend-left-of-leftmost
             zip-ascend-to-left-frame-of-zip-descend-left))))
@@ -483,12 +532,13 @@
   (mbe :logic (zip-step-backward (zip-end tree))
        :exec (if (tree-empty-p tree)
                  (zip-root tree)
-               (zip-descend-rightmost (zip-root tree))))
+               (zip-descend-rightmost-loop tree nil)))
   :inline t
   :guard-hints
   (("Goal"
     :in-theory
     (enable zip-end
+            zip-root
             zip-step-backward
             zip-descend-rightmost-hole-becomes-descend-right-of-rightmost
             zip-ascend-to-right-frame-of-zip-descend-right))))

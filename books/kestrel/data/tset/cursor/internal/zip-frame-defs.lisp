@@ -24,6 +24,7 @@
           zip-frame->elem
           zip-frame->sibling
           zip-frame
+          zip-frame-plug
           zip-frame-listp
           zip-frame-list-fix
           zip-path-no-left-frames-p

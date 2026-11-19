@@ -23,7 +23,8 @@
 
 (std::defredundant
   :names (zip-seek
-          acl2-number-zip-seek
-          symbol-zip-seek
-          eqlable-zip-seek
+          zip-seek-loop
+          acl2-number-zip-seek-loop
+          symbol-zip-seek-loop
+          eqlable-zip-seek-loop
           zip-path-brackets-p))

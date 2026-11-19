@@ -24,7 +24,6 @@
           zip->focus
           zip->path
           zip
-          zip-frame-plug
           zip-path-plug
           zip-plug
           zip-root))

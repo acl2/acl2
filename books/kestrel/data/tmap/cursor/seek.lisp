@@ -101,8 +101,10 @@
   :returns (cursor cursorp
                    :hints (("Goal" :in-theory (enable* cursorp
                                                        break-abstraction))))
-  (zip-seek x (zip-root (fix map)))
-  :guard-hints (("Goal" :in-theory (enable* break-abstraction)))
+  (mbe :logic (zip-seek x (zip-root (fix map)))
+       :exec (zip-seek-loop x map nil))
+  :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root)))
 
   ///
   (add-macro-fn seek seek$inline))
@@ -401,10 +403,11 @@
   ((x acl2-numberp)
    (map acl2-number-mapp))
   (mbe :logic (seek x map)
-       :exec (acl2-number-zip-seek x (zip-root map)))
+       :exec (acl2-number-zip-seek-loop x map nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             map-keys-acl2-numberp
                                             keys
                                             seek))))
@@ -413,10 +416,11 @@
   ((x symbolp)
    (map symbol-mapp))
   (mbe :logic (seek x map)
-       :exec (symbol-zip-seek x (zip-root map)))
+       :exec (symbol-zip-seek-loop x map nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             map-keys-symbolp
                                             keys
                                             seek))))
@@ -425,10 +429,11 @@
   ((x eqlablep)
    (map eqlable-mapp))
   (mbe :logic (seek x map)
-       :exec (eqlable-zip-seek x (zip-root map)))
+       :exec (eqlable-zip-seek-loop x map nil))
   :enabled t
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
+                                            zip-root
                                             map-keys-eqlablep
                                             keys
                                             seek))))

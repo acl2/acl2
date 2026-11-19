@@ -25,4 +25,5 @@
 
 (std::defredundant
   :names (zip-ascend-while-lower
+          zip-insert-hole-loop
           zip-insert-hole))

@@ -276,42 +276,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define zip-frame-plug
-  ((frame zip-frame-p)
-   (tree treep))
-  :returns (tree$ treep)
-  :short "Rebuild the node of a frame, with the given tree in its hole."
-  (if (zip-frame->from-left frame)
-      (tree-node (zip-frame->elem frame)
-                 tree
-                 (zip-frame->sibling frame))
-    (tree-node (zip-frame->elem frame)
-               (zip-frame->sibling frame)
-               tree))
-  :inline t)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule zip-frame-plug-when-zip-frame-equiv-of-arg1-congruence
-  (implies (zip-frame-equiv frame0 frame1)
-           (equal (zip-frame-plug frame0 tree)
-                  (zip-frame-plug frame1 tree)))
-  :rule-classes :congruence
-  :enable zip-frame-plug)
-
-(defrule zip-frame-plug-when-tree-equiv-of-arg2-congruence
-  (implies (tree-equiv tree0 tree1)
-           (equal (zip-frame-plug frame tree0)
-                  (zip-frame-plug frame tree1)))
-  :rule-classes :congruence
-  :enable zip-frame-plug)
-
-(defrule tree-empty-p-of-zip-frame-plug
-  (not (tree-empty-p (zip-frame-plug frame tree)))
-  :enable zip-frame-plug)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define zip-path-plug
   ((path zip-frame-listp)
    (tree treep))

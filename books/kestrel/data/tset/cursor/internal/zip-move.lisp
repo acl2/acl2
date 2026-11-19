@@ -602,3 +602,115 @@
            zip-path-no-right-frames-p
            zip-descend-right-of-zip-ascend-one-when-not-from-left
            zip-descend-leftmost-hole-of-zip-ascend-one-when-from-left))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The repeated moves, taking the focus and the path apart. These are the forms
+;; to execute: they build a single zipper, at the end of the move, where the
+;; moves above build one at each step.
+
+(define zip-descend-leftmost-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-descend-leftmost), from a focus and a path."
+  (mbe :logic (zip-descend-leftmost (zip focus path))
+       :exec (if (tree-empty-p (tree->left focus))
+                 (zip focus path)
+               (zip-descend-leftmost-loop
+                 (tree->left focus)
+                 (cons (zip-frame t (tree->head focus) (tree->right focus))
+                       path))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-descend-leftmost-loop
+                                           zip-descend-left)
+                        :expand ((zip-descend-leftmost (zip focus path))))))
+
+(define zip-descend-rightmost-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-descend-rightmost), from a focus and a path."
+  (mbe :logic (zip-descend-rightmost (zip focus path))
+       :exec (if (tree-empty-p (tree->right focus))
+                 (zip focus path)
+               (zip-descend-rightmost-loop
+                 (tree->right focus)
+                 (cons (zip-frame nil (tree->head focus) (tree->left focus))
+                       path))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-descend-rightmost-loop
+                                           zip-descend-right)
+                        :expand ((zip-descend-rightmost (zip focus path))))))
+
+(define zip-descend-leftmost-hole-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-descend-leftmost-hole), from a focus and a path."
+  (mbe :logic (zip-descend-leftmost-hole (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
+               (zip-descend-leftmost-hole-loop
+                 (tree->left focus)
+                 (cons (zip-frame t (tree->head focus) (tree->right focus))
+                       path))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-descend-leftmost-hole-loop
+                                           zip-descend-left)
+                        :expand ((zip-descend-leftmost-hole
+                                   (zip focus path))))))
+
+(define zip-descend-rightmost-hole-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-descend-rightmost-hole), from a focus and a path."
+  (mbe :logic (zip-descend-rightmost-hole (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
+               (zip-descend-rightmost-hole-loop
+                 (tree->right focus)
+                 (cons (zip-frame nil (tree->head focus) (tree->left focus))
+                       path))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-descend-rightmost-hole-loop
+                                           zip-descend-right)
+                        :expand ((zip-descend-rightmost-hole
+                                   (zip focus path))))))
+
+(define zip-ascend-to-left-frame-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-ascend-to-left-frame), from a focus and a path."
+  (mbe :logic (zip-ascend-to-left-frame (zip focus path))
+       :exec (cond ((acl2::endp path)
+                    (zip focus path))
+                   ((zip-frame->from-left (first path))
+                    (zip (zip-frame-plug (first path) focus)
+                         (rest path)))
+                   (t
+                    (zip-ascend-to-left-frame-loop
+                      (zip-frame-plug (first path) focus)
+                      (rest path)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-ascend-to-left-frame-loop
+                                           zip-ascend-one)
+                        :expand ((zip-ascend-to-left-frame
+                                   (zip focus path))))))
+
+(define zip-ascend-to-right-frame-loop
+  ((focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-ascend-to-right-frame), from a focus and a path."
+  (mbe :logic (zip-ascend-to-right-frame (zip focus path))
+       :exec (cond ((acl2::endp path)
+                    (zip focus path))
+                   ((zip-frame->from-left (first path))
+                    (zip-ascend-to-right-frame-loop
+                      (zip-frame-plug (first path) focus)
+                      (rest path)))
+                   (t
+                    (zip (zip-frame-plug (first path) focus)
+                         (rest path)))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-ascend-to-right-frame-loop
+                                           zip-ascend-one)
+                        :expand ((zip-ascend-to-right-frame
+                                   (zip focus path))))))

@@ -110,63 +110,169 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define acl2-number-zip-seek
+;; The search, taking the focus and the path apart. These are the forms to
+;; execute: they build a single zipper, at the end of the search, where
+;; zip-seek builds one at each step.
+
+(define zip-seek-loop
+  (x
+   (focus treep)
+   (path zip-frame-listp))
+  :short "@(tsee zip-seek), from a focus and a path."
+  (mbe :logic (zip-seek x (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
+               (mv-let (equalp ltp)
+                       (data::compare-<<
+                         x
+                         (tree-element->val (tree->head focus)))
+                 (cond (equalp
+                        (zip focus path))
+                       (ltp
+                        (zip-seek-loop
+                          x
+                          (tree->left focus)
+                          (cons (zip-frame t
+                                           (tree->head focus)
+                                           (tree->right focus))
+                                path)))
+                       (t
+                        (zip-seek-loop
+                          x
+                          (tree->right focus)
+                          (cons (zip-frame nil
+                                           (tree->head focus)
+                                           (tree->left focus))
+                                path)))))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-seek-loop
+                                           zip-value
+                                           zip-descend-left
+                                           zip-descend-right)
+                        :expand ((zip-seek x (zip focus path))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define acl2-number-zip-seek-loop
   ((x acl2-numberp)
-   (zip zipp))
-  :guard (tree-all-acl2-numberp (zip->focus zip))
-  (mbe :logic (zip-seek x zip)
-       :exec (if (tree-empty-p (zip->focus zip))
-                 zip
+   (focus treep)
+   (path zip-frame-listp))
+  :guard (tree-all-acl2-numberp focus)
+  :short "A variant of @(tsee zip-seek-loop) for numbers."
+  (mbe :logic (zip-seek x (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
                (mv-let (equalp ltp)
-                       (data::acl2-number-compare-<< x (zip-value zip))
-                 (cond (equalp zip)
-                       (ltp (acl2-number-zip-seek x (zip-descend-left zip)))
-                       (t (acl2-number-zip-seek x (zip-descend-right zip)))))))
+                       (data::acl2-number-compare-<<
+                         x
+                         (tree-element->val (tree->head focus)))
+                 (cond (equalp
+                        (zip focus path))
+                       (ltp
+                        (acl2-number-zip-seek-loop
+                          x
+                          (tree->left focus)
+                          (cons (zip-frame t
+                                           (tree->head focus)
+                                           (tree->right focus))
+                                path)))
+                       (t
+                        (acl2-number-zip-seek-loop
+                          x
+                          (tree->right focus)
+                          (cons (zip-frame nil
+                                           (tree->head focus)
+                                           (tree->left focus))
+                                path)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable zip-seek
-                                           acl2-number-zip-seek
+  :guard-hints (("Goal" :in-theory (enable acl2-number-zip-seek-loop
                                            zip-value
-                                           tree-all-acl2-numberp))))
+                                           zip-descend-left
+                                           zip-descend-right
+                                           tree-all-acl2-numberp)
+                        :expand ((zip-seek x (zip focus path))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define symbol-zip-seek
+(define symbol-zip-seek-loop
   ((x symbolp)
-   (zip zipp))
-  :guard (tree-all-symbolp (zip->focus zip))
-  (mbe :logic (zip-seek x zip)
-       :exec (if (tree-empty-p (zip->focus zip))
-                 zip
+   (focus treep)
+   (path zip-frame-listp))
+  :guard (tree-all-symbolp focus)
+  :short "A variant of @(tsee zip-seek-loop) for symbols."
+  (mbe :logic (zip-seek x (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
                (mv-let (equalp ltp)
-                       (data::symbol-compare-<< x (zip-value zip))
-                 (cond (equalp zip)
-                       (ltp (symbol-zip-seek x (zip-descend-left zip)))
-                       (t (symbol-zip-seek x (zip-descend-right zip)))))))
+                       (data::symbol-compare-<<
+                         x
+                         (tree-element->val (tree->head focus)))
+                 (cond (equalp
+                        (zip focus path))
+                       (ltp
+                        (symbol-zip-seek-loop
+                          x
+                          (tree->left focus)
+                          (cons (zip-frame t
+                                           (tree->head focus)
+                                           (tree->right focus))
+                                path)))
+                       (t
+                        (symbol-zip-seek-loop
+                          x
+                          (tree->right focus)
+                          (cons (zip-frame nil
+                                           (tree->head focus)
+                                           (tree->left focus))
+                                path)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable zip-seek
-                                           symbol-zip-seek
+  :guard-hints (("Goal" :in-theory (enable symbol-zip-seek-loop
                                            zip-value
-                                           tree-all-symbolp))))
+                                           zip-descend-left
+                                           zip-descend-right
+                                           tree-all-symbolp)
+                        :expand ((zip-seek x (zip focus path))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eqlable-zip-seek
+(define eqlable-zip-seek-loop
   ((x eqlablep)
-   (zip zipp))
-  :guard (tree-all-eqlablep (zip->focus zip))
-  (mbe :logic (zip-seek x zip)
-       :exec (if (tree-empty-p (zip->focus zip))
-                 zip
+   (focus treep)
+   (path zip-frame-listp))
+  :guard (tree-all-eqlablep focus)
+  :short "A variant of @(tsee zip-seek-loop) for @(tsee eqlablep) values."
+  (mbe :logic (zip-seek x (zip focus path))
+       :exec (if (tree-empty-p focus)
+                 (zip focus path)
                (mv-let (equalp ltp)
-                       (data::eqlable-compare-<< x (zip-value zip))
-                 (cond (equalp zip)
-                       (ltp (eqlable-zip-seek x (zip-descend-left zip)))
-                       (t (eqlable-zip-seek x (zip-descend-right zip)))))))
+                       (data::eqlable-compare-<<
+                         x
+                         (tree-element->val (tree->head focus)))
+                 (cond (equalp
+                        (zip focus path))
+                       (ltp
+                        (eqlable-zip-seek-loop
+                          x
+                          (tree->left focus)
+                          (cons (zip-frame t
+                                           (tree->head focus)
+                                           (tree->right focus))
+                                path)))
+                       (t
+                        (eqlable-zip-seek-loop
+                          x
+                          (tree->right focus)
+                          (cons (zip-frame nil
+                                           (tree->head focus)
+                                           (tree->left focus))
+                                path)))))))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable zip-seek
-                                           eqlable-zip-seek
+  :guard-hints (("Goal" :in-theory (enable eqlable-zip-seek-loop
                                            zip-value
-                                           tree-all-eqlablep))))
+                                           zip-descend-left
+                                           zip-descend-right
+                                           tree-all-eqlablep)
+                        :expand ((zip-seek x (zip focus path))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

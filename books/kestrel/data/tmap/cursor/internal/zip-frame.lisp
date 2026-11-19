@@ -25,6 +25,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Library extensions
+
+(defrulel not-tree-element-p-when-treep
+  (implies (treep x)
+           (not (tree-element-p x)))
+  :enable (treep
+           tree-element-p))
+
+(defrulel integerp-of-car-when-tree-element-p
+  (implies (tree-element-p x)
+           (integerp (car x)))
+  :enable tree-element-p)
+
+(defrulel not-integerp-of-car-when-treep
+  (implies (treep x)
+           (not (integerp (car x))))
+  :enable (treep
+           tree-element-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define zip-frame-p (x)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for zipper path frames."
@@ -33,17 +54,19 @@
    (xdoc::p
      "A frame records one step of the descent from the root to the focus. It
       holds the element of the node descended through, the child not descended
-      into, and a flag distinguishing the two cases: @('from-left') is true
-      when the focus lies in the left child, in which case the sibling is that
-      node's right subtree, and vice versa.")
+      into (the sibling), and which of the two children the focus lies in.")
    (xdoc::p
-     "The flag is required to be a @(tsee booleanp) so that frames, and hence
-      zippers, are unique."))
+     "A frame is a single pair, whose order gives the direction: the element
+      comes first when the focus lies in the left child, and the sibling comes
+      first when it lies in the right child. The two cases cannot be confused,
+      since nothing is both an element and a tree: an element begins with its
+      hash, and a nonempty tree begins with an element. Frames, and hence
+      zippers, are therefore unique."))
   (and (consp x)
-       (booleanp (car x))
-       (consp (cdr x))
-       (tree-element-p (cadr x))
-       (treep (cddr x))))
+       (if (tree-element-p (car x))
+           (treep (cdr x))
+         (and (treep (car x))
+              (tree-element-p (cdr x))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -59,7 +82,7 @@
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "An irrelevant path frame, used as the fixer's default."
-  (cons nil (cons (irr-tree-element) nil)))
+  (cons nil (irr-tree-element)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -142,8 +165,10 @@
                                                          zip-frame-fix
                                                          irr-zip-frame))))
   :short "Check whether the focus lies in the left child of the frame's node."
-  (car (zip-frame-fix frame))
-  :inline t)
+  (mbe :logic (tree-element-p (car (zip-frame-fix frame)))
+       :exec (integerp (car (car frame))))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable zip-frame-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +187,13 @@
                                                     zip-frame-fix
                                                     irr-zip-frame))))
   :short "Get the element of the frame's node."
-  (cadr (zip-frame-fix frame))
+  (mbe :logic (let ((frame (zip-frame-fix frame)))
+                (if (tree-element-p (car frame))
+                    (car frame)
+                  (cdr frame)))
+       :exec (if (integerp (car (car frame)))
+                 (car frame)
+               (cdr frame)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable zip-frame-p))))
 
@@ -183,7 +214,13 @@
                                                        zip-frame-fix
                                                        irr-zip-frame))))
   :short "Get the child of the frame's node not descended into."
-  (cddr (zip-frame-fix frame))
+  (mbe :logic (let ((frame (zip-frame-fix frame)))
+                (if (tree-element-p (car frame))
+                    (cdr frame)
+                  (car frame)))
+       :exec (if (integerp (car (car frame)))
+                 (cdr frame)
+               (car frame)))
   :inline t
   :guard-hints (("Goal" :in-theory (enable zip-frame-p))))
 
@@ -205,9 +242,11 @@
   :returns (frame zip-frame-p
                   :hints (("Goal" :in-theory (enable zip-frame-p))))
   :short "Constructor for @(see zip-frame-p)s."
-  (cons (if from-left t nil)
-        (cons (tree-element-fix elem)
-              (tree-fix sibling)))
+  (if from-left
+      (cons (tree-element-fix elem)
+            (tree-fix sibling))
+    (cons (tree-fix sibling)
+          (tree-element-fix elem)))
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -286,6 +325,49 @@
   :enable (zip-frame
            zip-frame->elem
            zip-frame->sibling))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define zip-frame-plug
+  ((frame zip-frame-p)
+   (tree treep))
+  :returns (tree$ treep)
+  :short "Rebuild the node of a frame, with the given tree in its hole."
+  (mbe :logic (if (zip-frame->from-left frame)
+                  (tree-node (zip-frame->elem frame)
+                             tree
+                             (zip-frame->sibling frame))
+                (tree-node (zip-frame->elem frame)
+                           (zip-frame->sibling frame)
+                           tree))
+       :exec (if (zip-frame->from-left frame)
+                 (tree-node (car frame) tree (cdr frame))
+               (tree-node (cdr frame) (car frame) tree)))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable zip-frame->from-left
+                                           zip-frame->elem
+                                           zip-frame->sibling
+                                           zip-frame-p))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule zip-frame-plug-when-zip-frame-equiv-of-arg1-congruence
+  (implies (zip-frame-equiv frame0 frame1)
+           (equal (zip-frame-plug frame0 tree)
+                  (zip-frame-plug frame1 tree)))
+  :rule-classes :congruence
+  :enable zip-frame-plug)
+
+(defrule zip-frame-plug-when-tree-equiv-of-arg2-congruence
+  (implies (tree-equiv tree0 tree1)
+           (equal (zip-frame-plug frame tree0)
+                  (zip-frame-plug frame tree1)))
+  :rule-classes :congruence
+  :enable zip-frame-plug)
+
+(defrule tree-empty-p-of-zip-frame-plug
+  (not (tree-empty-p (zip-frame-plug frame tree)))
+  :enable zip-frame-plug)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

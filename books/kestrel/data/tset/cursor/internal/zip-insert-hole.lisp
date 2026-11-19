@@ -107,6 +107,50 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define zip-insert-hole-loop
+  (x
+   (hash (unsigned-byte-p 32 hash))
+   (focus treep)
+   (path zip-frame-listp))
+  :guard (mbe :logic (equal (hash x) hash)
+              :exec (data::u32-equal (hash x) hash))
+  :short "Move up as @(tsee zip-ascend-while-lower) does, from a focus and a
+          path, and put a new node for the value on top of the subtree
+          reached."
+  :long
+  (xdoc::topstring-p
+    "This is the form of @(tsee zip-insert-hole) to execute. It builds a
+     single zipper, at the end.")
+  (mbe :logic (let ((zip (zip-ascend-while-lower x hash (zip focus path))))
+                (mv-let (in left right)
+                        (tree-split x (zip->focus zip))
+                  (declare (ignore in))
+                  (zip (tree-node (tree-element (hash x) x) left right)
+                       (zip->path zip))))
+       :exec (if (and (consp path)
+                      (let ((elem (zip-frame->elem (first path))))
+                        (heap<-with-hashes (tree-element->val elem)
+                                           x
+                                           (tree-element->hash elem)
+                                           hash)))
+                 (zip-insert-hole-loop x
+                                       hash
+                                       (zip-frame-plug (first path) focus)
+                                       (rest path))
+               (mv-let (in left right)
+                       (tree-split x focus)
+                 (declare (ignore in))
+                 (zip (tree-node (tree-element hash x) left right)
+                      path))))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable zip-insert-hole-loop
+                                           zip-ascend-one
+                                           data::u32-equal)
+                        :expand ((zip-ascend-while-lower
+                                   x (hash x) (zip focus path))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define zip-insert-hole
   (x
    (zip zipp))
@@ -124,13 +168,17 @@
      "Time complexity: @($O(d)$), where @($d$) is the depth of the hole. Over
       a @(see tset), the expected time is constant, aside from hashing the
       value."))
-  (let* ((hash (hash x))
-         (zip (zip-ascend-while-lower x hash zip)))
-    (mv-let (in left right)
-            (tree-split x (zip->focus zip))
-      (declare (ignore in))
-      (zip (tree-node (tree-element hash x) left right)
-           (zip->path zip)))))
+  (mbe :logic (let* ((hash (hash x))
+                     (zip (zip-ascend-while-lower x hash zip)))
+                (mv-let (in left right)
+                        (tree-split x (zip->focus zip))
+                  (declare (ignore in))
+                  (zip (tree-node (tree-element hash x) left right)
+                       (zip->path zip))))
+       :exec (zip-insert-hole-loop x
+                                   (hash x)
+                                   (zip->focus zip)
+                                   (zip->path zip))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
