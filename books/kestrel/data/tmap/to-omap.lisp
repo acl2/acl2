@@ -67,8 +67,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule to-omap-type-prescription
-  (or (consp (to-omap map))
-      (equal (to-omap map) nil))
+  (true-listp (to-omap map))
   :rule-classes :type-prescription
   :enable to-omap)
 

@@ -69,8 +69,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule to-oset-type-prescription
-  (or (consp (to-oset set))
-      (equal (to-oset set) nil))
+  (true-listp (to-oset set))
   :rule-classes :type-prescription
   :enable to-oset)
 

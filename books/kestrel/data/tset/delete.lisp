@@ -24,11 +24,13 @@
 (include-book "subset-defs")
 (include-book "insert-defs")
 (include-book "to-oset-defs")
+(include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "std/osets/top" :dir :system))
+(local (include-book "kestrel/data/utilities/oset" :dir :system))
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -52,6 +54,7 @@
 (local (include-book "subset"))
 (local (include-book "extensionality"))
 (local (include-book "insert"))
+(local (include-book "min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -325,6 +328,13 @@
            empty))
 
 (add-to-ruleset to-oset-theory '(to-oset-of-delete))
+
+(defrule tail-of-to-oset
+  (equal (set::tail (to-oset set))
+         (to-oset (delete (min set) set)))
+  :enable data::delete-when-equal-of-head)
+
+(add-to-ruleset from-oset-theory '(tail-of-to-oset))
 
 (defrule from-oset-of-oset-delete
   (equal (from-oset (set::delete x oset))

@@ -75,9 +75,11 @@
 (defruled min-of-after-becomes-car-of-zip-after
   (equal (min (after cursor))
          (car (zip-after (cursor-fix cursor))))
-  :enable zip-after-of-cursor-fix-becomes-to-oset-of-after)
+  :enable (zip-after-of-cursor-fix-becomes-to-oset-of-after
+           car-of-to-oset))
 
 (defruled max-of-before-becomes-car-of-last-of-zip-before
   (equal (max (before cursor))
          (car (last (zip-before (cursor-fix cursor)))))
-  :enable zip-before-of-cursor-fix-becomes-to-oset-of-before)
+  :enable (zip-before-of-cursor-fix-becomes-to-oset-of-before
+           car-of-last-of-to-oset))

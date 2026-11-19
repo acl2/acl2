@@ -11,6 +11,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "internal/min-max-defs")
 (include-book "set-defs")
@@ -23,6 +24,7 @@
 
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "std/osets/primitives" :dir :system))
 
 (local (include-book "internal/tree"))
 (local (include-book "internal/min-max"))
@@ -130,7 +132,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule car-of-to-oset
+(defruled car-of-to-oset
   (equal (car (to-oset set))
          (min set))
   :enable (to-oset
@@ -138,6 +140,14 @@
            break-abstraction))
 
 (add-to-ruleset from-oset-theory '(car-of-to-oset))
+
+(defrule head-of-to-oset
+  (equal (set::head (to-oset set))
+         (min set))
+  :enable (set::head
+           car-of-to-oset))
+
+(add-to-ruleset from-oset-theory '(head-of-to-oset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,7 +278,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule car-of-last-of-to-oset
+(defruled car-of-last-of-to-oset
   (equal (car (last (to-oset set)))
          (max set))
   :enable (to-oset

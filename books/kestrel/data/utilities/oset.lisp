@@ -57,6 +57,12 @@
            (setp (cdr l)))
   :enable setp)
 
+(defruled delete-when-equal-of-head
+  (implies (equal x (set::head oset))
+           (equal (set::delete x oset)
+                  (set::tail oset)))
+  :enable set::delete)
+
 ;; Splitting an oset: both halves of an append are osets themselves.
 
 (defruled setp-of-prefix-when-osetp-of-append
