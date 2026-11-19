@@ -2280,7 +2280,6 @@
           ;; (logext-rules)
           (trim-rules) ; remove?
           ;(trim-helper-rules)      ;many dups here with the above...
-          (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
           (yet-more-rules-non-jvm) ; not bv rules?
           (array-reduction-rules)
@@ -3182,6 +3181,7 @@
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
+          ;; (list-to-bv-array-rules) ; needed?
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
@@ -4197,10 +4197,12 @@
 ;     bvxor-all-ones            ;why? ;trying without
      )))
 
+;; TODO: Why different from unroll-spec-basic-rules?
 (defun unroll-spec-rules ()
   (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
+          (list-to-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
           ))
 
@@ -4227,7 +4229,7 @@
              nth-of-group
              ungroup-of-cons)
            ;; (bv-array-rules-simple)
-           ;; (list-to-bv-array-rules)
+           (list-to-bv-array-rules)
            ;; (set-difference-eq (core-rules-bv)
            ;;                    ;; these are kind of like trim rules, and can make the result worse:
            ;;                    '(;BVCHOP-OF-BVPLUS
