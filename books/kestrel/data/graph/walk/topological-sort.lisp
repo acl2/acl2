@@ -173,9 +173,9 @@
   (b* (((when (endp order))
         (equal (tset::fix seen) (nodes graph)))
        (node (first order))
-       ((when (tset::in node seen))
-        nil)
-       (seen (tset::insert node seen)))
+       ((mv seenp seen) (tset::insert? node seen))
+       ((when seenp)
+        nil))
     (and (tset::emptyp
            (tset::intersect (successors node graph) seen))
          (topological-orderp-loop (rest order) seen graph))))

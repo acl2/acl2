@@ -337,9 +337,9 @@
         (tset::fix expanded))
        (node (tset::min frontier))
        (frontier (tset::delete node frontier))
-       ((when (tset::in node expanded))
-        (successors+-search frontier expanded graph))
-       (expanded (tset::insert node expanded)))
+       ((mv expandedp expanded) (tset::insert? node expanded))
+       ((when expandedp)
+        (successors+-search frontier expanded graph)))
     (successors+-search (tset::union
                           frontier
                           (tset::diff (successors node graph)
