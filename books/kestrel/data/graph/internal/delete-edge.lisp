@@ -19,6 +19,7 @@
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -44,6 +45,7 @@
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
 (local (include-book "kestrel/data/tmap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -159,13 +161,28 @@
 
 (define adj-list-delete-edge (from to label (adjl adj-listp))
   :returns (new-adjl tmap::mapp)
-  (if (tmap::in from adjl)
-      (tmap::update from
-                    (adjacency-delete-label to
-                                            label
-                                            (tmap::lookup from adjl))
-                    adjl)
-    (tmap::fix adjl)))
+  (mbe :logic (if (tmap::in from adjl)
+                  (tmap::update from
+                                (adjacency-delete-label to
+                                                        label
+                                                        (tmap::lookup from adjl))
+                                adjl)
+                (tmap::fix adjl))
+       ;; One search in each map, editing at the cursors they reach.
+       :exec (b* ((outer (tmap::seek from adjl))
+                  ((unless (tmap::entryp outer))
+                   adjl)
+                  (adj (tmap::entry-val outer))
+                  (inner (tmap::seek to adj))
+                  ((unless (tmap::entryp inner))
+                   adjl)
+                  (labels (tset::delete label (tmap::entry-val inner)))
+                  (adj (tmap::from-cursor
+                         (if (tset::emptyp labels)
+                             (tmap::delete-entry inner)
+                           (tmap::update-entry labels inner)))))
+               (tmap::from-cursor (tmap::update-entry adj outer))))
+  :guard-hints (("Goal" :in-theory (enable adjacency-delete-label))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
