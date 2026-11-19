@@ -8,12 +8,15 @@
 
 (in-package "GRAPH")
 
+(include-book "std/omaps/defs" :dir :system)
+
 (include-book "kestrel/data/tmap/map-defs" :dir :system)
 (include-book "kestrel/data/tmap/size-defs" :dir :system)
 (include-book "kestrel/data/tmap/min-max-defs" :dir :system)
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/to-omap-defs" :dir :system)
 (include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "adj-list-defs")
@@ -25,6 +28,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (adjacency-transpose
+  :names (adjacency-transpose-omap
+          adjacency-transpose
+          adj-list-transpose-omap
           adj-list-transpose
           ))

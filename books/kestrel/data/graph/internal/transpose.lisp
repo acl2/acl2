@@ -10,6 +10,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "std/omaps/defs" :dir :system)
 
 (include-book "kestrel/data/tset/set-defs" :dir :system)
 (include-book "kestrel/data/tset/in-defs" :dir :system)
@@ -22,6 +23,7 @@
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/to-omap-defs" :dir :system)
 (include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "../edge-defs")
@@ -35,6 +37,7 @@
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+(local (include-book "std/omaps/core" :dir :system))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -49,6 +52,8 @@
 (local (include-book "kestrel/data/tmap/lookup" :dir :system))
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/to-omap" :dir :system))
 (local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../edge"))
@@ -63,26 +68,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Reverse the edges out of one source into an accumulating adjacency list:
-;; each target gains the source, with the same labels. The label sets are
-;; shared, not copied.
-;;
-;; Time complexity: @($O(d\\log(n))$), where @($d$) is the number of targets
-;; and @($n$) the number of keys of the accumulator.
+;; The reversal below, walking the omap of the source's adjacency instead of
+;; removing its least target at each step. This is what @(tsee
+;; adjacency-transpose) executes.
 
-(define adjacency-transpose (from (adj tmap::mapp) (acc tmap::mapp))
-  :guard (and (map-values-all-nonempty-setp adj)
+(define adjacency-transpose-omap (from (omap omap::mapp) (acc tmap::mapp))
+  :guard (and (omap-values-all-nonempty-setp omap)
               (map-values-all-adjacencyp acc))
   :returns (new-acc tmap::mapp)
-  (if (tmap::emptyp adj)
+  (if (omap::emptyp omap)
       (tmap::fix acc)
-    (b* ((to (tmap::min-key adj)))
-      (adjacency-transpose
+    (b* (((mv to labels) (omap::head omap)))
+      (adjacency-transpose-omap
         from
-        (tmap::delete to adj)
+        (omap::tail omap)
         (mbe :logic (tmap::update to
                                   (tmap::update from
-                                                (tmap::lookup to adj)
+                                                labels
                                                 (tmap::lookup
                                                   to
                                                   acc
@@ -90,8 +92,7 @@
                                   acc)
              ;; One search of the accumulator, editing at the cursor it
              ;; reaches.
-             :exec (b* ((labels (tmap::lookup to adj))
-                        (cursor (tmap::seek to acc)))
+             :exec (b* ((cursor (tmap::seek to acc)))
                      (tmap::from-cursor
                        (if (tmap::entryp cursor)
                            (tmap::update-entry
@@ -103,6 +104,36 @@
                            to
                            (tmap::update from labels (tmap::empty))
                            cursor))))))))
+  :guard-hints (("Goal" :in-theory (enable omap-values-all-nonempty-setp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reverse the edges out of one source into an accumulating adjacency list:
+;; each target gains the source, with the same labels. The label sets are
+;; shared, not copied.
+;;
+;; Time complexity: @($O(d\\log(n))$), where @($d$) is the number of targets
+;; and @($n$) the number of keys of the accumulator.
+
+(define adjacency-transpose (from (adj tmap::mapp) (acc tmap::mapp))
+  :guard (and (map-values-all-nonempty-setp adj)
+              (map-values-all-adjacencyp acc))
+  :returns (new-acc tmap::mapp)
+  (mbe :logic (if (tmap::emptyp adj)
+                  (tmap::fix acc)
+                (b* ((to (tmap::min-key adj)))
+                  (adjacency-transpose
+                    from
+                    (tmap::delete to adj)
+                    (tmap::update to
+                                  (tmap::update from
+                                                (tmap::lookup to adj)
+                                                (tmap::lookup
+                                                  to
+                                                  acc
+                                                  :default (tmap::empty)))
+                                  acc))))
+       :exec (adjacency-transpose-omap from (tmap::to-omap adj) acc))
   :measure (tmap::size adj)
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min)))
@@ -134,7 +165,16 @@
   :induct t
   :enable adjacency-transpose)
 
-(verify-guards adjacency-transpose)
+(defruledl adjacency-transpose-omap-of-to-omap
+  (equal (adjacency-transpose-omap from (tmap::to-omap adj) acc)
+         (adjacency-transpose from adj acc))
+  :induct (adjacency-transpose from adj acc)
+  :enable (adjacency-transpose
+           adjacency-transpose-omap))
+
+(verify-guards adjacency-transpose
+  :hints (("Goal" :in-theory (enable adjacency-transpose
+                                     adjacency-transpose-omap-of-to-omap))))
 
 ;; Each target of the source is now bound to its old adjacency with the source
 ;; added; every other key is unchanged.
@@ -173,6 +213,38 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The transpose below, walking the omap of the list instead of removing its
+;; least source at each step. This is what @(tsee adj-list-transpose)
+;; executes.
+
+(define adj-list-transpose-omap ((omap omap::mapp))
+  :guard (omap-values-all-adjacencyp omap)
+  :returns (new-adjl tmap::mapp)
+  (if (omap::emptyp omap)
+      (tmap::empty)
+    (b* (((mv from adj) (omap::head omap)))
+      (adjacency-transpose
+        from
+        adj
+        (adj-list-add-node from
+                           (adj-list-transpose-omap (omap::tail omap))))))
+  ;; Verified below
+  :verify-guards nil)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrulel map-values-all-adjacencyp-of-adj-list-transpose-omap
+  (implies (omap-values-all-adjacencyp omap)
+           (map-values-all-adjacencyp (adj-list-transpose-omap omap)))
+  :induct t
+  :enable (adj-list-transpose-omap
+           omap-values-all-adjacencyp))
+
+(verify-guards adj-list-transpose-omap
+  :hints (("Goal" :in-theory (enable omap-values-all-adjacencyp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Reverse every edge. Each source is added as a node, and its edges are then
 ;; reversed into the transpose of the rest of the list.
 ;;
@@ -181,15 +253,16 @@
 
 (define adj-list-transpose ((adjl adj-listp))
   :returns (new-adjl tmap::mapp)
-  (if (tmap::emptyp adjl)
-      (tmap::empty)
-    (b* ((from (tmap::min-key adjl)))
-      (adjacency-transpose
-        from
-        (tmap::lookup from adjl)
-        (adj-list-add-node from
-                           (adj-list-transpose
-                             (tmap::delete from adjl))))))
+  (mbe :logic (if (tmap::emptyp adjl)
+                  (tmap::empty)
+                (b* ((from (tmap::min-key adjl)))
+                  (adjacency-transpose
+                    from
+                    (tmap::lookup from adjl)
+                    (adj-list-add-node from
+                                       (adj-list-transpose
+                                         (tmap::delete from adjl))))))
+       :exec (adj-list-transpose-omap (tmap::to-omap adjl)))
   :measure (tmap::size adjl)
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min)))
@@ -212,7 +285,17 @@
   :induct t
   :enable adj-list-transpose)
 
-(verify-guards adj-list-transpose)
+(defruledl adj-list-transpose-omap-of-to-omap
+  (equal (adj-list-transpose-omap (tmap::to-omap adjl))
+         (adj-list-transpose adjl))
+  :induct (adj-list-transpose adjl)
+  :enable (adj-list-transpose
+           adj-list-transpose-omap
+           (:e tmap::empty)))
+
+(verify-guards adj-list-transpose
+  :hints (("Goal" :in-theory (enable adj-list-transpose
+                                     adj-list-transpose-omap-of-to-omap))))
 
 ;; The labels from one node to another in the transpose are the labels from
 ;; the second to the first.

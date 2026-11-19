@@ -10,6 +10,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "std/omaps/defs" :dir :system)
 
 (include-book "kestrel/data/tset/set-defs" :dir :system)
 (include-book "kestrel/data/tset/min-max-defs" :dir :system)
@@ -22,11 +23,13 @@
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/to-omap-defs" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/omaps/core" :dir :system))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -41,6 +44,9 @@
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
 (local (include-book "kestrel/data/tmap/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tmap/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/to-omap" :dir :system))
+(local (include-book "kestrel/data/tmap/induction" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -261,9 +267,48 @@
   :enable (map-values-all-nonempty-setp
            set-all-nonempty-setp))
 
+(defruledl map-values-all-nonempty-setp-of-delete-when-in
+  (implies (and (tset::in k (tmap::keys map))
+                (tset::setp (tmap::lookup k map))
+                (not (tset::emptyp (tmap::lookup k map))))
+           (equal (map-values-all-nonempty-setp (tmap::delete k map))
+                  (map-values-all-nonempty-setp map)))
+  :use (:instance
+         (:functional-instance
+           tmap::set-all-genericp-of-values-of-delete-when-in
+           (tset::genericp (lambda (x) (and (tset::setp x)
+                                            (not (tset::emptyp x)))))
+           (tset::set-all-genericp set-all-nonempty-setp))
+         (tmap::map map)
+         (tmap::k k))
+  :enable (map-values-all-nonempty-setp
+           set-all-nonempty-setp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The same invariant over an omap, for walking an adjacency as the omap of
+;; its entries. On the omap of a tmap it is the invariant on the tmap.
+
+(define omap-values-all-nonempty-setp ((omap omap::mapp))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  (or (omap::emptyp omap)
+      (b* (((mv - labels) (omap::head omap)))
+        (and (tset::setp labels)
+             (not (tset::emptyp labels))
+             (omap-values-all-nonempty-setp (omap::tail omap))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule omap-values-all-nonempty-setp-of-to-omap
+  (equal (omap-values-all-nonempty-setp (tmap::to-omap map))
+         (map-values-all-nonempty-setp map))
+  :induct (tmap::min-delete-induction map)
+  :enable (omap-values-all-nonempty-setp
+           map-values-all-nonempty-setp-of-delete-when-in))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The same three functions one level up, for the adjacency list itself: every
+;; The same functions one level up, for the adjacency list itself: every
 ;; value is a tmap satisfying @(tsee map-values-all-nonempty-setp). An
 ;; adjacency has no recognizer of its own; the element condition is the
 ;; conjunction spelled out.
@@ -443,6 +488,43 @@
          (tmap::k k))
   :enable (map-values-all-adjacencyp
            set-all-adjacencyp))
+
+(defruledl map-values-all-adjacencyp-of-delete-when-in
+  (implies (and (tset::in k (tmap::keys map))
+                (tmap::mapp (tmap::lookup k map))
+                (map-values-all-nonempty-setp (tmap::lookup k map)))
+           (equal (map-values-all-adjacencyp (tmap::delete k map))
+                  (map-values-all-adjacencyp map)))
+  :use (:instance
+         (:functional-instance
+           tmap::set-all-genericp-of-values-of-delete-when-in
+           (tset::genericp (lambda (x) (and (tmap::mapp x)
+                                            (map-values-all-nonempty-setp
+                                              x))))
+           (tset::set-all-genericp set-all-adjacencyp))
+         (tmap::map map)
+         (tmap::k k))
+  :enable (map-values-all-adjacencyp
+           set-all-adjacencyp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define omap-values-all-adjacencyp ((omap omap::mapp))
+  :returns (yes/no booleanp :rule-classes :type-prescription)
+  (or (omap::emptyp omap)
+      (b* (((mv - adj) (omap::head omap)))
+        (and (tmap::mapp adj)
+             (map-values-all-nonempty-setp adj)
+             (omap-values-all-adjacencyp (omap::tail omap))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule omap-values-all-adjacencyp-of-to-omap
+  (equal (omap-values-all-adjacencyp (tmap::to-omap map))
+         (map-values-all-adjacencyp map))
+  :induct (tmap::min-delete-induction map)
+  :enable (omap-values-all-adjacencyp
+           map-values-all-adjacencyp-of-delete-when-in))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
