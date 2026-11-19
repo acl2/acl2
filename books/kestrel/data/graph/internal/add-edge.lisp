@@ -17,6 +17,7 @@
 (include-book "kestrel/data/tmap/in-defs" :dir :system)
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -39,6 +40,7 @@
 (local (include-book "kestrel/data/tmap/lookup" :dir :system))
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -60,13 +62,36 @@
 
 (define adj-list-add-edge (from to label (adjl adj-listp))
   :returns (new-adjl tmap::mapp)
-  (b* ((adj (tmap::lookup from adjl :default (tmap::empty)))
-       (labels (tmap::lookup to adj :default (tset::empty))))
-    (tmap::update from
-                  (tmap::update to
-                                (tset::insert label labels)
-                                adj)
-                  adjl)))
+  (mbe :logic
+       (b* ((adj (tmap::lookup from adjl :default (tmap::empty)))
+            (labels (tmap::lookup to adj :default (tset::empty))))
+         (tmap::update from
+                       (tmap::update to
+                                     (tset::insert label labels)
+                                     adj)
+                       adjl))
+       ;; One descent in each map: the cursor reached by the search is edited
+       ;; in place.
+       :exec
+       (b* ((outer (tmap::seek from adjl))
+            ((unless (tmap::entryp outer))
+             (tmap::from-cursor
+               (tmap::update-hole
+                 from
+                 (tmap::update to
+                               (tset::insert label (tset::empty))
+                               (tmap::empty))
+                 outer)))
+            (inner (tmap::seek to (tmap::entry-val outer)))
+            (adj (tmap::from-cursor
+                   (if (tmap::entryp inner)
+                       (tmap::update-entry
+                         (tset::insert label (tmap::entry-val inner))
+                         inner)
+                     (tmap::update-hole to
+                                        (tset::insert label (tset::empty))
+                                        inner)))))
+         (tmap::from-cursor (tmap::update-entry adj outer)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
