@@ -9,6 +9,8 @@
 (in-package "TMAP")
 
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "std/omaps/defs" :dir :system)
 
 (include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
@@ -16,6 +18,7 @@
 (include-book "map-defs")
 (include-book "keys-defs")
 (include-book "lookup-defs")
+(include-book "to-omap-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
@@ -29,6 +32,11 @@
 (local (include-book "map"))
 (local (include-book "keys"))
 (local (include-book "lookup"))
+(local (include-book "to-omap"))
+
+(local (include-book "std/omaps/assoc" :dir :system))
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,6 +99,22 @@
   :guard-hints (("Goal" :in-theory (enable* keys
                                             lookup
                                             break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule head-key-of-to-omap
+  (equal (mv-nth 0 (omap::head (to-omap map)))
+         (tset::min (keys map)))
+  :enable data::head-key-becomes-head-of-keys)
+
+(add-to-ruleset from-omap-theory '(head-key-of-to-omap))
+
+(defrule head-value-of-to-omap
+  (equal (mv-nth 1 (omap::head (to-omap map)))
+         (lookup (tset::min (keys map)) map))
+  :use (:instance omap::assoc-of-head-key (map (to-omap map))))
+
+(add-to-ruleset from-omap-theory '(head-value-of-to-omap))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

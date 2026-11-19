@@ -450,3 +450,22 @@
   :use (:instance <<-when-assoc-equal-and-<<-of-caar-of-last
                   (y x))
   :enable <<-rules)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The head key of an omap is its least key, and deleting it leaves the tail.
+
+(defruled head-key-becomes-head-of-keys
+  (equal (mv-nth 0 (omap::head map))
+         (set::head (omap::keys map)))
+  :induct (omap::keys map)
+  :enable (omap::keys
+           omap::head-tail-order
+           set::head-insert)
+  :disable omap::update-of-head-and-tail)
+
+(defruled delete-when-equal-of-head-key
+  (implies (equal x (mv-nth 0 (omap::head map)))
+           (equal (omap::delete x map)
+                  (omap::tail map)))
+  :enable omap::delete)

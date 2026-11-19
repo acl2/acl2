@@ -25,6 +25,7 @@
 (include-book "submap-defs")
 (include-book "update-defs")
 (include-book "values-defs")
+(include-book "min-max-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
@@ -44,6 +45,8 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
+
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
 
 (local (include-book "internal/tree"))
@@ -60,6 +63,7 @@
 (local (include-book "extensionality"))
 (local (include-book "update"))
 (local (include-book "values"))
+(local (include-book "min-max"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -327,6 +331,13 @@
            break-abstraction))
 
 (add-to-ruleset to-omap-theory '(to-omap-of-delete))
+
+(defrule tail-of-to-omap
+  (equal (omap::tail (to-omap map))
+         (to-omap (delete (tset::min (keys map)) map)))
+  :enable data::delete-when-equal-of-head-key)
+
+(add-to-ruleset from-omap-theory '(tail-of-to-omap))
 
 (defrule from-omap-of-omap-delete
   (equal (from-omap (omap::delete key omap))
