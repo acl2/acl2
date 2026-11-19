@@ -55,6 +55,7 @@
 (local (include-book "internal/heap"))
 (local (include-book "internal/from-oset"))
 (local (include-book "internal/insert"))
+(local (include-book "internal/in"))
 (local (include-book "internal/in-order"))
 (local (include-book "hash"))
 (local (include-book "set"))
@@ -332,6 +333,62 @@
          (to-oset (insert x set))))
 
 (add-to-ruleset from-oset-theory '(insert-of-arg1-and-to-oset))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc insert?
+  :parents (tset)
+  :short "Get the results of @(tsee in) and @(tsee insert) simultaneously."
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "Time complexity: @($O(\\log(n))$). This is faster than calling the two
+       functions independently. When @('x') is usually in the set already,
+       checking with @(tsee in) first, and inserting only when it is absent,
+       can be faster.")
+    (xdoc::p
+      "Logically, a call of @('(insert? x set)') rewrites to
+       @('(mv (in x set) (insert x set))').")
+    (xdoc::section
+      "General form"
+      (xdoc::codeblock
+        "(insert? x set :test test)")
+      (xdoc::desc
+        "@(':test') &mdash; optional"
+        (xdoc::p
+          "One of: @('equal'), @('='), @('eq'), or @('eql'). If no value is
+           provided, the default is @('equal'). Specifying an alternative test
+           allows for a more performant implementation, at the cost of a
+           stronger guard. The guard asserts that the set consists of elements
+           suitable for comparison with the specified equality variant.")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmacro insert? (x set &key (test 'equal))
+  (declare (xargs :guard (member-eq test '(equal = eq eql))))
+  (case test
+    (equal `(insert?$inline ,x ,set))
+    (=     `(insert?-=      ,x ,set))
+    (eq    `(insert?-eq     ,x ,set))
+    (eql   `(insert?-eql    ,x ,set))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define insert?$inline
+  (x
+   (set setp))
+  (mbe :logic (mv (in x set)
+                  (insert x set))
+       :exec (mv-let (inp set$)
+                     (tree-insert x set)
+               (mv inp set$)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* in
+                                            insert
+                                            break-abstraction)))
+
+  ///
+  (add-macro-fn insert? insert?$inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -823,6 +880,51 @@
   :guard-hints (("Goal" :in-theory (enable* break-abstraction
                                             set-all-eqlablep
                                             insert))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define insert?-=
+  ((x acl2-numberp)
+   (set acl2-number-setp))
+  (mbe :logic (insert? x set)
+       :exec (mv-let (inp set$)
+                     (acl2-number-tree-insert x set)
+               (mv inp set$)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* in
+                                            insert
+                                            set-all-acl2-numberp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define insert?-eq
+  ((x symbolp)
+   (set symbol-setp))
+  (mbe :logic (insert? x set)
+       :exec (mv-let (inp set$)
+                     (symbol-tree-insert x set)
+               (mv inp set$)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* in
+                                            insert
+                                            set-all-symbolp
+                                            break-abstraction))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define insert?-eql
+  ((x eqlablep)
+   (set eqlable-setp))
+  (mbe :logic (insert? x set)
+       :exec (mv-let (inp set$)
+                     (eqlable-tree-insert x set)
+               (mv inp set$)))
+  :enabled t
+  :guard-hints (("Goal" :in-theory (enable* in
+                                            insert
+                                            set-all-eqlablep
+                                            break-abstraction))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

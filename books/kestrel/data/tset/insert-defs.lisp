@@ -13,6 +13,7 @@
 (include-book "internal/from-oset-defs")
 (include-book "internal/insert-defs")
 (include-book "set-defs")
+(include-book "in-defs")
 
 (local (include-book "std/util/defredundant" :dir :system))
 (local (include-book "insert"))
@@ -35,4 +36,9 @@
           insert-eq
           insert-eql
           insert-with-hash
+          insert?
+          insert?$inline
+          insert?-=
+          insert?-eq
+          insert?-eql
           ))
