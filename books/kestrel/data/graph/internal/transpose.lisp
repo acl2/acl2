@@ -22,6 +22,7 @@
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "adj-list-defs")
@@ -48,6 +49,7 @@
 (local (include-book "kestrel/data/tmap/lookup" :dir :system))
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "adj-list"))
@@ -78,14 +80,29 @@
       (adjacency-transpose
         from
         (tmap::delete to adj)
-        (tmap::update to
-                      (tmap::update from
-                                    (tmap::lookup to adj)
-                                    (tmap::lookup
-                                      to
-                                      acc
-                                      :default (tmap::empty)))
-                      acc))))
+        (mbe :logic (tmap::update to
+                                  (tmap::update from
+                                                (tmap::lookup to adj)
+                                                (tmap::lookup
+                                                  to
+                                                  acc
+                                                  :default (tmap::empty)))
+                                  acc)
+             ;; One search of the accumulator, editing at the cursor it
+             ;; reaches.
+             :exec (b* ((labels (tmap::lookup to adj))
+                        (cursor (tmap::seek to acc)))
+                     (tmap::from-cursor
+                       (if (tmap::entryp cursor)
+                           (tmap::update-entry
+                             (tmap::update from
+                                           labels
+                                           (tmap::entry-val cursor))
+                             cursor)
+                         (tmap::update-hole
+                           to
+                           (tmap::update from labels (tmap::empty))
+                           cursor))))))))
   :measure (tmap::size adj)
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min)))
