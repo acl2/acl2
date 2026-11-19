@@ -24,6 +24,7 @@
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
 (include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -51,6 +52,7 @@
 (local (include-book "kestrel/data/tmap/update" :dir :system))
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
 (local (include-book "kestrel/data/tmap/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../graph"))
 (local (include-book "../nodes"))
@@ -159,10 +161,21 @@
   :short "Increment the counter of each node in a set."
   (b* (((when (tset::emptyp targets))
         (tmap::fix counters))
-       (node (tset::min targets))
-       (count (nfix (tmap::lookup node counters :default 0))))
-    (kahn-increment (tset::delete node targets)
-                    (tmap::update node (+ 1 count) counters)))
+       (node (tset::min targets)))
+    (kahn-increment
+      (tset::delete node targets)
+      (mbe :logic (tmap::update
+                    node
+                    (+ 1 (nfix (tmap::lookup node counters :default 0)))
+                    counters)
+           ;; One search of the counters, editing at the cursor it reaches.
+           :exec (b* ((cursor (tmap::seek node counters)))
+                   (tmap::from-cursor
+                     (if (tmap::entryp cursor)
+                         (tmap::update-entry
+                           (+ 1 (nfix (tmap::entry-val cursor)))
+                           cursor)
+                       (tmap::update-hole node 1 cursor)))))))
   :measure (tset::cardinality targets))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -241,14 +254,29 @@
         (mv (tset::fix frontier)
             (tmap::fix counters)))
        (node (tset::min targets))
-       (count (nfix (tmap::lookup node counters :default 0)))
-       ((when (eql count 1))
-        (kahn-decrement (tset::delete node targets)
-                        (tset::insert node frontier)
-                        (tmap::delete node counters))))
-    (kahn-decrement (tset::delete node targets)
-                    frontier
-                    (tmap::update node (- count 1) counters)))
+       ((mv frontier counters)
+        (mbe :logic
+             (b* ((count (nfix (tmap::lookup node counters :default 0))))
+               (if (eql count 1)
+                   (mv (tset::insert node frontier)
+                       (tmap::delete node counters))
+                 (mv frontier
+                     (tmap::update node (- count 1) counters))))
+             ;; One search of the counters, editing at the cursor it reaches.
+             :exec
+             (b* ((cursor (tmap::seek node counters))
+                  (count (if (tmap::entryp cursor)
+                             (nfix (tmap::entry-val cursor))
+                           0)))
+               (if (eql count 1)
+                   (mv (tset::insert node frontier)
+                       (tmap::from-cursor (tmap::delete-entry cursor)))
+                 (mv frontier
+                     (tmap::from-cursor
+                       (if (tmap::entryp cursor)
+                           (tmap::update-entry (- count 1) cursor)
+                         (tmap::update-hole node (- count 1) cursor)))))))))
+    (kahn-decrement (tset::delete node targets) frontier counters))
   :measure (tset::cardinality targets))
 
 ;;;;;;;;;;;;;;;;;;;;
