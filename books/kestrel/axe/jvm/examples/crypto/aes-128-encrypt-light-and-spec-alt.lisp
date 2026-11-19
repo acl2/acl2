@@ -39,7 +39,6 @@
                    `(list-to-byte-array (aes::aes-128-encrypt (list ,@(make-var-names 'in 16))
                                                               (list ,@(make-var-names 'key *key-byte-count*))))
                    :rules :auto
-                   :extra-rules (introduce-bv-array-rules) ; turns nth into bv-array-read
                    :assumptions :bytes)
 
 ;; Unroll the code:
