@@ -495,14 +495,13 @@
     :disable maps-ok-listp-of-cons)
 
   (defruled decomposition-when-below-a0
-    (implies (and (code-point-p cp)
-                  (< cp #xA0))
+    (implies (< (code-point-fix cp) #xA0)
              (equal (decomposition cp compat ver)
-                    (list cp)))
+                    (list (code-point-fix cp))))
     :enable (hangul-syllable-p
              maps-ok)
     :use (:instance maps-ok-when-member-equal-of-maps-ok-listp
-                    (acl2::a cp)
+                    (acl2::a (code-point-fix cp))
                     (x (all-code-points))
                     (canonical (canonical-decompositions ver))
                     (compat (compatibility-decompositions ver)))))
@@ -542,10 +541,9 @@
     :induct (decompose cps1 compat ver))
 
   (defruled decompose-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (equal (decompose cps compat ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :induct t
     :enable (code-points-below-p decomposition-when-below-a0)))
 

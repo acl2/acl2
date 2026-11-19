@@ -35,7 +35,7 @@
      for example, a letter with an accent may be a single code point,
      or a letter followed by a combining mark.
      Sequences of code points that stand for the same text
-     are called canonically equivalent.
+     are called canonical equivalents.
      A normalization form [UAX #15] [Unicode, Section 3.11]
      maps every sequence of code points
      to one that is equivalent to it,
@@ -61,7 +61,7 @@
       are like NFD and NFC,
       but they use the compatibility decompositions,
       which lose some distinctions (of font, width, and so on)
-      between sequences that are not canonically equivalent."))
+      between sequences that are not canonical equivalents."))
    (xdoc::p
     "These are the names and the abbreviations of [UAX #15, Table 1].
      The letter D is for the two decomposed forms,
@@ -105,7 +105,23 @@
      see @(tsee nfd-memberp), @(tsee nfc-memberp),
      @(tsee nfkd-memberp) and @(tsee nfkc-memberp).
      These predicates are with the forms,
-     so they need no book that the forms do not need.")
+     so they need no book that the forms do not need.
+     A list is in NFD, or in NFKD, exactly when
+     it is fully decomposed and in canonical order.")
+   (xdoc::p
+    "Two lists of code points are canonical equivalents
+     if they have the same NFD form,
+     and compatibility equivalents
+     if they have the same NFKD form:
+     see @(tsee canonical-equivalent-p)
+     and @(tsee compatibility-equivalent-p).
+     Each of the two is an equivalence relation.
+     A list is a canonical equivalent of its NFD and NFC forms,
+     and a compatibility equivalent of all four.
+     Two lists are canonical equivalents
+     exactly when they have the same NFC form,
+     and compatibility equivalents
+     exactly when they have the same NFKC form.")
    (xdoc::p
     "The functions are validated in two ways,
      neither of which is a proof:
@@ -208,10 +224,9 @@
     :induct t)
 
   (defruled canonical-order-when-all-below-300
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #x300))
+    (implies (code-points-below-p cps #x300)
              (equal (canonical-order cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :induct t
     :enable (code-points-below-p
              canonical-combining-class-when-below-300)))
@@ -696,11 +711,10 @@
     :disable nfix)
 
   (defruled canonical-compose-from-starter-when-all-below-300
-    (implies (and (code-point-p starter)
-                  (code-point-listp cps)
-                  (code-points-below-p cps #x300))
+    (implies (code-points-below-p cps #x300)
              (equal (canonical-compose-from-starter starter nil 0 cps ver)
-                    (cons starter cps)))
+                    (cons (code-point-fix starter)
+                          (code-point-list-fix cps))))
     :induct t
     :enable (code-points-below-p
              canonical-combining-class-when-below-300
@@ -732,10 +746,9 @@
     :induct t)
 
   (defruled canonical-compose-when-all-below-300
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #x300))
+    (implies (code-points-below-p cps #x300)
              (equal (canonical-compose cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :enable (code-points-below-p
              canonical-combining-class-when-below-300
              canonical-compose-from-starter-when-all-below-300)
@@ -1113,7 +1126,33 @@
   (defrule nfd-memberp-when-undecomposable-listp-and-canonically-ordered-p
     (implies (and (undecomposable-listp cps nil ver)
                   (canonically-ordered-p cps ver))
-             (nfd-memberp cps ver))))
+             (nfd-memberp cps ver)))
+
+  ;; The NFD form of a list is fully decomposed and in canonical order.
+  ;; So a list that is in NFD, which is its own NFD form, is too.
+  ;; (The two theorems about the NFD form are disabled in these proofs,
+  ;; because as rules they would rewrite their own instances to true.)
+
+  (defrule undecomposable-listp-when-nfd-memberp
+    (implies (nfd-memberp cps ver)
+             (undecomposable-listp cps nil ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :use undecomposable-listp-of-nfd
+    :disable undecomposable-listp-of-nfd)
+
+  (defrule canonically-ordered-p-when-nfd-memberp
+    (implies (nfd-memberp cps ver)
+             (canonically-ordered-p cps ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :use canonically-ordered-p-of-nfd
+    :disable canonically-ordered-p-of-nfd)
+
+  (defruled nfd-memberp-alt-def
+    (equal (nfd-memberp cps ver)
+           (and (undecomposable-listp cps nil ver)
+                (canonically-ordered-p cps ver)))
+    :cases ((nfd-memberp cps ver))
+    :disable nfd-memberp))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1277,6 +1316,18 @@
                   (canonically-ordered-p cps ver))
              (nfkd-memberp cps ver)))
 
+  ;; The NFKD form of a list is fully decomposed.
+  ;; So a list that is in NFKD, which is its own NFKD form, is too.
+  ;; (The theorem about the NFKD form is disabled in this proof,
+  ;; because as a rule it would rewrite its own instance to true.)
+
+  (defrule undecomposable-listp-when-nfkd-memberp
+    (implies (nfkd-memberp cps ver)
+             (undecomposable-listp cps t ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :use undecomposable-listp-of-nfkd
+    :disable undecomposable-listp-of-nfkd)
+
   ;; The NFKD form of a list is in NFD.
   ;; So a list that is in NFKD is in NFD.
   ;; (The first theorem is disabled in the proof of the second one,
@@ -1291,7 +1342,16 @@
              (nfd-memberp cps ver))
     :rule-classes (:rewrite :forward-chaining)
     :use nfd-memberp-of-nfkd
-    :disable nfd-memberp-of-nfkd))
+    :disable nfd-memberp-of-nfkd)
+
+  ;; A list that is in NFKD is in NFD, and so it is in canonical order.
+
+  (defruled nfkd-memberp-alt-def
+    (equal (nfkd-memberp cps ver)
+           (and (undecomposable-listp cps t ver)
+                (canonically-ordered-p cps ver)))
+    :cases ((nfkd-memberp cps ver))
+    :disable nfkd-memberp))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1399,6 +1459,235 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; The decomposed forms of a list, in terms of other forms of the list.
+;; These rules are for the theorems about equivalence below,
+;; where two lists are known to have the same form of one kind
+;; and their forms of another kind are to be shown equal.
+;; The right sides are the definitions of NFD and NFKD, unfolded,
+;; so that the rules do not apply to their own results.
+
+(defruledl nfd-in-terms-of-nfc
+  (equal (nfd cps ver)
+         (canonical-order (decompose (nfc cps ver) nil ver) ver))
+  :enable nfc)
+
+(defruledl nfkd-in-terms-of-nfd
+  (equal (nfkd cps ver)
+         (canonical-order (decompose (nfd cps ver) t ver) ver))
+  :enable (nfkd nfd))
+
+(defruledl nfkd-in-terms-of-nfkc
+  (equal (nfkd cps ver)
+         (canonical-order (decompose (nfkc cps ver) t ver) ver))
+  :enable nfkc)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define canonical-equivalent-p ((cps1 code-point-listp)
+                                (cps2 code-point-listp)
+                                (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if two lists of code points are canonical equivalents
+          [Unicode, D70], in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Two sequences of code points are canonical equivalents
+     if their full canonical decompositions are identical [Unicode, D70],
+     that is, if they have the same form
+     in Normalization Form D (NFD), which is canonical decomposition.
+     Canonical equivalents stand for the same text:
+     a process is not to assume that they are to be interpreted differently
+     [Unicode, C6].")
+   (xdoc::p
+    "This is an equivalence relation:
+     it is reflexive, symmetric and transitive.
+     A list is a canonical equivalent of its NFD form,
+     and of its form in Normalization Form C (NFC), which is
+     canonical decomposition followed by canonical composition;
+     so either form of a list can take the place of the list
+     as an argument of this predicate.
+     Two lists are canonical equivalents
+     exactly when they have the same NFC form,
+     which is how programming languages usually compare identifiers
+     (see @(see normalization)).")
+   (xdoc::p
+    "Canonical equivalents are also compatibility equivalents:
+     see @(tsee compatibility-equivalent-p)."))
+  (equal (nfd cps1 ver)
+         (nfd cps2 ver))
+  :hooks (:fix)
+
+  ///
+
+  (defrule canonical-equivalent-p-reflexive
+    (canonical-equivalent-p cps cps ver))
+
+  (defrule canonical-equivalent-p-symmetric
+    (equal (canonical-equivalent-p cps1 cps2 ver)
+           (canonical-equivalent-p cps2 cps1 ver)))
+
+  (defruled canonical-equivalent-p-transitive
+    (implies (and (canonical-equivalent-p cps1 cps2 ver)
+                  (canonical-equivalent-p cps2 cps3 ver))
+             (canonical-equivalent-p cps1 cps3 ver)))
+
+  (defrule canonical-equivalent-p-of-nfd-arg1
+    (equal (canonical-equivalent-p (nfd cps1 ver) cps2 ver)
+           (canonical-equivalent-p cps1 cps2 ver)))
+
+  (defrule canonical-equivalent-p-of-nfd-arg2
+    (equal (canonical-equivalent-p cps1 (nfd cps2 ver) ver)
+           (canonical-equivalent-p cps1 cps2 ver)))
+
+  (defrule canonical-equivalent-p-of-nfc-arg1
+    (equal (canonical-equivalent-p (nfc cps1 ver) cps2 ver)
+           (canonical-equivalent-p cps1 cps2 ver)))
+
+  (defrule canonical-equivalent-p-of-nfc-arg2
+    (equal (canonical-equivalent-p cps1 (nfc cps2 ver) ver)
+           (canonical-equivalent-p cps1 cps2 ver)))
+
+  ;; Two lists with the same NFD form have the same NFC form,
+  ;; which is the canonical composition of that NFD form.
+  ;; Two lists with the same NFC form have the same NFD form,
+  ;; which is the NFD form of that NFC form.
+
+  (defrulel equal-of-nfc-and-nfc-when-equal-of-nfd-and-nfd
+    (implies (equal (nfd cps1 ver) (nfd cps2 ver))
+             (equal (equal (nfc cps1 ver) (nfc cps2 ver))
+                    t))
+    :enable nfc)
+
+  (defrulel equal-of-nfd-and-nfd-when-equal-of-nfc-and-nfc
+    (implies (equal (nfc cps1 ver) (nfc cps2 ver))
+             (equal (equal (nfd cps1 ver) (nfd cps2 ver))
+                    t))
+    :enable nfd-in-terms-of-nfc)
+
+  (defruled canonical-equivalent-p-in-terms-of-nfc
+    (equal (canonical-equivalent-p cps1 cps2 ver)
+           (equal (nfc cps1 ver)
+                  (nfc cps2 ver)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define compatibility-equivalent-p ((cps1 code-point-listp)
+                                    (cps2 code-point-listp)
+                                    (ver versionp))
+  :returns (yes/no booleanp)
+  :parents (normalization)
+  :short "Check if two lists of code points are compatibility equivalents
+          [Unicode, D67], in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Two sequences of code points are compatibility equivalents
+     if their full compatibility decompositions are identical [Unicode, D67],
+     that is, if they have the same form
+     in Normalization Form KD (NFKD), which is compatibility decomposition.
+     (The letter K stands for compatibility:
+     see @(see normalization) for the names of the four forms.)
+     Compatibility equivalents may differ in appearance or in behavior,
+     for example in font or in width.")
+   (xdoc::p
+    "This is an equivalence relation:
+     it is reflexive, symmetric and transitive.
+     A list is a compatibility equivalent of each of its four forms,
+     so any form of a list can take the place of the list
+     as an argument of this predicate.
+     Two lists are compatibility equivalents
+     exactly when they have the same form
+     in Normalization Form KC (NFKC), which is
+     compatibility decomposition followed by canonical composition.")
+   (xdoc::p
+    "Canonical equivalents (see @(tsee canonical-equivalent-p))
+     are also compatibility equivalents [Unicode, Section 3.7]."))
+  (equal (nfkd cps1 ver)
+         (nfkd cps2 ver))
+  :hooks (:fix)
+
+  ///
+
+  (defrule compatibility-equivalent-p-reflexive
+    (compatibility-equivalent-p cps cps ver))
+
+  (defrule compatibility-equivalent-p-symmetric
+    (equal (compatibility-equivalent-p cps1 cps2 ver)
+           (compatibility-equivalent-p cps2 cps1 ver)))
+
+  (defruled compatibility-equivalent-p-transitive
+    (implies (and (compatibility-equivalent-p cps1 cps2 ver)
+                  (compatibility-equivalent-p cps2 cps3 ver))
+             (compatibility-equivalent-p cps1 cps3 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfd-arg1
+    (equal (compatibility-equivalent-p (nfd cps1 ver) cps2 ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfd-arg2
+    (equal (compatibility-equivalent-p cps1 (nfd cps2 ver) ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfc-arg1
+    (equal (compatibility-equivalent-p (nfc cps1 ver) cps2 ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfc-arg2
+    (equal (compatibility-equivalent-p cps1 (nfc cps2 ver) ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfkd-arg1
+    (equal (compatibility-equivalent-p (nfkd cps1 ver) cps2 ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfkd-arg2
+    (equal (compatibility-equivalent-p cps1 (nfkd cps2 ver) ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfkc-arg1
+    (equal (compatibility-equivalent-p (nfkc cps1 ver) cps2 ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  (defrule compatibility-equivalent-p-of-nfkc-arg2
+    (equal (compatibility-equivalent-p cps1 (nfkc cps2 ver) ver)
+           (compatibility-equivalent-p cps1 cps2 ver)))
+
+  ;; Two lists with the same NFKD form have the same NFKC form,
+  ;; which is the canonical composition of that NFKD form.
+  ;; Two lists with the same NFKC form have the same NFKD form,
+  ;; which is the NFKD form of that NFKC form.
+
+  (defrulel equal-of-nfkc-and-nfkc-when-equal-of-nfkd-and-nfkd
+    (implies (equal (nfkd cps1 ver) (nfkd cps2 ver))
+             (equal (equal (nfkc cps1 ver) (nfkc cps2 ver))
+                    t))
+    :enable nfkc)
+
+  (defrulel equal-of-nfkd-and-nfkd-when-equal-of-nfkc-and-nfkc
+    (implies (equal (nfkc cps1 ver) (nfkc cps2 ver))
+             (equal (equal (nfkd cps1 ver) (nfkd cps2 ver))
+                    t))
+    :enable nfkd-in-terms-of-nfkc)
+
+  (defruled compatibility-equivalent-p-in-terms-of-nfkc
+    (equal (compatibility-equivalent-p cps1 cps2 ver)
+           (equal (nfkc cps1 ver)
+                  (nfkc cps2 ver))))
+
+  ;; Two lists with the same NFD form have the same NFKD form,
+  ;; which is the NFKD form of that NFD form.
+
+  (defrule compatibility-equivalent-p-when-canonical-equivalent-p
+    (implies (canonical-equivalent-p cps1 cps2 ver)
+             (compatibility-equivalent-p cps1 cps2 ver))
+    :rule-classes (:rewrite :forward-chaining)
+    :enable (canonical-equivalent-p
+             nfkd-in-terms-of-nfd)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection normalization-of-ascii
   :parents (normalization)
   :short "The normalization forms leave ASCII alone."
@@ -1427,63 +1716,55 @@
      if the second one is below @('#x300')."))
 
   (defrule nfd-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (equal (nfd cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :enable (nfd
              decompose-when-all-below-a0
              canonical-order-when-all-below-300
              code-points-below-p-when-below-smaller))
 
   (defrule nfc-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (equal (nfc cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :enable (nfc
              canonical-compose-when-all-below-300
              code-points-below-p-when-below-smaller))
 
   (defrule nfkd-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (equal (nfkd cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :enable (nfkd
              decompose-when-all-below-a0
              canonical-order-when-all-below-300
              code-points-below-p-when-below-smaller))
 
   (defrule nfkc-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (equal (nfkc cps ver)
-                    cps))
+                    (code-point-list-fix cps)))
     :enable (nfkc
              canonical-compose-when-all-below-300
              code-points-below-p-when-below-smaller))
 
   (defrule nfd-memberp-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (nfd-memberp cps ver))
     :enable nfd-memberp)
 
   (defrule nfc-memberp-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (nfc-memberp cps ver))
     :enable nfc-memberp)
 
   (defrule nfkd-memberp-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (nfkd-memberp cps ver))
     :enable nfkd-memberp)
 
   (defrule nfkc-memberp-when-all-below-a0
-    (implies (and (code-point-listp cps)
-                  (code-points-below-p cps #xA0))
+    (implies (code-points-below-p cps #xA0)
              (nfkc-memberp cps ver))
     :enable nfkc-memberp))

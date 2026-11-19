@@ -61,7 +61,14 @@
      so adding a version checks them for that version.
      The second layer follows the definitions of the normalization forms:
      see @(see identifier-closure-under-decomposition)
-     and @(see identifier-closure-under-composition)."))
+     and @(see identifier-closure-under-composition).")
+   (xdoc::p
+    "Two consequences follow.
+     A canonical equivalent of an identifier is an identifier:
+     see @(see identifier-closure-under-canonical-equivalence).
+     And the closure extends to the languages whose identifiers
+     can also start with a dollar sign or an underscore:
+     see @(see identifier-closure-with-optional-start)."))
   :order-subtopics t
   :default-parent t)
 
@@ -501,3 +508,186 @@
     (implies (xid-identifier-p cps ver)
              (xid-identifier-p (nfkc cps ver) ver))
     :enable nfkc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection identifier-closure-under-canonical-equivalence
+  :short "A canonical equivalent of an identifier is an identifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Two lists of code points are canonical equivalents
+     if they have the same form in Normalization Form D (NFD)
+     (see @(tsee canonical-equivalent-p)).
+     NFD neither makes nor unmakes identifiers
+     (see @(see identifier-closure-under-decomposition)),
+     where an identifier is an @('XID') identifier
+     (see @(tsee xid-identifier-p)).
+     So two canonical equivalents are both identifiers, or neither is.
+     The same holds for the lists of code points
+     that can continue an identifier
+     (see @(tsee xid-continue-listp)).")
+   (xdoc::p
+    "This does not hold for compatibility equivalents
+     (see @(tsee compatibility-equivalent-p)).
+     For example, the trade mark sign (U+2122)
+     is a compatibility equivalent of the two letters TM,
+     which are an identifier, but it is not an identifier.")
+   (xdoc::p
+    "The two theorems are disabled.
+     As rewrite rules, they replace the first list by the second one
+     when the two lists are known to be canonical equivalents."))
+
+  ;; We use the theorems about NFD on the two lists.
+  ;; (Those theorems are disabled in these two proofs,
+  ;; because as rules they would rewrite their own instances to true.)
+
+  (defruled xid-continue-listp-when-canonical-equivalent-p
+    (implies (canonical-equivalent-p cps1 cps2 ver)
+             (equal (xid-continue-listp cps1 ver)
+                    (xid-continue-listp cps2 ver)))
+    :enable canonical-equivalent-p
+    :use ((:instance xid-continue-listp-of-nfd (cps cps1))
+          (:instance xid-continue-listp-of-nfd (cps cps2)))
+    :disable xid-continue-listp-of-nfd)
+
+  (defruled xid-identifier-p-when-canonical-equivalent-p
+    (implies (canonical-equivalent-p cps1 cps2 ver)
+             (equal (xid-identifier-p cps1 ver)
+                    (xid-identifier-p cps2 ver)))
+    :enable canonical-equivalent-p
+    :use ((:instance xid-identifier-p-of-nfd (cps cps1))
+          (:instance xid-identifier-p-of-nfd (cps cps2)))
+    :disable xid-identifier-p-of-nfd))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection identifier-closure-with-optional-start
+  :short "The normalization forms leave alone
+          a dollar sign or an underscore at the start of a list,
+          and normalize what follows it as if it were not there."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The dollar sign and the underscore are
+     the two optional characters for the start of an identifier
+     of [UAX #31, Section 2.4, Table 3]
+     (see @(tsee optional-start-p)).
+     In every supported version of Unicode,
+     each of the four normalization forms
+     (see @(see normalization))
+     maps a list of code points that starts with one of the two
+     to that code point followed by that form of the rest of the list.
+     So such a list is in one of the four forms
+     exactly when the rest of the list is.")
+   (xdoc::p
+    "This extends the closure of identifiers under normalization
+     to the languages whose identifiers
+     can also start with one of these two code points,
+     which do not have the @('XID_Start') property
+     (see @(see xid) for the name).
+     In such a language, what follows the first code point of an identifier
+     is a list of code points that all have @('XID_Continue')
+     (see @(tsee xid-continue-listp)).
+     These theorems say that the normalized identifier
+     starts with the same code point,
+     followed by the normalized form of that list;
+     and the theorems of @(see identifier-closure-under-decomposition)
+     and @(see identifier-closure-under-composition)
+     say that this is again a list of code points
+     that all have @('XID_Continue').")
+   (xdoc::p
+    "The theorems follow from three facts about the tables,
+     which are proved by evaluation for each version:
+     neither of the two code points has a decomposition mapping;
+     both are starters;
+     and neither composes with any code point after it.
+     So the code points after the first one are
+     decomposed, reordered and composed among themselves.
+     (The non-starters right after it stay where they are,
+     as they do at the start of a list.)"))
+
+  (defrulel canonical-compose-from-starter-when-optional-start-p
+    (implies (optional-start-p starter)
+             (equal (canonical-compose-from-starter starter
+                                                    pending
+                                                    last-ccc
+                                                    cps
+                                                    ver)
+                    (cons starter
+                          (append (rev (code-point-list-fix pending))
+                                  (canonical-compose cps ver)))))
+    :induct (canonical-compose-from-starter starter pending last-ccc cps ver)
+    :enable (optional-start-p
+             canonical-compose-from-starter
+             canonical-compose
+             composition-of-dollar-sign
+             composition-of-underscore))
+
+  (defrule nfd-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfd (cons cp cps) ver)
+                    (cons cp (nfd cps ver))))
+    :enable (optional-start-p
+             nfd
+             decompose
+             decomposition-when-below-a0
+             canonical-order
+             canonical-combining-class-when-below-300))
+
+  (defrule nfc-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfc (cons cp cps) ver)
+                    (cons cp (nfc cps ver))))
+    :enable (optional-start-p
+             nfc
+             canonical-compose
+             canonical-combining-class-when-below-300))
+
+  (defrule nfkd-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfkd (cons cp cps) ver)
+                    (cons cp (nfkd cps ver))))
+    :enable (optional-start-p
+             nfkd
+             decompose
+             decomposition-when-below-a0
+             canonical-order
+             canonical-combining-class-when-below-300))
+
+  (defrule nfkc-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfkc (cons cp cps) ver)
+                    (cons cp (nfkc cps ver))))
+    :enable (optional-start-p
+             nfkc
+             canonical-compose
+             canonical-combining-class-when-below-300))
+
+  (defrule nfd-memberp-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfd-memberp (cons cp cps) ver)
+                    (nfd-memberp cps ver)))
+    :enable (optional-start-p
+             nfd-memberp))
+
+  (defrule nfc-memberp-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfc-memberp (cons cp cps) ver)
+                    (nfc-memberp cps ver)))
+    :enable (optional-start-p
+             nfc-memberp))
+
+  (defrule nfkd-memberp-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfkd-memberp (cons cp cps) ver)
+                    (nfkd-memberp cps ver)))
+    :enable (optional-start-p
+             nfkd-memberp))
+
+  (defrule nfkc-memberp-of-cons-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (nfkc-memberp (cons cp cps) ver)
+                    (nfkc-memberp cps ver)))
+    :enable (optional-start-p
+             nfkc-memberp)))

@@ -52,7 +52,8 @@
      (see @(tsee xid-identifier-p)).
      Languages adjust this;
      many also let an identifier start with an underscore,
-     which has @('XID_Continue') but not @('XID_Start').")
+     which has @('XID_Continue') but not @('XID_Start')
+     (see @(tsee optional-start-p)).")
    (xdoc::p
     "Both are derived properties.
      We take them from the file @('DerivedCoreProperties.txt')
@@ -345,3 +346,57 @@
                   (code-point-listp cps))
              (scalar-value-listp cps))
     :enable scalar-value-listp-when-xid-continue-listp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define optional-start-p ((cp code-point-p))
+  :returns (yes/no booleanp)
+  :short "Check if a code point is one of the two optional characters
+          for the start of an identifier:
+          the dollar sign and the underscore."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[UAX #31, Section 2.4, Table 3] lists these two code points,
+     U+0024 DOLLAR SIGN and U+005F LOW LINE,
+     as the optional characters for @('Start'),
+     which is the class of the code points that can start an identifier.
+     A language can add them to that class
+     by declaring a profile of the default identifier syntax
+     [UAX #31, UAX31-R1-2].
+     Many programming languages allow an identifier
+     to start with an underscore,
+     and some also allow it to start with a dollar sign.")
+   (xdoc::p
+    "Neither of the two has the @('XID_Start') property,
+     in any supported version of Unicode,
+     which is why they have to be added.
+     The underscore has the @('XID_Continue') property;
+     the dollar sign does not.
+     See @(see xid) for the names of the two properties.")
+   (xdoc::p
+    "The normalization forms leave these two code points alone
+     at the start of a list:
+     see @(see identifier-closure-with-optional-start)."))
+  (or (equal cp #x24)
+      (equal cp #x5F))
+  :hooks nil ; done below
+
+  ///
+
+  ;; The fixing function maps what is not a code point to 0,
+  ;; which is not one of the two.
+
+  (fty::deffixequiv optional-start-p
+    :hints (("Goal" :in-theory (enable code-point-fix))))
+
+  (defrule not-xid-start-p-when-optional-start-p
+    (implies (optional-start-p cp)
+             (not (xid-start-p cp ver)))
+    :enable xid-start-p-when-ascii)
+
+  (defruled xid-continue-p-when-optional-start-p
+    (implies (optional-start-p cp)
+             (equal (xid-continue-p cp ver)
+                    (equal cp #x5F)))
+    :enable xid-continue-p-when-ascii))
