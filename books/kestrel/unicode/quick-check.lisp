@@ -53,7 +53,10 @@
      The books in the @('tests') directory check, for every code point,
      that the properties agree with those functions,
      which validates the functions against data
-     that the Unicode Consortium derived independently."))
+     that the Unicode Consortium derived independently.
+     For the two decomposed forms, NFD and NFKD,
+     this agreement is also proved, in the book @('quick-check-theorems'):
+     see @(see quick-check-theorems)."))
   :order-subtopics t
   :default-parent t)
 
