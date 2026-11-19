@@ -2335,7 +2335,7 @@
 ;but they get in the way by applying to locals in jvm
 (defun introduce-bv-array-rules ()
   (declare (xargs :guard t))
-  '(nth-becomes-bv-array-read
+  '(nth-becomes-bv-array-read ; rename: requires the list to be a constant
     ;; bvnth-becomes-bv-array-read
     nth-of-bv-array-write-becomes-bv-array-read
     ;cons-becomes-bv-array-write-gen
@@ -4214,7 +4214,7 @@
            (amazing-rules-bv)
            (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
            (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-           ;; (introduce-bv-array-rules) ; todo: consider these
+           (introduce-bv-array-rules)
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
            (bvchop-list-rules) ; I think some rule introduces bvchop-list, like a fixing function
