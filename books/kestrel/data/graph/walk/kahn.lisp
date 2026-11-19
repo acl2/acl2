@@ -10,6 +10,7 @@
 
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "kestrel/data/tset/set-defs" :dir :system)
 (include-book "kestrel/data/tset/in-defs" :dir :system)
@@ -19,6 +20,7 @@
 (include-book "kestrel/data/tset/delete-defs" :dir :system)
 (include-book "kestrel/data/tset/diff-defs" :dir :system)
 (include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/tmap/map-defs" :dir :system)
 (include-book "kestrel/data/tmap/keys-defs" :dir :system)
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
@@ -34,6 +36,7 @@
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/osets/primitives" :dir :system))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -45,6 +48,7 @@
 (local (include-book "kestrel/data/tset/diff" :dir :system))
 (local (include-book "kestrel/data/tset/subset" :dir :system))
 (local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
 (local (include-book "kestrel/data/tset/extensionality" :dir :system))
 (local (include-book "kestrel/data/tmap/map" :dir :system))
 (local (include-book "kestrel/data/tmap/keys" :dir :system))
@@ -155,15 +159,15 @@
 ;; Removing a node decrements the counters of its successors, and a counter
 ;; which reaches zero is deleted and its node added to the frontier.
 
-(define kahn-increment ((targets tset::setp) (counters tmap::mapp))
+(define kahn-increment-oset ((targets set::setp) (counters tmap::mapp))
   :returns (counters$ tmap::mapp)
-  :parents (cyclicp)
-  :short "Increment the counter of each node in a set."
-  (b* (((when (tset::emptyp targets))
+  :parents (kahn-increment)
+  :short "Increment the counter of each node in an oset."
+  (b* (((when (set::emptyp targets))
         (tmap::fix counters))
-       (node (tset::min targets)))
-    (kahn-increment
-      (tset::delete node targets)
+       (node (set::head targets)))
+    (kahn-increment-oset
+      (set::tail targets)
       (mbe :logic (tmap::update
                     node
                     (+ 1 (nfix (tmap::lookup node counters :default 0)))
@@ -175,8 +179,24 @@
                          (tmap::update-entry
                            (+ 1 (nfix (tmap::entry-val cursor)))
                            cursor)
-                       (tmap::update-hole node 1 cursor)))))))
-  :measure (tset::cardinality targets))
+                       (tmap::update-hole node 1 cursor))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define kahn-increment ((targets tset::setp) (counters tmap::mapp))
+  :returns (counters$ tmap::mapp)
+  :parents (cyclicp)
+  :short "Increment the counter of each node in a set."
+  (mbe :logic (b* (((when (tset::emptyp targets))
+                    (tmap::fix counters))
+                   (node (tset::min targets))
+                   (count (nfix (tmap::lookup node counters :default 0))))
+                (kahn-increment (tset::delete node targets)
+                                (tmap::update node (+ 1 count) counters)))
+       :exec (kahn-increment-oset (tset::to-oset targets) counters))
+  :measure (tset::cardinality targets)
+  ;; Verified below
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -196,6 +216,33 @@
   :induct t
   :enable kahn-increment)
 
+(defruledl kahn-increment-oset-of-to-oset
+  (equal (kahn-increment-oset (tset::to-oset targets) counters)
+         (kahn-increment targets counters))
+  :induct (kahn-increment targets counters)
+  :enable (kahn-increment
+           kahn-increment-oset))
+
+(verify-guards kahn-increment
+  :hints (("Goal" :in-theory (enable kahn-increment
+                                     kahn-increment-oset-of-to-oset))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define kahn-counters-oset
+  ((set set::setp)
+   (counters tmap::mapp)
+   (graph graphp))
+  :returns (counters$ tmap::mapp)
+  :parents (kahn-counters)
+  :short "Count, for each node, the nodes of an oset with an edge to it."
+  (b* (((when (set::emptyp set))
+        (tmap::fix counters))
+       (node (set::head set)))
+    (kahn-counters-oset (set::tail set)
+                        (kahn-increment (successors node graph) counters)
+                        graph)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define kahn-counters
@@ -205,13 +252,17 @@
   :returns (counters$ tmap::mapp)
   :parents (cyclicp)
   :short "Count, for each node, the nodes of a set with an edge to it."
-  (b* (((when (tset::emptyp set))
-        (tmap::fix counters))
-       (node (tset::min set)))
-    (kahn-counters (tset::delete node set)
-                   (kahn-increment (successors node graph) counters)
-                   graph))
-  :measure (tset::cardinality set))
+  (mbe :logic (b* (((when (tset::emptyp set))
+                    (tmap::fix counters))
+                   (node (tset::min set)))
+                (kahn-counters (tset::delete node set)
+                               (kahn-increment (successors node graph)
+                                               counters)
+                               graph))
+       :exec (kahn-counters-oset (tset::to-oset set) counters graph))
+  :measure (tset::cardinality set)
+  ;; Verified below
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -239,21 +290,32 @@
   :induct t
   :enable kahn-counters)
 
+(defruledl kahn-counters-oset-of-to-oset
+  (equal (kahn-counters-oset (tset::to-oset set) counters graph)
+         (kahn-counters set counters graph))
+  :induct (kahn-counters set counters graph)
+  :enable (kahn-counters
+           kahn-counters-oset))
+
+(verify-guards kahn-counters
+  :hints (("Goal" :in-theory (enable kahn-counters
+                                     kahn-counters-oset-of-to-oset))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define kahn-decrement
-  ((targets tset::setp)
+(define kahn-decrement-oset
+  ((targets set::setp)
    (frontier tset::setp)
    (counters tmap::mapp))
   :returns (mv (frontier$ tset::setp)
                (counters$ tmap::mapp))
-  :parents (cyclicp)
-  :short "Decrement the counter of each node in a set, moving each node whose
+  :parents (kahn-decrement)
+  :short "Decrement the counter of each node in an oset, moving each node whose
           counter reaches zero to the frontier."
-  (b* (((when (tset::emptyp targets))
+  (b* (((when (set::emptyp targets))
         (mv (tset::fix frontier)
             (tmap::fix counters)))
-       (node (tset::min targets))
+       (node (set::head targets))
        ((mv frontier counters)
         (mbe :logic
              (b* ((count (nfix (tmap::lookup node counters :default 0))))
@@ -276,8 +338,35 @@
                        (if (tmap::entryp cursor)
                            (tmap::update-entry (- count 1) cursor)
                          (tmap::update-hole node (- count 1) cursor)))))))))
-    (kahn-decrement (tset::delete node targets) frontier counters))
-  :measure (tset::cardinality targets))
+    (kahn-decrement-oset (set::tail targets) frontier counters)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define kahn-decrement
+  ((targets tset::setp)
+   (frontier tset::setp)
+   (counters tmap::mapp))
+  :returns (mv (frontier$ tset::setp)
+               (counters$ tmap::mapp))
+  :parents (cyclicp)
+  :short "Decrement the counter of each node in a set, moving each node whose
+          counter reaches zero to the frontier."
+  (mbe :logic (b* (((when (tset::emptyp targets))
+                    (mv (tset::fix frontier)
+                        (tmap::fix counters)))
+                   (node (tset::min targets))
+                   (count (nfix (tmap::lookup node counters :default 0)))
+                   ((when (eql count 1))
+                    (kahn-decrement (tset::delete node targets)
+                                    (tset::insert node frontier)
+                                    (tmap::delete node counters))))
+                (kahn-decrement (tset::delete node targets)
+                                frontier
+                                (tmap::update node (- count 1) counters)))
+       :exec (kahn-decrement-oset (tset::to-oset targets) frontier counters))
+  :measure (tset::cardinality targets)
+  ;; Verified below
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -304,6 +393,17 @@
   :rule-classes :congruence
   :induct t
   :enable kahn-decrement)
+
+(defruledl kahn-decrement-oset-of-to-oset
+  (equal (kahn-decrement-oset (tset::to-oset targets) frontier counters)
+         (kahn-decrement targets frontier counters))
+  :induct (kahn-decrement targets frontier counters)
+  :enable (kahn-decrement
+           kahn-decrement-oset))
+
+(verify-guards kahn-decrement
+  :hints (("Goal" :in-theory (enable kahn-decrement
+                                     kahn-decrement-oset-of-to-oset))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

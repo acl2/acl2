@@ -8,11 +8,14 @@
 
 (in-package "GRAPH")
 
+(include-book "std/osets/defs" :dir :system)
+
 (include-book "kestrel/data/tset/min-max-defs" :dir :system)
 (include-book "kestrel/data/tset/insert-defs" :dir :system)
 (include-book "kestrel/data/tset/delete-defs" :dir :system)
 (include-book "kestrel/data/tset/diff-defs" :dir :system)
 (include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/tmap/map-defs" :dir :system)
 (include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 (include-book "kestrel/data/tmap/update-defs" :dir :system)
@@ -31,8 +34,11 @@
 (std::defredundant
   :names (kahn-remaining
           kahn-order
+          kahn-increment-oset
           kahn-increment
+          kahn-counters-oset
           kahn-counters
+          kahn-decrement-oset
           kahn-decrement
           kahn-loop
           kahn
