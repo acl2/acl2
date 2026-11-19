@@ -2142,14 +2142,12 @@
     ;; bvchop-of-bvnth
     ))
 
-
 (defun list-to-bv-array-rules ()
   (declare (xargs :guard t))
-  '(list-to-bv-array
-    list-to-bv-array-aux-base
+  '(list-to-byte-array ; opens to list-to-bv-array
+    list-to-bv-array
     list-to-bv-array-aux-unroll
-    list-to-byte-array ; wrapper for list-to-bv-array
-    ))
+    list-to-bv-array-aux-base))
 
 ;; (defun byte-array-to-bit-array-rules ()
 ;;   (declare (xargs :guard t))
