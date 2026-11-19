@@ -38,8 +38,8 @@
 
 ;; Unroll the spec, creating the DAG constant *aes-128-encrypt-spec-dag*:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
-                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(symbolic-byte-list 'in 16)
-                                                               ,(symbolic-byte-list 'key *key-byte-count*)))
+                   `(list-to-byte-array (aes::aes-128-encrypt (list ,@(make-var-names 'in 16))
+                                                              (list ,@(make-var-names 'key *key-byte-count*))))
                    :rules :auto
                    :extra-rules (introduce-bv-array-rules) ; turns nth into bv-array-read
                    :assumptions :bytes)
