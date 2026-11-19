@@ -9,6 +9,7 @@
 (in-package "GRAPH")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 
 (include-book "kestrel/data/tset/min-max-defs" :dir :system)
 (include-book "kestrel/data/tset/insert-defs" :dir :system)
@@ -16,6 +17,7 @@
 (include-book "kestrel/data/tset/union-defs" :dir :system)
 (include-book "kestrel/data/tset/diff-defs" :dir :system)
 (include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/tmap/keys-defs" :dir :system)
 (include-book "kestrel/data/tmap/in-defs" :dir :system)
 
@@ -31,6 +33,7 @@
 (std::defredundant
   :names (successors
           adjacentp
+          successors-of-oset
           successors-of-set
           successors+-search
           successors+

@@ -11,6 +11,7 @@
 (include-book "std/util/define" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
+(include-book "std/osets/defs" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/data/tset/set-defs" :dir :system)
@@ -22,6 +23,7 @@
 (include-book "kestrel/data/tset/union-defs" :dir :system)
 (include-book "kestrel/data/tset/diff-defs" :dir :system)
 (include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/to-oset-defs" :dir :system)
 (include-book "kestrel/data/tmap/map-defs" :dir :system)
 (include-book "kestrel/data/tmap/keys-defs" :dir :system)
 (include-book "kestrel/data/tmap/in-defs" :dir :system)
@@ -36,6 +38,7 @@
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
+(local (include-book "std/osets/primitives" :dir :system))
 
 (local (include-book "kestrel/data/tset/set" :dir :system))
 (local (include-book "kestrel/data/tset/in" :dir :system))
@@ -46,6 +49,7 @@
 (local (include-book "kestrel/data/tset/union" :dir :system))
 (local (include-book "kestrel/data/tset/diff" :dir :system))
 (local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/to-oset" :dir :system))
 (local (include-book "kestrel/data/tmap/map" :dir :system))
 (local (include-book "kestrel/data/tmap/keys" :dir :system))
 (local (include-book "kestrel/data/tmap/lookup" :dir :system))
@@ -212,6 +216,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define successors-of-oset ((oset set::setp) (graph graphp))
+  :returns (successors tset::setp)
+  :parents (successors-of-set)
+  :short "The successors of the nodes in an oset."
+  (if (set::emptyp oset)
+      (tset::empty)
+    (tset::union (successors (set::head oset) graph)
+                 (successors-of-oset (set::tail oset) graph)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define successors-of-set ((set tset::setp) (graph graphp))
   :returns (successors tset::setp)
   :parents (graph)
@@ -223,13 +239,16 @@
      complexity: @($O((k + m)\\log(n))$), where @($k$) is the size of the
      set, @($m$) the number of pairs of nodes joined by an edge from a node in
      the set, and @($n$) the number of nodes.")
-  (if (tset::emptyp set)
-      (tset::empty)
-    (tset::union (successors (tset::min set) graph)
-                 (successors-of-set (tset::delete (tset::min set) set)
-                                    graph)))
+  (mbe :logic (if (tset::emptyp set)
+                  (tset::empty)
+                (tset::union (successors (tset::min set) graph)
+                             (successors-of-set (tset::delete (tset::min set)
+                                                              set)
+                                                graph)))
+       :exec (successors-of-oset (tset::to-oset set) graph))
   :measure (tset::cardinality set)
-  :verify-guards :after-returns)
+  ;; Verified below
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -248,6 +267,17 @@
   :rule-classes :congruence
   :induct t
   :enable successors-of-set)
+
+(defruledl successors-of-oset-of-to-oset
+  (equal (successors-of-oset (tset::to-oset set) graph)
+         (successors-of-set set graph))
+  :induct (successors-of-set set graph)
+  :enable (successors-of-set
+           successors-of-oset))
+
+(verify-guards successors-of-set
+  :hints (("Goal" :in-theory (enable successors-of-set
+                                     successors-of-oset-of-to-oset))))
 
 ;; The empty set has no successors. The successors of each node in a set are
 ;; among the successors of the set, and every one of them is a node.
