@@ -33,16 +33,17 @@ validated.
 |------|----------|
 | `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
 | `versions` | The supported versions of Unicode, as a type. |
-| `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31). |
+| `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31); the two optional characters for the start of an identifier, `$` and `_`. |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
 | `combining-classes` | `Canonical_Combining_Class`. |
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
 | `compositions` | `Full_Composition_Exclusion`, and the pairs that compose. |
-| `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp`. |
-| `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers. |
-| `quick-check` | The `NF*_Quick_Check` properties (used here only to cross-check normalization). |
+| `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp`; `canonical-equivalent-p`, `compatibility-equivalent-p`. |
+| `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers, also when the identifier starts with `$` or `_`; a canonical equivalent of an identifier is an identifier. |
+| `quick-check` | The `NF*_Quick_Check` properties (the normalization functions do not use them). |
+| `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD. |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
 | `maps` | The fixtypes of the tree maps from code points to values, which represent the other properties. |
@@ -151,6 +152,41 @@ over the tables, and so re-checked whenever a version is added:
   `xid-continue-listp`, the lists of code points with `XID_Continue`.
 - `canonical-combining-class-when-xid-start-p`: a code point with
   `XID_Start` is a starter.
+- `canonical-equivalent-p` and `compatibility-equivalent-p` say that two
+  lists are canonical equivalents (definition D70 of the Unicode Standard:
+  they have the same NFD form) and compatibility equivalents (D67: the same
+  NFKD form).  Each is reflexive, symmetric and transitive.
+  `canonical-equivalent-p-of-nfc-arg1` (and `-arg2`, and the same for
+  `nfd`; for compatibility equivalence, the same for all four forms): a
+  form of a list can take the place of the list.
+  `canonical-equivalent-p-in-terms-of-nfc`: two lists are canonical
+  equivalents exactly when they have the same NFC form;
+  `compatibility-equivalent-p-in-terms-of-nfkc`: the same for the NFKC
+  form.  `compatibility-equivalent-p-when-canonical-equivalent-p`:
+  canonical equivalents are compatibility equivalents.
+- `xid-identifier-p-when-canonical-equivalent-p`: two canonical equivalents
+  are both XID identifiers, or neither is.  The same holds for
+  `xid-continue-listp`.
+- `optional-start-p` says that a code point is the dollar sign or the
+  underscore, the two optional characters for the start of an identifier
+  in UAX #31, Table 3.  `nfc-of-cons-when-optional-start-p` (and the same
+  for the other three forms): the form of such a code point followed by a
+  list is that code point followed by the form of the list.  So an
+  identifier that starts with `$` or `_` and goes on with code points with
+  `XID_Continue` normalizes to one of the same kind.
+  `nfc-memberp-of-cons-when-optional-start-p` (and the same for the other
+  three): such a list is in the form exactly when the rest of it is.
+- `nfd-memberp-alt-def`, `nfkd-memberp-alt-def`: a list is in NFD, or in
+  NFKD, exactly when it is fully decomposed and in canonical order.
+- `nfd-quick-check-yes-p-alt-def`, `nfkd-quick-check-yes-p-alt-def`: the
+  `NFD_Quick_Check` (or `NFKD_Quick_Check`) of a code point is Yes exactly
+  when the code point is its own canonical (or compatibility)
+  decomposition.  `nfd-memberp-in-terms-of-quick-check`,
+  `nfkd-memberp-in-terms-of-quick-check`: so a list is in NFD (or NFKD)
+  exactly when every code point has the value Yes and the list is in
+  canonical order, which is what the quick check of UAX #15, Section 9,
+  tests.  For these two forms, which have no Maybe values, the quick check
+  is exact.  (The same for NFC and NFKC is not done yet.)
 
 ### Including only what you need
 
@@ -161,12 +197,13 @@ supported version, and nothing else of this library.
 | To get | Include | Books of this library that it loads | Tables that it loads |
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
-| `xid-start-p`, `xid-continue-p`, `xid-identifier-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `xid-start-p`, `xid-continue-p`, `xid-identifier-p`, `optional-start-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
-| `nfd`, `nfc`, `nfkd`, `nfkc`, and `nfd-memberp` and the other three | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
+| The theorems that the quick check is exact for NFD and NFKD | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
 
 A front end for a language whose identifiers follow UAX #31 typically needs

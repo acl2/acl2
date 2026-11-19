@@ -610,6 +610,67 @@
                               second
                               (canonical-compositions ver)))
                     (x (all-code-points))
+                    (mappings (canonical-mappings ver))))
+
+  ;; Another consequence, used for the identifiers
+  ;; that start with a dollar sign (U+0024) or an underscore (U+005F):
+  ;; neither of these two code points
+  ;; composes with any code point after it.
+  ;; We check, on every code point, for each version,
+  ;; that the first code point of a canonical mapping of two code points
+  ;; is neither of them;
+  ;; the leading consonants and the LV syllables of Hangul are not either.
+
+  (local
+   (define first-ok ((cp code-point-p) (mappings decomposition-mapp))
+     :returns (yes/no booleanp)
+     (b* ((mapping (decomposition-map-lookup cp mappings)))
+       (or (not (equal (len mapping) 2))
+           (not (member (code-point-fix (first mapping))
+                        '(#x24 #x5F)))))
+     :hooks nil
+     :guard-hints (("Goal" :in-theory (enable len)))))
+
+  (local
+   (std::deflist first-ok-listp (x mappings)
+     :guard (and (code-point-listp x)
+                 (decomposition-mapp mappings))
+     (first-ok x mappings)))
+
+  (defrulel first-ok-listp-of-all-code-points
+    (first-ok-listp (all-code-points) (canonical-mappings ver))
+    :enable (canonical-mappings
+             (:e all-code-points))
+    :disable first-ok-listp-of-cons)
+
+  (defruled composition-of-dollar-sign
+    (equal (composition #x24 second ver)
+           nil)
+    :enable (composition
+             hangul-composition
+             first-ok
+             canonical-mapping-of-composition-map-lookup)
+    :use (:instance first-ok-when-member-equal-of-first-ok-listp
+                    (acl2::a (composition-map-lookup
+                              #x24
+                              second
+                              (canonical-compositions ver)))
+                    (x (all-code-points))
+                    (mappings (canonical-mappings ver))))
+
+  (defruled composition-of-underscore
+    (equal (composition #x5F second ver)
+           nil)
+    :enable (composition
+             hangul-composition
+             first-ok
+             canonical-mapping-of-composition-map-lookup)
+    :use (:instance first-ok-when-member-equal-of-first-ok-listp
+                    (acl2::a (composition-map-lookup
+                              #x5F
+                              second
+                              (canonical-compositions ver)))
+                    (x (all-code-points))
                     (mappings (canonical-mappings ver)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

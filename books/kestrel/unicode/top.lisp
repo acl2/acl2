@@ -24,6 +24,7 @@
 (include-book "normalization")
 (include-book "identifier-closure")
 (include-book "quick-check")
+(include-book "quick-check-theorems")
 (include-book "utf-8")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -62,8 +63,18 @@
       and the algorithms for Hangul syllables:
       see @(see normalization).")
     (xdoc::li
+     "Canonical equivalence and compatibility equivalence,
+      which are defined by the normalization forms:
+      see @(tsee canonical-equivalent-p)
+      and @(tsee compatibility-equivalent-p).")
+    (xdoc::li
      "The proof that normalizing an identifier gives an identifier:
       see @(see identifier-closure).")
+    (xdoc::li
+     "The quick check properties of the normalization forms,
+      and the proof that the quick check is exact
+      for the two decomposed forms:
+      see @(see quick-check) and @(see quick-check-theorems).")
     (xdoc::li
      "The @('Pattern_White_Space') property,
       which defines white space:
@@ -109,6 +120,8 @@
       @(tsee nfkd) and @(tsee nfkc),
       for the predicates that say that a list is in one of these forms,
       such as @(tsee nfc-memberp),
+      for @(tsee canonical-equivalent-p)
+      and @(tsee compatibility-equivalent-p),
       and for what the forms are made of.
       This is the largest part.")
     (xdoc::li
@@ -117,6 +130,10 @@
       It loads the previous two.")
     (xdoc::li
      "@('kestrel/unicode/quick-check') for the quick check properties.")
+    (xdoc::li
+     "@('kestrel/unicode/quick-check-theorems') for the theorems
+      that relate the quick check properties to the normalization forms.
+      It loads @('quick-check') and @('normalization').")
     (xdoc::li
      "@('kestrel/unicode/utf-8') for the theorems that connect this library
       to the UTF-8 decoder of @('[books]/unicode'), which it loads."))
@@ -186,6 +203,7 @@
     "In the documentation of this library,
      [Unicode] refers to the core specification of the Unicode Standard,
      whose definitions are numbered D1, D2, etc.,
+     and whose conformance clauses are numbered C1, C2, etc.;
      and [UAX #n] refers to the Unicode Standard Annex with that number:
      [UAX #9] is the Unicode Bidirectional Algorithm,
      [UAX #15] is Unicode Normalization Forms,

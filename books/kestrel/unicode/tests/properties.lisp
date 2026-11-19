@@ -301,6 +301,50 @@
 (test (nfd-memberp '(#x03BC) *v16*))
 (test (nfc-memberp '(#x03BC) *v16*))
 
+; Canonical and compatibility equivalence.
+; U+00E9 LATIN SMALL LETTER E WITH ACUTE and its decomposition
+; are canonical equivalents, and so compatibility equivalents.
+; Two marks of different classes are canonical equivalents in either order;
+; two marks of the same class are not.
+; U+212B ANGSTROM SIGN and U+00C5 are canonical equivalents.
+; U+FB01 LATIN SMALL LIGATURE FI and the letters f, i
+; are compatibility equivalents, but not canonical equivalents.
+; U+2122 TRADE MARK SIGN and the letters T, M are compatibility equivalents;
+; the letters are an identifier, and the sign is not.
+
+(test (canonical-equivalent-p '(#x00E9) '(#x0065 #x0301) *v16*))
+(test (compatibility-equivalent-p '(#x00E9) '(#x0065 #x0301) *v16*))
+(test (canonical-equivalent-p '(#x0071 #x0307 #x0323)
+                              '(#x0071 #x0323 #x0307)
+                              *v16*))
+(test (not (canonical-equivalent-p '(#x0071 #x0301 #x0307)
+                                   '(#x0071 #x0307 #x0301)
+                                   *v16*)))
+(test (canonical-equivalent-p '(#x212B) '(#x00C5) *v16*))
+(test (not (canonical-equivalent-p '(#x0065) '(#x00E9) *v16*)))
+(test (compatibility-equivalent-p '(#xFB01) '(#x66 #x69) *v16*))
+(test (not (canonical-equivalent-p '(#xFB01) '(#x66 #x69) *v16*)))
+(test (compatibility-equivalent-p '(#x2122) '(#x54 #x4D) *v17*))
+(test (xid-identifier-p '(#x54 #x4D) *v17*))
+(test (not (xid-identifier-p '(#x2122) *v17*)))
+(test (canonical-equivalent-p nil nil *v18*))
+
+; The dollar sign and the underscore, at the start of a list, are left alone,
+; and what follows them is normalized as if they were not there.
+
+(test (optional-start-p (char-code #\$)))
+(test (optional-start-p (char-code #\_)))
+(test (not (optional-start-p (char-code #\a))))
+(test (not (xid-start-p (char-code #\_) *v16*)))
+(test (xid-continue-p (char-code #\_) *v16*))
+(test (not (xid-continue-p (char-code #\$) *v16*)))
+(test (equal (nfc '(#x5F #x0065 #x0301) *v16*) '(#x5F #x00E9)))
+(test (equal (nfc '(#x5F #x0301 #x0065 #x0301) *v16*) '(#x5F #x0301 #x00E9)))
+(test (equal (nfd '(#x24 #x00E9) *v16*) '(#x24 #x0065 #x0301)))
+(test (equal (nfkc '(#x24 #xFB01) *v17*) '(#x24 #x66 #x69)))
+(test (nfc-memberp '(#x5F #x00E9) *v18*))
+(test (not (nfc-memberp '(#x5F #x0065 #x0301) *v18*)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Quick checks.
@@ -317,3 +361,22 @@
              (quick-check-value-yes)))
 (test (equal (nfkc-quick-check #xFB01 *v16*)
              (quick-check-value-no)))
+
+; The quick check of a list, for the two decomposed forms:
+; every code point has the value `yes', and the list is in canonical order.
+; U+00E9 LATIN SMALL LETTER E WITH ACUTE has the value `no' for both forms.
+; U+00B5 MICRO SIGN has the value `yes' for NFD and `no' for NFKD.
+; Two marks that are out of canonical order have the value `yes'.
+
+(test (nfd-quick-check-yes-p #x0065 *v16*))
+(test (not (nfd-quick-check-yes-p #x00E9 *v16*)))
+(test (nfd-quick-check-yes-p #x00B5 *v16*))
+(test (not (nfkd-quick-check-yes-p #x00B5 *v16*)))
+(test (nfd-quick-check-yes-listp '(#x0065 #x0301) *v16*))
+(test (nfkd-quick-check-yes-listp '(#x0065 #x0301) *v16*))
+(test (not (nfd-quick-check-yes-listp '(#x0061 #x00E9) *v17*)))
+(test (nfd-quick-check-yes-listp '(#x0071 #x0307 #x0323) *v18*))
+(test (not (canonically-ordered-p '(#x0071 #x0307 #x0323) *v18*)))
+(test (not (nfd-memberp '(#x0071 #x0307 #x0323) *v18*)))
+(test (canonically-ordered-p '(#x0071 #x0323 #x0307) *v18*))
+(test (nfd-memberp '(#x0071 #x0323 #x0307) *v18*))
