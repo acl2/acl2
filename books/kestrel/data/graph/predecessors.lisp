@@ -70,11 +70,9 @@
        predecessors of a node means visiting every node. A value which is not
        a node has no predecessors.")
     (xdoc::p
-      "Time complexity: @($O(n(\\log(n) + \\log(d)) + k\\log(k))$), where
-       @($n$) is the number of nodes, @($d$) the largest number of successors
-       of a node, and @($k$) the number of predecessors. This is not optimal:
-       each step takes and deletes the least remaining node, where a traversal
-       with an iterator would avoid the deletions."))
+      "Time complexity: @($O(n\\log(d) + k\\log(k))$), where @($n$) is the
+       number of nodes, @($d$) the largest number of successors of a node, and
+       @($k$) the number of predecessors."))
   (adj-list-predecessors node (fix graph))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
