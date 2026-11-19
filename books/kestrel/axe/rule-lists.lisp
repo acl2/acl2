@@ -197,6 +197,7 @@
             ;; if-x-y-x
             ;; if-of-not-same-arg2
             ;; if-of-not-same-arg3
+            if-of-if-t-nil
 
             fix-when-acl2-numberp
             = ; introduces EQUAL
@@ -3150,8 +3151,6 @@
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append '(equal-nil-of-myif
-;basic rules:
-            if-of-if-t-nil
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
             ;; nth-of-bvchop-becomes-nth2 ;yuck?
