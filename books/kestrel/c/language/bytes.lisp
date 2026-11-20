@@ -43,7 +43,12 @@
     "We model a byte as a natural number
      not exceeding the maximum value of @('unsigned char')."))
   (and (natp x)
-       (<= x (ienv->uchar-max ienv))))
+       (<= x (ienv->uchar-max ienv)))
+
+  ///
+
+  (defrule not-bytep-of-nil
+    (not (bytep nil ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
