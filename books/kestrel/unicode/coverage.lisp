@@ -89,7 +89,9 @@
      "The Stream-Safe Text Format and the Stream-Safe Text Process
       [UAX #15, Section 13],
       with the proof that the process gives text in that format
-      and leaves text in that format unchanged:
+      and leaves text in that format unchanged,
+      and that the four forms do not change
+      whether text is in that format:
       see @(see stream-safe)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
@@ -173,8 +175,10 @@
       and the theorem only for that value;
       the sets of the code points that are stable under each form,
       of which the library has a subset that is common to the four;
-      and what [UAX #15, Section 13] says
-      about the Stream-Safe Text Process and the normalization forms.")
+      and a proof that the Stream-Safe Text Process
+      keeps text that is in NFC or in NFKC in that form,
+      which [UAX #15, Section 13] says
+      and which the library proves for NFD and NFKD only.")
     (xdoc::li
      "From [UAX #31]:
       the identifiers defined by @('ID_Start') and @('ID_Continue'),
