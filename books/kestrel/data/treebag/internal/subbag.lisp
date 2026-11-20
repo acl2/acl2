@@ -72,7 +72,8 @@
                 (treemap::bstp y))
            (treeset::in key (treemap::tree-key-set y)))
   :induct t
-  :enable tree-subbag-p)
+  :enable (tree-subbag-p
+           treemap::in-of-tree-key-set-when-not-tree-empty-p))
 
 (defruled tree-lookup-<=-tree-lookup-when-tree-subbag-p
   (implies (and (tree-subbag-p x y)
@@ -82,7 +83,8 @@
            (<= (treemap::tree-lookup key x)
                (treemap::tree-lookup key y)))
   :induct t
-  :enable tree-subbag-p)
+  :enable (tree-subbag-p
+           treemap::in-of-tree-key-set-when-not-tree-empty-p))
 
 ;;;;;;;;;;;;;;;;;;;;
 

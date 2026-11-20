@@ -1672,7 +1672,7 @@
                                (canonical-address-p (+ -1 n addr))))
                       nil
                     t)))
-  :hints (("Goal" :in-theory (enable wb))))
+  :hints (("Goal" :in-theory (enable wb wb-1))))
 
 ;; This alias supports our strategy to move hyps to the RHSes of rules, even
 ;; when there is no clear simplification available in the cases where the
@@ -1688,7 +1688,7 @@
     (implies (zp n)
              (equal (wb n addr w value x86)
                     (mv nil x86)))
-    :hints (("Goal" :in-theory (enable wb)))))
+    :hints (("Goal" :in-theory (enable wb wb-1)))))
 
 (local
   (defthm wb-alias-when-zp
@@ -1701,13 +1701,13 @@
   (defthm len-of-wb
     (equal (len (wb n addr w value x86))
            2)
-    :hints (("Goal" :in-theory (enable wb)))))
+    :hints (("Goal" :in-theory (enable wb wb-1)))))
 
 (local
   (defthm cddr-of-wb
     (equal (cddr (wb n addr w value x86))
            nil)
-    :hints (("Goal" :in-theory (enable wb)))))
+    :hints (("Goal" :in-theory (enable wb wb-1)))))
 
 ;; This puts the canonical-address-p claims in the RHS.  Since there is not a
 ;; convenient way to specify what happens in the non-canonical cases, we put in

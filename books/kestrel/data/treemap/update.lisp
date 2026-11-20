@@ -393,7 +393,6 @@
          (treeset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist-rev
-           treeset::insert-all
            strip-cars))
 
 (defrule lookup-of-update-from-alist-rev
@@ -474,7 +473,6 @@
          (treeset::insert-all (strip-cars alist) (keys map)))
   :induct t
   :enable (update-from-alist
-           treeset::insert-all
            strip-cars))
 
 (defrule lookup-of-update-from-alist
@@ -494,6 +492,34 @@
 
 (verify-guards update-from-alist$inline
   :hints (("Goal" :in-theory (enable update-from-alist))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled update-from-alist-when-not-consp
+  (implies (not (consp alist))
+           (equal (update-from-alist alist map)
+                  (fix map)))
+  :enable update-from-alist)
+
+(defrule update-from-alist-when-not-consp-cheap
+  (implies (not (consp alist))
+           (equal (update-from-alist alist map)
+                  (fix map)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by update-from-alist-when-not-consp)
+
+(defruled update-from-alist-when-consp
+  (implies (consp alist)
+           (equal (update-from-alist alist map)
+                  (update (car (car alist))
+                          (cdr (car alist))
+                          (update-from-alist (cdr alist) map))))
+  :enable update-from-alist)
+
+(defrule update-from-alist-of-cons
+  (equal (update-from-alist (cons pair alist) map)
+         (update (car pair) (cdr pair) (update-from-alist alist map)))
+  :enable update-from-alist)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -552,6 +578,35 @@
                   (if (assoc-equal key alist)
                       (cdr (assoc-equal key alist))
                     default)))
+  :enable from-alist)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled from-alist-when-not-consp
+  (implies (not (consp alist))
+           (equal (from-alist alist)
+                  (empty)))
+  :enable from-alist)
+
+(defrule from-alist-when-not-consp-cheap
+  (implies (not (consp alist))
+           (equal (from-alist alist)
+                  (empty)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :by from-alist-when-not-consp)
+
+(defruled from-alist-when-consp
+  (implies (consp alist)
+           (equal (from-alist alist)
+                  (update (car (car alist))
+                          (cdr (car alist))
+                          (from-alist (cdr alist)))))
+  :enable (from-alist
+           update-from-alist-when-consp))
+
+(defrule from-alist-of-cons
+  (equal (from-alist (cons pair alist))
+         (update (car pair) (cdr pair) (from-alist alist)))
   :enable from-alist)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

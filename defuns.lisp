@@ -9468,7 +9468,8 @@
                   (mv-let (erp ign)
                     (if (eq key 'ec-call1-raw) ; see above
                         (mv nil nil)
-                      (chk-return-last-call key keyp arg2 arg3 wrld nil nil))
+                      (chk-return-last-call key keyp arg2 arg3 wrld nil nil
+                                            nil))
                     (declare (ignore ign))
                     (cond
                      (erp (logic-code-to-runnable-code (fargn term 3) wrld))

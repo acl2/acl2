@@ -151,7 +151,8 @@
                     (tree-generic-count tree))))
   :induct (tree-delete key tree)
   :enable (tree-delete
-           tree-generic-count))
+           tree-generic-count
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

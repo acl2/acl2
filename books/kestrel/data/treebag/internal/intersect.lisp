@@ -230,7 +230,6 @@
                     nil)))
   :induct t
   :enable (tree-intersect
-           treemap::tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

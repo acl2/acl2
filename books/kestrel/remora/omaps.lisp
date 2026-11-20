@@ -92,3 +92,29 @@
                    (a x)
                    (x (omap::values (omap::delete name m)))
                    (y s))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; More facts about maps, gathered from the proofs about lambda lifting.
+
+(local (include-book "std/omaps/extensionality" :dir :system))
+
+(defruled assoc-of-restrict-when-assoc
+  (implies (omap::assoc w (omap::restrict s m))
+           (and (set::in w s)
+                (equal (omap::assoc w (omap::restrict s m))
+                       (omap::assoc w m))
+                (omap::assoc w m)))
+  :enable (omap::assoc-of-restrict))
+
+(defruled restrict-of-update-when-not-in
+  (implies (not (set::in k s))
+           (equal (omap::restrict s (omap::update k v m))
+                  (omap::restrict s m)))
+  :enable (omap::extensionality omap::assoc-of-restrict))
+
+(defruled cdr-assoc-of-head-key
+  (implies (not (omap::emptyp m))
+           (equal (cdr (omap::assoc (mv-nth 0 (omap::head m)) m))
+                  (mv-nth 1 (omap::head m))))
+  :expand ((omap::assoc (mv-nth 0 (omap::head m)) m)))

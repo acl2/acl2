@@ -15,7 +15,6 @@
 
 (include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
 (include-book "kestrel/utilities/defopeners" :dir :system)
-(include-book "support-x86") ; todo
 
 ;; some of these are for symbolic execution:
 (in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
@@ -175,7 +174,10 @@
   :hints (("Goal" :induct (GET-PREFIXES proc-mode START-RIP PREFIXES rex-byte CNT X86)
            :in-theory (e/d ( ;xw
                             add-to-*ip
-                            get-prefixes)
+                            get-prefixes
+                            rml08
+                            rme08 ; todo
+                            )
                            (;acl2::unsigned-byte-p-from-bounds
                             ;acl2::bvchop-identity
                             ;x86isa::part-install-width-low-becomes-bvcat-32
@@ -197,18 +199,19 @@
                   (mv-nth 1
                           (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86))))
   :hints (("Goal" :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
-           :in-theory (e/d (get-prefixes
-                            add-to-*ip)
-                                  (;acl2::unsigned-byte-p-from-bounds
-                                   ;acl2::bvchop-identity
-                                   ;x86isa::part-install-width-low-becomes-bvcat-32
-                                   combine-bytes-when-singleton ;for speed
+                  :in-theory (e/d (get-prefixes
+                                   add-to-*ip
+                                   rml08
+                                   rme08)
+                                  (;;acl2::unsigned-byte-p-from-bounds
+                                   ;;acl2::bvchop-identity
+                                   ;;x86isa::part-install-width-low-becomes-bvcat-32
+                                   ;combine-bytes-when-singleton ;for speed
                                    x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
-                                   ;x86isa::part-select-width-low-becomes-slice ;for speed
+                                   ;;x86isa::part-select-width-low-becomes-slice ;for speed
                                    ACL2::ZP-OPEN
-                                   ;acl2::MV-NTH-OF-IF
+                                   ;;acl2::MV-NTH-OF-IF
                                    )))))
-
 
 ;seems needed - todo
 (in-theory (enable x86isa::GPR-SUB-SPEC-8$INLINE))

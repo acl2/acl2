@@ -162,7 +162,7 @@
             (reference-ctrex (update-reference-ctrex->initialized-fanins 0 reference-ctrex)))
          (mv reference-ctrex interp-st)))
       (t (mv reference-ctrex interp-st)))))
-             
+
 
 (define initialize-interp-st ((config fgl-config-p)
                               (interp-st)
@@ -208,11 +208,10 @@
        (trace-alist (if (trace-alist-p trace-alist)
                         trace-alist
                       (raise "State global ~x0 must contain an FGL trace alist, satisfying ~x1"
-                               '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
+                             '(@ :fgl-trace-rule-alist) 'trace-alist-p)))
        (interp-st (update-interp-st->trace-alist trace-alist interp-st))
-       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix (table-alist 'fgl-rewrite-rules (w state))) interp-st))
-       (interp-st (update-interp-st->binder-rules (redundant-alist-fix (table-alist 'fgl-binder-rules (w state))) interp-st))
-       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix (table-alist 'fgl-branch-merge-rules (w state))) interp-st))
+       (interp-st (update-interp-st->rewrite-rules (redundant-alist-fix config.rewrite-rule-table) interp-st))
+       (interp-st (update-interp-st->branch-merge-rules (redundant-alist-fix config.branch-merge-rules) interp-st))
        (interp-st (update-interp-st->congruence-rules (redundant-list-fix (fgl-congruence-runes (w state))) interp-st))
        (interp-st (update-interp-st->id-congruence-rules (redundant-list-fix (fgl-id-congruence-runes (w state))) interp-st)))
     (stobj-let ((logicman (interp-st->logicman interp-st)))
@@ -375,14 +374,14 @@
 
 (local
  (defthm major-stack-bfrlist-of-stack$a-set-term
-      (equal (major-stack-bfrlist (stack$a-set-term obj stack))
-             (major-stack-bfrlist stack))
-      :hints(("Goal" :in-theory (enable stack$a-set-term
-                                        major-stack-bfrlist
-                                        major-frame-bfrlist
-                                        minor-frame-bfrlist)
-              :expand ((minor-stack-bfrlist (major-frame->minor-stack (car stack))))
-              :do-not-induct t))))
+   (equal (major-stack-bfrlist (stack$a-set-term obj stack))
+          (major-stack-bfrlist stack))
+   :hints(("Goal" :in-theory (enable stack$a-set-term
+                                     major-stack-bfrlist
+                                     major-frame-bfrlist
+                                     minor-frame-bfrlist)
+           :expand ((minor-stack-bfrlist (major-frame->minor-stack (car stack))))
+           :do-not-induct t))))
 
 (local (defthm assoc-when-nonnil
          (implies v
@@ -432,8 +431,8 @@
                  :expand ((major-stack-bfrlist stack))))))
 
 (local (defthm iff?-forall-extensions-of-nil
-         (equal (iff?-forall-extensions nil obj term eval-alist)
-                (iff-forall-extensions obj term eval-alist))
+         (equal (iff?-forall-extensions nil term eval-alist)
+                (iff-forall-extensions term eval-alist))
          :hints(("Goal" :in-theory (enable iff?-forall-extensions)))))
 
 (define fgl-clause-proc-core ((goal pseudo-termp)
@@ -459,8 +458,6 @@
                                                      (interp-st->steplimit interp-st))))
        (- ;; Clear memoization tables that depend on e.g. the current world
         (clear-memoize-table 'fgl-equivp)
-        (clear-memoize-table 'fgl-function-binder-rules)
-        (clear-memoize-table 'fgl-function-binder-rules-from-lookup)
         (clear-memoize-table 'fgl-function-rules)
         (clear-memoize-table 'fgl-function-rules-from-lookup)
         (clear-memoize-table 'fgl-branch-merge-rules)
@@ -584,9 +581,6 @@
                   (fgl-major-stack-concretize x env))
            :hints(("Goal" :in-theory (enable fgl-major-stack-concretize)))))
 
-
-  (local (in-theory (disable fgl-interp-test-bvar-db-ok-implies-previous-ok)))
-
   (defret fgl-clause-proc-core-correct
     (implies (and (fgl-ev-meta-extract-global-facts)
                   (fgl-formula-checks-stub state)
@@ -606,10 +600,10 @@
                    (orig-alist (fgl-object-bindings-eval (stack$a-bindings stack) env logicman))
                    (MAJOR-ALIST
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-BINDINGS NEW-STACK)
-                                           ENV NEW-LOGICMAN))
+                                              ENV NEW-LOGICMAN))
                    (MINOR-ALIST
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
-                                           ENV LOGICMAN))
+                                              ENV LOGICMAN))
                    (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
                 `(:use ((:instance interp-st-sat-check-unsat-implies
                          (params ,(acl2::hq sat-config))
@@ -623,11 +617,6 @@
                          (env ,(acl2::hq env))
                          (st state)
                          (state ,(acl2::hq init-interp-state)))
-                        (:instance iff-forall-extensions-necc
-                         (obj ,(acl2::hq ans-eval))
-                         (term ,(acl2::hq goal))
-                         (eval-alist ,(acl2::hq eval-alist))
-                         (ext ,(acl2::hq eval-alist)))
                         (:instance fgl-ev-of-extension-when-term-vars-bound
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
@@ -649,10 +638,10 @@
                    (orig-alist (fgl-object-bindings-eval (stack$a-bindings stack) env logicman))
                    (MAJOR-ALIST
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-BINDINGS NEW-STACK)
-                                           ENV NEW-LOGICMAN))
+                                              ENV NEW-LOGICMAN))
                    (MINOR-ALIST
                     (FGL-OBJECT-BINDINGS-EVAL (STACK$A-MINOR-BINDINGS STACK)
-                                           ENV LOGICMAN))
+                                              ENV LOGICMAN))
                    (?EVAL-ALIST (APPEND MINOR-ALIST MAJOR-ALIST)))
                 `(:use ((:instance fgl-interp-test-correct
                          (x ,(acl2::hq goal))
@@ -660,11 +649,6 @@
                          (env ,(acl2::hq env))
                          (st state)
                          (state ,(acl2::hq init-interp-state)))
-                        (:instance iff-forall-extensions-necc
-                         (obj ,(acl2::hq ans-eval))
-                         (term ,(acl2::hq goal))
-                         (eval-alist ,(acl2::hq eval-alist))
-                         (ext ,(acl2::hq eval-alist)))
                         (:instance fgl-ev-of-extension-when-term-vars-bound
                          (b ,(acl2::hq eval-alist))
                          (a ,(acl2::hq orig-alist))
@@ -676,9 +660,9 @@
 
 
 (define fgl-interp-cp ((clause pseudo-term-listp)
-                      hint
-                      interp-st
-                      state)
+                       hint
+                       interp-st
+                       state)
   ;; :prepwork ((local (in-theory (disable acl2::member-equal-append))))
   :hooks nil
   :guard-debug t

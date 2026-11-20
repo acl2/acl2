@@ -316,6 +316,20 @@
            tree-element-p
            data::u32-equal))
 
+;; The same fact as a rewrite rule. The hash argument is logically ignored.
+
+(defrule tree-element-of-arg1-and-tree-element->key-and-tree-element->val
+  (implies (tree-element-p elem)
+           (equal (tree-element hash
+                                (tree-element->key elem)
+                                (tree-element->val elem))
+                  elem))
+  :enable (tree-element
+           tree-element->key
+           tree-element->val
+           tree-element-p
+           data::u32-equal))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tree-element$ (key val)

@@ -61,6 +61,7 @@
      "             :include-dirs       ...  ; default nil"
      "             :process            ...  ; default :validate"
      "             :const              ...  ; required, no default"
+     "             :strict-merge       ...  ; default t"
      "             :keep-going         ...  ; default nil"
      "             :ienv               ...  ; default (ienv-default)"
      "  )"))
@@ -337,6 +338,29 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
+
+    (xdoc::desc
+     "@(':strict-merge') &mdash; default @('t')"
+     (xdoc::p
+      "Boolean flag saying whether validation rejects
+       an identifier with external linkage
+       declared with incompatible types in different files.
+       This makes the behavior undefined [C17:6.2.7/2],
+       but it violates no constraint,
+       and compilers and linkers accept it,
+       so it may occur in practical code.")
+     (xdoc::p
+      "When @('t'), such declarations are rejected.
+       When @('nil'), they are accepted,
+       and the information about the identifier merged across the files
+       ignores the declarations whose types are incompatible with
+       the type merged from the files before them,
+       in the order of their paths
+       (see @(tsee valid-merge-externals-loop)).
+       This flag does not affect validation within each file.")
+     (xdoc::p
+      "The flag becomes part of the code ensemble
+       that is the value of the constant @('*const*')."))
 
     (xdoc::desc
      "@(':keep-going') &mdash; default @('nil')"

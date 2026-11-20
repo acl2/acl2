@@ -98,8 +98,8 @@
 
 (check-counterexample
  (b* ((x1 (logcons b (logcdr x)))
-       (x2 (logcons (logcar x1) y)))
-    (equal (loghead 3 x2) (loghead 3 (logcons 1 y)))))
+      (x2 (logcons (logcar x1) y)))
+   (equal (loghead 3 x2) (loghead 3 (logcons 1 y)))))
 
 
 
@@ -122,7 +122,7 @@
                       (or (not (a)) (b) (not (c)))
                       (or (a) (not (b)) (not (c)))
                       (or (not (a)) (not (b)) (not (c))))))
-  :hints (("goal" :clause-processor (fgl-interp-cp clause
+ :hints (("goal" :clause-processor (fgl-interp-cp clause
                                                   (change-fgl-config
                                                    (default-fgl-config)
                                                    :make-ites t)
@@ -160,7 +160,7 @@
 
 ;; (table fgl-fn-modes
 ;;        nil
-;;        (let ((my-fn-mode (make-fgl-function-mode :dont-expand-def t)))
+;;        (let ((my-fn-mode (make-fgl-function-mode :dont-rewrite t)))
 
 ;;          (list (cons 'unsigned-byte-p my-fn-mode)
 ;;                (cons 'acl2::loghead$inline my-fn-mode)
@@ -171,7 +171,7 @@
 ;;                (cons 'intcons my-fn-mode))) :clear)
 
 
-  
+
 (fgl-thm
  :hyp (unsigned-byte-p 5 x)
  :concl (equal (logtail 7 x) 0))
@@ -322,9 +322,9 @@
 ;;                        (check-non-consp x xsyn)) nil)
 ;;                  (t (abort-rewrite (equal x y))))))
 ;;   :hints(("Goal" :in-theory (enable int-endp))))
-               
-                     
-                     
+
+
+
 
 ;; (def-fgl-rewrite fgl-equal-ints
 ;;   (equal (equal (int x) (int y))
@@ -378,9 +378,9 @@
  :concl (unsigned-byte-p 50 (logand x y)))
 
 (fgl-thm
-  :hyp (and (unsigned-byte-p 90 x)
-            (unsigned-byte-p 90 y))
-  :concl (unsigned-byte-p 90 (logand x y)))
+ :hyp (and (unsigned-byte-p 90 x)
+           (unsigned-byte-p 90 y))
+ :concl (unsigned-byte-p 90 (logand x y)))
 
 
 ;; (trace$ (fgl-rewrite-try-rule
@@ -555,7 +555,7 @@
                (logcount x)))
 
 
-  
+
 
 
 (defun fast-logcount-32* (v)
@@ -601,7 +601,7 @@
 (install-fgl-metafns tests)
 
 
-       
+
 
 
 (fgl-thm
@@ -621,8 +621,8 @@
                     (equal (@ :fgl-interp-error-message) "Logbitp 6!")))
        (er soft 'test-fgl-error "Didn't work?")))
    (value '(value-triple :ok))))
-   
-      
+
+
 
 
 (fgl-thm
@@ -811,7 +811,7 @@
 
 (check-counterexample
  (not (equal (+ (loghead 3 x) (loghead 4 y)) 9)))
- 
+
 
 
 (acl2::must-fail
@@ -846,12 +846,12 @@
                     (< x upper-bound)))))
 
   (check-counterexample
-    (implies (and (unsigned-byte-p 16 x)
-                  (equal (integer-length x) 16))
-             (b* ((sqrt (bitops::int-sqrt x))
-                  (sqrt+1 (+ 1 sqrt))
-                  (lower-bound (* sqrt sqrt))
-                  (upper-bound (* sqrt+1 sqrt+1)))
-               (and (< lower-bound x)
-                    (< x upper-bound))))))
-                
+   (implies (and (unsigned-byte-p 16 x)
+                 (equal (integer-length x) 16))
+            (b* ((sqrt (bitops::int-sqrt x))
+                 (sqrt+1 (+ 1 sqrt))
+                 (lower-bound (* sqrt sqrt))
+                 (upper-bound (* sqrt+1 sqrt+1)))
+              (and (< lower-bound x)
+                   (< x upper-bound))))))
+

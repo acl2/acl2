@@ -17,7 +17,7 @@
 ; The CHERI documentation does not seem to have
 ; a clear list of all their additional keywords in the style of [C17] and [C23].
 ; The list is inferred from the documentation,
-; but the lists may be incomplete, and it will be extended as needed.
+; but the list may be incomplete, and it will be extended as needed.
 
 keyword-cheri = %s"__capability"
               / %s"__intcap_t"

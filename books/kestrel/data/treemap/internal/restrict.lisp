@@ -172,7 +172,8 @@
                        (treeset::in a (tree-key-set tree)))))
   ;; TODO: improve proof
   :induct t
-  :enable tree-restrict)
+  :enable (tree-restrict
+           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -211,7 +212,6 @@
   ;; TODO: improve proof
   :induct t
   :enable (tree-restrict
-           tree-lookup
            data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;

@@ -1215,12 +1215,7 @@ ACL2 !>>(DEFUN F6 (X)
 
 ACL2 Error [Translate] in ( DEFUN F6 ...):  The argument (DF- (TO-DF X))
 is illegal for EC-CALL, because DF- is a macro, not a function symbol.
-A call of EC-CALL must only be made on an argument of the form (FN
-...), where FN is a known function symbol of the current ACL2 world
-not belonging to the list that is the value of the constant 
-*EC-CALL-BAD-OPS*, or is a macro expanding in a certain direct way
-(as with defun-inline) to a call of FN$INLINE (i.e., the result of
-adding suffix "$INLINE" to the symbol-name of FN).  See :DOC ec-call.
+See :DOC ec-call.
 
 
 Summary

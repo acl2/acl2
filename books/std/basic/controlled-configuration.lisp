@@ -37,6 +37,7 @@
                                     tau
                                     no-function
                                     hooks
+                                    type-prescription
                                     state)
   (declare (xargs :stobjs state))
   `(progn
@@ -51,15 +52,20 @@
                                :absent
                                (w state))
                      :absent))
-            `((std::make-define-config :no-function ,no-function
-                                       :hooks ,hooks)))))
+            `((std::make-define-config
+               :no-function ,no-function
+               :hooks ,hooks
+               ,@(and type-prescription
+                      `(:type-prescription ,type-prescription)))))))
 
 (defmacro controlled-configuration (&key (induction-depth '0)
                                          (tau 'nil)
                                          (no-function 't)
-                                         (hooks '(:fix)))
+                                         (hooks '(:fix))
+                                         (type-prescription 'nil))
   `(make-event (controlled-configuration-fn ,induction-depth
                                             ,tau
                                             ,no-function
                                             ',hooks
+                                            ',type-prescription
                                             state)))

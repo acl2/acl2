@@ -113,7 +113,7 @@ void f(void) {
          ((when erp1) (cw "~%PARSER ERROR: ~@0~%" erp1))
          ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
          ((when erp2) (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
-         ((mv erp3 ast) (valid-trans-ensemble ast ienv nil))
+         ((mv erp3 ast) (valid-trans-ensemble ast ienv t nil))
          ((when erp3) (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
          (tunit (omap::head-val (trans-ensemble->units ast)))
          (item (second (trans-unit->items tunit)))

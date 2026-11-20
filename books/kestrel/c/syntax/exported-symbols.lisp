@@ -119,6 +119,8 @@
     make-expr-tycompat
     make-expr-offsetof
     make-expr-va-arg
+    make-expr-convertvector
+    make-expr-bit-cast
     expr-extension
 
     expr-listp
@@ -560,6 +562,7 @@
     code-ensemblep
     code-ensemble->trans-units
     code-ensemble->ienv
+    code-ensemble->strict-merge
     make-code-ensemble
     change-code-ensemble
 

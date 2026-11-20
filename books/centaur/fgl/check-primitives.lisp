@@ -73,21 +73,6 @@
 ;;                                ((consp x) (equal (len (cdr x)) (1- n)))
 ;;                                (t nil))))))
 
-(local (defthm fgl-ev-context-equv-forall-extensions-trivial
-         (implies (acl2::rewriting-negative-literal
-                   `(fgl-ev-context-equiv-forall-extensions ,contexts ,obj ,term ,eval-alist))
-                  (iff (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
-                       (and 
-                        (equal (fgl-ev-context-fix contexts (fgl-ev term eval-alist))
-                               (fgl-ev-context-fix contexts obj))
-                        (hide (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))))
-         :hints (("goal" :expand ((:free (x) (hide x)))
-                  :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
-                         (ext eval-alist)))
-                  :in-theory (disable fgl-ev-context-equiv-forall-extensions-necc)))))
-
-(local (in-theory (disable fgl-ev-context-equiv-forall-extensions)))
-
 ;; (local (defthm fgl-object-bindings-eval-nil
 ;;          (equal (fgl-object-bindings-eval-
 
@@ -535,11 +520,11 @@
                          (bind-free '((env . env) (logicman . logicman)) (env logicman)))
                     (Equal map-pair
                            (hons-assoc-equal k (fgl-object-alist-eval x env))))))
-                    
+    
     :hints (("goal" :induct (alist-const-pairs-map x acc nonconst-acc)
              :expand ((:free (x) (hide x))
                       (fgl-object-alist-eval x env))))))
-    
+
 
 (define alist-const-pairs-rec ((x fgl-object-p)
                                acc

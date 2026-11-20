@@ -233,6 +233,18 @@
                         subst bound-vars)
        (tyname-subst-free (c$::expr-va-arg->type expr)
                           subst bound-vars))
+     :convertvector
+     (c$::expr-convertvector
+      (expr-subst-free (c$::expr-convertvector->vec expr)
+                       subst bound-vars)
+      (tyname-subst-free (c$::expr-convertvector->type expr)
+                         subst bound-vars))
+     :bit-cast
+     (c$::expr-bit-cast
+       (tyname-subst-free (c$::expr-bit-cast->type expr)
+                          subst bound-vars)
+       (expr-subst-free (c$::expr-bit-cast->arg expr)
+                        subst bound-vars))
      :extension
      (expr-extension
        (expr-subst-free (c$::expr-extension->expr expr)
@@ -387,6 +399,7 @@
      :float64x (type-spec-fix type-spec)
      :float128 (type-spec-fix type-spec)
      :float128x (type-spec-fix type-spec)
+     :bf16 (type-spec-fix type-spec)
      :builtin-va-list (type-spec-fix type-spec)
      :struct-empty (type-spec-fix type-spec)
      :typeof-expr (c$::type-spec-typeof-expr

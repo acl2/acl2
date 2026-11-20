@@ -35334,11 +35334,12 @@ Subtopics
     (ec-call (fn term1 ... termk))
     (ec-call (fn term1 ... termk) :dfs-in 'dfs-in :dfs-out dfs-out)
 
-  where [30m[47mfn[0m[0m is a known function symbol other than those in the list that
-  is the value of the constant [30m[47m*ec-call-bad-ops*[0m[0m.  (But see the Note
-  on Inlining below for an exception pertaining to inlining.)  In
-  particular, [30m[47mfn[0m[0m is not a macro.  The second form is only relevant
-  for those who use [df]s and is discussed at the end of this topic.
+  where [30m[47mfn[0m[0m is a known function symbol that is not in the list value of
+  the constant [30m[47m*ec-call-bad-ops*[0m[0m and is not locally bound by [30m[47m[flet][0m[0m.
+  (But see the Note on Inlining below for an exception pertaining to
+  inlining.)  In particular, [30m[47mfn[0m[0m is not a macro.  The second form is
+  only relevant for those who use [df]s and is discussed at the end
+  of this topic.
 
   Semantically, [30m[47m(ec-call (fn term1 ... termk))[0m[0m equals [30m[47m(fn term1 ...
   termk)[0m[0m.  However, this use of [30m[47mec-call[0m[0m has two effects.
@@ -35666,12 +35667,18 @@ Proof efficiency
   memoizing.  Perhaps ACL2 users will contribute further
   documentation on which system functions to memoize for efficiency.
 
+  See [induction-coarse-v-fine-grained] for how to control induction
+  schemes to speed up proofs.
+
   The following may be helpful at the level of book certification, and
   are discussed in :doc certify-book-debug.
 
     (set-serialize-character-system nil)
     (set-bad-lisp-consp-memoize nil)
     (set-inhibit-output-lst '(proof-tree event))
+
+  See also [fast-cert] for a way to speed up book certification during
+  development of a set of books.
 
 
 Programming efficiency
@@ -78249,7 +78256,7 @@ Subtopics
   introduced by [30m[47m[defun][0m[0m, as follows, under certain restrictions.
 
     (defun fn-limit (x1 ... xn limit)
-      (declare ...) ; optional, as usual for defun ; ;
+      (declare ...) ; optional, as usual for defun
       (if (zp limit)
           <base>
         (let ((limit (1- limit)))
@@ -78265,7 +78272,10 @@ Subtopics
   term (see [term]).  In other words, the translation of [30m[47m<body>[0m[0m must
   have the property that the limit variable only occurs in recursive
   calls, and in those calls it occurs exactly as the final argument
-  and not in any other arguments.
+  and not in any other arguments.  (There are two additional, perhaps
+  obscure restrictions: the body of [30m[47mfn-limit[0m[0m must not use [30m[47m[ec-call][0m[0m
+  on any recursive call of that function, and [30m[47mfn-limit[0m[0m must not have
+  [30m[47m[xargs][0m[0m specifying [30m[47m:loop$-recursion t[0m[0m.)
 
   Such use of a ``limit'' argument to obtain termination is an old
   trick that pre-dates ACL2.  Such ``limited'' functions have
@@ -107618,6 +107628,98 @@ Bug Fixes From AI via Eric Smith
   causing an infinite loop in at least one Lisp implementation
   (SBCL).
 
+  Calls of [30m[47m[verify][0m[0m and [30m[47m[retrieve][0m[0m are now illegal when made inside the
+  [proof-builder].  This change avoids unsoundness: proofs of [30m[47mnil[0m[0m
+  were possible due to the lack of those restrictions.  See for
+  example [community-books] files
+  [30m[47msystem/tests/verify-fn-pc-macro-book.lsp[0m[0m and
+  [30m[47msystem/tests/pc-macro-retrieve-fn-error-save.lsp[0m[0m.
+
+  An infinite loop was possible when the compiled lambda cache (see
+  [30m[47m[print-cl-cache][0m[0m) is full.  This bug (which was in source function
+  [30m[47minvalidate-some-cl-cache-lines[0m[0m) has been fixed.  See
+  [community-books] [30m[47msystem/tests/cl-cache-full-ring-hang.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-full-ring-hang-loop.lisp[0m[0m and
+  [30m[47msystem/tests/cl-cache-invalidation-semantics.lisp[0m[0m.
+
+  The termination analysis for some instances of [30m[47m[loop$-recursion][0m[0m was
+  faulty as demonstrated in the [community-books]
+  [30m[47msystem/tests/loop-in-let-double-subst-rejects-valid-defun.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-double-subst-clause-processor.lisp[0m[0m,
+  [30m[47msystem/tests/loop-recursion-plain-target-subst.lisp[0m[0m, and
+  [30m[47msystem/tests/loop-recursion-double-subst-do-guard.lisp[0m[0m, due to the
+  inadvertent double application of substitutions intended to
+  instantiate locally bound variables.  This soundness bug has been
+  fixed: corrected code is in source function [30m[47mtermination-machine-rec[0m[0m
+  with comments explaining the mistake.
+
+  Fixed a soundness bug caused by execution of the raw-Lisp stobj
+  creator during a proof about a [stobj-table].  See [community-book]
+  [30m[47msystem/tests/star1-stobj-let-creator-non-live.lisp[0m[0m.
+
+  Fixed a soundness bug in [provisional-certification] that could occur
+  when changing and recertifying a sub-book before the final
+  certification takes place.  For details see a comment in ACL2
+  source function [30m[47minclude-book-alist-uncertified-books[0m[0m.
+
+  Fixed a soundness bug in [tau] related to properly encoding the
+  assumption that something is non-[30m[47mNIL[0m[0m when it is also assumed to be
+  not equal to one or more numeric constants.  See [community-books]
+  [30m[47msystem/tests/tau-neg-evgs-nil-first.lisp[0m[0m and
+  [30m[47msystem/tests/tau-neg-evgs-nil-first-lower-bound.lisp[0m[0m.
+
+  Fixed a soundness bug in [tau] related to failing to detect that
+  adding a new constraint to a tau produces a contradiction.  See
+  [community-books] [30m[47msystem/tests/tau-bound-overwrites-pos-evg.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a hard error, manifested when a tau that
+  asserts its subject is a particular constant is extended to include
+  an interval that does not contain the constant.  This should have
+  caused a contradiction but instead returned a tau that was
+  contradictory but not the canonical tau contradiction.  See
+  [community-book] [30m[47msystem/tests/tau-combine-hard-error.lisp[0m[0m.
+
+  Fixed a [tau] soundness bug related to the application of signature
+  rules.  When we apply a signature rule we have to check that the
+  tau of the instance of each variable implies the tau of the
+  hypothesis about that variable.  But these two taus may be computed
+  under different enabled structures and that can affect which tau
+  predicates are known to be true or false for explicit constants.
+  See [community-books] [30m[47msystem/tests/tau-implies-disabled-exec.lisp[0m[0m,
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-interval.lisp[0m[0m, and
+  [30m[47msystem/tests/tau-implies-pos-evg-ignores-recognizers.lisp[0m[0m.
+
+  The [tau] system represents the ``universal interval'' by [30m[47mnil[0m[0m.  But
+  sometimes it has to add a restriction to that interval's domain.
+  However, that creates an ill-formed interval that could be
+  exploited to prove [30m[47mnil[0m[0m.  This was fixed by changing
+  [30m[47mcollect-bounder-args[0m[0m.  See [community-books]
+  [30m[47msystem/tests/tau-bounder-nil-interval.lisp[0m[0m.
+
+  Fixed two soundness bugs in [30m[47m[memoize-partial][0m[0m by implementing the
+  following prohibitions on its total function (the one with the
+  ``limit'' variable as its last argument).
+
+    * The use of [30m[47m[ec-call][0m[0m is prohibited on recursive calls of that total
+      function; see [community-book]
+      [30m[47msystem/tests/memoize-partial-ec-call.lisp[0m[0m.
+
+    * The use of [30m[47m:loop$-recursion t[0m[0m is prohibited in any [30m[47m[xargs][0m[0m
+      declaration of that total function; see [community-book]
+      [30m[47msystem/tests/memoize-partial-loop-flet-capture.lisp[0m[0m.
+
+  Fixed a soundness bug that allowed a [30m[47m[table][0m[0m event to supply
+  arbitrary code to run for a function memoized with
+  [30m[47m[memoize-partial][0m[0m (or with the [30m[47m:total[0m[0m argument of [30m[47m[memoize][0m[0m).  For
+  an example, see [community-book]
+  [30m[47msystem/tests/memoize-partial-table-def.lisp[0m[0m.
+
+  Fixed a soundness bug in the check on whether a symbol [30m[47mwarrant-fn[0m[0m is
+  the warrant function of some function, [30m[47mfn[0m[0m (as performed by ACL2
+  system function [30m[47mwarrant-function-namep[0m[0m).  See [community-books]
+  [30m[47msystem/tests/fake-warrant-defpkg.lisp[0m[0m and
+  [30m[47msystem/tests/fake-warrant-name-import.lisp[0m[0m.
+
 
 Other Bug Fixes
 
@@ -107707,7 +107809,28 @@ Other Bug Fixes
   printed.  This can prevent a raw Lisp error during evaluation.
   Thanks to Warren Hunt for reporting this bug.
 
-  Applied fixes from Eric McCarthy for the [sharp-f-reader].
+  Applied fixes from Eric McCarthy for the [sharp-f-reader] (Pull
+  Request #2086), [sharp-u-reader] (Pull Request #2087), and
+  [sharp-d-reader] (Pull Request #2088).
+
+  When there is a reader error, ACL2 formerly cleared the input stream
+  unconditionally.  Now, that is done only when [30m[47m[standard-oi][0m[0m is its
+  initial value, that is, the value of [30m[47m[*standard-oi*][0m[0m.  This change
+  closes PR #2099 and includes the tests from that PR in
+  [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
+  McCarthy and AI for that PR.
+
+  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder].  The
+  following example shows why.
+
+    (verify (equal x x))
+    (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
+    :q
+    ; Now the exit command failed to work, so we were stuck in the proof-builder.
+
+  Fixed a soundness bug caused by permitting [30m[47m[ec-call][0m[0m to be used with
+  a function that is locally bound by [30m[47m[flet][0m[0m.  This now causes an
+  error.  See [community-book] [30m[47msystem/tests/ec-call-under-flet.lisp[0m[0m.
 
 
 Changes at the System Level
@@ -116610,6 +116733,9 @@ Subtopics
   [Tamep-lambdap]
       See [tame].
 
+  [Tau]
+      See [tau-system].
+
   [Thereis$]
       See [loop$].
 
@@ -119799,7 +119925,8 @@ Subtopics
     REMARKS ON EVENTS AND LD
     ADVANCED TOPICS
 
-  ENABLING PROGRAMMING WITH STATE
+
+ENABLING PROGRAMMING WITH STATE
 
   In order to submit a definition that takes [30m[47m[state][0m[0m as a formal
   parameter, you must either declare [30m[47mstate[0m[0m as a [30m[47m:[0m[0m[30m[47m[stobj][0m[0m (see
@@ -119831,7 +119958,8 @@ Subtopics
   proof obligation is generated by default.  See the section below
   entitled ``A remark on guards''.
 
-  STATE GLOBALS AND THE ACL2 LOGICAL WORLD
+
+STATE GLOBALS AND THE ACL2 LOGICAL WORLD
 
   Recall (see [state]) that one of the fields of the ACL2 state object
   is the global-table, which logically is an alist associating
@@ -119895,7 +120023,8 @@ Subtopics
   workaround using [30m[47mmake-event[0m[0m; see [make-event], in particular the
   section ``Examples Illustrating How to Access State''.
 
-  A REMARK ON GUARDS
+
+A REMARK ON GUARDS
 
   For a function definition (see [defun]), if [30m[47mstate[0m[0m is specified as a
   [stobj] as with the form [30m[47m(declare (xargs :stobjs state))[0m[0m, then the
@@ -119939,7 +120068,8 @@ Subtopics
   [30m[47m[xargs][0m[0m fields of [declare] forms, specifically, for keywords
   [30m[47m:guard[0m[0m, [30m[47m:stobjs[0m[0m, and [30m[47m:dfs[0m[0m.
 
-  ERRORS AND ERROR TRIPLES
+
+ERRORS AND ERROR TRIPLES
 
   When evaluation returns three values, where the first two are
   ordinary objects and the third is the ACL2 state, the result may be
@@ -120100,7 +120230,8 @@ Subtopics
   In the next section we discuss soft errors further, in the context of
   programming.
 
-  SEQUENTIAL PROGRAMMING
+
+SEQUENTIAL PROGRAMMING
 
   This section describes handy ways to modify state in steps, using
   macros that implement a sequence of [30m[47m[let][0m[0m or [30m[47m[mv-let][0m[0m bindings.
@@ -120179,7 +120310,8 @@ Subtopics
   either), and the same restriction holds for any code to be
   executed, such as the body of a [30m[47m[make-event][0m[0m form.
 
-  BINDING VARIABLES USING ERROR TRIPLES
+
+BINDING VARIABLES USING ERROR TRIPLES
 
   In this section we discuss the macro [30m[47mer-let*[0m[0m, which is a variant of
   the special form, [30m[47m[let*][0m[0m, that is useful when programming with
@@ -120224,7 +120356,8 @@ Subtopics
   returning a non-erroneous error triple even if the error flag was
   on.
 
-  BINDING STATE GLOBAL VARIABLES
+
+BINDING STATE GLOBAL VARIABLES
 
   In this section we introduce a utility, [30m[47m[state-global-let*][0m[0m, that is
   an analogue of [30m[47mlet*[0m[0m for state global variables.  Consider the
@@ -120241,11 +120374,13 @@ Subtopics
 
   See [state-global-let*] for more complete [documentation].
 
-  INPUT AND OUTPUT
+
+INPUT AND OUTPUT
 
   In ACL2, most input and output involves the ACL2 state.  See [io].
 
-  TIMINGS
+
+TIMINGS
 
   For how to obtain the time elapsed since the start of the ACL2
   session, see [read-run-time].
@@ -120256,7 +120391,8 @@ Subtopics
   To time an evaluation (though this really isn't about state), see
   [time$].
 
-  ENVIRONMENT AND SYSTEM
+
+ENVIRONMENT AND SYSTEM
 
   Next, we mention briefly some ways in which ACL2 interacts with its
   environment using the ACL2 state.
@@ -120267,7 +120403,8 @@ Subtopics
   For how to run a command in the host operating system, see
   [sys-call], [sys-call+], and [sys-call*].
 
-  REMARKS ON EVENTS AND LD
+
+REMARKS ON EVENTS AND LD
 
   In general, undefined or surprising behavior may occur when using
   ACL2 [events] or calling [ld] in your programs.  In some cases ACL2
@@ -120284,7 +120421,8 @@ Subtopics
   able to do this in event contexts, where it is able to carry out
   such tracking accurately.
 
-  ADVANCED TOPICS
+
+ADVANCED TOPICS
 
   ACL2 provides the function [30m[47mtrans-eval[0m[0m to evaluate an arbitrary form
   (after translating it to a [term], i.e., into internal form).  For
@@ -150120,6 +150258,7 @@ Logical Definitions
  (TAMEP-FUNCTIONP (POINTERS)
                   "See [tame].")
  (TAMEP-LAMBDAP (POINTERS) "See [tame].")
+ (TAU (POINTERS) "See [tau-system].")
  (TAU-DATA
   (TAU-SYSTEM)
   "To see what tau knows about a function symbol

@@ -31,6 +31,15 @@
   :rule-classes ((:forward-chaining))
   :hints (("Goal" :in-theory (enable canonical-address-p))))
 
+;; Adding a small offset to a canonical address gives a signed 64-bit value.
+;; Like x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64,
+;; but that one is in a book we want to avoid including.
+(defthm signed-byte-p-64-of-+-when-canonical-address-p-and-signed-byte-p-16
+  (implies (and (signed-byte-p 16 x)
+                (canonical-address-p y))
+           (signed-byte-p 64 (+ x y)))
+  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
+
 (defthm canonical-address-p-of-if
   (equal (canonical-address-p (if test a1 a2))
          (if test

@@ -257,3 +257,24 @@
                                     (interp-st-bfrs-ok-implies))))))
 
 
+;; Frame setup preserves the interpreter-state BFR invariant.
+
+(std::make-returnspec-config :hints-sub-returnnames t)
+
+(defret bfrs-okp-of-<fn>
+  (implies (and (interp-st-bfrs-ok interp-st)
+                (interp-st-bfr-listp (fgl-object-bindings-bfrlist bindings) interp-st))
+           (interp-st-bfrs-ok new-interp-st))
+  :hints (("Goal" :in-theory (enable interp-st-push-rule-frame interp-st-bfrs-ok
+                                     stack$a-set-phase stack$a-set-rule stack$a-set-bindings
+                                     stack$a-push-frame major-stack-bfrlist major-frame-bfrlist)))
+  :fn interp-st-push-rule-frame)
+
+(defret bfrs-okp-of-<fn>
+  (implies (and (interp-st-bfrs-ok interp-st)
+                (interp-st-bfr-listp (fgl-object-bindings-bfrlist bindings) interp-st))
+           (interp-st-bfrs-ok new-interp-st))
+  :hints (("Goal" :in-theory (enable interp-st-push-non-rule-frame interp-st-bfrs-ok
+                                     stack$a-set-phase stack$a-set-rule stack$a-set-bindings
+                                     stack$a-push-frame major-stack-bfrlist major-frame-bfrlist)))
+  :fn interp-st-push-non-rule-frame)

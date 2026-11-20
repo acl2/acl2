@@ -35,7 +35,6 @@
               treeset::heap<-trichotomy
               )
             (set-difference-eq *std-pkg-symbols*
-                               ;; TODO: prune some of these
                                #!STD
                                '(cardinality
                                  count

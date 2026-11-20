@@ -767,6 +767,7 @@
        ((erp valid-trans-units)
         (c$::valid-trans-ensemble (code-ensemble->trans-units code)
                                       (code-ensemble->ienv code)
+                                      (code-ensemble->strict-merge code)
                                       nil))
        ;; TODO: remove after it is proved that validation produces an annotated
        ;; term.

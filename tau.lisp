@@ -29,8 +29,8 @@
 ; Prelude:  General-Purpose Functions Having Nothing Specific to do with Tau
 
 ; A ``singleton evg list'' is a singleton list with an evg in it.  A ``neg-evg
-; list'' is a duplicate-free list of singleton evg lists, ordered ascending
-; almost according to lexorder.  The ``almost'' is due to the fact that we let
+; list'' is a duplicate-free list of singleton evg lists, almost ordered
+; ascending according to lexorder.  The ``almost'' is due to the fact that we let
 ; the singleton list containing NIL be the smallest thing in our ordering.  So
 ; a typical neg-evg list might be ((NIL) (0) (1) (2) (A) (B) (C)).
 ; Foreshadowing: a neg-evg list represents the evgs ruled out by a tau.  If a
@@ -1341,21 +1341,26 @@
 
 ; Note that the universal tau-interval (where all components are nil)
 
-; (make tau-interval
-;       :recog  nil  ; not known to be a number
-;       :lo     nil  ; negative infinity
-;       :lo-rel nil  ; <=
-;       :hi-rel nil  ; <=
-;       :hi     nil  ; positive infinity
-;       )
+(defconst *tau-universal-interval*
+  (make tau-interval
+        :domain  nil ; not known to be a number
+        :lo      nil  ; negative infinity
+        :lo-rel  nil  ; <=
+        :hi-rel  nil  ; <=
+        :hi      nil  ; positive infinity
+        ))
 
-; makes absolutely no restriction on the subject.  We use nil to represent this
-; tau-interval (and the variants with strict relations) rather than create and
-; subsequently test against (nil (nil . nil) . (nil . nil)).  However, we
-; exploit the fact that (access tau-interval nil :hi-rel), for example,
-; computes to nil.  (Tests show that it is faster to execute (access
+; makes absolutely no restriction on the subject.  We generally use nil to
+; represent this tau-interval (and the variants with strict relations) rather
+; than create and subsequently test against (nil (nil . nil) . (nil . nil)).
+; However, we exploit the fact that (access tau-interval nil :hi-rel), for
+; example, computes to nil.  (Tests show that it is faster to execute (access
 ; tau-interval x :hi-rel) than (if x (access tau-interval x :hi-rel) nil) even
-; when x is nil.)
+; when x is nil.)  However, we have occasion to use the consed up version of
+; the universal interval as a starting point for populating fields of an
+; unrestrained interval.  Claude noticed that if we're treating nil as the
+; universal interval and we do (change tau-interval nil :domain dom) we
+; get an ill-formed interval!
 
 ; If an interval's domain is the integers, we narrow the bounds to integers and
 ; weaken the relation.  For example, instead of creating
@@ -3770,9 +3775,50 @@
    ((eq tau1 *tau-contradiction*) t)
    ((eq tau2 *tau-contradiction*) nil)
    ((access tau tau2 :pos-evg)
+
+; If tau2 asserts that its subject is an explicit constant, then so must
+; tau1.  But in Version 8.7, we stopped there and returned t indicating that
+; M[tau1] --> M[tau2].  But Claude constructed a series of examples showing
+; that that is inadequate if the two taus were constructed under different
+; enabled structures.  For example, suppose we're trying to apply a signature
+; rule derived from the theorem
+
+; (IMPLIES (AND (EQUAL X 'D) (NOT (P X)))
+;          (INTEGERP (F X)))
+
+; But suppose that formula is valid because (p 'D) is true, so the hyp of the
+; signature rule is inconsistent.  Now if (:e p) is enabled when the signature
+; theorem is being processed by tau, we'd discover the inconsistency and not
+; store a rule.  But if (:e p) is disabled, we store the rule with the tau
+; (((D)) NIL NIL (286 . P)) as the hypothesis, which is just (and (equal x 'D)
+; (not (p x))).  Now later, when trying to prove (integerp (f 'd)) the
+; signature rule is tried and we need to show that the tau (((D)) NIL NIL
+; . NIL) (the tau of the instance of the variable X) implies the tau of the
+; signature.  And they both claim x='D.  But note that we don't know (not (p
+; d)).  In the Version 8.7 we reported that the signature is ok to fire because
+; the :pos-evgs agree.  But in fact, the hyp of the signature is contradictory
+; and we didn't notice.  So now, we check the other fields of the two taus to
+; make sure that everything in the signature's hyp is satisfied by the actuals.
+
+; The example just described is
+; books/system/tests/tau-implies-disabled-exec.lisp.  Related examples by
+; Claude on the same directory are
+; tau-implies-pos-evg-ignores-interval.lisp
+; tau-implies-pos-evg-ignores-recognizers.lisp
+
     (if (access tau tau1 :pos-evg)
-        (equal (access tau tau2 :pos-evg)
-               (access tau tau1 :pos-evg))
+        (and (equal (access tau tau2 :pos-evg)
+                    (access tau tau1 :pos-evg))
+             (not (member-neg-evgs (access tau tau1 :pos-evg)
+                                   (access tau tau2 :neg-evgs)))
+             (all-eval-valp t (access tau tau2 :pos-pairs)
+                            (access tau tau1 :pos-evg)
+                            ens wrld)
+             (all-eval-valp nil (access tau tau2 :neg-pairs)
+                            (access tau tau1 :pos-evg)
+                            ens wrld)
+             (eval-tau-interval (access tau tau2 :interval)
+                                (car (access tau tau1 :pos-evg))))
         nil))
    ((access tau tau1 :pos-evg)
 
@@ -4013,20 +4059,46 @@
 ; (delete-consecutive-integers-downward 8 '((3)(4)(7)(8)(17)))
 ; = (mv 6 '((3) (4)))
 
+(defun collect-<?-x-k1 (rel k neg-evgs)
+
+; See the comment in collect-<?-x-k below.  Here we know that (NIL) is
+; NOT an element of neg-evgs.
+
+  (cond ((endp neg-evgs) nil)
+        ((acl2-numberp (car (car neg-evgs)))
+         (if (<?-number-v-rational rel (car (car neg-evgs)) k)
+             (cons (car neg-evgs)
+                   (collect-<?-x-k1 rel k (cdr neg-evgs)))
+             (collect-<?-x-k1 rel k (cdr neg-evgs))))
+; All remaining elements of neg-evgs are non-numeric.  They are all coerced to
+; 0 by rel.  So we keep them all if 0 is acceptable and throw them all away
+; otherwise:
+        ((if rel (< 0 k) (<= 0 k))
+         neg-evgs)
+        (t nil)))
+
 (defun collect-<?-x-k (rel k neg-evgs)
 
 ; Provided the assumptions below are satisfied, we collect those x in neg-evgs
 ; such that (<? rel x k).  More precisely, rel denotes < (rel = t) or <= (rel =
 ; nil), and k is a rational; together they define the upper bound on an
-; interval.  Neg-evgs is a list of singletons.  We assume it is lexordered,
-; ascending, and duplicate-free.  It may or may not contain non-numbers
-; (depending on the domain of the interval, which we don't know here because we
-; don't see that much advantage in knowing.)  We collect those elements of
-; neg-evgs that satisfy rel and k, i.e., those that fit within the upper bound
-; of the interval.  Note that if k were nil, representing positive infinity,
-; and the inequalities above were extended in the obvious way, this function
-; would just return neg-evgs, so there is no reason to support k = nil; just
-; don't use the function in that case.
+; interval.  Neg-evgs is a list of singletons.  Recall (from the Prelude above)
+; neg-evgs is ``almost lexordered,'' ascending, and duplicate-free.  By
+; ``almost'' we mean that the singleton (NIL), if present, is first.  Neg-evgs
+; may or may not contain other non-numbers (depending on the domain of the
+; interval, which we don't know here because we don't see that much advantage
+; in knowing.)  We collect those elements of neg-evgs that satisfy rel and k,
+; i.e., those that fit within the upper bound of the interval.  Note that if k
+; were nil, representing positive infinity, and the inequalities above were
+; extended in the obvious way, this function would just return neg-evgs, so
+; there is no reason to support k = nil; just don't use the function in that
+; case.
+
+; We have to handle the (NIL) element of neg-evgs specially.  If (NIL) is in
+; the list, it is first.  We must keep it if (<? rel 0 k) is true.  We can't
+; ask (<? rel NIL k) because when used as an interval bound, NIL denotes an
+; infinity.  (See <?.)  But here we're using it as the false object which
+; coerces to 0 in arithmetic.
 
 ; Important Note: lexorder does NOT extend <=.  For example, (< 'abc 3) but it
 ; is not the case that (lexorder 'abc 3), because lexorder puts all numbers
@@ -4036,16 +4108,41 @@
 ; lexordering of neg-evgs here until we encounter the first non-acl2-numberp,
 ; at which point we know that all remaining elements are coerced to 0 by <.
 
+; Note: Claude found a bug in the ACL2  8.7 version of this function,
+; collect-<?-x-k, and its counterpart, collect-<?-k-x, having to do with our
+; failure to remember that neg-evgs is only ``almost'' lexordered (see the top
+; of this comment).  Those bugs were exploited to prove nil in
+; books/system/tests/tau-neg-evgs-nil-first.lisp and
+; books/system/tests/tau-neg-evgs-nil-first-lower-bound.lisp.
+
+  (cond ((endp neg-evgs) nil)
+        ((eq (car (car neg-evgs)) nil)
+
+; Leading neg-evg is (NIL).  So we collect it or not depending on whether
+; 0 <? k, since NIL is coerced to 0.
+
+         (if (<? rel 0 k)
+             (cons (car neg-evgs)
+                   (collect-<?-x-k1 rel k (cdr neg-evgs)))
+             (collect-<?-x-k1 rel k (cdr neg-evgs))))
+        (t (collect-<?-x-k1 rel k neg-evgs))))
+
+(defun collect-<?-k-x1 (rel k neg-evgs)
+
+; See the comments in collect-<?-x-k for general background on neg-evgs and
+; the comment in collect-<?-k-x for what this helper is doing.  Here we
+; know (NIL) is not an element of neg-evgs.
+
   (cond ((endp neg-evgs) nil)
         ((acl2-numberp (car (car neg-evgs)))
-         (if (<?-number-v-rational rel (car (car neg-evgs)) k)
+         (if (<?-rational-v-number rel k (car (car neg-evgs)))
              (cons (car neg-evgs)
-                   (collect-<?-x-k rel k (cdr neg-evgs)))
-             (collect-<?-x-k rel k (cdr neg-evgs))))
+                   (collect-<?-k-x1 rel k (cdr neg-evgs)))
+             (collect-<?-k-x1 rel k (cdr neg-evgs))))
 ; All remaining elements of neg-evgs are non-numeric.  They are all coerced to
 ; 0 by rel.  So we keep them all if 0 is acceptable and throw them all away
 ; otherwise:
-        ((if rel (< 0 k) (<= 0 k))
+        ((if rel (< k 0) (<= k 0))
          neg-evgs)
         (t nil)))
 
@@ -4056,17 +4153,16 @@
 ; details.
 
   (cond ((endp neg-evgs) nil)
-        ((acl2-numberp (car (car neg-evgs)))
-         (if (<?-rational-v-number rel k (car (car neg-evgs)))
+        ((eq (car (car neg-evgs)) nil)
+
+; Leading neg-evg is (NIL).  So we collect it or not depending on whether
+; k <? 0, since NIL is coerced to 0.
+
+         (if (<? rel k 0)
              (cons (car neg-evgs)
-                   (collect-<?-k-x rel k (cdr neg-evgs)))
-             (collect-<?-k-x rel k (cdr neg-evgs))))
-; All remaining elements of neg-evgs are non-numeric.  They are all coerced to
-; 0 by rel.  So we keep them all if 0 is acceptable and throw them all away
-; otherwise:
-        ((if rel (< k 0) (<= k 0))
-         neg-evgs)
-        (t nil)))
+                   (collect-<?-k-x1 rel k (cdr neg-evgs)))
+             (collect-<?-k-x1 rel k (cdr neg-evgs))))
+        (t (collect-<?-k-x1 rel k neg-evgs))))
 
 (defun adjust-upper-bound-with-neg-evgs (domain rel k neg-evgs)
 
@@ -4313,34 +4409,34 @@
 ; domain, squeeze both the initial lower and upper bounds of the interval.
 
           (mv-let
-           (lo-rel lo hi-rel hi)
-           (if (and (not (eq domain domain0))
-                    (eq domain 'INTEGERP))
-               (mv nil (squeeze-k nil lo-rel0 lo0) nil (squeeze-k t hi-rel0 hi0))
-               (mv lo-rel0 lo0 hi-rel0 hi0))
+            (lo-rel lo hi-rel hi)
+            (if (and (not (eq domain domain0))
+                     (eq domain 'INTEGERP))
+                (mv nil (squeeze-k nil lo-rel0 lo0) nil (squeeze-k t hi-rel0 hi0))
+                (mv lo-rel0 lo0 hi-rel0 hi0))
 
 ; If the more restrictive domain is INTEGERP, squeeze the new bound.
 
-           (mv-let
-            (rel k)
-            (if (eq domain 'INTEGERP)
-                (mv nil (squeeze-k upper-boundp rel k))
-                (mv rel k))
+            (mv-let
+              (rel k)
+              (if (eq domain 'INTEGERP)
+                  (mv nil (squeeze-k upper-boundp rel k))
+                  (mv rel k))
 
 ; Now we set lo, lo-rel, hi-rel, and hi to the most restrictive bounds we have.
 
-            (mv-let
-             (lo-rel lo)
-             (if (and (not upper-boundp)
-                      (lower-bound-> rel k lo-rel lo))
-                 (mv rel k)
-                 (mv lo-rel lo))
-             (mv-let
-              (hi-rel hi)
-              (if (and upper-boundp
-                       (upper-bound-< rel k hi-rel hi))
-                  (mv rel k)
-                  (mv hi-rel hi))
+              (mv-let
+                (lo-rel lo)
+                (if (and (not upper-boundp)
+                         (lower-bound-> rel k lo-rel lo))
+                    (mv rel k)
+                    (mv lo-rel lo))
+                (mv-let
+                  (hi-rel hi)
+                  (if (and upper-boundp
+                           (upper-bound-< rel k hi-rel hi))
+                      (mv rel k)
+                      (mv hi-rel hi))
 
 ; Note that we might have changed either or both of the bounds.  For example,
 ; if we changed the domain to INTEGERP, we might have moved both bounds.  In
@@ -4351,65 +4447,94 @@
 ; However, it is possible that we can do further adjustment via the neg-evgs,
 ; and we might have to adjust either or both of the bounds.
 
-              (mv-let
-               (new-lo-rel new-lo new-neg-evgs)
-               (if (and (equal lo-rel lo-rel0)
-                        (equal lo lo0))
-                   (mv lo-rel lo neg-evgs)
-                   (adjust-lower-bound-with-neg-evgs domain lo-rel lo neg-evgs))
-               (mv-let
-                (new-hi-rel new-hi new-neg-evgs)
-                (if (and (equal hi-rel hi-rel0)
-                         (equal hi hi0))
-                    (mv hi-rel hi new-neg-evgs)
-                    (adjust-upper-bound-with-neg-evgs domain hi-rel hi
-                                                      new-neg-evgs))
+                  (mv-let
+                    (new-lo-rel new-lo new-neg-evgs)
+                    (if (and (equal lo-rel lo-rel0)
+                             (equal lo lo0))
+                        (mv lo-rel lo neg-evgs)
+                        (adjust-lower-bound-with-neg-evgs domain lo-rel lo neg-evgs))
+                    (mv-let
+                      (new-hi-rel new-hi new-neg-evgs)
+                      (if (and (equal hi-rel hi-rel0)
+                               (equal hi hi0))
+                          (mv hi-rel hi new-neg-evgs)
+                          (adjust-upper-bound-with-neg-evgs domain hi-rel hi
+                                                            new-neg-evgs))
 
 ; So now the new, best bounds are given by new-lo-rel, new-lo, new-hi-rel, and
 ; new-hi, and the neg-evgs by new-neg-evgs.  Next we bind new-domain to
 ; ACL2-NUMBERP if it was completely unrestricted and the interval does not
 ; include 0; otherwise it is domain, as before.
 
-                (let ((new-domain
-                       (if (and (null domain)
-                                (or (positive-lower-boundp new-lo-rel new-lo)
-                                    (negative-upper-boundp new-hi-rel new-hi)))
-                           'acl2-numberp
-                           domain)))
+                      (let ((new-domain
+                             (if (and (null domain)
+                                      (or (positive-lower-boundp new-lo-rel new-lo)
+                                          (negative-upper-boundp new-hi-rel new-hi)))
+                                 'acl2-numberp
+                                 domain)))
 
 ; Even if the domain has been changed to ACL2-NUMBERP, we need not further
 ; filter the :neg-evgs: they will have been filtered by the adjustments to
 ; accommodate the interval bounds which are away from 0.  It remains only to
 ; see if this interval is empty or a singleton.
 
-                  (cond
-                   ((and (eq  new-domain domain0)
-                         (eq  new-lo-rel lo-rel0)
-                         (eql new-lo lo0)
-                         (eq  new-hi-rel hi-rel0)
-                         (eql new-hi hi0))
-                    tau)
-                   ((empty-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi)
-                    *tau-contradiction*)
-                   ((and new-domain
-                         (singleton-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi))
+                        (cond
+                         ((and (eq  new-domain domain0)
+                               (eq  new-lo-rel lo-rel0)
+                               (eql new-lo lo0)
+                               (eq  new-hi-rel hi-rel0)
+                               (eql new-hi hi0))
+                          tau)
+                         ((empty-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi)
+                          *tau-contradiction*)
+                         ((and new-domain
+                               (singleton-tau-intervalp new-lo-rel new-lo new-hi-rel new-hi))
 
-; If the interval is a singleton, e.g., k <= x <= k, then if the domain is
-; non-nil, we know the tau is the identity.  (In this case we will also know
-; that the domain is either INTEGERP or RATIONALP as per the type of k.)  The
-; only case in which a singleton interval does not convert to a constant is if
-; k=0 and the new-domain is nil.  Furthermore, if k/=0, then domain is never
-; nil.
+; If the interval is a singleton, e.g., new-hi <= x <= new-hi, then if the
+; domain is non-nil, we know the tau is the identity, i.e., new-hi should
+; become the :pos-evg of the new tau.  BUT WAIT! What if there already is a
+; :pos-evg, different from new-hi?  That would be a contradiction.  (In the
+; normal case we will also know that the domain is either INTEGERP or RATIONALP
+; as per the type of new-hi.)  The only case in which a singleton interval does
+; not convert to a constant or contradiction is if new-hi=0 and the new-domain
+; is nil.  Furthermore, if new-hi /= 0, then domain is never nil.  In an
+; earlier version of this function we forgot to check that whether tau already
+; had a :pos-evg that was different.  Claude found this bug and we fixed it by
+; adding the code below that tests :pos-evg.  See
+; books/system/tests/tau-bound-overwrites-pos-evg.lisp.
 
-                    (set-tau-pos-evg tau (cons new-hi nil) ens wrld))
-                   (t (change tau tau
-                              :interval (make tau-interval
-                                              :domain new-domain
-                                              :lo new-lo
-                                              :lo-rel new-lo-rel
-                                              :hi-rel new-hi-rel
-                                              :hi new-hi)
-                              :neg-evgs new-neg-evgs))))))))))))))
+; BUT WAIT again! What if its a singleton interval with a non-nil domain (so
+; we're inclined to think the subject is new-hi, but what if new-hi is in
+; neg-evgs?  Thanks again Claude, see
+; books/system/tests/tau-singleton-ignores-neg-evgs-signature.lisp and
+; books/system/tests/tau-singleton-ignores-neg-evgs.lisp.
+
+                          (let ((pos-evg (access tau tau :pos-evg))
+                                (new-pos-evg (cons new-hi nil)))
+                            (cond
+                             (pos-evg
+; There is a pos-evg in this tau.
+                              (if (equal (car pos-evg) new-hi)
+; New-hi already is the :pos-evg, so we don't change anything
+                                  tau
+; Otherwise, we have two different constants each of which is equal to the
+; subject of the tau.  This is a contradiction.
+                                  *tau-contradiction*))
+                             ((member-neg-evgs new-pos-evg
+                                               (access tau tau :neg-evgs))
+                              *tau-contradiction*)
+                             (t 
+; There's no known :pos-evg and new-pos-evg (i.e., new-hi) is not in neg-evgs,
+; so change :pos-evg.
+                              (set-tau-pos-evg tau new-pos-evg ens wrld)))))
+                         (t (change tau tau
+                                    :interval (make tau-interval
+                                                    :domain new-domain
+                                                    :lo new-lo
+                                                    :lo-rel new-lo-rel
+                                                    :hi-rel new-hi-rel
+                                                    :hi new-hi)
+                                    :neg-evgs new-neg-evgs))))))))))))))
 
 (defun add-to-tau1 (sign recog tau ens wrld)
 
@@ -4595,12 +4720,25 @@
             (if sign
                 (mv nil t)
               (mv t   nil)))
-          (tighten-bound tau
-                         nil ; new domain = ``no change''
-                         upper-boundp
-                         rel
-                         k
-                         ens wrld))))
+          (let ((tau1 (tighten-bound tau
+                                 nil ; new domain = ``no change''
+                                 upper-boundp
+                                 rel
+                                 k
+                                 ens wrld)))
+
+; The original tau now has a (possibly new) :interval in it.  If the tau has a
+; :pos-evg, we make sure that evg is in the interval.  If not, we signal a
+; contradiction.  In ACL2 Version 8.7 we failed to make this check.  Claude
+; pointed it out in books/system/tests/tau-combine-hard-error.lisp.
+
+            (cond
+             ((or (eq tau1 *tau-contradiction*)
+		  (and (access tau tau1 :pos-evg)
+                       (not (eval-tau-interval (access tau tau1 :interval)
+                                               (car (access tau tau1 :pos-evg))))))
+              *tau-contradiction*)
+             (t tau1))))))
 
 ; That completes the code for adding a signed :lessp-x-k or :lessp-k-x.
 
@@ -7169,6 +7307,7 @@
        (case-match concl
          (('BOOLEANP (f v))
           (and (symbolp f)
+               (not (eq f 'NOT))
                (symbolp v)))
          (& nil))))
 
@@ -10813,14 +10952,16 @@
                                      :interval))
                  (acceptable-doms (nth (car bounder-args) doms-lst)))
              (mv-let (flg dom)
-                     (find-first-acceptable-domain
-                      (access tau-interval actual-int :domain)
-                      acceptable-doms)
-                     (declare (ignore flg))
-                     (cons (change tau-interval actual-int :domain dom)
-                           (collect-bounder-args actual-tau-lst
-                                                 doms-lst
-                                                 (cdr bounder-args))))))))
+               (find-first-acceptable-domain
+                (access tau-interval actual-int :domain)
+                acceptable-doms)
+               (declare (ignore flg))
+               (cons (change tau-interval (or actual-int
+                                              *tau-universal-interval*)
+                             :domain dom)
+                     (collect-bounder-args actual-tau-lst
+                                           doms-lst
+                                           (cdr bounder-args))))))))
 
 (defun bounding-interval (bc actual-tau-lst wrld)
 

@@ -166,7 +166,6 @@
                     (tree-lookup key right))))
   :induct t
   :enable (tree-join
-           tree-lookup
            data::<<-rules
            <<-when-<<-all-l-and-in-of-tree-key-set
            <<-when-<<-all-r-and-in-of-tree-key-set))

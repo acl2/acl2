@@ -165,7 +165,7 @@
 ;; partial unifying subst is stored under that signature.
 
 
-  
+
 
 ;; Heuristic info about a constraint rule.
 ;; We'll look up the theorem in the world, so it doesn't need to be stored
@@ -490,7 +490,7 @@
   (b* (((when (atom lit-patterns)) (value nil))
        ((list var term) (car lit-patterns))
        ((er trans) (acl2::translate term t t nil 'def-fgl-boolean-constraint (w state)
-                              state))
+                                    state))
        ((er rest) (gbc-translate-lit-alist (cdr lit-patterns) state)))
     (value (cons (cons var trans) rest))))
 
@@ -499,7 +499,7 @@
 (define def-fgl-boolean-constraint-fn (name lit-patterns syntaxp body hints state)
   :mode :program
   (b* (((er syntaxp-trans) (acl2::translate syntaxp t t nil 'def-fgl-boolean-constraint
-                                      (w state) state))
+                                            (w state) state))
        ((er alist) (gbc-translate-lit-alist lit-patterns state))
        (body1 `(let ,(pairlis$ (strip-cars lit-patterns)
                                (pairlis$ (pairlis$
@@ -595,7 +595,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
 
 
   (defmacro def-fgl-boolean-constraint (name &key bindings (syntaxp ''t) body
-                                            hints)
+                                             hints)
     `(make-event
       (def-fgl-boolean-constraint-fn
         ',name ',bindings ',syntaxp ',body ',hints state))))
@@ -606,11 +606,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (equal (assoc k x)
                          (hons-assoc-equal k x)))))
 
-(defthm member-bfrlist-of-lookup-in-fgl-object-bindings
-  (implies (and (not (member v (fgl-object-bindings-bfrlist x)))
-                (pseudo-var-p k))
-           (not (member v (fgl-object-bfrlist (cdr (hons-assoc-equal k x))))))
-  :hints(("Goal" :in-theory (enable fgl-object-bindings-bfrlist hons-assoc-equal))))
+
 
 (define gbc-signature ((common-vars pseudo-var-list-p)
                        (subst fgl-object-bindings-p))
@@ -729,7 +725,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (not (member v (constraint-tuplelist-bfrlist tuples))))
              (not (member v (constraint-tuplelist-bfrlist new-tuples))))
     :hints(("Goal" :in-theory (e/d (constraint-tuplelist-bfrlist
-                                      constraint-tuple-bfrlist)
+                                    constraint-tuple-bfrlist)
                                    ((:d gbc-add-substs-to-existing-tuple)))
             :induct <call> :expand (<call>)))))
 
@@ -814,7 +810,7 @@ prior to introducing the constraint rule above, but succeed after:</p>
                   (not (member v (fgl-object-bindingslist-bfrlist acc))))
              (not (member v (fgl-object-bindingslist-bfrlist incomplete-substs))))
     :hints(("Goal" :in-theory (enable fgl-object-bindingslist-bfrlist)))))
-    
+
 
 
 (local (defthm pseudo-var-list-p-strip-cars-of-fgl-object-bindings
@@ -1051,35 +1047,35 @@ prior to introducing the constraint rule above, but succeed after:</p>
 #||
 
 (fgl::def-fgl-boolean-constraint logbitp-n-m
-       :bindings ((x (logbitp n a))
-                  (y (logbitp m a)))
-       :syntaxp (and (acl2::<< n m)
-                     (not (and (atom n) (atom m))))
-       :body (implies (equal n m)
-                      (equal x y)))
+:bindings ((x (logbitp n a))
+(y (logbitp m a)))
+:syntaxp (and (acl2::<< n m)
+(not (and (atom n) (atom m))))
+:body (implies (equal n m)
+(equal x y)))
 
 (time$ (b* ((ccat (table-alist 'fgl-bool-constraints (w state)))
-     ((mv substs ccat)
-      (gbc-process-new-lit '(:g-apply logbitp (fff) q) ccat state))
-     (- (cw "substs1: ~x0~%" substs))
-     (ccat (hons-shrink-alist ccat nil))
-     (state (f-put-global 'ccat1 ccat state))
-     ((mv substs ccat)
-      (gbc-process-new-lit '(:g-apply logbitp (qwr) b) ccat state))
-     (- (cw "substs2: ~x0~%" substs))
-     (ccat (hons-shrink-alist ccat nil))
-     (state (f-put-global 'ccat2 ccat state))
-     ((mv substs ccat)
-      (gbc-process-new-lit '(:g-apply logbitp (qwf) q) ccat state))
-     (- (cw "substs3: ~x0~%" substs))
-     (ccat (hons-shrink-alist ccat nil))
-     (state (f-put-global 'ccat3 ccat state))
-     ((mv substs ccat)
-      (gbc-process-new-lit '(:g-apply logbitp (fff) b) ccat state))
-     (- (cw "substs4: ~x0~%" substs))
-     (ccat (hons-shrink-alist ccat nil))
-     (state (f-put-global 'ccat3 ccat state)))
-  state))
+((mv substs ccat)
+(gbc-process-new-lit '(:g-apply logbitp (fff) q) ccat state))
+(- (cw "substs1: ~x0~%" substs))
+(ccat (hons-shrink-alist ccat nil))
+(state (f-put-global 'ccat1 ccat state))
+((mv substs ccat)
+(gbc-process-new-lit '(:g-apply logbitp (qwr) b) ccat state))
+(- (cw "substs2: ~x0~%" substs))
+(ccat (hons-shrink-alist ccat nil))
+(state (f-put-global 'ccat2 ccat state))
+((mv substs ccat)
+(gbc-process-new-lit '(:g-apply logbitp (qwf) q) ccat state))
+(- (cw "substs3: ~x0~%" substs))
+(ccat (hons-shrink-alist ccat nil))
+(state (f-put-global 'ccat3 ccat state))
+((mv substs ccat)
+(gbc-process-new-lit '(:g-apply logbitp (fff) b) ccat state))
+(- (cw "substs4: ~x0~%" substs))
+(ccat (hons-shrink-alist ccat nil))
+(state (f-put-global 'ccat3 ccat state)))
+state))
 
 ||#
 

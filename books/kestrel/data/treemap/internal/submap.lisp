@@ -442,7 +442,8 @@
                       (a (tree-submap-p-sk-witness x (tree->left y))))
            (:instance tree-lookup-when-tree-submap-p-and-in-of-tree-key-set
                       (key (tree-submap-p-sk-witness x (tree->left y)))))
-     :enable tree-submap-p-pick-a-point-polar
+     :enable (tree-submap-p-pick-a-point-polar
+              in-of-tree-key-set-when-not-tree-empty-p)
      :disable (treeset::in-when-in-and-subset
                treeset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))
@@ -470,7 +471,8 @@
                       (a (tree-submap-p-sk-witness x (tree->right y))))
            (:instance tree-lookup-when-tree-submap-p-and-in-of-tree-key-set
                       (key (tree-submap-p-sk-witness x (tree->right y)))))
-     :enable tree-submap-p-pick-a-point-polar
+     :enable (tree-submap-p-pick-a-point-polar
+              in-of-tree-key-set-when-not-tree-empty-p)
      :disable (treeset::in-when-in-and-subset
                treeset::in-when-subset-and-in
                tree-lookup-when-in-of-tree-key-set-and-tree-submap-p-forward-chaining))))

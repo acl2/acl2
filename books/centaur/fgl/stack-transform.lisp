@@ -32,6 +32,7 @@
 
 (include-book "logicman-transform")
 (include-book "stack-ev")
+(include-book "binding-domains")
 (include-book "constraint-db")
 (include-book "scratch-isomorphic")
 
@@ -76,9 +77,51 @@
   :fn fgl-object-alist-map-bfrs)
 
 
+(define fgl-arglist-map-bfrs ((x fgl-arglist-p)
+                              litarr
+                              (memo fgl-object-map-bfrs-memo-p))
+  :guard (and (< 0 (lits-length litarr))
+              (bfr-listp (fgl-arglist-bfrlist x)
+                         (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
+  :prepwork ((local (in-theory (enable fgl-arglist-bfrlist fgl-arg-bfrlist))))
+  :returns (mv (new-x fgl-arglist-p)
+               (new-memo fgl-object-map-bfrs-memo-p))
+  (b* (((when (atom x)) (mv nil (fgl-object-map-bfrs-memo-fix memo litarr)))
+       (arg (car x))
+       ((mv arg memo)
+        (fgl-arg-case arg
+          :unbound (mv (fgl-arg-fix arg) (fgl-object-map-bfrs-memo-fix memo litarr))
+          :obj (b* (((mv obj memo) (fgl-object-map-bfrs-memo arg.obj litarr memo)))
+                 (mv (fgl-arg-obj obj) memo))))
+       ((mv rest memo) (fgl-arglist-map-bfrs (cdr x) litarr memo)))
+    (mv (cons arg rest) memo))
+  ///
+  (defret fgl-arglist-unbounds-of-<fn>
+    (equal (fgl-arglist-unbounds new-x)
+           (fgl-arglist-unbounds x))
+    :hints (("Goal" :in-theory (enable fgl-arglist-unbounds))))
+
+  (defret len-of-<fn>
+    (equal (len new-x) (len x)))
+
+  (defret bfr-listp-of-<fn>
+    (implies (and (bfr-litarr-p (fgl-arglist-bfrlist x) litarr
+                                (bfrstate->bound bfrstate))
+                  (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
+             (bfr-listp (fgl-arglist-bfrlist new-x) bfrstate)))
+
+  (defret concretize-of-<fn>
+    (implies (bfr-litarr-correct-p (fgl-arglist-bfrlist x)
+                                   (fgl-env->bfr-vals env)
+                                   litarr logicman2 logicman)
+             (equal (fgl-arglist-concretize new-x env logicman2)
+                    (fgl-arglist-concretize x env logicman)))
+    :hints (("Goal" :in-theory (enable fgl-arglist-concretize)))))
+
+
 (define fgl-object-bindings-map-bfrs ((x fgl-object-bindings-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                      litarr
+                                      (memo fgl-object-map-bfrs-memo-p))
   :prepwork ((local (defthm fgl-object-alist-p-when-fgl-object-bindings-p
                       (implies (fgl-object-bindings-p x)
                                (fgl-object-alist-p x))
@@ -122,6 +165,15 @@
                (new-memo fgl-object-map-bfrs-memo-p))
   (fgl-object-alist-map-bfrs-memo (fgl-object-bindings-fix x) litarr memo)
   ///
+  (defret alist-keys-of-<fn>
+    (equal (alist-keys new-x)
+           (alist-keys (fgl-object-bindings-fix x)))
+    :hints (("Goal" :in-theory (enable fgl-object-bindings-map-bfrs
+                                       fgl-object-alist-map-bfrs
+                                       fgl-object-bindings-fix
+                                       alist-keys)
+             :induct (fgl-object-bindings-fix x))))
+
   (defret bfr-listp-of-<fn>
     (implies (and (bfr-litarr-p (fgl-object-bindings-bfrlist x) litarr
                                 (bfrstate->bound bfrstate))
@@ -144,8 +196,8 @@
 
 
 (define constraint-instance-map-bfrs ((x constraint-instance-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                      litarr
+                                      (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-instance-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -173,8 +225,8 @@
     :hints(("Goal" :in-theory (enable fgl-constraint-instance-concretize)))))
 
 (define constraint-instancelist-map-bfrs ((x constraint-instancelist-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                          litarr
+                                          (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-instancelist-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -213,8 +265,8 @@
 
 
 (define scratchobj-map-bfrs ((x scratchobj-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                             litarr
+                             (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (scratchobj->bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -223,15 +275,21 @@
   :prepwork ((local (in-theory (e/d (scratchobj->bfrlist)
                                     (bfrlist-of-scratchobj-fgl-obj->val
                                      bfrlist-of-scratchobj-fgl-objlist->val
+                                     bfrlist-of-scratchobj-fgl-arglist->val
+                                     bfrlist-of-scratchobj-fgl-bindings->val
                                      bfrlist-of-scratchobj-bfr->val
                                      bfrlist-of-scratchobj-bfrlist->val
                                      bfrlist-of-scratchobj-cinst->val
                                      bfrlist-of-scratchobj-cinstlist->val)))))
   (scratchobj-case x
     :fgl-obj (b* (((mv ans memo) (fgl-object-map-bfrs-memo x.val litarr memo)))
-              (mv (scratchobj-fgl-obj ans) memo))
+               (mv (scratchobj-fgl-obj ans) memo))
     :fgl-objlist (b* (((mv ans memo) (fgl-objectlist-map-bfrs-memo x.val litarr memo)))
-                  (mv (scratchobj-fgl-objlist ans) memo))
+                   (mv (scratchobj-fgl-objlist ans) memo))
+    :fgl-arglist (b* (((mv ans memo) (fgl-arglist-map-bfrs x.val litarr memo)))
+                   (mv (scratchobj-fgl-arglist ans) memo))
+    :fgl-bindings (b* (((mv ans memo) (fgl-object-bindings-map-bfrs x.val litarr memo)))
+                    (mv (scratchobj-fgl-bindings ans) memo))
     :bfr (mv (scratchobj-bfr (bfr-map x.val litarr)) (fgl-object-map-bfrs-memo-fix memo))
     :bfrlist (mv (scratchobj-bfrlist (bfrlist-map x.val litarr)) (fgl-object-map-bfrs-memo-fix memo))
     :cinst (b* (((mv ans memo) (constraint-instance-map-bfrs x.val litarr memo)))
@@ -262,8 +320,8 @@
     :hints(("Goal" :in-theory (enable scratchobj-isomorphic)))))
 
 (define scratchlist-map-bfrs ((x scratchlist-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                              litarr
+                              (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (scratchlist-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -295,8 +353,8 @@
 
 
 (define minor-frame-map-bfrs ((x minor-frame-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                              litarr
+                              (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (minor-frame-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -429,8 +487,8 @@
 
 
 (define fgl-object-bindingslist-map-bfrs ((x fgl-object-bindingslist-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                          litarr
+                                          (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (fgl-object-bindingslist-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -450,8 +508,8 @@
 
 
 (define sig-table-map-bfrs ((x sig-table-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                            litarr
+                            (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (sig-table-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -477,8 +535,8 @@
 
 
 (define constraint-tuple-map-bfrs ((x constraint-tuple-p)
-                              litarr
-                              (memo fgl-object-map-bfrs-memo-p))
+                                   litarr
+                                   (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-tuple-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -498,8 +556,8 @@
 
 
 (define constraint-tuplelist-map-bfrs ((x constraint-tuplelist-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                       litarr
+                                       (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-tuplelist-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -520,8 +578,8 @@
 
 
 (define constraint-table-map-bfrs ((x constraint-table-p)
-                                     litarr
-                                     (memo fgl-object-map-bfrs-memo-p))
+                                   litarr
+                                   (memo fgl-object-map-bfrs-memo-p))
   :guard (and (< 0 (lits-length litarr))
               (bfr-listp (constraint-table-bfrlist x)
                          (bfrstate (bfrmode :aignet) (1- (lits-length litarr)))))
@@ -573,3 +631,24 @@
                   (equal (bfrstate->mode bfrstate) (bfrmode :aignet)))
              (bfr-listp (constraint-db-bfrlist new-x) bfrstate))))
 
+(defret fgl-bindings-domain-of-<fn>
+  (equal (fgl-bindings-domain new-x)
+         (fgl-bindings-domain x))
+  :hints (("Goal" :in-theory (enable fgl-bindings-domain <fn>
+                                     fgl-object-alist-map-bfrs fgl-object-bindings-fix)
+           :induct (fgl-object-bindings-fix x)))
+  :fn fgl-object-bindings-map-bfrs)
+
+(defret minor-stack-binding-domains-of-<fn>
+  (equal (minor-stack-binding-domains new-x)
+         (minor-stack-binding-domains x))
+  :hints (("Goal" :in-theory (enable minor-stack-binding-domains
+                                     minor-frame-map-bfrs <fn>)))
+  :fn minor-stack-map-bfrs)
+
+(defret stack-binding-domains-of-<fn>
+  (equal (stack-binding-domains new-x)
+         (stack-binding-domains x))
+  :hints (("Goal" :in-theory (enable stack-binding-domains
+                                     major-frame-map-bfrs <fn>)))
+  :fn major-stack-map-bfrs)

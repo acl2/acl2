@@ -1,0 +1,46 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFUN F1 (X) X)
+
+Since F1 is non-recursive, its admission is trivial.  We observe that
+the type of F1 is described by the theorem (EQUAL (F1 X) X).  
+
+Summary
+Form:  ( DEFUN F1 ...)
+Rules: NIL
+ F1
+ACL2 !>>
+
+HARD ACL2 ERROR in ACL2-READER:  ACL2 supports #. syntax only for #.*a*,
+where *a* has been defined by DEFCONST.  Thus the form #.*NO-SUCH-CONSTANT*
+is illegal.  See :DOC sharp-dot-reader.
+
+ACL2 !>>(DEFUN F2 (X) X)
+
+Since F2 is non-recursive, its admission is trivial.  We observe that
+the type of F2 is described by the theorem (EQUAL (F2 X) X).  
+
+Summary
+Form:  ( DEFUN F2 ...)
+Rules: NIL
+ F2
+ACL2 !>>(DEFUN F3 (X) (LIST (F1 X) (F2 X)))
+
+Since F3 is non-recursive, its admission is trivial.  We observe that
+the type of F3 is described by the theorem 
+(AND (CONSP (F3 X)) (TRUE-LISTP (F3 X))).  We used primitive type reasoning.
+
+Summary
+Form:  ( DEFUN F3 ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ F3
+ACL2 !>>Bye.
