@@ -107748,10 +107748,11 @@ Bug Fixes From AI via Eric Smith
   ([30m[47m*initial-untouchable-fns*[0m[0m), and added [30m[47mboot-strap-flg[0m[0m to the list
   of built-in state global variable symbols
   ([30m[47m*initial-untouchable-vars*[0m[0m).  This fixes several unsound
-  behaviors.
+  behaviors.  See [community-books] directory
+  [30m[47msystem/tests/untouchables/[0m[0m.
 
-  (CCL only) Added a workaround for unsoundnesss involving [30m[47m[truncate][0m[0m
-  and related functions, due to a {related CCL bug |
+  (CCL only) Added a workaround from AI for unsoundnesss involving
+  [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |
   https://github.com/Clozure/ccl/issues/733}, as described in a
   comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
   [30m[47macl2.lisp[0m[0m.
