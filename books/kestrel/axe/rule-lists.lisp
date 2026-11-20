@@ -178,8 +178,9 @@
             myif-becomes-boolif-axe
             myif-of-not
             myif-of-constant-when-not-nil
-            myif-same-test
-            myif-same-test2
+            myif-same-test ; rename
+            myif-same-test2 ; rename
+            myif-not-myif-same  ;bozo more like this? ; rename
             myif-same-arg1-arg2-when-booleanp
             myif-of-myif-of-nil-arg1-arg2
             myif-of-myif-of-nil-arg1-arg3
@@ -197,6 +198,7 @@
             ;; if-x-y-x
             ;; if-of-not-same-arg2
             ;; if-of-not-same-arg3
+            if-of-if-t-nil
 
             fix-when-acl2-numberp
             = ; introduces EQUAL
@@ -1984,8 +1986,8 @@
      len-of-bv-array-write
      all-unsigned-byte-p-of-bv-array-write
      true-listp-of-bv-array-write
-;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
-;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
+     ;; bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
+     ;; bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
      bvxor-list-base  ;move
      bvxor-list-unroll ;move
      bv-array-read-of-0-arg1
@@ -2094,8 +2096,8 @@
 (defun bit-blast-rules ()
   (declare (xargs :guard t))
   (append (bit-blast-rules-basic)
-          '(blast-bvmult-into-bvplus-constant-version-arg1 ;
-            blast-bvmult-into-bvplus-constant-version-arg2 ;
+          '(blast-bvmult-into-bvplus-constant-version-arg1
+            blast-bvmult-into-bvplus-constant-version-arg2
             bvplus-becomes-ripple-carry-adder
             ripple-carry-adder-recursive
             ripple-carry-adder-base
@@ -2142,14 +2144,12 @@
     ;; bvchop-of-bvnth
     ))
 
-
 (defun list-to-bv-array-rules ()
   (declare (xargs :guard t))
-  '(list-to-bv-array
-    list-to-bv-array-aux-base
+  '(list-to-byte-array ; opens to list-to-bv-array
+    list-to-bv-array
     list-to-bv-array-aux-unroll
-    list-to-byte-array ; wrapper for list-to-bv-array
-    ))
+    list-to-bv-array-aux-base))
 
 ;; (defun byte-array-to-bit-array-rules ()
 ;;   (declare (xargs :guard t))
@@ -2161,13 +2161,12 @@
 (defun yet-more-rules-non-jvm ()
   (declare (xargs :guard t))
   '(true-listp-of-myif
-
     integerp-of-myif
+    unsigned-byte-p-of-myif ;can be expensive?!
+    len-of-myif
 
     all-unsigned-byte-p-of-cons
-    unsigned-byte-p-of-myif ;can be expensive?!
     ;;myif-of-constant-lists ;trying without mon jul  5 21:14:49 2010
-    len-of-myif
 
 ;    logext-list-does-nothing
     ;;all-signed-byte-p-when-all-unsigned-byte-p
@@ -2208,9 +2207,7 @@
           ;; todo: a lot of cruft in here:
           '(;bvand-of-constant-tighten-axe ; warning: can change the size of the bvand
 
-            max-constants-lemma ;bozo more like this?
-            myif-not-myif-same  ;bozo more like this?
-
+            ;max-constants-lemma ;bozo more like this?
 
             bvuminus-1 ; introduces getbit
             bvuminus-of-bvplus
@@ -2282,7 +2279,6 @@
           ;; (logext-rules)
           (trim-rules) ; remove?
           ;(trim-helper-rules)      ;many dups here with the above...
-          (list-to-bv-array-rules) ;move to parents?
           ;;(yet-more-rules-jvm) ;TTODO: Drop this.  It includes JVM rules..  dropping this broke des-encrypt
           (yet-more-rules-non-jvm) ; not bv rules?
           (array-reduction-rules)
@@ -2337,7 +2333,7 @@
 ;but they get in the way by applying to locals in jvm
 (defun introduce-bv-array-rules ()
   (declare (xargs :guard t))
-  '(nth-becomes-bv-array-read
+  '(nth-becomes-bv-array-read ; rename: requires the list to be a constant
     ;; bvnth-becomes-bv-array-read
     nth-of-bv-array-write-becomes-bv-array-read
     ;cons-becomes-bv-array-write-gen
@@ -3153,8 +3149,6 @@
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append '(equal-nil-of-myif
-;basic rules:
-            if-of-if-t-nil
 ;    possible-exception-of-nil
 ;    len-of-update-nth-rewrite-2
             ;; nth-of-bvchop-becomes-nth2 ;yuck?
@@ -3184,6 +3178,7 @@
 (defun amazing-rules-spec-and-dag ()
   (declare (xargs :guard t))
   (append (amazing-rules-bv)
+          ;; (list-to-bv-array-rules) ; needed?
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
@@ -4199,10 +4194,12 @@
 ;     bvxor-all-ones            ;why? ;trying without
      )))
 
+;; TODO: Why different from unroll-spec-basic-rules?
 (defun unroll-spec-rules ()
   (declare (xargs :guard t))
   (append (amazing-rules-spec-and-dag) ;todo: reduce?
           (introduce-bv-array-rules)
+          (list-to-bv-array-rules)
           (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
           ))
 
@@ -4215,7 +4212,7 @@
            (amazing-rules-bv)
            (leftrotate-intro-rules) ; perhaps not needed if the specs already use rotate ops
            (list-rules) ; or we could allow the list functions to open (if both, watch for loops with list-rules and the list function openers)
-           ;; (introduce-bv-array-rules) ; todo: consider these
+           (introduce-bv-array-rules)
            ;; '(list-to-byte-array) ;; todo: add to a rule set (whatever mentions list-to-bv-array)
            (if-becomes-bvif-rules) ; since we want the resulting DAG to be pure
            (bvchop-list-rules) ; I think some rule introduces bvchop-list, like a fixing function
@@ -4229,7 +4226,7 @@
              nth-of-group
              ungroup-of-cons)
            ;; (bv-array-rules-simple)
-           ;; (list-to-bv-array-rules)
+           (list-to-bv-array-rules)
            ;; (set-difference-eq (core-rules-bv)
            ;;                    ;; these are kind of like trim rules, and can make the result worse:
            ;;                    '(;BVCHOP-OF-BVPLUS
