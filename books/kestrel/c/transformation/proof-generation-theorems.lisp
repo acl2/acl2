@@ -39,8 +39,8 @@
     "These are not congruence rules in the ACL2 technical sense,
      but they are theorems expressing congruence-like properties:
      given two constructs (before and after a transformation, i.e. old and new),
-     if the executions of their sub-constucts are equivalent,
-     then the executions of the super-constructa are equivalent.
+     if the executions of their sub-constructs are equivalent,
+     then the executions of the super-constructs are equivalent.
      Here `equivalent' means the following:
      if the execution of the old construct does not yield an error,
      neither does the execution of the new construct,
@@ -63,7 +63,7 @@
      the execution of the old construct not yielding an error,
      and in some cases about
      the execution of the sub-constructs of the new construct
-     (not the new construct itself) not yielding an error);
+     (not the new construct itself) not yielding an error;
      they also include hypotheses about
      the sub-constructs yielding the same results.
      While in some cases the equality of the results of the sub-constructs
