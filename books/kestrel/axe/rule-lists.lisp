@@ -2208,9 +2208,7 @@
           ;; todo: a lot of cruft in here:
           '(;bvand-of-constant-tighten-axe ; warning: can change the size of the bvand
 
-            max-constants-lemma ;bozo more like this?
-
-
+            ;max-constants-lemma ;bozo more like this?
 
             bvuminus-1 ; introduces getbit
             bvuminus-of-bvplus
