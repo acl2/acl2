@@ -99,6 +99,46 @@ fn flag(b: bool) -> &'static str {
     }
 }
 
+/// The two-letter abbreviation of a General_Category of unicode-properties,
+/// from the name of the variant.
+fn general_category_abbreviation(c: char) -> &'static str {
+    use unicode_properties::UnicodeGeneralCategory;
+    let name = format!("{:?}", c.general_category());
+    match name.as_str() {
+        "UppercaseLetter" => "Lu",
+        "LowercaseLetter" => "Ll",
+        "TitlecaseLetter" => "Lt",
+        "ModifierLetter" => "Lm",
+        "OtherLetter" => "Lo",
+        "NonspacingMark" => "Mn",
+        "SpacingMark" => "Mc",
+        "EnclosingMark" => "Me",
+        "DecimalNumber" => "Nd",
+        "LetterNumber" => "Nl",
+        "OtherNumber" => "No",
+        "ConnectorPunctuation" => "Pc",
+        "DashPunctuation" => "Pd",
+        "OpenPunctuation" => "Ps",
+        "ClosePunctuation" => "Pe",
+        "InitialPunctuation" => "Pi",
+        "FinalPunctuation" => "Pf",
+        "OtherPunctuation" => "Po",
+        "MathSymbol" => "Sm",
+        "CurrencySymbol" => "Sc",
+        "ModifierSymbol" => "Sk",
+        "OtherSymbol" => "So",
+        "SpaceSeparator" => "Zs",
+        "LineSeparator" => "Zl",
+        "ParagraphSeparator" => "Zp",
+        "Control" => "Cc",
+        "Format" => "Cf",
+        "Surrogate" => "Cs",
+        "PrivateUse" => "Co",
+        "Unassigned" => "Cn",
+        _ => die(&format!("unicode-properties: unknown category {name}")),
+    }
+}
+
 fn code_points(out: &mut impl Write) -> io::Result<()> {
     let mut columns = vec![
         "xids@unicode-ident",
@@ -111,6 +151,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         "nfc@unicode-normalization",
         "nfkd@unicode-normalization",
         "nfkc@unicode-normalization",
+        "gc@unicode-properties",
     ];
     if cfg!(feature = "have-unicode-xid") {
         columns.extend(["xids@unicode-xid", "xidc@unicode-xid"]);
@@ -121,6 +162,13 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             "xidc@regex-syntax",
             "pws@regex-syntax",
             "bidic@regex-syntax",
+            "di@regex-syntax",
+            "vs@regex-syntax",
+            "jc@regex-syntax",
+            "nchar@regex-syntax",
+            "dep@regex-syntax",
+            "pcm@regex-syntax",
+            "psyn@regex-syntax",
         ]);
     }
     #[cfg(feature = "have-regex-syntax")]
@@ -129,6 +177,13 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         regex_syntax_set("XID_Continue"),
         regex_syntax_set("Pattern_White_Space"),
         regex_syntax_set("Bidi_Control"),
+        regex_syntax_set("Default_Ignorable_Code_Point"),
+        regex_syntax_set("Variation_Selector"),
+        regex_syntax_set("Join_Control"),
+        regex_syntax_set("Noncharacter_Code_Point"),
+        regex_syntax_set("Deprecated"),
+        regex_syntax_set("Prepended_Concatenation_Mark"),
+        regex_syntax_set("Pattern_Syntax"),
     ];
 
     writeln!(out, "#cp;{}", columns.join(";"))?;
@@ -139,7 +194,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         };
         write!(
             out,
-            "{cp};{};{};{};{};{};{};{};{};{};{}",
+            "{cp};{};{};{};{};{};{};{};{};{};{};{}",
             flag(unicode_ident::is_xid_start(c)),
             flag(unicode_ident::is_xid_continue(c)),
             flag(ra_ap_rustc_lexer::is_id_start(c)),
@@ -150,6 +205,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             join(std::iter::once(c).nfc()),
             join(std::iter::once(c).nfkd()),
             join(std::iter::once(c).nfkc()),
+            general_category_abbreviation(c),
         )?;
         #[cfg(feature = "have-unicode-xid")]
         write!(
@@ -159,14 +215,9 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             flag(unicode_xid::UnicodeXID::is_xid_continue(c)),
         )?;
         #[cfg(feature = "have-regex-syntax")]
-        write!(
-            out,
-            ";{};{};{};{}",
-            flag(sets[0][cp as usize]),
-            flag(sets[1][cp as usize]),
-            flag(sets[2][cp as usize]),
-            flag(sets[3][cp as usize]),
-        )?;
+        for set in &sets {
+            write!(out, ";{}", flag(set[cp as usize]))?;
+        }
         writeln!(out)?;
     }
     Ok(())

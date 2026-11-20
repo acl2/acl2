@@ -73,7 +73,8 @@ def main():
     acl2_columns, acl2 = read(sys.argv[1])
     index = {name: i for i, name in enumerate(acl2_columns)}
     for name in ["xids", "xidc", "pws", "bidic", "bidif", "ccc", "fce",
-                 "dm", "nfd", "nfc", "nfkd", "nfkc"]:
+                 "dm", "nfd", "nfc", "nfkd", "nfkc", "gc", "di", "vs", "jc",
+                 "nchar", "dep", "pcm", "psyn"]:
         if name not in index:
             die("%s: no column %s" % (sys.argv[1], name))
 

@@ -380,3 +380,146 @@
 (test (not (nfd-memberp '(#x0071 #x0307 #x0323) *v18*)))
 (test (canonically-ordered-p '(#x0071 #x0323 #x0307) *v18*))
 (test (nfd-memberp '(#x0071 #x0323 #x0307) *v18*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; General_Category: one code point for each of the thirty values.
+
+(defmacro test-general-category (cp ver constructor)
+  `(test (equal (code-point-general-category ,cp ,ver) (,constructor))))
+
+(test-general-category #x0041 *v17* general-category-uppercase-letter) ; A
+(test-general-category #x0061 *v17* general-category-lowercase-letter) ; a
+(test-general-category #x01C5 *v17* general-category-titlecase-letter)
+(test-general-category #x02B0 *v17* general-category-modifier-letter)
+(test-general-category #x4E00 *v17* general-category-other-letter)
+(test-general-category #x0301 *v17* general-category-nonspacing-mark)
+(test-general-category #x0903 *v17* general-category-spacing-mark)
+(test-general-category #x20DD *v17* general-category-enclosing-mark)
+(test-general-category #x0030 *v17* general-category-decimal-number) ; 0
+(test-general-category #x2160 *v17* general-category-letter-number)
+(test-general-category #x00B2 *v17* general-category-other-number)
+(test-general-category #x005F *v17* general-category-connector-punctuation)
+(test-general-category #x002D *v17* general-category-dash-punctuation)
+(test-general-category #x0028 *v17* general-category-open-punctuation)
+(test-general-category #x0029 *v17* general-category-close-punctuation)
+(test-general-category #x00AB *v17* general-category-initial-punctuation)
+(test-general-category #x00BB *v17* general-category-final-punctuation)
+(test-general-category #x0021 *v17* general-category-other-punctuation)
+(test-general-category #x002B *v17* general-category-math-symbol)
+(test-general-category #x0024 *v17* general-category-currency-symbol)
+(test-general-category #x005E *v17* general-category-modifier-symbol)
+(test-general-category #x00A9 *v17* general-category-other-symbol)
+(test-general-category #x0020 *v17* general-category-space-separator)
+(test-general-category #x2028 *v17* general-category-line-separator)
+(test-general-category #x2029 *v17* general-category-paragraph-separator)
+(test-general-category #x0000 *v17* general-category-control)
+(test-general-category #x200D *v17* general-category-format)
+(test-general-category #xD800 *v17* general-category-surrogate)
+(test-general-category #xE000 *v17* general-category-private-use)
+(test-general-category #x0378 *v17* general-category-unassigned)
+(test-general-category #x10FFFF *v17* general-category-unassigned)
+
+; The property is not stable:
+; U+0295 LATIN LETTER PHARYNGEAL VOICED FRICATIVE changed in Unicode 17.0.0.
+
+(test-general-category #x0295 *v16* general-category-lowercase-letter)
+(test-general-category #x0295 *v17* general-category-other-letter)
+(test-general-category #x0295 *v18* general-category-other-letter)
+
+; Abbreviations and major classes.
+
+(test (equal (general-category-abbreviation
+              (code-point-general-category #x0041 *v17*))
+             "Lu"))
+(test (equal (general-category-abbreviation (general-category-unassigned))
+             "Cn"))
+(test (general-category-letter-p (code-point-general-category #x4E00 *v17*)))
+(test (general-category-cased-letter-p
+       (code-point-general-category #x01C5 *v17*)))
+(test (not (general-category-cased-letter-p
+            (code-point-general-category #x4E00 *v17*))))
+(test (general-category-mark-p (code-point-general-category #x0301 *v17*)))
+(test (general-category-number-p (code-point-general-category #x2160 *v17*)))
+(test (general-category-punctuation-p
+       (code-point-general-category #x005F *v17*)))
+(test (general-category-symbol-p (code-point-general-category #x002B *v17*)))
+(test (general-category-separator-p
+       (code-point-general-category #x2028 *v17*)))
+(test (general-category-other-p (code-point-general-category #xD800 *v17*)))
+(test (not (general-category-letter-p
+            (code-point-general-category #x0030 *v17*))))
+
+; Assigned code points.  U+088F was assigned in Unicode 17.0.0
+; and U+0558 in Unicode 18.0.0.  Surrogates and private-use code points
+; count as assigned; noncharacters do not.
+
+(test (assigned-p #x0041 *v16*))
+(test (not (assigned-p #x0378 *v18*)))
+(test (not (assigned-p #x088F *v16*)))
+(test (assigned-p #x088F *v17*))
+(test (not (assigned-p #x0558 *v17*)))
+(test (assigned-p #x0558 *v18*))
+(test (assigned-p #xD800 *v16*))
+(test (assigned-p #xE000 *v16*))
+(test (not (assigned-p #xFFFF *v16*)))
+
+; The code points that have a value, as ranges.
+
+(test (equal (general-category-ranges (general-category-line-separator) *v17*)
+             (list (range #x2028 #x2028))))
+(test (equal (general-category-ranges (general-category-surrogate) *v16*)
+             (list (range #xD800 #xDFFF))))
+(test (equal (range-list-size
+              (general-category-ranges (general-category-format) *v17*))
+             170))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Default_Ignorable_Code_Point.
+
+(test (default-ignorable-p #x00AD *v17*)) ; SOFT HYPHEN
+(test (default-ignorable-p #x200D *v17*)) ; ZERO WIDTH JOINER
+(test (default-ignorable-p #xFE0F *v17*)) ; VARIATION SELECTOR-16
+(test (default-ignorable-p #xE0FFF *v17*)) ; unassigned, reserved for these
+(test (not (default-ignorable-p #x0041 *v17*)))
+(test (not (default-ignorable-p #x0600 *v17*))) ; ARABIC NUMBER SIGN
+
+; Variation_Selector and Join_Control.
+
+(test (variation-selector-p #x180B *v16*))
+(test (variation-selector-p #xFE0F *v17*))
+(test (variation-selector-p #xE01EF *v18*))
+(test (not (variation-selector-p #xFE10 *v17*)))
+(test (not (variation-selector-p #x180E *v17*))) ; MONGOLIAN VOWEL SEPARATOR
+(test (join-control-p #x200C *v16*)) ; ZERO WIDTH NON-JOINER
+(test (join-control-p #x200D *v18*)) ; ZERO WIDTH JOINER
+(test (not (join-control-p #x200B *v17*))) ; ZERO WIDTH SPACE
+
+; Noncharacter_Code_Point.
+
+(test (noncharacter-p #xFDD0 *v16*))
+(test (noncharacter-p #xFDEF *v16*))
+(test (noncharacter-p #xFFFE *v17*))
+(test (noncharacter-p #x1FFFF *v17*))
+(test (noncharacter-p #x10FFFF *v18*))
+(test (not (noncharacter-p #xFDF0 *v17*)))
+(test (not (noncharacter-p #xFFFD *v17*))) ; REPLACEMENT CHARACTER
+
+; Deprecated and Prepended_Concatenation_Mark.
+
+(test (deprecated-p #x0149 *v17*)) ; LATIN SMALL LETTER N PRECEDED BY APOSTROPHE
+(test (deprecated-p #xE0001 *v17*)) ; LANGUAGE TAG
+(test (not (deprecated-p #x0041 *v17*)))
+(test (prepended-concatenation-mark-p #x0600 *v17*)) ; ARABIC NUMBER SIGN
+(test (prepended-concatenation-mark-p #x06DD *v17*)) ; ARABIC END OF AYAH
+(test (not (prepended-concatenation-mark-p #x0041 *v17*)))
+
+; Pattern_Syntax.
+
+(test (pattern-syntax-p (char-code #\+) *v16*))
+(test (pattern-syntax-p (char-code #\() *v16*))
+(test (pattern-syntax-p #x2190 *v17*)) ; LEFTWARDS ARROW
+(test (not (pattern-syntax-p (char-code #\_) *v16*)))
+(test (not (pattern-syntax-p (char-code #\a) *v16*)))
+(test (not (pattern-syntax-p (char-code #\Space) *v16*)))
