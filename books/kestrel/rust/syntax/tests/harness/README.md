@@ -140,6 +140,10 @@ To compare those with the ACL2 lexer:
 
     python3 compare_bounds.py $DATA/tests $DATA/reference-1.100.0 $DATA/acl2-bounds.lsp
 
+One disagreement outside the known gaps is expected there: `/*!/*/`,
+which the Reference's rules accept, and which rustc and the ACL2 lexer
+reject as an unterminated block comment.
+
 ## How the comparison works
 
 **rustc.**
@@ -177,22 +181,9 @@ as the start of a file.
 **Known gaps.**
 `compare.py` and `compare_bounds.py` tag a disagreement as a known gap
 when the input contains something the lexer does not cover yet:
-`block-doc`, `doc-cr` (a bare CR in a doc comment),
-or `non-ascii`.
+`non-ascii` (non-ASCII identifiers) is the only one left.
 The tags are heuristics on the input text, in `known_gaps`;
 remove each one when its gap is closed.
-`gen_files.py` skips files with block doc comments
-for the same reason.
-
-**Edition 2024 reserved guards.**
-`rv-go-2024-guard` is `rv-go` for edition 2024 plus a stand-in for the
-reserved guards (`##`, and `#` before a string literal),
-which the tokenizer does not implement yet:
-it rejects a `#` lexeme immediately followed by a lexeme
-that starts with `#` or a double quote.
-`rv-go-bounds` uses the same stand-in.
-
-    (rust$::rv-go-2024-guard "/data/tests.lsp" "/data/acl2-2024-guard.lsp" state)
 
 ## Files
 

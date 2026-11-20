@@ -405,3 +405,106 @@ b\"")
 (assert-event (lexeme-cst-okp *0b12-as-decimal-cst*))
 (assert-event (not (lexeme-cst-reserved-number-okp *0b12-as-decimal-cst* nil)))
 (assert-event (reserrp (lexemize-rust-from-string "0b12")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC15]: which lexemes are subject to the reserved guard condition,
+; and the condition against the remaining input.
+; The condition holds in edition 2024 only;
+; the tokenizer tests check that the tokenizer applies it there.
+
+(defmacro test-pound-lexeme (string yes/no)
+  `(assert-event
+    (equal (pound-lexeme-cst-p (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-pound-lexeme "#" t)
+(test-pound-lexeme "!" nil)
+(test-pound-lexeme "r#a" nil) ; raw identifier
+(test-pound-lexeme "r#\"a\"#" nil) ; raw string literal
+
+(defmacro test-reserved-guard (string rest-nats yes/no)
+  `(assert-event
+    (equal (lexeme-cst-reserved-guard-okp
+            (car (lexemize-rust-from-string ,string))
+            ,rest-nats)
+           ,yes/no)))
+
+(test-reserved-guard "#" (list #x23) nil) ; ##
+(test-reserved-guard "#" (list #x22 #x61 #x22) nil) ; #"a"
+(test-reserved-guard "#" (list #x20 #x23) t) ; # #
+(test-reserved-guard "#" (list #x5b) t) ; #[
+(test-reserved-guard "#" (list #x72 #x22 #x22) t) ; #r""
+(test-reserved-guard "#" (list #x27 #x61 #x27) t) ; #'a'
+(test-reserved-guard "#" nil t) ; # at end of input
+(test-reserved-guard "!" (list #x23) t) ; only # is subject to it
+(test-reserved-guard "r#\"a\"#" (list #x23) t) ; a raw string, then #
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC3]: which lexemes are doc comments, and the condition on them.
+
+(defmacro test-doc-comment-lexeme (string yes/no)
+  `(assert-event
+    (equal (doc-comment-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-doc-comment-lexeme "///a" t)
+(test-doc-comment-lexeme "//!a" t)
+(test-doc-comment-lexeme "/** a */" t)
+(test-doc-comment-lexeme "/*! a */" t)
+(test-doc-comment-lexeme "//a" nil)
+(test-doc-comment-lexeme "////a" nil)
+(test-doc-comment-lexeme "/* a */" nil)
+(test-doc-comment-lexeme "/**/" nil)
+(test-doc-comment-lexeme "/*** a */" nil)
+(test-doc-comment-lexeme "a" nil)
+
+; A plain comment with a carriage return satisfies the condition.
+
+(assert-event
+ (b* ((trees (lexemize-rust (list #x2f #x2f #x61 #xd #x62)))) ; //a CR b
+   (and (equal (len trees) 1)
+        (lexeme-cst-doc-comment-cr-okp (car trees)))))
+
+; The rules let a doc comment extend over a carriage return.
+; The lexer does not produce such a CST, so we build two here,
+; with the lexing functions for the rules alone, which do not check [SC3].
+; Each is a valid lexeme CST, and the condition rejects it,
+; as the lexer rejects the input.
+
+(defun doc-lexeme-cst (doc-tree)
+  (abnf::make-tree-nonleaf
+   :rulename? (abnf::rulename "lexeme")
+   :branches (list (list (abnf::make-tree-nonleaf
+                          :rulename? (abnf::rulename "comment")
+                          :branches (list (list doc-tree)))))))
+
+(defconst *line-doc-with-cr* ; ///a CR b
+  (list #x2f #x2f #x2f #x61 #xd #x62))
+
+(defconst *line-doc-with-cr-cst*
+  (b* (((mv tree &) (lex-outer-line-doc *line-doc-with-cr*)))
+    (doc-lexeme-cst tree)))
+
+(assert-event (equal (abnf::tree->string *line-doc-with-cr-cst*)
+                     *line-doc-with-cr*))
+(assert-event (lexeme-cst-okp *line-doc-with-cr-cst*))
+(assert-event (doc-comment-lexeme-cst-p *line-doc-with-cr-cst*))
+(assert-event (not (lexeme-cst-doc-comment-cr-okp *line-doc-with-cr-cst*)))
+(assert-event (reserrp (lexemize-rust *line-doc-with-cr*)))
+
+(defconst *block-doc-with-cr* ; /*! CR */
+  (list #x2f #x2a #x21 #x20 #xd #x20 #x2a #x2f))
+
+(defconst *block-doc-with-cr-cst*
+  (b* (((mv tree &) (lex-inner-block-doc *block-doc-with-cr*)))
+    (doc-lexeme-cst tree)))
+
+(assert-event (equal (abnf::tree->string *block-doc-with-cr-cst*)
+                     *block-doc-with-cr*))
+(assert-event (lexeme-cst-okp *block-doc-with-cr-cst*))
+(assert-event (doc-comment-lexeme-cst-p *block-doc-with-cr-cst*))
+(assert-event (not (lexeme-cst-doc-comment-cr-okp *block-doc-with-cr-cst*)))
+(assert-event (reserrp (lexemize-rust *block-doc-with-cr*)))

@@ -180,51 +180,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Edition 2024 with a stand-in for the reserved guards, which the
-; tokenizer does not implement yet: reject a "#" lexeme immediately
-; followed by a lexeme that starts with "#" or a double quote.
-; (rv-go-2024-guard in out state) is rv-go for edition 2024 plus this
-; rule; it becomes redundant once the tokenizer has the rule.
-
-(define rv-guard-flag ((trees abnf::tree-listp))
-  :returns (yes/no booleanp)
-  :parents nil
-  (cond ((or (endp trees) (endp (cdr trees))) nil)
-        ((and (equal (abnf::tree->string (car trees)) '(35))
-              (b* ((next (abnf::tree->string (cadr trees))))
-                (and (consp next)
-                     (or (equal (car next) 35)
-                         (equal (car next) 34)))))
-         t)
-        (t (rv-guard-flag (cdr trees)))))
-
-(define rv-run1-2024-guard ((nats nat-listp))
-  :parents nil
-  (b* ((trees (lexemize-rust nats))
-       ((when (reserrp trees)) :err)
-       ((when (rv-guard-flag trees)) :err))
-    (rv-run1 nats (rust::edition-2024))))
-
-(define rv-run-2024-guard ((tests rv-test-listp) (acc true-listp))
-  :returns (results true-listp :hyp (true-listp acc))
-  :parents nil
-  (if (endp tests)
-      (revappend acc nil)
-    (rv-run-2024-guard (cdr tests)
-                       (cons (list (caar tests)
-                                   (rv-run1-2024-guard (cdar tests)))
-                             acc)))
-  :guard-hints (("Goal" :in-theory (enable rv-testp))))
-
-(define rv-go-2024-guard ((in stringp) (out stringp) state)
-  :returns (mv (n natp) state)
-  :parents nil
-  (b* (((mv tests state) (rv-read-tests in state))
-       (state (rv-write (rv-run-2024-guard tests nil) out state)))
-    (mv (len tests) state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Whole files: (rv-go-files in out state) writes, for each file,
 ; ("id" n) with the deep token count, ("id" :unbal),
 ; ("id" (:tokerr)) if only the tokenizer rejects the file, or
@@ -275,6 +230,7 @@
       (b* ((tree (car trees))
            (rest (nthcdr (len (abnf::tree->string tree)) input)))
         (and (lexeme-cst-okp tree)
+             (lexeme-cst-doc-comment-cr-okp tree)
              (lexeme-cst-float-period-okp tree rest)
              (lexeme-cst-reserved-number-okp tree rest)
              (lexeme-cst-reserved-prefix-okp tree rest)
@@ -307,7 +263,7 @@
 ; Token boundaries: (rv-go-bounds in out state) writes, for each test,
 ; ("id" :err), ("id" :unbal), or ("id" (start . end) ...) with the
 ; code-point offsets of each token in the input (end exclusive),
-; in edition 2024 with the stand-in for the reserved guards.
+; in edition 2024, the one that the Reference's rules correspond to.
 ; compare_bounds.py compares them with the tokens of the Reference's
 ; interpreter (reference-driver).  It returns the number of tests.
 
@@ -330,7 +286,6 @@
   :parents nil
   (b* ((trees (lexemize-rust nats))
        ((when (reserrp trees)) :err)
-       ((when (rv-guard-flag trees)) :err)
        (toks (tokenize-rust nats (rust::edition-2024) "t"))
        ((when (reserrp toks)) :err)
        ((when (eq (rv-tt-count toks nil 0) :unbal)) :unbal))

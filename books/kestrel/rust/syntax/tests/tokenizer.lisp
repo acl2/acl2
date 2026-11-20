@@ -14,7 +14,7 @@
 
 ; Tests of the tokenizer.
 ; We check the resulting tokens (and some spans),
-; in both editions where the difference matters [SC6].
+; in both editions where the difference matters [SC6] [SC15].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -117,6 +117,39 @@
 (test-tokens "//!doc"
              (list (token-doc-comment (doc-style-inner) nil "doc")))
 (test-tokens "////plain" nil) ; four slashes: plain comment, not doc
+
+; Block doc comments: the content is the text
+; between the "/**" or "/*!" and the "*/".
+
+(test-tokens "/** doc */"
+             (list (token-doc-comment (doc-style-outer) t " doc ")))
+(test-tokens "/**a*/"
+             (list (token-doc-comment (doc-style-outer) t "a")))
+(test-tokens "/*! doc */"
+             (list (token-doc-comment (doc-style-inner) t " doc ")))
+(test-tokens "/*!*/"
+             (list (token-doc-comment (doc-style-inner) t "")))
+(test-tokens "/** a /* b */ c */"
+             (list (token-doc-comment (doc-style-outer) t " a /* b */ c ")))
+(test-tokens "/**
+ * a
+ */"
+             (list (token-doc-comment (doc-style-outer) t "
+ * a
+ ")))
+(test-tokens "/** a */ b /*! c */"
+             (list (token-doc-comment (doc-style-outer) t " a ")
+                   (token-ident "b" nil)
+                   (token-doc-comment (doc-style-inner) t " c ")))
+
+; Block comments that are not doc comments:
+; two stars and nothing else, three stars or more.
+
+(test-tokens "/**/" nil)
+(test-tokens "/***/" nil)
+(test-tokens "/****/" nil)
+(test-tokens "/*** not doc */" nil)
+(test-tokens "/**/ */" (list (token-punct "*") (token-punct "/")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -369,6 +402,50 @@ b\" c"))
         (equal (position->column (span->end span1)) 1)
         (equal (position->line (span->start span2)) 2)
         (equal (position->column (span->start span2)) 3))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Reserved guards [SC15]: in edition 2024, a "#" immediately followed by
+; another "#" or by a string literal is rejected; in edition 2021,
+; the same text is separate tokens.
+; Each case below was run through rustc 1.87.0 in both editions.
+; The first two are from the rustc tests transcribed in
+; rustc-lexer-vectors.lisp, where they lex (lexing has no editions).
+
+(test-tokenize-fail "foo ##bar")
+(test-tokenize-fail "r\"\"##")
+(test-tokenize-fail "##")
+(test-tokenize-fail "###")
+(test-tokenize-fail "#\"a\"")
+(test-tokenize-fail "#\"a\"#")
+(test-tokenize-fail "m!(#\"x\")")
+
+(test-tokens-2021 "foo ##bar" (list (token-ident "foo" nil)
+                                    (token-punct "#")
+                                    (token-punct "#")
+                                    (token-ident "bar" nil)))
+(test-tokens-2021 "r\"\"##" (list (str-tok (str-kind-plain) 0 "" "")
+                                  (token-punct "#")
+                                  (token-punct "#")))
+(test-tokens-2021 "#\"a\"#" (list (token-punct "#")
+                                  (str-tok (str-kind-plain) nil "a" "")
+                                  (token-punct "#")))
+
+; A "#" followed by anything else is not a reserved guard:
+; whitespace or a comment; a raw string, byte string, or character literal.
+; And a raw string literal takes its own "#".
+
+(test-tokens "# #" (list (token-punct "#") (token-punct "#")))
+(test-tokens "#/**/#" (list (token-punct "#") (token-punct "#")))
+(test-tokens "# \"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-plain) nil "a" "")))
+(test-tokens "#r\"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-plain) 0 "a" "")))
+(test-tokens "#b\"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-byte) nil "a" "")))
+(test-tokens "#'a'" (list (token-punct "#") (char-tok nil "a" "")))
+(test-tokens "r#\"abc\"##" (list (str-tok (str-kind-plain) 1 "abc" "")
+                                 (token-punct "#")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

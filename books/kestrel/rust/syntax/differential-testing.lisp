@@ -18,7 +18,7 @@
 ; This book only documents the differential tests.
 ; The scripts, and the ACL2 book that runs the lexer and tokenizer on
 ; the test inputs, are in tests/harness; its README.md has the commands.
-; The numbers in the section on results are from 2026-11-13:
+; The numbers in the section on results are from 2026-11-19:
 ; update them, with the versions, when the comparison is run again.
 
 (defxdoc+ differential-testing
@@ -103,11 +103,11 @@
       does not take in the text after it.")
     (xdoc::li
      "Editions.
-      Each input is run in the editions 2021 and 2024.
-      Our tokenizer does not yet reject
-      the forms that only edition 2024 reserves
-      (@('##'), and @('#') right before a string literal);
-      for edition 2024, the comparison adds that rejection on our side."))
+      Each input is run in the editions 2021 and 2024, on both sides.
+      rustc's two editions differ on the inputs that have
+      a reserved guard [SC15]
+      (@('##'), or @('#') right before a string literal),
+      which only edition 2024 rejects."))
    (xdoc::h3 "Oracles")
    (xdoc::p
     "The authority is rustc, at the version that the library follows,
@@ -187,14 +187,12 @@
    (xdoc::ul
     (xdoc::li
      "Our lexer and tokenizer agree with rustc 1.87.0,
-      in each of the two editions
-      (in edition 2024, with the added rejection described above),
-      on all the inputs but 33.
-      Those 33 have forms that our lexer does not cover yet:
-      block doc comments, carriage returns in doc comments,
-      and non-ASCII identifiers.")
+      in each of the two editions,
+      on all the inputs but 16.
+      Those 16 have non-ASCII identifiers,
+      which our lexer does not cover yet.")
     (xdoc::li
-     "The CSTs of the 138,226 inputs that lex
+     "The CSTs of the 138,216 inputs that lex
       satisfy the executable conjuncts of the specification.")
     (xdoc::li
      "rustc 1.100.0 agrees with rustc 1.87.0 on all the inputs
@@ -208,13 +206,14 @@
     (xdoc::li
      "Our lexer puts the boundaries of the tokens
       where the Reference's interpreter does,
-      on all the inputs but 182:
-      the 148 above, and 34 with the forms listed in the first item."))
+      on all the inputs but 165:
+      the 148 above, the 16 of the first item,
+      and @('/*!/*/'), which our lexer rejects, as rustc does."))
    (xdoc::p
-    "On 1,400 source files, of 300 to 12,000 bytes each,
+    "On 251 source files, of 300 to 12,000 bytes each,
+     38 of them with block doc comments,
      our tokenizer and rustc 1.87.0, in edition 2021,
-     count the same number of tokens
-     in all but one, which has a non-ASCII identifier.")
+     count the same number of tokens in every file.")
    (xdoc::h3 "Limits")
    (xdoc::p
     "These tests are evidence, not proof:
