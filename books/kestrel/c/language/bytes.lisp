@@ -41,9 +41,9 @@
   (xdoc::topstring
    (xdoc::p
     "We model a byte as a natural number
-     below the maximum value of @('unsigned char')."))
+     not exceeding the maximum value of @('unsigned char')."))
   (and (natp x)
-       (< x (ienv->uchar-max ienv))))
+       (<= x (ienv->uchar-max ienv))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
