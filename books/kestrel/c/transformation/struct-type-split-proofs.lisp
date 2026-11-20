@@ -144,7 +144,16 @@
     :use (:instance c::value-struct-read-aux-when-member-type-lookup
                     (c::memtypes (c::member-type-list-fix members))
                     (c::memvals (c::value-struct->members val))
-                    (c::name name))))
+                    (c::name name)))
+
+  (defruled c::member-value-list->name-list-when-struct-valuep
+    (implies (c::struct-valuep val tag members flexiblep)
+             (equal (c::member-value-list->name-list
+                     (c::value-struct->members val))
+                    (c::member-type-list->name-list members)))
+    :use (:instance
+          c::member-type-list->name-list-of-member-types-of-member-values
+          (c::x (c::value-struct->members val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -211,7 +220,100 @@
      :hooks
      ((:fix :hints (("Goal"
                      :induct t
-                     :in-theory (enable c::member-value-list-fix))))))))
+                     :in-theory (enable c::member-value-list-fix)))))
+
+     ///
+
+     (defruled c::value-struct-read-aux-when-struct-value-splitp-loop
+       (implies (and (c::struct-value-splitp-loop old-memvals
+                                                  newl-memvals
+                                                  newr-memvals)
+                     (no-duplicatesp-equal
+                      (c::member-value-list->name-list old-memvals)))
+                (and (implies (member-equal
+                               (c::ident-fix name)
+                               (c::member-value-list->name-list newl-memvals))
+                              (equal
+                               (c::value-struct-read-aux name newl-memvals)
+                               (c::value-struct-read-aux name old-memvals)))
+                     (implies (member-equal
+                               (c::ident-fix name)
+                               (c::member-value-list->name-list newr-memvals))
+                              (equal
+                               (c::value-struct-read-aux name newr-memvals)
+                               (c::value-struct-read-aux name old-memvals)))))
+       :induct t
+       :enable (c::value-struct-read-aux
+                c::member-value-list->name-list
+                c::member-value-list-fix
+                c::member-value->name-in-name-list-when-member-value-in-list
+                no-duplicatesp-equal
+                member-equal
+                lemma)
+       :prep-lemmas
+       ((defruled lemma
+          (implies (and (c::struct-value-splitp-loop old-memvals
+                                                     newl-memvals
+                                                     newr-memvals)
+                        (no-duplicatesp-equal
+                         (c::member-value-list->name-list old-memvals)))
+                   (and (subsetp-equal
+                         (c::member-value-list->name-list newl-memvals)
+                         (c::member-value-list->name-list old-memvals))
+                        (subsetp-equal
+                         (c::member-value-list->name-list newr-memvals)
+                         (c::member-value-list->name-list old-memvals))))
+          :rule-classes :forward-chaining
+          :induct t
+          :enable (c::member-value-list->name-list
+                   c::member-value-list-fix
+                   c::member-value->name-in-name-list-when-member-value-in-list
+                   no-duplicatesp-equal
+                   subsetp-equal
+                   member-equal))))))
+
+  ///
+
+  (defruled c::struct-valuep-when-struct-value-splitp
+    (implies (c::struct-value-splitp old-val
+                                     newl-val
+                                     newr-val
+                                     old-tag
+                                     newl-tag
+                                     newr-tag
+                                     old-members
+                                     newl-members
+                                     newr-members)
+             (and (c::struct-valuep old-val old-tag old-members nil)
+                  (c::struct-valuep newl-val newl-tag newl-members nil)
+                  (c::struct-valuep newr-val newr-tag newr-members nil)))
+    :rule-classes :forward-chaining)
+
+  (defruled c::value-struct-read-when-struct-value-splitp
+    (implies (and (c::struct-value-splitp old-val
+                                          newl-val
+                                          newr-val
+                                          old-tag
+                                          newl-tag
+                                          newr-tag
+                                          old-members
+                                          newl-members
+                                          newr-members)
+                  (no-duplicatesp-equal
+                   (c::member-type-list->name-list old-members)))
+             (and (implies (c::member-type-lookup name newl-members)
+                           (equal (c::value-struct-read name newl-val)
+                                  (c::value-struct-read name old-val)))
+                  (implies (c::member-type-lookup name newr-members)
+                           (equal (c::value-struct-read name newr-val)
+                                  (c::value-struct-read name old-val)))))
+    :enable (c::value-struct-read
+             c::member-value-list->name-list-when-struct-valuep
+             c::member-type-lookup-iff-name-in-name-list)
+    :use (:instance c::value-struct-read-aux-when-struct-value-splitp-loop
+                    (old-memvals (c::value-struct->members old-val))
+                    (newl-memvals (c::value-struct->members newl-val))
+                    (newr-memvals (c::value-struct->members newr-val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -571,11 +673,9 @@
    (xdoc::p
     "This is used for the old, left new, and right new struct types.
      The generated equivalence predicate on struct values
-     characterizes the struct values of each type
-     via @(tsee c::struct-valuep),
-     to which it passes the tag,
-     the member types returned by this function,
-     and @('nil') as the flexible array member flag."))
+     passes the member types returned by this function,
+     along with the tags,
+     to @(tsee c::struct-value-splitp)."))
   (b* (((reterr) nil)
        ((when (endp mems)) (retok nil))
        ((erp cmem) (ldm-ident (car mems)) :iferr "")
@@ -591,95 +691,60 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stsp-struct-value-equiv ((mems ident-listp)
-                                 (lmems ident-listp)
-                                 (rmems ident-listp)
-                                 (old-ctag c::identp)
-                                 (old-cmemtypes c::member-type-listp)
+(define stsp-struct-value-equiv ((old-ctag c::identp)
                                  (newl-ctag c::identp)
-                                 (newl-cmemtypes c::member-type-listp)
                                  (newr-ctag c::identp)
+                                 (old-cmemtypes c::member-type-listp)
+                                 (newl-cmemtypes c::member-type-listp)
                                  (newr-cmemtypes c::member-type-listp))
-  :returns (mv (erp maybe-msgp)
-               (event pseudo-event-formp))
+  :returns (event pseudo-event-formp)
   :short "Generate the equivalence predicate on
           old, left new, and right new struct values."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This says that the three values are struct values
-     with the tags and member types of the respective struct types,
-     expressed via @(tsee c::struct-valuep),
-     and that reading each member from the old struct value
-     returns the same value as reading it from
-     the new left or right struct value, whichever has the member.
-     The members are read via @(tsee c::value-struct-read)."))
-  (b* (((reterr) '(_))
-       (old-ctag (c::ident-fix old-ctag))
-       (old-cmemtypes (c::member-type-list-fix old-cmemtypes))
+    "This is a wrapper of @(tsee c::struct-value-splitp),
+     to which it passes the tags and member types
+     of the old, left new, and right new struct types."))
+  (b* ((old-ctag (c::ident-fix old-ctag))
        (newl-ctag (c::ident-fix newl-ctag))
-       (newl-cmemtypes (c::member-type-list-fix newl-cmemtypes))
        (newr-ctag (c::ident-fix newr-ctag))
-       (newr-cmemtypes (c::member-type-list-fix newr-cmemtypes))
-       ((erp conjuncts) (stsp-struct-value-equiv-loop mems lmems rmems))
-       (event
-        `(define struct-value-equivp ((old-val c::valuep)
-                                      (newl-val c::valuep)
-                                      (newr-val c::valuep))
-           :returns (yes/no booleanp
-                            :hints
-                            (("Goal"
-                              :in-theory
-                              '(booleanp-compound-recognizer
-                                (:t struct-value-equivp)
-                                struct-value-equivp
-                                (:t c::struct-valuep)))))
-           (and (c::struct-valuep old-val ',old-ctag ',old-cmemtypes nil)
-                (c::struct-valuep newl-val ',newl-ctag ',newl-cmemtypes nil)
-                (c::struct-valuep newr-val ',newr-ctag ',newr-cmemtypes nil)
-                ,@conjuncts)
-           :guard-simplify :limited
-           :guard-hints
-           (("Goal"
-             :in-theory '(c::value-kind-when-struct-valuep
-                          (:e c::identp)
-                          (:e c::member-type-listp)
-                          (:e booleanp))))
-           :hooks
-           ((:fix
-             :hints
-             (("Goal"
-               :do-not '(preprocess) ; for speed
-               :in-theory '(struct-value-equivp
-                            c::struct-valuep-of-value-fix-val
-                            c::value-struct-read-of-value-fix-struct))))))))
-    (retok event))
-
-  :prepwork
-  ((define stsp-struct-value-equiv-loop ((mems ident-listp)
-                                         (lmems ident-listp)
-                                         (rmems ident-listp))
-     :returns (mv (erp maybe-msgp)
-                  (conjuncts true-listp))
-     :parents nil
-     (b* (((reterr) nil)
-          ((when (endp mems)) (retok nil))
-          (mem (car mems))
-          ((erp cmem) (ldm-ident mem) :iferr "")
-          ((erp new-val)
-           (cond ((member-equal (ident-fix mem) (ident-list-fix lmems))
-                  (retok 'newl-val))
-                 ((member-equal (ident-fix mem) (ident-list-fix rmems))
-                  (retok 'newr-val))
-                 (t (retmsg$ "Member ~x0 is neither in ~x1 nor in ~x2."
-                             (ident-fix mem)
-                             (ident-list-fix lmems)
-                             (ident-list-fix rmems)))))
-          (conjunct `(equal (c::value-struct-read ',cmem old-val)
-                            (c::value-struct-read ',cmem ,new-val)))
-          ((erp conjuncts)
-           (stsp-struct-value-equiv-loop (cdr mems) lmems rmems)))
-       (retok (cons conjunct conjuncts))))))
+       (old-cmemtypes (c::member-type-list-fix old-cmemtypes))
+       (newl-cmemtypes (c::member-type-list-fix newl-cmemtypes))
+       (newr-cmemtypes (c::member-type-list-fix newr-cmemtypes)))
+    `(define struct-value-equivp ((old-val c::valuep)
+                                  (newl-val c::valuep)
+                                  (newr-val c::valuep))
+       :returns (yes/no booleanp
+                        :hints
+                        (("Goal"
+                          :in-theory
+                          '(booleanp-compound-recognizer
+                            (:t struct-value-equivp)
+                            struct-value-equivp
+                            c::booleanp-of-struct-value-splitp))))
+       (c::struct-value-splitp old-val
+                               newl-val
+                               newr-val
+                               ',old-ctag
+                               ',newl-ctag
+                               ',newr-ctag
+                               ',old-cmemtypes
+                               ',newl-cmemtypes
+                               ',newr-cmemtypes)
+       :guard-simplify :limited
+       :guard-hints
+       (("Goal"
+         :in-theory '((:e c::identp)
+                      (:e c::member-type-listp))))
+       :hooks
+       ((:fix
+         :hints
+         (("Goal"
+           :in-theory '(struct-value-equivp
+                        c::struct-value-splitp-of-value-fix-old-val
+                        c::struct-value-splitp-of-value-fix-newl-val
+                        c::struct-value-splitp-of-value-fix-newr-val))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1619,6 +1684,8 @@
              c::exec-member
              c::apconvert-expr-value-when-not-array
              struct-value-equivp
+             c::struct-valuep-when-struct-value-splitp
+             c::value-struct-read-when-struct-value-splitp
              c::value-kind-when-struct-valuep
              c::value-struct-read-when-struct-valuep
              c::expr-value->value-of-expr-value
@@ -1643,7 +1710,9 @@
              (:e c::expr-member->target)
              (:e c::expr-member->name)
              (:e c::member-type-lookup)
+             (:e c::member-type-list->name-list)
              (:e c::typep)
+             (:e no-duplicatesp-equal)
              (:e equal)
              (:e binary-+)
              (:e <))
@@ -1735,6 +1804,7 @@
        ((unless (and (consp old-mems)
                      (consp newl-mems)
                      (consp newr-mems)
+                     (no-duplicatesp-equal old-mems)
                      (not (intersectp-equal newl-mems newr-mems))
                      (set-equiv old-mems (append newl-mems newr-mems))
                      (set-equiv (ident-list-fix rmems) newr-mems)))
@@ -1748,15 +1818,12 @@
        ((erp old-cmemtypes) (stsp-member-types old-mems old-types))
        ((erp newl-cmemtypes) (stsp-member-types newl-mems newl-types))
        ((erp newr-cmemtypes) (stsp-member-types newr-mems newr-types))
-       ((erp equiv-pred)
-        (stsp-struct-value-equiv old-mems
-                                 newl-mems
-                                 newr-mems
-                                 old-ctag
-                                 old-cmemtypes
+       (equiv-pred
+        (stsp-struct-value-equiv old-ctag
                                  newl-ctag
-                                 newl-cmemtypes
                                  newr-ctag
+                                 old-cmemtypes
+                                 newl-cmemtypes
                                  newr-cmemtypes)))
     (retok (list equiv-pred)
            old-mems
