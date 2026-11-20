@@ -178,8 +178,9 @@
             myif-becomes-boolif-axe
             myif-of-not
             myif-of-constant-when-not-nil
-            myif-same-test
-            myif-same-test2
+            myif-same-test ; rename
+            myif-same-test2 ; rename
+            myif-not-myif-same  ;bozo more like this? ; rename
             myif-same-arg1-arg2-when-booleanp
             myif-of-myif-of-nil-arg1-arg2
             myif-of-myif-of-nil-arg1-arg3
@@ -2208,7 +2209,7 @@
           '(;bvand-of-constant-tighten-axe ; warning: can change the size of the bvand
 
             max-constants-lemma ;bozo more like this?
-            myif-not-myif-same  ;bozo more like this?
+
 
 
             bvuminus-1 ; introduces getbit
