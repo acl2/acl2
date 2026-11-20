@@ -1,6 +1,6 @@
-# Differential tests of the lexer and tokenizer
+# Differential tests of the lexer, tokenizer, and token-tree builder
 
-These scripts compare the ACL2 Rust lexer and tokenizer
+These scripts compare the ACL2 Rust lexer, tokenizer, and token-tree builder
 (the books in `kestrel/rust/syntax`) with rustc,
 and with the interpreter of the Rust Reference's lexical grammar,
 on generated short inputs and on real source files.
@@ -8,7 +8,8 @@ The xdoc topic `rust$::differential-testing` says what is compared and why;
 this file says how to run the comparison.
 
 For each input, the comparison with rustc is on whether both sides accept it
-and, if so, on how many tokens it has.
+and, if so, on how many token trees it has;
+when the delimiters do not match, it is also on the kind of error.
 The comparison with the Reference's interpreter
 is also on where each token starts and ends.
 
@@ -54,7 +55,8 @@ Run the shell commands from this directory.
 
        python3 to_acl2.py $DATA/tests.lsp $DATA/tests
 
-4. Run them through the ACL2 lexer and tokenizer (a few seconds each):
+4. Run them through the ACL2 lexer, tokenizer, and token-tree builder
+   (a few seconds each):
 
        (include-book "kestrel/rust/syntax/tests/harness/driver" :dir :system)
        (rust$::rv-go "/data/tests.lsp" "/data/acl2-2021.lsp" (rust::edition-2021) state)
@@ -114,7 +116,17 @@ The results of each version go in directories named after it:
 
     python3 compare_results.py $DATA/tests $DATA/rustc-1.87.0-2021 $DATA/rustc-1.100.0-2021
 
-`compare_results.py` compares any two directories of results.
+`compare_results.py` compares any two directories of results,
+on whether each input is accepted and on the counts.
+It does not compare the errors.
+`compare.py` does, for the errors about delimiters,
+and they depend on the version of rustc:
+where closing delimiters of the wrong kind are followed
+by a closing delimiter that closes nothing,
+rustc 1.87.0 reports all these errors,
+and rustc 1.100.0 leaves out some of the first ones.
+So `compare.py` with the results of rustc 1.100.0
+shows `delimiter errors differ` on such inputs.
 
 ## The Reference's interpreter
 
@@ -152,20 +164,41 @@ counts its argument tokens.
 The tokens never reach the parser or later phases,
 so the only errors are those of rustc's lexer
 (including its building of token trees),
-which is the stage that the ACL2 lexer and tokenizer model.
+which is the stage that the ACL2 lexer, tokenizer,
+and token-tree builder model.
+(The exception is an input that closes the parenthesis of the macro
+invocation, like `) (`: see `:split` below.)
 The count is the number of top-level token trees:
 a delimited group counts as one.
 With `--deep` it is the number of all tokens,
 a group counting as one plus its contents.
 
 **ACL2.**
-The driver counts the tokens of the tokenizer in the same way.
+The driver runs the lexer, the tokenizer, and the token-tree builder.
+The probe puts the input between the parentheses of a macro invocation,
+so the driver gives the builder the tokens of the input
+between an opening and a closing parenthesis,
+and counts the token trees that the builder puts between the two.
 rustc turns a doc comment into the tokens of an attribute,
 so an outer doc comment counts as 2 token trees (5 tokens deep)
 and an inner one as 3 (6 deep).
-Inputs whose delimiters do not match are reported as `:unbal`:
-rustc rejects them while building token trees,
-which the ACL2 side does not do yet.
+
+For each short input the driver writes one of the following.
+
+| Result | Meaning | Agrees with rustc when |
+|---|---|---|
+| a number | the top-level token trees of the input | rustc accepts, with the same count |
+| `:err` | the lexer or the tokenizer rejects the input | rustc rejects |
+| `:mismatched`, `:unclosed`, `:unexpected` | the builder rejects the probe's tokens, with that kind of error | rustc's first error about delimiters is of that kind |
+| `:split` | the input closes the probe's parenthesis before its end, as `) (` does | rustc rejects, with no error about delimiters |
+
+The three kinds of error are rustc's
+`mismatched closing delimiter`,
+`this file contains an unclosed delimiter`, and
+`unexpected closing delimiter`.
+For whole files and for token boundaries,
+the driver gives the builder the tokens of the input alone,
+and writes `:unbal` if it rejects them.
 
 **Input adjustments.**
 `to_acl2.py` appends a line feed to each input,
@@ -193,7 +226,7 @@ remove each one when its gap is closed.
 | `gen_files.py` | Selects real source files |
 | `run_rustc.py` | Runs inputs through rustc |
 | `to_acl2.py` | Converts inputs to code-point lists for ACL2 |
-| `driver.lisp` | Runs inputs through the ACL2 lexer and tokenizer |
+| `driver.lisp` | Runs inputs through the ACL2 lexer, tokenizer, and token-tree builder |
 | `compare.py` | Compares the results on short inputs |
 | `compare_files.py` | Compares the results on whole files |
 | `compare_results.py` | Compares two directories of results (two versions of rustc, or the Reference's interpreter and rustc) |

@@ -11,15 +11,17 @@
 (in-package "RUST$")
 
 (include-book "../../tokenizer")
+(include-book "../../token-tree-builder")
 (include-book "../../extra-grammatical-restrictions")
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/file-io-light/write-objects-to-file" :dir :system)
 
-; The ACL2 side of the differential tests of the lexer and tokenizer
+; The ACL2 side of the differential tests of the lexer, the tokenizer,
+; and the token-tree builder
 ; (see the xdoc topic differential-testing, and README.md in this directory).
 ; Each entry point reads a file of test inputs written by to_acl2.py,
-; runs the lexer and tokenizer on each input,
+; runs the lexer, the tokenizer, and the token-tree builder on each input,
 ; and writes a file of results, or returns a summary,
 ; for the comparison scripts in this directory.
 ; The functions are not in the manual (:parents nil):
@@ -27,7 +29,8 @@
 
 (local (in-theory (enable abnf::tree-listp-when-result-not-error
                           lexemep-when-result-not-error
-                          token+span-listp-when-result-not-error)))
+                          token+span-listp-when-result-not-error
+                          token-tree-listp-when-result-not-error)))
 
 (defrulel nat-listp-of-nthcdr
   (implies (nat-listp x)
@@ -88,78 +91,102 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Counting tokens as the macros of run_rustc.py do.
+; Counting token trees as the macros of run_rustc.py do.
 ; rustc turns an outer doc comment into the tokens of #[doc = "..."]
 ; and an inner one into those of #![doc = "..."].
 
-; A count is a number, or :unbal if the delimiters do not match
-; (rustc rejects those inputs while it builds token trees).
-
-(define rv-countp (x)
-  :returns (yes/no booleanp)
-  :parents nil
-  (or (natp x)
-      (eq x :unbal)))
-
 ; Number of top-level token trees.
 
-(define rv-tt-count ((tokens token+span-listp) (stack true-listp) (acc natp))
-  :returns (count rv-countp
-                  :hyp (natp acc)
-                  :hints (("Goal" :in-theory (enable rv-countp))))
+(define rv-tt-count ((trees token-tree-listp) (acc natp))
+  :returns (count natp :hyp (natp acc))
   :parents nil
-  (b* (((when (endp tokens)) (if (endp stack) acc :unbal))
-       (tok (token+span->token (car tokens)))
-       (top (endp stack)))
-    (token-case
-     tok
-     :open-delim (rv-tt-count (cdr tokens)
-                              (cons tok.delim stack)
-                              (if top (1+ acc) acc))
-     :close-delim (if (and (consp stack) (equal (car stack) tok.delim))
-                      (rv-tt-count (cdr tokens) (cdr stack) acc)
-                    :unbal)
-     :doc-comment (rv-tt-count
-                   (cdr tokens)
-                   stack
-                   (if top
-                       (+ acc (if (equal tok.style (doc-style-outer)) 2 3))
-                     acc))
-     :otherwise (rv-tt-count (cdr tokens) stack (if top (1+ acc) acc)))))
+  (b* (((when (endp trees)) acc)
+       (tree (car trees))
+       (n (token-tree-case
+           tree
+           :leaf (b* ((tok (token+span->token tree.token)))
+                   (token-case
+                    tok
+                    :doc-comment (if (equal tok.style (doc-style-outer)) 2 3)
+                    :otherwise 1))
+           :delimited 1)))
+    (rv-tt-count (cdr trees) (+ acc n))))
 
 ; Number of tokens at all depths, a delimited group counting as one
-; plus its contents (the --deep count of run_rustc.py).
+; plus its contents (the --deep count of run_rustc.py):
+; that is every token but the closing delimiters.
+; This is for tokens that the token-tree builder accepts.
 
-(define rv-deep-count ((tokens token+span-listp) (stack true-listp) (acc natp))
-  :returns (count rv-countp
-                  :hyp (natp acc)
-                  :hints (("Goal" :in-theory (enable rv-countp))))
+(define rv-deep-count ((tokens token+span-listp) (acc natp))
+  :returns (count natp :hyp (natp acc))
   :parents nil
-  (b* (((when (endp tokens)) (if (endp stack) acc :unbal))
-       (tok (token+span->token (car tokens))))
-    (token-case
-     tok
-     :open-delim (rv-deep-count (cdr tokens) (cons tok.delim stack) (1+ acc))
-     :close-delim (if (and (consp stack) (equal (car stack) tok.delim))
-                      (rv-deep-count (cdr tokens) (cdr stack) acc)
-                    :unbal)
-     :doc-comment (rv-deep-count
-                   (cdr tokens)
-                   stack
-                   (+ acc (if (equal tok.style (doc-style-outer)) 5 6)))
-     :otherwise (rv-deep-count (cdr tokens) stack (1+ acc)))))
+  (b* (((when (endp tokens)) acc)
+       (tok (token+span->token (car tokens)))
+       (n (token-case
+           tok
+           :close-delim 0
+           :doc-comment (if (equal tok.style (doc-style-outer)) 5 6)
+           :otherwise 1)))
+    (rv-deep-count (cdr tokens) (+ acc n))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The probe of run_rustc.py puts each input between the parentheses
+; of a macro invocation.  So rustc builds token trees from
+; the opening parenthesis, the tokens of the input,
+; and the closing parenthesis
+; (the rest of the probe's file is balanced, and does not affect
+; whether there is an error about delimiters, or which is the first).
+; We give the token-tree builder the same tokens.
+
+(define rv-probe-tokens ((tokens token+span-listp))
+  :returns (probe-tokens token+span-listp)
+  :parents nil
+  (cons (make-token+span :token (token-open-delim (delim-paren))
+                         :span (irr-span))
+        (append (token+span-list-fix tokens)
+                (list (make-token+span :token (token-close-delim (delim-paren))
+                                       :span (irr-span))))))
+
+; The kind of an error of the token-tree builder, named after
+; rustc's three errors about delimiters.
+
+(define rv-delim-error ((err reserrp))
+  :parents nil
+  (b* ((info (fty::reserr->info err))
+       (frame (and (consp info) (car info)))
+       (payload (and (consp frame) (consp (cdr frame)) (cadr frame)))
+       (kind (and (consp payload) (car payload))))
+    (case kind
+      (:mismatched-closing-delimiter :mismatched)
+      (:unclosed-delimiter :unclosed)
+      (:unexpected-closing-delimiter :unexpected)
+      (t :other))))
+
 ; Short inputs: (rv-go in out edition state) writes, for each test,
-; ("id" n) with the number of top-level token trees, ("id" :err) if
-; the lexer or tokenizer rejects the input, or ("id" :unbal).
+; ("id" x), where x is one of the following.
+; - :err if the lexer or tokenizer rejects the input.
+; - :mismatched, :unclosed, or :unexpected if the token-tree builder
+;   rejects the probe's tokens, with that kind of error.
+; - :split if the builder accepts the probe's tokens,
+;   but the input closes the probe's parenthesis before its end,
+;   as ") (" does: the input is not the arguments of the macro,
+;   and there is nothing to count
+;   (rustc builds the token trees, and reports an error later).
+; - Otherwise, the number of top-level token trees of the input.
 ; It returns the number of tests.
 
 (define rv-run1 ((nats nat-listp) (edition rust::editionp))
   :parents nil
-  (b* ((toks (tokenize-rust nats edition "t")))
-    (if (reserrp toks) :err (rv-tt-count toks nil 0))))
+  (b* ((toks (tokenize-rust nats edition "t"))
+       ((when (reserrp toks)) :err)
+       (trees (build-token-trees (rv-probe-tokens toks)))
+       ((when (reserrp trees)) (rv-delim-error trees))
+       ((unless (and (consp trees) (not (consp (cdr trees))))) :split)
+       (tree (car trees)))
+    (token-tree-case tree
+                     :leaf :split
+                     :delimited (rv-tt-count tree.trees 0))))
 
 (define rv-run ((tests rv-test-listp) (edition rust::editionp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -196,8 +223,9 @@
                 (take (min 20 pos) (nthcdr (nfix (- pos 20)) nats))
                 (take (min 30 (len rest)) rest))))
        (toks (tokenize-rust nats (rust::edition-2021) "t"))
-       ((when (reserrp toks)) (list :tokerr)))
-    (rv-deep-count toks nil 0)))
+       ((when (reserrp toks)) (list :tokerr))
+       ((when (reserrp (build-token-trees toks))) :unbal))
+    (rv-deep-count toks 0)))
 
 (define rv-files ((tests rv-test-listp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -288,7 +316,7 @@
        ((when (reserrp trees)) :err)
        (toks (tokenize-rust nats (rust::edition-2024) "t"))
        ((when (reserrp toks)) :err)
-       ((when (eq (rv-tt-count toks nil 0) :unbal)) :unbal))
+       ((when (reserrp (build-token-trees toks))) :unbal))
     (rv-bounds-aux trees 0 nil)))
 
 (define rv-bounds ((tests rv-test-listp) (acc true-listp))

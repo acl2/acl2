@@ -185,6 +185,12 @@ cats['float-hand'] = [
     '1.0#', '1.0"x"', "1.0'a'", '1.0f32#', '1e1"x"', "1.'a", '1.0r#a', '1.0r"a"',
 ]
 
+# Delimiters, for the building of token trees: every way of nesting them,
+# closing them with the wrong one, leaving them open, and closing none;
+# with a token among them, so that the number of token trees varies.
+cats['delim5'] = list(words(['(', ')', '[', ']', '{', '}', 'a'], 1, 5))
+cats['delim6'] = list(words(['(', ')', '[', ']'], 6, 6))
+
 # Characters that Unicode 17 added to XID_Start, and to XID_Continue only
 # (the first of each range added since Unicode 16, and the last of the
 # largest), alone, after a letter, before a digit, and in lifetimes.
