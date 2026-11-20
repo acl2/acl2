@@ -1,7 +1,9 @@
 Raw benchmark data for the evaluation in "Treesets: Efficient Finite Sets with
 Unique Representations" (Grant Jurgensen, ACL2 Workshop 2026).
 
-- `bench-raw.csv`: `(tset-bench::run-full)`, from
+- `bench-raw.csv`: `(treeset-bench::run-full)`, from
+  `[books]/kestrel/data/treeset/benchmark/`. The library has since been
+  renamed: the suite is now `(tset-bench::run-full)`, in
   `[books]/kestrel/data/tset/benchmark/`.
 - `hash-bench-raw.csv`: `(hash-bench::run-full)`, from
   `[books]/kestrel/data/hash/benchmark/`.
