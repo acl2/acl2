@@ -280,6 +280,22 @@
                   (fix map)))
   :enable extensionality)
 
+(defrule equal-of-restrict-of-keys
+  (implies (and (equiv x$$ (double-rewrite x$))
+                (equal x$$ x))
+           (equal (equal (restrict (keys x) y) x$)
+                  (and (mapp x$)
+                       (submap x y))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0)))
+  :enable extensionality)
+
+(defruled submap-becomes-equal-of-restrict
+  (equal (submap x y)
+         (equal (restrict (keys x) y) (fix x))))
+
+(theory-invariant (incompatible! (:rewrite submap-becomes-equal-of-restrict)
+                                 (:rewrite equal-of-restrict-of-keys)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defruled restrict-of-update
