@@ -448,6 +448,7 @@
 
   (define sym-nat-map-bump ((key symbolp)
                             (map sym-nat-map-p))
+    :returns (map$ sym-nat-map-p :hyp :guard)
     (let ((cursor (tmap::seek key map)))
       (tmap::from-cursor
         (if (tmap::entryp cursor)

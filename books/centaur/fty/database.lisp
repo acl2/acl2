@@ -402,8 +402,8 @@
        (transsumbody (replace-*-in-symbols-with-str body "TRANSSUM"))
        (setbody      (replace-*-in-symbols-with-str body "SET"))
        (omapbody     (replace-*-in-symbols-with-str body "OMAP"))
-       (tsetbody  (replace-*-in-symbols-with-str body "TSET"))
-       (tmapbody  (replace-*-in-symbols-with-str body "TMAP"))
+       (tsetbody     (replace-*-in-symbols-with-str body "TSET"))
+       (tmapbody     (replace-*-in-symbols-with-str body "TMAP"))
        (cases
         `(case (tag ,var)
            (:sum ,(if add-binds `(b* (((flexsum ,var) ,var)) ,sumbody) sumbody))

@@ -230,8 +230,8 @@
                            (change-flexalist al :strategy :drop-keys)))
             (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
             (defomap     (parse-flexomap (cdar x) xvar our-fixtypes fixtypes state))
-            (deftset  (parse-flextset (cdar x) xvar our-fixtypes fixtypes state))
-            (deftmap  (parse-flextmap (cdar x) xvar our-fixtypes fixtypes state))
+            (deftset     (parse-flextset (cdar x) xvar our-fixtypes fixtypes state))
+            (deftmap     (parse-flextmap (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
