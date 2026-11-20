@@ -12,6 +12,8 @@
 
 (include-book "runs")
 
+(include-book "xdoc/alter" :dir :system) ; for XDOC::WITHOUT-XDOC
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -309,32 +311,61 @@
     (declare (xargs :mode :program))
     (if (endp table)
         nil
-      (cons `(xdoc::li ,(concatenate 'string
-                                     "@('" (first (car table)) "'), @('"
-                                     (second (car table)) "')."))
+      (cons `(xdoc::li ,(concatenate
+                         'string
+                         "@('" (first (car table)) "'), @('"
+                         (second (car table)) "'): @('("
+                         (acl2::string-downcase
+                          (symbol-name
+                           (script-table-constructor (second (car table)))))
+                         ")')."))
             (script-table-items (cdr table))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro def-script-type ()
-  `(fty::deftagsum script
+  `(xdoc::without-xdoc
+    (fty::deftagsum script
+      ,@(script-table-sum-cases *script-table*)
+      :pred script-p)))
+
+(def-script-type)
+
+(defmacro def-script-topic ()
+  `(defxdoc script
+     :parents (script-tables)
      :short "Fixtype of the values of the @('Script') property."
      :long
      (xdoc::topstring
       (xdoc::p
        "There is one value for each entry of @('*script-table*'):
         see @(see script-table) for how the values are named.
-        The values, with their four-letter codes first
-        and their long names second, are:")
+        The values, with their four-letter codes first,
+        their long names second, and their constructors third, are:")
       (xdoc::ul ,@(script-table-items *script-table*))
       (xdoc::p
        "@('Katakana_Or_Hiragana') is a value
         that no code point has in the supported versions,
-        in either property."))
-     ,@(script-table-sum-cases *script-table*)
-     :pred script-p))
+        in either property.")
+      (xdoc::p
+       "The type is introduced with @(tsee fty::deftagsum).
+        The constructors have no arguments.
+        The recognizer of the type is @('script-p'),
+        its fixer is @('script-fix'),
+        and its equivalence is @('script-equiv').
+        The function @('script-kind')
+        returns the keyword of a value, such as @(':latin'),
+        and the macro @('script-case')
+        distinguishes the values by their keywords.")
+      (xdoc::p
+       "These functions and macros
+        have no documentation topics of their own.
+        @(tsee fty::deftagsum) generates 543 topics for this type,
+        three of them for each value,
+        and none of them would say more than this topic does.
+        So we turn them off, with @('xdoc::without-xdoc')."))))
 
-(def-script-type)
+(def-script-topic)
 
 ;;;;;;;;;;;;;;;;;;;;
 

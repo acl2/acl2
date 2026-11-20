@@ -988,6 +988,44 @@ validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
 validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
 
+## Documentation topics
+
+The documentation is in XDOC, under the topic `unicode::unicode`.  Most of
+its topics are written next to the definitions that they document.  The
+macros that define types also generate topics, and for a type with many
+values those are many topics that say nothing: `fty::deftagsum` generates
+three for each value, which have only the name of the value in them.
+
+The rule of this library: when one form generates more than 50
+documentation topics, and they say nothing that one written topic could
+not say, the form goes inside `xdoc::without-xdoc` (book `xdoc/alter`),
+and one topic is written for it.  Three types are over the line:
+
+| Type | Values | Generated topics, turned off |
+|---|---|---|
+| `script` | 179 | 543 |
+| `general-category` | 30 | 96 |
+| `bidi-class` | 23 | 75 |
+
+The written topic of each of these types lists the values, says how the
+constructors are named, and names the recognizer, the fixer, the
+equivalence, the `-kind` function and the `-case` macro of the type.
+Those are the ones that `fty::deftagsum` always introduces, and they are
+used in the same way; they only have no topics of their own, so their
+names are not links in the documentation of the functions that use them.
+For `script`, the list of the values in the topic is generated from
+`*script-table*`, and has the constructor of each value.
+
+The rule is about topics without content.  It does not turn off topics
+that show a definition: the functions that `defruns` introduces for each
+table of runs (17 topics for each of six properties) keep theirs, because
+the macro writes their definitions, and their topics are where those and
+their theorems can be read.  The smaller types of the same kind
+(`identifier-type`, with 12 values and 42 topics, and the ones with fewer
+values) are under the line and keep the generated topics.
+
+With this, the library has about 700 topics.
+
 ## Performance
 
 Lookups in the maps (combining classes, decompositions, compositions) take

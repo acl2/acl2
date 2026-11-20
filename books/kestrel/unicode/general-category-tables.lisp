@@ -12,6 +12,8 @@
 
 (include-book "runs")
 
+(include-book "xdoc/alter" :dir :system) ; for XDOC::WITHOUT-XDOC
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,7 +63,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum general-category
+(xdoc::without-xdoc
+ (fty::deftagsum general-category
+   (:uppercase-letter ())
+   (:lowercase-letter ())
+   (:titlecase-letter ())
+   (:modifier-letter ())
+   (:other-letter ())
+   (:nonspacing-mark ())
+   (:spacing-mark ())
+   (:enclosing-mark ())
+   (:decimal-number ())
+   (:letter-number ())
+   (:other-number ())
+   (:connector-punctuation ())
+   (:dash-punctuation ())
+   (:open-punctuation ())
+   (:close-punctuation ())
+   (:initial-punctuation ())
+   (:final-punctuation ())
+   (:other-punctuation ())
+   (:math-symbol ())
+   (:currency-symbol ())
+   (:modifier-symbol ())
+   (:other-symbol ())
+   (:space-separator ())
+   (:line-separator ())
+   (:paragraph-separator ())
+   (:control ())
+   (:format ())
+   (:surrogate ())
+   (:private-use ())
+   (:unassigned ())
+   :pred general-category-p))
+
+(defxdoc general-category
+  :parents (general-category-tables)
   :short "Fixtype of the values of the @('General_Category') property."
   :long
   (xdoc::topstring
@@ -126,38 +163,26 @@
     "The first letter of an abbreviation
      is the same for values that belong together:
      see @(tsee general-category-letter-p)
-     and the predicates that follow it."))
-  (:uppercase-letter ())
-  (:lowercase-letter ())
-  (:titlecase-letter ())
-  (:modifier-letter ())
-  (:other-letter ())
-  (:nonspacing-mark ())
-  (:spacing-mark ())
-  (:enclosing-mark ())
-  (:decimal-number ())
-  (:letter-number ())
-  (:other-number ())
-  (:connector-punctuation ())
-  (:dash-punctuation ())
-  (:open-punctuation ())
-  (:close-punctuation ())
-  (:initial-punctuation ())
-  (:final-punctuation ())
-  (:other-punctuation ())
-  (:math-symbol ())
-  (:currency-symbol ())
-  (:modifier-symbol ())
-  (:other-symbol ())
-  (:space-separator ())
-  (:line-separator ())
-  (:paragraph-separator ())
-  (:control ())
-  (:format ())
-  (:surrogate ())
-  (:private-use ())
-  (:unassigned ())
-  :pred general-category-p)
+     and the predicates that follow it.")
+   (xdoc::p
+    "The type is introduced with @(tsee fty::deftagsum).
+     Each value has a constructor without arguments,
+     named @('general-category-') followed by the long name of the value
+     in lower case, with hyphens in place of underscores:
+     for example, @('(general-category-uppercase-letter)').
+     The recognizer of the type is @('general-category-p'),
+     its fixer is @('general-category-fix'),
+     and its equivalence is @('general-category-equiv').
+     The function @('general-category-kind')
+     returns the keyword of a value, such as @(':uppercase-letter'),
+     and the macro @('general-category-case')
+     distinguishes the values by their keywords.")
+   (xdoc::p
+    "These functions and macros have no documentation topics of their own.
+     @(tsee fty::deftagsum) generates 96 topics for this type,
+     three of them for each value,
+     and none of them would say more than this topic does.
+     So we turn them off, with @('xdoc::without-xdoc').")))
 
 ;;;;;;;;;;;;;;;;;;;;
 
