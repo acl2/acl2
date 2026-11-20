@@ -69,6 +69,11 @@ files+=("$work/rust-$version.txt")
 "$oracle" "$version" pairs "$work/acl2-pairs-$version.txt" || status=1
 "$oracle" "$version" stream-safe "$work/acl2-stream-safe-$version.txt" \
     || status=1
+if grep -q '^    "have-unicode-bidi",' \
+        "$here/rust-oracle/v$version/Cargo.toml"; then
+    echo "== Rust: the display order of text (this takes a minute)"
+    "$oracle" "$version" display-order || status=1
+fi
 
 if [ $# -gt 0 ]; then
     echo "== Python: running the oracle"

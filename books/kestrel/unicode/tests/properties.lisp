@@ -1393,6 +1393,15 @@
 (test (not (right-to-left-free-p '(#x61 #x05D0) *v17*)))
 (test (not (right-to-left-free-p '(#x61 #x202E #x62) *v17*)))
 
+; Neither are the Arabic-Indic digits, whose class is AN (Arabic_Number):
+; U+0661, a space and U+0662 are displayed with U+0662 first.
+; The European digits, whose class is EN, are.
+
+(test (right-to-left-code-point-p #x0661 *v17*))
+(test (not (right-to-left-free-p '(#x0661 #x20 #x0662) *v17*)))
+(test (not (right-to-left-code-point-p #x31 *v17*)))
+(test (right-to-left-free-p '(#x31 #x20 #x32) *v17*))
+
 ; Taking the internal skeleton a second time changes nothing
 ; in Unicode 18.0.0.  In Unicode 16.0.0 and 17.0.0 it does, for
 ; thirteen code points, such as U+01C6 LATIN SMALL LETTER DZ WITH CARON,

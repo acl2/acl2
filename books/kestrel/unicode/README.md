@@ -526,15 +526,19 @@ About confusable strings and mixed scripts (UTS #39):
 
 `skeleton` and `confusable-p` are the functions of the specification only
 for the lists that satisfy their guard, `right-to-left-free-p`: no code
-point of class `R`, `AL`, `RLE`, `RLO` or `RLI`.  A list of code points
-below U+0590, where the Hebrew block starts, satisfies it
+point of class `R`, `AL`, `AN`, `RLE`, `RLO` or `RLI`.  A list of code
+points below U+0590, where the Hebrew block starts, satisfies it
 (`right-to-left-free-p-when-all-below-590`).  For those lists the
 skeleton of the specification, which first puts the characters in the
-order of display, is the internal skeleton.  The library does not have the
-bidirectional algorithm, so that is not a theorem here, and the skeleton
-of the other lists is not modeled.  The specification states the condition
-without the three explicit formatting classes; the library adds them,
-because an override from right to left reorders left-to-right characters.
+order of display, is the internal skeleton, because they are displayed in
+the order in which they are stored.  **That is not a theorem here**: the
+library does not have the bidirectional algorithm.  It is a claim that was
+tested with an implementation of the algorithm (see "Validation").  The
+skeleton of the other lists is not modeled.  The specification states the
+condition with the classes `R` and `AL` only.  The test shows that this
+is not enough: U+0661, a space and U+0662 (class `AN`, the Arabic-Indic
+digits) are displayed with U+0662 first, and after U+202E RIGHT-TO-LEFT
+OVERRIDE (class `RLO`) the letters a, b are displayed as b, a.
 
 And about two versions, besides the theorems listed further up:
 `stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
@@ -1106,6 +1110,25 @@ earlier comparisons of every code point were run again.  No differences:
 - As a control, comparing the 17.0.0 output of the library with the
   18.0.0 oracle reports 2,529 code points that differ in the skeleton and
   13,010 in the augmented script set.
+
+The guard of `skeleton` rests on a claim about the Unicode Bidirectional
+Algorithm, which the library does not have: a text with no character of
+class `R`, `AL`, `AN`, `RLE`, `RLO` or `RLI` is displayed, in a paragraph
+from left to right, in the order in which it is stored.  The claim was
+tested on 2026-11-20 with `unicode-bidi` 0.3.18 (Unicode 16.0.0), by
+`oracle 16.0.0 display-order`, which `validation/run.sh` runs:
+
+- All 67,368,420 strings of one to six characters over twenty characters
+  of sixteen of the seventeen other classes are displayed in the order in
+  which they are stored.  (The seventeenth class is `B`, the paragraph
+  separators, which only cut a text into paragraphs.)  Explicit formatting
+  characters are left out of the comparison of the two orders, because
+  the skeleton removes them.
+- For each of the six classes, some string of up to four characters that
+  has one character of the class is displayed in another order: the test
+  prints one for each.
+
+So the claim is tested, not proved, and only on short strings.
 
 Not compared with another implementation: the resolved script set of a
 list, the three classes of confusable strings, and mixed-number
