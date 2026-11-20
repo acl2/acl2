@@ -63,7 +63,10 @@
       incorporated into lexeme validity
       via @(tsee lexeme-cst-okp).")
     (xdoc::li
-     "[SC3] Bare carriage return in doc comments: not yet formalized.")
+     "[SC3] Carriage return in doc comments:
+      formalized here,
+      as @(tsee lexeme-cst-doc-comment-cr-okp),
+      incorporated into @(tsee lexing-okp).")
     (xdoc::li
      "[SC4] Unicode XID identifiers with NFC normalization:
       not yet formalized.
@@ -133,7 +136,16 @@
       formalized here,
       as @(tsee lexeme-cst-float-period-okp),
       incorporated into @(tsee lexeme-cst-maximal-p)
-      and @(tsee lexing-okp)."))
+      and @(tsee lexing-okp).")
+    (xdoc::li
+     "[SC15] Reserved guards of edition 2024
+      (a @('#') immediately followed by
+      another @('#') or by a double quote):
+      formalized here,
+      as @(tsee lexeme-cst-reserved-guard-okp).
+      It depends on the edition,
+      so it is not part of @(tsee lexing-okp);
+      the tokenizer rejects these forms in edition 2024."))
    (xdoc::p
     "Some of these side conditions are there
      because rustc and the Rust Reference differ,
@@ -384,7 +396,7 @@ multi-line */")))
      with [SC2] (block comment closing)
      and [SC13] (string continuations).
      For [SC2], if the lexeme's string starts with @('/*'),
-     the lexeme can only be a block comment
+     the lexeme can only be a block comment, doc comment or not
      (no other lexeme's string starts that way),
      and its string must be exactly one complete block comment.
      For [SC13], see @(tsee lexeme-cst-string-continues-okp).
@@ -412,6 +424,65 @@ multi-line */")))
          (implies (prefixp (list #x2F #x2A) string) ; starts with /*
                   (block-comment-string-p string)))
        (lexeme-cst-string-continues-okp tree)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC3] Carriage return in doc comments.
+
+(define doc-comment-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding a doc comment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the lexemes subject to
+     the side condition [SC3]:
+     CSTs of the form @('lexeme -> comment -> R')
+     where @('R') is one of the four rules for doc comments,
+     line or block, outer or inner."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) nil)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "comment"))
+       ((when (reserrp sub2)) nil)
+       (rulename? (abnf::check-tree-nonleaf? sub2)))
+    (and (member-equal rulename?
+                       '("outer-line-doc"
+                         "inner-line-doc"
+                         "outer-block-doc"
+                         "inner-block-doc"))
+         t)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-doc-comment-cr-okp ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST holding a doc comment
+          has no carriage return [SC3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A doc comment lexeme
+     (see @(tsee doc-comment-lexeme-cst-p))
+     must not contain a carriage return (U+000D).
+     rustc rejects an input with such a doc comment.
+     A carriage return before a line feed does not count:
+     the two become a line feed before lexing,
+     so they do not reach the lexer.
+     Other comments may contain carriage returns.")
+   (xdoc::p
+    "Like [SC8], this condition rejects the whole lexing,
+     so it is a conjunct of @(tsee lexing-okp)
+     rather than part of the candidate set @(tsee lexeme-cst-okp).
+     The rules let a doc comment extend over a carriage return,
+     and maximal munch takes that longer comment,
+     which this condition then rejects.
+     If the condition restricted the candidates instead,
+     maximal munch would take the line doc comment
+     that ends just before the carriage return,
+     and the input @('///a'), carriage return, @('b') would lex,
+     as a doc comment, whitespace, and an identifier."))
+  (implies (doc-comment-lexeme-cst-p tree)
+           (not (member-equal #xd (abnf::tree->string tree)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -928,6 +999,55 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; [SC15] Reserved guards of edition 2024.
+
+(define pound-lexeme-cst-p ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding a lone @('#')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A lone @('#') is a punctuation token,
+     subject to the side condition [SC15].
+     No other lexeme consists of just a @('#'),
+     so it suffices to check the string of the tree."))
+  (equal (abnf::tree->string tree) (list #x23)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-reserved-guard-okp ((tree abnf::treep)
+                                       (rest-input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST holding a @('#') does not form
+          a reserved guard with the remaining input [SC15]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In edition 2024, two forms are reserved for future use:
+     two or more @('#') in a row,
+     and one or more @('#') immediately followed by a string literal.
+     Both start with a @('#') lexeme
+     (see @(tsee pound-lexeme-cst-p))
+     that is immediately followed by @('#') (U+0023)
+     or by @('\"') (U+0022);
+     and after a @('#'), a double quote can only start a string literal.
+     So the condition is that no @('#') lexeme is followed in that way.
+     Like [SC8], it rejects the whole lexing:
+     in edition 2024, @('##') is an error,
+     while in edition 2021 it is two tokens.")
+   (xdoc::p
+    "This condition holds in edition 2024 only.
+     Lexing does not depend on the edition,
+     so the condition is not a conjunct of @(tsee lexing-okp):
+     the tokenizer, which takes the edition, checks it
+     (see @(tsee tokenize-lexeme-csts))."))
+  (b* ((rest-input (nat-list-fix rest-input)))
+    (implies (pound-lexeme-cst-p tree)
+             (and (not (prefixp (list #x23) rest-input)) ; #
+                  (not (prefixp (list #x22) rest-input)))))) ; "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; [SC1] Maximal munch.
 
 (define-sk lexeme-cst-maximal-p ((tree abnf::treep) (rest-input nat-listp))
@@ -977,6 +1097,8 @@ multi-line */")))
      each covers a nonempty prefix of the remaining input
      and is maximal against what follows
      (see @(tsee lexeme-cst-maximal-p));
+     no doc comment lexeme contains a carriage return
+     (see @(tsee lexeme-cst-doc-comment-cr-okp));
      no float literal lexeme that ends with its period
      is followed by input that takes the period from it
      (see @(tsee lexeme-cst-float-period-okp));
@@ -1010,6 +1132,7 @@ multi-line */")))
          (consp string)
          (prefixp string input)
          (lexeme-cst-maximal-p tree (nthcdr (len string) input))
+         (lexeme-cst-doc-comment-cr-okp tree)
          (lexeme-cst-float-period-okp tree (nthcdr (len string) input))
          (lexeme-cst-reserved-number-okp tree (nthcdr (len string) input))
          (lexeme-cst-reserved-prefix-okp tree (nthcdr (len string) input))

@@ -17,7 +17,7 @@
 ; from the files named in the comments below.
 ;
 ; Only the cases within the current grammar slice are transcribed
-; (no block doc comments or non-ASCII identifiers).
+; (no non-ASCII identifiers).
 ; The transcription respects rustc's STAGING:
 ; cases rustc rejects in its lexer
 ; (invalid digits in a based literal, no valid digits,
@@ -25,8 +25,9 @@
 ; reserved prefixes, malformed or unterminated literals,
 ; invalid escapes, an underscore suffix,
 ; a lifetime followed by a single quote,
-; unterminated block comments)
-; must fail here [SC2] [SC7] [SC8] [SC9] [SC10] [SC11] [SC12],
+; unterminated block comments,
+; a carriage return in a doc comment)
+; must fail here [SC2] [SC3] [SC7] [SC8] [SC9] [SC10] [SC11] [SC12],
 ; while cases rustc rejects only in later phases
 ; (float suffixes on based literals, out-of-range values,
 ; suffixes on character and string literals,
@@ -122,6 +123,8 @@
 ; tests/ui/rust-2021/reserved-prefixes.rs,
 ; the cases that are fine (whitespace or punctuation intervenes,
 ; or the prefix is a genuine raw identifier).
+; (The "##" of "foo ##bar" is a reserved guard in edition 2024 [SC15]:
+; the tokenizer rejects it there; see the tokenizer tests.)
 
 (test-lex "foo # bar" 5) ; foo, space, #, space, bar
 (test-lex "foo #bar" 4) ; foo, space, #, bar
@@ -160,6 +163,26 @@
 pub fn main() {
 }
 " 16)
+
+; tests/ui/lexer/lex-bare-cr-string-literal-doc-comment.rs
+; (the doc comment cases; lexer-stage) [SC3]:
+; a bare CR is not allowed in a doc comment,
+; line or block, outer or inner.
+
+(test-lex-fail
+ (acl2::implode (append (coerce "/// doc comment with bare CR: '" 'list)
+                        (list (code-char 13) #\'))))
+(test-lex-fail
+ (acl2::implode (append (coerce "/** block doc comment with bare CR: '" 'list)
+                        (list (code-char 13))
+                        (coerce "' */" 'list))))
+(test-lex-fail
+ (acl2::implode (append (coerce "//! doc comment with bare CR: '" 'list)
+                        (list (code-char 13) #\'))))
+(test-lex-fail
+ (acl2::implode (append (coerce "/*! block doc comment with bare CR: '" 'list)
+                        (list (code-char 13))
+                        (coerce "' */" 'list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -277,7 +300,7 @@ pub fn main() {
 
 ; tests/ui/parser/trailing-carriage-return-in-string.rs,
 ; tests/ui/lexer/lex-bare-cr-string-literal-doc-comment.rs
-; (the string cases; the doc comment cases are [SC3], not yet covered),
+; (the string cases; the doc comment cases are further below),
 ; tests/ui/parser/unbalanced-doublequote.rs (lexer-stage):
 ; a string continuation is a backslash before a line feed,
 ; a bare CR is not allowed in strings,
@@ -349,6 +372,8 @@ pub fn main() {
 ; tests/ui/parser/raw/raw-str-in-macro-call.rs:
 ; "#" after a raw string are separate tokens,
 ; rejected (if at all) only by rustc's parser.
+; (Two or more of them in a row are a reserved guard in edition 2024
+; [SC15]: the tokenizer rejects them there; see the tokenizer tests.)
 
 (test-lex "r#\"\"##" 2)
 (test-lex "r#\"

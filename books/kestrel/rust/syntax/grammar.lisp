@@ -113,8 +113,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first slice covers whitespace, comments
-     (except block doc comments),
+    "The first slice covers whitespace, comments,
      ASCII identifiers, lifetimes, integer and float literals,
      character, byte, string, byte-string, and C-string literals
      (including their raw forms),
@@ -227,8 +226,7 @@
       and rustc rejects the input as an unterminated block comment.
       We reject it, by the side condition [SC2]
       (see @(tsee block-comment-string-p)).
-      The same holds for block doc comments, as in @('/*!/*/'),
-      which our grammar does not yet tell from other block comments."))
+      The same holds for block doc comments, as in @('/*!/*/')."))
    (xdoc::desc
     "A lone underscore right after a character or string literal"
     (xdoc::p
@@ -301,6 +299,43 @@
       We reject it, by the side condition [SC12]
       (see @(tsee lexeme-cst-lifetime-quote-okp))."))
    (xdoc::h3 "Where the Reference is ambiguous or contradicts itself")
+   (xdoc::desc
+    "A carriage return in a doc comment"
+    (xdoc::p
+     "The Reference says that a carriage return is not allowed in "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/comments.html#doc-comments"
+      "doc comments")
+     ", and its rules exclude one from their content.
+      But excluding it from the content does not reject the input:
+      by the rules, @('///a'), a carriage return, and @('b')
+      are a doc comment that ends before the carriage return,
+      then whitespace, then an identifier.
+      rustc takes a line doc comment to the end of its line,
+      and a block doc comment to its closing @('*/'),
+      and rejects the input because of the carriage return in the comment.
+      We reject it, by the side condition [SC3]
+      (see @(tsee lexeme-cst-doc-comment-cr-okp))."))
+   (xdoc::desc
+    "A slash right after the @('/**') of a block comment"
+    (xdoc::p
+     "The Reference gives @('/**/') as a block "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/comments.html"
+      "comment")
+     " that is not a doc comment.
+      But in its rule for outer block doc comments,
+      the character after the @('/**')
+      may be any character other than @('*'), also a slash.
+      So @('/**/ */') matches that rule as a whole,
+      and as a doc comment it is the longer text.
+      rustc takes @('/**/') as a complete block comment
+      wherever it occurs:
+      @('/**/ */') is that comment
+      followed by the tokens @('*') and @('/').
+      In our rule for outer block doc comments,
+      the character after the @('/**')
+      is neither @('*') nor @('/')."))
    (xdoc::desc
     "An underscore between the digits of a number literal and its suffix"
     (xdoc::p
@@ -602,9 +637,9 @@
       We have also compared it with our lexer,
       on where each token starts and ends:
       the two agree on all those inputs,
-      except on some with forms that our lexer does not cover yet
-      (block doc comments, carriage returns in doc comments,
-      and non-ASCII identifiers)."))
+      except on that one, where our lexer does as rustc,
+      and on those with non-ASCII identifiers,
+      which our lexer does not cover yet."))
    (xdoc::desc
     "The Ferrocene Language Specification"
     (xdoc::p
@@ -743,4 +778,11 @@
      (xdoc::td "[SC14] Float literals ending with a period")
      (xdoc::td "The lookaheads after @('FLOAT_BODY_WITH_FINAL_DOT').")
      (xdoc::td "The lookahead in the last alternative of
-                @('FLOAT_LITERAL').")))))
+                @('FLOAT_LITERAL')."))
+    (xdoc::tr
+     (xdoc::td "[SC15] Reserved guards of edition 2024")
+     (xdoc::td "@('Reserved_guard'),
+                which only the token rule of edition 2024 includes.")
+     (xdoc::td "@('RESERVED_GUARDED_STRING_LITERAL') and
+                @('RESERVED_POUNDS'), which always apply,
+                since the grammar has no editions.")))))
