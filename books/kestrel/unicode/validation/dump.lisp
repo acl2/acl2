@@ -30,6 +30,8 @@
 (include-book "../decimal-digits")
 (include-book "../emoji")
 (include-book "../identifier-status")
+(include-book "../skeleton")
+(include-book "../mixed-scripts")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,6 +89,15 @@
 ;   idst    1 if its Identifier_Status is Allowed, 0 if it is Restricted
 ;   idty    its Identifier_Type: the names of the types,
 ;           in the order of the file IdentifierType.txt
+;   skel    the internal skeleton of the code point alone
+;   skelk   the same without the second step of the internal skeleton,
+;           which removes the default ignorable code points
+;           (an earlier definition, which some implementations have)
+;   skelm   the internal skeleton of the letter a, the code point,
+;           U+0301 COMBINING ACUTE ACCENT and U+0327 COMBINING CEDILLA
+;   ass     its augmented script set: ALL, or the four-letter codes
+;           of its elements, the scripts first, in the order of the codes,
+;           and then those of Hanb, Hntl, Jpan and Kore that it has
 ;
 ; Numbers are in decimal; the code points of a sequence, and the items
 ; of a set, are separated by spaces.
@@ -219,7 +230,24 @@
        (state (princ$ ";" channel state))
        (state (dump-strings
                (identifier-type-names (code-point-identifier-types cp ver))
-               channel state)))
+               channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-nats (internal-skeleton (list cp) ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-nats
+               (nfd (replace-by-prototypes (nfd (list cp) ver) ver) ver)
+               channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-nats
+               (internal-skeleton (list #x61 cp #x301 #x327) ver)
+               channel state))
+       (state (princ$ ";" channel state))
+       (set (code-point-augmented-script-set cp ver))
+       (state (if (equal (script-set-kind set) :all)
+                  (princ$ "ALL" channel state)
+                (dump-strings
+                 (writing-system-list-codes (script-set-of->members set))
+                 channel state))))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -242,8 +270,9 @@
        (state (princ$ "nfd;nfc;nfkd;nfkc;" channel state))
        (state (princ$ "gc;di;vs;jc;nchar;dep;pcm;psyn;" channel state))
        (state (princ$ "ids;idc;sc;scx;bc;blk;dd;" channel state))
-       (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty"
+       (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty;"
                       channel state))
+       (state (princ$ "skel;skelk;skelm;ass" channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))

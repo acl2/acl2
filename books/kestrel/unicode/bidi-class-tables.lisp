@@ -137,11 +137,17 @@
      and the macro @('bidi-class-case')
      distinguishes the values by their keywords.")
    (xdoc::p
-    "These functions and macros have no documentation topics of their own.
+    "Apart from the recognizer, which has a topic of one line
+     so that the signatures of functions link to this type,
+     these functions and macros have no documentation topics of their own.
      @(tsee fty::deftagsum) generates 75 topics for this type,
      three of them for each value,
      and none of them would say more than this topic does.
      So we turn them off, with @('xdoc::without-xdoc').")))
+
+(defxdoc bidi-class-p
+  :parents (bidi-class)
+  :short "Recognizer of the values of the type @(tsee bidi-class).")
 
 ;;;;;;;;;;;;;;;;;;;;
 

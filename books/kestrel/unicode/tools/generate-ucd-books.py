@@ -111,6 +111,7 @@ UCD_FILES = {
     "emoji/emoji-data.txt": True,
     "security/IdentifierStatus.txt": True,
     "security/IdentifierType.txt": True,
+    "security/confusables.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
     "PropertyValueAliases.txt": False,
@@ -1493,6 +1494,85 @@ def book_normalization_test(version, sources):
     return book
 
 
+def book_confusables(version, sources):
+    source = sources["security/confusables.txt"]
+    book = Book(version, "confusables",
+                "Prototypes of confusable characters,"
+                " from the file confusables.txt of UTS #39.",
+                [source], ["maps"], ["std/util/defconsts"])
+    prototype = {}
+    total = None
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        m = re.match(r"^# total: (\d+)\s*$", line)
+        if m:
+            total = int(m.group(1))
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 3 or fields[2] != "MA":
+            die("%s: not 'source ; target ; MA'" % where)
+        cp, hi = parse_cp_range(fields[0], where)
+        if hi != cp:
+            die("%s: the source is a range" % where)
+        target = []
+        for field in fields[1].split():
+            lo, hi = parse_cp_range(field, where)
+            if hi != lo or 0xD800 <= lo <= 0xDFFF:
+                die("%s: bad target" % where)
+            target.append(lo)
+        if not target:
+            die("%s: empty target" % where)
+        if cp in prototype:
+            die("%s: U+%04X listed twice" % (where, cp))
+        if target == [cp]:
+            die("%s: U+%04X is its own prototype" % (where, cp))
+        prototype[cp] = target
+    if total != len(prototype):
+        die("%s: %d entries, but the file says 'total: %s'"
+            % (source.relpath, len(prototype), total))
+    # No code point of a prototype has a prototype of its own.
+    for cp, target in sorted(prototype.items()):
+        for c in target:
+            if c in prototype:
+                die("%s: U+%04X, in the prototype of U+%04X,"
+                    " has a prototype" % (source.relpath, c, cp))
+    lengths = {}
+    for target in prototype.values():
+        lengths[len(target)] = lengths.get(len(target), 0) + 1
+    book.comment(
+        "The prototypes of the characters that can be confused with"
+        " others\n"
+        "(UTS #39, Section 4): a map from a code point to its prototype,\n"
+        "which is a sequence of one or more code points.\n"
+        "The map is built from an alist whose entries are lists:\n"
+        "a code point, then the code points of its prototype.\n"
+        "A code point that is not in the map is its own prototype.\n"
+        "The third field of each line of the file, which is always MA,\n"
+        "is not recorded.\n"
+        "%d entries.  Entries per length of the prototype:"
+        % len(prototype))
+    for n in sorted(lengths):
+        book.comment("  %2d  %5d" % (n, lengths[n]))
+    book.blank()
+    def item(cp, target):
+        # An entry, on several lines if it is long.
+        lines = ["(" + hexcp(cp)]
+        for c in target:
+            if len(lines[-1]) + 1 + len(hexcp(c)) > 72:
+                lines.append(" " + hexcp(c))
+            else:
+                lines[-1] += " " + hexcp(c)
+        return "\n     ".join(lines) + ")"
+
+    book.tree_map("prototype",
+                  [item(cp, target)
+                   for cp, target in sorted(prototype.items())],
+                  True, "prototype-mapp")
+    return book
+
+
 BOOKS = [book_derived_core_properties,
          book_prop_list,
          book_derived_combining_class,
@@ -1506,6 +1586,7 @@ BOOKS = [book_derived_core_properties,
          book_emoji_data,
          book_identifier_status,
          book_identifier_type,
+         book_confusables,
          book_normalization_test]
 
 

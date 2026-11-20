@@ -67,6 +67,10 @@
     "security/IdentifierType.txt": {
       "sha256": "c7e57f71176fb3035e0c85e4d9f30b08374588b2bd16e729efbc7e49c7c9438f",
       "url": "https://www.unicode.org/Public/security/16.0.0/IdentifierType.txt"
+    },
+    "security/confusables.txt": {
+      "sha256": "95bd0aad6dced5ebc63436f459c06ab21a8d107cd842fb57f5c3a1e91bca8611",
+      "url": "https://www.unicode.org/Public/security/16.0.0/confusables.txt"
     }
   },
   "17.0.0": {
@@ -137,6 +141,10 @@
     "security/IdentifierType.txt": {
       "sha256": "924ac63faa97ed73420d6ac48d08279d90968c7da0502ab701e08bfbb9683c22",
       "url": "https://www.unicode.org/Public/17.0.0/security/IdentifierType.txt"
+    },
+    "security/confusables.txt": {
+      "sha256": "091c7f82fc39ef208faf8f94d29c244de99254675e09de163160c810d13ef22a",
+      "url": "https://www.unicode.org/Public/17.0.0/security/confusables.txt"
     }
   },
   "18.0.0": {
@@ -207,6 +215,10 @@
     "security/IdentifierType.txt": {
       "sha256": "fa24851acc669e58670e354e7b98a4ec8f52a809ec4f80524b6a60efdb868831",
       "url": "https://www.unicode.org/Public/18.0.0/security/IdentifierType.txt"
+    },
+    "security/confusables.txt": {
+      "sha256": "6ed3ee967c9dfdf6677d563c9985182fbc50a2efb7d6059cd57b2e2ce18f5b92",
+      "url": "https://www.unicode.org/Public/18.0.0/security/confusables.txt"
     }
   }
 }

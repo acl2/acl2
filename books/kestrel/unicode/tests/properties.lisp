@@ -1296,3 +1296,217 @@
 (test (equal (range-list-size
               (identifier-type-ranges (identifier-type-inclusion) *v17*))
              18))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Prototypes of confusable characters.
+
+; U+0441 CYRILLIC SMALL LETTER ES looks like the letter c;
+; U+0153 LATIN SMALL LIGATURE OE looks like o followed by e.
+
+(test (equal (prototype #x0441 *v17*) '(#x63)))
+(test (equal (prototype #x0153 *v17*) '(#x6F #x65)))
+(test (equal (prototype #x63 *v17*) '(#x63)))
+(test (own-prototype-p #x63 *v17*))
+(test (not (own-prototype-p #x0441 *v17*)))
+(test (equal (replace-by-prototypes '(#x0441 #x0153) *v17*)
+             '(#x63 #x6F #x65)))
+
+; The digit one, the capital letter I and the vertical line
+; look like the small letter l.
+
+(test (equal (prototype #x31 *v17*) '(#x6C)))
+(test (equal (prototype #x49 *v17*) '(#x6C)))
+(test (equal (prototype #x7C *v17*) '(#x6C)))
+
+; The data changes between versions:
+; the prototype of U+01C6 LATIN SMALL LETTER DZ WITH CARON.
+
+(test (equal (prototype #x1C6 *v16*) '(#x64 #x17E)))
+(test (equal (prototype #x1C6 *v17*) '(#x64 #x17E)))
+(test (equal (prototype #x1C6 *v18*) '(#x64 #x7A #x306)))
+
+; The longest prototype is the one of
+; U+FDFA ARABIC LIGATURE SALLALLAHOU ALAYHE WASALLAM.
+
+(test (equal (len (prototype #xFDFA *v17*)) 18))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Skeletons and confusable strings.
+
+; The examples of UTS #39, Section 4.
+
+(defconst *paypal* '(#x70 #x61 #x79 #x70 #x61 #x6C))
+(defconst *paypal-with-cyrillic-a* '(#x70 #x430 #x79 #x70 #x430 #x6C))
+(defconst *scope* '(#x73 #x63 #x6F #x70 #x65))
+(defconst *scope-in-cyrillic* '(#x455 #x441 #x43E #x440 #x435))
+(defconst *ljeto-with-digraph* '(#x1C9 #x65 #x74 #x6F))
+(defconst *ljeto* '(#x6C #x6A #x65 #x74 #x6F))
+
+(test (equal (skeleton *paypal* *v17*) *paypal*))
+(test (equal (skeleton *paypal-with-cyrillic-a* *v17*) *paypal*))
+(test (confusable-p *paypal* *paypal-with-cyrillic-a* *v17*))
+(test (mixed-script-confusable-p *paypal* *paypal-with-cyrillic-a* *v17*))
+(test (not (single-script-confusable-p *paypal* *paypal-with-cyrillic-a*
+                                       *v17*)))
+(test (not (whole-script-confusable-p *paypal* *paypal-with-cyrillic-a*
+                                      *v17*)))
+
+(test (confusable-p *scope* *scope-in-cyrillic* *v17*))
+(test (whole-script-confusable-p *scope* *scope-in-cyrillic* *v17*))
+(test (mixed-script-confusable-p *scope* *scope-in-cyrillic* *v17*))
+
+(test (confusable-p *ljeto-with-digraph* *ljeto* *v17*))
+(test (single-script-confusable-p *ljeto-with-digraph* *ljeto* *v17*))
+(test (not (mixed-script-confusable-p *ljeto-with-digraph* *ljeto* *v17*)))
+
+(test (not (confusable-p *paypal* *scope* *v17*)))
+
+; The second step removes the default ignorable code points,
+; such as U+200D ZERO WIDTH JOINER and U+00AD SOFT HYPHEN.
+
+(test (equal (remove-default-ignorable '(#x61 #x200D #x62 #xAD) *v17*)
+             '(#x61 #x62)))
+(test (equal (internal-skeleton '(#x61 #x200D #x62 #xAD) *v17*)
+             '(#x61 #x62)))
+(test (equal (internal-skeleton '(#x200D) *v17*) nil))
+
+; The first step is canonical decomposition:
+; a list and its NFC form have the same skeleton.
+; U+00E9 is e with acute; U+0301 is the combining acute accent.
+
+(test (equal (internal-skeleton '(#xE9) *v17*)
+             (internal-skeleton '(#x65 #x301) *v17*)))
+(test (confusable-p '(#xE9) '(#x65 #x301) *v17*))
+
+; The skeleton is defined here for the lists
+; that are displayed in the order in which they are stored.
+; U+05D0 HEBREW LETTER ALEF and U+0627 ARABIC LETTER ALEF are not such,
+; and neither is U+202E RIGHT-TO-LEFT OVERRIDE.
+
+(test (right-to-left-free-p *paypal-with-cyrillic-a* *v17*))
+(test (right-to-left-code-point-p #x05D0 *v17*))
+(test (right-to-left-code-point-p #x0627 *v17*))
+(test (right-to-left-code-point-p #x202E *v17*))
+(test (not (right-to-left-code-point-p #x202D *v17*))) ; LEFT-TO-RIGHT OVERRIDE
+(test (not (right-to-left-free-p '(#x61 #x05D0) *v17*)))
+(test (not (right-to-left-free-p '(#x61 #x202E #x62) *v17*)))
+
+; Taking the internal skeleton a second time changes nothing
+; in Unicode 18.0.0.  In Unicode 16.0.0 and 17.0.0 it does, for
+; thirteen code points, such as U+01C6 LATIN SMALL LETTER DZ WITH CARON,
+; whose internal skeleton ends with U+030C COMBINING CARON,
+; which has the prototype U+0306 COMBINING BREVE.
+
+(test (equal (internal-skeleton '(#x1C6) *v17*) '(#x64 #x7A #x30C)))
+(test (equal (internal-skeleton '(#x64 #x7A #x30C) *v17*)
+             '(#x64 #x7A #x306)))
+(test (equal (internal-skeleton '(#x1C6) *v18*) '(#x64 #x7A #x306)))
+(test (equal (internal-skeleton '(#x64 #x7A #x306) *v18*)
+             '(#x64 #x7A #x306)))
+(test (equal (len (internal-skeleton-unstable-code-points *v16*)) 13))
+(test (equal (internal-skeleton-unstable-code-points *v16*)
+             (internal-skeleton-unstable-code-points *v17*)))
+(test (equal (internal-skeleton-unstable-code-points *v18*) nil))
+(test (not (internal-skeleton-stable-listp '(#x61 #x1C6) *v17*)))
+(test (internal-skeleton-stable-listp '(#x61 #x1C6) *v18*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Mixed-script detection.
+
+; The resolved script set of a list, as :all or as a list of codes.
+
+(define resolved-script-codes ((cps code-point-listp) (ver versionp))
+  (b* ((set (resolved-script-set cps ver)))
+    (script-set-case set
+                     :all :all
+                     :of (writing-system-list-codes set.members))))
+
+; The examples of UTS #39, Table 1a, in the order of the table.
+; The second and third are "Circle" written in Cyrillic letters,
+; and with Cyrillic letters in place of three of the Latin ones;
+; the fourth has the digit one in place of the letter l;
+; the fifth and the sixth have mathematical sans-serif letters,
+; whose Script_Extensions is Common;
+; the last two are Japanese.
+
+(test (equal (resolved-script-codes '(#x43 #x69 #x72 #x63 #x6C #x65) *v17*)
+             '("Latn")))
+(test (equal (resolved-script-codes '(#x421 #x456 #x433 #x441 #x4C0 #x435)
+                                    *v17*)
+             '("Cyrl")))
+(test (equal (resolved-script-codes '(#x421 #x69 #x72 #x441 #x6C #x435)
+                                    *v17*)
+             nil))
+(test (equal (resolved-script-codes '(#x43 #x69 #x72 #x63 #x31 #x65) *v17*)
+             '("Latn")))
+(test (equal (resolved-script-codes
+              '(#x43 #x1D5C2 #x1D5CB #x1D5BC #x1D5C5 #x1D5BE) *v17*)
+             '("Latn")))
+(test (equal (resolved-script-codes
+              '(#x1D5A2 #x1D5C2 #x1D5CB #x1D5BC #x1D5C5 #x1D5BE) *v17*)
+             :all))
+(test (equal (resolved-script-codes '(#x3006 #x5207) *v17*)
+             '("Hani" "Hanb" "Jpan" "Kore")))
+(test (equal (resolved-script-codes '(#x306D #x30AC) *v17*)
+             '("Jpan")))
+
+(test (single-script-p '(#x43 #x69 #x72 #x63 #x6C #x65) *v17*))
+(test (mixed-script-p '(#x421 #x69 #x72 #x441 #x6C #x435) *v17*))
+(test (not (single-script-p '(#x421 #x69 #x72 #x441 #x6C #x435) *v17*)))
+(test (single-script-p '(#x3006 #x5207) *v17*))
+(test (single-script-p nil *v17*))
+
+; From Unicode 18.0.0 on, there is one more writing system, Hntl
+; (traditional Han with Latin), which Latin and Han characters have.
+; So a list of a Latin letter and a Han character,
+; mixed-script before, is single-script.
+
+(test (equal (resolved-script-codes '(#x43 #x69 #x72 #x63 #x6C #x65) *v18*)
+             '("Latn" "Hntl")))
+(test (equal (resolved-script-codes '(#x3006 #x5207) *v18*)
+             '("Hani" "Hanb" "Hntl" "Jpan" "Kore")))
+(test (mixed-script-p '(#x61 #x5207) *v17*))
+(test (equal (resolved-script-codes '(#x61 #x5207) *v18*) '("Hntl")))
+(test (single-script-p '(#x61 #x5207) *v18*))
+
+; The augmented script set of a code point.
+; U+30FC KATAKANA-HIRAGANA PROLONGED SOUND MARK
+; has both Japanese syllabaries in its Script_Extensions.
+
+(test (equal (script-set-kind (code-point-augmented-script-set #x31 *v17*))
+             :all))
+(test (equal (writing-system-list-codes
+              (script-set-of->members
+               (code-point-augmented-script-set #x30FC *v17*)))
+             '("Hira" "Kana" "Jpan")))
+(test (script-set-in (writing-system-japanese)
+                     (code-point-augmented-script-set #x30FC *v17*)))
+(test (script-set-in (writing-system-script (script-greek))
+                     (code-point-augmented-script-set #x31 *v17*)))
+(test (not (script-set-in (writing-system-script (script-greek))
+                          (code-point-augmented-script-set #x61 *v17*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Mixed-number detection.
+
+; ASCII digits only; ASCII and Arabic-Indic digits;
+; U+0660 ARABIC-INDIC DIGIT ZERO and
+; U+06F0 EXTENDED ARABIC-INDIC DIGIT ZERO, of two systems;
+; U+09EA BENGALI DIGIT FOUR and the digit eight.
+
+(test (not (mixed-number-systems-p '(#x61 #x31 #x32 #x39) *v17*)))
+(test (equal (decimal-digit-zeros '(#x61 #x31 #x32 #x39) *v17*) '(#x30)))
+(test (mixed-number-systems-p '(#x31 #x662) *v17*))
+(test (mixed-number-systems-p '(#x660 #x6F0) *v17*))
+(test (mixed-number-systems-p '(#x9EA #x38) *v17*))
+(test (not (mixed-number-systems-p '(#x661 #x662 #x669) *v17*)))
+(test (not (mixed-number-systems-p '(#x61 #x62) *v17*)))
+(test (equal (decimal-digit-zeros '(#x61 #x62) *v17*) nil))
+
+; U+2163 ROMAN NUMERAL FOUR is not a decimal digit and is ignored.
+
+(test (not (mixed-number-systems-p '(#x31 #x2163) *v17*)))

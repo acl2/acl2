@@ -12,7 +12,7 @@ for comparison with the ACL2 library.
 
 Usage:
 
-    python-oracle.py VERSION code-points > FILE
+    python-oracle.py VERSION code-points [UCD-DIR] > FILE
     python-oracle.py VERSION pairs PAIRS-FILE
 
 VERSION, e.g. 16.0.0, must be the version of Unicode of the Python
@@ -33,6 +33,15 @@ Each column is named `property@source`, where the source is
              its tables are for VERSION (it does not say which version
              they are for, so this is determined by asking it about two
              code points: see XID_START_PROBES)
+
+    python-and-files
+             the internal skeleton of UTS #39, computed here from
+             unicodedata.normalize and from two files of VERSION that
+             are read from UCD-DIR: security/confusables.txt for the
+             prototypes, and DerivedCoreProperties.txt for
+             Default_Ignorable_Code_Point.  These columns are written
+             only if UCD-DIR is given; it is laid out as for
+             tools/generate-ucd-books.py.
 
 Python strings may contain surrogates, so there is a line for every code
 point.
@@ -92,17 +101,56 @@ def regex_sets(version):
     return sets
 
 
+def data_lines(path, version):
+    """The data lines of a file of the Unicode Character Database or of
+    UTS #39, as lists of fields, after a check of the version."""
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    head = "\n".join(lines[:12])
+    if version not in head and version[:-2] not in head:
+        die("%s is not for Unicode %s" % (path, version))
+    for line in lines:
+        line = line.split("#", 1)[0].strip()
+        if line:
+            yield [field.strip() for field in line.split(";")]
+
+
+def skeleton_function(version, ucd_dir):
+    """The internal skeleton of UTS #39, Section 4, as a function on
+    strings, from the files of VERSION in UCD-DIR."""
+    prototype = {}
+    for fields in data_lines(ucd_dir + "/security/confusables.txt", version):
+        prototype[chr(int(fields[0], 16))] = "".join(
+            chr(int(cp, 16)) for cp in fields[1].split())
+    ignorable = set()
+    for fields in data_lines(ucd_dir + "/DerivedCoreProperties.txt",
+                             version):
+        if fields[1] == "Default_Ignorable_Code_Point":
+            ends = [int(cp, 16) for cp in fields[0].split("..")]
+            ignorable.update(chr(cp) for cp in range(ends[0], ends[-1] + 1))
+
+    def skeleton(s):
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(prototype.get(c, c) for c in s if c not in ignorable)
+        return unicodedata.normalize("NFD", s)
+
+    return skeleton
+
+
 def seq(s):
     return " ".join(str(ord(c)) for c in s)
 
 
-def code_points(version):
+def code_points(version, ucd_dir):
     sets = regex_sets(version)
+    skeleton = skeleton_function(version, ucd_dir) if ucd_dir else None
     columns = ["xids@python", "xidc@python", "bidif@python", "ccc@python",
                "dm@python", "nfd@python", "nfc@python", "nfkd@python",
                "nfkc@python", "gc@python", "bc@python", "dd@python"]
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
+    if skeleton:
+        columns += ["skel@python-and-files", "skelm@python-and-files"]
     out = sys.stdout
     out.write("#cp;" + ";".join(columns) + "\n")
     for cp in range(0x110000):
@@ -137,6 +185,9 @@ def code_points(version):
         if sets:
             fields += ["1" if sets[k][cp] else "0"
                        for k in ("xids", "xidc", "pws", "bidic")]
+        if skeleton:
+            fields += [seq(skeleton(c)),
+                       seq(skeleton("a" + c + "\u0301\u0327"))]
         out.write(";".join(fields) + "\n")
 
 
@@ -161,7 +212,7 @@ def pairs(path):
 
 def main():
     if len(sys.argv) < 3:
-        die("usage: python-oracle.py VERSION code-points"
+        die("usage: python-oracle.py VERSION code-points [UCD-DIR]"
             " | python-oracle.py VERSION pairs FILE")
     version = sys.argv[1]
     if unicodedata.unidata_version != version:
@@ -170,8 +221,8 @@ def main():
     print("python-oracle.py: Python %s has Unicode %s"
           % (sys.version.split()[0], unicodedata.unidata_version),
           file=sys.stderr)
-    if sys.argv[2] == "code-points" and len(sys.argv) == 3:
-        code_points(version)
+    if sys.argv[2] == "code-points" and len(sys.argv) in (3, 4):
+        code_points(version, sys.argv[3] if len(sys.argv) == 4 else None)
     elif sys.argv[2] == "pairs" and len(sys.argv) == 4:
         if not pairs(sys.argv[3]):
             sys.exit(1)
