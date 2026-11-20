@@ -226,7 +226,16 @@
   ///
 
   (fty::deffixequiv member-value-list->name-list
-    :args ((x member-value-listp))))
+    :args ((x member-value-listp)))
+
+  (defruled member-value->name-in-name-list-when-member-value-in-list
+    (implies (member-equal (member-value-fix memval)
+                           (member-value-list-fix memvals))
+             (member-equal (member-value->name memval)
+                           (member-value-list->name-list memvals)))
+    :induct t
+    :enable (member-value-list-fix
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
