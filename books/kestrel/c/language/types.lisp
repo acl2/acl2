@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -238,7 +238,17 @@
        ((when (equal (ident-fix name)
                      (member-type->name (car members))))
         (member-type->type (car members))))
-    (member-type-lookup name (cdr members))))
+    (member-type-lookup name (cdr members)))
+
+  ///
+
+  (defruled member-type-lookup-iff-name-in-name-list
+    (iff (member-type-lookup name members)
+         (member-equal (ident-fix name)
+                       (member-type-list->name-list members)))
+    :induct t
+    :enable (member-type-list->name-list
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
