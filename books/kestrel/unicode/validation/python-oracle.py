@@ -97,7 +97,7 @@ def code_points(version):
     sets = regex_sets(version)
     columns = ["xids@python", "xidc@python", "bidif@python", "ccc@python",
                "dm@python", "nfd@python", "nfc@python", "nfkd@python",
-               "nfkc@python"]
+               "nfkc@python", "gc@python"]
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
     out = sys.stdout
@@ -127,7 +127,8 @@ def code_points(version):
                   seq(unicodedata.normalize("NFD", c)),
                   seq(unicodedata.normalize("NFC", c)),
                   seq(unicodedata.normalize("NFKD", c)),
-                  seq(unicodedata.normalize("NFKC", c))]
+                  seq(unicodedata.normalize("NFKC", c)),
+                  unicodedata.category(c)]
         if sets:
             fields += ["1" if sets[k][cp] else "0"
                        for k in ("xids", "xidc", "pws", "bidic")]

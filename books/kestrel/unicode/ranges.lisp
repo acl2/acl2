@@ -204,6 +204,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define range-disjoint-from-range-p ((range1 range-p) (range2 range-p))
+  :returns (yes/no booleanp)
+  :short "Check if one of two ranges ends before the other starts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If this is the case, no code point is in both ranges:
+     see the theorem."))
+  (b* (((range range1) range1)
+       ((range range2) range2))
+    (or (< range1.max range2.min)
+        (< range2.max range1.min)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled not-code-point-in-range-p-when-range-disjoint-from-range-p
+    (implies (and (range-disjoint-from-range-p range1 range2)
+                  (code-point-in-range-p cp range1))
+             (not (code-point-in-range-p cp range2)))
+    :enable code-point-in-range-p))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define range-disjoint-from-ranges-p ((range range-p) (ranges range-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a range is disjoint from every range of a list,
+          in the sense of @(tsee range-disjoint-from-range-p)."
+  (cond ((endp ranges) t)
+        (t (and (range-disjoint-from-range-p range (car ranges))
+                (range-disjoint-from-ranges-p range (cdr ranges)))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled not-code-point-in-ranges-p-when-range-disjoint-from-ranges-p
+    (implies (and (range-disjoint-from-ranges-p range ranges)
+                  (code-point-in-range-p cp range))
+             (not (code-point-in-ranges-p cp ranges)))
+    :induct t
+    :enable (code-point-in-ranges-p
+             not-code-point-in-range-p-when-range-disjoint-from-range-p)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define ranges-disjoint-from-ranges-p ((ranges1 range-listp)
+                                       (ranges2 range-listp))
+  :returns (yes/no booleanp)
+  :short "Check if every range of a list
+          is disjoint from every range of another list,
+          in the sense of @(tsee range-disjoint-from-range-p)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If this is the case,
+     no code point is in both lists of ranges: see the theorem.
+     So that two properties have no code point in common,
+     e.g. @('Pattern_Syntax') and @('XID_Continue'),
+     is proved by evaluating this function on the tables."))
+  (cond ((endp ranges1) t)
+        (t (and (range-disjoint-from-ranges-p (car ranges1) ranges2)
+                (ranges-disjoint-from-ranges-p (cdr ranges1) ranges2))))
+  :hooks (:fix)
+
+  ///
+
+  (defruled not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p
+    (implies (and (code-point-in-ranges-p cp ranges1)
+                  (ranges-disjoint-from-ranges-p ranges1 ranges2))
+             (not (code-point-in-ranges-p cp ranges2)))
+    :induct t
+    :enable (code-point-in-ranges-p
+             not-code-point-in-ranges-p-when-range-disjoint-from-ranges-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define scalar-value-ranges ()
   :returns (ranges range-listp)
   :short "The Unicode scalar values, as a list of ranges."

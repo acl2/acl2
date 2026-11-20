@@ -1539,3 +1539,31 @@
 
 (assert-event (equal (len *xid-continue-v17.0.0*) 806))
 (assert-event (equal (range-list-size *xid-continue-v17.0.0*) 149221))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Default_Ignorable_Code_Point: 17 ranges, 4174 code points.
+
+(defconst *default-ignorable-code-point-v17.0.0*
+  (list (range #x00AD #x00AD)
+        (range #x034F #x034F)
+        (range #x061C #x061C)
+        (range #x115F #x1160)
+        (range #x17B4 #x17B5)
+        (range #x180B #x180F)
+        (range #x200B #x200F)
+        (range #x202A #x202E)
+        (range #x2060 #x206F)
+        (range #x3164 #x3164)
+        (range #xFE00 #xFE0F)
+        (range #xFEFF #xFEFF)
+        (range #xFFA0 #xFFA0)
+        (range #xFFF0 #xFFF8)
+        (range #x1BCA0 #x1BCA3)
+        (range #x1D173 #x1D17A)
+        (range #xE0000 #xE0FFF)))
+
+(assert-event (equal (len *default-ignorable-code-point-v17.0.0*) 17))
+(assert-event
+ (equal (range-list-size *default-ignorable-code-point-v17.0.0*)
+        4174))

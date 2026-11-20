@@ -51,3 +51,125 @@
 
 (assert-event (equal (len *bidi-control-v18.0.0*) 4))
 (assert-event (equal (range-list-size *bidi-control-v18.0.0*) 12))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Join_Control: 1 ranges, 2 code points.
+
+(defconst *join-control-v18.0.0*
+  (list (range #x200C #x200D)))
+
+(assert-event (equal (len *join-control-v18.0.0*) 1))
+(assert-event (equal (range-list-size *join-control-v18.0.0*) 2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Variation_Selector: 4 ranges, 260 code points.
+
+(defconst *variation-selector-v18.0.0*
+  (list (range #x180B #x180D)
+        (range #x180F #x180F)
+        (range #xFE00 #xFE0F)
+        (range #xE0100 #xE01EF)))
+
+(assert-event (equal (len *variation-selector-v18.0.0*) 4))
+(assert-event (equal (range-list-size *variation-selector-v18.0.0*) 260))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Noncharacter_Code_Point: 18 ranges, 66 code points.
+
+(defconst *noncharacter-code-point-v18.0.0*
+  (list (range #xFDD0 #xFDEF)
+        (range #xFFFE #xFFFF)
+        (range #x1FFFE #x1FFFF)
+        (range #x2FFFE #x2FFFF)
+        (range #x3FFFE #x3FFFF)
+        (range #x4FFFE #x4FFFF)
+        (range #x5FFFE #x5FFFF)
+        (range #x6FFFE #x6FFFF)
+        (range #x7FFFE #x7FFFF)
+        (range #x8FFFE #x8FFFF)
+        (range #x9FFFE #x9FFFF)
+        (range #xAFFFE #xAFFFF)
+        (range #xBFFFE #xBFFFF)
+        (range #xCFFFE #xCFFFF)
+        (range #xDFFFE #xDFFFF)
+        (range #xEFFFE #xEFFFF)
+        (range #xFFFFE #xFFFFF)
+        (range #x10FFFE #x10FFFF)))
+
+(assert-event (equal (len *noncharacter-code-point-v18.0.0*) 18))
+(assert-event (equal (range-list-size *noncharacter-code-point-v18.0.0*) 66))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Deprecated: 8 ranges, 15 code points.
+
+(defconst *deprecated-v18.0.0*
+  (list (range #x0149 #x0149)
+        (range #x0673 #x0673)
+        (range #x0F77 #x0F77)
+        (range #x0F79 #x0F79)
+        (range #x17A3 #x17A4)
+        (range #x206A #x206F)
+        (range #x2329 #x232A)
+        (range #xE0001 #xE0001)))
+
+(assert-event (equal (len *deprecated-v18.0.0*) 8))
+(assert-event (equal (range-list-size *deprecated-v18.0.0*) 15))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Prepended_Concatenation_Mark: 7 ranges, 13 code points.
+
+(defconst *prepended-concatenation-mark-v18.0.0*
+  (list (range #x0600 #x0605)
+        (range #x06DD #x06DD)
+        (range #x070F #x070F)
+        (range #x0890 #x0891)
+        (range #x08E2 #x08E2)
+        (range #x110BD #x110BD)
+        (range #x110CD #x110CD)))
+
+(assert-event (equal (len *prepended-concatenation-mark-v18.0.0*) 7))
+(assert-event
+ (equal (range-list-size *prepended-concatenation-mark-v18.0.0*)
+        13))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Pattern_Syntax: 28 ranges, 2760 code points.
+
+(defconst *pattern-syntax-v18.0.0*
+  (list (range #x0021 #x002F)
+        (range #x003A #x0040)
+        (range #x005B #x005E)
+        (range #x0060 #x0060)
+        (range #x007B #x007E)
+        (range #x00A1 #x00A7)
+        (range #x00A9 #x00A9)
+        (range #x00AB #x00AC)
+        (range #x00AE #x00AE)
+        (range #x00B0 #x00B1)
+        (range #x00B6 #x00B6)
+        (range #x00BB #x00BB)
+        (range #x00BF #x00BF)
+        (range #x00D7 #x00D7)
+        (range #x00F7 #x00F7)
+        (range #x2010 #x2027)
+        (range #x2030 #x203E)
+        (range #x2041 #x2053)
+        (range #x2055 #x205E)
+        (range #x2190 #x245F)
+        (range #x2500 #x2775)
+        (range #x2794 #x2BFF)
+        (range #x2E00 #x2E7F)
+        (range #x3001 #x3003)
+        (range #x3008 #x3020)
+        (range #x3030 #x3030)
+        (range #xFD3E #xFD3F)
+        (range #xFE45 #xFE46)))
+
+(assert-event (equal (len *pattern-syntax-v18.0.0*) 28))
+(assert-event (equal (range-list-size *pattern-syntax-v18.0.0*) 2760))

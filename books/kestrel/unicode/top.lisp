@@ -14,9 +14,18 @@
 (include-book "versions")
 (include-book "ranges")
 (include-book "maps")
+(include-book "general-category-tables")
+(include-book "general-category")
 (include-book "xid")
 (include-book "pattern-white-space")
+(include-book "pattern-syntax")
 (include-book "bidi-controls")
+(include-book "default-ignorable")
+(include-book "variation-selectors")
+(include-book "join-controls")
+(include-book "noncharacters")
+(include-book "deprecated")
+(include-book "prepended-concatenation-marks")
 (include-book "hangul")
 (include-book "combining-classes")
 (include-book "decompositions")
@@ -26,6 +35,8 @@
 (include-book "quick-check")
 (include-book "quick-check-theorems")
 (include-book "utf-8")
+(include-book "property-relations")
+(include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,11 +56,20 @@
     " that the lexers of programming languages need.
      It is meant to be shared by the models of those languages:
      nothing in it is specific to one language.
+     The one topic that names programming languages
+     is @(see unicode-coverage),
+     which says for which of them the library has enough.
      Currently it has:")
    (xdoc::ul
     (xdoc::li
      "Code points and scalar values:
       see @(see code-points).")
+    (xdoc::li
+     "The @('General_Category') property,
+      which says whether a code point is a letter, a mark, a number,
+      punctuation, a symbol, a separator or something else,
+      and whether it is assigned at all:
+      see @(see general-category-property).")
     (xdoc::li
      "The @('XID_Start') and @('XID_Continue') properties,
       where @('ID') is short for `identifier',
@@ -80,14 +100,29 @@
       which defines white space:
       see @(see pattern-white-space).")
     (xdoc::li
+     "The @('Pattern_Syntax') property,
+      which defines the characters of syntax:
+      see @(see pattern-syntax).")
+    (xdoc::li
      "The bidirectional control characters,
       which a lexer may have to reject or report:
-      see @(see bidi-controls)."))
+      see @(see bidi-controls).")
+    (xdoc::li
+     "Six more properties of characters
+      that a lexer may have to reject, report or treat specially:
+      the default ignorable code points, the variation selectors,
+      the join controls, the noncharacters, the deprecated characters
+      and the prepended concatenation marks.
+      See @(see default-ignorable), @(see variation-selectors),
+      @(see join-controls), @(see noncharacters), @(see deprecated)
+      and @(see prepended-concatenation-marks).")
+    (xdoc::li
+     "Theorems that relate these properties to each other:
+      see @(see property-relations)."))
    (xdoc::p
-    "It does not have the general category or the case mappings,
-     which are to be added when a use needs them,
-     nor collation, text segmentation, the bidirectional algorithm,
-     or the confusables data, which are out of its scope.")
+    "What the library models of each Unicode specification,
+     and what it does not model,
+     is listed in @(see unicode-coverage).")
    (xdoc::p
     "This library does not deal with encodings either.
      The library @(see acl2::unicode) (in @('[books]/unicode'))
@@ -109,8 +144,24 @@
      "@('kestrel/unicode/xid') for @(tsee xid-start-p),
       @(tsee xid-continue-p) and @(tsee xid-identifier-p).")
     (xdoc::li
+     "@('kestrel/unicode/general-category')
+      for @(tsee code-point-general-category), @(tsee assigned-p)
+      and @(tsee general-category-ranges).")
+    (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
-      for @(tsee pattern-white-space-p).")
+      for @(tsee pattern-white-space-p),
+      and @('kestrel/unicode/pattern-syntax')
+      for @(tsee pattern-syntax-p).")
+    (xdoc::li
+     "@('kestrel/unicode/default-ignorable'),
+      @('kestrel/unicode/variation-selectors'),
+      @('kestrel/unicode/join-controls'),
+      @('kestrel/unicode/noncharacters'),
+      @('kestrel/unicode/deprecated') and
+      @('kestrel/unicode/prepended-concatenation-marks')
+      for @(tsee default-ignorable-p), @(tsee variation-selector-p),
+      @(tsee join-control-p), @(tsee noncharacter-p),
+      @(tsee deprecated-p) and @(tsee prepended-concatenation-mark-p).")
     (xdoc::li
      "@('kestrel/unicode/bidi-controls') for @(tsee bidi-control-p),
       @(tsee bidi-explicit-formatting-p)
@@ -136,14 +187,21 @@
       It loads @('quick-check') and @('normalization').")
     (xdoc::li
      "@('kestrel/unicode/utf-8') for the theorems that connect this library
-      to the UTF-8 decoder of @('[books]/unicode'), which it loads."))
+      to the UTF-8 decoder of @('[books]/unicode'), which it loads.")
+    (xdoc::li
+     "@('kestrel/unicode/property-relations') for the theorems
+      that relate properties to each other.
+      It loads the books of all the properties that it relates."))
    (xdoc::p
     "A model of a language whose identifiers follow [UAX #31]
      typically needs @('xid');
      @('normalization') if it normalizes or compares identifiers,
      and then @('identifier-closure') for the theorems
      that what it normalizes is still an identifier;
-     and @('pattern-white-space') and @('bidi-controls')
+     @('general-category') if its identifiers or its white space
+     are defined by general categories;
+     and @('pattern-white-space'), @('bidi-controls')
+     and the books of the other properties
      if its white space or the characters that it rejects
      are defined by those properties.
      None of these loads the tests.
@@ -177,7 +235,8 @@
      and how to add a version.")
    (xdoc::p
     "The tables are lists of ranges of code points,
-     or tree maps from code points to values,
+     tree maps from code points to values,
+     or lists of runs of code points with the same value,
      with fixtypes that are checked when the books are certified:
      see @(see tables).")
    (xdoc::h3 "Representation")
@@ -227,17 +286,25 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The data of this library is in tables of two kinds:")
+    "The data of this library is in tables of three kinds:")
    (xdoc::ul
     (xdoc::li
      "Lists of ranges of code points, for the binary properties:
       see @(see ranges).")
     (xdoc::li
-     "Maps from code points to values, for the other properties:
-      see @(see maps)."))
+     "Maps from code points to values,
+      for the properties that have a value
+      that most code points share:
+      see @(see maps).")
+    (xdoc::li
+     "Lists of runs of code points with the same value,
+      for the @('General_Category') property,
+      which has no such value:
+      see @(see general-category-tables)."))
    (xdoc::p
-    "Both kinds are fixtypes:
+    "All three kinds are fixtypes:
      a range is a product of two code points,
+     a run is a product of two code points and a value,
      and the maps are @(see treemap::treemap)s
      whose keys and values have fixtypes.
      Every generated table is built with the constructors of its type,
@@ -248,7 +315,9 @@
      there is a function that selects the table of a version of Unicode
      and that returns a value of the type.")
    (xdoc::p
-    "Membership in a list of ranges takes time linear in the number of ranges.
+    "Membership in a list of ranges takes time linear in the number of ranges,
+     and so does a lookup in a list of runs.
      A lookup in a map takes time logarithmic in the size of the map."))
   :order-subtopics (ranges
-                    maps))
+                    maps
+                    general-category-tables))

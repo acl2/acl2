@@ -87,6 +87,7 @@ UCD_FILES = {
     "DerivedNormalizationProps.txt": True,
     "extracted/DerivedCombiningClass.txt": True,
     "extracted/DerivedBidiClass.txt": True,
+    "extracted/DerivedGeneralCategory.txt": True,
     "NormalizationTest.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
@@ -102,6 +103,18 @@ HANGUL_S_COUNT = 11172
 # (UAX #9, Sections 2.1 to 2.5), by their short aliases.
 BIDI_EXPLICIT_FORMATTING = ["LRE", "RLE", "LRO", "RLO", "PDF",
                             "LRI", "RLI", "FSI", "PDI"]
+
+# The values of General_Category, by their short aliases, in the order of
+# UAX #44, Table 12.  This is also the order of the constructors of the
+# ACL2 type general-category; the names of the constructors are the long
+# aliases, which this script takes from PropertyValueAliases.txt.
+GENERAL_CATEGORIES = ["Lu", "Ll", "Lt", "Lm", "Lo",
+                      "Mn", "Mc", "Me",
+                      "Nd", "Nl", "No",
+                      "Pc", "Pd", "Ps", "Pe", "Pi", "Pf", "Po",
+                      "Sm", "Sc", "Sk", "So",
+                      "Zs", "Zl", "Zp",
+                      "Cc", "Cf", "Cs", "Co", "Cn"]
 
 
 def die(message):
@@ -274,15 +287,17 @@ def parse_value_aliases(source):
 def parse_unicode_data(source):
     """Parse UnicodeData.txt.
 
-    Return (ccc, decomposition, listed): ccc[cp] is the
+    Return (ccc, decomposition, listed, category): ccc[cp] is the
     Canonical_Combining_Class (field 3) as an int; decomposition[cp] is
     None or (tag, mapping) for field 5, where tag is None for a canonical
     mapping and the '<...>' tag otherwise, and mapping is a list of code
-    points; listed[cp] says whether the file covers cp.  Code points that
-    are not covered get ccc 0 and no decomposition, which are the
-    defaults that UAX #44 gives for unlisted code points.
+    points; listed[cp] says whether the file covers cp; category[cp] is
+    the General_Category (field 2), by its short alias.  Code points that
+    are not covered get ccc 0, no decomposition and the category Cn,
+    which are the defaults that UAX #44 gives for unlisted code points.
     """
     ccc = [0] * NUM_CP
+    category = ["Cn"] * NUM_CP
     decomposition = [None] * NUM_CP
     listed = [False] * NUM_CP
     previous = -1
@@ -318,6 +333,8 @@ def parse_unicode_data(source):
         this_ccc = int(fields[3])
         if not (0 <= this_ccc <= 254):
             die("%s: bad combining class" % where)
+        if fields[2] not in GENERAL_CATEGORIES or fields[2] == "Cn":
+            die("%s: bad general category" % where)
         this_decomposition = None
         if fields[5]:
             if range_line:
@@ -335,11 +352,12 @@ def parse_unicode_data(source):
         for c in range(lo, cp + 1):
             listed[c] = True
             ccc[c] = this_ccc
+            category[c] = fields[2]
             decomposition[c] = this_decomposition
         previous = cp
     if first is not None:
         die("%s: First without Last at the end" % source.relpath)
-    return ccc, decomposition, listed
+    return ccc, decomposition, listed, category
 
 
 def parse_normalization_test(source):
@@ -390,6 +408,18 @@ def to_ranges(has):
             ranges.append((lo, cp))
         cp += 1
     return ranges
+
+
+def to_runs(value):
+    """The maximal runs (lo, hi, v) of code points with the same value v,
+    in order: together they cover every code point exactly once."""
+    runs = []
+    lo = 0
+    for cp in range(1, NUM_CP + 1):
+        if cp == NUM_CP or value[cp] != value[lo]:
+            runs.append((lo, cp - 1, value[lo]))
+            lo = cp
+    return runs
 
 
 def check_ranges(ranges):
@@ -557,6 +587,11 @@ def book_derived_core_properties(version, sources):
     book.range_list("xid-start", xid_start, "XID_Start")
     book.rule()
     book.range_list("xid-continue", xid_continue, "XID_Continue")
+    book.rule()
+    book.range_list("default-ignorable-code-point",
+                    binary_property(source, parsed,
+                                    "Default_Ignorable_Code_Point"),
+                    "Default_Ignorable_Code_Point")
     return book
 
 
@@ -573,6 +608,12 @@ def book_prop_list(version, sources):
     book.range_list("bidi-control",
                    binary_property(source, parsed, "Bidi_Control"),
                    "Bidi_Control")
+    for name in ["Join_Control", "Variation_Selector",
+                 "Noncharacter_Code_Point", "Deprecated",
+                 "Prepended_Concatenation_Mark", "Pattern_Syntax"]:
+        book.rule()
+        book.range_list(name.lower().replace("_", "-"),
+                        binary_property(source, parsed, name), name)
     return book
 
 
@@ -632,7 +673,7 @@ def book_unicode_data(version, sources):
     book = Book(version, "unicode-data",
                 "Decomposition mappings, from UnicodeData.txt.",
                 [source], ["maps"], ["std/util/defconsts"])
-    ccc, decomposition, listed = parse_unicode_data(source)
+    ccc, decomposition, listed, _ = parse_unicode_data(source)
 
     # Cross-check: field 3 against extracted/DerivedCombiningClass.txt.
     derived_ccc = combining_classes(sources)
@@ -710,7 +751,7 @@ def full_composition_exclusion_from_primary_data(sources):
     """Full_Composition_Exclusion computed from CompositionExclusions.txt
     and UnicodeData.txt, as UAX #15 defines it.  Used only to cross-check
     DerivedNormalizationProps.txt."""
-    ccc, decomposition, _ = parse_unicode_data(sources["UnicodeData.txt"])
+    ccc, decomposition, _, _ = parse_unicode_data(sources["UnicodeData.txt"])
     source = sources["CompositionExclusions.txt"]
     entries, _ = parse_property_file(source)
     excluded = [False] * NUM_CP
@@ -802,6 +843,86 @@ def book_derived_bidi_class(version, sources):
     return book
 
 
+def book_derived_general_category(version, sources):
+    source = sources["extracted/DerivedGeneralCategory.txt"]
+    aliases = parse_value_aliases(sources["PropertyValueAliases.txt"])
+    book = Book(version, "derived-general-category",
+                "General_Category,"
+                " from extracted/DerivedGeneralCategory.txt.",
+                [source], ["general-category-tables"],
+                ["std/util/defconsts"])
+    value = enumerated_property(source, parse_property_file(source))
+    short = {}
+    for v in set(value):
+        if ("gc", v) not in aliases:
+            die("%s: unknown General_Category %r" % (source.relpath, v))
+        short[v] = aliases[("gc", v)][0]
+    value = [short[v] for v in value]
+    if set(value) != set(GENERAL_CATEGORIES):
+        die("%s: the values are not the thirty of UAX #44, Table 12"
+            % source.relpath)
+    # Cross-check with field 2 of UnicodeData.txt, whose default is Cn.
+    _, _, _, category = parse_unicode_data(sources["UnicodeData.txt"])
+    for cp in range(NUM_CP):
+        if value[cp] != category[cp]:
+            die("%s: U+%04X is %s here but %s in UnicodeData.txt"
+                % (source.relpath, cp, value[cp], category[cp]))
+    long_name = {v: aliases[("gc", v)][1] for v in GENERAL_CATEGORIES}
+
+    def constructor(v):
+        return "(general-category-%s)" % long_name[v].lower().replace("_",
+                                                                      "-")
+
+    runs = to_runs(value)
+    count = {v: 0 for v in GENERAL_CATEGORIES}
+    for lo, hi, v in runs:
+        count[v] += hi - lo + 1
+    book.comment(
+        "The General_Category of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the value that all the code points from the first to the last"
+        " have.\n"
+        "The runs are maximal and in order, and cover every code point.\n"
+        "The values are read from the derived file, which lists every"
+        " code point,\n"
+        "and are checked against field 2 of UnicodeData.txt.\n"
+        "%d runs.  Code points per value:" % len(runs))
+    for v in GENERAL_CATEGORIES:
+        book.comment("  %s  %-21s %7d" % (v, long_name[v], count[v]))
+    book.blank()
+    const = book.constant("general-category")
+    # With defconsts the list is built when the book is certified and its
+    # value is stored in the certificate; a defconst of this size takes
+    # the Lisp compiler half a minute.
+    book.lines.append("(defconsts %s" % const)
+    book.lines.append("  (list")
+    for lo, hi, v in runs:
+        line = "   (general-category-run %s %s %s)" % (hexcp(lo), hexcp(hi),
+                                                       constructor(v))
+        if len(line) <= 79:
+            book.lines.append(line)
+        else:
+            book.lines.append("   (general-category-run %s %s"
+                              % (hexcp(lo), hexcp(hi)))
+            book.lines.append("                         %s)" % constructor(v))
+    book.lines[-1] += "))"
+    book.blank()
+    book.assert_equal("(len %s)" % const, len(runs))
+    book.assert_holds("(general-category-run-list-covers-p 0 #x10FFFF %s)"
+                      % const)
+    book.blank()
+    book.comment("The number of code points that have each value.")
+    book.blank()
+    for v in GENERAL_CATEGORIES:
+        book.lines.append("(assert-event")
+        book.lines.append(" (equal (range-list-size")
+        book.lines.append("         (general-category-run-list-ranges")
+        book.lines.append("          %s" % constructor(v))
+        book.lines.append("          %s))" % const)
+        book.lines.append("        %d))" % count[v])
+    return book
+
+
 def book_normalization_test(version, sources):
     source = sources["NormalizationTest.txt"]
     parts = parse_normalization_test(source)
@@ -856,6 +977,7 @@ BOOKS = [book_derived_core_properties,
          book_unicode_data,
          book_derived_normalization_props,
          book_derived_bidi_class,
+         book_derived_general_category,
          book_normalization_test]
 
 

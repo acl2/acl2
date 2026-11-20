@@ -39,6 +39,10 @@
     "extracted/DerivedDecompositionType.txt": {
       "sha256": "29f8bff31296bab424e8d728e2a3c0a3240c5a67dadf47fa7092ec0585ad91b6",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    },
+    "extracted/DerivedGeneralCategory.txt": {
+      "sha256": "7676ab755a41ef82108460238569e60ad65c191ddafe61b36c6765ec1353f293",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedGeneralCategory.txt"
     }
   },
   "17.0.0": {
@@ -81,6 +85,10 @@
     "extracted/DerivedDecompositionType.txt": {
       "sha256": "f44e5ceaf40edc1fe06ea0404e8bebc7d356dcc38aac076543b6874008a06e3e",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    },
+    "extracted/DerivedGeneralCategory.txt": {
+      "sha256": "d62e5bab70ca74f099343f71224fa051cb1fdd61a1ab45c0488c44cfc0b6102e",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedGeneralCategory.txt"
     }
   },
   "18.0.0": {
@@ -123,6 +131,10 @@
     "extracted/DerivedDecompositionType.txt": {
       "sha256": "0941d968cf73472500ab3eb807c02d85e6d7510832a2be7e5d21bd6c08e96e92",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedDecompositionType.txt"
+    },
+    "extracted/DerivedGeneralCategory.txt": {
+      "sha256": "d6b151d2d40ee9b1876d26f417980f45ffae47b6055ccf7203cb31f07a030f94",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedGeneralCategory.txt"
     }
   }
 }
