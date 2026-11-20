@@ -73,6 +73,7 @@
   :short "Recognize lists of bytes."
   (bytep x ienv)
   :true-listp t
+  :elementp-of-nil nil
 
   ///
 
