@@ -15,6 +15,7 @@
 //!
 //!     oracle VERSION code-points > FILE
 //!     oracle VERSION pairs PAIRS-FILE
+//!     oracle VERSION stream-safe STREAM-SAFE-FILE
 //!
 //! VERSION, e.g. 16.0.0, must be the version of Unicode that the crates
 //! implement; the program stops if a crate says otherwise.
@@ -27,10 +28,19 @@
 //! with lines `first second composite nfc...` (composite is `-` if the two
 //! code points do not compose), and checks each line against
 //! unicode-normalization.  It exits with status 1 if any line differs.
+//!
+//! The third form reads a file written by DUMP-STREAM-SAFE of
+//! ../../dump.lisp, with lines `sequence > result`, and checks that the
+//! result is what the stream_safe iterator of unicode-normalization gives
+//! for the sequence.  It exits with status 1 if any line differs.
 
 use std::io::{self, BufRead, BufWriter, Write};
 use unicode_normalization::char::{canonical_combining_class, compose};
 use unicode_normalization::UnicodeNormalization;
+
+const USAGE: &str = "usage: oracle VERSION code-points \
+                     | oracle VERSION pairs FILE \
+                     | oracle VERSION stream-safe FILE";
 
 fn die(message: &str) -> ! {
     eprintln!("oracle: error: {message}");
@@ -262,10 +272,45 @@ fn pairs(path: &str) -> io::Result<bool> {
     Ok(differences == 0)
 }
 
+fn stream_safe(path: &str) -> io::Result<bool> {
+    let file = std::fs::File::open(path)?;
+    let (mut lines, mut skipped, mut differences) = (0u64, 0u64, 0u64);
+    for line in io::BufReader::new(file).lines() {
+        let line = line?;
+        if line.starts_with('#') {
+            continue;
+        }
+        lines += 1;
+        let Some((sequence, result)) = line.split_once(" > ") else {
+            die(&format!("bad line: {line}"));
+        };
+        let cp = |s: &str| -> Option<char> {
+            char::from_u32(s.parse().unwrap_or_else(|_| die("bad number")))
+        };
+        let chars: Option<Vec<char>> = sequence.split(' ').map(cp).collect();
+        let Some(chars) = chars else {
+            skipped += 1;
+            continue;
+        };
+        let here = join(chars.into_iter().stream_safe());
+        if here != result {
+            differences += 1;
+            if differences <= 20 {
+                println!("DIFFERENT: {line} (here: {here})");
+            }
+        }
+    }
+    println!(
+        "stream-safe@unicode-normalization: {lines} sequences, \
+         {skipped} skipped (surrogates), {differences} different"
+    );
+    Ok(differences == 0)
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {
-        die("usage: oracle VERSION code-points | oracle VERSION pairs FILE");
+        die(USAGE);
     }
     let version = parse_version(&args[1]);
 
@@ -299,6 +344,12 @@ fn main() -> io::Result<()> {
             }
             Ok(())
         }
-        _ => die("usage: oracle VERSION code-points | oracle VERSION pairs FILE"),
+        ("stream-safe", 4) => {
+            if !stream_safe(&args[3])? {
+                std::process::exit(1);
+            }
+            Ok(())
+        }
+        _ => die(USAGE),
     }
 }

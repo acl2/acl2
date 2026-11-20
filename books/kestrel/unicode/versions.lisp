@@ -80,3 +80,26 @@
                 :v16.0.0 "16.0.0"
                 :v17.0.0 "17.0.0"
                 :v18.0.0 "18.0.0"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled version-fix-in-terms-of-version-case
+  :short "The fixing function of versions, as a choice among the versions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This rule is disabled.
+     When it is enabled,
+     a term that takes a version as an argument
+     is split into one case for each supported version,
+     and in each case the version is a constant.
+     This is how a statement about every version
+     is proved by evaluation, one version at a time."))
+  (equal (version-fix ver)
+         (version-case ver
+                       :v16.0.0 (version-v16.0.0)
+                       :v17.0.0 (version-v17.0.0)
+                       :v18.0.0 (version-v18.0.0)))
+  :enable (version-fix-when-v16.0.0
+           version-fix-when-v17.0.0
+           version-fix-when-v18.0.0))

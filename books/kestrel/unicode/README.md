@@ -57,9 +57,13 @@ validated.
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
 | `compositions` | `Full_Composition_Exclusion`, and the pairs that compose. |
 | `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp`; `canonical-equivalent-p`, `compatibility-equivalent-p`. |
+| `composing-pairs` | The code points that compose with a code point after them (`composes-with-following-p`) and those that compose with a code point before them (`composes-with-previous-p`); the type of sets of code points. |
+| `normalization-inert` | `normalization-inert-p`: a starter with no decomposition that composes with nothing.  The proof that each of the four forms normalizes separately what is before and what is after such a code point, and leaves it as it is.  Which ASCII code points are inert; `Pattern_White_Space` code points are. |
+| `normalization-members` | Which code points can occur in a normalization form of a list: for an inert ASCII code point, exactly when it occurs in NFD and in NFC. |
+| `stream-safe` | The Stream-Safe Text Format (`stream-safe-p`) and the Stream-Safe Text Process (`stream-safe-process`) of UAX #15, with the proof that the process gives text in the format and leaves text in the format unchanged. |
 | `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers, also when the identifier starts with `$` or `_`; a canonical equivalent of an identifier is an identifier. |
 | `quick-check` | The `NF*_Quick_Check` properties (the normalization functions do not use them). |
-| `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD. |
+| `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD, and that the code points that NFC and NFKC change are those whose quick check value is No. |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
 | `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value. |
@@ -210,6 +214,54 @@ over the tables, and so re-checked whenever a version is added:
   canonical order, which is what the quick check of UAX #15, Section 9,
   tests.  For these two forms, which have no Maybe values, the quick check
   is exact.  (The same for NFC and NFKC is not done yet.)
+- `nfc-changes-p-in-terms-of-quick-check`,
+  `nfkc-changes-p-in-terms-of-quick-check`: NFC (or NFKC) changes a code
+  point, taken alone, exactly when its `NFC_Quick_Check` (or
+  `NFKC_Quick_Check`) is No.  So "the characters that NFKC changes" and
+  "the characters whose `NFKC_Quick_Check` is No" are the same set.
+- `composition-when-not-composes-with-following-p`,
+  `composition-when-not-composes-with-previous-p`: two code points do not
+  compose if the first one is not the first code point of any pair that
+  composes, or the second one is not the second code point of any.
+  `composes-with-following-p-when-ascii`: the ASCII code points that compose
+  with a code point after them are the letters other than `Q` and `q`, and
+  `<`, `=`, `>`.  `not-composes-with-previous-p-when-below-300`.
+- `normalization-inert-p` says that a code point is a starter, has no
+  decomposition, and composes neither with a code point after it nor with
+  one before it.  `nfc-of-append-of-cons-when-normalization-inert-p` (and
+  the same for the other three forms): the form of a list, then an inert
+  code point, then another list, is the form of the first list, then the
+  code point, then the form of the second list.  So if the delimiters of a
+  language are inert, normalizing its text is the same as normalizing each
+  piece between delimiters.  `normalization-inert-p-when-ascii`: an ASCII
+  code point is inert unless it is a letter other than `Q` and `q`, or one
+  of `<`, `=`, `>`.  `normalization-inert-p-when-pattern-white-space-p`.
+  These generalize the theorems about `$` and `_` above.
+- `canonical-order-of-append-of-cons-when-starter-p`: canonical ordering
+  does not move code points past a starter.
+- `member-equal-of-canonical-order`: the canonical order of a list has the
+  same code points as the list.
+  `member-equal-of-nfd-when-member-equal-of-nfc`: a code point with no
+  canonical decomposition that occurs in NFC occurs in NFD (composition
+  does not make such a code point).
+  `member-equal-of-nfc-when-normalization-inert-p`: an inert code point
+  occurs in NFC exactly when it occurs in NFD; the same for NFKC and NFKD.
+- `member-equal-of-nfd-when-inert-ascii`,
+  `member-equal-of-nfc-when-inert-ascii`: an inert ASCII code point occurs
+  in NFD (or NFC) of a list exactly when it occurs in the list, or it is the
+  semicolon and U+037E GREEK QUESTION MARK occurs in the list, or it is the
+  grave accent and U+1FEF GREEK VARIA occurs in the list.  So the canonical
+  forms neither bring in nor take away the ASCII digits, the space, or the
+  ASCII punctuation other than `<`, `=`, `>`, with those two exceptions.
+  (There is no such theorem for the letters and `<`, `=`, `>`, nor for NFKD
+  and NFKC.)
+- `stream-safe-p-of-stream-safe-process`: the Stream-Safe Text Process of
+  UAX #15, Section 13, gives text in Stream-Safe Text Format, that is, text
+  whose NFKD form has no more than 30 non-starters in a row.
+  `stream-safe-process-when-stream-safe-p`: the process leaves such text
+  unchanged.  `stream-safe-p-in-terms-of-decompose`: the format can be
+  checked on the compatibility decomposition, before it is put in canonical
+  order.
 
 ### Including only what you need
 
@@ -228,15 +280,21 @@ supported version, and nothing else of this library.
 | `variation-selector-p`, `join-control-p`, `noncharacter-p`, `deprecated-p`, `prepended-concatenation-mark-p` | `variation-selectors`, `join-controls`, `noncharacters`, `deprecated`, `prepended-concatenation-marks` (one book each) | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
+| `composes-with-following-p`, `composes-with-previous-p`; the type `code-point-set` | `composing-pairs` | `compositions`, and the books that it loads | `unicode-data`, `derived-normalization-props` |
+| `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
+| The theorems about the code points that occur in a normalization form | `normalization-members` | `normalization-inert`, and the books that it loads | the same |
+| `stream-safe-p`, `stream-safe-process` | `stream-safe` | `normalization`, and the books that it loads | the tables of `normalization` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
-| The theorems that the quick check is exact for NFD and NFKD | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
+| The theorems that the quick check is exact for NFD and NFKD, and `nfc-changes-p`, `nfkc-changes-p` | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
 | Theorems that relate properties to each other | `property-relations` | `general-category`, `xid`, `combining-classes`, and the books of the eight other properties that it relates | the tables of those books |
 
 A front end for a language whose identifiers follow UAX #31 typically needs
 `xid`; `normalization` if it normalizes or compares identifiers, and then
-`identifier-closure` to know that what it normalizes is still an identifier;
+`identifier-closure` to know that what it normalizes is still an identifier,
+and `normalization-inert` to know that normalization does not reach across
+its delimiters;
 `pattern-white-space` and `bidi-controls` if its white space or the
 characters it rejects are defined by those properties; and `utf-8` if it
 decodes its input with `[books]/unicode`.  A front end for a language that
@@ -354,11 +412,18 @@ books build these lists with the constructor of ranges.  `General_Category`
 is a list of runs (`fty::defprod general-category-run`: a first code point,
 a last code point, and the value they all have, which is of the type
 `fty::deftagsum general-category`); the runs are in order and cover every
-code point exactly once, which each generated book checks by evaluation,
-and the books build the lists with the constructor of runs.  The other
+code point exactly once, which each generated book checks by evaluation.
+A generated book writes each run as a triple, such as `(#x0041 #x005A "Lu")`,
+inside the macro `general-category-run-table`, which expands to one call of
+the constructor of runs per triple, with the constructor of the value that
+the two-letter abbreviation stands for; so these lists too are built with
+the typed constructors, and the files are a third of the size that they
+would have with the calls written out.  The other
 tables are tree maps (`fty::deftreemap`) from code points to values, or,
 for composition, from pairs of code points (`fty::defprod code-point-pair`)
-to scalar values.  Every table that is not built with typed constructors is
+to scalar values; and the sets of the code points that are the first, or
+the second, of a pair that composes are tree sets (`fty::deftreeset
+code-point-set`).  Every table that is not built with typed constructors is
 checked against the recognizer of its type, by evaluation, in the book
 that defines it.  The conformance test vectors are typed too: a line of
 `NormalizationTest.txt` is a `normalization-test-line`, a product with one
@@ -402,18 +467,20 @@ For example 19.0.0 (this is how 18.0.0 was added):
 
 1. Generate the tables and record the SHA-256 of the inputs:
    `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
-2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, and a line
-   to `version-string`.
+2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, a line
+   to `version-string`, and a line to the statement and to the hint of the
+   theorem `version-fix-in-terms-of-version-case`.
 3. In each book that selects tables by version (`general-category`, `xid`,
    `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
-   `combining-classes`, `decompositions`, `compositions`, `quick-check`),
+   `combining-classes`, `decompositions`, `compositions`, `composing-pairs`,
+   `quick-check`),
    add the `include-book`
    of the new data book and a `:v19.0.0` line to each selector;
-   `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions` and
-   `compositions`, also copy the block that defines and checks the computed
-   tables.
+   `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions`,
+   `compositions` and `composing-pairs`, also copy the block that defines
+   and checks the computed tables.
 4. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
    `quick-check-v18.0.0.lisp`, changing the version.
 5. Certify `top` and `tests/*`.  This checks the invariants of the new
@@ -463,7 +530,8 @@ point alone, its `General_Category`, and whether it has each of
 and `validation/compare.py` compares the files.  A second file, with 97,080
 pairs of code points (every first of a composing pair with every second of a
 composing pair, Hangul included), compares composition and the NFC form of
-each pair.
+each pair.  A third file compares the Stream-Safe Text Process on sequences
+of code points: see below.
 
 Run on 2026-11-13, with ACL2 at commit `3ccb342c8` (SBCL 2.6.1):
 
@@ -523,6 +591,20 @@ code point, and the earlier comparisons were run again:
   read from `extracted/DerivedGeneralCategory.txt`, against field 2 of
   `UnicodeData.txt`.
 
+The Stream-Safe Text Process was compared, on the same day, with the
+`stream_safe` iterator of `unicode-normalization` (0.1.24, 0.1.25 and 0.1.26
+for the three versions).  `validation/dump.lisp` writes what
+`stream-safe-process` gives for three sequences for each code point whose
+compatibility decomposition has a non-starter (the code point 35 times; 29
+combining acute accents, the code point, and 3 more accents; and the code
+point 16 times between two letters, and once more), and for five other
+sequences: 6,275 sequences for 16.0.0, 6,377 for 17.0.0 and 6,479 for
+18.0.0.  The process inserts U+034F in 1,885 of the sequences for 16.0.0.
+No differences.  The other definitions and theorems
+added on that day (`composing-pairs`, `normalization-inert`,
+`normalization-members`) are statements about the normalization functions,
+proved in the library; nothing new is compared for them.
+
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
 interpreter with the right version of Unicode):
 
@@ -536,7 +618,9 @@ validation/run.sh 18.0.0 /tmp/unicode-validation
 ## Performance
 
 Lookups in the maps (combining classes, decompositions, compositions) take
-time logarithmic in the size of the map.  Membership in a list of ranges
+time logarithmic in the size of the map, and so do membership tests in the
+sets of code points (the code points that compose with others).
+Membership in a list of ranges
 (the binary properties, such as `XID_Start`) takes time linear in the
 number of ranges, which is a few hundred for the largest properties.
 A lookup of `General_Category` takes time linear in the number of runs,

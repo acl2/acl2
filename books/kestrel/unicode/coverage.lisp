@@ -74,9 +74,23 @@
       Each passes the conformance test of every supported version.")
     (xdoc::li
      "The four quick check properties [UAX #15, Section 9],
-      and the proof that the quick check is exact
-      for the two decomposed forms, NFD and NFKD:
-      see @(see quick-check) and @(see quick-check-theorems)."))
+      the proof that the quick check is exact
+      for the two decomposed forms, NFD and NFKD,
+      and the proof that the code points that NFC and NFKC change
+      are those whose quick check value is `no':
+      see @(see quick-check) and @(see quick-check-theorems).")
+    (xdoc::li
+     "A condition for a code point to be stable
+      under all four forms [UAX #15, Section 9.1],
+      with the theorems that the forms
+      normalize separately what is before and what is after such a code point:
+      see @(see normalization-inert-code-points).")
+    (xdoc::li
+     "The Stream-Safe Text Format and the Stream-Safe Text Process
+      [UAX #15, Section 13],
+      with the proof that the process gives text in that format
+      and leaves text in that format unchanged:
+      see @(see stream-safe)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul
@@ -154,8 +168,13 @@
      "From [UAX #15]:
       a proof of what the quick check says
       for the two composed forms, NFC and NFKC,
-      for which the library has the properties and not the theorem;
-      and the Stream-Safe Text Format.")
+      when no code point has the value `no':
+      the library has the properties,
+      and the theorem only for that value;
+      the sets of the code points that are stable under each form,
+      of which the library has a subset that is common to the four;
+      and what [UAX #15, Section 13] says
+      about the Stream-Safe Text Process and the normalization forms.")
     (xdoc::li
      "From [UAX #31]:
       the identifiers defined by @('ID_Start') and @('ID_Continue'),

@@ -75,7 +75,9 @@
    (xdoc::p
     "The corresponding theorems for the two composed forms,
      NFC and NFKC, whose properties have `maybe' values,
-     are not here yet."))
+     are not here yet.
+     For those two forms we only prove
+     which code points have the value `no': see @(see quick-check-no)."))
   :order-subtopics t
   :default-parent t)
 
@@ -277,3 +279,141 @@
                 (canonically-ordered-p cps ver)))
     :enable (nfkd-memberp-alt-def
              nfkd-quick-check-yes-listp-alt-def)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ quick-check-no
+  :parents (quick-check-theorems)
+  :short "The code points that the two composed normalization forms change
+          are those whose quick check value is `no'."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two composed forms are Normalization Forms C and KC
+     (NFC and NFKC: see @(see normalization)).
+     Their quick check properties,
+     @('NFC_Quick_Check') and @('NFKC_Quick_Check'),
+     have three values [UAX #15, Section 9].
+     The value `no' is for the code points
+     that cannot occur in text of that form.
+     The theorems here say that, in every supported version of Unicode,
+     these are exactly the code points
+     that the form changes when it is applied to them alone:
+     the code points that are not their own NFC form,
+     or their own NFKC form.")
+   (xdoc::p
+    "Specifications use both descriptions.
+     For example, a profile of identifiers
+     that leaves out compatibility characters
+     can say that it leaves out the characters that NFKC changes,
+     or the characters whose @('NFKC_Quick_Check') is `no'.
+     These theorems say that the two are the same set.")
+   (xdoc::p
+    "A code point whose value is `maybe' is not changed
+     when the form is applied to it alone;
+     it may be changed when it follows other code points.")
+   (xdoc::p
+    "The theorems are proved by checking every code point, for each version;
+     so adding a version checks them for that version."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define nfc-changes-p ((cp code-point-p) (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if Normalization Form C (NFC) changes a code point,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the NFC form of the list that consists of the code point
+     is not that list."))
+  (not (equal (nfc (list cp) ver)
+              (list (code-point-fix cp))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection nfc-changes-p-and-quick-check
+  :short "Normalization Form C (NFC) changes a code point
+          exactly when the @('NFC_Quick_Check') property
+          of the code point is `no'."
+
+  (local
+   (define nfc-no-ok ((cp code-point-p) (ver versionp))
+     :returns (yes/no booleanp)
+     (equal (nfc-changes-p cp ver)
+            (quick-check-value-case (nfc-quick-check cp ver) :no))
+     :hooks nil))
+
+  (local
+   (std::deflist nfc-no-ok-listp (x ver)
+     :guard (and (code-point-listp x)
+                 (versionp ver))
+     (nfc-no-ok x ver)))
+
+  (defrulel nfc-no-ok-listp-of-all-code-points
+    (nfc-no-ok-listp (all-code-points) (version-fix ver))
+    :enable (version-fix-in-terms-of-version-case
+             (:e all-code-points))
+    :disable nfc-no-ok-listp-of-cons)
+
+  (defruled nfc-changes-p-in-terms-of-quick-check
+    (equal (nfc-changes-p cp ver)
+           (quick-check-value-case (nfc-quick-check cp ver) :no))
+    :enable nfc-no-ok
+    :use (:instance nfc-no-ok-when-member-equal-of-nfc-no-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (ver (version-fix ver)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define nfkc-changes-p ((cp code-point-p) (ver versionp))
+  :returns (yes/no booleanp)
+  :short "Check if Normalization Form KC (NFKC) changes a code point,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the NFKC form of the list that consists of the code point
+     is not that list."))
+  (not (equal (nfkc (list cp) ver)
+              (list (code-point-fix cp))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection nfkc-changes-p-and-quick-check
+  :short "Normalization Form KC (NFKC) changes a code point
+          exactly when the @('NFKC_Quick_Check') property
+          of the code point is `no'."
+
+  (local
+   (define nfkc-no-ok ((cp code-point-p) (ver versionp))
+     :returns (yes/no booleanp)
+     (equal (nfkc-changes-p cp ver)
+            (quick-check-value-case (nfkc-quick-check cp ver) :no))
+     :hooks nil))
+
+  (local
+   (std::deflist nfkc-no-ok-listp (x ver)
+     :guard (and (code-point-listp x)
+                 (versionp ver))
+     (nfkc-no-ok x ver)))
+
+  (defrulel nfkc-no-ok-listp-of-all-code-points
+    (nfkc-no-ok-listp (all-code-points) (version-fix ver))
+    :enable (version-fix-in-terms-of-version-case
+             (:e all-code-points))
+    :disable nfkc-no-ok-listp-of-cons)
+
+  (defruled nfkc-changes-p-in-terms-of-quick-check
+    (equal (nfkc-changes-p cp ver)
+           (quick-check-value-case (nfkc-quick-check cp ver) :no))
+    :enable nfkc-no-ok
+    :use (:instance nfkc-no-ok-when-member-equal-of-nfkc-no-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (ver (version-fix ver)))))
