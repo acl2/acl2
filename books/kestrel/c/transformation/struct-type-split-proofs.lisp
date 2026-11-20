@@ -146,6 +146,73 @@
                     (c::memvals (c::value-struct->members val))
                     (c::name name))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define c::struct-value-splitp ((old-val c::valuep)
+                                (newl-val c::valuep)
+                                (newr-val c::valuep)
+                                (old-tag c::identp)
+                                (newl-tag c::identp)
+                                (newr-tag c::identp)
+                                (old-members c::member-type-listp)
+                                (newl-members c::member-type-listp)
+                                (newr-members c::member-type-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a struct value is split into two."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We put this in the @('C') package
+     because it pertains to the language formalization
+     and is more general than C-to-C transformations.")
+   (xdoc::p
+    "We check whether the value @('old-val')
+     is split into the new values @('newl-val') and @('newr-val'),
+     where the @('l') and @('r') after @('new') stand for `left' and `right'.
+     By `split' we mean that the members (names and values) of @('old-val')
+     have been divided between @('newl-val') and @('newr-val'),
+     which have no extra members other than the ones from @('old-val').
+     We also check that each value has the given tag
+     and the given members with associated types,
+     and that it has no flexible array member."))
+  (and (c::struct-valuep old-val old-tag old-members nil)
+       (c::struct-valuep newl-val newl-tag newl-members nil)
+       (c::struct-valuep newr-val newr-tag newr-members nil)
+       (c::struct-value-splitp-loop (c::value-struct->members old-val)
+                                    (c::value-struct->members newl-val)
+                                    (c::value-struct->members newr-val)))
+  :guard-hints
+  (("Goal" :in-theory (enable c::value-kind-when-struct-valuep)))
+  :prepwork
+  ((define c::struct-value-splitp-loop ((old-memvals c::member-value-listp)
+                                        (newl-memvals c::member-value-listp)
+                                        (newr-memvals c::member-value-listp))
+     :returns (yes/no booleanp)
+     :parents nil
+     (b* (((when (endp old-memvals))
+           (and (endp newl-memvals)
+                (endp newr-memvals)))
+          (old-memval (car old-memvals)))
+       (cond ((member-equal (c::member-value-fix old-memval)
+                            (c::member-value-list-fix newl-memvals))
+              (and (not (member-equal (c::member-value-fix old-memval)
+                                      (c::member-value-list-fix newr-memvals)))
+                   (c::struct-value-splitp-loop (cdr old-memvals)
+                                                (cdr newl-memvals)
+                                                newr-memvals)))
+             ((member-equal (c::member-value-fix old-memval)
+                            (c::member-value-list-fix newr-memvals))
+              (and (not (member-equal (c::member-value-fix old-memval)
+                                      (c::member-value-list-fix newl-memvals)))
+                   (c::struct-value-splitp-loop (cdr old-memvals)
+                                                newl-memvals
+                                                (cdr newr-memvals))))
+             (t nil)))
+     :hooks
+     ((:fix :hints (("Goal"
+                     :induct t
+                     :in-theory (enable c::member-value-list-fix))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define stsp-process-const-old/new (const (name symbolp) (wrld plist-worldp))
