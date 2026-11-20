@@ -3,8 +3,9 @@
 An ACL2 model of the parts of the Unicode Standard that the lexers of
 programming languages need: code points, the identifier and white space
 properties, normalization, scripts, the bidirectional classes and controls,
-and the properties that say which characters are safe in identifiers.  It
-is a shared library: nothing in it is specific to one language.
+the properties that say which characters are safe in identifiers, and the
+detection of strings that look alike or that mix scripts.  It is a shared
+library: nothing in it is specific to one language.
 
 The documentation is in XDOC (topic `unicode::unicode`); this file covers
 what a maintainer needs: where things are, where the data comes from, how to
@@ -46,6 +47,17 @@ validated.
   `Right_To_Left`, `AL` is `Arabic_Letter`, `NSM` is `Nonspacing_Mark`, and
   so on.  The documentation of the type `bidi-class` lists all
   twenty-three.
+- A prototype is the sequence of characters that stands for what a
+  character looks like, in the data of UTS #39; a skeleton is what a
+  string becomes when its characters are replaced by their prototypes.
+  Two strings are confusable when they have the same skeleton.  The
+  specification writes `internalSkeleton` for the skeleton that does not
+  look at the order of display, and `bidiSkeleton` for the one that does.
+- `Hanb`, `Hntl`, `Jpan` and `Kore` are the codes, in ISO 15924, of four
+  writing systems that use several scripts: Han with Bopomofo,
+  traditional Han with Latin, Japanese and Korean.  They are not values
+  of the `Script` property; UTS #39 adds them to the sets of scripts that
+  it compares.
 - UAX: Unicode Standard Annex.  UAX #9 is the Unicode Bidirectional
   Algorithm, UAX #15 is Unicode Normalization Forms, UAX #24 is Unicode
   Script Property, UAX #31 is Unicode Identifiers and Syntax, UAX #44 is
@@ -67,6 +79,11 @@ validated.
 | `scripts` | `Script` (`code-point-script`) and `Script_Extensions` (`code-point-script-extensions`), with the ranges of the code points of a script and of those whose script extensions contain it; the proof that the script extensions contain the script, unless it is `Common` or `Inherited`. |
 | `identifier-status` | `Identifier_Status` (`identifier-allowed-p`) and `Identifier_Type` (`code-point-identifier-types`) of UTS #39, with the proof that a code point is allowed exactly when all its types are `Inclusion` or `Recommended`. |
 | `identifier-status-normalization` | The proof that NFKC changes no allowed code point, and changes every code point that has the type `Not_NFKC`. |
+| `confusables` | The prototypes of confusable characters (`prototype`), from the data of UTS #39, with the proof that each code point of a prototype is its own prototype. |
+| `skeleton` | The internal skeleton of a string (`internal-skeleton`): NFD, removal of the default ignorable code points, prototypes, NFD.  The proof that taking it twice is the same as taking it once in 18.0.0, and in 16.0.0 and 17.0.0 except for thirteen code points.  The skeleton (`skeleton`) and the confusable strings (`confusable-p`), for the lists that have no code point that starts right-to-left text. |
+| `confusable-kinds` | The three classes of confusable strings: single-script, mixed-script and whole-script confusables. |
+| `mixed-scripts` | Mixed-script detection: the augmented script set of a code point, the resolved script set of a list (`resolved-script-set`), and whether a list is single-script (`single-script-p`). |
+| `mixed-numbers` | Mixed-number detection: whether a list has decimal digits of more than one system (`mixed-number-systems-p`). |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
@@ -97,7 +114,7 @@ validated.
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
 | `range-operations` | Union, intersection, difference and complement of sets of code points given as lists of ranges, each with the theorem that says which code points are in the result; the normal form of a list of ranges; the list of the code points of a list of ranges. |
-| `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value: combining classes, decompositions, the classes of the explicit formatting characters, and the values of the decimal digits. |
+| `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value: combining classes, decompositions, the classes of the explicit formatting characters, the values of the decimal digits, and the prototypes of confusable characters. |
 | `runs` | The macro `defruns`, which introduces, for a property with many values, the fixtype of runs of code points with the same value, the lookup, the ranges of a value (or, when the values are sets, of the code points whose set has an element), and the theorems that relate them. |
 | `general-category-tables` | The fixtype of the thirty values of `General_Category`, the list of the thirty values (`general-category-values`), and the runs of that property. |
 | `script-tables` | The fixtype of the scripts, defined from one table of their codes and names (`*script-table*`); the runs of `Script` and of `Script_Extensions`. |
@@ -106,19 +123,19 @@ validated.
 | `identifier-type-tables` | The fixtype of the twelve values of `Identifier_Type`, and the runs of that property, whose values are lists of types. |
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
-| `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and two books from the data files of UTS #39. |
+| `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and three books from the data files of UTS #39. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
 | `validation/` | Tools to compare the library, on every code point, with other implementations. |
 
 What is not modeled is listed, specification by specification, in the
 documentation topic `unicode-coverage` (book `coverage`).  Among other
-things: character names, case mappings, the bidirectional algorithm, text
-segmentation, confusables and the detection of mixed scripts of UTS #39,
-emoji sequences, and collation.  That topic is also the only place where
-the library names programming languages: it says, for C, Java, Python,
-Rust, Scheme and Remora, whether the library has all that their lexical
-rules take from Unicode.
+things: character names, case mappings, the bidirectional algorithm (and
+so the skeleton of a string that has right-to-left characters), text
+segmentation, emoji sequences, and collation.  That topic is also the
+only place where the library names programming languages: it says, for C,
+Java, Python, Rust, Scheme and Remora, whether the library has all that
+their lexical rules take from Unicode.
 
 Encodings are elsewhere and are not rebuilt here: `[books]/unicode` has a
 verified UTF-8 decoder and encoder, and `[books]/kestrel/unicode-light` has
@@ -469,6 +486,56 @@ About scripts, bidirectional classes, emoji, digits and blocks:
   `block-ranges-of-later-version`: a block of a version is the same block
   in every later version.
 
+About confusable strings and mixed scripts (UTS #39):
+
+- `own-prototype-listp-of-prototype`,
+  `replace-by-prototypes-of-replace-by-prototypes`: each code point of a
+  prototype is its own prototype, so replacing code points by their
+  prototypes a second time changes nothing.
+- `internal-skeleton-of-nfc`, `internal-skeleton-of-nfd`,
+  `internal-skeleton-when-canonical-equivalent-p`: a list, its NFC form
+  and its NFD form have the same internal skeleton, and so do canonical
+  equivalents.  `nfd-memberp-of-internal-skeleton`: the internal skeleton
+  is in NFD.
+- `internal-skeleton-of-internal-skeleton-from-v18.0.0`: from Unicode
+  18.0.0 on, the internal skeleton of the internal skeleton of a list is
+  the internal skeleton of the list, as the specification says.
+- `internal-skeleton-of-internal-skeleton`: in every version, that holds
+  for a list that has none of the code points of
+  `internal-skeleton-unstable-code-points`, of which there are thirteen in
+  16.0.0 and 17.0.0 and none in 18.0.0.
+  `internal-skeleton-of-internal-skeleton-when-unstable`: it fails for
+  each of the thirteen.  So in 16.0.0 and 17.0.0 the data does not do what
+  the specification says of it; the documentation topic
+  `skeleton-idempotence` has an example.
+- `confusable-p-reflexive`, `confusable-p-symmetric`,
+  `confusable-p-transitive`: being confusable is an equivalence relation.
+  `confusable-p-when-canonical-equivalent-p`: canonical equivalents are
+  confusable.
+- `confusable-p-in-terms-of-kinds`,
+  `not-mixed-script-confusable-p-when-single-script-confusable-p`,
+  `mixed-script-confusable-p-when-whole-script-confusable-p`: confusable
+  strings are single-script confusables or mixed-script confusables, not
+  both, and whole-script confusables are mixed-script confusables.
+- `resolved-script-set-of-append`: the resolved script set of two lists
+  put together is the intersection of their resolved script sets.
+  `mixed-script-p-of-append-when-mixed-script-p-left` (and `-right`): a
+  list with a mixed-script part is mixed-script.
+  `not-script-set-empty-p-of-code-point-augmented-script-set`: a single
+  code point is never mixed-script.
+
+`skeleton` and `confusable-p` are the functions of the specification only
+for the lists that satisfy their guard, `right-to-left-free-p`: no code
+point of class `R`, `AL`, `RLE`, `RLO` or `RLI`.  A list of code points
+below U+0590, where the Hebrew block starts, satisfies it
+(`right-to-left-free-p-when-all-below-590`).  For those lists the
+skeleton of the specification, which first puts the characters in the
+order of display, is the internal skeleton.  The library does not have the
+bidirectional algorithm, so that is not a theorem here, and the skeleton
+of the other lists is not modeled.  The specification states the condition
+without the three explicit formatting classes; the library adds them,
+because an override from right to left reorders left-to-right characters.
+
 And about two versions, besides the theorems listed further up:
 `stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
 (text of assigned characters stays in Stream-Safe Text Format, and the
@@ -495,6 +562,11 @@ supported version, and nothing else of this library.
 | `decimal-digit-value`, `decimal-digit-p`, `decimal-digit-zero` | `decimal-digits` | `code-points`, `versions`, `ranges`, `maps` | `unicode-data` |
 | `identifier-allowed-p`, `code-point-identifier-types`, `identifier-type-ranges`; the type `identifier-type` | `identifier-status` | `code-points`, `versions`, `ranges`, `runs`, `identifier-type-tables` | `identifier-status`, `identifier-type` |
 | The theorems that relate the identifier status and types to NFKC | `identifier-status-normalization` | `property-relations`, `quick-check-theorems`, and the books that those load | the tables of those books |
+| `prototype`, `replace-by-prototypes` | `confusables` | `versions`, `maps` | `confusables` |
+| `internal-skeleton`, `skeleton`, `confusable-p`, `right-to-left-free-p` | `skeleton` | `confusables`, `normalization`, `default-ignorable`, `bidi-class`, and the books that those load | the tables of those books |
+| `single-script-confusable-p`, `mixed-script-confusable-p`, `whole-script-confusable-p` | `confusable-kinds` | `skeleton`, `mixed-scripts`, and the books that those load | the tables of those books |
+| `code-point-augmented-script-set`, `resolved-script-set`, `single-script-p`, `mixed-script-p`; the types `writing-system` and `script-set` | `mixed-scripts` | `scripts`, and the books that it loads | `scripts`, `script-extensions` |
+| `decimal-digit-zeros`, `mixed-number-systems-p` | `mixed-numbers` | `decimal-digits`, and the books that it loads | `unicode-data` |
 | `code-point-general-category`, `general-category-ranges`, `assigned-p`; the type `general-category` and its predicates such as `general-category-letter-p` | `general-category` | `code-points`, `versions`, `ranges`, `general-category-tables` | `derived-general-category` |
 | `general-category-changes`, `general-category-changes-of-assigned`, and the theorem that the `General_Category` of an assigned code point stays the same, with one exception | `general-category-changes` | `general-category`, `range-operations`, and the books that those load | `derived-general-category` |
 | `ranges-union`, `ranges-intersection`, `ranges-difference`, `ranges-complement`, `ranges-normalize`, `range-list-code-points` | `range-operations` | `code-points`, `ranges` | none |
@@ -597,7 +669,7 @@ versions.  The documentation topic `versions` has the whole list.
 The books in `data/v<version>/` are written by
 `tools/generate-ucd-books.py` from these files of the Unicode Character
 Database (UCD) of that version, at
-`https://www.unicode.org/Public/<version>/ucd/`, and from two data files
+`https://www.unicode.org/Public/<version>/ucd/`, and from three data files
 of UTS #39:
 
 | UCD file | Generated book | Tables |
@@ -615,17 +687,23 @@ of UTS #39:
 | `emoji/emoji-data.txt` | `emoji-data` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` |
 | `IdentifierStatus.txt` of UTS #39 | `identifier-status` | `Identifier_Status` |
 | `IdentifierType.txt` of UTS #39 | `identifier-type` | `Identifier_Type` |
+| `confusables.txt` of UTS #39 | `confusables` | the prototypes of confusable characters |
 | `NormalizationTest.txt` | `normalization-test` | The conformance test vectors |
 
 Three more files are read only to interpret or cross-check those:
 `PropertyValueAliases.txt`, `CompositionExclusions.txt`, and
 `extracted/DerivedDecompositionType.txt`.
 
-The two files of UTS #39 are not in the `ucd/` directory, and they moved:
-they are at `https://www.unicode.org/Public/security/16.0.0/` for 16.0.0,
-and at `https://www.unicode.org/Public/<version>/security/` from 17.0.0 on.
-The generator knows both places (`canonical_url`), and expects the two
-files in the subdirectory `security/` of the directory it is given.
+The three files of UTS #39 are not in the `ucd/` directory, and they
+moved: they are at `https://www.unicode.org/Public/security/16.0.0/` for
+16.0.0, and at `https://www.unicode.org/Public/<version>/security/` from
+17.0.0 on.  The generator knows both places (`canonical_url`), and expects
+the three files in the subdirectory `security/` of the directory it is
+given.
+
+For `confusables.txt` the generator checks that the number of entries is
+the one in the last line of the file, that no code point is listed twice
+or is its own prototype, and that no code point of a prototype is listed.
 
 Each generated book records the URL of its source file and the SHA-256 of
 the bytes that were read.  `tools/ucd-sources.json` has the same for all the
@@ -702,9 +780,9 @@ to those copies, so the recorded SHA-256 values are those of the official
 files.
 
 The six files that were added later (`Scripts.txt`,
-`ScriptExtensions.txt`, `Blocks.txt`, `emoji/emoji-data.txt`, and the two
+`ScriptExtensions.txt`, `Blocks.txt`, `emoji/emoji-data.txt`, and two
 files of UTS #39) were downloaded from `www.unicode.org` on 2026-11-19,
-for each version.
+for each version, and `confusables.txt` on 2026-11-20.
 
 To repeat that check for a version:
 
@@ -723,7 +801,7 @@ python3 tools/generate-ucd-books.py 16.0.0 UCD_DIR [--fetch]
 ```
 
 where `UCD_DIR` is laid out like `https://www.unicode.org/Public/16.0.0/ucd/`,
-with the two files of UTS #39 in its subdirectory `security/`
+with the three files of UTS #39 in its subdirectory `security/`
 (`--fetch` downloads into it the files that are missing).  The version must
 be written in full.  The script needs only the Python standard library.
 
@@ -742,7 +820,7 @@ For example 19.0.0 (this is how 18.0.0 was added):
    `scripts` of the new version does not certify, and says which.)
 4. In each book that selects tables by version (`general-category`, `xid`,
    `id`, `id-compat-math`, `scripts`, `bidi-class`, `blocks`, `emoji`,
-   `decimal-digits`, `identifier-status`,
+   `decimal-digits`, `identifier-status`, `confusables`,
    `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
@@ -752,10 +830,15 @@ For example 19.0.0 (this is how 18.0.0 was added):
    of the new data book and a `:v19.0.0` line to each selector;
    `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions`,
    `compositions` and `composing-pairs`, also copy the block that defines
-   and checks the computed tables.
-5. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
+   and checks the computed tables.  In `skeleton`, add a `:v19.0.0 nil`
+   line to `internal-skeleton-unstable-code-points`.
+5. Read Section 5.1 of the revision of UTS #39 for the new version.  If
+   the rules for the augmented script set have changed, as they did in
+   the revision for 18.0.0, change `augment-script-extensions` in
+   `mixed-scripts`, with a condition on the version.
+6. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
    `quick-check-v18.0.0.lisp`, changing the version.
-6. Certify `top` and `tests/*`.  This checks the invariants of the new
+7. Certify `top` and `tests/*`.  This checks the invariants of the new
    tables, re-proves for the new version the theorems listed above (if one
    fails, that is a real change in Unicode to look at), and runs the
    conformance test.  The theorems about two versions are re-proved for
@@ -786,6 +869,16 @@ For example 19.0.0 (this is how 18.0.0 was added):
      stability of normalization allows.
    - `block-ranges-of-later-version` fails if the new version changes a
      block; the stability policies do not cover blocks.
+   - The check of the tables in the section `skeleton-idempotence` of
+     `skeleton` fails if the internal skeleton of some code point of the
+     new version is not its own internal skeleton.  UTS #39 says that
+     there is none, and there was none in 18.0.0, but there were thirteen
+     in 16.0.0 and in 17.0.0.  To find them, evaluate, for each code point
+     that has a prototype, whether the internal skeleton of its internal
+     skeleton is its internal skeleton; put those that fail in the new
+     line of `internal-skeleton-unstable-code-points`.  Then
+     `internal-skeleton-of-internal-skeleton-from-v18.0.0` has to be
+     restated for 18.0.0 alone.
    - The theorems of `property-relations` are facts about the data, some
      of which the specifications state and some not.  If one fails, that
      is a change in Unicode to look at, as before.
@@ -797,12 +890,13 @@ For example 19.0.0 (this is how 18.0.0 was added):
    noncharacters, the three fixed values of `General_Category`) would mean
    that the new version breaks a stability policy of the standard, or that
    a table is wrong.
-7. For the comparison with other implementations, add
+8. For the comparison with other implementations, add
    `validation/rust-oracle/v19.0.0/Cargo.toml` with the versions of the
    crates that implement Unicode 19.0.0.
 
-Nothing else changes: no definition other than the table of the scripts,
-and no theorem statement other than those just listed.
+Nothing else changes: no definition other than the table of the scripts
+and, if the specification changed it, the rule of the augmented script
+sets; and no theorem statement other than those just listed.
 
 ## Validation
 
@@ -978,13 +1072,60 @@ the identifier types are proved to agree with the identifier status,
 which is compared; nothing checks the blocks beyond the checks of the
 generator.
 
+The skeletons and the script sets of UTS #39, which were added on
+2026-11-20 too, were compared on that day, for every code point
+(`validation/dump.lisp` writes four more columns for them), and the
+earlier comparisons of every code point were run again.  No differences:
+
+- The internal skeleton of each code point alone, and of each code point
+  between the letter a and two combining marks that are not in canonical
+  order: with `unicode-security` 0.1.3 for 18.0.0; and, for 16.0.0 and
+  17.0.0, with a second implementation of the four steps, in
+  `validation/python-oracle.py`, which takes NFD from Python (3.14.6 and
+  3.15.0b4) and reads the prototypes and the default ignorable code
+  points from the files `confusables.txt` and `DerivedCoreProperties.txt`
+  themselves, not from the generated tables.  The same author wrote that
+  second implementation, so it is weaker evidence than a crate.
+- `unicode-security` 0.1.2, for 16.0.0, has an earlier definition of the
+  skeleton, without the removal of the default ignorable code points.
+  The library does not have that function; the dump computes it from
+  `nfd` and `replace-by-prototypes` (the column `skelk`), and it agrees
+  with the crate on every code point.
+- The augmented script set of each code point: with `unicode-security`
+  0.1.2 for 16.0.0 and 0.1.3 for 18.0.0.  The crate does not have the
+  writing system `Hntl`, which UTS #39 has from 18.0.0 on; the comparison
+  leaves it out of the sets of the library.  So the rule for `Hntl` was
+  not compared with another implementation; the tests have its examples
+  from Table 1a of UTS #39.  For an unassigned code point the crate has
+  the empty set where the library, following the definition, has the set
+  of the one script `Unknown`; the oracle writes `Zzzz` for it.
+- The crate for 16.0.0 and the second implementation give, like the
+  library, U+0064, U+007A, U+030C as the skeleton of U+01C6 and U+0306 as
+  the skeleton of U+030C: the internal skeleton of 16.0.0 and 17.0.0 is
+  not idempotent in them either.
+- As a control, comparing the 17.0.0 output of the library with the
+  18.0.0 oracle reports 2,529 code points that differ in the skeleton and
+  13,010 in the augmented script set.
+
+Not compared with another implementation: the resolved script set of a
+list, the three classes of confusable strings, and mixed-number
+detection, which are short definitions on top of what is compared; the
+tests have the examples of UTS #39 for each.  The file
+`confusablesSummary.txt` of UTS #39 is not used as a test: its groups of
+look-alike strings are not the classes of strings with the same skeleton
+(by the second implementation, 73 of its 3,417 groups in 17.0.0, and 31
+of its 3,138 groups in 18.0.0, have members with different skeletons).
+
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
-interpreter with the right version of Unicode):
+interpreter with the right version of Unicode; `UCD_DIR` is the directory
+with the files of the version, for the skeletons of the Python part):
 
 ```
 cert.pl validation/dump
-validation/run.sh 16.0.0 /tmp/unicode-validation python3.14
-validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
+UCD_DIR=/tmp/ucd-16.0.0 \
+  validation/run.sh 16.0.0 /tmp/unicode-validation python3.14
+UCD_DIR=/tmp/ucd-17.0.0 \
+  validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
 validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
 
@@ -1011,8 +1152,10 @@ The written topic of each of these types lists the values, says how the
 constructors are named, and names the recognizer, the fixer, the
 equivalence, the `-kind` function and the `-case` macro of the type.
 Those are the ones that `fty::deftagsum` always introduces, and they are
-used in the same way; they only have no topics of their own, so their
-names are not links in the documentation of the functions that use them.
+used in the same way; they only have no topics of their own.  The
+exception is the recognizer, which has a topic of one line, so that a
+signature such as `(code-point-script cp ver)` returning a `script-p`
+links to the type.
 For `script`, the list of the values in the topic is generated from
 `*script-table*`, and has the constructor of each value.
 
@@ -1024,7 +1167,7 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 700 topics.
+With this, the library has about 800 topics.
 
 ## Performance
 
@@ -1038,7 +1181,8 @@ A lookup of `General_Category` takes time linear in the number of runs,
 which is about 4,100; the same goes for `Script` (about 1,700 runs),
 `Script_Extensions` (1,900), `Bidi_Class` (1,300), `Block` (400) and
 `Identifier_Type` (2,400 in 16.0.0, and 5,200 in the later versions).
-The value of a decimal digit is a lookup in a tree map.
+The value of a decimal digit is a lookup in a tree map, and so is the
+prototype of a code point.  The skeleton of a list normalizes it twice.
 The operations on lists of ranges take time proportional to the product of
 the lengths of the two lists; `general-category-changes`, which uses them
 on the ranges of each of the thirty values, takes well under a second.
@@ -1046,8 +1190,8 @@ The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.
 
-Certifying all the 103 books from scratch, the tests and the generated
-tables included, took about three and a half minutes with two jobs
+Certifying all the 111 books from scratch, the tests and the generated
+tables included, took a little over three and a half minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
 sum with 179 cases) and `normalization-across-versions` (22 seconds).

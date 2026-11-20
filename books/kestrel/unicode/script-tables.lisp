@@ -358,7 +358,9 @@
         and the macro @('script-case')
         distinguishes the values by their keywords.")
       (xdoc::p
-       "These functions and macros
+       "Apart from the recognizer, which has a topic of one line
+        so that the signatures of functions link to this type,
+        these functions and macros
         have no documentation topics of their own.
         @(tsee fty::deftagsum) generates 543 topics for this type,
         three of them for each value,
@@ -366,6 +368,10 @@
         So we turn them off, with @('xdoc::without-xdoc')."))))
 
 (def-script-topic)
+
+(defxdoc script-p
+  :parents (script)
+  :short "Recognizer of the values of the type @(tsee script).")
 
 ;;;;;;;;;;;;;;;;;;;;
 

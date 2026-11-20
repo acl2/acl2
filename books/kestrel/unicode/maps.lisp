@@ -113,6 +113,40 @@
     (if in? mapping nil))
   :hooks (:fix))
 
+(fty::deftreemap prototype-map
+  :short "Fixtype of maps from code points to sequences of scalar values,
+          for the prototypes of confusable characters."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the data of the file @('confusables.txt')
+     of Unicode Security Mechanisms [UTS #39, Section 4]:
+     the file gives to some characters a prototype,
+     which is a sequence of one or more characters
+     that stands for what the character looks like.
+     The default value, for a code point that is not in the map,
+     is the code point itself."))
+  :key-type code-point
+  :val-type scalar-value-list
+  :pred prototype-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define prototype-map-lookup ((cp code-point-p)
+                              (map prototype-mapp))
+  :returns (prototype scalar-value-listp)
+  :short "Look up a code point in a map of prototypes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') if the code point is not in the map.
+     The sequences in the maps of the generated tables are not empty,
+     so there @('nil') means that the code point is not in the map."))
+  (b* (((mv in? prototype) (treemap::lookup? (code-point-fix cp)
+                                             (prototype-map-fix map))))
+    (if in? prototype nil))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum bidi-formatting-class
