@@ -14,11 +14,24 @@
 (include-book "versions")
 (include-book "ranges")
 (include-book "range-operations")
+(include-book "runs")
 (include-book "maps")
 (include-book "general-category-tables")
 (include-book "general-category")
 (include-book "general-category-changes")
 (include-book "xid")
+(include-book "id")
+(include-book "id-compat-math")
+(include-book "script-tables")
+(include-book "scripts")
+(include-book "bidi-class-tables")
+(include-book "bidi-class")
+(include-book "block-tables")
+(include-book "blocks")
+(include-book "emoji")
+(include-book "decimal-digits")
+(include-book "identifier-type-tables")
+(include-book "identifier-status")
 (include-book "pattern-white-space")
 (include-book "pattern-syntax")
 (include-book "bidi-controls")
@@ -43,6 +56,7 @@
 (include-book "quick-check-theorems")
 (include-book "utf-8")
 (include-book "property-relations")
+(include-book "identifier-status-normalization")
 (include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +96,22 @@
       where @('ID') is short for `identifier',
       and the identifiers that they define:
       see @(see xid).")
+    (xdoc::li
+     "The @('ID_Start') and @('ID_Continue') properties,
+      from which those two are derived,
+      with the exact difference between them,
+      and the two properties of the mathematical notation profile:
+      see @(see id-properties) and @(see id-compat-math).")
+    (xdoc::li
+     "The @('Script') and @('Script_Extensions') properties,
+      which say which writing system a character belongs to:
+      see @(see scripts).")
+    (xdoc::li
+     "The @('Identifier_Status') and @('Identifier_Type') properties
+      of Unicode Security Mechanisms,
+      which say which characters are safe to allow in identifiers,
+      and why the others are not:
+      see @(see identifier-status).")
     (xdoc::li
      "The four normalization forms, which are
       Normalization Forms D, C, KD and KC (NFD, NFC, NFKD and NFKC),
@@ -128,6 +158,19 @@
      "The bidirectional control characters,
       which a lexer may have to reject or report:
       see @(see bidi-controls).")
+    (xdoc::li
+     "The @('Bidi_Class') property,
+      which says whether a character is written
+      from left to right or from right to left:
+      see @(see bidi-class-property).")
+    (xdoc::li
+     "The emoji properties and the regional indicators:
+      see @(see emoji).")
+    (xdoc::li
+     "The decimal digits of every system of digits, with their values:
+      see @(see decimal-digits).")
+    (xdoc::li
+     "The @('Block') property: see @(see blocks).")
     (xdoc::li
      "Six more properties of characters
       that a lexer may have to reject, report or treat specially:
@@ -192,6 +235,30 @@
       for @(tsee ranges-union), @(tsee ranges-intersection),
       @(tsee ranges-difference) and @(tsee ranges-complement).
       It loads no tables.")
+    (xdoc::li
+     "@('kestrel/unicode/id') for @(tsee id-start-p)
+      and @(tsee id-continue-p), which loads @('xid');
+      @('kestrel/unicode/id-compat-math')
+      for @(tsee id-compat-math-start-p)
+      and @(tsee id-compat-math-continue-p).")
+    (xdoc::li
+     "@('kestrel/unicode/scripts') for @(tsee code-point-script)
+      and @(tsee code-point-script-extensions);
+      @('kestrel/unicode/bidi-class')
+      for @(tsee code-point-bidi-class),
+      which loads @('bidi-controls');
+      @('kestrel/unicode/blocks') for @(tsee code-point-block);
+      @('kestrel/unicode/emoji') for @(tsee emoji-p)
+      and the other emoji properties;
+      @('kestrel/unicode/decimal-digits')
+      for @(tsee decimal-digit-value).")
+    (xdoc::li
+     "@('kestrel/unicode/identifier-status')
+      for @(tsee identifier-allowed-p)
+      and @(tsee code-point-identifier-types);
+      @('kestrel/unicode/identifier-status-normalization')
+      for the theorems that relate them to Normalization Form KC,
+      which loads @('normalization').")
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p),
@@ -302,6 +369,12 @@
      See the file @('README.md') for how to regenerate the tables
      and how to add a version.")
    (xdoc::p
+    "Two of the generated books are not from that database:
+     the tables of @('Identifier_Status') and @('Identifier_Type')
+     are generated from two data files
+     of Unicode Technical Standard #39,
+     which are published for each version of Unicode.")
+   (xdoc::p
     "The tables are lists of ranges of code points,
      tree maps from code points to values,
      or lists of runs of code points with the same value,
@@ -336,8 +409,12 @@
      and [UAX #n] refers to the Unicode Standard Annex with that number:
      [UAX #9] is the Unicode Bidirectional Algorithm,
      [UAX #15] is Unicode Normalization Forms,
+     [UAX #24] is Unicode Script Property,
      [UAX #31] is Unicode Identifiers and Syntax,
      and [UAX #44] is the Unicode Character Database.
+     [UTS #n] refers to the Unicode Technical Standard with that number:
+     [UTS #39] is Unicode Security Mechanisms
+     and [UTS #51] is Unicode Emoji.
      [Stability] refers to the "
     (xdoc::ahref "https://unicode.org/policies/stability_policy.html"
                  "Unicode Character Encoding Stability Policies")
@@ -346,10 +423,14 @@
   :order-subtopics (code-points
                     versions
                     xid
+                    id-properties
                     normalization
                     identifier-closure
+                    identifier-status
+                    scripts
                     pattern-white-space
                     bidi-controls
+                    bidi-class-property
                     tables))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -373,9 +454,16 @@
       see @(see maps).")
     (xdoc::li
      "Lists of runs of code points with the same value,
-      for the @('General_Category') property,
-      which has no such value:
-      see @(see general-category-tables)."))
+      for the properties that have no such value,
+      such as @('General_Category') and @('Script'),
+      and for the properties whose values are sets,
+      such as @('Script_Extensions'):
+      see @(see runs).
+      Each of these properties has a topic
+      for the type of its values and for its runs:
+      @(see general-category-tables), @(see script-tables),
+      @(see bidi-class-tables), @(see block-tables)
+      and @(see identifier-type-tables)."))
    (xdoc::p
     "All three kinds are fixtypes:
      a range is a product of two code points,
@@ -400,4 +488,9 @@
   :order-subtopics (ranges
                     range-operations
                     maps
-                    general-category-tables))
+                    runs
+                    general-category-tables
+                    script-tables
+                    bidi-class-tables
+                    block-tables
+                    identifier-type-tables))

@@ -2,8 +2,9 @@
 
 An ACL2 model of the parts of the Unicode Standard that the lexers of
 programming languages need: code points, the identifier and white space
-properties, normalization, and the bidirectional controls.  It is a shared
-library: nothing in it is specific to one language.
+properties, normalization, scripts, the bidirectional classes and controls,
+and the properties that say which characters are safe in identifiers.  It
+is a shared library: nothing in it is specific to one language.
 
 The documentation is in XDOC (topic `unicode::unicode`); this file covers
 what a maintainer needs: where things are, where the data comes from, how to
@@ -29,9 +30,27 @@ validated.
   the type `general-category` use the long names; the documentation of the
   type lists all thirty with their abbreviations, and
   `general-category-abbreviation` returns the abbreviation.
-- UAX: Unicode Standard Annex.  UAX #15 is Unicode Normalization Forms,
-  UAX #31 is Unicode Identifiers and Syntax, UAX #44 is the Unicode
-  Character Database.  UTS: Unicode Technical Standard.
+- `ID_Start`, `ID_Continue`: the properties of the code points that can
+  start, and continue, an identifier in the default syntax of UAX #31.
+  `Other_ID_Start` and `Other_ID_Continue` are the short lists of code
+  points that have them although their `General_Category` would not give
+  them.  `ID_Compat_Math_Start` and `ID_Compat_Math_Continue` (`Compat` is
+  short for compatibility) are the characters that the mathematical
+  notation profile of UAX #31 adds.
+- A script has a long name and a four-letter code, which is its code in
+  ISO 15924: `Latn` is `Latin`, `Zyyy` is `Common`, `Zinh` is `Inherited`,
+  `Zzzz` is `Unknown`.  The constructors of the type `script` use the long
+  names; `script-code` returns the code.
+- The values of `Bidi_Class` have long names and abbreviations of one to
+  three letters (UAX #9, Table 4): `L` is `Left_To_Right`, `R` is
+  `Right_To_Left`, `AL` is `Arabic_Letter`, `NSM` is `Nonspacing_Mark`, and
+  so on.  The documentation of the type `bidi-class` lists all
+  twenty-three.
+- UAX: Unicode Standard Annex.  UAX #9 is the Unicode Bidirectional
+  Algorithm, UAX #15 is Unicode Normalization Forms, UAX #24 is Unicode
+  Script Property, UAX #31 is Unicode Identifiers and Syntax, UAX #44 is
+  the Unicode Character Database.  UTS: Unicode Technical Standard.
+  UTS #39 is Unicode Security Mechanisms, and UTS #51 is Unicode Emoji.
 - UCD: Unicode Character Database.
 
 ## What is here
@@ -43,16 +62,25 @@ validated.
 | `general-category` | `General_Category`: `code-point-general-category`, the ranges of the code points that have a value (`general-category-ranges`), and `assigned-p`. |
 | `general-category-changes` | The code points whose `General_Category` is not the same in two versions (`general-category-changes`), and those of them that are assigned in the first version (`general-category-changes-of-assigned`), as lists of ranges; the proof that in the supported versions the `General_Category` of an assigned code point is the same in every later version, with one exception, U+0295. |
 | `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31); the two optional characters for the start of an identifier, `$` and `_`. |
+| `id` | `ID_Start`, `ID_Continue`, `Other_ID_Start` and `Other_ID_Continue`; the exact difference between the `ID` and the `XID` properties (23 and 19 code points); a code point that has `ID_Start` or `ID_Continue` has it in every later version. |
+| `id-compat-math` | `ID_Compat_Math_Start` and `ID_Compat_Math_Continue`, the characters of the mathematical notation profile of UAX #31. |
+| `scripts` | `Script` (`code-point-script`) and `Script_Extensions` (`code-point-script-extensions`), with the ranges of the code points of a script and of those whose script extensions contain it; the proof that the script extensions contain the script, unless it is `Common` or `Inherited`. |
+| `identifier-status` | `Identifier_Status` (`identifier-allowed-p`) and `Identifier_Type` (`code-point-identifier-types`) of UTS #39, with the proof that a code point is allowed exactly when all its types are `Inclusion` or `Recommended`. |
+| `identifier-status-normalization` | The proof that NFKC changes no allowed code point, and changes every code point that has the type `Not_NFKC`. |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
+| `bidi-class` | `Bidi_Class` in full (`code-point-bidi-class`), and the proof that it agrees with the table of the explicit formatting classes of `bidi-controls`. |
+| `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
+| `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
+| `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
 | `default-ignorable` | `Default_Ignorable_Code_Point`. |
 | `variation-selectors` | `Variation_Selector`. |
 | `join-controls` | `Join_Control`: the zero width joiner and non-joiner. |
 | `noncharacters` | `Noncharacter_Code_Point`, with the proof that the tables are the 66 code points that the standard describes. |
 | `deprecated` | `Deprecated`. |
 | `prepended-concatenation-marks` | `Prepended_Concatenation_Mark`. |
-| `property-relations` | Theorems that relate properties to each other: a code point that is not a starter is a mark; variation selectors are nonspacing marks; bidirectional controls, join controls and variation selectors are default ignorable; noncharacters are unassigned; `Pattern_Syntax` is disjoint from `Pattern_White_Space`, and both are disjoint from `XID_Continue`; and more. |
+| `property-relations` | Theorems that relate properties to each other: a code point that is not a starter is a mark; variation selectors are nonspacing marks; bidirectional controls, join controls and variation selectors are default ignorable; noncharacters are unassigned; `Pattern_Syntax` is disjoint from `Pattern_White_Space`, and both are disjoint from `XID_Continue`; `ID_Start` and `ID_Continue` are what UAX #31 derives them from; the script is `Unknown` exactly for the unassigned, private-use and surrogate code points; the decimal digits are the code points of category `Nd`; what the identifier types say about other properties; and more. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
 | `combining-classes` | `Canonical_Combining_Class`. |
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
@@ -62,30 +90,35 @@ validated.
 | `normalization-inert` | `normalization-inert-p`: a starter with no decomposition that composes with nothing.  The proof that each of the four forms normalizes separately what is before and what is after such a code point, and leaves it as it is.  Which ASCII code points are inert; `Pattern_White_Space` code points are. |
 | `normalization-members` | Which code points can occur in a normalization form of a list: for an inert ASCII code point, exactly when it occurs in NFD and in NFC; and the proof that NFC brings in no ASCII code point, with three exceptions. |
 | `stream-safe` | The Stream-Safe Text Format (`stream-safe-p`) and the Stream-Safe Text Process (`stream-safe-process`) of UAX #15, with the proof that the process gives text in the format and leaves text in the format unchanged, and that normalizing does not change whether text is in the format. |
-| `normalization-across-versions` | The proof that the four normalization forms of a list of code points that are assigned in a version are the same in every later version (the normalization stability of the Unicode Standard), and so are the combining class and the decompositions of an assigned code point, and what two assigned code points compose to. |
+| `normalization-across-versions` | The proof that the four normalization forms of a list of code points that are assigned in a version are the same in every later version (the normalization stability of the Unicode Standard), and so are the combining class and the decompositions of an assigned code point, and what two assigned code points compose to.  The same for the Stream-Safe Text Format and Process, and for the quick check properties. |
 | `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers, also when the identifier starts with `$` or `_`; a canonical equivalent of an identifier is an identifier. |
 | `quick-check` | The `NF*_Quick_Check` properties (the normalization functions do not use them). |
 | `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD, and that the code points that NFC and NFKC change are those whose quick check value is No. |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
 | `range-operations` | Union, intersection, difference and complement of sets of code points given as lists of ranges, each with the theorem that says which code points are in the result; the normal form of a list of ranges; the list of the code points of a list of ranges. |
-| `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value. |
-| `general-category-tables` | The fixtype of the thirty values of `General_Category`, the list of the thirty values (`general-category-values`), and the fixtypes of runs of code points with the same value, which represent that property. |
+| `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value: combining classes, decompositions, the classes of the explicit formatting characters, and the values of the decimal digits. |
+| `runs` | The macro `defruns`, which introduces, for a property with many values, the fixtype of runs of code points with the same value, the lookup, the ranges of a value (or, when the values are sets, of the code points whose set has an element), and the theorems that relate them. |
+| `general-category-tables` | The fixtype of the thirty values of `General_Category`, the list of the thirty values (`general-category-values`), and the runs of that property. |
+| `script-tables` | The fixtype of the scripts, defined from one table of their codes and names (`*script-table*`); the runs of `Script` and of `Script_Extensions`. |
+| `bidi-class-tables` | The fixtype of the twenty-three values of `Bidi_Class`, with the predicates for the strong, weak, neutral and explicit formatting classes; the runs of that property. |
+| `block-tables` | The runs of `Block`, whose values are the names of the blocks, as strings. |
+| `identifier-type-tables` | The fixtype of the twelve values of `Identifier_Type`, and the runs of that property, whose values are lists of types. |
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
-| `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database. |
+| `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and two books from the data files of UTS #39. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
 | `validation/` | Tools to compare the library, on every code point, with other implementations. |
 
 What is not modeled is listed, specification by specification, in the
 documentation topic `unicode-coverage` (book `coverage`).  Among other
-things: character names, case mappings, scripts, the bidirectional
-algorithm, text segmentation, confusables and the other data of UTS #39,
-emoji, and collation.  That topic is also the only place where the library
-names programming languages: it says, for C, Java, Python, Rust, Scheme and
-Remora, whether the library has all that their lexical rules take from
-Unicode.
+things: character names, case mappings, the bidirectional algorithm, text
+segmentation, confusables and the detection of mixed scripts of UTS #39,
+emoji sequences, and collation.  That topic is also the only place where
+the library names programming languages: it says, for C, Java, Python,
+Rust, Scheme and Remora, whether the library has all that their lexical
+rules take from Unicode.
 
 Encodings are elsewhere and are not rebuilt here: `[books]/unicode` has a
 verified UTF-8 decoder and encoder, and `[books]/kestrel/unicode-light` has
@@ -361,6 +394,88 @@ versions:
   (xid-start-ranges (version-v16.0.0)))` is the list of the 4,647 code
   points that got `XID_Start` in 17.0.0.
 
+The properties with many values are tables of runs (`runs`, `defruns`).
+For each, one function gives the value of a code point and another the
+ranges of the code points that have a value, and a theorem says that the
+two agree: `code-point-in-general-category-ranges`,
+`code-point-in-script-ranges`, `code-point-in-bidi-class-ranges`,
+`code-point-in-block-ranges`; and, for the properties whose values are
+sets, `code-point-in-script-extensions-ranges` and
+`code-point-in-identifier-type-ranges`: a code point is in the ranges of
+an element exactly when the element is in its set.  So a fact about every
+code point is proved by evaluation on a few thousand ranges; most of the
+theorems below are proved that way.
+
+About identifiers:
+
+- `id-start-p-in-terms-of-general-category`,
+  `id-continue-p-in-terms-of-general-category`: `ID_Start` and
+  `ID_Continue`, which the library reads from `DerivedCoreProperties.txt`,
+  are what UAX #31, Table 2, derives them from: the letters and letter
+  numbers (and, to continue, the marks, the decimal digits and the
+  connector punctuation), with `Other_ID_Start` and `Other_ID_Continue`,
+  without `Pattern_Syntax` and `Pattern_White_Space`.
+- `id-start-p-in-terms-of-xid-start-p`,
+  `id-continue-p-in-terms-of-xid-continue-p`: a code point has `ID_Start`
+  exactly when it has `XID_Start` or is one of 23 code points, which
+  `id-start-not-xid-start-ranges` lists; the same for `ID_Continue`, with
+  19 code points.  The lists are the same in every supported version.
+- `id-start-p-of-later-version`, `id-continue-p-of-later-version`: these
+  two properties only grow, as the standard promises.
+- `not-id-continue-p-when-id-compat-math-continue-p`: the characters of
+  the mathematical notation profile are not characters of the default
+  identifiers.
+- `identifier-allowed-p-in-terms-of-types`: the `Identifier_Status` of a
+  code point is `Allowed` exactly when each of its `Identifier_Type`s is
+  `Inclusion` or `Recommended`.  The two properties come from two files.
+- `not-nfkc-changes-p-when-identifier-allowed-p`,
+  `nfkc-of-list-when-identifier-allowed-p`: NFKC changes no allowed code
+  point.  `nfkc-changes-p-when-identifier-type-not-nfkc`: NFKC changes
+  every code point that has the type `Not_NFKC`.  (The converse fails for
+  seven code points, which are `Deprecated` or `Default_Ignorable`.)
+- `identifier-type-not-character-in-terms-of-general-category`,
+  `identifier-type-deprecated-in-terms-of-deprecated-p`,
+  `default-ignorable-p-when-identifier-type-default-ignorable`,
+  `not-xid-continue-p-when-identifier-type-not-xid`: the identifier types
+  are what UTS #39, Table 1, says they are, in terms of the other
+  properties.
+
+About scripts, bidirectional classes, emoji, digits and blocks:
+
+- `member-equal-of-code-point-script-and-script-extensions`: the script
+  extensions of a code point contain its script, unless the script is
+  `Common` or `Inherited`.  `consp-of-code-point-script-extensions`: they
+  are never empty.
+- `script-unknown-in-terms-of-general-category`: the script of a code
+  point is `Unknown` exactly when the code point is unassigned, private
+  use or a surrogate.
+- `bidi-explicit-formatting-class-in-terms-of-bidi-class`: the full table
+  of `Bidi_Class` agrees with the small table of the nine explicit
+  formatting classes that `bidi-controls` has.
+  `general-category-when-bidi-class-nonspacing-mark`: a code point of
+  class `NSM` is a nonspacing or an enclosing mark.
+- `emoji-p-when-emoji-presentation-p` (and the same for the modifiers,
+  the modifier bases and the regional indicators);
+  `extended-pictographic-p-or-emoji-component-p-when-emoji-p`: an emoji is
+  a pictograph or an emoji component.  `emoji-modifier-p-alt-def`,
+  `regional-indicator-p-alt-def`, `emoji-component-ranges-alt-def`: these
+  three are the same code points in every supported version.
+- `decimal-digit-value-of-decimal-digit-zero-plus`: the decimal digits of a
+  system are ten consecutive code points with the values 0 to 9; so
+  `decimal-digit-zero`, the code point of a digit less its value, tells the
+  systems of digits apart.  `decimal-digit-p-in-terms-of-general-category`:
+  the decimal digits are the code points of category `Nd`.
+- `len-of-block-ranges-upper-bound`: a block is one range.
+  `block-ranges-of-later-version`: a block of a version is the same block
+  in every later version.
+
+And about two versions, besides the theorems listed further up:
+`stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
+(text of assigned characters stays in Stream-Safe Text Format, and the
+process gives the same result), and `nfc-quick-check-of-later-version`
+(and the other three: the quick check values of an assigned code point
+stay the same).
+
 ### Including only what you need
 
 Each of these books can be included on its own; none of them needs `top`.
@@ -371,6 +486,15 @@ supported version, and nothing else of this library.
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
 | `xid-start-p`, `xid-continue-p`, `xid-identifier-p`, `optional-start-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `id-start-p`, `id-continue-p`, `other-id-start-p`, `other-id-continue-p` | `id` | `xid`, and the books that it loads | `derived-core-properties`, `prop-list` |
+| `id-compat-math-start-p`, `id-compat-math-continue-p` | `id-compat-math` | `id`, and the books that it loads | the same |
+| `code-point-script`, `script-ranges`, `code-point-script-extensions`, `script-extensions-ranges`; the type `script` | `scripts` | `code-points`, `versions`, `ranges`, `runs`, `script-tables` | `scripts`, `script-extensions` |
+| `code-point-bidi-class`, `bidi-class-ranges`; the type `bidi-class` and its predicates such as `bidi-class-right-to-left-p` | `bidi-class` | `bidi-controls`, `runs`, `bidi-class-tables`, and the books that those load | `derived-bidi-class`, `prop-list` |
+| `code-point-block`, `block-ranges`, `block-names` | `blocks` | `code-points`, `versions`, `ranges`, `runs`, `block-tables` | `blocks` |
+| `emoji-p`, `emoji-presentation-p`, `emoji-modifier-p`, `emoji-modifier-base-p`, `emoji-component-p`, `extended-pictographic-p`, `regional-indicator-p` | `emoji` | `code-points`, `versions`, `ranges` | `emoji-data`, `prop-list` |
+| `decimal-digit-value`, `decimal-digit-p`, `decimal-digit-zero` | `decimal-digits` | `code-points`, `versions`, `ranges`, `maps` | `unicode-data` |
+| `identifier-allowed-p`, `code-point-identifier-types`, `identifier-type-ranges`; the type `identifier-type` | `identifier-status` | `code-points`, `versions`, `ranges`, `runs`, `identifier-type-tables` | `identifier-status`, `identifier-type` |
+| The theorems that relate the identifier status and types to NFKC | `identifier-status-normalization` | `property-relations`, `quick-check-theorems`, and the books that those load | the tables of those books |
 | `code-point-general-category`, `general-category-ranges`, `assigned-p`; the type `general-category` and its predicates such as `general-category-letter-p` | `general-category` | `code-points`, `versions`, `ranges`, `general-category-tables` | `derived-general-category` |
 | `general-category-changes`, `general-category-changes-of-assigned`, and the theorem that the `General_Category` of an assigned code point stays the same, with one exception | `general-category-changes` | `general-category`, `range-operations`, and the books that those load | `derived-general-category` |
 | `ranges-union`, `ranges-intersection`, `ranges-difference`, `ranges-complement`, `ranges-normalize`, `range-list-code-points` | `range-operations` | `code-points`, `ranges` | none |
@@ -384,12 +508,12 @@ supported version, and nothing else of this library.
 | `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
 | The theorems about the code points that occur in a normalization form | `normalization-members` | `normalization-inert`, and the books that it loads | the same |
 | `stream-safe-p`, `stream-safe-process` | `stream-safe` | `normalization`, and the books that it loads | the tables of `normalization` |
-| The theorems that the normalization forms of assigned code points are the same in every later version | `normalization-across-versions` | `normalization`, `general-category`, and the books that those load | the tables of `normalization`, and `derived-general-category` |
+| The theorems that the normalization forms of assigned code points are the same in every later version, and the same for Stream-Safe text and for the quick check properties | `normalization-across-versions` | `normalization`, `stream-safe`, `quick-check`, `general-category`, and the books that those load | the tables of `normalization`, and `derived-general-category` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | The theorems that the quick check is exact for NFD and NFKD, and `nfc-changes-p`, `nfkc-changes-p` | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
-| Theorems that relate properties to each other | `property-relations` | `general-category`, `xid`, `combining-classes`, and the books of the eight other properties that it relates | the tables of those books |
+| Theorems that relate properties to each other | `property-relations` | the books of all the properties that it relates, which are most of the library except normalization | the tables of those books |
 
 A front end for a language whose identifiers follow UAX #31 typically needs
 `xid`; `normalization` if it normalizes or compares identifiers, and then
@@ -473,22 +597,35 @@ versions.  The documentation topic `versions` has the whole list.
 The books in `data/v<version>/` are written by
 `tools/generate-ucd-books.py` from these files of the Unicode Character
 Database (UCD) of that version, at
-`https://www.unicode.org/Public/<version>/ucd/`:
+`https://www.unicode.org/Public/<version>/ucd/`, and from two data files
+of UTS #39:
 
 | UCD file | Generated book | Tables |
 |----------|----------------|--------|
-| `DerivedCoreProperties.txt` | `derived-core-properties` | `XID_Start`, `XID_Continue`, `Default_Ignorable_Code_Point` |
-| `PropList.txt` | `prop-list` | `Pattern_White_Space`, `Bidi_Control`, `Join_Control`, `Variation_Selector`, `Noncharacter_Code_Point`, `Deprecated`, `Prepended_Concatenation_Mark`, `Pattern_Syntax` |
+| `DerivedCoreProperties.txt` | `derived-core-properties` | `XID_Start`, `XID_Continue`, `Default_Ignorable_Code_Point`, `ID_Start`, `ID_Continue` |
+| `PropList.txt` | `prop-list` | `Pattern_White_Space`, `Bidi_Control`, `Join_Control`, `Variation_Selector`, `Noncharacter_Code_Point`, `Deprecated`, `Prepended_Concatenation_Mark`, `Pattern_Syntax`, `Other_ID_Start`, `Other_ID_Continue`, `ID_Compat_Math_Start`, `ID_Compat_Math_Continue`, `Regional_Indicator` |
 | `extracted/DerivedGeneralCategory.txt` | `derived-general-category` | `General_Category` |
 | `extracted/DerivedCombiningClass.txt` | `derived-combining-class` | `Canonical_Combining_Class` |
-| `UnicodeData.txt` | `unicode-data` | `Decomposition_Mapping` (canonical and compatibility) |
+| `UnicodeData.txt` | `unicode-data` | `Decomposition_Mapping` (canonical and compatibility); the values of the decimal digits |
 | `DerivedNormalizationProps.txt` | `derived-normalization-props` | `Full_Composition_Exclusion`, `NF*_Quick_Check` |
-| `extracted/DerivedBidiClass.txt` | `derived-bidi-class` | `Bidi_Class`, for the nine explicit formatting classes only |
+| `extracted/DerivedBidiClass.txt` | `derived-bidi-class` | `Bidi_Class`: a map for the nine explicit formatting classes, and the runs of the whole property |
+| `Scripts.txt` | `scripts` | `Script` |
+| `ScriptExtensions.txt` | `script-extensions` | `Script_Extensions` |
+| `Blocks.txt` | `blocks` | `Block` |
+| `emoji/emoji-data.txt` | `emoji-data` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` |
+| `IdentifierStatus.txt` of UTS #39 | `identifier-status` | `Identifier_Status` |
+| `IdentifierType.txt` of UTS #39 | `identifier-type` | `Identifier_Type` |
 | `NormalizationTest.txt` | `normalization-test` | The conformance test vectors |
 
 Three more files are read only to interpret or cross-check those:
 `PropertyValueAliases.txt`, `CompositionExclusions.txt`, and
 `extracted/DerivedDecompositionType.txt`.
+
+The two files of UTS #39 are not in the `ucd/` directory, and they moved:
+they are at `https://www.unicode.org/Public/security/16.0.0/` for 16.0.0,
+and at `https://www.unicode.org/Public/<version>/security/` from 17.0.0 on.
+The generator knows both places (`canonical_url`), and expects the two
+files in the subdirectory `security/` of the directory it is given.
 
 Each generated book records the URL of its source file and the SHA-256 of
 the bytes that were read.  `tools/ucd-sources.json` has the same for all the
@@ -506,7 +643,15 @@ How the generator reads the UCD:
 - **Defaults come from the `@missing` lines.**  A code point that a file does
   not list takes the value of the last `@missing` line that covers it.
   (`extracted/DerivedBidiClass.txt` has two dozen such lines.)  Binary
-  properties have no `@missing` lines; their default is "no".
+  properties have no `@missing` lines; their default is "no".  The default
+  of `Script_Extensions` is written `<script>`: the set of the one script
+  that `Scripts.txt` gives to the code point.
+- **The properties with many values are written as runs that cover every
+  code point**, the defaults included: `Unknown` for the script,
+  `No_Block` for the block, `Not_Character` for the identifier type.
+- **The scripts are checked against the type.**  The book `scripts` of a
+  version asserts that every script of `PropertyValueAliases.txt`, with
+  its code and its long name, is an entry of `*script-table*`.
 - **`First`/`Last` pairs of lines in `UnicodeData.txt` are ranges.**
 - **Surrogates are code points** and get property values like any others.
 
@@ -528,7 +673,12 @@ inside the macro `general-category-run-table`, which expands to one call of
 the constructor of runs per triple, with the constructor of the value that
 the two-letter abbreviation stands for; so these lists too are built with
 the typed constructors, and the files are a third of the size that they
-would have with the calls written out.  The other
+would have with the calls written out.  `Script`, `Script_Extensions`,
+`Bidi_Class`, `Block` and `Identifier_Type` are lists of runs in the same
+way; the macro `defruns` (book `runs`) introduces the type of the runs and
+the functions on them for each, and each has its own macro to write the
+runs compactly.  The values of `Script_Extensions` and of
+`Identifier_Type` are lists, which stand for sets.  The other
 tables are tree maps (`fty::deftreemap`) from code points to values, or,
 for composition, from pairs of code points (`fty::defprod code-point-pair`)
 to scalar values; and the sets of the code points that are the first, or
@@ -551,6 +701,11 @@ generator reads, for every supported version, were downloaded from
 to those copies, so the recorded SHA-256 values are those of the official
 files.
 
+The six files that were added later (`Scripts.txt`,
+`ScriptExtensions.txt`, `Blocks.txt`, `emoji/emoji-data.txt`, and the two
+files of UTS #39) were downloaded from `www.unicode.org` on 2026-11-19,
+for each version.
+
 To repeat that check for a version:
 
 ```
@@ -567,7 +722,8 @@ that the books it would generate are the ones in the tree.
 python3 tools/generate-ucd-books.py 16.0.0 UCD_DIR [--fetch]
 ```
 
-where `UCD_DIR` is laid out like `https://www.unicode.org/Public/16.0.0/ucd/`
+where `UCD_DIR` is laid out like `https://www.unicode.org/Public/16.0.0/ucd/`,
+with the two files of UTS #39 in its subdirectory `security/`
 (`--fetch` downloads into it the files that are missing).  The version must
 be written in full.  The script needs only the Python standard library.
 
@@ -580,7 +736,13 @@ For example 19.0.0 (this is how 18.0.0 was added):
 2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, a line
    to `version-string` and to `version-rank`, and a line to the statement
    and to the hint of the theorem `version-fix-in-terms-of-version-case`.
-3. In each book that selects tables by version (`general-category`, `xid`,
+3. In `script-tables.lisp`, add to `*script-table*` the scripts that the
+   new version adds, with their codes and long names as in
+   `PropertyValueAliases.txt`.  (If one is missing, the generated book
+   `scripts` of the new version does not certify, and says which.)
+4. In each book that selects tables by version (`general-category`, `xid`,
+   `id`, `id-compat-math`, `scripts`, `bidi-class`, `blocks`, `emoji`,
+   `decimal-digits`, `identifier-status`,
    `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
@@ -591,14 +753,15 @@ For example 19.0.0 (this is how 18.0.0 was added):
    `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions`,
    `compositions` and `composing-pairs`, also copy the block that defines
    and checks the computed tables.
-4. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
+5. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
    `quick-check-v18.0.0.lisp`, changing the version.
-5. Certify `top` and `tests/*`.  This checks the invariants of the new
+6. Certify `top` and `tests/*`.  This checks the invariants of the new
    tables, re-proves for the new version the theorems listed above (if one
    fails, that is a real change in Unicode to look at), and runs the
    conformance test.  The theorems about two versions are re-proved for
-   the new version with each of the others.  Two kinds of them can fail
-   without anything being wrong:
+   the new version with each of the others.  Some theorems can fail
+   without anything being wrong, because they say more than the standard
+   promises:
    - `code-point-general-category-of-later-version` names the characters
      whose `General_Category` has changed.  If the new version changes
      another one, evaluate
@@ -611,18 +774,35 @@ For example 19.0.0 (this is how 18.0.0 was added):
      points, prepended concatenation marks) fail if the new version adds a
      code point to the property.  Then the theorem has to go, or to become
      a theorem that the property only grows, like those for `XID_Start`.
+     The same goes for the theorems that list the code points of
+     `Other_ID_Start`, `Other_ID_Continue`, `ID_Compat_Math_Start`,
+     `ID_Compat_Math_Continue`, `Emoji_Modifier`, `Emoji_Component` and
+     `Regional_Indicator` (names ending in `alt-def`), and for the two
+     lists of the code points that have an `ID` property and not the `XID`
+     one.
+   - `nfc-quick-check-of-later-version` and
+     `nfkc-quick-check-of-later-version` fail if the new version gives the
+     value Maybe to a code point that had the value Yes, which the
+     stability of normalization allows.
+   - `block-ranges-of-later-version` fails if the new version changes a
+     block; the stability policies do not cover blocks.
+   - The theorems of `property-relations` are facts about the data, some
+     of which the specifications state and some not.  If one fails, that
+     is a change in Unicode to look at, as before.
 
    A failure of any of the others (assigned code points, `XID_Start`,
-   `XID_Continue`, normalization, `Pattern_White_Space`, `Pattern_Syntax`,
+   `XID_Continue`, `ID_Start`, `ID_Continue`, normalization, Stream-Safe
+   text, the quick check for NFD and NFKD,
+   `Pattern_White_Space`, `Pattern_Syntax`,
    noncharacters, the three fixed values of `General_Category`) would mean
    that the new version breaks a stability policy of the standard, or that
    a table is wrong.
-6. For the comparison with other implementations, add
+7. For the comparison with other implementations, add
    `validation/rust-oracle/v19.0.0/Cargo.toml` with the versions of the
    crates that implement Unicode 19.0.0.
 
-Nothing else changes: no definition, and no theorem statement other than
-those two kinds.
+Nothing else changes: no definition other than the table of the scripts,
+and no theorem statement other than those just listed.
 
 ## Validation
 
@@ -741,6 +921,63 @@ added on that day (`composing-pairs`, `normalization-inert`,
 `normalization-members`) are statements about the normalization functions,
 proved in the library; nothing new is compared for them.
 
+The properties of identifiers, scripts, bidirectional classes, emoji and
+digits, which were added on 2026-11-20, were compared on that day, for
+every code point (`validation/dump.lisp` writes sixteen more columns),
+and the earlier comparisons of every code point were run again.  No
+differences:
+
+- `Script` and `Script_Extensions`: with `unicode-script` 0.5.7 for
+  16.0.0, 0.5.8 for 17.0.0 and 0.5.9 for 18.0.0.  (The crate has no code
+  for the script `Unknown`; the oracle writes `Zzzz` for it.)
+- `Bidi_Class`: with `unicode-bidi` 0.3.18 for 16.0.0, on the 292,531
+  assigned code points that are not surrogates; with Python 3.14.6 for
+  16.0.0, on the 294,579 assigned code points (Python 3.14 has no value
+  for the others); and with Python 3.15.0b4 for 17.0.0, on every code
+  point: that Python gives the unassigned code points the default values
+  of the standard.  The unassigned code points are not compared with
+  `unicode-bidi`, which does not follow the defaults of
+  `extracted/DerivedBidiClass.txt` everywhere: it has L for the 3,835
+  unassigned code points whose default is BN, and R for 135 of the 293
+  whose default is AL.  There is no release of `unicode-bidi` for the
+  later versions, so for 18.0.0 `Bidi_Class` was not compared with another
+  implementation.  The generator checks, for the three versions, the
+  `Bidi_Class` of every code point that `UnicodeData.txt` lists against
+  field 4 of that file.
+- `Identifier_Status`: with `unicode-security` 0.1.2 for 16.0.0 and 0.1.3
+  for 18.0.0.  There is no release of it for 17.0.0, whose table differs
+  from that of 18.0.0 in one code point.
+- `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`
+  and `Emoji_Component`: with the emoji status of `unicode-properties`
+  (0.1.3, 0.1.4 and 0.1.5 for the three versions), which is one of nine
+  values according to which of these five properties a code point has
+  (the table `EMOJI_STATUS` of `validation/compare.py`).
+- `ID_Start`, `ID_Continue`, the five emoji properties just listed,
+  `Extended_Pictographic` and `Regional_Indicator`: with `regex-syntax`
+  0.8.5, for 16.0.0.  For the later versions, `ID_Start` and `ID_Continue`
+  are proved to be what UAX #31 derives from `General_Category`, which is
+  compared, and to differ from `XID_Start` and `XID_Continue`, which are
+  compared, in the same code points as in 16.0.0; `Regional_Indicator` is
+  proved to be the same code points; `Extended_Pictographic` of 17.0.0 and
+  18.0.0 was not compared with another implementation.
+- The values of the decimal digits: with `unicodedata.decimal` of Python
+  3.14.6 for 16.0.0 and of Python 3.15.0b4 for 17.0.0.  For 18.0.0 they
+  were not compared; the library proves, for each version, that the
+  decimal digits are the code points of category `Nd`, and that they come
+  in runs of ten with the values 0 to 9.
+- As a control, comparing the 17.0.0 output of the library with the
+  18.0.0 oracle reports 13,007 code points that differ in `Script`, 9 in
+  emoji status, and 1 in `Identifier_Status`.
+
+Not compared with another implementation, in any version: `Block`,
+`Identifier_Type`, `Other_ID_Start`, `Other_ID_Continue`,
+`ID_Compat_Math_Start` and `ID_Compat_Math_Continue`.  What the library
+has about them is the data files and the theorems: the last four are
+proved to be short lists of code points, which the documentation shows;
+the identifier types are proved to agree with the identifier status,
+which is compared; nothing checks the blocks beyond the checks of the
+generator.
+
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
 interpreter with the right version of Unicode):
 
@@ -760,13 +997,22 @@ Membership in a list of ranges
 (the binary properties, such as `XID_Start`) takes time linear in the
 number of ranges, which is a few hundred for the largest properties.
 A lookup of `General_Category` takes time linear in the number of runs,
-which is about 4,100.
+which is about 4,100; the same goes for `Script` (about 1,700 runs),
+`Script_Extensions` (1,900), `Bidi_Class` (1,300), `Block` (400) and
+`Identifier_Type` (2,400 in 16.0.0, and 5,200 in the later versions).
+The value of a decimal digit is a lookup in a tree map.
 The operations on lists of ranges take time proportional to the product of
 the lengths of the two lists; `general-category-changes`, which uses them
 on the ranges of each of the thirty values, takes well under a second.
 The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.
+
+Certifying all the 103 books from scratch, the tests and the generated
+tables included, took about three and a half minutes with two jobs
+(`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
+seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
+sum with 179 cases) and `normalization-across-versions` (22 seconds).
 
 ## License
 

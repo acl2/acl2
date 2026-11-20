@@ -173,3 +173,91 @@
 
 (assert-event (equal (len *pattern-syntax-v16.0.0*) 28))
 (assert-event (equal (range-list-size *pattern-syntax-v16.0.0*) 2760))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Other_ID_Start: 4 ranges, 6 code points.
+
+(defconst *other-id-start-v16.0.0*
+  (list (range #x1885 #x1886)
+        (range #x2118 #x2118)
+        (range #x212E #x212E)
+        (range #x309B #x309C)))
+
+(assert-event (equal (len *other-id-start-v16.0.0*) 4))
+(assert-event (equal (range-list-size *other-id-start-v16.0.0*) 6))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Other_ID_Continue: 7 ranges, 16 code points.
+
+(defconst *other-id-continue-v16.0.0*
+  (list (range #x00B7 #x00B7)
+        (range #x0387 #x0387)
+        (range #x1369 #x1371)
+        (range #x19DA #x19DA)
+        (range #x200C #x200D)
+        (range #x30FB #x30FB)
+        (range #xFF65 #xFF65)))
+
+(assert-event (equal (len *other-id-continue-v16.0.0*) 7))
+(assert-event (equal (range-list-size *other-id-continue-v16.0.0*) 16))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ID_Compat_Math_Start: 13 ranges, 13 code points.
+
+(defconst *id-compat-math-start-v16.0.0*
+  (list (range #x2202 #x2202)
+        (range #x2207 #x2207)
+        (range #x221E #x221E)
+        (range #x1D6C1 #x1D6C1)
+        (range #x1D6DB #x1D6DB)
+        (range #x1D6FB #x1D6FB)
+        (range #x1D715 #x1D715)
+        (range #x1D735 #x1D735)
+        (range #x1D74F #x1D74F)
+        (range #x1D76F #x1D76F)
+        (range #x1D789 #x1D789)
+        (range #x1D7A9 #x1D7A9)
+        (range #x1D7C3 #x1D7C3)))
+
+(assert-event (equal (len *id-compat-math-start-v16.0.0*) 13))
+(assert-event (equal (range-list-size *id-compat-math-start-v16.0.0*) 13))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ID_Compat_Math_Continue: 18 ranges, 43 code points.
+
+(defconst *id-compat-math-continue-v16.0.0*
+  (list (range #x00B2 #x00B3)
+        (range #x00B9 #x00B9)
+        (range #x2070 #x2070)
+        (range #x2074 #x207E)
+        (range #x2080 #x208E)
+        (range #x2202 #x2202)
+        (range #x2207 #x2207)
+        (range #x221E #x221E)
+        (range #x1D6C1 #x1D6C1)
+        (range #x1D6DB #x1D6DB)
+        (range #x1D6FB #x1D6FB)
+        (range #x1D715 #x1D715)
+        (range #x1D735 #x1D735)
+        (range #x1D74F #x1D74F)
+        (range #x1D76F #x1D76F)
+        (range #x1D789 #x1D789)
+        (range #x1D7A9 #x1D7A9)
+        (range #x1D7C3 #x1D7C3)))
+
+(assert-event (equal (len *id-compat-math-continue-v16.0.0*) 18))
+(assert-event (equal (range-list-size *id-compat-math-continue-v16.0.0*) 43))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Regional_Indicator: 1 ranges, 26 code points.
+
+(defconst *regional-indicator-v16.0.0*
+  (list (range #x1F1E6 #x1F1FF)))
+
+(assert-event (equal (len *regional-indicator-v16.0.0*) 1))
+(assert-event (equal (range-list-size *regional-indicator-v16.0.0*) 26))

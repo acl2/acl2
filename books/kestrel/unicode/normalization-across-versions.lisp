@@ -12,7 +12,10 @@
 
 (include-book "general-category")
 (include-book "normalization")
+(include-book "stream-safe")
+(include-book "quick-check")
 
+(local (include-book "range-operations"))
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
 (acl2::controlled-configuration)
@@ -63,6 +66,16 @@
      that is not assigned in the earlier one either:
      so two code points of the earlier version
      compose in the later version exactly as they did.")
+   (xdoc::p
+    "Two consequences are also here.
+     Text of assigned characters that is in Stream-Safe Text Format
+     is in that format in every later version,
+     and the Stream-Safe Text Process gives the same result:
+     see @(see stream-safe-across-versions).
+     And the quick check properties of an assigned code point
+     are the same in every later version,
+     which the standard promises only in part:
+     see @(see quick-check-across-versions).")
    (xdoc::p
     "The rules here are disabled by default:
      they have a version in their hypotheses
@@ -716,3 +729,215 @@
                     (compatibility-equivalent-p cps1 cps2 ver1)))
     :enable (compatibility-equivalent-p
              nfkd-of-later-version)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection stream-safe-across-versions
+  :short "For a list of code points
+          that are assigned in a version of Unicode,
+          being in Stream-Safe Text Format,
+          and the result of the Stream-Safe Text Process,
+          are the same in every later version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see stream-safe) for the format and the process.
+     Both are defined by Normalization Form KD (NFKD),
+     which is compatibility decomposition,
+     and by which code points are starters;
+     for assigned code points
+     neither changes in a later version
+     (see @(see normalization-across-versions)).
+     So this follows from the stability of normalization,
+     and it cannot fail when a version is added
+     unless that theorem does."))
+
+  (defruledl leading-non-starter-count-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (leading-non-starter-count cps ver2)
+                    (leading-non-starter-count cps ver1)))
+    :induct (len cps)
+    :enable (leading-non-starter-count
+             starter-p-of-later-version
+             len))
+
+  (defruledl non-starter-count-after-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (non-starter-count-after count cps ver2)
+                    (non-starter-count-after count cps ver1)))
+    :induct (non-starter-count-after count cps ver1)
+    :expand (non-starter-count-after count cps ver2)
+    :enable (non-starter-count-after
+             starter-p-of-later-version))
+
+  (defruledl non-starter-runs-within-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (non-starter-runs-within-p count cps ver2)
+                    (non-starter-runs-within-p count cps ver1)))
+    :induct (non-starter-runs-within-p count cps ver1)
+    :expand (non-starter-runs-within-p count cps ver2)
+    :enable (non-starter-runs-within-p
+             starter-p-of-later-version))
+
+  (defruled stream-safe-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (stream-safe-p cps ver2)
+                    (stream-safe-p cps ver1)))
+    :enable (stream-safe-p
+             nfkd-of-later-version
+             non-starter-runs-within-p-of-later-version))
+
+  (defruledl stream-safe-process-from-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (stream-safe-process-from count cps ver2)
+                    (stream-safe-process-from count cps ver1)))
+    :induct (stream-safe-process-from count cps ver1)
+    :expand (stream-safe-process-from count cps ver2)
+    :enable (stream-safe-process-from
+             nfkd-of-later-version
+             leading-non-starter-count-of-later-version
+             non-starter-count-after-of-later-version))
+
+  (defruled stream-safe-process-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (equal (stream-safe-process cps ver2)
+                    (stream-safe-process cps ver1)))
+    :enable (stream-safe-process
+             stream-safe-process-from-of-later-version)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection quick-check-across-versions
+  :short "The quick check properties of a code point
+          that is assigned in a version of Unicode
+          are the same in every later version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see quick-check) for the four properties,
+     one for each normalization form:
+     @('NFD_Quick_Check'), @('NFC_Quick_Check'),
+     @('NFKD_Quick_Check') and @('NFKC_Quick_Check').")
+   (xdoc::p
+    "This holds for the supported versions,
+     in the order of @(tsee version<=).
+     The stability of normalization
+     [Stability, Normalization Stability] implies part of it:
+     the values for the two decomposed forms,
+     which say whether the code point has a decomposition,
+     and the value `no' for the two composed forms,
+     which says that the form changes the code point
+     (see @(see quick-check-theorems)).
+     It does not imply that a `yes' stays a `yes':
+     a later version could add a character
+     that decomposes into a new character
+     followed by an existing mark,
+     and the mark would then get the value `maybe'.
+     No supported version does that.
+     So when a version is added, the theorems for the two composed forms
+     can fail without a table being wrong;
+     then their conclusions have to be weakened
+     to what the standard promises.")
+   (xdoc::p
+    "The theorems are proved by evaluation on lists of ranges,
+     for each pair of versions:
+     the code points that are in a table of one version
+     and not in the table of the other
+     are all unassigned in the earlier version."))
+
+  ;; For each of the six tables: a code point that is assigned
+  ;; in the earlier version is in the table of the later version
+  ;; exactly when it is in the table of the earlier one.
+
+  (local
+   (defmacro def-table-across-versions (table)
+     (b* ((changes (acl2::packn-pos (list table '-changes-are-unassigned)
+                                    'quick-check))
+          (thm (acl2::packn-pos (list 'in- table '-of-later-version)
+                                'quick-check)))
+       `(progn
+          (defrulel ,changes
+            (implies (version<= ver1 ver2)
+                     (and (equal (ranges-difference
+                                  (ranges-difference (,table ver1)
+                                                     (,table ver2))
+                                  (general-category-ranges
+                                   (general-category-unassigned) ver1))
+                                 nil)
+                          (equal (ranges-difference
+                                  (ranges-difference (,table ver2)
+                                                     (,table ver1))
+                                  (general-category-ranges
+                                   (general-category-unassigned) ver1))
+                                 nil)))
+            :rule-classes nil
+            :enable (version<=
+                     version-rank
+                     ,table
+                     general-category-ranges
+                     general-category-runs))
+          (defruledl ,thm
+            (implies (and (version<= ver1 ver2)
+                          (assigned-p cp ver1))
+                     (equal (code-point-in-ranges-p cp (,table ver2))
+                            (code-point-in-ranges-p cp (,table ver1))))
+            :enable assigned-p-in-terms-of-ranges
+            :disable ((:e general-category-unassigned))
+            :use (,changes
+                  (:instance
+                   code-point-in-ranges-p-when-ranges-difference-is-empty
+                   (ranges1 (ranges-difference (,table ver1) (,table ver2)))
+                   (ranges2 (general-category-ranges
+                             (general-category-unassigned) ver1)))
+                  (:instance
+                   code-point-in-ranges-p-when-ranges-difference-is-empty
+                   (ranges1 (ranges-difference (,table ver2) (,table ver1)))
+                   (ranges2 (general-category-ranges
+                             (general-category-unassigned) ver1)))))))))
+
+  (local (def-table-across-versions nfd-quick-check-no-ranges))
+  (local (def-table-across-versions nfc-quick-check-no-ranges))
+  (local (def-table-across-versions nfc-quick-check-maybe-ranges))
+  (local (def-table-across-versions nfkd-quick-check-no-ranges))
+  (local (def-table-across-versions nfkc-quick-check-no-ranges))
+  (local (def-table-across-versions nfkc-quick-check-maybe-ranges))
+
+  (defruled nfd-quick-check-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-p cp ver1))
+             (equal (nfd-quick-check cp ver2)
+                    (nfd-quick-check cp ver1)))
+    :enable (nfd-quick-check
+             in-nfd-quick-check-no-ranges-of-later-version))
+
+  (defruled nfc-quick-check-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-p cp ver1))
+             (equal (nfc-quick-check cp ver2)
+                    (nfc-quick-check cp ver1)))
+    :enable (nfc-quick-check
+             in-nfc-quick-check-no-ranges-of-later-version
+             in-nfc-quick-check-maybe-ranges-of-later-version))
+
+  (defruled nfkd-quick-check-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-p cp ver1))
+             (equal (nfkd-quick-check cp ver2)
+                    (nfkd-quick-check cp ver1)))
+    :enable (nfkd-quick-check
+             in-nfkd-quick-check-no-ranges-of-later-version))
+
+  (defruled nfkc-quick-check-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-p cp ver1))
+             (equal (nfkc-quick-check cp ver2)
+                    (nfkc-quick-check cp ver1)))
+    :enable (nfkc-quick-check
+             in-nfkc-quick-check-no-ranges-of-later-version
+             in-nfkc-quick-check-maybe-ranges-of-later-version)))

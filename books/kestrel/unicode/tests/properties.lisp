@@ -988,3 +988,311 @@
 (test (xid-identifier-p '(#x0078 #x00E9 #x0031) *v18*))
 (test (not (xid-identifier-p '(#x088F) *v16*)))
 (test (xid-identifier-p '(#x088F) *v17*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Tables of runs.
+
+(test (equal (script-run-table (#x0041 #x005A "Latn"))
+             (list (script-run #x0041 #x005A (script-latin)))))
+(test (equal (script-extensions-run-table (#x3001 #x3003 "Bopo" "Hang"))
+             (list (script-extensions-run
+                    #x3001 #x3003
+                    (list (script-bopomofo) (script-hangul))))))
+(test (equal (bidi-class-run-table (#x0041 #x005A "L") (#x005B #x0060 "ON"))
+             (list (bidi-class-run #x0041 #x005A (bidi-class-left-to-right))
+                   (bidi-class-run #x005B #x0060
+                                   (bidi-class-other-neutral)))))
+(test (equal (block-run-table (#x0000 #x007F "Basic Latin"))
+             (list (block-run #x0000 #x007F "Basic Latin"))))
+(test (equal (identifier-type-run-table
+              (#x018D #x018D "Technical" "Obsolete"))
+             (list (identifier-type-run
+                    #x018D #x018D
+                    (list (identifier-type-technical)
+                          (identifier-type-obsolete))))))
+(test (script-run-list-covers-p 0 2 (script-run-table (0 1 "Latn")
+                                                      (2 2 "Grek"))))
+(test (not (script-run-list-covers-p 0 3 (script-run-table (0 1 "Latn")
+                                                           (3 3 "Grek")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Script and Script_Extensions.
+
+(test (equal (script-code (script-latin)) "Latn"))
+(test (equal (script-name (script-old-hungarian)) "Old_Hungarian"))
+(test (equal (len (script-values)) 179))
+
+(test (equal (code-point-script (char-code #\a) *v16*) (script-latin)))
+(test (equal (code-point-script #x03B1 *v16*) (script-greek)))
+(test (equal (code-point-script #x4E00 *v16*) (script-han)))
+(test (equal (code-point-script (char-code #\Space) *v16*) (script-common)))
+(test (equal (code-point-script #x0301 *v16*) (script-inherited)))
+(test (equal (code-point-script #x0378 *v16*) (script-unknown))) ; unassigned
+(test (equal (code-point-script #xE000 *v16*) (script-unknown))) ; private use
+
+; The Sidetic script was added in Unicode 17.0.0.
+
+(test (equal (code-point-script #x10940 *v16*) (script-unknown)))
+(test (equal (code-point-script #x10940 *v17*) (script-sidetic)))
+
+; The script extensions of a letter are its script.
+; U+3001 IDEOGRAPHIC COMMA has the script Common
+; and is used with seven scripts;
+; U+0301 COMBINING ACUTE ACCENT has the script Inherited
+; and is used with eight.
+
+(test (equal (code-point-script-extensions (char-code #\a) *v16*)
+             (list (script-latin))))
+(test (equal (code-point-script-extensions #x3001 *v16*)
+             (list (script-bopomofo) (script-hangul) (script-han)
+                   (script-hiragana) (script-katakana) (script-mongolian)
+                   (script-yi))))
+(test (equal (len (code-point-script-extensions #x0301 *v16*)) 8))
+(test (member-equal (script-latin)
+                    (code-point-script-extensions #x0301 *v16*)))
+(test (not (member-equal (script-inherited)
+                         (code-point-script-extensions #x0301 *v16*))))
+
+; Counts: the code points whose script is Latin,
+; and those whose script extensions have Latin.
+
+(test (equal (range-list-size (script-ranges (script-latin) *v16*)) 1487))
+(test (equal (range-list-size (script-ranges (script-latin) *v18*)) 1653))
+(test (equal (range-list-size (script-extensions-ranges (script-latin) *v16*))
+             1555))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Bidi_Class.
+
+(defmacro test-bidi-class (cp ver abbreviation)
+  `(test (equal (bidi-class-abbreviation (code-point-bidi-class ,cp ,ver))
+                ,abbreviation)))
+
+(test-bidi-class (char-code #\a) *v16* "L")
+(test-bidi-class #x05D0 *v16* "R") ; HEBREW LETTER ALEF
+(test-bidi-class #x0627 *v16* "AL") ; ARABIC LETTER ALEF
+(test-bidi-class (char-code #\0) *v16* "EN")
+(test-bidi-class #x0660 *v16* "AN") ; ARABIC-INDIC DIGIT ZERO
+(test-bidi-class (char-code #\+) *v16* "ES")
+(test-bidi-class (char-code #\$) *v16* "ET")
+(test-bidi-class (char-code #\,) *v16* "CS")
+(test-bidi-class #x0301 *v16* "NSM")
+(test-bidi-class (char-code #\Space) *v16* "WS")
+(test-bidi-class 9 *v16* "S") ; tab
+(test-bidi-class 10 *v16* "B") ; line feed
+(test-bidi-class #x202E *v16* "RLO")
+
+; Code points that are not assigned have default classes:
+; U+05FF, in the Hebrew block, is R; U+0378 is L.
+
+(test (not (assigned-p #x05FF *v16*)))
+(test-bidi-class #x05FF *v16* "R")
+(test-bidi-class #x0378 *v16* "L")
+
+(test (bidi-class-right-to-left-p (code-point-bidi-class #x0627 *v16*)))
+(test (not (bidi-class-right-to-left-p
+            (code-point-bidi-class (char-code #\a) *v16*))))
+(test (bidi-class-explicit-formatting-p (code-point-bidi-class #x202E *v16*)))
+
+; The property is not stable:
+; U+1B3A BALINESE VOWEL SIGN RA REPA changed in Unicode 18.0.0.
+
+(test-bidi-class #x1B3A *v17* "NSM")
+(test-bidi-class #x1B3A *v18* "L")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Block.
+
+(test (equal (code-point-block (char-code #\a) *v16*) "Basic Latin"))
+(test (equal (code-point-block #x2118 *v16*) "Letterlike Symbols"))
+(test (equal (block-ranges "Letterlike Symbols" *v16*)
+             (list (range #x2100 #x214F))))
+(test (equal (block-ranges "Letterlike Symbols" *v18*)
+             (list (range #x2100 #x214F))))
+(test (equal (code-point-block #x2FE0 *v16*) "No_Block"))
+(test (equal (block-ranges "No Such Block" *v16*) nil))
+(test (equal (len (block-names *v16*)) 338))
+(test (equal (len (block-names *v17*)) 346))
+(test (equal (len (block-names *v18*)) 353))
+
+; The Sidetic block was added in Unicode 17.0.0.
+
+(test (equal (block-ranges "Sidetic" *v16*) nil))
+(test (equal (block-ranges "Sidetic" *v17*) (list (range #x10940 #x1095F))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ID_Start and ID_Continue.
+
+(test (id-start-p (char-code #\a) *v16*))
+(test (not (id-start-p (char-code #\_) *v16*)))
+(test (id-continue-p (char-code #\_) *v16*))
+
+; U+037A GREEK YPOGEGRAMMENI has ID_Start and not XID_Start;
+; U+0E33 THAI CHARACTER SARA AM has ID_Start,
+; and of the XID properties only XID_Continue.
+
+(test (id-start-p #x037A *v16*))
+(test (not (xid-start-p #x037A *v16*)))
+(test (id-start-p #x0E33 *v16*))
+(test (not (xid-start-p #x0E33 *v16*)))
+(test (xid-continue-p #x0E33 *v16*))
+(test (equal (range-list-size (id-start-not-xid-start-ranges)) 23))
+(test (equal (range-list-size (id-continue-not-xid-continue-ranges)) 19))
+
+; U+2118 SCRIPT CAPITAL P is a symbol with Other_ID_Start;
+; U+00B7 MIDDLE DOT is punctuation with Other_ID_Continue.
+
+(test (other-id-start-p #x2118 *v16*))
+(test (id-start-p #x2118 *v16*))
+(test (other-id-continue-p #x00B7 *v16*))
+(test (id-continue-p #x00B7 *v16*))
+(test (not (id-start-p #x00B7 *v16*)))
+
+(test (equal (range-list-size (id-start-ranges *v16*)) 141269))
+(test (equal (range-list-size (id-continue-ranges *v18*)) 162100))
+(test (not (id-start-p #x088F *v16*)))
+(test (id-start-p #x088F *v17*))
+
+; The mathematical notation profile.
+
+(test (id-compat-math-start-p #x2202 *v16*)) ; PARTIAL DIFFERENTIAL
+(test (id-compat-math-continue-p #x2202 *v16*))
+(test (id-compat-math-continue-p #x00B2 *v16*)) ; SUPERSCRIPT TWO
+(test (not (id-compat-math-start-p #x00B2 *v16*)))
+(test (not (id-compat-math-continue-p (char-code #\a) *v16*)))
+(test (equal (range-list-size (id-compat-math-start-ranges *v18*)) 13))
+(test (equal (range-list-size (id-compat-math-continue-ranges *v18*)) 43))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Emoji properties.
+
+; U+1F600 GRINNING FACE.
+
+(test (emoji-p #x1F600 *v16*))
+(test (emoji-presentation-p #x1F600 *v16*))
+(test (extended-pictographic-p #x1F600 *v16*))
+
+; The number sign is an emoji, because of the keycap sequences,
+; but it is not shown as one by default, and it is not a pictograph.
+
+(test (emoji-p (char-code #\#) *v16*))
+(test (emoji-component-p (char-code #\#) *v16*))
+(test (not (emoji-presentation-p (char-code #\#) *v16*)))
+(test (not (extended-pictographic-p (char-code #\#) *v16*)))
+
+; U+00A9 COPYRIGHT SIGN is an emoji that is shown as text by default.
+
+(test (emoji-p #x00A9 *v16*))
+(test (not (emoji-presentation-p #x00A9 *v16*)))
+
+(test (emoji-modifier-p #x1F3FB *v16*))
+(test (emoji-modifier-base-p #x1F44D *v16*)) ; THUMBS UP SIGN
+(test (regional-indicator-p #x1F1E6 *v16*))
+(test (emoji-component-p #x200D *v16*)) ; ZERO WIDTH JOINER
+(test (not (emoji-p #x200D *v16*)))
+(test (not (emoji-p (char-code #\a) *v16*)))
+
+; Emoji are added in each version;
+; Extended_Pictographic lost code points in 17.0.0 and in 18.0.0.
+
+(test (equal (range-list-size (emoji-ranges *v16*)) 1431))
+(test (equal (range-list-size (emoji-ranges *v17*)) 1438))
+(test (equal (range-list-size (emoji-ranges *v18*)) 1447))
+(test (equal (range-list-size (extended-pictographic-ranges *v16*)) 3537))
+(test (equal (range-list-size (extended-pictographic-ranges *v17*)) 2848))
+(test (equal (range-list-size (extended-pictographic-ranges *v18*)) 2830))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Decimal digits.
+
+(test (equal (decimal-digit-value (char-code #\7) *v16*) 7))
+(test (equal (decimal-digit-value #x0667 *v16*) 7)) ; ARABIC-INDIC DIGIT SEVEN
+(test (equal (decimal-digit-value #xFF19 *v16*) 9)) ; FULLWIDTH DIGIT NINE
+(test (not (decimal-digit-value (char-code #\a) *v16*)))
+(test (not (decimal-digit-value #x00B2 *v16*))) ; SUPERSCRIPT TWO
+(test (not (decimal-digit-p #x2460 *v16*))) ; CIRCLED DIGIT ONE
+
+; The zero of the system of a digit.
+; Two digits are of the same system when they have the same zero.
+
+(test (equal (decimal-digit-zero (char-code #\7) *v16*) (char-code #\0)))
+(test (equal (decimal-digit-zero #x0667 *v16*) #x0660))
+(test (not (equal (decimal-digit-zero (char-code #\7) *v16*)
+                  (decimal-digit-zero #x0667 *v16*))))
+
+(test (equal (treemap::size (decimal-digit-values *v16*)) 760))
+(test (equal (treemap::size (decimal-digit-values *v18*)) 770))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Identifier_Status and Identifier_Type.
+
+(test (identifier-allowed-p (char-code #\a) *v16*))
+(test (equal (code-point-identifier-types (char-code #\a) *v16*)
+             (list (identifier-type-recommended))))
+
+; The apostrophe is allowed although it does not have XID_Continue.
+
+(test (identifier-allowed-p (char-code #\') *v16*))
+(test (equal (code-point-identifier-types (char-code #\') *v16*)
+             (list (identifier-type-inclusion))))
+(test (not (xid-continue-p (char-code #\') *v16*)))
+
+(test (not (identifier-allowed-p (char-code #\$) *v16*)))
+(test (equal (code-point-identifier-types (char-code #\$) *v16*)
+             (list (identifier-type-not-xid))))
+
+; U+00AA FEMININE ORDINAL INDICATOR is changed by NFKC.
+
+(test (equal (code-point-identifier-types #x00AA *v16*)
+             (list (identifier-type-not-nfkc))))
+(test (nfkc-changes-p #x00AA *v16*))
+
+; A code point can have more than one type.
+
+(test (equal (code-point-identifier-types #x018D *v16*)
+             (list (identifier-type-technical) (identifier-type-obsolete))))
+
+; An unassigned code point.
+
+(test (equal (code-point-identifier-types #x0378 *v16*)
+             (list (identifier-type-not-character))))
+
+; U+0149 is changed by NFKC but its type is Deprecated.
+
+(test (equal (code-point-identifier-types #x0149 *v16*)
+             (list (identifier-type-deprecated))))
+(test (nfkc-changes-p #x0149 *v16*))
+
+; The properties are not stable.
+; Unicode 17.0.0 restricted many characters that Unicode 16.0.0 allowed,
+; among them U+0114 LATIN CAPITAL LETTER E WITH BREVE
+; and the ideograph U+4E12.
+
+(test (identifier-allowed-p #x0114 *v16*))
+(test (not (identifier-allowed-p #x0114 *v17*)))
+(test (equal (code-point-identifier-types #x0114 *v17*)
+             (list (identifier-type-uncommon-use))))
+(test (identifier-allowed-p #x4E12 *v16*))
+(test (not (identifier-allowed-p #x4E12 *v17*)))
+(test (identifier-allowed-p #x4E00 *v17*))
+(test (equal (range-list-size (identifier-allowed-ranges *v16*)) 112778))
+(test (equal (range-list-size (identifier-allowed-ranges *v17*)) 33791))
+(test (equal (range-list-size (identifier-allowed-ranges *v18*)) 33792))
+
+; The allowed code points of Unicode 17.0.0
+; are the 33,773 that are Recommended and the 18 that are Inclusion.
+
+(test (equal (range-list-size
+              (identifier-type-ranges (identifier-type-recommended) *v17*))
+             33773))
+(test (equal (range-list-size
+              (identifier-type-ranges (identifier-type-inclusion) *v17*))
+             18))

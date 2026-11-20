@@ -36,7 +36,7 @@
     "The specifications are cited as in the rest of the library:
      [Unicode] is the core specification of the Unicode Standard,
      [UAX #n] is Unicode Standard Annex number n,
-     and UTS #n, below, is Unicode Technical Standard number n.")
+     and [UTS #n] is Unicode Technical Standard number n.")
 
    (xdoc::h3 "What is modeled")
    (xdoc::p
@@ -106,6 +106,18 @@
      "The closure of those identifiers under the four normalization forms
       [UAX #31, Section 5.1.3]: see @(see identifier-closure).")
     (xdoc::li
+     "The @('ID_Start') and @('ID_Continue') properties,
+      with @('Other_ID_Start') and @('Other_ID_Continue'),
+      the proof that they are what [UAX #31, Table 2] derives them from,
+      and the list of the code points
+      in which they differ from @('XID_Start') and @('XID_Continue'):
+      see @(see id-properties) and @(see id-relations).")
+    (xdoc::li
+     "The two properties of the profile for mathematical notation
+      [UAX #31, Section 7.1],
+      @('ID_Compat_Math_Start') and @('ID_Compat_Math_Continue'):
+      see @(see id-compat-math).")
+    (xdoc::li
      "The @('Pattern_White_Space') and @('Pattern_Syntax') properties:
       see @(see pattern-white-space) and @(see pattern-syntax)."))
    (xdoc::p
@@ -129,13 +141,46 @@
       @(see join-controls), @(see noncharacters),
       @(see deprecated) and @(see prepended-concatenation-marks).")
     (xdoc::li
-     "@('Bidi_Control'), and the part of @('Bidi_Class')
-      that tells the explicit directional formatting characters
-      from each other [UAX #9, Sections 2.1 to 2.5]:
-      see @(see bidi-controls).")
+     "@('Bidi_Control') and @('Bidi_Class') [UAX #9, Table 4]:
+      see @(see bidi-controls), which has the explicit directional
+      formatting characters [UAX #9, Sections 2.1 to 2.5],
+      and @(see bidi-class-property), which has the whole property.")
+    (xdoc::li
+     "@('Script') and @('Script_Extensions') [UAX #24]:
+      see @(see scripts).")
+    (xdoc::li
+     "@('Block'): see @(see blocks).")
+    (xdoc::li
+     "The decimal digits and their values,
+      which is the part of @('Numeric_Type') and @('Numeric_Value')
+      for the characters whose numeric type is @('Decimal'):
+      see @(see decimal-digits).")
     (xdoc::li
      "@('XID_Start'), @('XID_Continue'),
-      @('Pattern_White_Space') and @('Pattern_Syntax'), as said above."))
+      @('ID_Start'), @('ID_Continue'),
+      @('Other_ID_Start'), @('Other_ID_Continue'),
+      @('ID_Compat_Math_Start'), @('ID_Compat_Math_Continue'),
+      @('Pattern_White_Space') and @('Pattern_Syntax'), as said above;
+      and @('Regional_Indicator'), with the emoji properties below."))
+   (xdoc::p
+    "From [UTS #39], Unicode Security Mechanisms:")
+   (xdoc::ul
+    (xdoc::li
+     "@('Identifier_Status') and @('Identifier_Type')
+      [UTS #39, Section 3.1 and Table 1],
+      with the proof that the two agree,
+      and that Normalization Form KC changes no allowed character:
+      see @(see identifier-status), @(see identifier-type-relations)
+      and @(see identifier-status-and-normalization)."))
+   (xdoc::p
+    "From [UTS #51], Unicode Emoji:")
+   (xdoc::ul
+    (xdoc::li
+     "The six emoji properties of characters [UTS #51, Annex A]:
+      @('Emoji'), @('Emoji_Presentation'), @('Emoji_Modifier'),
+      @('Emoji_Modifier_Base'), @('Emoji_Component')
+      and @('Extended_Pictographic'):
+      see @(see emoji)."))
    (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")
@@ -155,7 +200,8 @@
       whose characters are assigned in a version
       are the same in every later version,
       and so are the combining class and the decompositions
-      of an assigned character.
+      of an assigned character,
+      and the result of the Stream-Safe Text Process.
       See @(see normalization-across-versions).")
     (xdoc::li
      "Property Value Stability, for the properties that the library has:
@@ -163,7 +209,9 @@
       of @('Pattern_Syntax') and of @('Pattern_White_Space')
       are the same in every version;
       a code point that has @('XID_Start') or @('XID_Continue') keeps it
-      (see @(see xid-across-versions));
+      (see @(see xid-across-versions)),
+      and so does one that has @('ID_Start') or @('ID_Continue')
+      (see @(see id-across-versions));
       no code point of @('Pattern_Syntax') or of @('Pattern_White_Space')
       has @('XID_Continue')
       (see @(see pattern-syntax-relations));
@@ -177,7 +225,10 @@
    (xdoc::p
     "The @('General_Category') of other characters is not stable.
      The library computes its changes between two versions:
-     see @(see general-category-across-versions).")
+     see @(see general-category-across-versions).
+     Scripts, bidirectional classes, the emoji properties,
+     and the identifier status and type are not stable either,
+     and the library has no theorems about them across versions.")
 
    (xdoc::h3 "What is not modeled")
    (xdoc::p
@@ -189,14 +240,7 @@
       the names of characters and their aliases;
       case mappings, case folding,
       and the properties @('Lowercase') and @('Uppercase');
-      @('Script') and @('Script_Extensions'); @('Block');
-      numeric values;
-      @('ID_Start') and @('ID_Continue'),
-      of which the library has only the variants
-      that are closed under normalization,
-      namely @('XID_Start') and @('XID_Continue');
-      the values of @('Bidi_Class') other than the nine
-      of the explicit directional formatting characters;
+      numeric values other than those of the decimal digits;
       paired brackets and mirroring;
       @('Joining_Type') and the other properties
       that describe how characters join;
@@ -220,15 +264,18 @@
       and which the library proves for NFD and NFKD only.")
     (xdoc::li
      "From [UAX #31]:
-      the identifiers defined by @('ID_Start') and @('ID_Continue'),
-      the profile for mathematical notation,
+      predicates for the identifiers
+      that @('ID_Start') and @('ID_Continue') define,
+      and for those of the profile for mathematical notation:
+      the library has the properties,
+      and a predicate only for the identifiers
+      of @('XID_Start') and @('XID_Continue');
       and the other profiles and requirements of that annex.")
     (xdoc::li
      "From [Stability]:
       the policies about the names of characters,
       about case folding and case pairs,
-      about the names and aliases of properties,
-      and about @('ID_Start') and @('ID_Continue'),
+      and about the names and aliases of properties,
       none of which the library has;
       and the policies as promises about versions to come,
       which are not something a theorem about the tables can say:
@@ -236,18 +283,21 @@
       and are checked again for each version that is added.")
     (xdoc::li
      "[UAX #9], the bidirectional algorithm:
-      the library does not say in which order text is displayed.")
+      the library has the bidirectional class of each character,
+      and does not say in which order text is displayed.")
     (xdoc::li
      "[UAX #29], text segmentation:
       grapheme clusters, words and sentences.
       Also [UAX #14], line breaking.")
     (xdoc::li
-     "UTS #39, Unicode Security Mechanisms:
-      the identifier status and type of a character,
+     "From [UTS #39]:
       confusable characters and the skeleton of a string,
-      and the detection of mixed scripts.")
+      the sets of scripts of a string and the detection of mixed scripts,
+      the detection of mixed numbers,
+      and the restriction levels.")
     (xdoc::li
-     "UTS #51, emoji: the emoji properties and the emoji sequences.")
+     "From [UTS #51]: the emoji sequences,
+      and the choice between text and emoji presentation.")
     (xdoc::li
      "UTS #10, collation; UTS #18, regular expressions;
       UTS #46, compatibility processing of domain names."))
@@ -319,7 +369,7 @@
       The warnings of the Rust compiler
       about identifiers that can be confused with each other
       and about identifiers that mix scripts
-      rely on UTS #39, which is not modeled.")
+      rely on the parts of [UTS #39] that are not modeled.")
     (xdoc::li
      (xdoc::b "Scheme: sufficient.")
      " In Scheme as its sixth revised report defines it
@@ -337,12 +387,14 @@
       takes from Unicode, among other things,
       the general category, the default ignorable code points,
       the variation selectors, the join controls,
-      the bidirectional controls and Normalization Form C,
+      the bidirectional controls and classes, Normalization Form C,
+      the identifier status and type of [UTS #39],
+      the emoji properties of [UTS #51],
+      the scripts of characters, a block,
+      and the values of the decimal digits,
       which are modeled.
-      It also takes the identifier status and type
-      and the skeleton of UTS #39,
-      the emoji properties of UTS #51,
-      the scripts of characters, the whole of @('Bidi_Class'),
+      It also takes the skeleton of [UTS #39]
+      and its sets of scripts, grapheme clusters, emoji sequences,
       and the names of characters,
       which are not.")))
   :order-subtopics t)
