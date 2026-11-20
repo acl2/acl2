@@ -18,6 +18,7 @@
 ;; b233d36b7225307d5a687c8294a48469631e97cc
 ;; doubly commented out to fool cert.pl dependency checker
 ;;(include-book "std/util/defval-tests" :dir :system)
-(include-book "xdoc/save" :dir :system)
+(include-book ; linebreak to avoid cert.pl dependency on the ACL2 documentation
+  "xdoc/save" :dir :system)
 (xdoc::save "./doc" :error t :redef-okp t)
 |#
