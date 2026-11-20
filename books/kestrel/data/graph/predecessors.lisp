@@ -128,11 +128,12 @@
   :long
   (xdoc::topstring-p
     "Values in the set which are not nodes have no predecessors. Time
-     complexity: @($O(k\\,n(\\log(n) + \\log(d)) + m\\log(n))$), where
+     complexity: @($O(k\\log(k) + k\\,n\\log(d) + m\\log(n))$), where
      @($k$) is the size of the set, @($n$) the number of nodes, @($d$) the
      largest number of successors of a node, and @($m$) the number of pairs
-     of nodes joined by an edge to a node in the set. Like @(tsee
-     predecessors), this is not optimal.")
+     of nodes joined by an edge to a node in the set. This is not optimal,
+     since finding the predecessors of each element of the set visits every
+     node.")
   (if (tset::emptyp set)
       (tset::empty)
     (tset::union (predecessors (tset::min set) graph)

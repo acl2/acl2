@@ -216,15 +216,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define successors-of-oset ((oset set::setp) (graph graphp))
+;; Executable form of successors-of-set: the same union, over the oset of the
+;; set, accumulating the successors found.
+
+(define successors-of-oset ((oset set::setp) (acc tset::setp) (graph graphp))
   :returns (successors tset::setp)
-  :parents (successors-of-set)
-  :short "The successors of the nodes in an oset."
   (if (set::emptyp oset)
-      (tset::empty)
-    (tset::union (successors (set::head oset) graph)
-                 (successors-of-oset (set::tail oset) graph)))
-  :verify-guards :after-returns)
+      (tset::fix acc)
+    (successors-of-oset (set::tail oset)
+                        (tset::union (successors (set::head oset) graph) acc)
+                        graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -245,7 +246,7 @@
                              (successors-of-set (tset::delete (tset::min set)
                                                               set)
                                                 graph)))
-       :exec (successors-of-oset (tset::to-oset set) graph))
+       :exec (successors-of-oset (tset::to-oset set) (tset::empty) graph))
   :measure (tset::cardinality set)
   ;; Verified below
   :verify-guards nil)
@@ -268,12 +269,23 @@
   :induct t
   :enable successors-of-set)
 
+;; The union adds the successors to whatever the accumulator holds.
+
+(defruledl successors-of-oset-of-union
+  (equal (successors-of-oset oset (tset::union set acc) graph)
+         (tset::union set (successors-of-oset oset acc graph)))
+  :induct (successors-of-oset oset acc graph)
+  :enable successors-of-oset)
+
 (defruledl successors-of-oset-of-to-oset
-  (equal (successors-of-oset (tset::to-oset set) graph)
-         (successors-of-set set graph))
+  (equal (successors-of-oset (tset::to-oset set) acc graph)
+         (tset::union acc (successors-of-set set graph)))
   :induct (successors-of-set set graph)
+  :expand (successors-of-oset (tset::to-oset set) acc graph)
   :enable (successors-of-set
-           successors-of-oset))
+           successors-of-oset
+           successors-of-oset-of-union)
+  :disable tset::commutativity-of-union)
 
 (verify-guards successors-of-set
   :hints (("Goal" :in-theory (enable successors-of-set

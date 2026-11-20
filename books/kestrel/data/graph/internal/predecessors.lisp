@@ -38,6 +38,7 @@
 (local (include-book "kestrel/data/tset/cardinality" :dir :system))
 (local (include-book "kestrel/data/tset/insert" :dir :system))
 (local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 (local (include-book "kestrel/data/tmap/map" :dir :system))
 (local (include-book "kestrel/data/tmap/keys" :dir :system))
 (local (include-book "kestrel/data/tmap/size" :dir :system))
@@ -51,22 +52,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The search below, walking the omap of the list instead of removing its
-;; least node at each step. This is what @(tsee adj-list-predecessors)
-;; executes.
+;; Executable form of adj-list-predecessors: the same scan, over the omap of
+;; the list, adding each predecessor found to an accumulator.
 
-(define adj-list-predecessors-omap (to (omap omap::mapp))
+(define adj-list-predecessors-omap (to (omap omap::mapp) (acc tset::setp))
   :guard (omap-values-all-adjacencyp omap)
   :returns (preds tset::setp)
   (if (omap::emptyp omap)
-      (tset::empty)
-    (b* (((mv from adj) (omap::head omap))
-         (preds (adj-list-predecessors-omap to (omap::tail omap))))
-      (if (tmap::in to adj)
-          (tset::insert from preds)
-        preds)))
-  :guard-hints (("Goal" :in-theory (enable omap-values-all-adjacencyp)))
-  :verify-guards :after-returns)
+      (tset::fix acc)
+    (b* (((mv from adj) (omap::head omap)))
+      (adj-list-predecessors-omap to
+                                  (omap::tail omap)
+                                  (if (tmap::in to adj)
+                                      (tset::insert from acc)
+                                    acc))))
+  :guard-hints (("Goal" :in-theory (enable omap-values-all-adjacencyp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,7 +83,7 @@
                   (if (tmap::in to (tmap::lookup from adjl))
                       (tset::insert from preds)
                     preds)))
-       :exec (adj-list-predecessors-omap to (tmap::to-omap adjl)))
+       :exec (adj-list-predecessors-omap to (tmap::to-omap adjl) (tset::empty)))
   :measure (tmap::size adjl)
   ;; Verified below
   :verify-guards nil)
@@ -98,12 +98,22 @@
   :expand ((adj-list-predecessors to adjl0)
            (adj-list-predecessors to adjl1)))
 
+;; The search adds the predecessors to whatever the accumulator holds.
+
+(defruledl adj-list-predecessors-omap-of-insert
+  (equal (adj-list-predecessors-omap to omap (tset::insert from acc))
+         (tset::insert from (adj-list-predecessors-omap to omap acc)))
+  :induct (adj-list-predecessors-omap to omap acc)
+  :enable adj-list-predecessors-omap)
+
 (defruledl adj-list-predecessors-omap-of-to-omap
-  (equal (adj-list-predecessors-omap to (tmap::to-omap adjl))
-         (adj-list-predecessors to adjl))
+  (equal (adj-list-predecessors-omap to (tmap::to-omap adjl) acc)
+         (tset::union acc (adj-list-predecessors to adjl)))
   :induct (adj-list-predecessors to adjl)
+  :expand (adj-list-predecessors-omap to (tmap::to-omap adjl) acc)
   :enable (adj-list-predecessors
-           adj-list-predecessors-omap))
+           adj-list-predecessors-omap
+           adj-list-predecessors-omap-of-insert))
 
 (verify-guards adj-list-predecessors
   :hints (("Goal" :in-theory (enable adj-list-predecessors

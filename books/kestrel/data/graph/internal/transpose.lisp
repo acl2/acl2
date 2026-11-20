@@ -54,6 +54,7 @@
 (local (include-book "kestrel/data/tmap/delete" :dir :system))
 (local (include-book "kestrel/data/tmap/min-max" :dir :system))
 (local (include-book "kestrel/data/tmap/to-omap" :dir :system))
+(local (include-book "kestrel/data/tmap/extensionality" :dir :system))
 (local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 
 (local (include-book "../edge"))
@@ -68,9 +69,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The reversal below, walking the omap of the source's adjacency instead of
-;; removing its least target at each step. This is what @(tsee
-;; adjacency-transpose) executes.
+;; Executable form of adjacency-transpose: the same loop, over the omap of the
+;; adjacency.
 
 (define adjacency-transpose-omap (from (omap omap::mapp) (acc tmap::mapp))
   :guard (and (omap-values-all-nonempty-setp omap)
@@ -211,37 +211,68 @@
   :induct t
   :enable adjacency-transpose)
 
+;; Reversing the edges of one source commutes with adding a node, and with
+;; reversing the edges of another source.
+
+(defruledl adjacency-transpose-of-adj-list-add-node
+  (equal (adjacency-transpose from adj (adj-list-add-node node acc))
+         (adj-list-add-node node (adjacency-transpose from adj acc)))
+  :enable (tmap::extensionality
+           adj-list-add-node))
+
+(defruledl adjacency-transpose-of-adjacency-transpose-commutative
+  (implies (not (equal from0 from1))
+           (equal (adjacency-transpose from0
+                                       adj0
+                                       (adjacency-transpose from1 adj1 acc))
+                  (adjacency-transpose from1
+                                       adj1
+                                       (adjacency-transpose from0 adj0 acc))))
+  :enable tmap::extensionality)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The transpose below, walking the omap of the list instead of removing its
-;; least source at each step. This is what @(tsee adj-list-transpose)
-;; executes.
+;; Executable form of adj-list-transpose: the same steps, over the omap of the
+;; list, from the least source to the greatest. The logical definition takes
+;; them in the opposite order, with the same result, since the steps for
+;; distinct sources commute.
 
-(define adj-list-transpose-omap ((omap omap::mapp))
-  :guard (omap-values-all-adjacencyp omap)
+(define adj-list-transpose-omap ((omap omap::mapp) (acc tmap::mapp))
+  :guard (and (omap-values-all-adjacencyp omap)
+              (map-values-all-adjacencyp acc))
   :returns (new-adjl tmap::mapp)
   (if (omap::emptyp omap)
-      (tmap::empty)
+      (tmap::fix acc)
     (b* (((mv from adj) (omap::head omap)))
-      (adjacency-transpose
-        from
-        adj
-        (adj-list-add-node from
-                           (adj-list-transpose-omap (omap::tail omap))))))
-  ;; Verified below
-  :verify-guards nil)
+      (adj-list-transpose-omap
+        (omap::tail omap)
+        (adjacency-transpose from adj (adj-list-add-node from acc)))))
+  :guard-hints (("Goal" :in-theory (enable omap-values-all-adjacencyp))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrulel map-values-all-adjacencyp-of-adj-list-transpose-omap
-  (implies (omap-values-all-adjacencyp omap)
-           (map-values-all-adjacencyp (adj-list-transpose-omap omap)))
-  :induct t
-  :enable (adj-list-transpose-omap
-           omap-values-all-adjacencyp))
+;; Adding a node commutes with the walk, and so does reversing the edges of a
+;; source not in the omap.
 
-(verify-guards adj-list-transpose-omap
-  :hints (("Goal" :in-theory (enable omap-values-all-adjacencyp))))
+(defruledl adj-list-transpose-omap-of-adj-list-add-node
+  (equal (adj-list-transpose-omap omap (adj-list-add-node node acc))
+         (adj-list-add-node node (adj-list-transpose-omap omap acc)))
+  :induct (adj-list-transpose-omap omap acc)
+  :enable (adj-list-transpose-omap
+           adjacency-transpose-of-adj-list-add-node))
+
+(defruledl adj-list-transpose-omap-of-adjacency-transpose
+  (implies (not (omap::assoc from omap))
+           (equal (adj-list-transpose-omap omap
+                                           (adjacency-transpose from adj acc))
+                  (adjacency-transpose from
+                                       adj
+                                       (adj-list-transpose-omap omap acc))))
+  :induct (adj-list-transpose-omap omap acc)
+  :expand (adj-list-transpose-omap omap (adjacency-transpose from adj acc))
+  :enable (adj-list-transpose-omap
+           adjacency-transpose-of-adj-list-add-node
+           adjacency-transpose-of-adjacency-transpose-commutative))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -262,7 +293,7 @@
                     (adj-list-add-node from
                                        (adj-list-transpose
                                          (tmap::delete from adjl))))))
-       :exec (adj-list-transpose-omap (tmap::to-omap adjl)))
+       :exec (adj-list-transpose-omap (tmap::to-omap adjl) (tmap::empty)))
   :measure (tmap::size adjl)
   :hints (("Goal" :in-theory (enable tset::cardinality-of-delete-when-in
                                      tset::in-of-min)))
@@ -286,12 +317,15 @@
   :enable adj-list-transpose)
 
 (defruledl adj-list-transpose-omap-of-to-omap
-  (equal (adj-list-transpose-omap (tmap::to-omap adjl))
+  (equal (adj-list-transpose-omap (tmap::to-omap adjl) (tmap::empty))
          (adj-list-transpose adjl))
   :induct (adj-list-transpose adjl)
+  :expand (adj-list-transpose-omap (tmap::to-omap adjl) (tmap::empty))
   :enable (adj-list-transpose
            adj-list-transpose-omap
-           (:e tmap::empty)))
+           adj-list-transpose-omap-of-adj-list-add-node
+           adj-list-transpose-omap-of-adjacency-transpose)
+  :disable tmap::to-omap-of-delete)
 
 (verify-guards adj-list-transpose
   :hints (("Goal" :in-theory (enable adj-list-transpose

@@ -70,8 +70,7 @@
                                      (tset::insert label labels)
                                      adj)
                        adjl))
-       ;; One descent in each map: the cursor reached by the search is edited
-       ;; in place.
+       ;; One search in each map, editing at the cursors they reach.
        :exec
        (b* ((outer (tmap::seek from adjl))
             ((unless (tmap::entryp outer))
