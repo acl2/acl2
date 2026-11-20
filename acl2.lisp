@@ -820,6 +820,59 @@
 ; See acl2-fns.lisp for changes to lower-case-p, char-upcase, and
 ; string-upcase, which are installed later below after loading acl2-fns.lisp.
 
+; AI discovered the errors involving the truncate implementation in CCL, and
+; noted resulting unsoundness in ACL2.  The following example is illustrative.
+;   ACL2 !>(truncate 3/4 1/1180591620717411303424)
+;   #<COMPILED-LEXICAL-CLOSURE (INTERNAL HANDLER WRITE-INTERNAL) #x10F60326C>
+;   ACL2 !>
+; Evaluation caused a raw Lisp error in ACL2 built on CCL for the following.
+;   (mod 3/4 1/1180591620717411303424)
+;   (floor 3/4 1/1180591620717411303424)
+;   (rem 3/4 1/1180591620717411303424)
+;   (ceiling 3/4 1/1180591620717411303424)
+;   (round 3/4 1/1180591620717411303424)
+; The suggested workaround from AI is below.  But we install it only when
+; necessary, as determined by the following test (so we moved "#+ccl from in
+; front of AI's code to the entire form below).
+
+; NOTE: The original AI suggestion was further below and did not include the
+; typep check, which we added so that when the CCL bug is fixed (see
+; https://github.com/Clozure/ccl/issues/733), this code won't fire.
+
+; <<Start AI fix 1>>
+
+#+ccl
+(when (and (fboundp 'ccl::truncate-no-rem) ; AI suggestion (see below)
+           (not (typep (ccl::truncate-no-rem 3 1/295147905179352825856)
+                       'number)))
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) have a bug
+; in ccl::truncate-no-rem, which computes truncate when only one value is
+; needed and is also used by floor, ceiling, round, mod, and rem.  For a ratio
+; divisor n/d it multiplies the dividend by d into a stack-allocated bignum and
+; then truncates that product by n; so when n is 1, it returns that bignum,
+; which is later overwritten.  For example, (mod 3/4 (/ (expt 2 70))) evaluated
+; to 3/4 instead of 0, which made it possible to prove nil; see community book
+; books/system/tests/ccl-truncate-ratio-divisor.lisp.  We avoid that code by
+; giving ccl::truncate-no-rem integer arguments when the dividend is rational
+; and the divisor is a ratio, since a/b divided by n/d is (a*d)/(b*n).
+
+; (when (fboundp 'ccl::truncate-no-rem) ;;; Changed from AI to test above
+  (let ((old (symbol-function 'ccl::truncate-no-rem))
+        (ccl:*warn-if-redefine-kernel* nil))
+    (setf (symbol-function 'ccl::truncate-no-rem)
+          (lambda (number divisor &rest rest)
+            (declare (dynamic-extent rest))
+            (if (and (rationalp number)
+                     (rationalp divisor)
+                     (not (integerp divisor)))
+                (funcall old
+                         (* (numerator number) (denominator divisor))
+                         (* (denominator number) (numerator divisor)))
+              (apply old number divisor rest))))))
+
+; <<End AI fix 1>>
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
