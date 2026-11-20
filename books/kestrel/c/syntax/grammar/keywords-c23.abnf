@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Keywords in the C23 standard [C23:6.4.2].
-; We include the alternative spellings in Table 6.1.
+; They include the alternative spellings in Table 6.1.
 
 keyword-c23 = %s"alignas"
             / %s"_Alignas" ; alternative to 'alignas'

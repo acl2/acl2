@@ -12,6 +12,7 @@
 (in-package "C")
 
 (include-book "implementation-environments/top")
+(include-book "bytes")
 (include-book "grammar")
 (include-book "keywords")
 (include-book "punctuators")

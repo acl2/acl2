@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -226,7 +226,16 @@
   ///
 
   (fty::deffixequiv member-value-list->name-list
-    :args ((x member-value-listp))))
+    :args ((x member-value-listp)))
+
+  (defruled member-value->name-in-name-list-when-member-value-in-list
+    (implies (member-equal (member-value-fix memval)
+                           (member-value-list-fix memvals))
+             (member-equal (member-value->name memval)
+                           (member-value-list->name-list memvals)))
+    :induct t
+    :enable (member-value-list-fix
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -856,7 +865,13 @@
     "A @(tsee member-type) is the static counterpart of
      a @(tsee member-value)."))
   (make-member-type :name (member-value->name member)
-                    :type (type-of-value (member-value->value member))))
+                    :type (type-of-value (member-value->value member)))
+
+  ///
+
+  (defruled member-type->name-of-member-type-of-member-value
+    (equal (member-type->name (member-type-of-member-value member))
+           (member-value->name member))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -869,7 +884,14 @@
   ///
 
   (fty::deffixequiv member-types-of-member-values
-    :args ((x member-value-listp))))
+    :args ((x member-value-listp)))
+
+  (defruled member-type-list->name-list-of-member-types-of-member-values
+    (equal (member-type-list->name-list (member-types-of-member-values x))
+           (member-value-list->name-list x))
+    :induct t
+    :enable (member-value-list->name-list
+             member-type->name-of-member-type-of-member-value)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
