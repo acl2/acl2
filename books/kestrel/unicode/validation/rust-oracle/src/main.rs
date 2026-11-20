@@ -16,6 +16,7 @@
 //!     oracle VERSION code-points > FILE
 //!     oracle VERSION pairs PAIRS-FILE
 //!     oracle VERSION stream-safe STREAM-SAFE-FILE
+//!     oracle VERSION display-order
 //!
 //! VERSION, e.g. 16.0.0, must be the version of Unicode that the crates
 //! implement; the program stops if a crate says otherwise.
@@ -38,6 +39,13 @@
 //! ../../dump.lisp, with lines `sequence > result`, and checks that the
 //! result is what the stream_safe iterator of unicode-normalization gives
 //! for the sequence.  It exits with status 1 if any line differs.
+//!
+//! The fourth form, which needs unicode-bidi, tests a claim that the
+//! library makes and does not prove, because it does not have the Unicode
+//! Bidirectional Algorithm: a text with no character of the six classes
+//! that RIGHT-TO-LEFT-CODE-POINT-P of ../../../skeleton.lisp recognizes
+//! is displayed, in a paragraph from left to right, in the order in which
+//! it is stored.  See the function display_order.
 
 use std::io::{self, BufRead, BufWriter, Write};
 use unicode_normalization::char::{canonical_combining_class, compose};
@@ -45,7 +53,8 @@ use unicode_normalization::UnicodeNormalization;
 
 const USAGE: &str = "usage: oracle VERSION code-points \
                      | oracle VERSION pairs FILE \
-                     | oracle VERSION stream-safe FILE";
+                     | oracle VERSION stream-safe FILE \
+                     | oracle VERSION display-order";
 
 fn die(message: &str) -> ! {
     eprintln!("oracle: error: {message}");
@@ -463,6 +472,121 @@ fn stream_safe(path: &str) -> io::Result<bool> {
     Ok(differences == 0)
 }
 
+/// The explicit directional formatting characters.  They are default
+/// ignorable, so the skeleton of UTS #39 removes them: the test below
+/// compares the order of the other characters.
+#[cfg(feature = "have-unicode-bidi")]
+const EXPLICIT_FORMATTING: [char; 9] = [
+    '\u{202A}', '\u{202B}', '\u{202C}', '\u{202D}', '\u{202E}', '\u{2066}',
+    '\u{2067}', '\u{2068}', '\u{2069}',
+];
+
+/// Count the strings of 1 to MAX characters of ALPHABET, containing MUST
+/// if it is given, that unicode-bidi displays, in a paragraph from left to
+/// right, with their characters other than the explicit formatting ones
+/// in another order than the one in which they are stored.
+/// Return the number of strings, the number displayed in another order,
+/// and the first of those with its display.
+#[cfg(feature = "have-unicode-bidi")]
+fn count_reordered(
+    alphabet: &[char],
+    must: Option<char>,
+    max: usize,
+) -> (u64, u64, Option<(String, String)>) {
+    use unicode_bidi::{BidiInfo, Level};
+    let kept = |s: &str| -> Vec<char> {
+        s.chars().filter(|c| !EXPLICIT_FORMATTING.contains(c)).collect()
+    };
+    let (mut total, mut reordered, mut first) = (0u64, 0u64, None);
+    for len in 1..=max {
+        let mut digits = vec![0usize; len];
+        'strings: loop {
+            let s: String = digits.iter().map(|&i| alphabet[i]).collect();
+            if must.map_or(true, |m| s.contains(m)) {
+                total += 1;
+                let info = BidiInfo::new(&s, Some(Level::ltr()));
+                let para = &info.paragraphs[0];
+                let shown = info.reorder_line(para, para.range.clone());
+                if info.paragraphs.len() != 1 || kept(&shown) != kept(&s) {
+                    reordered += 1;
+                    first.get_or_insert((s.clone(), shown.into_owned()));
+                }
+            }
+            for k in (0..len).rev() {
+                digits[k] += 1;
+                if digits[k] < alphabet.len() {
+                    continue 'strings;
+                }
+                digits[k] = 0;
+            }
+            break;
+        }
+    }
+    (total, reordered, first)
+}
+
+/// Test, with unicode-bidi, the claim about RIGHT-TO-LEFT-FREE-P of
+/// ../../../skeleton.lisp.  The alphabet has twenty characters of sixteen
+/// of the seventeen classes that the predicate allows; the seventeenth is
+/// B, the paragraph separators, which only cut a text into paragraphs.
+/// Every string of up to six of them must be displayed in the order in
+/// which it is stored; and for each of the six classes that the predicate
+/// excludes, some string of up to four characters with one character of
+/// that class added to the alphabet must be displayed in another order.
+#[cfg(feature = "have-unicode-bidi")]
+fn display_order() -> bool {
+    use unicode_bidi::BidiClass::*;
+    let allowed = [
+        ('a', L), ('b', L), ('1', EN), (' ', WS), ('!', ON), ('(', ON),
+        (')', ON), ('+', ES), ('%', ET), (',', CS), ('\u{301}', NSM),
+        ('\u{200B}', BN), ('\u{1}', BN), ('\t', S), ('\u{202A}', LRE),
+        ('\u{202D}', LRO), ('\u{2066}', LRI), ('\u{2068}', FSI),
+        ('\u{202C}', PDF), ('\u{2069}', PDI),
+    ];
+    let excluded = [
+        ('\u{5D0}', R), ('\u{627}', AL), ('\u{663}', AN), ('\u{202B}', RLE),
+        ('\u{202E}', RLO), ('\u{2067}', RLI),
+    ];
+    for (c, class) in allowed.iter().chain(excluded.iter()) {
+        if unicode_bidi::bidi_class(*c) != *class {
+            die("a character of the test is not of the expected class");
+        }
+    }
+    let show = |s: &str| -> String {
+        s.chars()
+            .map(|c| format!("{:04X}", c as u32))
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    let mut ok = true;
+    let alphabet: Vec<char> = allowed.iter().map(|(c, _)| *c).collect();
+    let (total, reordered, first) = count_reordered(&alphabet, None, 6);
+    println!(
+        "display-order@unicode-bidi: {total} strings without \
+         R, AL, AN, RLE, RLO, RLI: {reordered} displayed in another order"
+    );
+    if let Some((s, shown)) = first {
+        println!("    {} is displayed as {}", show(&s), show(&shown));
+        ok = false;
+    }
+    for (c, class) in excluded {
+        let mut with = alphabet.clone();
+        with.push(c);
+        let (total, reordered, first) = count_reordered(&with, Some(c), 4);
+        println!(
+            "display-order@unicode-bidi: {total} strings with {class:?}: \
+             {reordered} displayed in another order"
+        );
+        match first {
+            Some((s, shown)) => {
+                println!("    {} is displayed as {}", show(&s), show(&shown))
+            }
+            None => ok = false,
+        }
+    }
+    ok
+}
+
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 3 {
@@ -517,6 +641,13 @@ fn main() -> io::Result<()> {
         }
         ("stream-safe", 4) => {
             if !stream_safe(&args[3])? {
+                std::process::exit(1);
+            }
+            Ok(())
+        }
+        #[cfg(feature = "have-unicode-bidi")]
+        ("display-order", 3) => {
+            if !display_order() {
                 std::process::exit(1);
             }
             Ok(())

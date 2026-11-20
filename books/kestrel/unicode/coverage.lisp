@@ -182,7 +182,8 @@
     (xdoc::li
      "The skeleton of a string and the confusable strings
       [UTS #39, Section 4],
-      for the strings that have no right-to-left character
+      for the strings that have no right-to-left character,
+      no Arabic-Indic digit or other character of class @('AN'),
       and no explicit formatting character that starts right-to-left text,
       and the three classes of confusable strings:
       see @(see confusable-detection) and @(see confusable-kinds).")
@@ -315,7 +316,8 @@
      "From [UTS #39]:
       the bidirectional skeleton,
       and so the skeleton and the confusability
-      of strings that have right-to-left characters;
+      of the strings that are not displayed
+      in the order in which they are stored;
       whether a string has a whole-script confusable at all
       [UTS #39, Section 4.1];
       and the restriction levels [UTS #39, Section 5.2].")
@@ -419,7 +421,7 @@
       the scripts of characters, a block,
       the values of the decimal digits,
       and, of [UTS #39], the skeleton of a string
-      that has no right-to-left character,
+      that is displayed in the order in which it is stored,
       mixed-script detection and mixed-number detection,
       which are modeled.
       It also takes the bidirectional skeleton of [UTS #39],
