@@ -52,7 +52,14 @@
                        :hints (("Goal" :in-theory (enable bytep))))
   :short "Fixer for @(tsee bytep)."
   (mbe :logic (if (bytep byte ienv) byte 0)
-       :exec byte))
+       :exec byte)
+
+  ///
+
+  (defrule byte-fix-when-bytep
+    (implies (bytep byte ienv)
+             (equal (byte-fix byte ienv)
+                    byte))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,4 +74,12 @@
 (std::defprojection byte-list-fix (x ienv)
   :guard (and (ienvp ienv) (byte-listp x ienv))
   :returns (fixed-bytes (byte-listp fixed-bytes ienv))
-  (byte-fix x ienv))
+  (byte-fix x ienv)
+
+  ///
+
+  (defrule byte-list-fix-when-byte-listp
+    (implies (byte-listp x ienv)
+             (equal (byte-list-fix x ienv)
+                    x))
+    :induct t))
