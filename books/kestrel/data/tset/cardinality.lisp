@@ -1,0 +1,115 @@
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
+(include-book "xdoc/constructors" :dir :system)
+
+(include-book "std/osets/defs" :dir :system)
+
+(include-book "internal/count-defs")
+(include-book "set-defs")
+(include-book "to-oset-defs")
+
+(local (include-book "std/basic/controlled-configuration" :dir :system))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
+
+(local (include-book "kestrel/lists-light/len" :dir :system))
+
+(local (include-book "internal/tree"))
+(local (include-book "internal/count"))
+(local (include-book "internal/in-order"))
+(local (include-book "set"))
+(local (include-book "to-oset"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cardinality ((set setp))
+  :returns (cardinality natp :rule-classes :type-prescription)
+  :parents (tset)
+  :short "The number of elements in a @(see tset)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "Time complexity: @($O(n)$)."))
+  (tree-nodes-count (fix set))
+  :inline t
+  :guard-hints (("Goal" :in-theory (enable setp))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule cardinality-when-set-equiv-congruence
+  (implies (equiv set0 set1)
+           (equal (cardinality set0)
+                  (cardinality set1)))
+  :rule-classes :congruence
+  :enable cardinality)
+
+(defruled equal-of-cardinality-and-0-becomes-emptyp
+  (equal (equal (cardinality set)
+                0)
+         (emptyp set))
+  :enable (cardinality
+           emptyp))
+
+(defrule cardinality-when-emptyp-forward-chaining
+  (implies (emptyp set)
+           (equal (cardinality set)
+                  0))
+  :rule-classes :forward-chaining
+  :enable equal-of-cardinality-and-0-becomes-emptyp)
+
+(defrule emptyp-when-equal-cardinality-and-0-forward-chaining
+  (implies (equal (cardinality set)
+                  0)
+           (emptyp set))
+  :rule-classes :forward-chaining
+  :enable equal-of-cardinality-and-0-becomes-emptyp)
+
+(defrule cardinality-when-not-emptyp-type-prescription
+  (implies (not (emptyp set))
+           (and (integerp (cardinality set))
+                (< 0 (cardinality set))))
+  :rule-classes :type-prescription
+  :enable equal-of-cardinality-and-0-becomes-emptyp)
+
+(defruled cardinality-when-not-emptyp-linear
+  (implies (not (emptyp set))
+           (< 0 (cardinality set)))
+  :rule-classes :linear)
+
+(defrule cardinality-of-empty
+  (equal (cardinality (empty))
+         0)
+  :enable empty)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule oset-cardinality-of-to-oset
+  (equal (set::cardinality (to-oset set))
+         (cardinality set))
+  :enable (to-oset
+           cardinality
+           fix
+           setp
+           empty))
+
+(add-to-ruleset from-oset-theory '(oset-cardinality-of-to-oset))
+
+(defruled cardinality-becomes-oset-cardinality
+  (equal (cardinality set)
+         (set::cardinality (to-oset set))))
+
+(add-to-ruleset to-oset-theory '(cardinality-becomes-oset-cardinality))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy cardinality-extra-rules
+  '(cardinality-when-not-emptyp-linear))

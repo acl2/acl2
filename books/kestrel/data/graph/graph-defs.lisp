@@ -8,7 +8,7 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
 
 (include-book "internal/adj-list-defs")
 (include-book "internal/well-formed-defs")

@@ -59,45 +59,45 @@
     :returns (free-vars ident-setp)
     (expr-case
      expr
-     :ident (if (treeset::in expr.ident bound-vars)
-                (treeset::empty)
-              (treeset::insert expr.ident (treeset::empty)))
-     :const (treeset::empty)
-     :string (treeset::empty)
+     :ident (if (tset::in expr.ident bound-vars)
+                (tset::empty)
+              (tset::insert expr.ident (tset::empty)))
+     :const (tset::empty)
+     :string (tset::empty)
      :paren (free-vars-expr expr.inner bound-vars)
-     :gensel (treeset::union (free-vars-expr expr.control bound-vars)
-                             (free-vars-genassoc-list expr.assocs bound-vars))
-     :arrsub (treeset::union (free-vars-expr expr.arg1 bound-vars)
-                             (free-vars-expr expr.arg2 bound-vars))
-     :funcall (treeset::union (free-vars-expr expr.fun bound-vars)
-                              (free-vars-expr-list expr.args bound-vars))
+     :gensel (tset::union (free-vars-expr expr.control bound-vars)
+                          (free-vars-genassoc-list expr.assocs bound-vars))
+     :arrsub (tset::union (free-vars-expr expr.arg1 bound-vars)
+                          (free-vars-expr expr.arg2 bound-vars))
+     :funcall (tset::union (free-vars-expr expr.fun bound-vars)
+                           (free-vars-expr-list expr.args bound-vars))
      :member (free-vars-expr expr.arg bound-vars)
      :memberp (free-vars-expr expr.arg bound-vars)
      :complit (free-vars-desiniter-list expr.elems bound-vars)
      :unary (free-vars-expr expr.arg bound-vars)
-     :label-addr (treeset::empty)
+     :label-addr (tset::empty)
      :sizeof (free-vars-tyname expr.type bound-vars)
      :alignof (free-vars-tyname expr.type bound-vars)
      :cast (free-vars-expr expr.arg bound-vars)
-     :binary (treeset::union (free-vars-expr expr.arg1 bound-vars)
-                             (free-vars-expr expr.arg2 bound-vars))
-     :cond (treeset::union (free-vars-expr expr.test bound-vars)
-                           (treeset::union (free-vars-expr-option expr.then bound-vars)
-                                           (free-vars-expr expr.else bound-vars)))
-     :comma (treeset::union (free-vars-expr expr.first bound-vars)
-                            (free-vars-expr expr.next bound-vars))
+     :binary (tset::union (free-vars-expr expr.arg1 bound-vars)
+                          (free-vars-expr expr.arg2 bound-vars))
+     :cond (tset::union (free-vars-expr expr.test bound-vars)
+                        (tset::union (free-vars-expr-option expr.then bound-vars)
+                                     (free-vars-expr expr.else bound-vars)))
+     :comma (tset::union (free-vars-expr expr.first bound-vars)
+                         (free-vars-expr expr.next bound-vars))
      :stmt (b* (((mv free-vars -)
                  (free-vars-comp-stmt expr.stmt bound-vars)))
              free-vars)
-     :tycompat (treeset::union (free-vars-tyname expr.type1 bound-vars)
-                               (free-vars-tyname expr.type2 bound-vars))
+     :tycompat (tset::union (free-vars-tyname expr.type1 bound-vars)
+                            (free-vars-tyname expr.type2 bound-vars))
      :offsetof (free-vars-tyname expr.type bound-vars)
-     :va-arg (treeset::union (free-vars-expr expr.list bound-vars)
-                             (free-vars-tyname expr.type bound-vars))
-     :convertvector (treeset::union (free-vars-expr expr.vec bound-vars)
-                                    (free-vars-tyname expr.type bound-vars))
-     :bit-cast (treeset::union (free-vars-tyname expr.type bound-vars)
-                               (free-vars-expr expr.arg bound-vars))
+     :va-arg (tset::union (free-vars-expr expr.list bound-vars)
+                          (free-vars-tyname expr.type bound-vars))
+     :convertvector (tset::union (free-vars-expr expr.vec bound-vars)
+                                 (free-vars-tyname expr.type bound-vars))
+     :bit-cast (tset::union (free-vars-tyname expr.type bound-vars)
+                            (free-vars-expr expr.arg bound-vars))
      :extension (free-vars-expr expr.expr bound-vars)
      :sizeof-ambig (raise "Unexpected ambiguous expression")
      :alignof-ambig (raise "Unexpected ambiguous expression")
@@ -116,9 +116,9 @@
     :short "Collect free variables appearing in an expression list."
     :returns (free-vars ident-setp)
     (if (endp exprs)
-        (treeset::empty)
-      (treeset::union (free-vars-expr (first exprs) bound-vars)
-                      (free-vars-expr-list (rest exprs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-expr (first exprs) bound-vars)
+                   (free-vars-expr-list (rest exprs) bound-vars)))
     :measure (expr-list-count exprs))
 
   (define free-vars-expr-option
@@ -129,7 +129,7 @@
     (expr-option-case
      expr?
      :some (free-vars-expr expr?.val bound-vars)
-     :none (treeset::empty))
+     :none (tset::empty))
     :measure (expr-option-count expr?))
 
   (define free-vars-const-expr
@@ -148,7 +148,7 @@
     (const-expr-option-case
      cexpr?
      :some (free-vars-const-expr cexpr?.val bound-vars)
-     :none (treeset::empty))
+     :none (tset::empty))
     :measure (const-expr-option-count cexpr?))
 
   (define free-vars-genassoc
@@ -168,9 +168,9 @@
     :short "Collect free variables appearing in a generic association list."
     :returns (free-vars ident-setp)
     (if (endp genassocs)
-        (treeset::empty)
-      (treeset::union (free-vars-genassoc (first genassocs) bound-vars)
-                      (free-vars-genassoc-list (rest genassocs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-genassoc (first genassocs) bound-vars)
+                   (free-vars-genassoc-list (rest genassocs) bound-vars)))
     :measure (genassoc-list-count genassocs))
 
   (define free-vars-type-spec
@@ -180,41 +180,41 @@
     :returns (free-vars ident-setp)
     (type-spec-case
      type-spec
-     :void (treeset::empty)
-     :char (treeset::empty)
-     :short (treeset::empty)
-     :int (treeset::empty)
-     :long (treeset::empty)
-     :float (treeset::empty)
-     :double (treeset::empty)
-     :signed (treeset::empty)
-     :unsigned (treeset::empty)
-     :bool (treeset::empty)
-     :complex (treeset::empty)
+     :void (tset::empty)
+     :char (tset::empty)
+     :short (tset::empty)
+     :int (tset::empty)
+     :long (tset::empty)
+     :float (tset::empty)
+     :double (tset::empty)
+     :signed (tset::empty)
+     :unsigned (tset::empty)
+     :bool (tset::empty)
+     :complex (tset::empty)
      :atomic (free-vars-tyname type-spec.type bound-vars)
      :struct (free-vars-struni-spec type-spec.spec bound-vars)
      :union (free-vars-struni-spec type-spec.spec bound-vars)
      :enum (free-vars-enum-spec type-spec.spec bound-vars)
-     :typedef (if (treeset::in type-spec.name bound-vars)
-                (treeset::empty)
-              (treeset::insert type-spec.name (treeset::empty)))
-     :int128 (treeset::empty)
-     :locase-float80 (treeset::empty)
-     :locase-float128 (treeset::empty)
-     :float16 (treeset::empty)
-     :float16x (treeset::empty)
-     :float32 (treeset::empty)
-     :float32x (treeset::empty)
-     :float64 (treeset::empty)
-     :float64x (treeset::empty)
-     :float128 (treeset::empty)
-     :float128x (treeset::empty)
-     :bf16 (treeset::empty)
-     :builtin-va-list (treeset::empty)
-     :struct-empty (treeset::empty)
+     :typedef (if (tset::in type-spec.name bound-vars)
+                (tset::empty)
+              (tset::insert type-spec.name (tset::empty)))
+     :int128 (tset::empty)
+     :locase-float80 (tset::empty)
+     :locase-float128 (tset::empty)
+     :float16 (tset::empty)
+     :float16x (tset::empty)
+     :float32 (tset::empty)
+     :float32x (tset::empty)
+     :float64 (tset::empty)
+     :float64x (tset::empty)
+     :float128 (tset::empty)
+     :float128x (tset::empty)
+     :bf16 (tset::empty)
+     :builtin-va-list (tset::empty)
+     :struct-empty (tset::empty)
      :typeof-expr (free-vars-expr type-spec.expr bound-vars)
      :typeof-type (free-vars-tyname type-spec.type bound-vars)
-     :auto-type (treeset::empty)
+     :auto-type (tset::empty)
      :typeof-ambig (raise "Unexpected ambiguous expression"))
     :no-function nil
     :measure (type-spec-count type-spec))
@@ -227,7 +227,7 @@
     (spec/qual-case
      spec/qual
      :typespec (free-vars-type-spec spec/qual.spec bound-vars)
-     :typequal (treeset::empty)
+     :typequal (tset::empty)
      :align (free-vars-align-spec spec/qual.spec bound-vars)
      :attrib (free-vars-attrib-spec spec/qual.spec bound-vars))
     :measure (spec/qual-count spec/qual))
@@ -239,9 +239,9 @@
             qualifiers."
     :returns (free-vars ident-setp)
     (if (endp specquals)
-        (treeset::empty)
-      (treeset::union (free-vars-spec/qual (first specquals) bound-vars)
-                      (free-vars-spec/qual-list (rest specquals) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-spec/qual (first specquals) bound-vars)
+                   (free-vars-spec/qual-list (rest specquals) bound-vars)))
     :measure (spec/qual-list-count specquals))
 
   (define free-vars-align-spec
@@ -264,15 +264,15 @@
     :returns (free-vars ident-setp)
     (decl-spec-case
      decl-spec
-     :stoclass (treeset::empty)
+     :stoclass (tset::empty)
      :typespec (free-vars-type-spec decl-spec.spec bound-vars)
-     :typequal (treeset::empty)
-     :function (treeset::empty)
+     :typequal (tset::empty)
+     :function (tset::empty)
      :align (free-vars-align-spec decl-spec.spec bound-vars)
      :attrib (free-vars-attrib-spec decl-spec.spec bound-vars)
-     :stdcall (treeset::empty)
+     :stdcall (tset::empty)
      ;; TODO: can a __declspec attribute ever include relevant variables?
-     :declspec (treeset::empty))
+     :declspec (tset::empty))
     :measure (decl-spec-count decl-spec))
 
   (define free-vars-decl-spec-list
@@ -282,9 +282,9 @@
             specifiers."
     :returns (free-vars ident-setp)
     (if (endp decl-specs)
-        (treeset::empty)
-      (treeset::union (free-vars-decl-spec (first decl-specs) bound-vars)
-                      (free-vars-decl-spec-list (rest decl-specs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-decl-spec (first decl-specs) bound-vars)
+                   (free-vars-decl-spec-list (rest decl-specs) bound-vars)))
     :measure (decl-spec-list-count decl-specs))
 
   (define free-vars-typequal/attribspec
@@ -295,7 +295,7 @@
     :returns (free-vars ident-setp)
     (c$::typequal/attribspec-case
      typequal/attribspec
-     :type (treeset::empty)
+     :type (tset::empty)
      :attrib (free-vars-attrib-spec typequal/attribspec.spec bound-vars))
     :measure (c$::typequal/attribspec-count typequal/attribspec))
 
@@ -306,9 +306,9 @@
             attribute specifiers."
     :returns (free-vars ident-setp)
     (if (endp typequal/attribspecs)
-        (treeset::empty)
-      (treeset::union (free-vars-typequal/attribspec (first typequal/attribspecs) bound-vars)
-                      (free-vars-typequal/attribspec-list (rest typequal/attribspecs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-typequal/attribspec (first typequal/attribspecs) bound-vars)
+                   (free-vars-typequal/attribspec-list (rest typequal/attribspecs) bound-vars)))
     :measure (c$::typequal/attribspec-list-count typequal/attribspecs))
 
   (define free-vars-typequal/attribspec-list-list
@@ -318,9 +318,9 @@
             qualifiers and attribute specifiers."
     :returns (free-vars ident-setp)
     (if (endp typequal/attribspec-lists)
-        (treeset::empty)
-      (treeset::union (free-vars-typequal/attribspec-list (first typequal/attribspec-lists) bound-vars)
-                      (free-vars-typequal/attribspec-list-list (rest typequal/attribspec-lists) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-typequal/attribspec-list (first typequal/attribspec-lists) bound-vars)
+                   (free-vars-typequal/attribspec-list-list (rest typequal/attribspec-lists) bound-vars)))
     :measure (c$::typequal/attribspec-list-list-count typequal/attribspec-lists))
 
   (define free-vars-initer
@@ -342,7 +342,7 @@
     (initer-option-case
      initer?
      :some (free-vars-initer initer?.val bound-vars)
-     :none (treeset::empty))
+     :none (tset::empty))
     :measure (initer-option-count initer?))
 
   (define free-vars-desiniter
@@ -352,8 +352,8 @@
             designations."
     :returns (free-vars ident-setp)
     (b* (((desiniter desiniter) desiniter))
-      (treeset::union (free-vars-designor-list desiniter.designors bound-vars)
-                      (free-vars-initer desiniter.initer bound-vars)))
+      (tset::union (free-vars-designor-list desiniter.designors bound-vars)
+                   (free-vars-initer desiniter.initer bound-vars)))
     :measure (desiniter-count desiniter))
 
   (define free-vars-desiniter-list
@@ -363,9 +363,9 @@
             optional designations."
     :returns (free-vars ident-setp)
     (if (endp desiniters)
-        (treeset::empty)
-      (treeset::union (free-vars-desiniter (first desiniters) bound-vars)
-                      (free-vars-desiniter-list (rest desiniters) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-desiniter (first desiniters) bound-vars)
+                   (free-vars-desiniter-list (rest desiniters) bound-vars)))
     :measure (desiniter-list-count desiniters))
 
   (define free-vars-designor
@@ -375,9 +375,9 @@
     :returns (free-vars ident-setp)
     (designor-case
      designor
-     :sub (treeset::union (free-vars-const-expr designor.index bound-vars)
-                          (free-vars-const-expr-option designor.range? bound-vars))
-     :dot (treeset::empty))
+     :sub (tset::union (free-vars-const-expr designor.index bound-vars)
+                       (free-vars-const-expr-option designor.range? bound-vars))
+     :dot (tset::empty))
     :measure (designor-count designor))
 
   (define free-vars-designor-list
@@ -386,9 +386,9 @@
     :short "Collect free variables appearing in a list of designators."
     :returns (free-vars ident-setp)
     (if (endp designors)
-        (treeset::empty)
-      (treeset::union (free-vars-designor (first designors) bound-vars)
-                      (free-vars-designor-list (rest designors) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-designor (first designors) bound-vars)
+                   (free-vars-designor-list (rest designors) bound-vars)))
     :measure (designor-list-count designors))
 
   (define free-vars-declor
@@ -403,7 +403,7 @@
            (free-vars-typequal/attribspec-list-list declor.pointers bound-vars))
          ((mv free-vars1 bound-vars param-bound-vars)
           (free-vars-dirdeclor declor.direct bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars
           param-bound-vars))
     :measure (declor-count declor))
@@ -419,7 +419,7 @@
      :some (b* (((mv free-vars bound-vars -)
                  (free-vars-declor declor?.val bound-vars)))
              (mv free-vars bound-vars))
-     :none (mv (treeset::empty) (ident-set-fix bound-vars)))
+     :none (mv (tset::empty) (ident-set-fix bound-vars)))
     :measure (declor-option-count declor?))
 
   (define free-vars-dirdeclor
@@ -431,9 +431,9 @@
                  (param-bound-vars ident-setp))
     (dirdeclor-case
      dirdeclor
-     :ident (mv (treeset::empty)
-                (treeset::insert dirdeclor.ident (ident-set-fix bound-vars))
-                (treeset::empty))
+     :ident (mv (tset::empty)
+                (tset::insert dirdeclor.ident (ident-set-fix bound-vars))
+                (tset::empty))
      :paren (free-vars-declor dirdeclor.inner bound-vars)
      :array
      (b* ((free-vars0
@@ -442,9 +442,9 @@
             (free-vars-expr-option dirdeclor.size? bound-vars))
           ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
-       (mv (treeset::union free-vars0 (treeset::union free-vars1 free-vars2))
+       (mv (tset::union free-vars0 (tset::union free-vars1 free-vars2))
            bound-vars
-           (treeset::empty)))
+           (tset::empty)))
      :array-static1
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
@@ -452,9 +452,9 @@
             (free-vars-expr dirdeclor.size bound-vars))
           ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
-       (mv (treeset::union free-vars0 (treeset::union free-vars1 free-vars2))
+       (mv (tset::union free-vars0 (tset::union free-vars1 free-vars2))
            bound-vars
-           (treeset::empty)))
+           (tset::empty)))
      :array-static2
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
@@ -462,23 +462,23 @@
             (free-vars-expr dirdeclor.size bound-vars))
           ((mv free-vars2 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
-       (mv (treeset::union free-vars0 (treeset::union free-vars1 free-vars2))
+       (mv (tset::union free-vars0 (tset::union free-vars1 free-vars2))
            bound-vars
-           (treeset::empty)))
+           (tset::empty)))
      :array-star
      (b* ((free-vars0
             (free-vars-typequal/attribspec-list dirdeclor.qualspecs bound-vars))
           ((mv free-vars1 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars)))
-       (mv (treeset::union free-vars0 free-vars1)
+       (mv (tset::union free-vars0 free-vars1)
            bound-vars
-           (treeset::empty)))
+           (tset::empty)))
      :function-params
      (b* (((mv free-vars0 bound-vars -)
            (free-vars-dirdeclor dirdeclor.declor bound-vars))
           ((mv free-vars1 param-bound-vars)
             (free-vars-param-declon-list dirdeclor.params bound-vars)))
-       (mv (treeset::union free-vars0 free-vars1)
+       (mv (tset::union free-vars0 free-vars1)
            bound-vars
            param-bound-vars))
      :function-names (free-vars-dirdeclor dirdeclor.declor bound-vars))
@@ -490,8 +490,8 @@
     :short "Collect free variables appearing in an abstract declarator."
     :returns (free-vars ident-setp)
     (b* (((absdeclor absdeclor) absdeclor))
-      (treeset::union (free-vars-typequal/attribspec-list-list absdeclor.pointers bound-vars)
-                      (free-vars-dirabsdeclor-option absdeclor.direct? bound-vars)))
+      (tset::union (free-vars-typequal/attribspec-list-list absdeclor.pointers bound-vars)
+                   (free-vars-dirabsdeclor-option absdeclor.direct? bound-vars)))
     :measure (absdeclor-count absdeclor))
 
   (define free-vars-absdeclor-option
@@ -502,7 +502,7 @@
     (absdeclor-option-case
      absdeclor?
      :some (free-vars-absdeclor absdeclor?.val bound-vars)
-     :none (treeset::empty))
+     :none (tset::empty))
     :measure (absdeclor-option-count absdeclor?))
 
   (define free-vars-dirabsdeclor
@@ -512,26 +512,26 @@
     :returns (free-vars ident-setp)
     (dirabsdeclor-case
      dirabsdeclor
-     :dummy-base (treeset::empty)
+     :dummy-base (tset::empty)
      :paren (free-vars-absdeclor dirabsdeclor.inner bound-vars)
      :array
-     (treeset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
-                     (treeset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
-                                     (free-vars-expr-option dirabsdeclor.size? bound-vars)))
+     (tset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
+                  (tset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
+                               (free-vars-expr-option dirabsdeclor.size? bound-vars)))
      :array-static1
-     (treeset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
-                     (treeset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
-                                     (free-vars-expr dirabsdeclor.size bound-vars)))
+     (tset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
+                  (tset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
+                               (free-vars-expr dirabsdeclor.size bound-vars)))
      :array-static2
-     (treeset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
-                     (treeset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
-                                     (free-vars-expr dirabsdeclor.size bound-vars)))
+     (tset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
+                  (tset::union (free-vars-typequal/attribspec-list dirabsdeclor.qualspecs bound-vars)
+                               (free-vars-expr dirabsdeclor.size bound-vars)))
      :array-star (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
      :function
      (b* (((mv free-vars -)
            (free-vars-param-declon-list dirabsdeclor.params bound-vars)))
-       (treeset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
-                       free-vars)))
+       (tset::union (free-vars-dirabsdeclor-option dirabsdeclor.declor? bound-vars)
+                    free-vars)))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   (define free-vars-dirabsdeclor-option
@@ -543,7 +543,7 @@
     (dirabsdeclor-option-case
      dirabsdeclor?
      :some (free-vars-dirabsdeclor dirabsdeclor?.val bound-vars)
-     :none (treeset::empty))
+     :none (tset::empty))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   (define free-vars-param-declon
@@ -556,7 +556,7 @@
          (free-vars0 (free-vars-decl-spec-list paramdecl.specs bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-param-declor paramdecl.declor bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (param-declon-count paramdecl))
 
@@ -568,12 +568,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp paramdecls))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-param-declon (first paramdecls) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-param-declon-list (rest paramdecls) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (param-declon-list-count paramdecls))
 
@@ -590,7 +590,7 @@
                     (mv free-vars bound-vars))
      :abstract (mv (free-vars-absdeclor paramdeclor.declor bound-vars)
                    (ident-set-fix bound-vars))
-     :none (mv (treeset::empty) (ident-set-fix bound-vars))
+     :none (mv (tset::empty) (ident-set-fix bound-vars))
      :ambig (mv (raise "Unexpected ambiguous expression")
                 (ident-set-fix bound-vars)))
     :no-function nil
@@ -601,8 +601,8 @@
      (bound-vars ident-setp))
     :returns (free-vars ident-setp)
     (b* (((tyname tyname) tyname))
-      (treeset::union (free-vars-spec/qual-list tyname.specquals bound-vars)
-                      (free-vars-absdeclor-option tyname.declor? bound-vars)))
+      (tset::union (free-vars-spec/qual-list tyname.specquals bound-vars)
+                   (free-vars-absdeclor-option tyname.declor? bound-vars)))
     :measure (tyname-count tyname))
 
   (define free-vars-struni-spec
@@ -633,14 +633,14 @@
                (free-vars-spec/qual-list struct-declon.specquals bound-vars))
              ((mv free-vars1 bound-vars)
               (free-vars-struct-declor-list struct-declon.declors bound-vars)))
-          (mv (treeset::union free-vars0
-                              (treeset::union free-vars1
-                                              (free-vars-attrib-spec-list struct-declon.attribs
-                                                                          bound-vars)))
+          (mv (tset::union free-vars0
+                           (tset::union free-vars1
+                                        (free-vars-attrib-spec-list struct-declon.attribs
+                                                                    bound-vars)))
               bound-vars))
         :statassert (mv (free-vars-statassert struct-declon.statassert bound-vars)
                         bound-vars)
-        :empty (mv (treeset::empty) bound-vars)))
+        :empty (mv (tset::empty) bound-vars)))
     :measure (struct-declon-count struct-declon))
 
   (define free-vars-struct-declon-list
@@ -651,12 +651,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp struct-declons))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-struct-declon (first struct-declons) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-struct-declon-list (rest struct-declons) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (struct-declon-list-count struct-declons))
 
@@ -671,7 +671,7 @@
            (free-vars-const-expr-option structdeclor.expr? bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-declor-option structdeclor.declor? bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (struct-declor-count structdeclor))
 
@@ -683,12 +683,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp structdeclors))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-struct-declor (first structdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-struct-declor-list (rest structdeclors) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (struct-declor-list-count structdeclors))
 
@@ -714,7 +714,7 @@
     (b* ((bound-vars (ident-set-fix bound-vars))
          ((enumer enumer) enumer))
       (mv (free-vars-const-expr-option enumer.value? bound-vars)
-          (treeset::insert enumer.name bound-vars)))
+          (tset::insert enumer.name bound-vars)))
     :measure (enumer-count enumer))
 
   (define free-vars-enumer-list
@@ -724,12 +724,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp enumers))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-enumer (first enumers) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-enumer-list (rest enumers) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (enumer-list-count enumers))
 
@@ -749,7 +749,7 @@
     :returns (free-vars ident-setp)
     (c$::attrib-case
      attrib
-     :name-only (treeset::empty)
+     :name-only (tset::empty)
      :name-params (free-vars-expr-list attrib.params bound-vars))
     :measure (c$::attrib-count attrib))
 
@@ -759,9 +759,9 @@
     :short "Collect free variables appearing in a list of GCC attribute."
     :returns (free-vars ident-setp)
     (if (endp attribs)
-        (treeset::empty)
-      (treeset::union (free-vars-attrib (first attribs) bound-vars)
-                      (free-vars-attrib-list (rest attribs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-attrib (first attribs) bound-vars)
+                   (free-vars-attrib-list (rest attribs) bound-vars)))
     :measure (c$::attrib-list-count attribs))
 
   (define free-vars-attrib-spec
@@ -780,9 +780,9 @@
             specifiers."
     :returns (free-vars ident-setp)
     (if (endp attrib-specs)
-        (treeset::empty)
-      (treeset::union (free-vars-attrib-spec (first attrib-specs) bound-vars)
-                      (free-vars-attrib-spec-list (rest attrib-specs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-attrib-spec (first attrib-specs) bound-vars)
+                   (free-vars-attrib-spec-list (rest attrib-specs) bound-vars)))
     :measure (c$::attrib-spec-list-count attrib-specs))
 
   (define free-vars-init-declor
@@ -796,7 +796,7 @@
          (free-vars1 (free-vars-attrib-spec-list initdeclor.attribs bound-vars))
          ((mv free-vars2 bound-vars -)
           (free-vars-declor initdeclor.declor bound-vars)))
-      (mv (treeset::union free-vars0 (treeset::union free-vars1 free-vars2))
+      (mv (tset::union free-vars0 (tset::union free-vars1 free-vars2))
           bound-vars))
     :measure (init-declor-count initdeclor))
 
@@ -808,12 +808,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp initdeclors))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-init-declor (first initdeclors) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-init-declor-list (rest initdeclors) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (init-declor-list-count initdeclors))
 
@@ -837,12 +837,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp declons))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-declon (first declons) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-declon-list (rest declons) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (declon-list-count declons))
 
@@ -853,10 +853,10 @@
     :returns (free-vars ident-setp)
     (label-case
      label
-     :name (treeset::empty)
-     :casexpr (treeset::union (free-vars-const-expr label.expr bound-vars)
-                              (free-vars-const-expr-option label.range? bound-vars))
-     :default (treeset::empty))
+     :name (tset::empty)
+     :casexpr (tset::union (free-vars-const-expr label.expr bound-vars)
+                           (free-vars-const-expr-option label.range? bound-vars))
+     :default (tset::empty))
     :measure (label-count label))
 
   (define free-vars-asm-output
@@ -875,9 +875,9 @@
             operands."
     :returns (free-vars ident-setp)
     (if (endp asm-outputs)
-        (treeset::empty)
-      (treeset::union (free-vars-asm-output (first asm-outputs) bound-vars)
-                      (free-vars-asm-output-list (rest asm-outputs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-asm-output (first asm-outputs) bound-vars)
+                   (free-vars-asm-output-list (rest asm-outputs) bound-vars)))
     :measure (c$::asm-output-list-count asm-outputs))
 
   (define free-vars-asm-input
@@ -896,9 +896,9 @@
             operands."
     :returns (free-vars ident-setp)
     (if (endp asm-inputs)
-        (treeset::empty)
-      (treeset::union (free-vars-asm-input (first asm-inputs) bound-vars)
-                      (free-vars-asm-input-list (rest asm-inputs) bound-vars)))
+        (tset::empty)
+      (tset::union (free-vars-asm-input (first asm-inputs) bound-vars)
+                   (free-vars-asm-input-list (rest asm-inputs) bound-vars)))
     :measure (c$::asm-input-list-count asm-inputs))
 
   (define free-vars-asm-stmt
@@ -907,8 +907,8 @@
     :short "Collect free variables appearing in an assembler statement."
     :returns (free-vars ident-setp)
     (b* (((c$::asm-stmt asm-stmt) asm-stmt))
-      (treeset::union (free-vars-asm-output-list asm-stmt.outputs bound-vars)
-                      (free-vars-asm-input-list asm-stmt.inputs bound-vars)))
+      (tset::union (free-vars-asm-output-list asm-stmt.outputs bound-vars)
+                   (free-vars-asm-input-list asm-stmt.inputs bound-vars)))
     :measure (c$::asm-stmt-count asm-stmt))
 
   (define free-vars-stmt
@@ -918,38 +918,38 @@
     :returns (free-vars ident-setp)
     (stmt-case
      stmt
-     :labeled (treeset::union (free-vars-label stmt.label bound-vars)
-                              (free-vars-stmt stmt.stmt bound-vars))
+     :labeled (tset::union (free-vars-label stmt.label bound-vars)
+                           (free-vars-stmt stmt.stmt bound-vars))
      :compound (b* (((mv free-vars -)
                      (free-vars-comp-stmt stmt.stmt bound-vars)))
                  free-vars)
      :expr (free-vars-expr-option stmt.expr? bound-vars)
-     :null-attrib (treeset::empty)
-     :if (treeset::union (free-vars-expr stmt.test bound-vars)
-                         (free-vars-stmt stmt.then bound-vars))
-     :ifelse (treeset::union (free-vars-expr stmt.test bound-vars)
-                             (treeset::union (free-vars-stmt stmt.then bound-vars)
-                                             (free-vars-stmt stmt.else bound-vars)))
-     :switch (treeset::union (free-vars-expr stmt.target bound-vars)
-                             (free-vars-stmt stmt.body bound-vars))
-     :while (treeset::union (free-vars-expr stmt.test bound-vars)
-                            (free-vars-stmt stmt.body bound-vars))
-     :dowhile (treeset::union (free-vars-stmt stmt.body bound-vars)
-                              (free-vars-expr stmt.test bound-vars))
-     :for-expr (treeset::union (free-vars-expr-option stmt.init bound-vars)
-                               (treeset::union (free-vars-expr-option stmt.test bound-vars)
-                                               (treeset::union (free-vars-expr-option stmt.next bound-vars)
-                                                               (free-vars-stmt stmt.body bound-vars))))
+     :null-attrib (tset::empty)
+     :if (tset::union (free-vars-expr stmt.test bound-vars)
+                      (free-vars-stmt stmt.then bound-vars))
+     :ifelse (tset::union (free-vars-expr stmt.test bound-vars)
+                          (tset::union (free-vars-stmt stmt.then bound-vars)
+                                       (free-vars-stmt stmt.else bound-vars)))
+     :switch (tset::union (free-vars-expr stmt.target bound-vars)
+                          (free-vars-stmt stmt.body bound-vars))
+     :while (tset::union (free-vars-expr stmt.test bound-vars)
+                         (free-vars-stmt stmt.body bound-vars))
+     :dowhile (tset::union (free-vars-stmt stmt.body bound-vars)
+                           (free-vars-expr stmt.test bound-vars))
+     :for-expr (tset::union (free-vars-expr-option stmt.init bound-vars)
+                            (tset::union (free-vars-expr-option stmt.test bound-vars)
+                                         (tset::union (free-vars-expr-option stmt.next bound-vars)
+                                                      (free-vars-stmt stmt.body bound-vars))))
      :for-declon (b* (((mv free-vars for-bound-vars)
                        (free-vars-declon stmt.init bound-vars)))
-                   (treeset::union free-vars
-                                   (treeset::union (free-vars-expr-option stmt.test for-bound-vars)
-                                                   (treeset::union (free-vars-expr-option stmt.next for-bound-vars)
-                                                                   (free-vars-stmt stmt.body for-bound-vars)))))
-     :goto (treeset::empty)
+                   (tset::union free-vars
+                                (tset::union (free-vars-expr-option stmt.test for-bound-vars)
+                                             (tset::union (free-vars-expr-option stmt.next for-bound-vars)
+                                                          (free-vars-stmt stmt.body for-bound-vars)))))
+     :goto (tset::empty)
      :gotoe (free-vars-expr stmt.label bound-vars)
-     :continue (treeset::empty)
-     :break (treeset::empty)
+     :continue (tset::empty)
+     :break (tset::empty)
      :return (free-vars-expr-option stmt.expr? bound-vars)
      :return-attrib (free-vars-expr stmt.expr bound-vars)
      :asm (free-vars-asm-stmt stmt.stmt bound-vars)
@@ -969,7 +969,7 @@
         :declon (free-vars-declon item.declon bound-vars)
         :stmt (mv (free-vars-stmt item.stmt bound-vars)
                   bound-vars)
-        :ambig (mv (treeset::empty) bound-vars)))
+        :ambig (mv (tset::empty) bound-vars)))
     :measure (block-item-count item))
 
   (define free-vars-block-item-list
@@ -979,12 +979,12 @@
     :returns (mv (free-vars ident-setp)
                  (bound-vars ident-setp))
     (b* (((when (endp items))
-          (mv (treeset::empty) (ident-set-fix bound-vars)))
+          (mv (tset::empty) (ident-set-fix bound-vars)))
          ((mv free-vars0 bound-vars)
           (free-vars-block-item (first items) bound-vars))
          ((mv free-vars1 bound-vars)
           (free-vars-block-item-list (rest items) bound-vars)))
-      (mv (treeset::union free-vars0 free-vars1)
+      (mv (tset::union free-vars0 free-vars1)
           bound-vars))
     :measure (block-item-list-count items))
 
@@ -1011,11 +1011,11 @@
        (free-vars1 (free-vars-decl-spec-list fundef.specs bound-vars))
        ((mv free-vars2 bound-vars param-bound-vars)
         (free-vars-declor fundef.declor bound-vars))
-       (bound-vars (treeset::union bound-vars param-bound-vars))
+       (bound-vars (tset::union bound-vars param-bound-vars))
        (free-vars3 (free-vars-attrib-spec-list fundef.attribs bound-vars))
        ((mv free-vars4 bound-vars)
         (free-vars-declon-list fundef.declons bound-vars))
        ((mv free-vars5 &) (free-vars-comp-stmt fundef.body bound-vars)))
-    (treeset::union free-vars1
-                    (treeset::union free-vars2
-                                    (treeset::union free-vars3 (treeset::union free-vars4 free-vars5))))))
+    (tset::union free-vars1
+                 (tset::union free-vars2
+                              (tset::union free-vars3 (tset::union free-vars4 free-vars5))))))

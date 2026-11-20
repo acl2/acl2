@@ -36,13 +36,10 @@
   (b* ((sys-dir (acl2::system-books-dir state))
        ((unless (stringp sys-dir))
         (er hard? 'SMT-config=>*default-smtlink-config* "Failed to find ~
-where the system books are."))
-       (relative-smtlink-dir "projects/smtlink/z3_interface")
-       (interface-dir
-        (concatenate 'string sys-dir relative-smtlink-dir)))
-    (make-smtlink-config :interface-dir interface-dir
-                         :smt-module "ACL2_to_Z3"
-                         :smt-class "ACL22SMT"
+                                                         where the system books are.")))
+    (make-smtlink-config :interface-dir ""
+                         :smt-module ""
+                         :smt-class ""
                          :smt-cmd "z3"
                          :pythonpath "")))
 
@@ -118,17 +115,8 @@ where the system books are."))
        ((cons first rest) config-alist)
        ((cons option value) first)
        (new-cnf (cond
-                 ;; ;; if value is "", use the default-cnf
-                 ;; ;; default-cnf is $ACL2_SYSTEM_BOOKS/projects/smtlink/z3_interface
-                 ;; ((and (equal option "interface-dir") (not (equal value "default")))
-                 ;;  (change-smtlink-config default-cnf :interface-dir value))
-                 ;; ((equal option "smt-module")
-                 ;;  (change-smtlink-config default-cnf :SMT-module value))
-                 ;; ((equal option "smt-class")
-                 ;;  (change-smtlink-config default-cnf :SMT-class value))
                  ((equal option "smt-cmd")
                   (change-smtlink-config default-cnf :SMT-cmd value))
-                 ;; (t (change-smtlink-config default-cnf :PYTHONPATH value))
                  (t default-cnf)
                  )))
     (change-smt-cnf rest new-cnf)))
@@ -154,7 +142,8 @@ where the system books are."))
             (file-exists smtconfig SMT_HOME state)
           (mv nil state)))
        ((if exists-in-SMT_HOME)
-        (prog2$ (cw "Reading smtlink-config from $SMT_HOME...~%")
+        (prog2$ (cw "Reading ~x0 from $SMT_HOME...~%"
+                    smtconfig)
                 (mv SMT_HOME state)))
        ((mv & HOME state) (getenv$ "HOME" state))
        ((mv exists-in-HOME state)
@@ -162,7 +151,8 @@ where the system books are."))
             (file-exists smtconfig HOME state)
           (mv nil state)))
        ((if exists-in-HOME)
-        (prog2$ (cw "Reading smtlink-config from $HOME...~%")
+        (prog2$ (cw "Reading ~x0 from $HOME...~%"
+                    smtconfig)
                 (mv HOME state)))
        ((mv & SMTLINK-PWD state) (getenv$ "PWD" state))
        ((mv exists-in-SMTLINK-PWD state)
@@ -170,10 +160,12 @@ where the system books are."))
             (file-exists smtconfig SMTLINK-PWD state)
           (mv nil state)))
        ((if exists-in-SMTLINK-PWD)
-        (prog2$ (cw "Reading smtlink-config from Smtlink directory...~%")
+        (prog2$ (cw "Reading ~x0 from Smtlink directory...~%"
+                    smtconfig)
                 (mv SMTLINK-PWD state))))
     (mv (prog2$
-         (er hard? 'SMT-config=>find-smtlink-config "Failed to find smtlink-config.~%")
+          (er hard? 'SMT-config=>find-smtlink-config "Failed to find ~x0.~%"
+              smtconfig)
          "")
         state)))
 
@@ -188,7 +180,7 @@ where the system books are."))
 ;;
 
 (defconsts (*smt-cnf* state)
-  (b* ((smtconfig "smtlink-config")
+  (b* ((smtconfig "smtlink3-config")
        ((mv dir state) (find-smtlink-config smtconfig state))
        (res (read-file-into-string (concatenate 'string dir "/" smtconfig)))
        ((unless res) (mv (default-smtlink-config) state))

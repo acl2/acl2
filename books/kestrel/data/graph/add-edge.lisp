@@ -12,8 +12,8 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -27,15 +27,15 @@
 (include-book "internal/add-edge-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
-(local (include-book "kestrel/data/treemap/in" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
+(local (include-book "kestrel/data/tmap/in" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -52,7 +52,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-edge (from to label (graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))
@@ -111,7 +110,7 @@
 
 (defrule nodes-of-add-edge
   (equal (nodes (add-edge from to label graph))
-         (treeset::insert from (treeset::insert to (nodes graph))))
+         (tset::insert from (tset::insert to (nodes graph))))
   :enable (nodes
            add-edge
            graphp
@@ -119,7 +118,7 @@
 
 (defrule edges-of-add-edge
   (equal (edges (add-edge from to label graph))
-         (treeset::insert (edge from to label) (edges graph)))
+         (tset::insert (edge from to label) (edges graph)))
   :enable (edges
            add-edge
            graphp
@@ -133,13 +132,13 @@
   (equal (labels x y (add-edge from to label graph))
          (if (and (equal x from)
                   (equal y to))
-             (treeset::insert label (labels x y graph))
+             (tset::insert label (labels x y graph))
            (labels x y graph)))
-  :enable treeset::extensionality-polar)
+  :enable tset::extensionality-polar)
 
 (defrule labels-of-add-edge-same
   (equal (labels from to (add-edge from to label graph))
-         (treeset::insert label (labels from to graph)))
+         (tset::insert label (labels from to graph)))
   :enable labels-of-add-edge)
 
 (defrule labels-of-add-edge-diff-from-cheap
@@ -163,16 +162,16 @@
 (defruled successors-of-add-edge
   (equal (successors x (add-edge from to label graph))
          (if (equal x from)
-             (treeset::insert to (successors x graph))
+             (tset::insert to (successors x graph))
            (successors x graph)))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-add-edge)
   :disable emptyp-of-labels)
 
 (defrule successors-of-add-edge-same
   (equal (successors from (add-edge from to label graph))
-         (treeset::insert to (successors from graph)))
+         (tset::insert to (successors from graph)))
   :enable successors-of-add-edge)
 
 (defrule successors-of-add-edge-diff-cheap
@@ -185,16 +184,16 @@
 (defruled predecessors-of-add-edge
   (equal (predecessors y (add-edge from to label graph))
          (if (equal y to)
-             (treeset::insert from (predecessors y graph))
+             (tset::insert from (predecessors y graph))
            (predecessors y graph)))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels
            labels-of-add-edge)
   :disable emptyp-of-labels)
 
 (defrule predecessors-of-add-edge-same
   (equal (predecessors to (add-edge from to label graph))
-         (treeset::insert from (predecessors to graph)))
+         (tset::insert from (predecessors to graph)))
   :enable predecessors-of-add-edge)
 
 (defrule predecessors-of-add-edge-diff-cheap

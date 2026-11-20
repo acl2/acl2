@@ -17,7 +17,7 @@
 (include-book "types")
 (include-book "macro-tables")
 
-(include-book "kestrel/fty/deftreemap" :dir :system)
+(include-book "kestrel/fty/deftmap" :dir :system)
 
 (acl2::controlled-configuration)
 
@@ -174,7 +174,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap valid-ord-scope
+(fty::deftmap valid-ord-scope
   :short "Fixtype of validation scopes of ordinary identifiers."
   :long
   (xdoc::topstring
@@ -192,8 +192,8 @@
 
   (defrule valid-ord-info-optionp-of-lookup-when-valid-ord-scopep
     (implies (valid-ord-scopep scope)
-             (valid-ord-info-optionp (treemap::lookup ident scope)))
-    :cases ((treeset::in ident (treemap::keys scope)))))
+             (valid-ord-info-optionp (tmap::lookup ident scope)))
+    :cases ((tset::in ident (tmap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +239,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap valid-tag-scope
+(fty::deftmap valid-tag-scope
   :short "Fixtype of validation scopes of tags."
   :long
   (xdoc::topstring
@@ -255,8 +255,8 @@
 
   (defrule valid-tag-info-optionp-of-lookup-when-valid-tag-scopep
     (implies (valid-tag-scopep scope)
-             (valid-tag-info-optionp (treemap::lookup ident scope)))
-    :cases ((treeset::in ident (treemap::keys scope)))))
+             (valid-tag-info-optionp (tmap::lookup ident scope)))
+    :cases ((tset::in ident (tmap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -322,7 +322,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap valid-externals
+(fty::deftmap valid-externals
   :short "Fixtype of validation information associated with identifiers with
           external linkage."
   :key-type ident
@@ -332,8 +332,8 @@
 
   (defrule valid-ext-info-optionp-of-lookup-when-valid-externalsp
     (implies (valid-externalsp externals)
-             (valid-ext-info-optionp (treemap::lookup ident externals)))
-    :cases ((treeset::in ident (treemap::keys externals)))))
+             (valid-ext-info-optionp (tmap::lookup ident externals)))
+    :cases ((tset::in ident (tmap::keys externals)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,8 +381,8 @@
   :body (valid-table (irr-filepath)
                      nil
                      (irr-macro-table)
-                     (treemap::empty)
-                     (treemap::empty)))
+                     (tmap::empty)
+                     (tmap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -401,7 +401,7 @@
    (xdoc::p
     "Scopes always start empty, i.e. with no identifiers.
      This function returns the empty scope."))
-  (make-valid-scope :ord (treemap::empty) :tag (treemap::empty)))
+  (make-valid-scope :ord (tmap::empty) :tag (tmap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,8 +419,8 @@
   (make-valid-table :filepath filepath
                     :scopes (list (empty-valid-scope))
                     :macros (macro-init dialect)
-                    :externals (treemap::empty)
-                    :completions (treemap::empty)))
+                    :externals (tmap::empty)
+                    :completions (tmap::empty)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -503,7 +503,7 @@
      (b* (((when (endp scopes)) (mv nil nil))
           (scope (car scopes))
           (ord-scope (valid-scope->ord scope))
-          (info? (treemap::lookup (ident-fix ident) ord-scope))
+          (info? (tmap::lookup (ident-fix ident) ord-scope))
           ((when info?) (mv info? (bool-fix currentp))))
        (valid-lookup-ord-loop ident (cdr scopes) nil)))))
 
@@ -522,7 +522,7 @@
   (b* ((scopes (valid-table->scopes table))
        ((when (endp scopes)) (raise "Internal error: no scopes."))
        (scope (car (last scopes))))
-    (treemap::lookup (ident-fix ident) (valid-scope->ord scope)))
+    (tmap::lookup (ident-fix ident) (valid-scope->ord scope)))
   :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -546,7 +546,7 @@
      (b* (((when (endp scopes)) (mv nil nil))
           (scope (car scopes))
           (tag-scope (valid-scope->tag scope))
-          (info? (treemap::lookup (ident-fix ident) tag-scope))
+          (info? (tmap::lookup (ident-fix ident) tag-scope))
           ((when info?) (mv info? (bool-fix currentp))))
        (valid-lookup-tag-loop ident (cdr scopes) nil)))))
 
@@ -570,9 +570,9 @@
         (valid-table-fix table))
        (scope (car table.scopes))
        (tag-scope (valid-scope->tag scope))
-       (new-tag-scope (treemap::update (ident-fix ident)
-                                       (valid-tag-info-fix info)
-                                       tag-scope))
+       (new-tag-scope (tmap::update (ident-fix ident)
+                                    (valid-tag-info-fix info)
+                                    tag-scope))
        (new-scope (change-valid-scope scope :tag new-tag-scope))
        (new-scopes (cons new-scope (cdr table.scopes)))
        (table (change-valid-table table :scopes new-scopes)))

@@ -12,10 +12,10 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -25,12 +25,12 @@
 (include-book "walk-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
 
 (local (include-book "../graph"))
 (local (include-book "../nodes"))
@@ -46,14 +46,14 @@
 ;; from. This builds no edge set, so it is what walk-in executes.
 
 (define steps-in (from (steps step-listp) (graph graphp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walk-in)
   :short "Check that each of a list of steps, taken from a node, follows an edge
           of a @(see graph)."
   (if (consp steps)
       (b* ((to (step->to (car steps))))
-        (and (treeset::in (step->label (car steps))
-                          (treemap::lookup to (adjacency from graph)))
+        (and (tset::in (step->label (car steps))
+                       (tmap::lookup to (adjacency from graph)))
              (steps-in to (cdr steps) graph)))
     t))
 
@@ -69,7 +69,7 @@
 
 (defruledl steps-in-becomes-subset-of-steps-edges
   (equal (steps-in from steps graph)
-         (treeset::subset (steps-edges from steps) (edges graph)))
+         (tset::subset (steps-edges from steps) (edges graph)))
   :induct t
   :enable (steps-in
            steps-edges))
@@ -77,7 +77,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-in ((walk walkp) (graph graphp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if a walk is a walk in a @(see graph)."
   :long
@@ -91,8 +91,8 @@
        is the number of steps, @($n$) the number of nodes, @($d$) the largest
        number of successors of a node, and @($l$) the largest number of labels
        on edges between two nodes."))
-  (mbe :logic (and (treeset::in (walk->start walk) (nodes graph))
-                   (treeset::subset (walk-edges walk) (edges graph)))
+  (mbe :logic (and (tset::in (walk->start walk) (nodes graph))
+                   (tset::subset (walk-edges walk) (edges graph)))
        :exec (and (node-in (walk->start walk) graph)
                   (steps-in (walk->start walk) (walk->steps walk) graph)))
   :guard-hints (("Goal" :in-theory (enable walk-edges
@@ -121,7 +121,7 @@
 (defrule walk-in-when-not-consp-of-walk->steps
   (implies (not (consp (walk->steps walk)))
            (equal (walk-in walk graph)
-                  (treeset::in (walk->start walk) (nodes graph))))
+                  (tset::in (walk->start walk) (nodes graph))))
   :enable walk-in)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -130,16 +130,16 @@
 ;; leads to one.
 
 (defrulel in-of-steps-end-and-nodes
-  (implies (and (treeset::in from (nodes graph))
-                (treeset::subset (steps-edges from steps) (edges graph)))
-           (treeset::in (steps-end from steps) (nodes graph)))
+  (implies (and (tset::in from (nodes graph))
+                (tset::subset (steps-edges from steps) (edges graph)))
+           (tset::in (steps-end from steps) (nodes graph)))
   :induct t
   :enable (steps-end
            steps-edges))
 
 (defrule in-of-walk-end-and-nodes-when-walk-in
   (implies (walk-in walk graph)
-           (treeset::in (walk-end walk) (nodes graph)))
+           (tset::in (walk-end walk) (nodes graph)))
   :enable (walk-in
            walk-end
            walk-edges))

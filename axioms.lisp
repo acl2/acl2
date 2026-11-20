@@ -22862,15 +22862,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   defabsstobj-fn1 ; called by defabsstobj-missing-events; seems safe
     maybe-add-command-landmark
     ubt-ubu-fn1
-    install-event-defuns ; calls install-event
-    defthm-fn1 ; calls install-event
-    defuns-fn0 ; calls defuns-fn1
-    ld-read-eval-print ; calls maybe-add-command-landmark
+    install-event-defuns      ; calls install-event
+    defthm-fn1                ; calls install-event
+    defuns-fn0                ; calls defuns-fn1
+    ld-read-eval-print        ; calls maybe-add-command-landmark
     ld-read-eval-print-simple ; calls maybe-add-command-landmark
-    ld-loop ; calls ld-read-eval-print
-    ld-loop-simple ; calls ld-read-eval-print-simple
-    ld-fn-body ; calls ld-loop
-    ld-fn0 ld-fn1 ; both call ld-fn-body
+    ld-loop                   ; calls ld-read-eval-print
+    ld-loop-simple            ; calls ld-read-eval-print-simple
+    ld-fn-body                ; calls ld-loop
+    ld-fn0 ld-fn1             ; both call ld-fn-body
 
 ; End of functions leading to calls of set-w
 
@@ -22925,6 +22925,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     state-from-instructions state-stack-from-instructions
     assign-event-name-and-rule-classes
     save-fn
+    ev-synp
+    ev-fncall-w-tau-recog
+    ev-respecting-ens
+    trans-eval1
+    verify-guards-fn1
+    ev-rec-return-last
+    ev-fncall-meta
+    acl2-raw-eval
+    trace$-fn-general
     ))
 
 (defconst *initial-untouchable-vars*
@@ -23087,6 +23096,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     inside-progn-fn1
     warnings-as-errors
     pc-output pc-ss-alist
+    boot-strap-flg
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,

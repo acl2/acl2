@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2026 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -231,14 +231,24 @@
    (xdoc::p
     "We search from the beginning and stop at the first hit;
      since the names are unique in well-formed lists,
-     the exact search strategy makes no difference
+     the exact search strategy makes no difference.
      We return the type of the member if the search is successful.
      We return @('nil') if the search is unsuccessful."))
   (b* (((when (endp members)) nil)
        ((when (equal (ident-fix name)
                      (member-type->name (car members))))
         (member-type->type (car members))))
-    (member-type-lookup name (cdr members))))
+    (member-type-lookup name (cdr members)))
+
+  ///
+
+  (defruled member-type-lookup-iff-name-in-name-list
+    (iff (member-type-lookup name members)
+         (member-equal (ident-fix name)
+                       (member-type-list->name-list members)))
+    :induct t
+    :enable (member-type-list->name-list
+             member-equal)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,7 +465,8 @@
     "The @('void') type is never complete [C17:6.2.5/19].
      The basic types, which are the integer types in our subset of C,
      are always complete [C17:6.2.5/14].
-     A structure type is complete as soon as its declaration ends [C17:6.7.2.1/8];
+     A structure type is complete as soon as its declaration ends
+     [C17:6.7.2.1/8];
      it is incomplete inside the structure type,
      but we do not use this predicate for the member types.
      A pointer type is always complete [C17:6.2.5/20]
