@@ -59,8 +59,8 @@ validated.
 | `normalization` | The canonical ordering and composition algorithms; `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp`, `nfc-memberp`, `nfkd-memberp`, `nfkc-memberp`; `canonical-equivalent-p`, `compatibility-equivalent-p`. |
 | `composing-pairs` | The code points that compose with a code point after them (`composes-with-following-p`) and those that compose with a code point before them (`composes-with-previous-p`); the type of sets of code points. |
 | `normalization-inert` | `normalization-inert-p`: a starter with no decomposition that composes with nothing.  The proof that each of the four forms normalizes separately what is before and what is after such a code point, and leaves it as it is.  Which ASCII code points are inert; `Pattern_White_Space` code points are. |
-| `normalization-members` | Which code points can occur in a normalization form of a list: for an inert ASCII code point, exactly when it occurs in NFD and in NFC. |
-| `stream-safe` | The Stream-Safe Text Format (`stream-safe-p`) and the Stream-Safe Text Process (`stream-safe-process`) of UAX #15, with the proof that the process gives text in the format and leaves text in the format unchanged. |
+| `normalization-members` | Which code points can occur in a normalization form of a list: for an inert ASCII code point, exactly when it occurs in NFD and in NFC; and the proof that NFC brings in no ASCII code point, with three exceptions. |
+| `stream-safe` | The Stream-Safe Text Format (`stream-safe-p`) and the Stream-Safe Text Process (`stream-safe-process`) of UAX #15, with the proof that the process gives text in the format and leaves text in the format unchanged, and that normalizing does not change whether text is in the format. |
 | `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers, also when the identifier starts with `$` or `_`; a canonical equivalent of an identifier is an identifier. |
 | `quick-check` | The `NF*_Quick_Check` properties (the normalization functions do not use them). |
 | `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD, and that the code points that NFC and NFKC change are those whose quick check value is No. |
@@ -233,10 +233,14 @@ over the tables, and so re-checked whenever a version is added:
   code point, then another list, is the form of the first list, then the
   code point, then the form of the second list.  So if the delimiters of a
   language are inert, normalizing its text is the same as normalizing each
-  piece between delimiters.  `normalization-inert-p-when-ascii`: an ASCII
-  code point is inert unless it is a letter other than `Q` and `q`, or one
-  of `<`, `=`, `>`.  `normalization-inert-p-when-pattern-white-space-p`.
-  These generalize the theorems about `$` and `_` above.
+  piece between delimiters.
+  `nfc-memberp-of-append-of-cons-when-normalization-inert-p` (and the same
+  for the other three): such a list is in the form exactly when the first
+  list is and the second list is.  `normalization-inert-p-when-ascii`: an
+  ASCII code point is inert unless it is a letter other than `Q` and `q`,
+  or one of `<`, `=`, `>`.
+  `normalization-inert-p-when-pattern-white-space-p`.  These generalize the
+  theorems about `$` and `_` above.
 - `canonical-order-of-append-of-cons-when-starter-p`: canonical ordering
   does not move code points past a starter.
 - `member-equal-of-canonical-order`: the canonical order of a list has the
@@ -253,15 +257,27 @@ over the tables, and so re-checked whenever a version is added:
   grave accent and U+1FEF GREEK VARIA occurs in the list.  So the canonical
   forms neither bring in nor take away the ASCII digits, the space, or the
   ASCII punctuation other than `<`, `=`, `>`, with those two exceptions.
-  (There is no such theorem for the letters and `<`, `=`, `>`, nor for NFKD
-  and NFKC.)
+- `member-equal-of-nfc-when-ascii`: NFC brings in no ASCII code point, with
+  three exceptions.  If an ASCII code point, inert or not, occurs in NFC of
+  a list, then it occurs in the list, or it is the semicolon and U+037E
+  occurs in the list, or it is the grave accent and U+1FEF occurs in the
+  list, or it is the letter `K` and U+212A KELVIN SIGN occurs in the list.
+  So an ASCII letter, or `<`, `=` or `>`, that comes out of the
+  decomposition of a code point always composes again.  (The converse
+  fails for those: a letter followed by a mark that it composes with is not
+  in the NFC form.  There is no such theorem for NFKD and NFKC.)
 - `stream-safe-p-of-stream-safe-process`: the Stream-Safe Text Process of
   UAX #15, Section 13, gives text in Stream-Safe Text Format, that is, text
   whose NFKD form has no more than 30 non-starters in a row.
   `stream-safe-process-when-stream-safe-p`: the process leaves such text
   unchanged.  `stream-safe-p-in-terms-of-decompose`: the format can be
   checked on the compatibility decomposition, before it is put in canonical
-  order.
+  order.  `stream-safe-p-of-nfc` (and the same for the other three forms):
+  putting text in a normalization form does not change whether it is in
+  the format.  `nfd-memberp-of-stream-safe-process`,
+  `nfkd-memberp-of-stream-safe-process`: the process keeps text that is in
+  NFD, or in NFKD, in that form.  (UAX #15 says the same of NFC and NFKC;
+  that is not proved.)
 
 ### Including only what you need
 

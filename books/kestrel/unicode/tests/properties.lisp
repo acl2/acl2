@@ -720,3 +720,88 @@
 (test (equal (stream-safe-process '(#x66 #x6F #x6F) *v17*)
              '(#x66 #x6F #x6F)))
 (test (equal (stream-safe-process nil *v18*) nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; ASCII code points in Normalization Form C.
+
+; A letter that comes out of a decomposition composes again,
+; possibly with another mark than the one it came with:
+; U+00C5 LATIN CAPITAL LETTER A WITH RING ABOVE and U+0323 COMBINING DOT BELOW
+; give U+1EA0 LATIN CAPITAL LETTER A WITH DOT BELOW
+; and U+030A COMBINING RING ABOVE.
+
+(test (equal (nfd '(#x00C5 #x0323) *v16*) '(#x0041 #x0323 #x030A)))
+(test (equal (nfc '(#x00C5 #x0323) *v16*) '(#x1EA0 #x030A)))
+(test (not (member-equal #x0041 (nfc '(#x00C5 #x0323) *v16*))))
+
+; U+226E NOT LESS-THAN is the less-than sign and a mark, and stays composed.
+
+(test (equal (nfd '(#x226E) *v16*) '(#x003C #x0338)))
+(test (equal (nfc '(#x226E) *v16*) '(#x226E)))
+
+; A letter that is in the list may not be in its form.
+
+(test (not (member-equal #x0041 (nfc '(#x0041 #x0300) *v16*))))
+
+; The letter K is in the form of U+212A KELVIN SIGN.
+
+(test (member-equal #x004B (nfc '(#x212A) *v17*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Being in a form, on the two sides of an inert code point.
+; Here the code point is a parenthesis;
+; what is before it is in Normalization Form C in the first list
+; and not in the second one.
+
+(test (nfc-memberp '(#x00E9 #x0028 #x0073) *v16*))
+(test (not (nfc-memberp '(#x0065 #x0301 #x0028 #x0073) *v16*)))
+(test (nfd-memberp '(#x0065 #x0301 #x0028 #x0073) *v16*))
+(test (not (nfd-memberp '(#x0065 #x0301 #x0028 #x00E9) *v16*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The Stream-Safe Text Format and the normalization forms.
+
+; Normalizing does not change whether text is in the format.
+; U+00E1 LATIN SMALL LETTER A WITH ACUTE and 30 more acute accents
+; are 31 non-starters in a row in Normalization Form KD.
+
+(test (not (stream-safe-p (cons #x00E1 (make-list 30 :initial-element #x0301))
+                          *v16*)))
+(test (not (stream-safe-p
+            (nfd (cons #x00E1 (make-list 30 :initial-element #x0301)) *v16*)
+            *v16*)))
+(test (not (stream-safe-p
+            (nfkc (cons #x00E1 (make-list 30 :initial-element #x0301)) *v16*)
+            *v16*)))
+
+; The process keeps text in its normalization form.
+; This list is in Normalization Forms C and KC, and so is the result;
+; its decomposed form is in Normalization Forms D and KD,
+; and so is the result for it.
+
+(test (nfc-memberp (cons #x00E1 (make-list 30 :initial-element #x0301))
+                   *v16*))
+(test (equal (stream-safe-process
+              (cons #x00E1 (make-list 30 :initial-element #x0301))
+              *v16*)
+             (append (cons #x00E1 (make-list 29 :initial-element #x0301))
+                     (list #x034F #x0301))))
+(test (nfc-memberp (stream-safe-process
+                    (cons #x00E1 (make-list 30 :initial-element #x0301))
+                    *v16*)
+                   *v16*))
+(test (nfkc-memberp (stream-safe-process
+                     (cons #x00E1 (make-list 30 :initial-element #x0301))
+                     *v16*)
+                    *v16*))
+(test (nfd-memberp (stream-safe-process
+                    (cons #x0061 (make-list 31 :initial-element #x0301))
+                    *v16*)
+                   *v16*))
+(test (nfkd-memberp (stream-safe-process
+                     (cons #x0061 (make-list 31 :initial-element #x0301))
+                     *v16*)
+                    *v16*))

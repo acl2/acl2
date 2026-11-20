@@ -240,10 +240,13 @@
      There is a theorem for each of the four forms,
      for an inert code point between two lists.
      From it we get the case of an inert code point at the start of a list,
-     the fact that an inert code point alone is in each of the four forms,
-     and the fact that two lists that are in a form
-     are still in that form when they are put together
-     with an inert code point between them."))
+     and the fact that an inert code point alone is in each of the four forms.")
+   (xdoc::p
+    "A list that has an inert code point in it is in a form
+     exactly when what is before the code point is in that form
+     and what is after it is in that form.
+     So text whose delimiters are inert is in a normalization form
+     exactly when every piece between two delimiters is."))
 
   (defrule nfd-of-append-of-cons-when-normalization-inert-p
     (implies (normalization-inert-p cp ver)
@@ -363,33 +366,209 @@
                     (nfkc-memberp cps ver)))
     :enable nfkc-memberp)
 
-  (defrule nfd-memberp-of-append-of-cons-when-normalization-inert-p
+  ;; An inert code point between two lists.
+  ;; A list that has an inert code point in it is in a form
+  ;; exactly when what is before the code point and what is after it are.
+  ;; One direction follows from the theorems above.
+  ;; For the other one, suppose that the form of the first list,
+  ;; the code point, and the form of the second list
+  ;; make up the same list as the first list, the code point, the second list.
+  ;; If the form of the first list were shorter than the first list,
+  ;; the first list would start with its form followed by the code point;
+  ;; then its form would start with the form of its form,
+  ;; which is its form, followed by the code point,
+  ;; so it would be longer than itself.
+  ;; If it were longer, we would reach the same conclusion
+  ;; with the form of the first list in the place of the first list.
+  ;; So the two have the same length, and the rest follows.
+
+  (local
+   (define two-lists-induct (x u)
+     :returns (irrelevant null)
+     (if (or (atom x) (atom u))
+         nil
+       (two-lists-induct (cdr x) (cdr u)))
+     :hooks nil))
+
+  (defruledl append-of-cons-of-nthcdr-when-prefix
+    (implies (and (equal (append x (cons d y)) (append u z))
+                  (< (len x) (len u))
+                  (true-listp u))
+             (equal (append x (cons d (nthcdr (+ 1 (len x)) u)))
+                    u))
+    :induct (two-lists-induct x u)
+    :enable (two-lists-induct
+             append
+             nthcdr
+             len))
+
+  (defrulel equal-of-appends-when-same-len
+    (implies (and (not (< (len x) (len u)))
+                  (not (< (len u) (len x)))
+                  (true-listp x)
+                  (true-listp u))
+             (equal (equal (append x y) (append u v))
+                    (and (equal x u)
+                         (equal y v))))
+    :induct (two-lists-induct x u)
+    :enable (two-lists-induct
+             append
+             len))
+
+  (defrulel not-equal-of-append-of-cons-and-self
+    (and (not (equal (append x (cons a y)) x))
+         (not (equal x (append x (cons a y)))))
+    :induct (len x)
+    :enable (append
+             len))
+
+  (defrulel nfd-when-prefix-with-inert
     (implies (and (normalization-inert-p cp ver)
-                  (nfd-memberp cps1 ver)
-                  (nfd-memberp cps2 ver))
-             (nfd-memberp (append cps1 (cons cp cps2)) ver))
-    :enable nfd-memberp)
+                  (equal (append x (cons cp y)) (append u z))
+                  (< (len x) (len u))
+                  (true-listp u))
+             (equal (nfd u ver)
+                    (append (nfd x ver)
+                            (cons (code-point-fix cp)
+                                  (nfd (nthcdr (+ 1 (len x)) u) ver)))))
+    :rule-classes nil
+    :enable append-of-cons-of-nthcdr-when-prefix
+    :disable nfd-of-append-of-cons-when-normalization-inert-p
+    :use (:instance nfd-of-append-of-cons-when-normalization-inert-p
+                    (cps1 x)
+                    (cps2 (nthcdr (+ 1 (len x)) u))))
+
+  (defrule nfd-memberp-of-append-of-cons-when-normalization-inert-p
+    (implies (normalization-inert-p cp ver)
+             (equal (nfd-memberp (append cps1 (cons cp cps2)) ver)
+                    (and (nfd-memberp cps1 ver)
+                         (nfd-memberp cps2 ver))))
+    :enable nfd-memberp
+    :use ((:instance nfd-when-prefix-with-inert
+                     (x (nfd cps1 ver))
+                     (cp (code-point-fix cp))
+                     (y (nfd cps2 ver))
+                     (u (code-point-list-fix cps1))
+                     (z (cons (code-point-fix cp)
+                              (code-point-list-fix cps2))))
+          (:instance nfd-when-prefix-with-inert
+                     (x (code-point-list-fix cps1))
+                     (cp (code-point-fix cp))
+                     (y (code-point-list-fix cps2))
+                     (u (nfd cps1 ver))
+                     (z (cons (code-point-fix cp)
+                              (nfd cps2 ver))))))
+
+  (defrulel nfc-when-prefix-with-inert
+    (implies (and (normalization-inert-p cp ver)
+                  (equal (append x (cons cp y)) (append u z))
+                  (< (len x) (len u))
+                  (true-listp u))
+             (equal (nfc u ver)
+                    (append (nfc x ver)
+                            (cons (code-point-fix cp)
+                                  (nfc (nthcdr (+ 1 (len x)) u) ver)))))
+    :rule-classes nil
+    :enable append-of-cons-of-nthcdr-when-prefix
+    :disable nfc-of-append-of-cons-when-normalization-inert-p
+    :use (:instance nfc-of-append-of-cons-when-normalization-inert-p
+                    (cps1 x)
+                    (cps2 (nthcdr (+ 1 (len x)) u))))
 
   (defrule nfc-memberp-of-append-of-cons-when-normalization-inert-p
+    (implies (normalization-inert-p cp ver)
+             (equal (nfc-memberp (append cps1 (cons cp cps2)) ver)
+                    (and (nfc-memberp cps1 ver)
+                         (nfc-memberp cps2 ver))))
+    :enable nfc-memberp
+    :use ((:instance nfc-when-prefix-with-inert
+                     (x (nfc cps1 ver))
+                     (cp (code-point-fix cp))
+                     (y (nfc cps2 ver))
+                     (u (code-point-list-fix cps1))
+                     (z (cons (code-point-fix cp)
+                              (code-point-list-fix cps2))))
+          (:instance nfc-when-prefix-with-inert
+                     (x (code-point-list-fix cps1))
+                     (cp (code-point-fix cp))
+                     (y (code-point-list-fix cps2))
+                     (u (nfc cps1 ver))
+                     (z (cons (code-point-fix cp)
+                              (nfc cps2 ver))))))
+
+  (defrulel nfkd-when-prefix-with-inert
     (implies (and (normalization-inert-p cp ver)
-                  (nfc-memberp cps1 ver)
-                  (nfc-memberp cps2 ver))
-             (nfc-memberp (append cps1 (cons cp cps2)) ver))
-    :enable nfc-memberp)
+                  (equal (append x (cons cp y)) (append u z))
+                  (< (len x) (len u))
+                  (true-listp u))
+             (equal (nfkd u ver)
+                    (append (nfkd x ver)
+                            (cons (code-point-fix cp)
+                                  (nfkd (nthcdr (+ 1 (len x)) u) ver)))))
+    :rule-classes nil
+    :enable append-of-cons-of-nthcdr-when-prefix
+    :disable nfkd-of-append-of-cons-when-normalization-inert-p
+    :use (:instance nfkd-of-append-of-cons-when-normalization-inert-p
+                    (cps1 x)
+                    (cps2 (nthcdr (+ 1 (len x)) u))))
 
   (defrule nfkd-memberp-of-append-of-cons-when-normalization-inert-p
+    (implies (normalization-inert-p cp ver)
+             (equal (nfkd-memberp (append cps1 (cons cp cps2)) ver)
+                    (and (nfkd-memberp cps1 ver)
+                         (nfkd-memberp cps2 ver))))
+    :enable nfkd-memberp
+    :use ((:instance nfkd-when-prefix-with-inert
+                     (x (nfkd cps1 ver))
+                     (cp (code-point-fix cp))
+                     (y (nfkd cps2 ver))
+                     (u (code-point-list-fix cps1))
+                     (z (cons (code-point-fix cp)
+                              (code-point-list-fix cps2))))
+          (:instance nfkd-when-prefix-with-inert
+                     (x (code-point-list-fix cps1))
+                     (cp (code-point-fix cp))
+                     (y (code-point-list-fix cps2))
+                     (u (nfkd cps1 ver))
+                     (z (cons (code-point-fix cp)
+                              (nfkd cps2 ver))))))
+
+  (defrulel nfkc-when-prefix-with-inert
     (implies (and (normalization-inert-p cp ver)
-                  (nfkd-memberp cps1 ver)
-                  (nfkd-memberp cps2 ver))
-             (nfkd-memberp (append cps1 (cons cp cps2)) ver))
-    :enable nfkd-memberp)
+                  (equal (append x (cons cp y)) (append u z))
+                  (< (len x) (len u))
+                  (true-listp u))
+             (equal (nfkc u ver)
+                    (append (nfkc x ver)
+                            (cons (code-point-fix cp)
+                                  (nfkc (nthcdr (+ 1 (len x)) u) ver)))))
+    :rule-classes nil
+    :enable append-of-cons-of-nthcdr-when-prefix
+    :disable nfkc-of-append-of-cons-when-normalization-inert-p
+    :use (:instance nfkc-of-append-of-cons-when-normalization-inert-p
+                    (cps1 x)
+                    (cps2 (nthcdr (+ 1 (len x)) u))))
 
   (defrule nfkc-memberp-of-append-of-cons-when-normalization-inert-p
-    (implies (and (normalization-inert-p cp ver)
-                  (nfkc-memberp cps1 ver)
-                  (nfkc-memberp cps2 ver))
-             (nfkc-memberp (append cps1 (cons cp cps2)) ver))
-    :enable nfkc-memberp))
+    (implies (normalization-inert-p cp ver)
+             (equal (nfkc-memberp (append cps1 (cons cp cps2)) ver)
+                    (and (nfkc-memberp cps1 ver)
+                         (nfkc-memberp cps2 ver))))
+    :enable nfkc-memberp
+    :use ((:instance nfkc-when-prefix-with-inert
+                     (x (nfkc cps1 ver))
+                     (cp (code-point-fix cp))
+                     (y (nfkc cps2 ver))
+                     (u (code-point-list-fix cps1))
+                     (z (cons (code-point-fix cp)
+                              (code-point-list-fix cps2))))
+          (:instance nfkc-when-prefix-with-inert
+                     (x (code-point-list-fix cps1))
+                     (cp (code-point-fix cp))
+                     (y (code-point-list-fix cps2))
+                     (u (nfkc cps1 ver))
+                     (z (cons (code-point-fix cp)
+                              (nfkc cps2 ver)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
