@@ -123,6 +123,16 @@
      and compatibility equivalents
      exactly when they have the same NFKC form.")
    (xdoc::p
+    "Some code points are left alone by the four forms,
+     and split the text in parts that are normalized separately;
+     the ASCII digits, the space and most ASCII punctuation are such.
+     See @(see normalization-inert-code-points),
+     and @(see normalization-members) for where
+     certain code points of a normalized text come from.
+     These are in books of their own,
+     and so is the Stream-Safe Text Format of [UAX #15, Section 13]:
+     see @(see stream-safe).")
+   (xdoc::p
     "The functions are validated in two ways,
      neither of which is a proof:
      by running the whole of the conformance test

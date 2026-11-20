@@ -523,3 +523,200 @@
 (test (not (pattern-syntax-p (char-code #\_) *v16*)))
 (test (not (pattern-syntax-p (char-code #\a) *v16*)))
 (test (not (pattern-syntax-p (char-code #\Space) *v16*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The compact way of writing a list of runs of General_Category:
+; each triple becomes a run built by the typed constructors.
+
+(test (equal (general-category-run-table
+              (#x0041 #x005A "Lu")
+              (#x005B #x005B "Ps"))
+             (list (general-category-run #x0041
+                                         #x005A
+                                         (general-category-uppercase-letter))
+                   (general-category-run #x005B
+                                         #x005B
+                                         (general-category-open-punctuation)))))
+(test (general-category-run-listp
+       (general-category-run-table (#x0000 #x001F "Cc") (#x0020 #x0020 "Zs"))))
+(test (equal (general-category-run-table) nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The code points that compose with others.
+
+; The letter s composes with a combining mark after it;
+; U+0307 COMBINING DOT ABOVE composes with a letter before it.
+; The letter q composes with nothing, and neither does a parenthesis.
+; The equals sign composes with U+0338 COMBINING LONG SOLIDUS OVERLAY.
+
+(test (composes-with-following-p #x0073 *v16*))
+(test (not (composes-with-previous-p #x0073 *v16*)))
+(test (composes-with-previous-p #x0307 *v16*))
+(test (not (composes-with-following-p #x0071 *v16*)))
+(test (not (composes-with-following-p #x0028 *v16*)))
+(test (composes-with-following-p #x003D *v16*))
+(test (composes-with-previous-p #x0338 *v16*))
+(test (equal (composition #x003D #x0338 *v16*) #x2260))
+
+; A composite can compose again:
+; U+1E63 LATIN SMALL LETTER S WITH DOT BELOW composes with U+0307.
+
+(test (composes-with-following-p #x1E63 *v16*))
+
+; Hangul: a leading consonant and an LV syllable compose with what follows;
+; a vowel and a trailing consonant compose with what precedes;
+; an LVT syllable composes with nothing.
+
+(test (composes-with-following-p #x1112 *v16*))
+(test (composes-with-following-p #xD558 *v16*))
+(test (composes-with-previous-p #x1161 *v16*))
+(test (composes-with-previous-p #x11AB *v16*))
+(test (not (composes-with-following-p #xD55C *v16*)))
+(test (not (composes-with-previous-p #xD55C *v16*)))
+
+; The sets of the first and of the second code points of the pairs
+; that compose to primary composites have the same sizes in the three versions.
+
+(test (equal (treeset::cardinality (canonical-composition-firsts *v16*)) 391))
+(test (equal (treeset::cardinality (canonical-composition-firsts *v17*)) 391))
+(test (equal (treeset::cardinality (canonical-composition-firsts *v18*)) 391))
+(test (equal (treeset::cardinality (canonical-composition-seconds *v16*)) 72))
+(test (equal (treeset::cardinality (canonical-composition-seconds *v17*)) 72))
+(test (equal (treeset::cardinality (canonical-composition-seconds *v18*)) 72))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Code points that are inert under normalization.
+
+; ASCII punctuation, digits and the space are inert,
+; except for the three characters < = >.
+; Of the ASCII letters, only Q and q are.
+
+(test (normalization-inert-p #x0028 *v16*))
+(test (normalization-inert-p #x003B *v16*))
+(test (normalization-inert-p #x0030 *v16*))
+(test (normalization-inert-p #x0020 *v16*))
+(test (not (normalization-inert-p #x003D *v16*)))
+(test (not (normalization-inert-p #x0041 *v16*)))
+(test (normalization-inert-p #x0051 *v16*))
+(test (normalization-inert-p #x0071 *v16*))
+
+; U+2028 LINE SEPARATOR and U+200B ZERO WIDTH SPACE are inert.
+; U+00A0 NO-BREAK SPACE and U+3000 IDEOGRAPHIC SPACE are not:
+; they have compatibility decompositions.
+; A combining mark is not: it is not a starter.
+; The Hangul jamo and syllables are not.
+
+(test (normalization-inert-p #x2028 *v16*))
+(test (normalization-inert-p #x200B *v16*))
+(test (not (normalization-inert-p #x00A0 *v16*)))
+(test (not (normalization-inert-p #x3000 *v16*)))
+(test (not (normalization-inert-p #x0301 *v16*)))
+(test (not (normalization-inert-p #x1112 *v16*)))
+(test (not (normalization-inert-p #xD55C *v16*)))
+
+; A code point that is not assigned is inert:
+; U+0558 before Unicode 18.0.0.
+
+(test (normalization-inert-p #x0558 *v17*))
+
+; What is before and what is after a parenthesis is normalized separately.
+; The equals sign is different: it composes with the mark after it.
+
+(test (equal (nfc '(#x0065 #x0301 #x0028 #x0073 #x0307 #x0323) *v16*)
+             (append (nfc '(#x0065 #x0301) *v16*)
+                     (list #x0028)
+                     (nfc '(#x0073 #x0307 #x0323) *v16*))))
+(test (equal (nfc '(#x0028 #x0338) *v16*) '(#x0028 #x0338)))
+(test (equal (nfc '(#x003D #x0338) *v16*) '(#x2260)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Where ASCII code points of the canonical forms come from.
+
+; U+037E GREEK QUESTION MARK becomes a semicolon,
+; U+1FEF GREEK VARIA becomes a grave accent,
+; and U+212A KELVIN SIGN becomes the letter K.
+
+(test (equal (nfc '(#x037E) *v16*) '(#x003B)))
+(test (equal (nfc '(#x1FEF) *v16*) '(#x0060)))
+(test (equal (nfc '(#x212A) *v16*) '(#x004B)))
+(test (equal (nfd '(#x037E) *v18*) '(#x003B)))
+
+; The letter A comes out of U+00C0 LATIN CAPITAL LETTER A WITH GRAVE
+; in NFD, and not in NFC.
+
+(test (member-equal #x0041 (nfd '(#x00C0) *v16*)))
+(test (not (member-equal #x0041 (nfc '(#x00C0) *v16*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The code points that the composed forms change.
+
+; U+00A0 NO-BREAK SPACE is changed by NFKC and not by NFC.
+; U+037E GREEK QUESTION MARK is changed by both.
+; U+00C5 LATIN CAPITAL LETTER A WITH RING ABOVE is changed by neither.
+; These are the code points whose quick check value is `no'.
+
+(test (nfkc-changes-p #x00A0 *v16*))
+(test (not (nfc-changes-p #x00A0 *v16*)))
+(test (nfc-changes-p #x037E *v16*))
+(test (nfkc-changes-p #x037E *v16*))
+(test (not (nfc-changes-p #x00C5 *v16*)))
+(test (not (nfkc-changes-p #x00C5 *v16*)))
+(test (quick-check-value-case (nfkc-quick-check #x00A0 *v16*) :no))
+(test (quick-check-value-case (nfc-quick-check #x00A0 *v16*) :yes))
+
+; A combining mark alone is not changed, although its value is `maybe'.
+
+(test (not (nfc-changes-p #x0301 *v16*)))
+(test (quick-check-value-case (nfc-quick-check #x0301 *v16*) :maybe))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The Stream-Safe Text Format.
+
+; A letter followed by 30 combining marks is in the format;
+; with 31 marks it is not,
+; and the process puts U+034F COMBINING GRAPHEME JOINER before the last one.
+
+(test (stream-safe-p (cons #x0061 (make-list 30 :initial-element #x0301))
+                     *v16*))
+(test (not (stream-safe-p (cons #x0061
+                                (make-list 31 :initial-element #x0301))
+                          *v16*)))
+(test (equal (stream-safe-process
+              (cons #x0061 (make-list 31 :initial-element #x0301))
+              *v16*)
+             (append (cons #x0061 (make-list 30 :initial-element #x0301))
+                     (list #x034F #x0301))))
+(test (stream-safe-p (stream-safe-process
+                      (cons #x0061 (make-list 100 :initial-element #x0301))
+                      *v16*)
+                     *v16*))
+
+; The count is taken in Normalization Form KD.
+; U+0F73 TIBETAN VOWEL SIGN II is a starter,
+; but its decomposition is two non-starters.
+; So 15 of them in a row are in the format, and 16 are not;
+; the process puts the joiner before the sixteenth.
+
+(test (starter-p #x0F73 *v16*))
+(test (equal (decomposition #x0F73 t *v16*) '(#x0F71 #x0F72)))
+(test (not (starter-p #x0F71 *v16*)))
+(test (not (starter-p #x0F72 *v16*)))
+(test (stream-safe-p (make-list 15 :initial-element #x0F73) *v16*))
+(test (not (stream-safe-p (make-list 16 :initial-element #x0F73) *v16*)))
+(test (equal (stream-safe-process (make-list 16 :initial-element #x0F73)
+                                  *v16*)
+             (append (make-list 15 :initial-element #x0F73)
+                     (list #x034F #x0F73))))
+
+; ASCII text is in the format, and the process leaves it alone.
+
+(test (stream-safe-p '(#x66 #x6F #x6F) *v17*))
+(test (equal (stream-safe-process '(#x66 #x6F #x6F) *v17*)
+             '(#x66 #x6F #x6F)))
+(test (equal (stream-safe-process nil *v18*) nil))

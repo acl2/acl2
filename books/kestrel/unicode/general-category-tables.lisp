@@ -423,6 +423,97 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection general-category-run-table
+  :short "Write a list of runs compactly."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The generated tables have some four thousand runs each.
+     So that they are short to write and easy to compare
+     with the files of the Unicode Character Database,
+     each run is written as a triple
+     of the minimum code point, the maximum code point,
+     and the two-letter abbreviation of the value, as a string:")
+   (xdoc::codeblock
+    "(general-category-run-table"
+    " (#x0041 #x005A \"Lu\")"
+    " (#x005B #x005B \"Ps\"))")
+   (xdoc::p
+    "This macro expands to a call of @('list')
+     on one call of the constructor of runs for each triple,
+     with the constructor of the value
+     that the abbreviation stands for:")
+   (xdoc::codeblock
+    "(list (general-category-run #x0041 #x005A"
+    "                            (general-category-uppercase-letter))"
+    "      (general-category-run #x005B #x005B"
+    "                            (general-category-open-punctuation)))")
+   (xdoc::p
+    "So the list is built by the typed constructors,
+     and it is a list of runs by construction.
+     A triple that is not of this form,
+     or whose string is not one of the thirty abbreviations
+     (see @(tsee general-category-abbreviation)),
+     is an error when the macro is expanded."))
+
+  (defconst *general-category-constructors*
+    '(("Lu" . general-category-uppercase-letter)
+      ("Ll" . general-category-lowercase-letter)
+      ("Lt" . general-category-titlecase-letter)
+      ("Lm" . general-category-modifier-letter)
+      ("Lo" . general-category-other-letter)
+      ("Mn" . general-category-nonspacing-mark)
+      ("Mc" . general-category-spacing-mark)
+      ("Me" . general-category-enclosing-mark)
+      ("Nd" . general-category-decimal-number)
+      ("Nl" . general-category-letter-number)
+      ("No" . general-category-other-number)
+      ("Pc" . general-category-connector-punctuation)
+      ("Pd" . general-category-dash-punctuation)
+      ("Ps" . general-category-open-punctuation)
+      ("Pe" . general-category-close-punctuation)
+      ("Pi" . general-category-initial-punctuation)
+      ("Pf" . general-category-final-punctuation)
+      ("Po" . general-category-other-punctuation)
+      ("Sm" . general-category-math-symbol)
+      ("Sc" . general-category-currency-symbol)
+      ("Sk" . general-category-modifier-symbol)
+      ("So" . general-category-other-symbol)
+      ("Zs" . general-category-space-separator)
+      ("Zl" . general-category-line-separator)
+      ("Zp" . general-category-paragraph-separator)
+      ("Cc" . general-category-control)
+      ("Cf" . general-category-format)
+      ("Cs" . general-category-surrogate)
+      ("Co" . general-category-private-use)
+      ("Cn" . general-category-unassigned)))
+
+  (define general-category-run-table-forms ((triples true-listp))
+    :returns (forms true-listp)
+    :parents nil
+    (b* (((when (endp triples)) nil)
+         (triple (car triples))
+         ((unless (and (true-listp triple)
+                       (equal (len triple) 3)))
+          (er hard? 'general-category-run-table
+              "~x0 is not a triple." triple))
+         (constructor
+          (cdr (assoc-equal (third triple) *general-category-constructors*)))
+         ((unless constructor)
+          (er hard? 'general-category-run-table
+              "~x0 is not the abbreviation of a General_Category."
+              (third triple))))
+      (cons `(general-category-run ,(first triple)
+                                   ,(second triple)
+                                   (,constructor))
+            (general-category-run-table-forms (cdr triples))))
+    :hooks nil)
+
+  (defmacro general-category-run-table (&rest triples)
+    `(list ,@(general-category-run-table-forms triples))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define general-category-run-list-lookup ((cp code-point-p)
                                           (runs general-category-run-listp))
   :returns (gc general-category-p)
