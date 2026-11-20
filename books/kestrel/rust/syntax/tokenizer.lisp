@@ -301,7 +301,7 @@
            ((fty::okf content)
             (code-points-to-utf-8-string (nthcdr 3 nats))))
         (lexeme-token (token-doc-comment (doc-style-inner) nil content))))
-     ((equal rulename? "plain-block-comment")
+     ((equal rulename? "block-comment")
       (b* (((unless (and (>= (len nats) 4)
                          (prefixp (list #x2f #x2a) nats))) ; /* ... */
             (reserrf (list :no-block-comment-markers nats)))

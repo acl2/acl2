@@ -4931,21 +4931,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines lex-block-comment-fns
+(defines lex-block-comment-or-doc-fns
   :short "Lexing functions for (nested) block comments."
   :long
   (xdoc::topstring
    (xdoc::p
     "Rust block comments nest,
      so these functions are mutually recursive:
-     a @('block-comment') contains @('block-item')s,
-     and a @('block-item') may be a @('block-comment').
-     The rule @('block-comment') is for a block comment of any kind,
+     a @('block-comment-or-doc') contains @('block-item')s,
+     and a @('block-item') may be a @('block-comment-or-doc').
+     The rule @('block-comment-or-doc')
+     is for a block comment of any kind,
      as it occurs nested in another.
      The block comments that are lexemes,
      plain ones and doc comments, have rules of their own,
      which also use @('block-item');
-     see @(tsee lex-plain-block-comment),
+     see @(tsee lex-block-comment),
      @(tsee lex-outer-block-doc), and @(tsee lex-inner-block-doc).
      An item that starts with @('/*') is always a nested comment,
      as in rustc.
@@ -4965,7 +4966,7 @@
      the length theorems are available."))
   :verify-guards nil
 
-  (define lex-block-comment ((input nat-listp))
+  (define lex-block-comment-or-doc ((input nat-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (rest-input nat-listp))
     :measure (acl2::two-nats-measure (len input) 0)
@@ -4978,7 +4979,7 @@
           (mv (reserrf (list :unclosed-block-comment))
               (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
-           :rulename? (abnf::rulename "block-comment")
+           :rulename? (abnf::rulename "block-comment-or-doc")
            :branches (list (list tree-open)
                            trees-items
                            (list tree-close)))
@@ -4990,7 +4991,7 @@
     :measure (acl2::two-nats-measure (len input) 1)
     (b* ((input (nat-list-fix input))
          ((when (prefixp (list #x2f #x2a) input)) ; starts with /*
-          (b* (((mv tree input1) (lex-block-comment input))
+          (b* (((mv tree input1) (lex-block-comment-or-doc input))
                ((when (reserrp tree)) (mv (reserrf-push tree) input)))
             (mv (abnf::make-tree-nonleaf
                  :rulename? (abnf::rulename "block-item")
@@ -5032,11 +5033,11 @@
 
   ///
 
-  (std::defret-mutual len-of-lex-block-comment-fns-<=
-    (defret len-of-lex-block-comment-<=
+  (std::defret-mutual len-of-lex-block-comment-or-doc-fns-<=
+    (defret len-of-lex-block-comment-or-doc-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear
-      :fn lex-block-comment)
+      :fn lex-block-comment-or-doc)
     (defret len-of-lex-block-item-<=
       (<= (len rest-input) (len input))
       :rule-classes :linear
@@ -5046,19 +5047,19 @@
       :rule-classes :linear
       :fn lex-*-block-item)
     :hints (("Goal"
-             :expand ((lex-block-comment input)
+             :expand ((lex-block-comment-or-doc input)
                       (lex-block-item input)
                       (lex-*-block-item input))
-             :in-theory (enable lex-block-comment
+             :in-theory (enable lex-block-comment-or-doc
                                 lex-block-item
                                 lex-*-block-item))))
 
-  (std::defret-mutual len-of-lex-block-comment-fns-<
-    (defret len-of-lex-block-comment-<
+  (std::defret-mutual len-of-lex-block-comment-or-doc-fns-<
+    (defret len-of-lex-block-comment-or-doc-<
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
       :rule-classes :linear
-      :fn lex-block-comment)
+      :fn lex-block-comment-or-doc)
     (defret len-of-lex-block-item-<
       (implies (not (reserrp tree))
                (< (len rest-input) (len input)))
@@ -5069,21 +5070,21 @@
       :rule-classes nil
       :fn lex-*-block-item)
     :hints (("Goal"
-             :expand ((lex-block-comment input)
+             :expand ((lex-block-comment-or-doc input)
                       (lex-block-item input)
                       (lex-*-block-item input))
-             :in-theory (enable lex-block-comment
+             :in-theory (enable lex-block-comment-or-doc
                                 lex-block-item
                                 lex-*-block-item))))
 
-  (verify-guards lex-block-comment)
+  (verify-guards lex-block-comment-or-doc)
 
-  (std::defret-mutual input-decomposition-of-lex-block-comment-fns
-    (defret input-decomposition-of-lex-block-comment
+  (std::defret-mutual input-decomposition-of-lex-block-comment-or-doc-fns
+    (defret input-decomposition-of-lex-block-comment-or-doc
       (implies (not (reserrp tree))
                (equal (append (abnf::tree->string tree) rest-input)
                       (nat-list-fix input)))
-      :fn lex-block-comment)
+      :fn lex-block-comment-or-doc)
     (defret input-decomposition-of-lex-block-item
       (implies (not (reserrp tree))
                (equal (append (abnf::tree->string tree) rest-input)
@@ -5094,10 +5095,10 @@
              (nat-list-fix input))
       :fn lex-*-block-item)
     :hints (("Goal"
-             :expand ((lex-block-comment input)
+             :expand ((lex-block-comment-or-doc input)
                       (lex-block-item input)
                       (lex-*-block-item input))
-             :in-theory (enable lex-block-comment
+             :in-theory (enable lex-block-comment-or-doc
                                 lex-block-item
                                 lex-*-block-item
                                 input-decomposition-of-parse-ichars
@@ -5105,11 +5106,11 @@
                                        abnf::tree-list->string
                                        abnf::tree-list-list->string))))
 
-  (std::defret-mutual cst-matchp-of-lex-block-comment-fns
-    (defret cst-matchp-of-lex-block-comment
+  (std::defret-mutual cst-matchp-of-lex-block-comment-or-doc-fns
+    (defret cst-matchp-of-lex-block-comment-or-doc
       (implies (not (reserrp tree))
-               (cst-matchp tree "block-comment"))
-      :fn lex-block-comment)
+               (cst-matchp tree "block-comment-or-doc"))
+      :fn lex-block-comment-or-doc)
     (defret cst-matchp-of-lex-block-item
       (implies (not (reserrp tree))
                (cst-matchp tree "block-item"))
@@ -5118,11 +5119,11 @@
       (cst-list-elem-matchp trees "block-item")
       :fn lex-*-block-item)
     :hints (("Goal"
-             :expand ((lex-block-comment input)
+             :expand ((lex-block-comment-or-doc input)
                       (lex-block-item input)
                       (lex-*-block-item input))
              :in-theory
-             (enable lex-block-comment
+             (enable lex-block-comment-or-doc
                      lex-block-item
                      lex-*-block-item
                      cst-matchp
@@ -5142,11 +5143,11 @@
                      abnf::tree-list-match-element-p
                      abnf::numrep-match-repeat-range-p))))
 
-  (defret tree-terminatedp-of-lex-block-comment
+  (defret tree-terminatedp-of-lex-block-comment-or-doc
     (implies (not (reserrp tree))
              (abnf::tree-terminatedp tree))
-    :fn lex-block-comment
-    :hints (("Goal" :use cst-matchp-of-lex-block-comment
+    :fn lex-block-comment-or-doc
+    :hints (("Goal" :use cst-matchp-of-lex-block-comment-or-doc
                     :in-theory (enable cst-matchp))))
 
   (defret tree-terminatedp-of-lex-block-item
@@ -5188,7 +5189,7 @@
      otherwise @('**')."))
   (b* ((input (nat-list-fix input))
        ((when (prefixp (list #x2f #x2a) input)) ; /*
-        (b* (((mv tree input1) (lex-block-comment input))
+        (b* (((mv tree input1) (lex-block-comment-or-doc input))
              ((when (reserrp tree)) (mv (reserrf-push tree) input)))
           (mv (abnf::make-tree-nonleaf
                :rulename? (abnf::rulename "block-first-item")
@@ -5236,7 +5237,7 @@
                      tree-match-element-p-when-cst-matchp$
                      tree-match-of-parse-ichars-elem
                      tree-terminatedp-of-parse-ichars
-                     tree-terminatedp-of-lex-block-comment
+                     tree-terminatedp-of-lex-block-comment-or-doc
                      tree-terminatedp-of-lex-not-star-bang
                      abnf::tree-terminatedp
                      abnf::tree-list-terminatedp
@@ -5255,10 +5256,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-plain-block-comment ((input nat-listp))
+(define lex-block-comment ((input nat-listp))
   :returns (mv (tree abnf::tree-resultp)
                (rest-input nat-listp))
-  :short "Lex a @('plain-block-comment')."
+  :short "Lex a @('block-comment')."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -5270,17 +5271,17 @@
      as the first item and go on past the @('/').
      In the general form, the items after the first one
      are lexed as in every block comment
-     (see @(tsee lex-block-comment-fns))."))
+     (see @(tsee lex-block-comment-or-doc-fns))."))
   (b* (((mv tree input1) (abnf::parse-ichars "/**/" input))
        ((when (not (reserrp tree)))
         (mv (abnf::make-tree-nonleaf
-             :rulename? (abnf::rulename "plain-block-comment")
+             :rulename? (abnf::rulename "block-comment")
              :branches (list (list tree)))
             input1))
        ((mv tree input1) (abnf::parse-ichars "/***/" input))
        ((when (not (reserrp tree)))
         (mv (abnf::make-tree-nonleaf
-             :rulename? (abnf::rulename "plain-block-comment")
+             :rulename? (abnf::rulename "block-comment")
              :branches (list (list tree)))
             input1))
        ((mv tree1 input1) (abnf::parse-ichars "/*" input))
@@ -5295,21 +5296,21 @@
         (mv (reserrf (list :unclosed-block-comment))
             (nat-list-fix input))))
     (mv (abnf::make-tree-nonleaf
-         :rulename? (abnf::rulename "plain-block-comment")
+         :rulename? (abnf::rulename "block-comment")
          :branches (list (list tree1) (list tree2) trees3 (list tree4)))
         input4))
   ///
 
-  (defret len-of-lex-plain-block-comment-<=
+  (defret len-of-lex-block-comment-<=
     (<= (len rest-input) (len input))
     :rule-classes :linear)
 
-  (defret len-of-lex-plain-block-comment-<
+  (defret len-of-lex-block-comment-<
     (implies (not (reserrp tree))
              (< (len rest-input) (len input)))
     :rule-classes :linear)
 
-  (defret input-decomposition-of-lex-plain-block-comment
+  (defret input-decomposition-of-lex-block-comment
     (implies (not (reserrp tree))
              (equal (append (abnf::tree->string tree) rest-input)
                     (nat-list-fix input)))
@@ -5318,9 +5319,9 @@
                                        abnf::tree-list->string
                                        abnf::tree-list-list->string))))
 
-  (defret cst-matchp-of-lex-plain-block-comment
+  (defret cst-matchp-of-lex-block-comment
     (implies (not (reserrp tree))
-             (cst-matchp tree "plain-block-comment"))
+             (cst-matchp tree "block-comment"))
     :hints (("Goal"
              :in-theory
              (enable cst-matchp
@@ -5339,10 +5340,10 @@
                      abnf::tree-list-match-element-p
                      abnf::numrep-match-repeat-range-p))))
 
-  (defret tree-terminatedp-of-lex-plain-block-comment
+  (defret tree-terminatedp-of-lex-block-comment
     (implies (not (reserrp tree))
              (abnf::tree-terminatedp tree))
-    :hints (("Goal" :use cst-matchp-of-lex-plain-block-comment
+    :hints (("Goal" :use cst-matchp-of-lex-block-comment
                     :in-theory (enable cst-matchp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5359,7 +5360,7 @@
      with a @('*') there the comment is a plain one,
      and a @('/') there ends the plain comment @('/**/').
      The remaining items are lexed as in every block comment
-     (see @(tsee lex-block-comment-fns))."))
+     (see @(tsee lex-block-comment-or-doc-fns))."))
   (b* (((mv tree1 input1) (abnf::parse-ichars "/**" input))
        ((when (reserrp tree1))
         (mv (reserrf-push tree1) (nat-list-fix input)))
@@ -5432,7 +5433,7 @@
   (xdoc::topstring
    (xdoc::p
     "After the @('/*!'), the items are lexed as in every block comment
-     (see @(tsee lex-block-comment-fns))."))
+     (see @(tsee lex-block-comment-or-doc-fns))."))
   (b* (((mv tree1 input1) (abnf::parse-ichars "/*!" input))
        ((when (reserrp tree1))
         (mv (reserrf-push tree1) (nat-list-fix input)))
@@ -5555,7 +5556,7 @@
                :branches (list (list tree)))
               input1)))
        ((when (prefixp (list #x2f #x2a) input)) ; /*
-        (b* (((mv tree input1) (lex-plain-block-comment input))
+        (b* (((mv tree input1) (lex-block-comment input))
              ((when (reserrp tree)) (mv (reserrf-push tree) input)))
           (mv (abnf::make-tree-nonleaf
                :rulename? (abnf::rulename "comment")
@@ -5613,7 +5614,7 @@
              (enable cst-matchp
                      tree-match-of-make-tree-nonleaf-elem
                      tree-match-element-p-when-cst-matchp$
-                     tree-terminatedp-of-lex-plain-block-comment
+                     tree-terminatedp-of-lex-block-comment
                      tree-terminatedp-of-lex-outer-block-doc
                      tree-terminatedp-of-lex-inner-block-doc
                      tree-terminatedp-of-lex-inner-line-doc

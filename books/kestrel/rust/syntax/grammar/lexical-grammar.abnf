@@ -200,7 +200,7 @@ whitespace-char = %x9 ; horizontal tab
 comment = line-comment
         / outer-line-doc
         / inner-line-doc
-        / plain-block-comment
+        / block-comment
         / outer-block-doc
         / inner-block-doc
 
@@ -221,11 +221,11 @@ inner-line-doc = "//!" *not-lf ; [SC3]
 ; The three rules follow BLOCK_COMMENT, OUTER_BLOCK_DOC, and
 ; INNER_BLOCK_DOC of [Reference; comments].
 
-plain-block-comment = "/*" block-first-item *block-item "*/" ; [SC2]
-                    / "/**/"
-                    / "/***/"
+block-comment = "/*" block-first-item *block-item "*/" ; [SC2]
+              / "/**/"
+              / "/***/"
 
-block-first-item = block-comment
+block-first-item = block-comment-or-doc
                  / not-star-bang
                  / "**"
 
@@ -233,13 +233,16 @@ outer-block-doc = "/**" not-star-slash *block-item "*/" ; [SC2] [SC3]
 
 inner-block-doc = "/*!" *block-item "*/" ; [SC2] [SC3]
 
-; Block comments nest: block-item includes block-comment,
-; which is a block comment of any of the three kinds.
+; Block comments nest: block-item includes block-comment-or-doc,
+; a block comment of any of the three kinds, nested in another.
+; In [Reference; comments], BlockCommentOrDoc is the choice of the
+; three rules above; here it is a single rule for all block comments,
+; since the kind of a nested comment makes no difference.
 ; The rules with block-item overapproximate: see [SC2].
 
-block-comment = "/*" *block-item "*/" ; [SC2]
+block-comment-or-doc = "/*" *block-item "*/" ; [SC2]
 
-block-item = block-comment
+block-item = block-comment-or-doc
            / not-star-slash
            / "*"
            / "/"
