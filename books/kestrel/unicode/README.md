@@ -39,8 +39,9 @@ validated.
 | Book | Contents |
 |------|----------|
 | `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
-| `versions` | The supported versions of Unicode, as a type. |
+| `versions` | The supported versions of Unicode, as a type, and the order in which they were released (`version<=`). |
 | `general-category` | `General_Category`: `code-point-general-category`, the ranges of the code points that have a value (`general-category-ranges`), and `assigned-p`. |
+| `general-category-changes` | The code points whose `General_Category` is not the same in two versions (`general-category-changes`), and those of them that are assigned in the first version (`general-category-changes-of-assigned`), as lists of ranges; the proof that in the supported versions the `General_Category` of an assigned code point is the same in every later version, with one exception, U+0295. |
 | `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31); the two optional characters for the start of an identifier, `$` and `_`. |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `pattern-syntax` | `Pattern_Syntax`. |
@@ -51,7 +52,7 @@ validated.
 | `noncharacters` | `Noncharacter_Code_Point`, with the proof that the tables are the 66 code points that the standard describes. |
 | `deprecated` | `Deprecated`. |
 | `prepended-concatenation-marks` | `Prepended_Concatenation_Mark`. |
-| `property-relations` | Theorems that relate properties to each other: a code point that is not a starter is a mark; variation selectors are nonspacing marks; bidirectional controls, join controls and variation selectors are default ignorable; noncharacters are unassigned; `Pattern_Syntax` is disjoint from `Pattern_White_Space` and from `XID_Continue`; and more. |
+| `property-relations` | Theorems that relate properties to each other: a code point that is not a starter is a mark; variation selectors are nonspacing marks; bidirectional controls, join controls and variation selectors are default ignorable; noncharacters are unassigned; `Pattern_Syntax` is disjoint from `Pattern_White_Space`, and both are disjoint from `XID_Continue`; and more. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
 | `combining-classes` | `Canonical_Combining_Class`. |
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
@@ -61,13 +62,15 @@ validated.
 | `normalization-inert` | `normalization-inert-p`: a starter with no decomposition that composes with nothing.  The proof that each of the four forms normalizes separately what is before and what is after such a code point, and leaves it as it is.  Which ASCII code points are inert; `Pattern_White_Space` code points are. |
 | `normalization-members` | Which code points can occur in a normalization form of a list: for an inert ASCII code point, exactly when it occurs in NFD and in NFC; and the proof that NFC brings in no ASCII code point, with three exceptions. |
 | `stream-safe` | The Stream-Safe Text Format (`stream-safe-p`) and the Stream-Safe Text Process (`stream-safe-process`) of UAX #15, with the proof that the process gives text in the format and leaves text in the format unchanged, and that normalizing does not change whether text is in the format. |
+| `normalization-across-versions` | The proof that the four normalization forms of a list of code points that are assigned in a version are the same in every later version (the normalization stability of the Unicode Standard), and so are the combining class and the decompositions of an assigned code point, and what two assigned code points compose to. |
 | `identifier-closure` | The proof that the four normalization forms take identifiers to identifiers, also when the identifier starts with `$` or `_`; a canonical equivalent of an identifier is an identifier. |
 | `quick-check` | The `NF*_Quick_Check` properties (the normalization functions do not use them). |
 | `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD, and that the code points that NFC and NFKC change are those whose quick check value is No. |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
+| `range-operations` | Union, intersection, difference and complement of sets of code points given as lists of ranges, each with the theorem that says which code points are in the result; the normal form of a list of ranges; the list of the code points of a list of ranges. |
 | `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value. |
-| `general-category-tables` | The fixtype of the thirty values of `General_Category`, and the fixtypes of runs of code points with the same value, which represent that property. |
+| `general-category-tables` | The fixtype of the thirty values of `General_Category`, the list of the thirty values (`general-category-values`), and the fixtypes of runs of code points with the same value, which represent that property. |
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database. |
@@ -279,6 +282,85 @@ over the tables, and so re-checked whenever a version is added:
   NFD, or in NFKD, in that form.  (UAX #15 says the same of NFC and NFKC;
   that is not proved.)
 
+Theorems about two versions.  `(version<= ver1 ver2)` says that `ver1` is
+`ver2` or was released before it.  The Unicode Standard promises some of
+these in its
+[stability policies](https://unicode.org/policies/stability_policy.html);
+here they are theorems about the supported versions, proved by evaluation
+on the tables of each pair of versions, and so re-checked whenever a
+version is added.  They are disabled by default, because the earlier
+version is in their hypotheses only.
+
+- `assigned-p-of-later-version`: a code point that is assigned in a version
+  is assigned in every later version.  `assigned-listp` says that every
+  code point of a list is assigned.
+- `xid-start-p-of-later-version`, `xid-continue-p-of-later-version`,
+  `xid-identifier-p-of-later-version`: a code point that has `XID_Start` or
+  `XID_Continue` keeps it, and an XID identifier stays one.
+- `nfc-of-later-version` (and the same for the other three forms): if every
+  code point of a list is assigned in a version, the form of the list is
+  the same in every later version.  This is the normalization stability of
+  the standard.  So are `nfc-memberp-of-later-version` (and the other
+  three), `canonical-equivalent-p-of-later-version` and
+  `compatibility-equivalent-p-of-later-version`: such a list is in a form,
+  and two such lists are equivalent, in the later version exactly when
+  they are in the earlier one.  The hypothesis is needed: U+1ACF COMBINING
+  DOUBLE CARON is not assigned in 16.0.0, and the NFC form of the letter
+  `a`, U+1ACF and U+0323 COMBINING DOT BELOW is not the same in 16.0.0 and
+  in 17.0.0 (a test in `tests/properties` shows it).
+- `canonical-combining-class-of-later-version`,
+  `decomposition-of-later-version`, `composition-of-later-version`: the
+  combining class and the decompositions of an assigned code point, and
+  what two assigned code points compose to, are the same in every later
+  version.  `assigned-listp-of-nfc` (and the other three forms): the forms
+  of a list of assigned code points consist of assigned code points.
+- `pattern-white-space-p-same-in-all-versions`,
+  `pattern-syntax-p-same-in-all-versions`,
+  `noncharacter-p-same-in-all-versions`: these properties have the same
+  code points in every version, as the standard promises.
+  `bidi-control-p-same-in-all-versions`,
+  `join-control-p-same-in-all-versions`,
+  `variation-selector-p-same-in-all-versions`,
+  `deprecated-p-same-in-all-versions`,
+  `default-ignorable-p-same-in-all-versions`,
+  `prepended-concatenation-mark-p-same-in-all-versions`: so do these, in the
+  supported versions; the standard does not promise it.
+- The `General_Category` of an assigned character can change.
+  `code-point-in-general-category-changes`: a code point is in the ranges
+  of `(general-category-changes ver1 ver2)` exactly when its
+  `General_Category` is not the same in the two versions;
+  `general-category-changes-of-assigned` leaves out the code points that
+  are not assigned in the first version.
+  `code-point-general-category-of-later-version`: in the supported
+  versions, the `General_Category` of an assigned code point is the same in
+  every later version, unless the code point is U+0295 LATIN LETTER
+  PHARYNGEAL VOICED FRICATIVE, which went from `Ll` to `Lo` in 17.0.0.
+  The code points of `Control`, `Private_Use` and `Surrogate` are the same
+  in every version, as the standard promises
+  (`general-category-control-ranges-same-in-all-versions` and two more).
+
+Operations on lists of ranges, for a model that defines its own sets of
+code points from the properties, or that compares a property between two
+versions:
+
+- `ranges-union`, `ranges-intersection`, `ranges-difference`,
+  `ranges-complement`, each with a theorem such as
+  `code-point-in-ranges-p-of-ranges-union`: a code point is in the ranges
+  of the union exactly when it is in the ranges of one of the two lists.
+  These theorems have no hypotheses.  The results are in a normal form
+  (`ranges-normalized-p`): no empty range, increasing order, and at least
+  one code point between two ranges; `ranges-normalize` puts any list in
+  that form.  A list in normal form has no code point exactly when it is
+  `nil`, so that two sets are disjoint, or one is within the other, can be
+  tested by evaluation
+  (`code-point-in-ranges-p-when-ranges-difference-is-empty`).
+- `range-list-code-points` is the list of the code points of a list of
+  ranges, in order; its length is `range-list-size`, and it has no
+  duplicates when the list is in normal form.
+- For example, `(ranges-difference (xid-start-ranges (version-v17.0.0))
+  (xid-start-ranges (version-v16.0.0)))` is the list of the 4,647 code
+  points that got `XID_Start` in 17.0.0.
+
 ### Including only what you need
 
 Each of these books can be included on its own; none of them needs `top`.
@@ -290,6 +372,8 @@ supported version, and nothing else of this library.
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
 | `xid-start-p`, `xid-continue-p`, `xid-identifier-p`, `optional-start-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `code-point-general-category`, `general-category-ranges`, `assigned-p`; the type `general-category` and its predicates such as `general-category-letter-p` | `general-category` | `code-points`, `versions`, `ranges`, `general-category-tables` | `derived-general-category` |
+| `general-category-changes`, `general-category-changes-of-assigned`, and the theorem that the `General_Category` of an assigned code point stays the same, with one exception | `general-category-changes` | `general-category`, `range-operations`, and the books that those load | `derived-general-category` |
+| `ranges-union`, `ranges-intersection`, `ranges-difference`, `ranges-complement`, `ranges-normalize`, `range-list-code-points` | `range-operations` | `code-points`, `ranges` | none |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `pattern-syntax-p` | `pattern-syntax` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `default-ignorable-p` | `default-ignorable` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
@@ -300,6 +384,7 @@ supported version, and nothing else of this library.
 | `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
 | The theorems about the code points that occur in a normalization form | `normalization-members` | `normalization-inert`, and the books that it loads | the same |
 | `stream-safe-p`, `stream-safe-process` | `stream-safe` | `normalization`, and the books that it loads | the tables of `normalization` |
+| The theorems that the normalization forms of assigned code points are the same in every later version | `normalization-across-versions` | `normalization`, `general-category`, and the books that those load | the tables of `normalization`, and `derived-general-category` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | The theorems that the quick check is exact for NFD and NFKD, and `nfc-changes-p`, `nfkc-changes-p` | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
@@ -373,6 +458,15 @@ no default version,
 and nothing means "latest": adding a version never changes the result of an
 existing call.  Which version a use needs is for that use to say, and it
 need not be tied to a release of the language being modeled.
+
+`(version<= ver1 ver2)` says that `ver1` is `ver2` or was released before
+it.  A model that moves from a version to a later one can use the theorems
+about two versions, listed under "Using it": what is assigned stays
+assigned, an identifier stays an identifier, and the normalization forms of
+text whose characters are all assigned stay the same.  What can change is
+the `General_Category` of an existing character;
+`general-category-changes-of-assigned` lists those changes for any two
+versions.  The documentation topic `versions` has the whole list.
 
 ## The data
 
@@ -484,8 +578,8 @@ For example 19.0.0 (this is how 18.0.0 was added):
 1. Generate the tables and record the SHA-256 of the inputs:
    `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
 2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, a line
-   to `version-string`, and a line to the statement and to the hint of the
-   theorem `version-fix-in-terms-of-version-case`.
+   to `version-string` and to `version-rank`, and a line to the statement
+   and to the hint of the theorem `version-fix-in-terms-of-version-case`.
 3. In each book that selects tables by version (`general-category`, `xid`,
    `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
@@ -502,12 +596,33 @@ For example 19.0.0 (this is how 18.0.0 was added):
 5. Certify `top` and `tests/*`.  This checks the invariants of the new
    tables, re-proves for the new version the theorems listed above (if one
    fails, that is a real change in Unicode to look at), and runs the
-   conformance test.
+   conformance test.  The theorems about two versions are re-proved for
+   the new version with each of the others.  Two kinds of them can fail
+   without anything being wrong:
+   - `code-point-general-category-of-later-version` names the characters
+     whose `General_Category` has changed.  If the new version changes
+     another one, evaluate
+     `(general-category-changes-of-assigned (version-v18.0.0)
+     (version-v19.0.0))` and add what it lists to the statement of the
+     theorem and to the range list in the lemma before it.
+   - The six theorems that end with `-same-in-all-versions` and that the
+     standard does not promise (bidirectional controls, join controls,
+     variation selectors, deprecated characters, default ignorable code
+     points, prepended concatenation marks) fail if the new version adds a
+     code point to the property.  Then the theorem has to go, or to become
+     a theorem that the property only grows, like those for `XID_Start`.
+
+   A failure of any of the others (assigned code points, `XID_Start`,
+   `XID_Continue`, normalization, `Pattern_White_Space`, `Pattern_Syntax`,
+   noncharacters, the three fixed values of `General_Category`) would mean
+   that the new version breaks a stability policy of the standard, or that
+   a table is wrong.
 6. For the comparison with other implementations, add
    `validation/rust-oracle/v19.0.0/Cargo.toml` with the versions of the
    crates that implement Unicode 19.0.0.
 
-Nothing else changes: no definition, and no theorem statement.
+Nothing else changes: no definition, and no theorem statement other than
+those two kinds.
 
 ## Validation
 
@@ -526,7 +641,12 @@ there is no formal specification to prove that against.  The evidence is:
   properties and `Full_Composition_Exclusion`, which are read from
   `DerivedNormalizationProps.txt`, agree with the normalization functions,
   which are computed from other files.
-- `properties`: examples.
+- `properties`: examples.  Among them, the number of code points that each
+  version adds, computed from the tables of `General_Category` with the
+  operations on lists of ranges: 4,803 for 17.0.0 and 13,007 for 18.0.0.
+  These agree with the counts of the code points whose `Age` is 17.0 and
+  18.0 in the file `DerivedAge.txt` of the Unicode Character Database,
+  which the library does not read (counted with a script on 2026-11-19).
 
 The conformance test takes about ten seconds per version, and the
 quick-check test about twenty.
@@ -641,6 +761,9 @@ Membership in a list of ranges
 number of ranges, which is a few hundred for the largest properties.
 A lookup of `General_Category` takes time linear in the number of runs,
 which is about 4,100.
+The operations on lists of ranges take time proportional to the product of
+the lengths of the two lists; `general-category-changes`, which uses them
+on the ranges of each of the thirty values, takes well under a second.
 The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.

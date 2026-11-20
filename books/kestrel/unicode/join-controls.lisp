@@ -71,4 +71,10 @@
              (or (equal cp #x200C) ; ZERO WIDTH NON-JOINER
                  (equal cp #x200D)))) ; ZERO WIDTH JOINER
     :enable (join-control-ranges
-             code-point-in-range-p)))
+             code-point-in-range-p))
+
+  (defrule join-control-p-same-in-all-versions
+    (equal (join-control-p cp ver1)
+           (join-control-p cp ver2))
+    :rule-classes nil
+    :enable join-control-p-alt-def))

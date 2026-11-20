@@ -13,9 +13,11 @@
 (include-book "code-points")
 (include-book "versions")
 (include-book "ranges")
+(include-book "range-operations")
 (include-book "maps")
 (include-book "general-category-tables")
 (include-book "general-category")
+(include-book "general-category-changes")
 (include-book "xid")
 (include-book "pattern-white-space")
 (include-book "pattern-syntax")
@@ -35,6 +37,7 @@
 (include-book "normalization-inert")
 (include-book "normalization-members")
 (include-book "stream-safe")
+(include-book "normalization-across-versions")
 (include-book "identifier-closure")
 (include-book "quick-check")
 (include-book "quick-check-theorems")
@@ -136,7 +139,20 @@
       and @(see prepended-concatenation-marks).")
     (xdoc::li
      "Theorems that relate these properties to each other:
-      see @(see property-relations)."))
+      see @(see property-relations).")
+    (xdoc::li
+     "Theorems about what stays the same
+      from a version of Unicode to a later one:
+      assigned code points, identifiers,
+      and the normalization forms of text whose characters are assigned;
+      and the list of what does change in the @('General_Category').
+      See @(see versions).")
+    (xdoc::li
+     "Union, intersection, difference and complement
+      of sets of code points that are given as lists of ranges,
+      for models that define their own sets of characters
+      and for comparing a property between versions:
+      see @(see range-operations)."))
    (xdoc::p
     "What the library models of each Unicode specification,
      and what it does not model,
@@ -164,7 +180,18 @@
     (xdoc::li
      "@('kestrel/unicode/general-category')
       for @(tsee code-point-general-category), @(tsee assigned-p)
-      and @(tsee general-category-ranges).")
+      and @(tsee general-category-ranges);
+      @('kestrel/unicode/general-category-changes')
+      for @(tsee general-category-changes)
+      and the theorem that the @('General_Category')
+      of an assigned code point is the same in every later version,
+      with one exception.
+      It loads @('general-category') and @('range-operations').")
+    (xdoc::li
+     "@('kestrel/unicode/range-operations')
+      for @(tsee ranges-union), @(tsee ranges-intersection),
+      @(tsee ranges-difference) and @(tsee ranges-complement).
+      It loads no tables.")
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p),
@@ -203,8 +230,13 @@
       what is before and what is after an inert code point;
       @('kestrel/unicode/normalization-members') for the theorems
       about the code points that occur in a form of a list;
-      and @('kestrel/unicode/stream-safe')
-      for @(tsee stream-safe-p) and @(tsee stream-safe-process).
+      @('kestrel/unicode/stream-safe')
+      for @(tsee stream-safe-p) and @(tsee stream-safe-process);
+      and @('kestrel/unicode/normalization-across-versions')
+      for the theorems that the forms of text
+      whose characters are assigned in a version of Unicode
+      are the same in every later version,
+      which also loads @('general-category').
       Each of these loads @('normalization').")
     (xdoc::li
      "@('kestrel/unicode/identifier-closure') for the theorems
@@ -231,6 +263,9 @@
      that what it normalizes is still an identifier,
      and @('normalization-inert') for the theorems
      that normalization does not reach across its delimiters;
+     @('normalization-across-versions') if it is to show
+     that its programs mean the same
+     when the implementation moves to a later version of Unicode;
      @('general-category') if its identifiers or its white space
      are defined by general categories;
      and @('pattern-white-space'), @('bidi-controls')
@@ -302,7 +337,12 @@
      [UAX #9] is the Unicode Bidirectional Algorithm,
      [UAX #15] is Unicode Normalization Forms,
      [UAX #31] is Unicode Identifiers and Syntax,
-     and [UAX #44] is the Unicode Character Database."))
+     and [UAX #44] is the Unicode Character Database.
+     [Stability] refers to the "
+    (xdoc::ahref "https://unicode.org/policies/stability_policy.html"
+                 "Unicode Character Encoding Stability Policies")
+    ", which say what will not change in later versions of the standard;
+     its policies are cited by their names."))
   :order-subtopics (code-points
                     versions
                     xid
@@ -352,7 +392,12 @@
    (xdoc::p
     "Membership in a list of ranges takes time linear in the number of ranges,
      and so does a lookup in a list of runs.
-     A lookup in a map takes time logarithmic in the size of the map."))
+     A lookup in a map takes time logarithmic in the size of the map.")
+   (xdoc::p
+    "Lists of ranges can be combined as sets of code points,
+     with union, intersection, difference and complement:
+     see @(see range-operations)."))
   :order-subtopics (ranges
+                    range-operations
                     maps
                     general-category-tables))

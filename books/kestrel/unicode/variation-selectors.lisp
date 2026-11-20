@@ -77,4 +77,10 @@
                  (and (<= #xE0100 cp) ; VARIATION SELECTOR-17
                       (<= cp #xE01EF))))) ; to VARIATION SELECTOR-256
     :enable (variation-selector-ranges
-             code-point-in-range-p)))
+             code-point-in-range-p))
+
+  (defrule variation-selector-p-same-in-all-versions
+    (equal (variation-selector-p cp ver1)
+           (variation-selector-p cp ver2))
+    :rule-classes nil
+    :enable variation-selector-p-alt-def))

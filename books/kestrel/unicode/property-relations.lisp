@@ -297,7 +297,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection pattern-syntax-relations
-  :short "Theorems that relate @('Pattern_Syntax') to other properties."
+  :short "Theorems that relate @('Pattern_Syntax')
+          and @('Pattern_White_Space') to other properties."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A code point that has @('Pattern_Syntax') or @('Pattern_White_Space')
+     does not have @('XID_Continue'), and so not @('XID_Start') either:
+     the characters of syntax and of white space
+     are not characters of identifiers.
+     The Unicode Standard promises
+     that this will stay so [Stability, Property Value Stability].
+     No code point has both @('Pattern_Syntax')
+     and @('Pattern_White_Space')."))
 
   (defrulel pattern-syntax-ranges-disjoint-from-pattern-white-space-ranges
     (ranges-disjoint-from-ranges-p (pattern-syntax-ranges ver)
@@ -329,5 +341,24 @@
 
   (defrule not-xid-start-p-when-pattern-syntax-p
     (implies (pattern-syntax-p cp ver)
+             (not (xid-start-p cp ver)))
+    :rule-classes (:rewrite :forward-chaining))
+
+  (defrulel pattern-white-space-ranges-disjoint-from-xid-continue-ranges
+    (ranges-disjoint-from-ranges-p (pattern-white-space-ranges ver)
+                                   (xid-continue-ranges ver))
+    :enable (pattern-white-space-ranges
+             xid-continue-ranges))
+
+  (defrule not-xid-continue-p-when-pattern-white-space-p
+    (implies (pattern-white-space-p cp ver)
+             (not (xid-continue-p cp ver)))
+    :rule-classes (:rewrite :forward-chaining)
+    :enable (pattern-white-space-p
+             xid-continue-p
+             not-code-point-in-ranges-p-when-ranges-disjoint-from-ranges-p))
+
+  (defrule not-xid-start-p-when-pattern-white-space-p
+    (implies (pattern-white-space-p cp ver)
              (not (xid-start-p cp ver)))
     :rule-classes (:rewrite :forward-chaining)))

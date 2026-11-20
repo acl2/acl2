@@ -52,7 +52,57 @@
      says how to add a version;
      doing so adds a case to the type defined here
      and to the functions that select the tables,
-     and changes nothing else."))
+     and changes nothing else.")
+   (xdoc::h3 "From a version to a later one")
+   (xdoc::p
+    "The Unicode Standard promises
+     that some things do not change in later versions:
+     these are its stability policies, cited as [Stability]
+     (see @(see unicode) for the reference).
+     For the supported versions, in the order of @(tsee version<=),
+     the following are theorems of this library.
+     They are proved by evaluation on the tables,
+     for each pair of versions,
+     so adding a version checks them for that version.")
+   (xdoc::ul
+    (xdoc::li
+     "A code point that is assigned stays assigned:
+      see @(see assigned-across-versions).")
+    (xdoc::li
+     "A code point that has @('XID_Start') or @('XID_Continue') keeps it,
+      and an identifier stays an identifier:
+      see @(see xid-across-versions).")
+    (xdoc::li
+     "The four normalization forms of text
+      whose characters are all assigned stay the same,
+      and so do the combining classes and the decompositions
+      of assigned characters:
+      see @(see normalization-across-versions).")
+    (xdoc::li
+     "The code points of @('Pattern_White_Space'), of @('Pattern_Syntax')
+      and the noncharacters are the same in every version,
+      as the standard promises [Stability, Property Value Stability].
+      In the supported versions the same holds
+      for the bidirectional control characters, the join controls,
+      the variation selectors, the deprecated characters,
+      the default ignorable code points
+      and the prepended concatenation marks,
+      though the standard does not promise it.
+      Each of these properties has a theorem
+      whose name ends with @('-same-in-all-versions'),
+      in the topic of the property.")
+    (xdoc::li
+     "The @('General_Category') of an assigned character can change.
+      The changes between two versions are computed by
+      @(tsee general-category-changes-of-assigned);
+      in the supported versions there is one:
+      see @(see general-category-stability)."))
+   (xdoc::p
+    "To compare the code points of any property in two versions,
+     use the @(see range-operations):
+     for example, the difference of the ranges of @('XID_Start')
+     in a version and in an earlier one
+     is the list of the code points that got the property."))
   :order-subtopics t
   :default-parent t)
 
@@ -103,3 +153,56 @@
   :enable (version-fix-when-v16.0.0
            version-fix-when-v17.0.0
            version-fix-when-v18.0.0))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define version-rank ((ver versionp))
+  :returns (rank natp :rule-classes (:rewrite :type-prescription))
+  :short "The position of a version among the supported versions,
+          in the order in which they were released, starting from 0."
+  (version-case ver
+                :v16.0.0 0
+                :v17.0.0 1
+                :v18.0.0 2)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define version<= ((ver1 versionp) (ver2 versionp))
+  :returns (yes/no booleanp)
+  :short "Check if a version of Unicode is another version
+          or was released before it."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the order in which the theorems
+     about what stays the same from a version to a later one
+     are stated: for example, a code point
+     that has the @('XID_Start') property in a version
+     has it in every later version.
+     The order is reflexive, transitive, antisymmetric and total."))
+  (<= (version-rank ver1) (version-rank ver2))
+  :hooks (:fix)
+
+  ///
+
+  (defrule version<=-reflexive
+    (version<= ver ver))
+
+  (defruled version<=-transitive
+    (implies (and (version<= ver1 ver2)
+                  (version<= ver2 ver3))
+             (version<= ver1 ver3)))
+
+  (defruled version<=-antisymmetric
+    (implies (and (version<= ver1 ver2)
+                  (version<= ver2 ver1))
+             (equal (version-fix ver1)
+                    (version-fix ver2)))
+    :enable (version-rank
+             version-fix-in-terms-of-version-case))
+
+  (defrule version<=-total
+    (or (version<= ver1 ver2)
+        (version<= ver2 ver1))
+    :rule-classes nil))
