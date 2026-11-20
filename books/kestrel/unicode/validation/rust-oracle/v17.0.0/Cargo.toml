@@ -42,6 +42,7 @@ have-unicode-ident-version = []
 have-unicode-script = []
 have-unicode-bidi = []
 have-unicode-security = []
+unicode-security-removes-default-ignorables = []
 
 [dependencies]
 unicode-normalization = "=0.1.25"

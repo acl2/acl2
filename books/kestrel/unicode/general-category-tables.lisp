@@ -178,11 +178,17 @@
      and the macro @('general-category-case')
      distinguishes the values by their keywords.")
    (xdoc::p
-    "These functions and macros have no documentation topics of their own.
+    "Apart from the recognizer, which has a topic of one line
+     so that the signatures of functions link to this type,
+     these functions and macros have no documentation topics of their own.
      @(tsee fty::deftagsum) generates 96 topics for this type,
      three of them for each value,
      and none of them would say more than this topic does.
      So we turn them off, with @('xdoc::without-xdoc').")))
+
+(defxdoc general-category-p
+  :parents (general-category)
+  :short "Recognizer of the values of the type @(tsee general-category).")
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -21,7 +21,10 @@
 #
 #   unicode-script 0.5.7         Unicode 16.0.0 (says so itself)
 #   unicode-bidi 0.3.18          Unicode 16.0.0 (says so itself)
-#   unicode-security 0.1.2       Unicode 16.0.0 (says so itself)
+#   unicode-security 0.1.2       Unicode 16.0.0 (says so itself); its
+#                                skeleton does not remove the default
+#                                ignorable code points, and it does not
+#                                have the writing system Hntl
 
 [package]
 name = "unicode-oracle-v16-0-0"
@@ -47,6 +50,7 @@ have-unicode-ident-version = []
 have-unicode-script = []
 have-unicode-bidi = []
 have-unicode-security = []
+unicode-security-removes-default-ignorables = []
 
 [dependencies]
 unicode-xid = "=0.2.6"

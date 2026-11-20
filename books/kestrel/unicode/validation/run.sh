@@ -24,6 +24,11 @@
 #                module of the same version of Unicode installed;
 #                if it is omitted, the comparison with Python is skipped
 #
+# If the environment variable UCD_DIR is set, it is the directory with the
+# files of VERSION, laid out as for tools/generate-ucd-books.py; then the
+# Python oracle also computes the skeletons of UTS #39, from the files
+# security/confusables.txt and DerivedCoreProperties.txt of that directory.
+#
 # This needs acl2 and cargo on the PATH, and the book dump in this
 # directory certified (cert.pl dump).  cargo downloads the crates.
 #
@@ -32,7 +37,7 @@
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '10,31p' "$0"
+    sed -n '10,36p' "$0"
     exit 2
 fi
 version=$1
@@ -68,7 +73,7 @@ files+=("$work/rust-$version.txt")
 if [ $# -gt 0 ]; then
     echo "== Python: running the oracle"
     "$@" "$here/python-oracle.py" "$version" code-points \
-         > "$work/python-$version.txt"
+         ${UCD_DIR:+"$UCD_DIR"} > "$work/python-$version.txt"
     files+=("$work/python-$version.txt")
     "$@" "$here/python-oracle.py" "$version" pairs \
          "$work/acl2-pairs-$version.txt" || status=1

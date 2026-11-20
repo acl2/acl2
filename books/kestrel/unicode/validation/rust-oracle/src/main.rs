@@ -188,6 +188,50 @@ fn script_extension_codes(c: char) -> String {
     codes.join(" ")
 }
 
+/// The augmented script set of a character (UTS #39, Section 5.1)
+/// according to unicode-security: ALL, or the four-letter codes of the
+/// scripts, in the order of the codes, and then those of Hanb, Jpan and
+/// Kore that the set has.  The crate does not have the writing system
+/// Hntl, which UTS #39 has from Unicode 18.0.0 on.  And for a character
+/// whose Script_Extensions is the one script Unknown, the crate has the
+/// empty set; we write Zzzz, the code of that script.
+#[cfg(feature = "have-unicode-security")]
+fn augmented_script_set_codes(c: char) -> String {
+    use unicode_security::mixed_script::AugmentedScriptSet;
+    let set = AugmentedScriptSet::from(c);
+    if set.is_all() {
+        return "ALL".to_string();
+    }
+    if set.is_empty() {
+        return script_code(unicode_script::Script::Unknown).to_string();
+    }
+    let mut codes: Vec<&str> = set.base.iter().map(script_code).collect();
+    codes.sort_unstable();
+    if set.hanb {
+        codes.push("Hanb");
+    }
+    if set.jpan {
+        codes.push("Jpan");
+    }
+    if set.kore {
+        codes.push("Kore");
+    }
+    codes.join(" ")
+}
+
+/// The skeleton of a string according to unicode-security, as code
+/// points in decimal separated by spaces.  Up to its version for
+/// Unicode 16.0.0, the crate does not remove the default ignorable code
+/// points; from its version for Unicode 18.0.0 on, it does, and this
+/// is the internal skeleton of UTS #39, Section 4.
+#[cfg(feature = "have-unicode-security")]
+fn skeleton_code_points(s: &str) -> String {
+    unicode_security::skeleton(s)
+        .map(|c| (c as u32).to_string())
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// The Bidi_Class of a character according to unicode-bidi, or `!` (not
 /// compared) for an unassigned code point.  For those, the crate does not
 /// follow the defaults of DerivedBidiClass.txt everywhere: in its version
@@ -226,6 +270,13 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
     }
     if cfg!(feature = "have-unicode-security") {
         columns.push("idst@unicode-security");
+        columns.push("ass_no_hntl@unicode-security");
+        if cfg!(feature = "unicode-security-removes-default-ignorables") {
+            columns.push("skel@unicode-security");
+            columns.push("skelm@unicode-security");
+        } else {
+            columns.push("skelk@unicode-security");
+        }
     }
     if cfg!(feature = "have-unicode-xid") {
         columns.extend(["xids@unicode-xid", "xidc@unicode-xid"]);
@@ -313,6 +364,14 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         {
             use unicode_security::GeneralSecurityProfile;
             write!(out, ";{}", flag(c.identifier_allowed()))?;
+            write!(out, ";{}", augmented_script_set_codes(c))?;
+            write!(out, ";{}", skeleton_code_points(&c.to_string()))?;
+            #[cfg(feature = "unicode-security-removes-default-ignorables")]
+            {
+                let marked: String =
+                    ['a', c, '\u{301}', '\u{327}'].iter().collect();
+                write!(out, ";{}", skeleton_code_points(&marked))?;
+            }
         }
         #[cfg(feature = "have-unicode-xid")]
         write!(

@@ -27,6 +27,9 @@ ACL2 column `property`, for every code point, except that:
     for the surrogates, which are not Rust chars); such fields are counted
     but not compared;
 
+  * ass_no_hntl is compared with the ACL2 column ass without the
+    writing system Hntl, which the crate unicode-security does not have;
+
   * emoji_status, which the crate unicode-properties gives as one of
     nine values, is compared with the value that the five ACL2 columns
     emoji, epres, emod, ebase and ecomp determine (see EMOJI_STATUS);
@@ -96,7 +99,8 @@ def main():
                  "dm", "nfd", "nfc", "nfkd", "nfkc", "gc", "di", "vs", "jc",
                  "nchar", "dep", "pcm", "psyn", "ids", "idc", "sc", "scx",
                  "bc", "blk", "dd", "emoji", "epres", "emod", "ebase",
-                 "ecomp", "extpict", "ri", "idst", "idty"]:
+                 "ecomp", "extpict", "ri", "idst", "idty", "skel", "skelk",
+                 "skelm", "ass"]:
         if name not in index:
             die("%s: no column %s" % (sys.argv[1], name))
 
@@ -115,6 +119,11 @@ def main():
                      ("emoji", "epres", "emod", "ebase", "ecomp")]
             return [EMOJI_STATUS.get(tuple(row[i] for i in flags),
                                      "no such status")
+                    for row in acl2]
+        if prop == "ass_no_hntl":
+            i = index["ass"]
+            return [" ".join(code for code in row[i].split(" ")
+                             if code != "Hntl")
                     for row in acl2]
         if prop not in index:
             die("no ACL2 column for %s" % prop)

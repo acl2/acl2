@@ -171,7 +171,29 @@
       with the proof that the two agree,
       and that Normalization Form KC changes no allowed character:
       see @(see identifier-status), @(see identifier-type-relations)
-      and @(see identifier-status-and-normalization)."))
+      and @(see identifier-status-and-normalization).")
+    (xdoc::li
+     "The prototypes of confusable characters
+      and the internal skeleton of a string [UTS #39, Section 4],
+      with the proof of when taking the internal skeleton twice
+      is the same as taking it once:
+      see @(see confusables), @(tsee internal-skeleton)
+      and @(see skeleton-idempotence).")
+    (xdoc::li
+     "The skeleton of a string and the confusable strings
+      [UTS #39, Section 4],
+      for the strings that have no right-to-left character
+      and no explicit formatting character that starts right-to-left text,
+      and the three classes of confusable strings:
+      see @(see confusable-detection) and @(see confusable-kinds).")
+    (xdoc::li
+     "Mixed-script detection [UTS #39, Section 5.1]:
+      augmented script sets, resolved script sets,
+      and single-script and mixed-script strings:
+      see @(see mixed-script-detection).")
+    (xdoc::li
+     "Mixed-number detection [UTS #39, Section 5.3]:
+      see @(see mixed-number-detection)."))
    (xdoc::p
     "From [UTS #51], Unicode Emoji:")
    (xdoc::ul
@@ -291,10 +313,12 @@
       Also [UAX #14], line breaking.")
     (xdoc::li
      "From [UTS #39]:
-      confusable characters and the skeleton of a string,
-      the sets of scripts of a string and the detection of mixed scripts,
-      the detection of mixed numbers,
-      and the restriction levels.")
+      the bidirectional skeleton,
+      and so the skeleton and the confusability
+      of strings that have right-to-left characters;
+      whether a string has a whole-script confusable at all
+      [UTS #39, Section 4.1];
+      and the restriction levels [UTS #39, Section 5.2].")
     (xdoc::li
      "From [UTS #51]: the emoji sequences,
       and the choice between text and emoji presentation.")
@@ -369,7 +393,9 @@
       The warnings of the Rust compiler
       about identifiers that can be confused with each other
       and about identifiers that mix scripts
-      rely on the parts of [UTS #39] that are not modeled.")
+      rely on the skeleton and on the script sets of [UTS #39]:
+      see @(see confusable-detection)
+      and @(see mixed-script-detection).")
     (xdoc::li
      (xdoc::b "Scheme: sufficient.")
      " In Scheme as its sixth revised report defines it
@@ -391,10 +417,13 @@
       the identifier status and type of [UTS #39],
       the emoji properties of [UTS #51],
       the scripts of characters, a block,
-      and the values of the decimal digits,
+      the values of the decimal digits,
+      and, of [UTS #39], the skeleton of a string
+      that has no right-to-left character,
+      mixed-script detection and mixed-number detection,
       which are modeled.
-      It also takes the skeleton of [UTS #39]
-      and its sets of scripts, grapheme clusters, emoji sequences,
+      It also takes the bidirectional skeleton of [UTS #39],
+      grapheme clusters, emoji sequences,
       and the names of characters,
       which are not.")))
   :order-subtopics t)

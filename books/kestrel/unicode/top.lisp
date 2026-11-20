@@ -57,6 +57,11 @@
 (include-book "utf-8")
 (include-book "property-relations")
 (include-book "identifier-status-normalization")
+(include-book "confusables")
+(include-book "skeleton")
+(include-book "mixed-scripts")
+(include-book "confusable-kinds")
+(include-book "mixed-numbers")
 (include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -112,6 +117,20 @@
       which say which characters are safe to allow in identifiers,
       and why the others are not:
       see @(see identifier-status).")
+    (xdoc::li
+     "Confusable strings, that is, strings that look alike:
+      the prototypes of characters, the skeleton of a string,
+      and the three classes of confusable strings,
+      of Unicode Security Mechanisms:
+      see @(see confusables), @(see confusable-detection)
+      and @(see confusable-kinds).")
+    (xdoc::li
+     "Mixed-script detection and mixed-number detection,
+      of the same specification:
+      whether the characters of a string have a script in common,
+      and whether its digits are of one system:
+      see @(see mixed-script-detection)
+      and @(see mixed-number-detection).")
     (xdoc::li
      "The four normalization forms, which are
       Normalization Forms D, C, KD and KC (NFD, NFC, NFKD and NFKC),
@@ -260,6 +279,21 @@
       for the theorems that relate them to Normalization Form KC,
       which loads @('normalization').")
     (xdoc::li
+     "@('kestrel/unicode/confusables') for @(tsee prototype);
+      @('kestrel/unicode/skeleton') for @(tsee internal-skeleton),
+      @(tsee skeleton) and @(tsee confusable-p),
+      which loads @('confusables'), @('normalization'),
+      @('default-ignorable') and @('bidi-class');
+      @('kestrel/unicode/mixed-scripts')
+      for @(tsee resolved-script-set) and @(tsee single-script-p),
+      which loads @('scripts');
+      @('kestrel/unicode/confusable-kinds')
+      for @(tsee whole-script-confusable-p) and the other two classes,
+      which loads @('skeleton') and @('mixed-scripts');
+      @('kestrel/unicode/mixed-numbers')
+      for @(tsee mixed-number-systems-p),
+      which loads @('decimal-digits').")
+    (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p),
       and @('kestrel/unicode/pattern-syntax')
@@ -369,9 +403,10 @@
      See the file @('README.md') for how to regenerate the tables
      and how to add a version.")
    (xdoc::p
-    "Two of the generated books are not from that database:
+    "Three of the generated books are not from that database:
      the tables of @('Identifier_Status') and @('Identifier_Type')
-     are generated from two data files
+     and the table of the prototypes of confusable characters
+     are generated from three data files
      of Unicode Technical Standard #39,
      which are published for each version of Unicode.")
    (xdoc::p
@@ -427,6 +462,10 @@
                     normalization
                     identifier-closure
                     identifier-status
+                    confusables
+                    confusable-detection
+                    mixed-script-detection
+                    mixed-number-detection
                     scripts
                     pattern-white-space
                     bidi-controls
