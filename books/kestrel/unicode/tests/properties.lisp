@@ -805,3 +805,186 @@
                      (cons #x0061 (make-list 31 :initial-element #x0301))
                      *v16*)
                     *v16*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Operations on lists of ranges.
+
+; The results are in normal form:
+; ranges that overlap or touch are merged, and empty ranges are dropped.
+
+(test (equal (ranges-union (list (range #x41 #x5A))
+                           (list (range #x61 #x7A)))
+             (list (range #x41 #x5A) (range #x61 #x7A))))
+(test (equal (ranges-union (list (range 0 5) (range 20 30))
+                           (list (range 6 9) (range 25 40)))
+             (list (range 0 9) (range 20 40))))
+(test (equal (ranges-normalize
+              (list (range 10 20) (range 0 9) (range 15 30) (range 5 3)))
+             (list (range 0 30))))
+(test (ranges-normalized-p (list (range 0 9) (range 20 40))))
+(test (not (ranges-normalized-p (list (range 0 9) (range 10 40)))))
+(test (equal (ranges-complement nil)
+             (list (range 0 #x10FFFF))))
+(test (equal (ranges-complement (list (range 0 #x10FFFF)))
+             nil))
+(test (equal (ranges-complement (list (range #xD800 #xDFFF)))
+             (list (range 0 #xD7FF) (range #xE000 #x10FFFF))))
+(test (equal (range-list-code-points (list (range 3 5) (range 9 9)))
+             (list 3 4 5 9)))
+
+; The ASCII code points that have XID_Start are the letters;
+; those that have XID_Continue and not XID_Start
+; are the digits and the underscore.
+
+(test (equal (ranges-intersection (list (range 0 #x7F))
+                                  (xid-start-ranges *v16*))
+             (list (range #x41 #x5A) (range #x61 #x7A))))
+(test (equal (ranges-difference
+              (ranges-intersection (xid-continue-ranges *v16*)
+                                   (list (range 0 #x7F)))
+              (xid-start-ranges *v16*))
+             (list (range #x30 #x39) (range #x5F #x5F))))
+
+; No code point has both Pattern_White_Space and Pattern_Syntax;
+; the code points of Pattern_White_Space that are not ASCII are five.
+
+(test (equal (ranges-intersection (pattern-white-space-ranges *v16*)
+                                  (pattern-syntax-ranges *v16*))
+             nil))
+(test (equal (ranges-difference (pattern-white-space-ranges *v16*)
+                                (list (range 0 #x7F)))
+             (list (range #x85 #x85)
+                   (range #x200E #x200F)
+                   (range #x2028 #x2029))))
+
+; The number of the assigned code points of each version,
+; which counts the surrogates and the private-use code points.
+
+(test (equal (range-list-size
+              (ranges-complement
+               (general-category-ranges (general-category-unassigned) *v16*)))
+             294579))
+(test (equal (range-list-size
+              (ranges-complement
+               (general-category-ranges (general-category-unassigned) *v17*)))
+             299382))
+(test (equal (range-list-size
+              (ranges-complement
+               (general-category-ranges (general-category-unassigned) *v18*)))
+             312389))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; From a version to a later one.
+
+(test (version<= *v16* *v16*))
+(test (version<= *v16* *v17*))
+(test (version<= *v16* *v18*))
+(test (not (version<= *v18* *v17*)))
+
+; Unicode 17.0.0 assigns 4,803 code points more than Unicode 16.0.0,
+; and Unicode 18.0.0 assigns 13,007 more than Unicode 17.0.0.
+; No code point stops being assigned.
+
+(test (equal (range-list-size
+              (ranges-difference
+               (general-category-ranges (general-category-unassigned) *v16*)
+               (general-category-ranges (general-category-unassigned) *v17*)))
+             4803))
+(test (equal (range-list-size
+              (ranges-difference
+               (general-category-ranges (general-category-unassigned) *v17*)
+               (general-category-ranges (general-category-unassigned) *v18*)))
+             13007))
+(test (equal (ranges-difference
+              (general-category-ranges (general-category-unassigned) *v17*)
+              (general-category-ranges (general-category-unassigned) *v16*))
+             nil))
+
+; The code points that got XID_Start in Unicode 17.0.0 are 4,647,
+; one of them U+088F ARABIC LETTER NOON WITH RING ABOVE;
+; no code point lost the property.
+
+(test (equal (range-list-size
+              (ranges-difference (xid-start-ranges *v17*)
+                                 (xid-start-ranges *v16*)))
+             4647))
+(test (code-point-in-ranges-p
+       #x088F
+       (ranges-difference (xid-start-ranges *v17*)
+                          (xid-start-ranges *v16*))))
+(test (equal (ranges-difference (xid-start-ranges *v16*)
+                                (xid-start-ranges *v17*))
+             nil))
+
+; The General_Category: the thirty values.
+
+(test (equal (len (general-category-values)) 30))
+(test (equal (general-category-abbreviation (car (general-category-values)))
+             "Lu"))
+
+; The one change to an existing character, in the supported versions,
+; is U+0295 LATIN LETTER PHARYNGEAL VOICED FRICATIVE, in Unicode 17.0.0.
+; The other code points whose value is not the same in two versions
+; are those that the later version adds.
+
+(test (equal (general-category-changes-of-assigned *v16* *v17*)
+             (list (range #x0295 #x0295))))
+(test (equal (general-category-changes-of-assigned *v17* *v18*)
+             nil))
+(test (equal (general-category-changes-of-assigned *v16* *v18*)
+             (list (range #x0295 #x0295))))
+(test (equal (range-list-size (general-category-changes *v16* *v17*))
+             4804))
+(test (equal (range-list-size (general-category-changes *v17* *v18*))
+             13007))
+(test (equal (general-category-changes *v17* *v17*)
+             nil))
+(test (code-point-in-ranges-p #x088F (general-category-changes *v16* *v17*)))
+(test (not (code-point-in-ranges-p (char-code #\a)
+                                   (general-category-changes *v16* *v18*))))
+
+; The code points of three values never change.
+
+(test (equal (general-category-ranges (general-category-control) *v18*)
+             (list (range #x00 #x1F) (range #x7F #x9F))))
+(test (equal (general-category-ranges (general-category-surrogate) *v18*)
+             (list (range #xD800 #xDFFF))))
+(test (equal (general-category-ranges (general-category-private-use) *v18*)
+             (list (range #xE000 #xF8FF)
+                   (range #xF0000 #xFFFFD)
+                   (range #x100000 #x10FFFD))))
+
+; Normalization is the same in a later version
+; for text whose characters are assigned in the earlier one.
+
+(test (assigned-listp '(#x0065 #x0301 #x0028 #xD55C) *v16*))
+(test (equal (nfc '(#x0065 #x0301 #x0028 #xD55C) *v18*)
+             (nfc '(#x0065 #x0301 #x0028 #xD55C) *v16*)))
+(test (equal (nfkd '(#x0065 #x0301 #x0028 #xD55C) *v18*)
+             (nfkd '(#x0065 #x0301 #x0028 #xD55C) *v16*)))
+
+; It need not be the same for other text.
+; U+1ACF COMBINING DOUBLE CARON was added in Unicode 17.0.0,
+; with combining class 230.
+; In Unicode 16.0.0 it is not assigned, so its class is 0,
+; and U+0323 COMBINING DOT BELOW after it does not move before it;
+; in Unicode 17.0.0 the dot below moves and composes with the letter,
+; which gives U+1EA1 LATIN SMALL LETTER A WITH DOT BELOW.
+
+(test (not (assigned-p #x1ACF *v16*)))
+(test (assigned-p #x1ACF *v17*))
+(test (equal (canonical-combining-class #x1ACF *v16*) 0))
+(test (equal (canonical-combining-class #x1ACF *v17*) 230))
+(test (equal (nfc '(#x0061 #x1ACF #x0323) *v16*)
+             '(#x0061 #x1ACF #x0323)))
+(test (equal (nfc '(#x0061 #x1ACF #x0323) *v17*)
+             '(#x1EA1 #x1ACF)))
+
+; An identifier of a version is an identifier of the later versions.
+
+(test (xid-identifier-p '(#x0078 #x00E9 #x0031) *v16*))
+(test (xid-identifier-p '(#x0078 #x00E9 #x0031) *v18*))
+(test (not (xid-identifier-p '(#x088F) *v16*)))
+(test (xid-identifier-p '(#x088F) *v17*))

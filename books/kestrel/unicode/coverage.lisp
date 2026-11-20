@@ -139,6 +139,45 @@
    (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")
+   (xdoc::p
+    "From [Stability], the Unicode Character Encoding Stability Policies,
+     the following, as theorems about the supported versions
+     (see @(see versions)):")
+   (xdoc::ul
+    (xdoc::li
+     "Encoding Stability, as far as this:
+      a code point that is assigned in a version
+      is assigned in every later version.
+      See @(see assigned-across-versions).")
+    (xdoc::li
+     "Normalization Stability:
+      the four normalization forms of text
+      whose characters are assigned in a version
+      are the same in every later version,
+      and so are the combining class and the decompositions
+      of an assigned character.
+      See @(see normalization-across-versions).")
+    (xdoc::li
+     "Property Value Stability, for the properties that the library has:
+      the code points of @('Noncharacter_Code_Point'),
+      of @('Pattern_Syntax') and of @('Pattern_White_Space')
+      are the same in every version;
+      a code point that has @('XID_Start') or @('XID_Continue') keeps it
+      (see @(see xid-across-versions));
+      no code point of @('Pattern_Syntax') or of @('Pattern_White_Space')
+      has @('XID_Continue')
+      (see @(see pattern-syntax-relations));
+      and the code points whose @('General_Category') is
+      @('Control'), @('Private_Use') or @('Surrogate')
+      are the same in every version
+      (see @(see general-category-stability)).")
+    (xdoc::li
+     "Identifier Stability, for the identifiers of @(see xid):
+      an identifier of a version is an identifier of every later version."))
+   (xdoc::p
+    "The @('General_Category') of other characters is not stable.
+     The library computes its changes between two versions:
+     see @(see general-category-across-versions).")
 
    (xdoc::h3 "What is not modeled")
    (xdoc::p
@@ -184,6 +223,17 @@
       the identifiers defined by @('ID_Start') and @('ID_Continue'),
       the profile for mathematical notation,
       and the other profiles and requirements of that annex.")
+    (xdoc::li
+     "From [Stability]:
+      the policies about the names of characters,
+      about case folding and case pairs,
+      about the names and aliases of properties,
+      and about @('ID_Start') and @('ID_Continue'),
+      none of which the library has;
+      and the policies as promises about versions to come,
+      which are not something a theorem about the tables can say:
+      the theorems are about the supported versions,
+      and are checked again for each version that is added.")
     (xdoc::li
      "[UAX #9], the bidirectional algorithm:
       the library does not say in which order text is displayed.")

@@ -264,6 +264,66 @@
           (x (integers-from-to 0 #x7F))
           (ranges (xid-continue-ranges ver)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection xid-across-versions
+  :short "A code point that has @('XID_Start') or @('XID_Continue')
+          in a version of Unicode has it in every later version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The Unicode Standard promises this
+     for the identifier properties
+     [Stability, Property Value Stability],
+     so that an identifier stays an identifier when the version changes
+     [Stability, Identifier Stability].
+     Here it is a theorem about the supported versions,
+     in the order of @(tsee version<=).
+     It is proved by evaluation on the tables, for each pair of versions:
+     each range of the earlier version is within a range of the later one.
+     So adding a version checks the promise for that version.")
+   (xdoc::p
+    "The two rules are disabled by default:
+     they have a version in their hypotheses
+     that is not in their conclusions.
+     The same holds for lists of code points and for identifiers:
+     see @('xid-continue-listp-of-later-version')
+     in @(tsee xid-continue-listp)
+     and @('xid-identifier-p-of-later-version')
+     in @(tsee xid-identifier-p)."))
+
+  (defrulel xid-start-ranges-within-ranges-of-later-version
+    (implies (version<= ver1 ver2)
+             (ranges-within-ranges-p (xid-start-ranges ver1)
+                                     (xid-start-ranges ver2)))
+    :rule-classes :forward-chaining
+    :enable (version<=
+             version-rank
+             xid-start-ranges))
+
+  (defrulel xid-continue-ranges-within-ranges-of-later-version
+    (implies (version<= ver1 ver2)
+             (ranges-within-ranges-p (xid-continue-ranges ver1)
+                                     (xid-continue-ranges ver2)))
+    :rule-classes :forward-chaining
+    :enable (version<=
+             version-rank
+             xid-continue-ranges))
+
+  (defruled xid-start-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (xid-start-p cp ver1))
+             (xid-start-p cp ver2))
+    :enable (xid-start-p
+             code-point-in-ranges-p-when-ranges-within-ranges-p))
+
+  (defruled xid-continue-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (xid-continue-p cp ver1))
+             (xid-continue-p cp ver2))
+    :enable (xid-continue-p
+             code-point-in-ranges-p-when-ranges-within-ranges-p)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::deflist xid-continue-listp (x ver)
@@ -292,7 +352,16 @@
                   (code-point-listp cps))
              (scalar-value-listp cps))
     :induct t
-    :enable xid-continue-listp))
+    :enable xid-continue-listp)
+
+  (defruled xid-continue-listp-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (xid-continue-listp cps ver1))
+             (xid-continue-listp cps ver2))
+    :induct (len cps)
+    :enable (xid-continue-listp
+             xid-continue-p-of-later-version
+             len)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +414,14 @@
     (implies (and (xid-identifier-p cps ver)
                   (code-point-listp cps))
              (scalar-value-listp cps))
-    :enable scalar-value-listp-when-xid-continue-listp))
+    :enable scalar-value-listp-when-xid-continue-listp)
+
+  (defruled xid-identifier-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (xid-identifier-p cps ver1))
+             (xid-identifier-p cps ver2))
+    :enable (xid-start-p-of-later-version
+             xid-continue-listp-of-later-version)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

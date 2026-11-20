@@ -110,7 +110,13 @@
                  (and (<= #x2066 cp) ; LRI, RLI, FSI, PDI
                       (<= cp #x2069)))))
     :enable (bidi-control-ranges
-             code-point-in-range-p)))
+             code-point-in-range-p))
+
+  (defrule bidi-control-p-same-in-all-versions
+    (equal (bidi-control-p cp ver1)
+           (bidi-control-p cp ver2))
+    :rule-classes nil
+    :enable bidi-control-p-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -194,7 +200,13 @@
     :use (:instance class-ok-when-member-equal-of-class-ok-listp
           (acl2::a (code-point-fix cp))
           (x (all-code-points))
-          (map (bidi-formatting-classes ver)))))
+          (map (bidi-formatting-classes ver))))
+
+  (defrule bidi-explicit-formatting-class-same-in-all-versions
+    (equal (bidi-explicit-formatting-class cp ver1)
+           (bidi-explicit-formatting-class cp ver2))
+    :rule-classes nil
+    :enable bidi-explicit-formatting-class-alt-def))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,6 +229,12 @@
                       (<= cp #x2069)))))
     :enable (bidi-explicit-formatting-class-alt-def
              code-point-p))
+
+  (defrule bidi-explicit-formatting-p-same-in-all-versions
+    (equal (bidi-explicit-formatting-p cp ver1)
+           (bidi-explicit-formatting-p cp ver2))
+    :rule-classes nil
+    :enable bidi-explicit-formatting-p-alt-def)
 
   (defrule bidi-control-p-when-bidi-explicit-formatting-p
     (implies (bidi-explicit-formatting-p cp ver)
