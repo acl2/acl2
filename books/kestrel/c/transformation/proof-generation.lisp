@@ -3065,7 +3065,8 @@
       (implies (and (gout->thm-name gout)
                     (or (not ideclors-thm-name)
                         (and (init-declor-list-obj-block-formalp ideclors)
-                             (init-declor-list-obj-block-formalp ideclors-new))))
+                             (init-declor-list-obj-block-formalp
+                              ideclors-new))))
                (and (b* (((mv okp tyspecs)
                           (check-decl-spec-list-all-typespec specs)))
                       (and okp
@@ -3491,7 +3492,7 @@
     (xdoc::li
      "The main theorem for the function definition,
       saying that, if the execution of the old function does not yield an error,
-      neither does the execition of the new function,
+      neither does the execution of the new function,
       and they return the same results and computation states."))
    (xdoc::p
     "The main theorem also says that the type of the result is in
