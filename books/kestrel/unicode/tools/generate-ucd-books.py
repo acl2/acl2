@@ -882,6 +882,9 @@ def book_derived_general_category(version, sources):
         "each run is a first code point, a last code point,\n"
         "and the value that all the code points from the first to the last"
         " have.\n"
+        "A run is written as a triple, with the abbreviation of the value;\n"
+        "the macro general-category-run-table makes the list of runs"
+        " from the triples.\n"
         "The runs are maximal and in order, and cover every code point.\n"
         "The values are read from the derived file, which lists every"
         " code point,\n"
@@ -895,16 +898,9 @@ def book_derived_general_category(version, sources):
     # value is stored in the certificate; a defconst of this size takes
     # the Lisp compiler half a minute.
     book.lines.append("(defconsts %s" % const)
-    book.lines.append("  (list")
+    book.lines.append("  (general-category-run-table")
     for lo, hi, v in runs:
-        line = "   (general-category-run %s %s %s)" % (hexcp(lo), hexcp(hi),
-                                                       constructor(v))
-        if len(line) <= 79:
-            book.lines.append(line)
-        else:
-            book.lines.append("   (general-category-run %s %s"
-                              % (hexcp(lo), hexcp(hi)))
-            book.lines.append("                         %s)" % constructor(v))
+        book.lines.append('   (%s %s "%s")' % (hexcp(lo), hexcp(hi), v))
     book.lines[-1] += "))"
     book.blank()
     book.assert_equal("(len %s)" % const, len(runs))

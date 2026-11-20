@@ -14,6 +14,7 @@
 (include-book "../pattern-white-space")
 (include-book "../bidi-controls")
 (include-book "../normalization")
+(include-book "../stream-safe")
 (include-book "../general-category")
 (include-book "../default-ignorable")
 (include-book "../variation-selectors")
@@ -74,6 +75,16 @@
 ; so the file has all the pairs that compose, and many more that do not.
 ; Each line has the two code points, the code point they compose to
 ; (or - if they do not compose), and the NFC form of the pair,
+; separated by spaces.
+;
+; A third function writes, to a third file,
+; what the library says the Stream-Safe Text Process does
+; to sequences of code points that have many non-starters in a row
+; in Normalization Form KD.
+; There are three sequences for each code point
+; whose compatibility decomposition has a non-starter,
+; and a few more.
+; Each line has a sequence, the character >, and the result of the process,
 ; separated by spaces.
 ;
 ; The functions here are in program mode: they do input/output,
@@ -233,4 +244,71 @@
        (state (princ$ "#first second composite nfc" channel state))
        (state (newline channel state))
        (state (dump-pairs-of-firsts firsts seconds ver channel state)))
+    (close-output-channel channel state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The Stream-Safe Text Process, on sequences of code points.
+
+(defun has-non-starter-p (cps ver)
+  (cond ((endp cps) nil)
+        (t (or (not (starter-p (car cps) ver))
+               (has-non-starter-p (cdr cps) ver)))))
+
+(defun dump-stream-safe-line (cps ver channel state)
+  (declare (xargs :stobjs state))
+  (b* ((state (dump-nats cps channel state))
+       (state (princ$ " > " channel state))
+       (state (dump-nats (stream-safe-process cps ver) channel state)))
+    (newline channel state)))
+
+; For a code point whose compatibility decomposition has a non-starter:
+; the code point 35 times;
+; 29 times U+0301 COMBINING ACUTE ACCENT, the code point, 3 times U+0301;
+; and the letter a, the code point 16 times, the letter a, the code point.
+
+(defun dump-stream-safe-of-code-points (cp ver channel state)
+  (declare (xargs :stobjs state))
+  (cond ((> cp #x10FFFF) state)
+        ((has-non-starter-p (decomposition cp t ver) ver)
+         (b* ((state (dump-stream-safe-line
+                      (make-list 35 :initial-element cp)
+                      ver channel state))
+              (state (dump-stream-safe-line
+                      (append (make-list 29 :initial-element #x301)
+                              (list cp)
+                              (make-list 3 :initial-element #x301))
+                      ver channel state))
+              (state (dump-stream-safe-line
+                      (append (list #x61)
+                              (make-list 16 :initial-element cp)
+                              (list #x61 cp))
+                      ver channel state)))
+           (dump-stream-safe-of-code-points (+ 1 cp) ver channel state)))
+        (t (dump-stream-safe-of-code-points (+ 1 cp) ver channel state))))
+
+; Write the file.  For example:
+;   (dump-stream-safe (version-v16.0.0) "/tmp/acl2-stream-safe-16.0.0.txt"
+;                     state)
+
+(defun dump-stream-safe (ver filename state)
+  (declare (xargs :stobjs state))
+  (b* (((mv channel state) (open-output-channel filename :character state))
+       ((unless channel)
+        (prog2$ (er hard? 'dump-stream-safe "Cannot open ~x0." filename)
+                state))
+       (state (princ$ "#sequence > result" channel state))
+       (state (newline channel state))
+       ;; a few sequences of ASCII and of combining marks:
+       (state (dump-stream-safe-line (list #x66 #x6F #x6F) ver channel state))
+       (state (dump-stream-safe-line (make-list 30 :initial-element #x301)
+                                     ver channel state))
+       (state (dump-stream-safe-line (make-list 31 :initial-element #x301)
+                                     ver channel state))
+       (state (dump-stream-safe-line (make-list 100 :initial-element #x301)
+                                     ver channel state))
+       (state (dump-stream-safe-line
+               (cons #x61 (make-list 61 :initial-element #x323))
+               ver channel state))
+       (state (dump-stream-safe-of-code-points 0 ver channel state)))
     (close-output-channel channel state)))

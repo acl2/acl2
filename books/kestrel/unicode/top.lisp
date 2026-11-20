@@ -31,6 +31,10 @@
 (include-book "decompositions")
 (include-book "compositions")
 (include-book "normalization")
+(include-book "composing-pairs")
+(include-book "normalization-inert")
+(include-book "normalization-members")
+(include-book "stream-safe")
 (include-book "identifier-closure")
 (include-book "quick-check")
 (include-book "quick-check-theorems")
@@ -91,9 +95,23 @@
      "The proof that normalizing an identifier gives an identifier:
       see @(see identifier-closure).")
     (xdoc::li
+     "The code points that the normalization forms leave alone
+      and across which they do not reach,
+      which is what a language needs to know about its delimiters:
+      see @(see normalization-inert-code-points);
+      and where certain code points of a normalized text come from:
+      see @(see normalization-members).")
+    (xdoc::li
+     "The Stream-Safe Text Format,
+      which bounds the number of combining marks in a row,
+      and the process that puts text in that format:
+      see @(see stream-safe).")
+    (xdoc::li
      "The quick check properties of the normalization forms,
-      and the proof that the quick check is exact
-      for the two decomposed forms:
+      the proof that the quick check is exact
+      for the two decomposed forms,
+      and the proof that the code points that the two composed forms change
+      are those whose quick check value is `no':
       see @(see quick-check) and @(see quick-check-theorems).")
     (xdoc::li
      "The @('Pattern_White_Space') property,
@@ -176,9 +194,22 @@
       and for what the forms are made of.
       This is the largest part.")
     (xdoc::li
+     "@('kestrel/unicode/composing-pairs')
+      for @(tsee composes-with-following-p)
+      and @(tsee composes-with-previous-p);
+      @('kestrel/unicode/normalization-inert')
+      for @(tsee normalization-inert-p) and the theorems
+      that each form normalizes separately
+      what is before and what is after an inert code point;
+      @('kestrel/unicode/normalization-members') for the theorems
+      about the code points that occur in a form of a list;
+      and @('kestrel/unicode/stream-safe')
+      for @(tsee stream-safe-p) and @(tsee stream-safe-process).
+      Each of these loads @('normalization').")
+    (xdoc::li
      "@('kestrel/unicode/identifier-closure') for the theorems
       that normalizing an identifier gives an identifier.
-      It loads the previous two.")
+      It loads @('xid') and @('normalization').")
     (xdoc::li
      "@('kestrel/unicode/quick-check') for the quick check properties.")
     (xdoc::li
@@ -197,7 +228,9 @@
      typically needs @('xid');
      @('normalization') if it normalizes or compares identifiers,
      and then @('identifier-closure') for the theorems
-     that what it normalizes is still an identifier;
+     that what it normalizes is still an identifier,
+     and @('normalization-inert') for the theorems
+     that normalization does not reach across its delimiters;
      @('general-category') if its identifiers or its white space
      are defined by general categories;
      and @('pattern-white-space'), @('bidi-controls')
@@ -238,7 +271,9 @@
      tree maps from code points to values,
      or lists of runs of code points with the same value,
      with fixtypes that are checked when the books are certified:
-     see @(see tables).")
+     see @(see tables).
+     A few sets of code points that are computed from the tables
+     are tree sets: see @(tsee code-point-set).")
    (xdoc::h3 "Representation")
    (xdoc::p
     "Code points are natural numbers, never ACL2 characters.

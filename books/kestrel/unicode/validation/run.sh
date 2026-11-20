@@ -42,12 +42,15 @@ here=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$work"
 work=$(cd "$work" && pwd)
 
-echo "== ACL2: writing $work/acl2-$version.txt and acl2-pairs-$version.txt"
+echo "== ACL2: writing $work/acl2-$version.txt, acl2-pairs-$version.txt"
+echo "   and acl2-stream-safe-$version.txt"
 acl2 > "$work/acl2-$version.log" 2>&1 <<EOF2
 (include-book "$here/dump")
 (in-package "UNICODE")
 (dump-properties (version-v$version) "$work/acl2-$version.txt" state)
 (dump-pairs (version-v$version) "$work/acl2-pairs-$version.txt" state)
+(dump-stream-safe (version-v$version) "$work/acl2-stream-safe-$version.txt"
+                  state)
 EOF2
 files=("$work/acl2-$version.txt")
 status=0
@@ -59,6 +62,8 @@ oracle="$here/rust-oracle/v$version/target/release/oracle"
 "$oracle" "$version" code-points > "$work/rust-$version.txt"
 files+=("$work/rust-$version.txt")
 "$oracle" "$version" pairs "$work/acl2-pairs-$version.txt" || status=1
+"$oracle" "$version" stream-safe "$work/acl2-stream-safe-$version.txt" \
+    || status=1
 
 if [ $# -gt 0 ]; then
     echo "== Python: running the oracle"
