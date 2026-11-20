@@ -26,7 +26,7 @@
    (xdoc::p
     "In C, a byte consists of @('CHAR_BIT') bits (8 or more)
      [C17:5.2.4.2.1/1] [C23:5.3.5.3.2],
-     which are captured in @(see uchar-formats) in our formalization.
+     whose number is captured in @(see uchar-formats) in our formalization.
      Here we provide recognizers and fixers for bytes, and lists thereof,
      parameterized by an implementation environment."))
   :order-subtopics t
