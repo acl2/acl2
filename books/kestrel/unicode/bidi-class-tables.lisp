@@ -215,9 +215,9 @@
    (xdoc::p
     "These are the two strong classes
      of the characters that are written from right to left.
-     A text that has no character of these two classes
-     and no explicit directional formatting character
-     is displayed from left to right, in the order in which it is stored."))
+     A text can be displayed in another order than the one it is stored in
+     without any character of these two classes:
+     see @(tsee right-to-left-code-point-p)."))
   (bidi-class-case class
                    :right-to-left t
                    :arabic-letter t

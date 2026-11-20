@@ -20,7 +20,9 @@
 # And, for the properties that those crates do not have:
 #
 #   unicode-script 0.5.7         Unicode 16.0.0 (says so itself)
-#   unicode-bidi 0.3.18          Unicode 16.0.0 (says so itself)
+#   unicode-bidi 0.3.18          Unicode 16.0.0 (says so itself); also
+#                                used to test which text is displayed in
+#                                the order in which it is stored
 #   unicode-security 0.1.2       Unicode 16.0.0 (says so itself); its
 #                                skeleton does not remove the default
 #                                ignorable code points, and it does not

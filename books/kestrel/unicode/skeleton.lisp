@@ -544,20 +544,36 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check if its bidirectional class
-     is one of the two strong right-to-left classes,
-     @('R') (@('Right_To_Left')) and @('AL') (@('Arabic_Letter')),
-     or one of the three classes
-     of the explicit directional formatting characters
-     that start an embedding, an override or an isolate
-     from right to left:
-     @('RLE') (@('Right_To_Left_Embedding')),
-     @('RLO') (@('Right_To_Left_Override'))
-     and @('RLI') (@('Right_To_Left_Isolate'))
-     [UAX #9, Table 4]."))
+     is one of the following six [UAX #9, Table 4]:")
+   (xdoc::ul
+    (xdoc::li
+     "The two strong right-to-left classes,
+      @('R') (@('Right_To_Left')) and @('AL') (@('Arabic_Letter')).")
+    (xdoc::li
+     "@('AN') (@('Arabic_Number')),
+      the class of the Arabic-Indic digits
+      and of a few other characters used in numbers.
+      A number is displayed from left to right,
+      but in a paragraph from left to right
+      two numbers of this class with a space between them
+      are displayed in the opposite order:
+      for the characters between them,
+      numbers act as right-to-left characters [UAX #9, rule N1].
+      The European digits, of class @('EN'), do not do this
+      in a text that has no character of the two strong classes above.")
+    (xdoc::li
+     "The three classes
+      of the explicit directional formatting characters
+      that start an embedding, an override or an isolate
+      from right to left:
+      @('RLE') (@('Right_To_Left_Embedding')),
+      @('RLO') (@('Right_To_Left_Override'))
+      and @('RLI') (@('Right_To_Left_Isolate')).")))
   (b* ((class (code-point-bidi-class cp ver)))
     (bidi-class-case class
                      :right-to-left t
                      :arabic-letter t
+                     :arabic-number t
                      :right-to-left-embedding t
                      :right-to-left-override t
                      :right-to-left-isolate t
@@ -578,23 +594,29 @@
     "See @(tsee right-to-left-code-point-p).
      A text that satisfies this predicate,
      in a paragraph from left to right,
-     is displayed in the order in which it is stored:
-     the Unicode Bidirectional Algorithm [UAX #9]
-     gives an even embedding level to each of its characters,
-     and reorders only the characters with odd levels.
-     This library does not have that algorithm yet,
-     so this is not a theorem here.")
+     is displayed in the order in which it is stored,
+     by the Unicode Bidirectional Algorithm [UAX #9].
+     This library does not have that algorithm,
+     so this is not a theorem here.
+     It was tested with an implementation of the algorithm,
+     on every string of up to six characters
+     over twenty characters of sixteen of the other seventeen classes
+     (all but the paragraph separators,
+     which only cut a text into paragraphs);
+     and for each of the six classes that the predicate excludes,
+     the same test finds strings that are displayed in another order.
+     The file @('README.md') says how to repeat the test.")
    (xdoc::p
     "The specification of the skeleton states a weaker condition:
      that the bidirectional skeleton
      of a string with no character of class @('R') or @('AL'),
      for a paragraph from left to right,
      is its internal skeleton [UTS #39, Section 4].
-     We also exclude the three explicit formatting characters,
-     because an override from right to left
-     makes left-to-right characters be displayed from right to left,
-     and an embedding or isolate from right to left
-     can reorder what is around them."))
+     We exclude four more classes, because of that test:
+     the Arabic-Indic digits U+0661 and U+0662 with a space between them
+     are displayed with U+0662 first;
+     and after U+202E RIGHT-TO-LEFT OVERRIDE,
+     the letters a, b are displayed as b, a."))
   (right-to-left-code-point-p x ver)
   :negatedp t
 
