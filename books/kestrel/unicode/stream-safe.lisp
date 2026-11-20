@@ -53,8 +53,12 @@
      and that it leaves text in that format unchanged;
      so applying the process a second time changes nothing.
      See @(see stream-safe-theorems).
-     We do not prove what [UAX #15, Section 13] says
-     about the process and the normalization forms.")
+     We also prove that putting text in a normalization form
+     does not change whether it is in Stream-Safe Text Format,
+     and that the process keeps text that is in NFD or in NFKD in that form.
+     [UAX #15, Section 13] says the same of NFC and NFKC,
+     which we do not prove.
+     See @(see stream-safe-and-normalization-forms).")
    (xdoc::p
     "A starter is a code point
      whose canonical combining class is 0 (see @(tsee starter-p));
@@ -543,3 +547,134 @@
   (defrule stream-safe-process-of-stream-safe-process
     (equal (stream-safe-process (stream-safe-process cps ver) ver)
            (stream-safe-process cps ver))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection stream-safe-and-normalization-forms
+  :short "The Stream-Safe Text Format and Process,
+          and the normalization forms."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Putting a list of code points in one of the four normalization forms
+     (see @(see normalization))
+     does not change whether it is in Stream-Safe Text Format.
+     This is because the format is defined on the NFKD form,
+     and the NFKD form of any of the four forms of a list
+     is the NFKD form of the list.
+     So it does not matter whether the format is checked
+     before or after the text is normalized.")
+   (xdoc::p
+    "The Stream-Safe Text Process keeps a list that is in NFD in NFD,
+     and a list that is in NFKD in NFKD
+     (see @(tsee nfd-memberp) and @(tsee nfkd-memberp)).
+     This is because what the process inserts,
+     U+034F COMBINING GRAPHEME JOINER,
+     is a starter with no decomposition:
+     the list is still fully decomposed and in canonical order.
+     [UAX #15, Section 13] says the same of NFC and NFKC;
+     that is not proved here."))
+
+  ;; The format is not changed by the four forms.
+
+  (defrule stream-safe-p-of-nfd
+    (equal (stream-safe-p (nfd cps ver) ver)
+           (stream-safe-p cps ver))
+    :enable stream-safe-p)
+
+  (defrule stream-safe-p-of-nfc
+    (equal (stream-safe-p (nfc cps ver) ver)
+           (stream-safe-p cps ver))
+    :enable stream-safe-p)
+
+  (defrule stream-safe-p-of-nfkd
+    (equal (stream-safe-p (nfkd cps ver) ver)
+           (stream-safe-p cps ver))
+    :enable stream-safe-p)
+
+  (defrule stream-safe-p-of-nfkc
+    (equal (stream-safe-p (nfkc cps ver) ver)
+           (stream-safe-p cps ver))
+    :enable stream-safe-p)
+
+  ;; The combining grapheme joiner is a starter
+  ;; and is its own decomposition, canonical and compatibility.
+
+  (defrulel canonical-combining-class-of-combining-grapheme-joiner
+    (equal (canonical-combining-class *combining-grapheme-joiner* ver)
+           0)
+    :enable (canonical-combining-class
+             canonical-combining-class-map))
+
+  (defrulel undecomposable-p-of-combining-grapheme-joiner
+    (undecomposable-p *combining-grapheme-joiner* compat ver)
+    :enable (undecomposable-p
+             decomposition
+             canonical-decompositions
+             compatibility-decompositions))
+
+  ;; The result of the process is fully decomposed if its argument is.
+
+  (defrulel undecomposable-listp-of-stream-safe-process-from
+    (implies (undecomposable-listp cps compat ver)
+             (undecomposable-listp (stream-safe-process-from count cps ver)
+                                   compat
+                                   ver))
+    :induct (stream-safe-process-from count cps ver)
+    :enable stream-safe-process-from)
+
+  ;; The result of the process is in canonical order if its argument is.
+  ;; We prove this for the result with a code point in front of it,
+  ;; which is the code point before, in the argument;
+  ;; the induction changes that code point as it goes through the list.
+
+  (local
+   (define ordered-induct ((cp code-point-p)
+                           (count natp)
+                           (cps code-point-listp)
+                           (ver versionp))
+     :returns (irrelevant null)
+     (b* ((count (lnfix count))
+          ((when (endp cps)) nil)
+          (next (code-point-fix (car cps)))
+          (decomposed (nfkd (list next) ver))
+          (insert (> (+ count (leading-non-starter-count decomposed ver))
+                     *stream-safe-limit*))
+          (count-before (if insert 0 count))
+          (count-after (non-starter-count-after count-before decomposed ver)))
+       (ordered-induct next count-after (cdr cps) ver))
+     :measure (len cps)
+     :hooks nil
+     :ignore-ok t
+     :irrelevant-formals-ok t))
+
+  (defrulel canonically-ordered-p-of-cons-of-stream-safe-process-from
+    (implies (canonically-ordered-p (cons cp cps) ver)
+             (canonically-ordered-p
+              (cons cp (stream-safe-process-from count cps ver))
+              ver))
+    :induct (ordered-induct cp count cps ver)
+    :enable (ordered-induct
+             stream-safe-process-from
+             canonically-ordered-p))
+
+  (defrulel canonically-ordered-p-of-stream-safe-process-from
+    (implies (canonically-ordered-p cps ver)
+             (canonically-ordered-p (stream-safe-process-from count cps ver)
+                                    ver))
+    :enable canonically-ordered-p
+    :expand (stream-safe-process-from count cps ver))
+
+  ;; The two theorems.
+
+  (defrule nfd-memberp-of-stream-safe-process
+    (implies (nfd-memberp cps ver)
+             (nfd-memberp (stream-safe-process cps ver) ver))
+    :enable (nfd-memberp-alt-def
+             stream-safe-process))
+
+  (defrule nfkd-memberp-of-stream-safe-process
+    (implies (nfkd-memberp cps ver)
+             (nfkd-memberp (stream-safe-process cps ver) ver))
+    :enable (nfkd-memberp-alt-def
+             stream-safe-process)))
