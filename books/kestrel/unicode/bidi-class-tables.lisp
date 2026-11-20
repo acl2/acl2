@@ -12,6 +12,8 @@
 
 (include-book "runs")
 
+(include-book "xdoc/alter" :dir :system) ; for XDOC::WITHOUT-XDOC
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -33,7 +35,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum bidi-class
+(xdoc::without-xdoc
+ (fty::deftagsum bidi-class
+   (:left-to-right ())
+   (:right-to-left ())
+   (:arabic-letter ())
+   (:european-number ())
+   (:european-separator ())
+   (:european-terminator ())
+   (:arabic-number ())
+   (:common-separator ())
+   (:nonspacing-mark ())
+   (:boundary-neutral ())
+   (:paragraph-separator ())
+   (:segment-separator ())
+   (:white-space ())
+   (:other-neutral ())
+   (:left-to-right-embedding ())
+   (:left-to-right-override ())
+   (:right-to-left-embedding ())
+   (:right-to-left-override ())
+   (:pop-directional-format ())
+   (:left-to-right-isolate ())
+   (:right-to-left-isolate ())
+   (:first-strong-isolate ())
+   (:pop-directional-isolate ())
+   :pred bidi-class-p))
+
+(defxdoc bidi-class
+  :parents (bidi-class-tables)
   :short "Fixtype of the values of the @('Bidi_Class') property."
   :long
   (xdoc::topstring
@@ -92,31 +122,26 @@
     (xdoc::li "@('RLI'), @('Right_To_Left_Isolate').")
     (xdoc::li "@('FSI'), @('First_Strong_Isolate').")
     (xdoc::li "@('PDI'), @('Pop_Directional_Isolate'),
-               which ends an isolate.")))
-  (:left-to-right ())
-  (:right-to-left ())
-  (:arabic-letter ())
-  (:european-number ())
-  (:european-separator ())
-  (:european-terminator ())
-  (:arabic-number ())
-  (:common-separator ())
-  (:nonspacing-mark ())
-  (:boundary-neutral ())
-  (:paragraph-separator ())
-  (:segment-separator ())
-  (:white-space ())
-  (:other-neutral ())
-  (:left-to-right-embedding ())
-  (:left-to-right-override ())
-  (:right-to-left-embedding ())
-  (:right-to-left-override ())
-  (:pop-directional-format ())
-  (:left-to-right-isolate ())
-  (:right-to-left-isolate ())
-  (:first-strong-isolate ())
-  (:pop-directional-isolate ())
-  :pred bidi-class-p)
+               which ends an isolate."))
+   (xdoc::p
+    "The type is introduced with @(tsee fty::deftagsum).
+     Each value has a constructor without arguments,
+     named @('bidi-class-') followed by the long name of the value
+     in lower case, with hyphens in place of underscores:
+     for example, @('(bidi-class-left-to-right)').
+     The recognizer of the type is @('bidi-class-p'),
+     its fixer is @('bidi-class-fix'),
+     and its equivalence is @('bidi-class-equiv').
+     The function @('bidi-class-kind')
+     returns the keyword of a value, such as @(':left-to-right'),
+     and the macro @('bidi-class-case')
+     distinguishes the values by their keywords.")
+   (xdoc::p
+    "These functions and macros have no documentation topics of their own.
+     @(tsee fty::deftagsum) generates 75 topics for this type,
+     three of them for each value,
+     and none of them would say more than this topic does.
+     So we turn them off, with @('xdoc::without-xdoc').")))
 
 ;;;;;;;;;;;;;;;;;;;;
 
