@@ -67,7 +67,12 @@
   :guard (ienvp ienv)
   :short "Recognize lists of bytes."
   (bytep x ienv)
-  :true-listp t)
+  :true-listp t
+
+  ///
+
+  (fty::deffixequiv byte-listp
+    :args ((ienv ienvp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,4 +87,7 @@
     (implies (byte-listp x ienv)
              (equal (byte-list-fix x ienv)
                     x))
-    :induct t))
+    :induct t)
+
+  (fty::deffixequiv byte-list-fix
+    :args ((ienv ienvp))))
