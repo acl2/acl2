@@ -79,6 +79,7 @@
 (std::defprojection byte-list-fix (x ienv)
   :guard (and (ienvp ienv) (byte-listp x ienv))
   :returns (fixed-bytes (byte-listp fixed-bytes ienv))
+  :short "Fixer for @(tsee byte-listp)."
   (byte-fix x ienv)
 
   ///
