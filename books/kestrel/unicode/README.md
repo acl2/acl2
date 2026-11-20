@@ -23,8 +23,15 @@ validated.
   have those modifications; the Unicode documents do not say what it stands
   for.  An XID identifier is a code point with `XID_Start` followed by code
   points with `XID_Continue`.
+- The values of `General_Category` have long names and two-letter
+  abbreviations (UAX #44, Table 12): `Lu` is `Uppercase_Letter`, `Mn` is
+  `Nonspacing_Mark`, `Cn` is `Unassigned`, and so on.  The constructors of
+  the type `general-category` use the long names; the documentation of the
+  type lists all thirty with their abbreviations, and
+  `general-category-abbreviation` returns the abbreviation.
 - UAX: Unicode Standard Annex.  UAX #15 is Unicode Normalization Forms,
-  UAX #31 is Unicode Identifiers and Syntax.
+  UAX #31 is Unicode Identifiers and Syntax, UAX #44 is the Unicode
+  Character Database.  UTS: Unicode Technical Standard.
 - UCD: Unicode Character Database.
 
 ## What is here
@@ -33,9 +40,18 @@ validated.
 |------|----------|
 | `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
 | `versions` | The supported versions of Unicode, as a type. |
+| `general-category` | `General_Category`: `code-point-general-category`, the ranges of the code points that have a value (`general-category-ranges`), and `assigned-p`. |
 | `xid` | `XID_Start` and `XID_Continue`, and the XID identifiers (the default identifiers of UAX #31); the two optional characters for the start of an identifier, `$` and `_`. |
 | `pattern-white-space` | `Pattern_White_Space`. |
+| `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
+| `default-ignorable` | `Default_Ignorable_Code_Point`. |
+| `variation-selectors` | `Variation_Selector`. |
+| `join-controls` | `Join_Control`: the zero width joiner and non-joiner. |
+| `noncharacters` | `Noncharacter_Code_Point`, with the proof that the tables are the 66 code points that the standard describes. |
+| `deprecated` | `Deprecated`. |
+| `prepended-concatenation-marks` | `Prepended_Concatenation_Mark`. |
+| `property-relations` | Theorems that relate properties to each other: a code point that is not a starter is a mark; variation selectors are nonspacing marks; bidirectional controls, join controls and variation selectors are default ignorable; noncharacters are unassigned; `Pattern_Syntax` is disjoint from `Pattern_White_Space` and from `XID_Continue`; and more. |
 | `hangul` | The arithmetic decomposition and composition of Hangul syllables. |
 | `combining-classes` | `Canonical_Combining_Class`. |
 | `decompositions` | `Decomposition_Mapping`, and the full canonical and compatibility decompositions. |
@@ -46,16 +62,23 @@ validated.
 | `quick-check-theorems` | The proof that the quick check is exact for NFD and NFKD. |
 | `utf-8` | Theorems connecting scalar values to the verified UTF-8 codec of `[books]/unicode`. |
 | `ranges` | The fixtypes of ranges of code points and of lists of ranges, which represent the binary properties. |
-| `maps` | The fixtypes of the tree maps from code points to values, which represent the other properties. |
+| `maps` | The fixtypes of the tree maps from code points to values, which represent the properties with a default value. |
+| `general-category-tables` | The fixtype of the thirty values of `General_Category`, and the fixtypes of runs of code points with the same value, which represent that property. |
+| `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
 | `validation/` | Tools to compare the library, on every code point, with other implementations. |
 
-Out of scope: collation, text segmentation, the bidirectional algorithm, and
-confusables.  Not done yet, to be added when a use needs them: the general
-category and the case mappings.
+What is not modeled is listed, specification by specification, in the
+documentation topic `unicode-coverage` (book `coverage`).  Among other
+things: character names, case mappings, scripts, the bidirectional
+algorithm, text segmentation, confusables and the other data of UTS #39,
+emoji, and collation.  That topic is also the only place where the library
+names programming languages: it says, for C, Java, Python, Rust, Scheme and
+Remora, whether the library has all that their lexical rules take from
+Unicode.
 
 Encodings are elsewhere and are not rebuilt here: `[books]/unicode` has a
 verified UTF-8 decoder and encoder, and `[books]/kestrel/unicode-light` has
@@ -198,20 +221,32 @@ supported version, and nothing else of this library.
 |--------|---------|-------------------------------------|----------------------|
 | `code-point-p`, `scalar-value-p`, and the types of their lists | `code-points` | | |
 | `xid-start-p`, `xid-continue-p`, `xid-identifier-p`, `optional-start-p` | `xid` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `code-point-general-category`, `general-category-ranges`, `assigned-p`; the type `general-category` and its predicates such as `general-category-letter-p` | `general-category` | `code-points`, `versions`, `ranges`, `general-category-tables` | `derived-general-category` |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
+| `pattern-syntax-p` | `pattern-syntax` | `code-points`, `versions`, `ranges` | `prop-list` |
+| `default-ignorable-p` | `default-ignorable` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
+| `variation-selector-p`, `join-control-p`, `noncharacter-p`, `deprecated-p`, `prepended-concatenation-mark-p` | `variation-selectors`, `join-controls`, `noncharacters`, `deprecated`, `prepended-concatenation-marks` (one book each) | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | The theorems that normalizing an identifier gives an identifier | `identifier-closure` | `xid`, `normalization`, and the books that those load | the tables of `xid` and of `normalization` |
 | `nfc-quick-check` and the other three | `quick-check` | `code-points`, `versions`, `ranges` | `derived-normalization-props` |
 | The theorems that the quick check is exact for NFD and NFKD | `quick-check-theorems` | `quick-check`, `normalization`, and the books that those load | the tables of `normalization` |
 | Theorems that what the UTF-8 decoder of `[books]/unicode` returns are scalar values | `utf-8` | `code-points` | none (it loads that decoder) |
+| Theorems that relate properties to each other | `property-relations` | `general-category`, `xid`, `combining-classes`, and the books of the eight other properties that it relates | the tables of those books |
 
 A front end for a language whose identifiers follow UAX #31 typically needs
 `xid`; `normalization` if it normalizes or compares identifiers, and then
 `identifier-closure` to know that what it normalizes is still an identifier;
 `pattern-white-space` and `bidi-controls` if its white space or the
 characters it rejects are defined by those properties; and `utf-8` if it
-decodes its input with `[books]/unicode`.
+decodes its input with `[books]/unicode`.  A front end for a language that
+defines its identifiers or its white space by general categories needs
+`general-category`.  The predicates on values, such as
+`general-category-letter-p`, apply to the result of
+`code-point-general-category`; a set of code points given by a list of
+categories can also be had as lists of ranges, with
+`general-category-ranges`, and the theorem
+`code-point-in-general-category-ranges` says that the two agree.
 
 - **`top`** is all of the above, and the documentation.  Neither `top` nor
   any book in the table loads the tests or the test vectors: only the books
@@ -241,12 +276,19 @@ decodes its input with `[books]/unicode`.
   library, and the converse to get results back; `scalar-value-p-alt-def`
   (a scalar value is a natural number below `#xD800`, or from `#xE000` to
   `#x10FFFF`) makes both easy to prove.
-- **Small sets.**  `Pattern_White_Space` and the bidirectional controls are
-  a few code points, the same in all the supported versions.  A front end
-  that lists them in its own grammar or lexer can keep its list and prove
-  it equal to the property, for any version, from
-  `pattern-white-space-p-alt-def`, `bidi-control-p-alt-def` and
-  `bidi-explicit-formatting-p-alt-def`.
+- **Small sets.**  `Pattern_White_Space`, the bidirectional controls, the
+  join controls, the variation selectors and the noncharacters are a few
+  code points or a few ranges, the same in all the supported versions.  A
+  front end that lists them in its own grammar or lexer can keep its list
+  and prove it equal to the property, for any version, from
+  `pattern-white-space-p-alt-def`, `bidi-control-p-alt-def`,
+  `bidi-explicit-formatting-p-alt-def`, `join-control-p-alt-def`,
+  `variation-selector-p-alt-def` and `noncharacter-p-alt-def`.
+- **Speed of `General_Category`.**  `code-point-general-category` goes
+  through the list of runs, about 4,100 of them, until it finds the run of
+  the code point; `general-category-ranges` goes through the whole list at
+  each call.  That is enough for proofs and for tests.  A faster lookup,
+  proved equal to this one, is not there yet.
 
 ## Versions
 
@@ -267,8 +309,9 @@ Database (UCD) of that version, at
 
 | UCD file | Generated book | Tables |
 |----------|----------------|--------|
-| `DerivedCoreProperties.txt` | `derived-core-properties` | `XID_Start`, `XID_Continue` |
-| `PropList.txt` | `prop-list` | `Pattern_White_Space`, `Bidi_Control` |
+| `DerivedCoreProperties.txt` | `derived-core-properties` | `XID_Start`, `XID_Continue`, `Default_Ignorable_Code_Point` |
+| `PropList.txt` | `prop-list` | `Pattern_White_Space`, `Bidi_Control`, `Join_Control`, `Variation_Selector`, `Noncharacter_Code_Point`, `Deprecated`, `Prepended_Concatenation_Mark`, `Pattern_Syntax` |
+| `extracted/DerivedGeneralCategory.txt` | `derived-general-category` | `General_Category` |
 | `extracted/DerivedCombiningClass.txt` | `derived-combining-class` | `Canonical_Combining_Class` |
 | `UnicodeData.txt` | `unicode-data` | `Decomposition_Mapping` (canonical and compatibility) |
 | `DerivedNormalizationProps.txt` | `derived-normalization-props` | `Full_Composition_Exclusion`, `NF*_Quick_Check` |
@@ -288,8 +331,8 @@ How the generator reads the UCD:
 
 - **Derived properties come from the derived files**; they are not
   recomputed.  Where the same information is also computable from the
-  primary files (the combining classes and decomposition types from
-  `UnicodeData.txt`; `Full_Composition_Exclusion` from
+  primary files (the combining classes, decomposition types and general
+  categories from `UnicodeData.txt`; `Full_Composition_Exclusion` from
   `CompositionExclusions.txt` and `UnicodeData.txt`), the generator computes
   it too, compares, and stops on any difference.
 - **Defaults come from the `@missing` lines.**  A code point that a file does
@@ -307,10 +350,15 @@ handled by the arithmetic of the standard, not by tables.
 
 The tables are fixtypes.  A binary property is a list of ranges of code
 points (`fty::defprod range`, `fty::deflist range-list`); the generated
-books build these lists with the constructor of ranges.  The other tables
-are tree maps (`fty::deftreemap`) from code points to values, or, for
-composition, from pairs of code points (`fty::defprod code-point-pair`) to
-scalar values.  Every table that is not built with typed constructors is
+books build these lists with the constructor of ranges.  `General_Category`
+is a list of runs (`fty::defprod general-category-run`: a first code point,
+a last code point, and the value they all have, which is of the type
+`fty::deftagsum general-category`); the runs are in order and cover every
+code point exactly once, which each generated book checks by evaluation,
+and the books build the lists with the constructor of runs.  The other
+tables are tree maps (`fty::deftreemap`) from code points to values, or,
+for composition, from pairs of code points (`fty::defprod code-point-pair`)
+to scalar values.  Every table that is not built with typed constructors is
 checked against the recognizer of its type, by evaluation, in the book
 that defines it.  The conformance test vectors are typed too: a line of
 `NormalizationTest.txt` is a `normalization-test-line`, a product with one
@@ -356,9 +404,12 @@ For example 19.0.0 (this is how 18.0.0 was added):
    `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
 2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, and a line
    to `version-string`.
-3. In each book that selects tables by version (`xid`,
-   `pattern-white-space`, `bidi-controls`, `combining-classes`,
-   `decompositions`, `compositions`, `quick-check`), add the `include-book`
+3. In each book that selects tables by version (`general-category`, `xid`,
+   `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
+   `default-ignorable`, `variation-selectors`, `join-controls`,
+   `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
+   `combining-classes`, `decompositions`, `compositions`, `quick-check`),
+   add the `include-book`
    of the new data book and a `:v19.0.0` line to each selector;
    `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions` and
    `compositions`, also copy the block that defines and checks the computed
@@ -404,9 +455,12 @@ compared with implementations of the *same* version of Unicode.
 `validation/dump.lisp` writes, for each of the 1,114,112 code points, its
 `XID_Start`, `XID_Continue`, `Pattern_White_Space`, `Bidi_Control`,
 explicit formatting class, `Canonical_Combining_Class`,
-`Decomposition_Mapping`, and the NFD, NFC, NFKD and NFKC forms of the code
-point alone; the oracles write the same from other implementations, and
-`validation/compare.py` compares the files.  A second file, with 97,080
+`Decomposition_Mapping`, the NFD, NFC, NFKD and NFKC forms of the code
+point alone, its `General_Category`, and whether it has each of
+`Default_Ignorable_Code_Point`, `Variation_Selector`, `Join_Control`,
+`Noncharacter_Code_Point`, `Deprecated`, `Prepended_Concatenation_Mark` and
+`Pattern_Syntax`; the oracles write the same from other implementations,
+and `validation/compare.py` compares the files.  A second file, with 97,080
 pairs of code points (every first of a composing pair with every second of a
 composing pair, Hangul included), compares composition and the NFC form of
 each pair.
@@ -448,6 +502,27 @@ Notes:
   with another implementation (the first two are proved to be the same as
   in the other versions).
 
+The properties added on 2026-11-19 were compared on that day, for every
+code point, and the earlier comparisons were run again:
+
+- `General_Category`: with `unicode-properties` 0.1.3 for 16.0.0, 0.1.4 for
+  17.0.0 and 0.1.5 for 18.0.0 (the versions that rustc's lexer is built
+  with, which checks that they are for the same version of Unicode as
+  `unicode-ident`); and with Python 3.14.6 for 16.0.0 and Python 3.15.0b4
+  for 17.0.0, which also cover the surrogates.  No differences.
+- `Default_Ignorable_Code_Point`, `Variation_Selector`, `Join_Control`,
+  `Noncharacter_Code_Point`, `Deprecated`, `Prepended_Concatenation_Mark`
+  and `Pattern_Syntax`: with `regex-syntax` 0.8.5, for 16.0.0.  No
+  differences.  There is no release of `regex-syntax` for the later
+  versions, and the Python `regex` module was not installed for this run.
+  But each of these seven tables is the same in 16.0.0, 17.0.0 and 18.0.0,
+  as evaluating `(equal (deprecated-ranges (version-v16.0.0))
+  (deprecated-ranges (version-v17.0.0)))` and the like shows, so the
+  comparison for 16.0.0 covers the three versions.
+- The generator also checks `General_Category` of every code point, as
+  read from `extracted/DerivedGeneralCategory.txt`, against field 2 of
+  `UnicodeData.txt`.
+
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
 interpreter with the right version of Unicode):
 
@@ -464,6 +539,8 @@ Lookups in the maps (combining classes, decompositions, compositions) take
 time logarithmic in the size of the map.  Membership in a list of ranges
 (the binary properties, such as `XID_Start`) takes time linear in the
 number of ranges, which is a few hundred for the largest properties.
+A lookup of `General_Category` takes time linear in the number of runs,
+which is about 4,100.
 The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.

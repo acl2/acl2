@@ -14,6 +14,14 @@
 (include-book "../pattern-white-space")
 (include-book "../bidi-controls")
 (include-book "../normalization")
+(include-book "../general-category")
+(include-book "../default-ignorable")
+(include-book "../variation-selectors")
+(include-book "../join-controls")
+(include-book "../noncharacters")
+(include-book "../deprecated")
+(include-book "../prepended-concatenation-marks")
+(include-book "../pattern-syntax")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -45,6 +53,14 @@
 ;   nfc     the NFC form of the code point alone
 ;   nfkd    the NFKD form of the code point alone
 ;   nfkc    the NFKC form of the code point alone
+;   gc      its General_Category, by its two-letter abbreviation
+;   di      1 if it has Default_Ignorable_Code_Point, 0 otherwise
+;   vs      1 if it has Variation_Selector, 0 otherwise
+;   jc      1 if it has Join_Control, 0 otherwise
+;   nchar   1 if it has Noncharacter_Code_Point, 0 otherwise
+;   dep     1 if it has Deprecated, 0 otherwise
+;   pcm     1 if it has Prepended_Concatenation_Mark, 0 otherwise
+;   psyn    1 if it has Pattern_Syntax, 0 otherwise
 ;
 ; Numbers are in decimal; the code points of a sequence are separated
 ; by spaces.
@@ -108,7 +124,19 @@
        (state (princ$ ";" channel state))
        (state (dump-nats (nfkd cps ver) channel state))
        (state (princ$ ";" channel state))
-       (state (dump-nats (nfkc cps ver) channel state)))
+       (state (dump-nats (nfkc cps ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (general-category-abbreviation
+                       (code-point-general-category cp ver))
+                      channel state))
+       (state (dump-flag (default-ignorable-p cp ver) channel state))
+       (state (dump-flag (variation-selector-p cp ver) channel state))
+       (state (dump-flag (join-control-p cp ver) channel state))
+       (state (dump-flag (noncharacter-p cp ver) channel state))
+       (state (dump-flag (deprecated-p cp ver) channel state))
+       (state (dump-flag (prepended-concatenation-mark-p cp ver)
+                         channel state))
+       (state (dump-flag (pattern-syntax-p cp ver) channel state)))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -128,7 +156,8 @@
                 state))
        (state (princ$ "#cp;xids;xidc;pws;bidic;bidif;ccc;fce;dm;"
                       channel state))
-       (state (princ$ "nfd;nfc;nfkd;nfkc" channel state))
+       (state (princ$ "nfd;nfc;nfkd;nfkc;" channel state))
+       (state (princ$ "gc;di;vs;jc;nchar;dep;pcm;psyn" channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))
