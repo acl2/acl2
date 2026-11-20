@@ -180,3 +180,78 @@
                                          (bidi-formatting-class-map-fix map))))
     (if in? class nil))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define digit-value-p (x)
+  :returns (yes/no booleanp)
+  :short "Recognize the values of decimal digits:
+          the natural numbers from 0 to 9."
+  (and (natp x)
+       (<= x 9))
+
+  ///
+
+  (defrule natp-when-digit-value-p
+    (implies (digit-value-p x)
+             (natp x))
+    :rule-classes :compound-recognizer)
+
+  (defrule digit-value-p-upper-bound
+    (implies (digit-value-p x)
+             (<= x 9))
+    :rule-classes :forward-chaining))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deffixer digit-value-fix
+  :short "Fixer for @(tsee digit-value-p)."
+  :pred digit-value-p
+  :body-fix 0)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defsection digit-value
+  :short "Fixtype of the values of decimal digits."
+  (fty::deffixtype digit-value
+    :pred digit-value-p
+    :fix digit-value-fix
+    :equiv digit-value-equiv
+    :define t))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption digit-value-option
+  digit-value
+  :short "Fixtype of optional values of decimal digits."
+  :pred digit-value-option-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreemap decimal-digit-map
+  :short "Fixtype of maps from code points to values of decimal digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the table of the code points
+     whose @('Numeric_Type') property is @('Decimal'),
+     with their values [UAX #44, Table 9].
+     A code point that is not in the map is not a decimal digit."))
+  :key-type code-point
+  :val-type digit-value
+  :pred decimal-digit-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define decimal-digit-map-lookup ((cp code-point-p)
+                                  (map decimal-digit-mapp))
+  :returns (value? digit-value-option-p)
+  :short "Look up a code point in a map of values of decimal digits."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') if the code point is not in the map."))
+  (b* (((mv in? value) (treemap::lookup? (code-point-fix cp)
+                                         (decimal-digit-map-fix map))))
+    (if in? value nil))
+  :hooks (:fix))

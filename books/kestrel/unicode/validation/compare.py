@@ -27,6 +27,10 @@ ACL2 column `property`, for every code point, except that:
     for the surrogates, which are not Rust chars); such fields are counted
     but not compared;
 
+  * emoji_status, which the crate unicode-properties gives as one of
+    nine values, is compared with the value that the five ACL2 columns
+    emoji, epres, emod, ebase and ecomp determine (see EMOJI_STATUS);
+
   * for the precomposed Hangul syllables, the dm column of the Python
     oracle is compared with the ACL2 NFD column: the Decomposition_Mapping
     of an LVT syllable is the pair of an LV syllable and a T jamo, but
@@ -43,6 +47,22 @@ The exit status is 1 if anything differs.
 import sys
 
 NUM_CP = 0x110000
+
+# The EmojiStatus of the crate unicode-properties, for each combination
+# of (Emoji, Emoji_Presentation, Emoji_Modifier, Emoji_Modifier_Base,
+# Emoji_Component) that the crate has a value for.
+EMOJI_STATUS = {
+    ("0", "0", "0", "0", "0"): "NonEmoji",
+    ("0", "0", "0", "0", "1"): "NonEmojiButEmojiComponent",
+    ("1", "1", "0", "0", "0"): "EmojiPresentation",
+    ("1", "0", "0", "1", "0"): "EmojiModifierBase",
+    ("1", "1", "0", "1", "0"): "EmojiPresentationAndModifierBase",
+    ("1", "0", "0", "0", "0"): "EmojiOther",
+    ("1", "1", "0", "0", "1"): "EmojiPresentationAndEmojiComponent",
+    ("1", "1", "1", "0", "1"):
+        "EmojiPresentationAndModifierAndEmojiComponent",
+    ("1", "0", "0", "0", "1"): "EmojiOtherAndEmojiComponent",
+}
 
 
 def die(message):
@@ -74,7 +94,9 @@ def main():
     index = {name: i for i, name in enumerate(acl2_columns)}
     for name in ["xids", "xidc", "pws", "bidic", "bidif", "ccc", "fce",
                  "dm", "nfd", "nfc", "nfkd", "nfkc", "gc", "di", "vs", "jc",
-                 "nchar", "dep", "pcm", "psyn"]:
+                 "nchar", "dep", "pcm", "psyn", "ids", "idc", "sc", "scx",
+                 "bc", "blk", "dd", "emoji", "epres", "emod", "ebase",
+                 "ecomp", "extpict", "ri", "idst", "idty"]:
         if name not in index:
             die("%s: no column %s" % (sys.argv[1], name))
 
@@ -88,6 +110,12 @@ def main():
             prop = "xidc"
         if prop == "rustc_whitespace":
             prop = "pws"
+        if prop == "emoji_status":
+            flags = [index[name] for name in
+                     ("emoji", "epres", "emod", "ebase", "ecomp")]
+            return [EMOJI_STATUS.get(tuple(row[i] for i in flags),
+                                     "no such status")
+                    for row in acl2]
         if prop not in index:
             die("no ACL2 column for %s" % prop)
         i = index[prop]

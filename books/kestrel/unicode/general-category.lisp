@@ -192,8 +192,9 @@
     :disable ((:e general-category-surrogate)))
 
   (defruled general-category-surrogate-iff-surrogate-p
-    (equal (general-category-case (code-point-general-category cp ver)
-                                  :surrogate)
+    (equal (equal (general-category-kind
+                   (code-point-general-category cp ver))
+                  :surrogate)
            (surrogate-p cp))
     :enable (equal-of-code-point-general-category
              surrogate-p-alt-def
