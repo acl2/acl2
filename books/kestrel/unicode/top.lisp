@@ -62,6 +62,7 @@
 (include-book "mixed-scripts")
 (include-book "confusable-kinds")
 (include-book "mixed-numbers")
+(include-book "identifier-chunks")
 (include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,6 +132,11 @@
       and whether its digits are of one system:
       see @(see mixed-script-detection)
       and @(see mixed-number-detection).")
+    (xdoc::li
+     "The chunks of an identifier,
+      which are the words that its letter case and its punctuation
+      make visible, of Unicode Source Code Handling:
+      see @(see identifier-word-boundaries).")
     (xdoc::li
      "The four normalization forms, which are
       Normalization Forms D, C, KD and KC (NFD, NFC, NFKD and NFKC),
@@ -292,7 +298,10 @@
       which loads @('skeleton') and @('mixed-scripts');
       @('kestrel/unicode/mixed-numbers')
       for @(tsee mixed-number-systems-p),
-      which loads @('decimal-digits').")
+      which loads @('decimal-digits');
+      @('kestrel/unicode/identifier-chunks')
+      for @(tsee identifier-chunks),
+      which loads @('general-category') and @('scripts').")
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p),
@@ -448,8 +457,9 @@
      [UAX #31] is Unicode Identifiers and Syntax,
      and [UAX #44] is the Unicode Character Database.
      [UTS #n] refers to the Unicode Technical Standard with that number:
-     [UTS #39] is Unicode Security Mechanisms
-     and [UTS #51] is Unicode Emoji.
+     [UTS #39] is Unicode Security Mechanisms,
+     [UTS #51] is Unicode Emoji
+     and [UTS #55] is Unicode Source Code Handling.
      [Stability] refers to the "
     (xdoc::ahref "https://unicode.org/policies/stability_policy.html"
                  "Unicode Character Encoding Stability Policies")
@@ -466,6 +476,7 @@
                     confusable-detection
                     mixed-script-detection
                     mixed-number-detection
+                    identifier-word-boundaries
                     scripts
                     pattern-white-space
                     bidi-controls

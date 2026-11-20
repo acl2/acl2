@@ -1519,3 +1519,118 @@
 ; U+2163 ROMAN NUMERAL FOUR is not a decimal digit and is ignored.
 
 (test (not (mixed-number-systems-p '(#x31 #x2163) *v17*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Identifier chunks.
+
+; The code points of an ASCII string.
+
+(defun char-codes (chars)
+  (declare (xargs :guard (character-listp chars)))
+  (if (endp chars)
+      nil
+    (cons (char-code (car chars))
+          (char-codes (cdr chars)))))
+
+(defmacro ascii (string)
+  `(char-codes (coerce ,string 'list)))
+
+; The examples of UTS #55, Section 5.1.2.1, in the order of its table.
+
+(test (equal (identifier-chunks (ascii "TypeII") *v17*)
+             (list (ascii "Type") (ascii "II"))))
+(test (equal (identifier-chunks (ascii "OCaml") *v17*)
+             (list (ascii "O") (ascii "Caml"))))
+
+; HTTP followed by a word in Cyrillic letters, the first one uppercase.
+
+(test (equal (identifier-chunks
+              (append (ascii "HTTP") '(#x417 #x430 #x43F #x440 #x43E #x441))
+              *v17*)
+             (list (ascii "HTTP") '(#x417 #x430 #x43F #x440 #x43E #x441))))
+(test (equal (identifier-chunks (ascii "UAX9ClauseHL4") *v17*)
+             (list (ascii "UAX9") (ascii "Clause") (ascii "HL4"))))
+(test (equal (identifier-chunks (ascii "LOUD_SNAKE") *v17*)
+             (list (ascii "LOUD") (ascii "_") (ascii "SNAKE"))))
+(test (equal (identifier-chunks (ascii "Fancy_Snake") *v17*)
+             (list (ascii "Fancy") (ascii "_") (ascii "Snake"))))
+(test (equal (identifier-chunks (ascii "snake-kebab") *v17*)
+             (list (ascii "snake") (ascii "-") (ascii "kebab"))))
+
+; U+00B7 MIDDLE DOT is Other_Punctuation and makes no boundary.
+
+(test (equal (identifier-chunks
+              (append (ascii "Paral") '(#xB7) (ascii "lel")) *v17*)
+             (list (append (ascii "Paral") '(#xB7) (ascii "lel")))))
+(test (equal (identifier-chunks (ascii "microB") *v17*)
+             (list (ascii "micro") (ascii "B"))))
+
+; U+15AF CANADIAN SYLLABICS AIVILIK B is an Other_Letter:
+; no boundary after a lowercase letter.
+
+(test (equal (identifier-chunks (append (ascii "micro") '(#x15AF)) *v17*)
+             (list (append (ascii "micro") '(#x15AF)))))
+
+; HTTP followed by a word in Devanagari, which has no case.
+
+(test (equal (identifier-chunks
+              (append (ascii "HTTP") '(#x938 #x930 #x94D #x935 #x930)) *v17*)
+             (list (append (ascii "HTTP")
+                           '(#x938 #x930 #x94D #x935 #x930)))))
+(test (equal (identifier-chunks (ascii "dromedaryCamel") *v17*)
+             (list (ascii "dromedary") (ascii "Camel"))))
+(test (equal (identifier-chunks (ascii "snakeELEPHANTSnake") *v17*)
+             (list (ascii "snake") (ascii "ELEPHANT") (ascii "Snake"))))
+
+; Marks after a letter count as that letter:
+; e, U+0301 COMBINING ACUTE ACCENT, A.
+
+(test (equal (identifier-chunks '(#x65 #x301 #x41) *v17*)
+             '((#x65 #x301) (#x41))))
+
+; Titlecase letters.  U+01C5 is Latin: there is a boundary before it,
+; and after it when an uppercase letter follows.
+; U+1F88 is Greek: a boundary after a lowercase letter,
+; here U+03B1 GREEK SMALL LETTER ALPHA, but none before
+; U+0391 GREEK CAPITAL LETTER ALPHA.
+
+(test (equal (identifier-chunks '(#x61 #x1C5 #x62) *v17*)
+             '((#x61) (#x1C5 #x62))))
+(test (equal (identifier-chunks '(#x1C5 #x41) *v17*)
+             '((#x1C5) (#x41))))
+(test (equal (identifier-chunks '(#x3B1 #x1F88) *v17*)
+             '((#x3B1) (#x1F88))))
+(test (equal (identifier-chunks '(#x1F88 #x391) *v17*)
+             '((#x1F88 #x391))))
+(test (chunk-non-greek-titlecase-p #x1C5 *v17*))
+(test (not (chunk-non-greek-titlecase-p #x1F88 *v17*)))
+
+; The empty list has no chunk; no chunk is empty.
+
+(test (equal (identifier-chunks nil *v17*) nil))
+(test (equal (identifier-chunks (ascii "_") *v17*) (list (ascii "_"))))
+(test (equal (identifier-chunks (ascii "__") *v17*)
+             (list (ascii "_") (ascii "_"))))
+
+; There are thirty-one titlecase letters in each version: four Latin ones,
+; and twenty-seven Greek ones.
+
+(test (equal (range-list-code-points
+              (ranges-difference
+               (general-category-ranges (general-category-titlecase-letter)
+                                        *v17*)
+               (script-ranges (script-greek) *v17*)))
+             '(#x1C5 #x1C8 #x1CB #x1F2)))
+(test (equal (len (range-list-code-points
+                   (general-category-ranges
+                    (general-category-titlecase-letter) *v16*)))
+             31))
+(test (equal (len (range-list-code-points
+                   (general-category-ranges
+                    (general-category-titlecase-letter) *v17*)))
+             31))
+(test (equal (len (range-list-code-points
+                   (general-category-ranges
+                    (general-category-titlecase-letter) *v18*)))
+             31))
