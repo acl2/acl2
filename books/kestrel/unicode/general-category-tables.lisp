@@ -201,6 +201,86 @@
                          :unassigned "Cn")
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist general-category-list
+  :short "Fixtype of lists of values of the @('General_Category') property."
+  :elt-type general-category
+  :true-listp t
+  :elementp-of-nil nil
+  :pred general-category-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define general-category-values ()
+  :returns (gcs general-category-listp)
+  :short "The thirty values of the @('General_Category') property."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "They are in the order of [UAX #44, Table 12],
+     which is the order in @(tsee general-category).
+     Every value is in the list, once."))
+  (list (general-category-uppercase-letter)
+        (general-category-lowercase-letter)
+        (general-category-titlecase-letter)
+        (general-category-modifier-letter)
+        (general-category-other-letter)
+        (general-category-nonspacing-mark)
+        (general-category-spacing-mark)
+        (general-category-enclosing-mark)
+        (general-category-decimal-number)
+        (general-category-letter-number)
+        (general-category-other-number)
+        (general-category-connector-punctuation)
+        (general-category-dash-punctuation)
+        (general-category-open-punctuation)
+        (general-category-close-punctuation)
+        (general-category-initial-punctuation)
+        (general-category-final-punctuation)
+        (general-category-other-punctuation)
+        (general-category-math-symbol)
+        (general-category-currency-symbol)
+        (general-category-modifier-symbol)
+        (general-category-other-symbol)
+        (general-category-space-separator)
+        (general-category-line-separator)
+        (general-category-paragraph-separator)
+        (general-category-control)
+        (general-category-format)
+        (general-category-surrogate)
+        (general-category-private-use)
+        (general-category-unassigned))
+
+  ///
+
+  (defrule len-of-general-category-values
+    (equal (len (general-category-values))
+           30))
+
+  (defrule no-duplicatesp-equal-of-general-category-values
+    (no-duplicatesp-equal (general-category-values)))
+
+  (defrule member-equal-of-general-category-fix-and-values
+    (member-equal (general-category-fix gc) (general-category-values))
+    :use (:instance general-category-kind-possibilities (x gc))
+    :disable (general-category-values
+              general-category-kind-possibilities))
+
+  (defrulel general-category-p-when-member-equal-of-values
+    (implies (member-equal gc (general-category-values))
+             (general-category-p gc))
+    :enable member-equal)
+
+  (in-theory (disable (:e general-category-values)))
+
+  (defrule member-equal-of-general-category-values
+    (iff (member-equal gc (general-category-values))
+         (general-category-p gc))
+    :disable (general-category-values
+              member-equal-of-general-category-fix-and-values)
+    :use member-equal-of-general-category-fix-and-values))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define general-category-letter-p ((gc general-category-p))

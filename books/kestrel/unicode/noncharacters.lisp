@@ -103,4 +103,10 @@
     :use (:instance noncharacter-ok-when-member-equal-of-noncharacter-ok-listp
                     (acl2::a (code-point-fix cp))
                     (x (all-code-points))
-                    (ranges (noncharacter-ranges ver)))))
+                    (ranges (noncharacter-ranges ver))))
+
+  (defrule noncharacter-p-same-in-all-versions
+    (equal (noncharacter-p cp ver1)
+           (noncharacter-p cp ver2))
+    :rule-classes nil
+    :enable noncharacter-p-alt-def))

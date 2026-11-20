@@ -17,6 +17,8 @@
 (include-book "data/v17.0.0/derived-general-category")
 (include-book "data/v18.0.0/derived-general-category")
 
+(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -144,6 +146,23 @@
                               :unassigned))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist assigned-listp (x ver)
+  :guard (and (code-point-listp x)
+              (versionp ver))
+  :short "Check if all the code points of a list are assigned,
+          in a version of Unicode."
+  (assigned-p x ver)
+
+  ///
+
+  (fty::deffixequiv assigned-listp
+    :args ((x code-point-listp) (ver versionp))
+    :hints (("Goal"
+             :induct (assigned-listp x ver)
+             :in-theory (enable assigned-listp)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection general-category-theorems
@@ -181,3 +200,72 @@
              code-point-in-range-p)
     :disable ((:e general-category-surrogate)
               surrogate-p)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection assigned-across-versions
+  :short "A code point that is assigned in a version of Unicode
+          is assigned in every later version."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee assigned-p), and @(tsee version<=) for the order.
+     This is a promise of the Unicode Standard:
+     once a character is encoded, it is not moved or removed
+     [Stability, Encoding Stability].
+     Here it is a theorem about the supported versions,
+     proved by evaluation on the tables, for each pair of versions:
+     each range of unassigned code points of the later version
+     is within such a range of the earlier one.")
+   (xdoc::p
+    "The first theorem says that a code point is assigned
+     exactly when it is not in the ranges of the code points
+     whose @('General_Category') is @('Unassigned').
+     The @('General_Category') of an assigned code point
+     can change from a version to a later one:
+     see @(see general-category-across-versions)."))
+
+  (defrulel general-category-kind-is-unassigned
+    (implies (general-category-p gc)
+             (equal (equal (general-category-kind gc) :unassigned)
+                    (equal gc (general-category-unassigned))))
+    :enable equal-of-general-category-unassigned
+    :disable ((:e general-category-unassigned)))
+
+  (defruled assigned-p-in-terms-of-ranges
+    (equal (assigned-p cp ver)
+           (not (code-point-in-ranges-p
+                 cp
+                 (general-category-ranges (general-category-unassigned)
+                                          ver))))
+    :enable (assigned-p
+             equal-of-code-point-general-category)
+    :disable ((:e general-category-unassigned)))
+
+  (defrulel unassigned-ranges-within-ranges-of-earlier-version
+    (implies (version<= ver1 ver2)
+             (ranges-within-ranges-p
+              (general-category-ranges (general-category-unassigned) ver2)
+              (general-category-ranges (general-category-unassigned) ver1)))
+    :rule-classes :forward-chaining
+    :enable (version<=
+             version-rank
+             general-category-ranges
+             general-category-runs))
+
+  (defruled assigned-p-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-p cp ver1))
+             (assigned-p cp ver2))
+    :enable (assigned-p-in-terms-of-ranges
+             code-point-in-ranges-p-when-ranges-within-ranges-p)
+    :disable ((:e general-category-unassigned)))
+
+  (defruled assigned-listp-of-later-version
+    (implies (and (version<= ver1 ver2)
+                  (assigned-listp cps ver1))
+             (assigned-listp cps ver2))
+    :induct (len cps)
+    :enable (assigned-listp
+             assigned-p-of-later-version
+             len)))

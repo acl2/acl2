@@ -82,6 +82,12 @@
     :enable (pattern-white-space-ranges
              code-point-in-range-p))
 
+  (defrule pattern-white-space-p-same-in-all-versions
+    (equal (pattern-white-space-p cp ver1)
+           (pattern-white-space-p cp ver2))
+    :rule-classes nil
+    :enable pattern-white-space-p-alt-def)
+
   (defrule scalar-value-p-when-pattern-white-space-p
     (implies (and (pattern-white-space-p cp ver)
                   (code-point-p cp))

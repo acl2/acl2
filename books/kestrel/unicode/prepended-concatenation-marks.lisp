@@ -33,7 +33,13 @@
      for example U+0600 ARABIC NUMBER SIGN.
      Unlike most format characters, these are visible.
      We take the property from the file @('PropList.txt')
-     of the Unicode Character Database, for each supported version."))
+     of the Unicode Character Database, for each supported version.")
+   (xdoc::p
+    "The property is the same in all the supported versions:
+     see the theorem @('prepended-concatenation-mark-p-same-in-all-versions').
+     The standard does not promise that;
+     the theorem is checked again when a version is added,
+     and if it fails then, the property has changed."))
   :order-subtopics t
   :default-parent t)
 
@@ -58,4 +64,12 @@
           @('Prepended_Concatenation_Mark') property,
           in a version of Unicode."
   (code-point-in-ranges-p cp (prepended-concatenation-mark-ranges ver))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule prepended-concatenation-mark-p-same-in-all-versions
+    (equal (prepended-concatenation-mark-p cp ver1)
+           (prepended-concatenation-mark-p cp ver2))
+    :rule-classes nil
+    :enable prepended-concatenation-mark-ranges))

@@ -47,7 +47,13 @@
     "Most of the code points that have the property are unassigned:
      they are set aside for characters of this kind
      that may be added in the future.
-     The stability policies do not say that the property never changes."))
+     The stability policies do not say that the property never changes.")
+   (xdoc::p
+    "The property is the same in all the supported versions:
+     see the theorem @('default-ignorable-p-same-in-all-versions').
+     The standard does not promise that;
+     the theorem is checked again when a version is added,
+     and if it fails then, the property has changed."))
   :order-subtopics t
   :default-parent t)
 
@@ -72,4 +78,12 @@
           @('Default_Ignorable_Code_Point') property,
           in a version of Unicode."
   (code-point-in-ranges-p cp (default-ignorable-ranges ver))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule default-ignorable-p-same-in-all-versions
+    (equal (default-ignorable-p cp ver1)
+           (default-ignorable-p cp ver2))
+    :rule-classes nil
+    :enable default-ignorable-ranges))
