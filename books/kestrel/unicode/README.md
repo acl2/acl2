@@ -62,7 +62,12 @@ validated.
   Algorithm, UAX #15 is Unicode Normalization Forms, UAX #24 is Unicode
   Script Property, UAX #31 is Unicode Identifiers and Syntax, UAX #44 is
   the Unicode Character Database.  UTS: Unicode Technical Standard.
-  UTS #39 is Unicode Security Mechanisms, and UTS #51 is Unicode Emoji.
+  UTS #39 is Unicode Security Mechanisms, UTS #51 is Unicode Emoji, and
+  UTS #55 is Unicode Source Code Handling.
+- A chunk of an identifier is one of the words that its letter case and
+  its punctuation make visible: `dromedaryCamel` has the chunks
+  `dromedary` and `Camel`, and `snake_case` has `snake`, `_` and `case`
+  (UTS #55, Section 5.1.2.1).
 - UCD: Unicode Character Database.
 
 ## What is here
@@ -84,6 +89,7 @@ validated.
 | `confusable-kinds` | The three classes of confusable strings: single-script, mixed-script and whole-script confusables. |
 | `mixed-scripts` | Mixed-script detection: the augmented script set of a code point, the resolved script set of a list (`resolved-script-set`), and whether a list is single-script (`single-script-p`). |
 | `mixed-numbers` | Mixed-number detection: whether a list has decimal digits of more than one system (`mixed-number-systems-p`). |
+| `identifier-chunks` | The identifier word boundaries of UTS #55 (`identifier-word-boundary-p`) and the chunks of an identifier (`identifier-chunks`), with the proofs that the chunks put together are the identifier and that no chunk is empty. |
 | `pattern-white-space` | `Pattern_White_Space`. |
 | `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
@@ -510,6 +516,17 @@ About confusable strings and mixed scripts (UTS #39):
   `skeleton-idempotence` has an example.
 - `confusable-p-reflexive`, `confusable-p-symmetric`,
   `confusable-p-transitive`: being confusable is an equivalence relation.
+
+About the chunks of an identifier (UTS #55):
+
+- `flatten-of-identifier-chunks`: the chunks of a list, put together in
+  order, are the list.  `not-member-equal-of-nil-and-identifier-chunks`:
+  no chunk is empty.  `consp-of-identifier-chunks`: a list has a chunk
+  exactly when it is not empty.
+- `script-extensions-of-titlecase-letter`: the `Script_Extensions` of a
+  titlecase letter is its `Script` alone.  The specification writes
+  `\p{Grek}` for the Greek titlecase letters, which could be read as
+  either property; by this theorem the two readings are the same.
   `confusable-p-when-canonical-equivalent-p`: canonical equivalents are
   confusable.
 - `confusable-p-in-terms-of-kinds`,
@@ -571,6 +588,7 @@ supported version, and nothing else of this library.
 | `single-script-confusable-p`, `mixed-script-confusable-p`, `whole-script-confusable-p` | `confusable-kinds` | `skeleton`, `mixed-scripts`, and the books that those load | the tables of those books |
 | `code-point-augmented-script-set`, `resolved-script-set`, `single-script-p`, `mixed-script-p`; the types `writing-system` and `script-set` | `mixed-scripts` | `scripts`, and the books that it loads | `scripts`, `script-extensions` |
 | `decimal-digit-zeros`, `mixed-number-systems-p` | `mixed-numbers` | `decimal-digits`, and the books that it loads | `unicode-data` |
+| `identifier-word-boundary-p`, `identifier-chunks` | `identifier-chunks` | `general-category`, `scripts`, `range-operations`, and the books that those load | `derived-general-category`, `scripts`, `script-extensions` |
 | `code-point-general-category`, `general-category-ranges`, `assigned-p`; the type `general-category` and its predicates such as `general-category-letter-p` | `general-category` | `code-points`, `versions`, `ranges`, `general-category-tables` | `derived-general-category` |
 | `general-category-changes`, `general-category-changes-of-assigned`, and the theorem that the `General_Category` of an assigned code point stays the same, with one exception | `general-category-changes` | `general-category`, `range-operations`, and the books that those load | `derived-general-category` |
 | `ranges-union`, `ranges-intersection`, `ranges-difference`, `ranges-complement`, `ranges-normalize`, `range-list-code-points` | `range-operations` | `code-points`, `ranges` | none |
@@ -1133,7 +1151,11 @@ So the claim is tested, not proved, and only on short strings.
 Not compared with another implementation: the resolved script set of a
 list, the three classes of confusable strings, and mixed-number
 detection, which are short definitions on top of what is compared; the
-tests have the examples of UTS #39 for each.  The file
+tests have the examples of UTS #39 for each.  The chunks of an
+identifier are not compared with another implementation either.  The
+tests have the thirteen examples of the table of UTS #55, Section
+5.1.2.1, and that is all the evidence there is that the definition is the
+one the specification means.  The file
 `confusablesSummary.txt` of UTS #39 is not used as a test: its groups of
 look-alike strings are not the classes of strings with the same skeleton
 (by the second implementation, 73 of its 3,417 groups in 17.0.0, and 31
@@ -1213,7 +1235,7 @@ The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.
 
-Certifying all the 111 books from scratch, the tests and the generated
+Certifying all the 112 books from scratch, the tests and the generated
 tables included, took a little over three and a half minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged

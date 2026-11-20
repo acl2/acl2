@@ -196,6 +196,13 @@
      "Mixed-number detection [UTS #39, Section 5.3]:
       see @(see mixed-number-detection)."))
    (xdoc::p
+    "From [UTS #55], Unicode Source Code Handling:")
+   (xdoc::ul
+    (xdoc::li
+     "The identifier word boundaries and the chunks of an identifier
+      [UTS #55, Section 5.1.2.1]:
+      see @(see identifier-word-boundaries)."))
+   (xdoc::p
     "From [UTS #51], Unicode Emoji:")
    (xdoc::ul
     (xdoc::li
@@ -321,6 +328,15 @@
       whether a string has a whole-script confusable at all
       [UTS #39, Section 4.1];
       and the restriction levels [UTS #39, Section 5.2].")
+    (xdoc::li
+     "From [UTS #55]:
+      whether a chunk of an identifier is confusing
+      [UTS #55, Section 5.1.2.2],
+      which needs the restriction levels of [UTS #39]
+      and a search among the strings that are confusable with the chunk;
+      and the rest of that specification,
+      which is guidance for the design of programming languages
+      and of the tools that show their source code.")
     (xdoc::li
      "From [UTS #51]: the emoji sequences,
       and the choice between text and emoji presentation.")
