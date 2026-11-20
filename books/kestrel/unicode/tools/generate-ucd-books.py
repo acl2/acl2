@@ -26,10 +26,16 @@ Usage:
                There is no default and nothing means "latest".
     UCD_DIR    A directory laid out like
                https://www.unicode.org/Public/<VERSION>/ucd/
-               (so the extracted/ files are in UCD_DIR/extracted/).
+               (so the extracted/ files are in UCD_DIR/extracted/ and
+               emoji-data.txt is in UCD_DIR/emoji/), with the two data
+               files of UTS #39 that are read in UCD_DIR/security/.
     --fetch    Download into UCD_DIR the needed files that are not
-               already there (from --base-url, which defaults to
-               https://www.unicode.org/Public/<VERSION>/ucd/).
+               already there.  The files of the UCD come from --base-url,
+               which defaults to
+               https://www.unicode.org/Public/<VERSION>/ucd/;
+               the files of UTS #39 come from where the Unicode
+               Consortium publishes them for that version (see
+               canonical_url below).
     --pin      Record the SHA-256 of each file read for this version in
                ucd-sources.json (next to this script).  This is how a new
                Unicode version is added.  Without --pin, the version must
@@ -60,6 +66,16 @@ What is read, and how:
 
   * The surrogates U+D800..U+DFFF are code points and have property
     values like any others; nothing here removes them.
+
+  * The properties with many values (General_Category, Bidi_Class,
+    Script, Script_Extensions, Block, Identifier_Type) are written as
+    lists of runs that cover every code point, the defaults included.
+    The default of Script_Extensions is written "<script>" in its file:
+    it is the set of the one script that the Script property gives.
+
+  * IdentifierStatus.txt and IdentifierType.txt are data files of
+    UTS #39, not of the UCD.  They have a version of Unicode in their
+    headers, which is checked like those of the UCD files.
 """
 
 import argparse
@@ -89,6 +105,12 @@ UCD_FILES = {
     "extracted/DerivedBidiClass.txt": True,
     "extracted/DerivedGeneralCategory.txt": True,
     "NormalizationTest.txt": True,
+    "Scripts.txt": True,
+    "ScriptExtensions.txt": True,
+    "Blocks.txt": True,
+    "emoji/emoji-data.txt": True,
+    "security/IdentifierStatus.txt": True,
+    "security/IdentifierType.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
     "PropertyValueAliases.txt": False,
@@ -101,6 +123,19 @@ HANGUL_S_COUNT = 11172
 
 # The Bidi_Class values of the explicit directional formatting characters
 # (UAX #9, Sections 2.1 to 2.5), by their short aliases.
+# The 23 values of Bidi_Class, in the order of UAX #9, Table 4.
+BIDI_CLASSES = ["L", "R", "AL",
+                "EN", "ES", "ET", "AN", "CS", "NSM", "BN",
+                "B", "S", "WS", "ON",
+                "LRE", "LRO", "RLE", "RLO", "PDF",
+                "LRI", "RLI", "FSI", "PDI"]
+
+# The 12 values of Identifier_Type, in the order of UTS #39, Table 1.
+IDENTIFIER_TYPES = ["Not_Character", "Deprecated", "Default_Ignorable",
+                    "Not_NFKC", "Not_XID", "Exclusion", "Obsolete",
+                    "Technical", "Uncommon_Use", "Limited_Use",
+                    "Inclusion", "Recommended"]
+
 BIDI_EXPLICIT_FORMATTING = ["LRE", "RLE", "LRO", "RLO", "PDF",
                             "LRI", "RLI", "FSI", "PDI"]
 
@@ -138,11 +173,29 @@ class Source:
 
 
 def canonical_url(version, relpath):
+    """Where the Unicode Consortium publishes a file of a version.
+
+    The data files of UTS #39 are outside the ucd/ directory, and they
+    moved: up to Unicode 16.0.0 they are in Public/security/<version>/,
+    and from 17.0.0 on in Public/<version>/security/.
+    """
+    if relpath.startswith("security/"):
+        name = relpath[len("security/"):]
+        if int(version.split(".")[0]) <= 16:
+            return ("https://www.unicode.org/Public/security/%s/%s"
+                    % (version, name))
+        return ("https://www.unicode.org/Public/%s/security/%s"
+                % (version, name))
     return "https://www.unicode.org/Public/%s/ucd/%s" % (version, relpath)
 
 
 def check_header_version(version, relpath, lines):
-    """Most UCD files start with '# <Name>-<version>.txt'; check it."""
+    """Most UCD files start with '# <Name>-<version>.txt'; check it.
+
+    emoji-data.txt and the files of UTS #39 start with '# <Name>.txt'
+    and give the version a few lines down, as 'Version: 17.0.0',
+    'Version: 17.0' or 'Emoji Version 16.0'; check that instead.
+    """
     stem = Path(relpath).stem
     m = re.match(r"^# %s-(\d+\.\d+\.\d+)\.txt\s*$" % re.escape(stem),
                  lines[0] if lines else "")
@@ -150,8 +203,21 @@ def check_header_version(version, relpath, lines):
         if m.group(1) != version:
             die("%s is for Unicode %s, not %s"
                 % (relpath, m.group(1), version))
-    elif stem != "UnicodeData":
+    elif stem == "UnicodeData":
         # UnicodeData.txt has no header; every other file we read does.
+        pass
+    elif lines and re.match(r"^# %s\.txt\s*$" % re.escape(stem), lines[0]):
+        found = None
+        for line in lines[1:15]:
+            m = re.match(r"^#.*\bVersion:? (\d+\.\d+(?:\.\d+)?)\b", line)
+            if m:
+                found = m.group(1)
+                break
+        if found is None:
+            die("%s: no version in the header" % relpath)
+        if found != version and found + ".0" != version:
+            die("%s is for Unicode %s, not %s" % (relpath, found, version))
+    else:
         die("%s: no version in the first line: %r" % (relpath, lines[:1]))
 
 
@@ -528,6 +594,49 @@ class Book:
         self.assert_equal("(range-list-size %s)" % const, sum(has))
         self.blank()
 
+    def run_table(self, name, macro, covers, runs, strings):
+        """Emit a constant whose value is a list of runs, written with
+        the macro MACRO; STRINGS gives, for the value of a run, the list
+        of the strings to write after its two code points.  The runs
+        must cover every code point, which the predicate COVERS checks
+        when the book is certified."""
+        assert runs and runs[0][0] == 0 and runs[-1][1] == MAX_CP
+        assert all(runs[i][1] + 1 == runs[i + 1][0]
+                   for i in range(len(runs) - 1))
+        const = self.constant(name)
+        # With defconsts the list is built when the book is certified and
+        # its value is stored in the certificate; a defconst of this size
+        # takes the Lisp compiler much longer.
+        self.lines.append("(defconsts %s" % const)
+        self.lines.append("  (%s" % macro)
+        for lo, hi, value in runs:
+            line = "   (%s %s" % (hexcp(lo), hexcp(hi))
+            for string in strings(value):
+                assert '"' not in string and "\\" not in string
+                word = ' "%s"' % string
+                if len(line) + len(word) > 78:
+                    self.lines.append(line)
+                    line = "   " + word
+                else:
+                    line += word
+            self.lines.append(line + ")")
+        self.lines[-1] += "))"
+        self.blank()
+        self.assert_equal("(len %s)" % const, len(runs))
+        self.assert_holds("(%s 0 #x10FFFF %s)" % (covers, const))
+        self.blank()
+        return const
+
+    def assert_range_list_size(self, ranges_form, size):
+        """Emit an assertion on the number of code points of a list of
+        ranges, given as lines of ACL2."""
+        self.lines.append("(assert-event")
+        self.lines.append(" (equal (range-list-size")
+        for line in ranges_form[:-1]:
+            self.lines.append("         " + line)
+        self.lines.append("         %s)" % ranges_form[-1])
+        self.lines.append("        %d))" % size)
+
     def tree_map(self, name, entries, quoted, recognizer):
         """Emit a constant whose value is the tree map with the given
         entries, which are the texts of the pairs of an alist: either
@@ -592,6 +701,10 @@ def book_derived_core_properties(version, sources):
                     binary_property(source, parsed,
                                     "Default_Ignorable_Code_Point"),
                     "Default_Ignorable_Code_Point")
+    for name in ["ID_Start", "ID_Continue"]:
+        book.rule()
+        book.range_list(name.lower().replace("_", "-"),
+                        binary_property(source, parsed, name), name)
     return book
 
 
@@ -610,7 +723,10 @@ def book_prop_list(version, sources):
                    "Bidi_Control")
     for name in ["Join_Control", "Variation_Selector",
                  "Noncharacter_Code_Point", "Deprecated",
-                 "Prepended_Concatenation_Mark", "Pattern_Syntax"]:
+                 "Prepended_Concatenation_Mark", "Pattern_Syntax",
+                 "Other_ID_Start", "Other_ID_Continue",
+                 "ID_Compat_Math_Start", "ID_Compat_Math_Continue",
+                 "Regional_Indicator"]:
         book.rule()
         book.range_list(name.lower().replace("_", "-"),
                         binary_property(source, parsed, name), name)
@@ -668,10 +784,67 @@ def book_derived_combining_class(version, sources):
     return book
 
 
+def parse_decimal_digits(source):
+    """The decimal digit values of UnicodeData.txt, as a dict.
+
+    Field 6 is the value of a decimal digit, from 0 to 9; a character
+    that has it has Numeric_Type=Decimal, and then fields 7 and 8 have
+    the same value (UAX #44, Table 9).  The ranges that are given by a
+    First and a Last line have no values.
+    """
+    digits = {}
+    for number, line in enumerate(source.lines, start=1):
+        if not line:
+            continue
+        fields = line.split(";")
+        if fields[6] == "":
+            continue
+        where = "%s:%d" % (source.relpath, number)
+        if not re.match(r"^[0-9]$", fields[6]):
+            die("%s: bad decimal digit value" % where)
+        if fields[7] != fields[6] or fields[8] != fields[6]:
+            die("%s: fields 6, 7 and 8 differ for a decimal digit" % where)
+        if fields[1].endswith(", First>") or fields[1].endswith(", Last>"):
+            die("%s: decimal digit value in a First/Last range" % where)
+        digits[int(fields[0], 16)] = int(fields[6])
+    return digits
+
+
+def parse_bidi_classes(source):
+    """The Bidi_Class of the code points that UnicodeData.txt lists.
+
+    Field 4 is the Bidi_Class, by its abbreviation.  Return a dict from
+    the listed code points to it; a First and a Last line give it to the
+    code points between them too.  Used only to cross-check
+    extracted/DerivedBidiClass.txt, which also has the default values of
+    the code points that UnicodeData.txt does not list.
+    """
+    classes = {}
+    first = None
+    for number, line in enumerate(source.lines, start=1):
+        if not line:
+            continue
+        fields = line.split(";")
+        where = "%s:%d" % (source.relpath, number)
+        if fields[4] not in BIDI_CLASSES:
+            die("%s: bad bidirectional class" % where)
+        cp = int(fields[0], 16)
+        lo = cp
+        if fields[1].endswith(", Last>"):
+            if first is None or fields[4] != classes[first]:
+                die("%s: First and Last lines differ" % where)
+            lo = first + 1
+        first = cp if fields[1].endswith(", First>") else None
+        for c in range(lo, cp + 1):
+            classes[c] = fields[4]
+    return classes
+
+
 def book_unicode_data(version, sources):
     source = sources["UnicodeData.txt"]
     book = Book(version, "unicode-data",
-                "Decomposition mappings, from UnicodeData.txt.",
+                "Decomposition mappings and decimal digit values,"
+                " from UnicodeData.txt.",
                 [source], ["maps"], ["std/util/defconsts"])
     ccc, decomposition, listed, _ = parse_unicode_data(source)
 
@@ -744,6 +917,19 @@ def book_unicode_data(version, sources):
     book.blank()
     book.tree_map("compatibility-decomposition-mapping",
                   items(compatibility), True, "decomposition-mapp")
+    digits = parse_decimal_digits(source)
+    book.blank()
+    book.rule()
+    book.comment(
+        "The values of the decimal digits (field 6 of UnicodeData.txt):\n"
+        "a map from the code points that have Numeric_Type=Decimal\n"
+        "to their values, which are numbers from 0 to 9.\n"
+        "%d entries." % len(digits))
+    book.blank()
+    book.tree_map("decimal-digit",
+                  ["(%s . %d)" % (hexcp(cp), v)
+                   for cp, v in sorted(digits.items())],
+                  True, "decimal-digit-mapp")
     return book
 
 
@@ -812,15 +998,24 @@ def book_derived_bidi_class(version, sources):
     source = sources["extracted/DerivedBidiClass.txt"]
     aliases = parse_value_aliases(sources["PropertyValueAliases.txt"])
     book = Book(version, "derived-bidi-class",
-                "Part of Bidi_Class, from extracted/DerivedBidiClass.txt.",
-                [source], ["maps"], ["std/util/defconsts"])
+                "Bidi_Class, from extracted/DerivedBidiClass.txt.",
+                [source], ["maps", "bidi-class-tables"],
+                ["std/util/defconsts"])
     value = enumerated_property(source, parse_property_file(source))
     short = {}
     for v in set(value):
         if ("bc", v) not in aliases:
             die("%s: unknown Bidi_Class %r" % (source.relpath, v))
         short[v] = aliases[("bc", v)][0]
-    # We keep only the nine classes of interest.
+    # Cross-check with field 4 of UnicodeData.txt, for the code points
+    # that it lists (the others have default values, which only the
+    # derived file gives).
+    listed = parse_bidi_classes(sources["UnicodeData.txt"])
+    for cp, v in sorted(listed.items()):
+        if short[value[cp]] != v:
+            die("%s: U+%04X is %s here but %s in UnicodeData.txt"
+                % (source.relpath, cp, short[value[cp]], v))
+    # For the first table we keep only the nine classes of interest.
     entries = [(cp, short[v]) for cp, v in enumerate(value)
                if short[v] in BIDI_EXPLICIT_FORMATTING]
     if set(v for _, v in entries) != set(BIDI_EXPLICIT_FORMATTING):
@@ -831,7 +1026,7 @@ def book_derived_bidi_class(version, sources):
         "classes of the explicit directional formatting characters\n"
         "(UAX #9, Sections 2.1 to 2.5) to their classes:\n"
         "LRE, RLE, LRO, RLO, PDF, LRI, RLI, FSI, PDI.\n"
-        "The other values of Bidi_Class are not in this file.\n"
+        "The table after this one has all the values of Bidi_Class.\n"
         "The classes are read from the derived file, honoring its\n"
         "@missing lines.\n"
         "%d code points." % len(entries))
@@ -840,6 +1035,45 @@ def book_derived_bidi_class(version, sources):
                   ["(cons %s (bidi-formatting-class-%s))"
                    % (hexcp(cp), v.lower()) for cp, v in entries],
                   False, "bidi-formatting-class-mapp")
+    # The whole property.
+    value = [short[v] for v in value]
+    if set(value) != set(BIDI_CLASSES):
+        die("%s: the values are not the 23 of UAX #9, Table 4"
+            % source.relpath)
+    long_name = {v: aliases[("bc", v)][1] for v in BIDI_CLASSES}
+    runs = to_runs(value)
+    count = {v: 0 for v in BIDI_CLASSES}
+    for lo, hi, v in runs:
+        count[v] += hi - lo + 1
+    book.blank()
+    book.rule()
+    book.comment(
+        "The Bidi_Class of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the value that all the code points from the first to the last"
+        " have.\n"
+        "A run is written as a triple, with the abbreviation of the value;\n"
+        "the macro bidi-class-run-table makes the list of runs"
+        " from the triples.\n"
+        "The runs are maximal and in order, and cover every code point.\n"
+        "The values are read from the derived file, honoring its @missing"
+        " lines,\n"
+        "which give the defaults of the code points that are not assigned.\n"
+        "%d runs.  Code points per value:" % len(runs))
+    for v in BIDI_CLASSES:
+        book.comment("  %-3s  %-23s %7d" % (v, long_name[v], count[v]))
+    book.blank()
+    const = book.run_table("bidi-class", "bidi-class-run-table",
+                           "bidi-class-run-list-covers-p", runs,
+                           lambda v: [v])
+    book.comment("The number of code points that have each value.")
+    book.blank()
+    for v in BIDI_CLASSES:
+        book.assert_range_list_size(
+            ["(bidi-class-run-list-ranges",
+             " (bidi-class-%s)" % long_name[v].lower().replace("_", "-"),
+             " %s)" % const],
+            count[v])
     return book
 
 
@@ -893,20 +1127,10 @@ def book_derived_general_category(version, sources):
     for v in GENERAL_CATEGORIES:
         book.comment("  %s  %-21s %7d" % (v, long_name[v], count[v]))
     book.blank()
-    const = book.constant("general-category")
-    # With defconsts the list is built when the book is certified and its
-    # value is stored in the certificate; a defconst of this size takes
-    # the Lisp compiler half a minute.
-    book.lines.append("(defconsts %s" % const)
-    book.lines.append("  (general-category-run-table")
-    for lo, hi, v in runs:
-        book.lines.append('   (%s %s "%s")' % (hexcp(lo), hexcp(hi), v))
-    book.lines[-1] += "))"
-    book.blank()
-    book.assert_equal("(len %s)" % const, len(runs))
-    book.assert_holds("(general-category-run-list-covers-p 0 #x10FFFF %s)"
-                      % const)
-    book.blank()
+    const = book.run_table("general-category",
+                           "general-category-run-table",
+                           "general-category-run-list-covers-p", runs,
+                           lambda v: [v])
     book.comment("The number of code points that have each value.")
     book.blank()
     for v in GENERAL_CATEGORIES:
@@ -916,6 +1140,308 @@ def book_derived_general_category(version, sources):
         book.lines.append("          %s" % constructor(v))
         book.lines.append("          %s))" % const)
         book.lines.append("        %d))" % count[v])
+    return book
+
+
+def script_aliases(sources):
+    """The scripts of PropertyValueAliases.txt: a list of (code, long
+    name) in file order, and a dict from every alias to the code."""
+    aliases = parse_value_aliases(sources["PropertyValueAliases.txt"])
+    scripts, code = [], {}
+    for (prop, alias), names in aliases.items():
+        if prop != "sc":
+            continue
+        if not re.match(r"^[A-Z][a-z]{3}$", names[0]):
+            die("PropertyValueAliases.txt: bad script code %r" % names[0])
+        if (names[0], names[1]) not in scripts:
+            scripts.append((names[0], names[1]))
+        code[alias] = names[0]
+    return scripts, code
+
+
+def script_constructor(long_name):
+    return "(script-%s)" % long_name.lower().replace("_", "-")
+
+
+def script_values(sources):
+    """The Script of every code point, as its four-letter code."""
+    source = sources["Scripts.txt"]
+    scripts, code = script_aliases(sources)
+    value = enumerated_property(source, parse_property_file(source))
+    for v in set(value):
+        if v not in code:
+            die("%s: unknown script %r" % (source.relpath, v))
+    return scripts, code, [code[v] for v in value]
+
+
+def book_scripts(version, sources):
+    source = sources["Scripts.txt"]
+    aliases_source = sources["PropertyValueAliases.txt"]
+    book = Book(version, "scripts",
+                "Script, from Scripts.txt.",
+                [source, aliases_source], ["script-tables"],
+                ["std/util/defconsts"])
+    scripts, _, value = script_values(sources)
+    long_name = dict(scripts)
+    book.comment(
+        "The scripts of this version of Unicode: the four-letter code and\n"
+        "the long name of each value of the Script property, from\n"
+        "PropertyValueAliases.txt.  Each must be an entry of the table\n"
+        "from which the type of the scripts is defined.\n"
+        "%d scripts." % len(scripts))
+    book.blank()
+    book.lines.append("(assert-event")
+    book.lines.append(" (script-table-agrees-p")
+    book.lines.append("  '((\"%s\" \"%s\")" % scripts[0])
+    for entry in scripts[1:]:
+        book.lines.append("    (\"%s\" \"%s\")" % entry)
+    book.lines[-1] += ")))"
+    book.blank()
+    book.rule()
+    runs = to_runs(value)
+    count = {}
+    for lo, hi, v in runs:
+        count[v] = count.get(v, 0) + hi - lo + 1
+    book.comment(
+        "The Script of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the value that all the code points from the first to the last"
+        " have.\n"
+        "A run is written as a triple, with the four-letter code of the"
+        " script;\n"
+        "the macro script-run-table makes the list of runs"
+        " from the triples.\n"
+        "The runs are maximal and in order, and cover every code point.\n"
+        "The code points that the file does not list have the value Zzzz\n"
+        "(Unknown), as its @missing line says.\n"
+        "%d runs; %d scripts have code points." % (len(runs), len(count)))
+    book.blank()
+    const = book.run_table("script", "script-run-table",
+                           "script-run-list-covers-p", runs,
+                           lambda v: [v])
+    book.comment("The number of code points that have each value.")
+    book.blank()
+    for code, name in scripts:
+        book.assert_range_list_size(
+            ["(script-run-list-ranges",
+             " %s" % script_constructor(name),
+             " %s)" % const],
+            count.get(code, 0))
+    return book
+
+
+def book_script_extensions(version, sources):
+    source = sources["ScriptExtensions.txt"]
+    scripts_source = sources["Scripts.txt"]
+    book = Book(version, "script-extensions",
+                "Script_Extensions, from ScriptExtensions.txt.",
+                [source, scripts_source], ["script-tables"],
+                ["std/util/defconsts"])
+    scripts, code, script = script_values(sources)
+    entries, missing = parse_property_file(source)
+    if [fields for _, _, fields in missing] != [["<script>"]]:
+        die("%s: the default is not <script>" % source.relpath)
+    value = [None] * NUM_CP
+    explicit = 0
+    for lo, hi, fields in entries:
+        if len(fields) != 1:
+            die("%s: bad line at U+%04X" % (source.relpath, lo))
+        codes = tuple(fields[0].split())
+        if not codes or len(set(codes)) != len(codes):
+            die("%s: bad set at U+%04X" % (source.relpath, lo))
+        for c in codes:
+            if code.get(c) != c:
+                die("%s: %r is not the code of a script"
+                    % (source.relpath, c))
+        for cp in range(lo, hi + 1):
+            if value[cp] is not None:
+                die("%s: U+%04X listed twice" % (source.relpath, cp))
+            value[cp] = codes
+            explicit += 1
+    for cp in range(NUM_CP):
+        if value[cp] is None:
+            value[cp] = (script[cp],)
+    runs = to_runs(value)
+    count = {}
+    for lo, hi, codes in runs:
+        for c in codes:
+            count[c] = count.get(c, 0) + hi - lo + 1
+    book.comment(
+        "The Script_Extensions of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the set of scripts that all the code points from the first\n"
+        "to the last have.\n"
+        "A run is written as its two code points followed by the"
+        " four-letter codes\n"
+        "of the scripts, in the order of the file;\n"
+        "the macro script-extensions-run-table makes the list of runs.\n"
+        "The runs are maximal and in order, and cover every code point.\n"
+        "The file lists %d code points.  The others have the default,\n"
+        "which the file writes <script>: the set of the one script that\n"
+        "Scripts.txt gives to the code point.\n"
+        "%d runs." % (explicit, len(runs)))
+    book.blank()
+    const = book.run_table("script-extensions",
+                           "script-extensions-run-table",
+                           "script-extensions-run-list-covers-p", runs,
+                           lambda codes: list(codes))
+    book.comment("The number of code points whose set has each script.")
+    book.blank()
+    for c, name in scripts:
+        book.assert_range_list_size(
+            ["(script-extensions-run-list-member-ranges",
+             " %s" % script_constructor(name),
+             " %s)" % const],
+            count.get(c, 0))
+    return book
+
+
+def book_blocks(version, sources):
+    source = sources["Blocks.txt"]
+    book = Book(version, "blocks",
+                "Block, from Blocks.txt.",
+                [source], ["block-tables"], ["std/util/defconsts"])
+    entries, missing = parse_property_file(source)
+    if [fields for _, _, fields in missing] != [["No_Block"]]:
+        die("%s: the default is not No_Block" % source.relpath)
+    names = [fields[0] for _, _, fields in entries]
+    if len(set(names)) != len(names) or "No_Block" in names:
+        die("%s: a block is listed twice" % source.relpath)
+    for name in names:
+        if not re.match(r"^[A-Za-z0-9][A-Za-z0-9 -]*[A-Za-z0-9]$", name):
+            die("%s: unexpected block name %r" % (source.relpath, name))
+    value = enumerated_property(source, (entries, missing))
+    runs = to_runs(value)
+    for lo, hi, fields in entries:
+        if (lo, hi, fields[0]) not in runs:
+            die("%s: block %r is not one run" % (source.relpath, fields[0]))
+    book.comment(
+        "The Block of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the name of the block that all the code points from the first\n"
+        "to the last are in.\n"
+        "The names are written as in the file, with spaces.\n"
+        "The macro block-run-table makes the list of runs from the"
+        " triples.\n"
+        "The runs are in order and cover every code point:\n"
+        "each block is one run, and the code points between blocks\n"
+        "are in runs with the value No_Block, as the @missing line of the"
+        " file says.\n"
+        "%d blocks; %d runs; %d code points are in no block."
+        % (len(entries), len(runs), value.count("No_Block")))
+    book.blank()
+    const = book.run_table("block", "block-run-table",
+                           "block-run-list-covers-p", runs,
+                           lambda v: [v])
+    book.comment("The number of blocks, and each block is one run.")
+    book.blank()
+    book.assert_equal("(len (block-run-list-names %s))" % const,
+                      len(entries))
+    book.assert_holds("(no-duplicatesp-equal (block-run-list-names %s))"
+                      % const)
+    return book
+
+
+def book_emoji_data(version, sources):
+    source = sources["emoji/emoji-data.txt"]
+    parsed = parse_property_file(source)
+    book = Book(version, "emoji-data",
+                "Emoji properties, from emoji/emoji-data.txt.",
+                [source], ["ranges"])
+    names = ["Emoji", "Emoji_Presentation", "Emoji_Modifier",
+             "Emoji_Modifier_Base", "Emoji_Component",
+             "Extended_Pictographic"]
+    if set(fields[0] for _, _, fields in parsed[0]) != set(names):
+        die("%s: the properties are not the six expected ones"
+            % source.relpath)
+    for i, name in enumerate(names):
+        if i:
+            book.rule()
+        book.range_list(name.lower().replace("_", "-"),
+                        binary_property(source, parsed, name), name)
+    return book
+
+
+def book_identifier_status(version, sources):
+    source = sources["security/IdentifierStatus.txt"]
+    book = Book(version, "identifier-status",
+                "Identifier_Status, from the file IdentifierStatus.txt"
+                " of UTS #39.",
+                [source], ["ranges"])
+    parsed = parse_property_file(source)
+    value = enumerated_property(source, parsed)
+    if set(value) != {"Allowed", "Restricted"}:
+        die("%s: the values are not Allowed and Restricted"
+            % source.relpath)
+    book.comment(
+        "The code points whose Identifier_Status is Allowed.\n"
+        "The other code points have the value Restricted,\n"
+        "as the @missing line of the file says.")
+    book.blank()
+    book.range_list("identifier-status-allowed",
+                    [v == "Allowed" for v in value],
+                    "Identifier_Status=Allowed")
+    return book
+
+
+def book_identifier_type(version, sources):
+    source = sources["security/IdentifierType.txt"]
+    book = Book(version, "identifier-type",
+                "Identifier_Type, from the file IdentifierType.txt"
+                " of UTS #39.",
+                [source], ["identifier-type-tables"],
+                ["std/util/defconsts"])
+    entries, missing = parse_property_file(source)
+    if [fields for _, _, fields in missing] != [["Not_Character"]]:
+        die("%s: the default is not Not_Character" % source.relpath)
+    value = [("Not_Character",)] * NUM_CP
+    listed = [False] * NUM_CP
+    for lo, hi, fields in entries:
+        if len(fields) != 1:
+            die("%s: bad line at U+%04X" % (source.relpath, lo))
+        types = tuple(fields[0].split())
+        if not types or len(set(types)) != len(types):
+            die("%s: bad set at U+%04X" % (source.relpath, lo))
+        for t in types:
+            if t not in IDENTIFIER_TYPES:
+                die("%s: unknown type %r" % (source.relpath, t))
+        for cp in range(lo, hi + 1):
+            if listed[cp]:
+                die("%s: U+%04X listed twice" % (source.relpath, cp))
+            listed[cp] = True
+            value[cp] = types
+    runs = to_runs(value)
+    count = {t: 0 for t in IDENTIFIER_TYPES}
+    for lo, hi, types in runs:
+        for t in types:
+            count[t] += hi - lo + 1
+    book.comment(
+        "The Identifier_Type of every code point, as a list of runs:\n"
+        "each run is a first code point, a last code point,\n"
+        "and the set of types that all the code points from the first\n"
+        "to the last have.\n"
+        "A run is written as its two code points followed by the names"
+        " of the types,\n"
+        "in the order of the file;\n"
+        "the macro identifier-type-run-table makes the list of runs.\n"
+        "The runs are maximal and in order, and cover every code point.\n"
+        "The code points that the file does not list have the one type\n"
+        "Not_Character, as its @missing line says.\n"
+        "%d runs.  Code points per type:" % len(runs))
+    for t in IDENTIFIER_TYPES:
+        book.comment("  %-17s %7d" % (t, count[t]))
+    book.blank()
+    const = book.run_table("identifier-type", "identifier-type-run-table",
+                           "identifier-type-run-list-covers-p", runs,
+                           lambda types: list(types))
+    book.comment("The number of code points whose set has each type.")
+    book.blank()
+    for t in IDENTIFIER_TYPES:
+        book.assert_range_list_size(
+            ["(identifier-type-run-list-member-ranges",
+             " (identifier-type-%s)" % t.lower().replace("_", "-"),
+             " %s)" % const],
+            count[t])
     return book
 
 
@@ -974,6 +1500,12 @@ BOOKS = [book_derived_core_properties,
          book_derived_normalization_props,
          book_derived_bidi_class,
          book_derived_general_category,
+         book_scripts,
+         book_script_extensions,
+         book_blocks,
+         book_emoji_data,
+         book_identifier_status,
+         book_identifier_type,
          book_normalization_test]
 
 
@@ -1004,7 +1536,10 @@ def fetch(version, ucd_dir, base_url):
         path = ucd_dir / relpath
         if path.exists():
             continue
-        url = base_url.rstrip("/") + "/" + relpath
+        if base_url is None or relpath.startswith("security/"):
+            url = canonical_url(version, relpath)
+        else:
+            url = base_url.rstrip("/") + "/" + relpath
         print("fetching " + url)
         path.parent.mkdir(parents=True, exist_ok=True)
         with urllib.request.urlopen(url) as response:
@@ -1029,8 +1564,7 @@ def main():
     if not re.match(r"^[1-9]\d*\.\d+\.\d+$", version):
         die("the version must be written in full, like 16.0.0")
     if args.fetch:
-        fetch(version, args.ucd_dir,
-              args.base_url or canonical_url(version, ""))
+        fetch(version, args.ucd_dir, args.base_url)
     elif args.base_url:
         die("--base-url is only for --fetch")
 

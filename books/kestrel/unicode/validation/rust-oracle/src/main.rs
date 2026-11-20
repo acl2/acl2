@@ -23,6 +23,11 @@
 //! The first form writes a header line and one line for each code point.
 //! Each column is named `property@crate`.  A surrogate is not a `char`,
 //! so its fields are all `!`, which means "cannot say".
+//! Besides the crates that rustc uses, the columns come from
+//! unicode-script (Script and Script_Extensions), unicode-bidi (Bidi_Class)
+//! and unicode-security (Identifier_Status), for the versions of Unicode
+//! for which those crates have a release, and from the emoji status of
+//! unicode-properties.
 //!
 //! The second form reads a file written by DUMP-PAIRS of ../../dump.lisp,
 //! with lines `first second composite nfc...` (composite is `-` if the two
@@ -149,6 +154,55 @@ fn general_category_abbreviation(c: char) -> &'static str {
     }
 }
 
+/// The four-letter code of a script according to unicode-script.
+/// The crate gives the empty string as the code of the script Unknown,
+/// whose code in PropertyValueAliases.txt is Zzzz.
+#[cfg(feature = "have-unicode-script")]
+fn script_code(script: unicode_script::Script) -> &'static str {
+    if script == unicode_script::Script::Unknown {
+        "Zzzz"
+    } else {
+        script.short_name()
+    }
+}
+
+/// The Script_Extensions of a character according to unicode-script,
+/// as the four-letter codes of the scripts in the order of the codes.
+/// The crate has special values for the sets of one script that are
+/// Common, Inherited and Unknown.
+#[cfg(feature = "have-unicode-script")]
+fn script_extension_codes(c: char) -> String {
+    use unicode_script::{Script, UnicodeScript};
+    let extension = c.script_extension();
+    if extension.is_common() {
+        return script_code(Script::Common).to_string();
+    }
+    if extension.is_inherited() {
+        return script_code(Script::Inherited).to_string();
+    }
+    if extension.is_empty() {
+        return script_code(Script::Unknown).to_string();
+    }
+    let mut codes: Vec<&str> = extension.iter().map(script_code).collect();
+    codes.sort_unstable();
+    codes.join(" ")
+}
+
+/// The Bidi_Class of a character according to unicode-bidi, or `!` (not
+/// compared) for an unassigned code point.  For those, the crate does not
+/// follow the defaults of DerivedBidiClass.txt everywhere: in its version
+/// for Unicode 16.0.0 it gives L where the default is BN (noncharacters
+/// and unassigned default ignorable code points), and R to some of the
+/// unassigned code points whose default is AL.
+#[cfg(feature = "have-unicode-bidi")]
+fn bidi_class_abbreviation(c: char) -> String {
+    use unicode_properties::{GeneralCategory, UnicodeGeneralCategory};
+    if c.general_category() == GeneralCategory::Unassigned {
+        return "!".to_string();
+    }
+    format!("{:?}", unicode_bidi::bidi_class(c))
+}
+
 fn code_points(out: &mut impl Write) -> io::Result<()> {
     let mut columns = vec![
         "xids@unicode-ident",
@@ -162,7 +216,17 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         "nfkd@unicode-normalization",
         "nfkc@unicode-normalization",
         "gc@unicode-properties",
+        "emoji_status@unicode-properties",
     ];
+    if cfg!(feature = "have-unicode-script") {
+        columns.extend(["sc@unicode-script", "scx@unicode-script"]);
+    }
+    if cfg!(feature = "have-unicode-bidi") {
+        columns.push("bc@unicode-bidi");
+    }
+    if cfg!(feature = "have-unicode-security") {
+        columns.push("idst@unicode-security");
+    }
     if cfg!(feature = "have-unicode-xid") {
         columns.extend(["xids@unicode-xid", "xidc@unicode-xid"]);
     }
@@ -179,6 +243,15 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             "dep@regex-syntax",
             "pcm@regex-syntax",
             "psyn@regex-syntax",
+            "ids@regex-syntax",
+            "idc@regex-syntax",
+            "emoji@regex-syntax",
+            "epres@regex-syntax",
+            "emod@regex-syntax",
+            "ebase@regex-syntax",
+            "ecomp@regex-syntax",
+            "extpict@regex-syntax",
+            "ri@regex-syntax",
         ]);
     }
     #[cfg(feature = "have-regex-syntax")]
@@ -194,6 +267,15 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         regex_syntax_set("Deprecated"),
         regex_syntax_set("Prepended_Concatenation_Mark"),
         regex_syntax_set("Pattern_Syntax"),
+        regex_syntax_set("ID_Start"),
+        regex_syntax_set("ID_Continue"),
+        regex_syntax_set("Emoji"),
+        regex_syntax_set("Emoji_Presentation"),
+        regex_syntax_set("Emoji_Modifier"),
+        regex_syntax_set("Emoji_Modifier_Base"),
+        regex_syntax_set("Emoji_Component"),
+        regex_syntax_set("Extended_Pictographic"),
+        regex_syntax_set("Regional_Indicator"),
     ];
 
     writeln!(out, "#cp;{}", columns.join(";"))?;
@@ -204,7 +286,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         };
         write!(
             out,
-            "{cp};{};{};{};{};{};{};{};{};{};{};{}",
+            "{cp};{};{};{};{};{};{};{};{};{};{};{};{:?}",
             flag(unicode_ident::is_xid_start(c)),
             flag(unicode_ident::is_xid_continue(c)),
             flag(ra_ap_rustc_lexer::is_id_start(c)),
@@ -216,7 +298,22 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             join(std::iter::once(c).nfkd()),
             join(std::iter::once(c).nfkc()),
             general_category_abbreviation(c),
+            unicode_properties::UnicodeEmoji::emoji_status(c),
         )?;
+        #[cfg(feature = "have-unicode-script")]
+        write!(
+            out,
+            ";{};{}",
+            script_code(unicode_script::UnicodeScript::script(&c)),
+            script_extension_codes(c),
+        )?;
+        #[cfg(feature = "have-unicode-bidi")]
+        write!(out, ";{}", bidi_class_abbreviation(c))?;
+        #[cfg(feature = "have-unicode-security")]
+        {
+            use unicode_security::GeneralSecurityProfile;
+            write!(out, ";{}", flag(c.identifier_allowed()))?;
+        }
         #[cfg(feature = "have-unicode-xid")]
         write!(
             out,
@@ -330,6 +427,21 @@ fn main() -> io::Result<()> {
         let (a, b, c) = unicode_xid::UNICODE_VERSION;
         check_version("unicode-xid", (a, b, c), version);
     }
+    check_version(
+        "unicode-properties",
+        unicode_properties::UNICODE_VERSION,
+        version,
+    );
+    #[cfg(feature = "have-unicode-script")]
+    check_version("unicode-script", unicode_script::UNICODE_VERSION, version);
+    #[cfg(feature = "have-unicode-bidi")]
+    check_version("unicode-bidi", unicode_bidi::UNICODE_VERSION, version);
+    #[cfg(feature = "have-unicode-security")]
+    check_version(
+        "unicode-security",
+        unicode_security::UNICODE_VERSION,
+        version,
+    );
 
     match (args[2].as_str(), args.len()) {
         ("code-points", 3) => {

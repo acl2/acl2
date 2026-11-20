@@ -10,7 +10,7 @@
 
 (in-package "UNICODE")
 
-(include-book "ranges")
+(include-book "runs")
 
 (acl2::controlled-configuration)
 
@@ -33,7 +33,7 @@
      in Unicode 17.0.0, the 1,114,112 code points
      form 4,144 runs of code points with the same value.")
    (xdoc::p
-    "So we represent the property as a list of runs.
+    "So we represent the property as a list of @(see runs).
      A run consists of a first code point, a last code point,
      and the value that every code point from the first to the last has.
      The generated tables list the runs in increasing order,
@@ -41,7 +41,10 @@
      That is a checkable property of a list of runs
      (see @(tsee general-category-run-list-covers-p)),
      and under it the value of a code point
-     is the value of the one run that contains it.")
+     is the value of the one run that contains it.
+     The type of the runs and the functions on lists of runs
+     are introduced by the macro @(tsee defruns),
+     which does the same for the other properties of this kind.")
    (xdoc::p
     "The code points that have a given value
      form a list of @(see ranges),
@@ -475,66 +478,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod general-category-run
-  :short "Fixtype of runs of code points
-          that have the same @('General_Category')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A run consists of a minimum and a maximum code point,
-     and a value of the @('General_Category') property.
-     It says that the code points
-     from the minimum to the maximum, both included,
-     have that value."))
-  ((min code-point)
-   (max code-point)
-   (value general-category))
-  :pred general-category-run-p)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist general-category-run-list
-  :short "Fixtype of lists of runs of code points
-          that have the same @('General_Category')."
-  :elt-type general-category-run
-  :true-listp t
-  :elementp-of-nil nil
-  :pred general-category-run-listp)
+(defruns general-category
+  :property "General_Category"
+  :value-type general-category
+  :value-pred general-category-p
+  :value-fix general-category-fix
+  :default (general-category-unassigned))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection general-category-run-table
-  :short "Write a list of runs compactly."
+  :short "Write a list of runs of @('General_Category') compactly."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The generated tables have some four thousand runs each.
-     So that they are short to write and easy to compare
-     with the files of the Unicode Character Database,
-     each run is written as a triple
+    "Each run is written as a triple
      of the minimum code point, the maximum code point,
-     and the two-letter abbreviation of the value, as a string:")
+     and the two-letter abbreviation of the value, as a string
+     (see @(tsee general-category-abbreviation)):")
    (xdoc::codeblock
     "(general-category-run-table"
     " (#x0041 #x005A \"Lu\")"
     " (#x005B #x005B \"Ps\"))")
    (xdoc::p
-    "This macro expands to a call of @('list')
-     on one call of the constructor of runs for each triple,
-     with the constructor of the value
-     that the abbreviation stands for:")
-   (xdoc::codeblock
-    "(list (general-category-run #x0041 #x005A"
-    "                            (general-category-uppercase-letter))"
-    "      (general-category-run #x005B #x005B"
-    "                            (general-category-open-punctuation)))")
-   (xdoc::p
-    "So the list is built by the typed constructors,
-     and it is a list of runs by construction.
-     A triple that is not of this form,
-     or whose string is not one of the thirty abbreviations
-     (see @(tsee general-category-abbreviation)),
-     is an error when the macro is expanded."))
+    "See @(see run-tables) for what this expands to.
+     The generated tables have some four thousand runs each."))
 
   (defconst *general-category-constructors*
     '(("Lu" . general-category-uppercase-letter)
@@ -568,163 +536,9 @@
       ("Co" . general-category-private-use)
       ("Cn" . general-category-unassigned)))
 
-  (define general-category-run-table-forms ((triples true-listp))
-    :returns (forms true-listp)
-    :parents nil
-    (b* (((when (endp triples)) nil)
-         (triple (car triples))
-         ((unless (and (true-listp triple)
-                       (equal (len triple) 3)))
-          (er hard? 'general-category-run-table
-              "~x0 is not a triple." triple))
-         (constructor
-          (cdr (assoc-equal (third triple) *general-category-constructors*)))
-         ((unless constructor)
-          (er hard? 'general-category-run-table
-              "~x0 is not the abbreviation of a General_Category."
-              (third triple))))
-      (cons `(general-category-run ,(first triple)
-                                   ,(second triple)
-                                   (,constructor))
-            (general-category-run-table-forms (cdr triples))))
-    :hooks nil)
-
   (defmacro general-category-run-table (&rest triples)
-    `(list ,@(general-category-run-table-forms triples))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define general-category-run-list-lookup ((cp code-point-p)
-                                          (runs general-category-run-listp))
-  :returns (gc general-category-p)
-  :short "The @('General_Category') that a list of runs gives to a code point."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is the value of the first run of the list
-     that contains the code point.
-     If no run contains the code point,
-     the result is @('Unassigned'),
-     which is the default value of the property [UAX #44];
-     that case does not arise with the generated tables,
-     whose runs cover every code point."))
-  (cond ((endp runs) (general-category-unassigned))
-        (t (b* (((general-category-run run) (car runs))
-                (fixed-cp (code-point-fix cp)))
-             (if (and (<= run.min fixed-cp)
-                      (<= fixed-cp run.max))
-                 run.value
-               (general-category-run-list-lookup cp (cdr runs))))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define general-category-run-list-ranges ((gc general-category-p)
-                                          (runs general-category-run-listp))
-  :returns (ranges range-listp)
-  :short "The ranges of the runs of a list
-          that have a given @('General_Category')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The result has one range for each run with that value,
-     in the same order."))
-  (cond ((endp runs) nil)
-        (t (b* (((general-category-run run) (car runs))
-                (ranges (general-category-run-list-ranges gc (cdr runs))))
-             (if (equal run.value (general-category-fix gc))
-                 (cons (range run.min run.max) ranges)
-               ranges))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define general-category-run-list-covers-p ((min code-point-p)
-                                            (max code-point-p)
-                                            (runs general-category-run-listp))
-  :returns (yes/no booleanp)
-  :short "Check if the runs of a list cover, in order and exactly once,
-          the code points from a minimum to a maximum."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is: the first run starts at the minimum,
-     each run after it starts
-     right after the one before it ends,
-     the last run ends at the maximum,
-     and no run is empty.
-     In particular the list has at least one run.")
-   (xdoc::p
-    "Each generated table satisfies this predicate
-     with the minimum 0 and the maximum @('#x10FFFF'),
-     which is checked by evaluation in the book that has the table.
-     Then every code point is in exactly one run,
-     and the theorem
-     @('code-point-in-general-category-run-list-ranges')
-     applies to every code point."))
-  (b* (((when (endp runs)) nil)
-       ((general-category-run run) (car runs))
-       (min (code-point-fix min))
-       (max (code-point-fix max))
-       ((unless (and (equal run.min min)
-                     (<= run.min run.max)))
-        nil)
-       ((when (endp (cdr runs))) (equal run.max max)))
-    (and (< run.max max)
-         (general-category-run-list-covers-p (+ 1 run.max) max (cdr runs))))
-  :guard-hints (("Goal" :in-theory (enable code-point-p)))
-  :measure (acl2-count runs)
-  :hooks (:fix)
-
-  ///
-
-  (defrulel code-point-fix-upper-bound
-    (<= (code-point-fix x) #x10FFFF)
-    :rule-classes :linear
-    :enable (code-point-fix code-point-p))
-
-  (defruled general-category-run-list-lookup-when-in-ranges
-    (implies (and (general-category-run-list-covers-p min max runs)
-                  (code-point-in-ranges-p
-                   cp (general-category-run-list-ranges gc runs)))
-             (and (<= (code-point-fix min) (code-point-fix cp))
-                  (equal (general-category-run-list-lookup cp runs)
-                         (general-category-fix gc))))
-    :induct (general-category-run-list-covers-p min max runs)
-    :enable (general-category-run-list-lookup
-             general-category-run-list-ranges
-             code-point-in-range-p
-             code-point-p))
-
-  (defruled in-general-category-run-list-ranges-when-lookup
-    (implies (and (general-category-run-list-covers-p min max runs)
-                  (<= (code-point-fix min) (code-point-fix cp))
-                  (<= (code-point-fix cp) (code-point-fix max))
-                  (equal (general-category-run-list-lookup cp runs)
-                         (general-category-fix gc)))
-             (code-point-in-ranges-p
-              cp (general-category-run-list-ranges gc runs)))
-    :induct (general-category-run-list-covers-p min max runs)
-    :enable (general-category-run-list-lookup
-             general-category-run-list-ranges
-             code-point-in-range-p
-             code-point-p))
-
-  (defruled code-point-in-general-category-run-list-ranges-when-between
-    (implies (and (general-category-run-list-covers-p min max runs)
-                  (<= (code-point-fix min) (code-point-fix cp))
-                  (<= (code-point-fix cp) (code-point-fix max)))
-             (equal (code-point-in-ranges-p
-                     cp (general-category-run-list-ranges gc runs))
-                    (equal (general-category-run-list-lookup cp runs)
-                           (general-category-fix gc))))
-    :enable (general-category-run-list-lookup-when-in-ranges
-             in-general-category-run-list-ranges-when-lookup))
-
-  (defruled code-point-in-general-category-run-list-ranges
-    (implies (general-category-run-list-covers-p 0 #x10FFFF runs)
-             (equal (code-point-in-ranges-p
-                     cp (general-category-run-list-ranges gc runs))
-                    (equal (general-category-run-list-lookup cp runs)
-                           (general-category-fix gc))))
-    :enable code-point-in-general-category-run-list-ranges-when-between))
+    `(list ,@(run-table-forms triples
+                              :value
+                              *general-category-constructors*
+                              'general-category-run
+                              'general-category-run-table))))

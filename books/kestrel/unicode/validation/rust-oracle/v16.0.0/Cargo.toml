@@ -16,6 +16,12 @@
 #   regex-syntax 0.8.5           Unicode 16.0.0 (per its generated tables)
 #   ra-ap-rustc_lexer 0.145.0    rustc's own lexer crate, as published for
 #                                rust-analyzer; this version uses unicode-xid
+#
+# And, for the properties that those crates do not have:
+#
+#   unicode-script 0.5.7         Unicode 16.0.0 (says so itself)
+#   unicode-bidi 0.3.18          Unicode 16.0.0 (says so itself)
+#   unicode-security 0.1.2       Unicode 16.0.0 (says so itself)
 
 [package]
 name = "unicode-oracle-v16-0-0"
@@ -28,10 +34,19 @@ name = "oracle"
 path = "../src/main.rs"
 
 [features]
-default = ["have-unicode-xid", "have-regex-syntax"]
+default = [
+    "have-unicode-xid",
+    "have-regex-syntax",
+    "have-unicode-script",
+    "have-unicode-bidi",
+    "have-unicode-security",
+]
 have-unicode-xid = []
 have-regex-syntax = []
 have-unicode-ident-version = []
+have-unicode-script = []
+have-unicode-bidi = []
+have-unicode-security = []
 
 [dependencies]
 unicode-xid = "=0.2.6"
@@ -39,9 +54,12 @@ unicode-normalization = "=0.1.24"
 unicode-ident = "=1.0.18"
 regex-syntax = "=0.8.5"
 ra-ap-rustc_lexer = "=0.145.0"
-# rustc_lexer uses this crate (for emoji, which this oracle does not use);
-# this is its version for Unicode 16.0.0.
+# rustc_lexer uses this crate (for emoji); this is its version for
+# Unicode 16.0.0.
 unicode-properties = "=0.1.3"
+unicode-script = "=0.5.7"
+unicode-bidi = "=0.3.18"
+unicode-security = "=0.1.2"
 
 [profile.release]
 debug-assertions = true

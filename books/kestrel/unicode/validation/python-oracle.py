@@ -24,7 +24,10 @@ The first form writes a header line and one line for each code point.
 Each column is named `property@source`, where the source is
 
     python   the interpreter itself: the unicodedata module, and
-             str.isidentifier for XID_Start and XID_Continue
+             str.isidentifier for XID_Start and XID_Continue.
+             unicodedata.bidirectional gives the Bidi_Class of the
+             assigned characters only; for the others the field is `!`,
+             which means "cannot say".
     regex    the third-party `regex` module, which has its own Unicode
              tables; its columns are written only if it is installed and
              its tables are for VERSION (it does not say which version
@@ -97,7 +100,7 @@ def code_points(version):
     sets = regex_sets(version)
     columns = ["xids@python", "xidc@python", "bidif@python", "ccc@python",
                "dm@python", "nfd@python", "nfc@python", "nfkd@python",
-               "nfkc@python", "gc@python"]
+               "nfkc@python", "gc@python", "bc@python", "dd@python"]
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
     out = sys.stdout
@@ -128,7 +131,9 @@ def code_points(version):
                   seq(unicodedata.normalize("NFC", c)),
                   seq(unicodedata.normalize("NFKD", c)),
                   seq(unicodedata.normalize("NFKC", c)),
-                  unicodedata.category(c)]
+                  unicodedata.category(c),
+                  bidi if bidi else "!",
+                  str(unicodedata.decimal(c, "-"))]
         if sets:
             fields += ["1" if sets[k][cp] else "0"
                        for k in ("xids", "xidc", "pws", "bidic")]

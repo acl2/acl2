@@ -23,6 +23,13 @@
 (include-book "../deprecated")
 (include-book "../prepended-concatenation-marks")
 (include-book "../pattern-syntax")
+(include-book "../id")
+(include-book "../scripts")
+(include-book "../bidi-class")
+(include-book "../blocks")
+(include-book "../decimal-digits")
+(include-book "../emoji")
+(include-book "../identifier-status")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,9 +69,27 @@
 ;   dep     1 if it has Deprecated, 0 otherwise
 ;   pcm     1 if it has Prepended_Concatenation_Mark, 0 otherwise
 ;   psyn    1 if it has Pattern_Syntax, 0 otherwise
+;   ids     1 if it has ID_Start, 0 otherwise
+;   idc     1 if it has ID_Continue, 0 otherwise
+;   sc      its Script, by its four-letter code
+;   scx     its Script_Extensions: the four-letter codes of the scripts,
+;           in the order of the codes
+;   bc      its Bidi_Class, by its abbreviation
+;   blk     the name of its Block, with spaces, or No_Block
+;   dd      its value as a decimal digit, or - if it is not one
+;   emoji   1 if it has Emoji, 0 otherwise
+;   epres   1 if it has Emoji_Presentation, 0 otherwise
+;   emod    1 if it has Emoji_Modifier, 0 otherwise
+;   ebase   1 if it has Emoji_Modifier_Base, 0 otherwise
+;   ecomp   1 if it has Emoji_Component, 0 otherwise
+;   extpict 1 if it has Extended_Pictographic, 0 otherwise
+;   ri      1 if it has Regional_Indicator, 0 otherwise
+;   idst    1 if its Identifier_Status is Allowed, 0 if it is Restricted
+;   idty    its Identifier_Type: the names of the types,
+;           in the order of the file IdentifierType.txt
 ;
-; Numbers are in decimal; the code points of a sequence are separated
-; by spaces.
+; Numbers are in decimal; the code points of a sequence, and the items
+; of a set, are separated by spaces.
 ;
 ; This book also defines a function that writes, to another file,
 ; what the library says about pairs of code points: whether they compose,
@@ -104,6 +129,25 @@
 (defun dump-flag (flag channel state)
   (declare (xargs :stobjs state))
   (princ$ (if flag ";1" ";0") channel state))
+
+(defun dump-strings (strings channel state)
+  (declare (xargs :stobjs state))
+  (cond ((endp strings) state)
+        (t (pprogn (princ$ (car strings) channel state)
+                   (if (consp (cdr strings))
+                       (princ$ " " channel state)
+                     state)
+                   (dump-strings (cdr strings) channel state)))))
+
+(defun script-codes (scripts)
+  (cond ((endp scripts) nil)
+        (t (cons (script-code (car scripts))
+                 (script-codes (cdr scripts))))))
+
+(defun identifier-type-names (types)
+  (cond ((endp types) nil)
+        (t (cons (identifier-type-name (car types))
+                 (identifier-type-names (cdr types))))))
 
 (defun dump-code-point (cp ver channel state)
   (declare (xargs :stobjs state))
@@ -147,7 +191,35 @@
        (state (dump-flag (deprecated-p cp ver) channel state))
        (state (dump-flag (prepended-concatenation-mark-p cp ver)
                          channel state))
-       (state (dump-flag (pattern-syntax-p cp ver) channel state)))
+       (state (dump-flag (pattern-syntax-p cp ver) channel state))
+       (state (dump-flag (id-start-p cp ver) channel state))
+       (state (dump-flag (id-continue-p cp ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (script-code (code-point-script cp ver)) channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-strings
+               (script-codes (code-point-script-extensions cp ver))
+               channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (bidi-class-abbreviation
+                       (code-point-bidi-class cp ver))
+                      channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (code-point-block cp ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (or (decimal-digit-value cp ver) "-") channel state))
+       (state (dump-flag (emoji-p cp ver) channel state))
+       (state (dump-flag (emoji-presentation-p cp ver) channel state))
+       (state (dump-flag (emoji-modifier-p cp ver) channel state))
+       (state (dump-flag (emoji-modifier-base-p cp ver) channel state))
+       (state (dump-flag (emoji-component-p cp ver) channel state))
+       (state (dump-flag (extended-pictographic-p cp ver) channel state))
+       (state (dump-flag (regional-indicator-p cp ver) channel state))
+       (state (dump-flag (identifier-allowed-p cp ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-strings
+               (identifier-type-names (code-point-identifier-types cp ver))
+               channel state)))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -168,7 +240,10 @@
        (state (princ$ "#cp;xids;xidc;pws;bidic;bidif;ccc;fce;dm;"
                       channel state))
        (state (princ$ "nfd;nfc;nfkd;nfkc;" channel state))
-       (state (princ$ "gc;di;vs;jc;nchar;dep;pcm;psyn" channel state))
+       (state (princ$ "gc;di;vs;jc;nchar;dep;pcm;psyn;" channel state))
+       (state (princ$ "ids;idc;sc;scx;bc;blk;dd;" channel state))
+       (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty"
+                      channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))
