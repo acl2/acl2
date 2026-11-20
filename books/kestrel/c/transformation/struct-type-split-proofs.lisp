@@ -3460,8 +3460,10 @@
                         (:e ldm-type-set)
                         (:e ldm-comp-stmt)
                         (:e c::tyname-to-type)
+                        (:e c::type-of-value-option)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
+                        c::type-option-of-stmt-value
                         c::errorp-of-error
                         c::compustate-frames-number-of-push-frame
                         (:t c::compustate-frames-number)))))

@@ -3494,6 +3494,24 @@
       neither does the execition of the new function,
       and they return the same results and computation states."))
    (xdoc::p
+    "The main theorem also says that the type of the result is in
+     the set of types calculated by @(tsee fundef-types)
+     from the body of the function.
+     The return type of the function may not be in that set:
+     for instance, an @('int') function may return
+     an expression of type @('short'),
+     which C converts to @('int'),
+     but our formal semantics of C does not cover this conversion yet.
+     In this situation, the execution of the old function yields an error,
+     and so the theorem holds, given its hypothesis that there is no error.
+     For the proof to work in this situation too,
+     the hints include @(tsee c::type-option-of-stmt-value)
+     and the executable counterpart of @(tsee c::type-of-value-option),
+     which let the prover combine
+     the check on the type of the result in @(tsee c::exec-fun)
+     with the fact, from the theorem for the body,
+     that the type of the value returned by the body is in the set.")
+   (xdoc::p
     "We treat the special singleton @('(void)') parameter list
      as an empty list before mapping the parameters
      with @(tsee ldm-param-declon-list).
@@ -3683,8 +3701,10 @@
                         (:e ldm-type-set)
                         (:e ldm-comp-stmt)
                         (:e c::tyname-to-type)
+                        (:e c::type-of-value-option)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
+                        c::type-option-of-stmt-value
                         c::errorp-of-error
                         c::compustate-frames-number-of-push-frame
                         (:t c::compustate-frames-number)))))
