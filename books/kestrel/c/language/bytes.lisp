@@ -99,7 +99,7 @@
     :already-definedp t)
 
   (defrule byte-list-fix-when-byte-listp
-    (implies (byte-listp x ienv)
-             (equal (byte-list-fix x ienv)
-                    x))
+    (implies (byte-listp bytes ienv)
+             (equal (byte-list-fix bytes ienv)
+                    bytes))
     :induct t))
