@@ -110861,10 +110861,11 @@ it."
  list of built-in untouchable function symbols
  (@('*initial-untouchable-fns*')), and added @('boot-strap-flg') to the list of
  built-in state global variable symbols (@('*initial-untouchable-vars*')).
- This fixes several unsound behaviors.</p>
+ This fixes several unsound behaviors.  See @(see community-books) directory
+ @('system/tests/untouchables/').</p>
 
- <p>(CCL only) Added a workaround for unsoundnesss involving @(tsee truncate)
- and related functions, due to a <a
+ <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
+ truncate) and related functions, due to a <a
  href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
  described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
  ACL2 source file @('acl2.lisp').</p>
