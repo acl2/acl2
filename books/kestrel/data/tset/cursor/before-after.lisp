@@ -119,7 +119,8 @@
   :enable (after
            entry
            entryp
-           break-abstraction)
+           break-abstraction
+           in-of-zip-oset-after-when-bstp)
   :disable in-of-zip-oset-after)
 
 (defrule <<-of-arg1-and-entry-when-in-of-before
@@ -129,7 +130,8 @@
   :enable (before
            entry
            entryp
-           break-abstraction)
+           break-abstraction
+           in-of-zip-oset-before-when-bstp)
   :disable in-of-zip-oset-before)
 
 ;;;;;;;;;;;;;;;;;;;;

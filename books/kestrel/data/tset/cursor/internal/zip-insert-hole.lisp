@@ -311,55 +311,17 @@
 ;; Replacing the focus by a tree with one more value keeps the order
 ;; invariant, when the path brackets the value.
 
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-arg2-when-heapp-of-zip-path-plug-forward-chaining
-  (implies (heapp (zip-path-plug path tree))
-           (heapp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->val head))
-                (<<-all-r (tree-element->val head) right)))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-parts-when-heapp-of-tree-node-forward-chaining
-  (implies (heapp (tree-node head left right))
-           (and (heapp left)
-                (heapp right)
-                (heap<-all-l left (tree-element->val head))
-                (heap<-all-l right (tree-element->val head))))
-  :rule-classes :forward-chaining)
-
-(local
-  (define zip-path-plug-induction ((path zip-frame-listp)
-                                   (tree treep)
-                                   (new treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        (list tree new)
-      (zip-path-plug-induction
-        (rest path)
-        (zip-frame-plug (first path) tree)
-        (zip-frame-plug (first path) new)))))
-
 (defruledl bstp-of-zip-path-plug-when-tree-subset-p-of-tree-node
   (implies (and (bstp (zip-path-plug path tree))
                 (bstp new)
                 (zip-path-brackets-p x path)
                 (tree-subset-p new (tree-node (tree-element nil x) tree nil)))
            (bstp (zip-path-plug path new)))
-  :induct (zip-path-plug-induction path tree new)
+  :induct (zip-path-plug-bi-induction path tree new)
   :expand ((zip-path-plug path tree)
            (zip-path-plug path new))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-frame-plug
            zip-path-brackets-p
            <<-all-l-when-tree-subset-p-of-tree-node
            <<-all-r-when-tree-subset-p-of-tree-node
@@ -381,24 +343,15 @@
         (and (heap< x (tree-element->val (zip-frame->elem (first path))))
              (zip-path-heap-above-p x (rest path))))))
 
-(local
-  (define zip-path-plug-induction1 ((path zip-frame-listp)
-                                    (tree treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        tree
-      (zip-path-plug-induction1 (rest path)
-                                (zip-frame-plug (first path) tree)))))
-
 (defruledl zip-path-heap-above-p-when-heap<-of-head
   (implies (and (heapp (zip-path-plug path tree))
                 (not (tree-empty-p tree))
                 (heap< x (tree-element->val (tree->head tree))))
            (zip-path-heap-above-p x path))
-  :induct (zip-path-plug-induction1 path tree)
+  :induct (zip-path-plug path tree)
   :expand ((zip-path-plug path tree))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug)
+           zip-frame-plug
            zip-path-heap-above-p
            heap<-rules))
 
@@ -420,10 +373,11 @@
                 (zip-path-heap-above-p x path)
                 (tree-subset-p new (tree-node (tree-element nil x) tree nil)))
            (heapp (zip-path-plug path new)))
-  :induct (zip-path-plug-induction path tree new)
+  :induct (zip-path-plug-bi-induction path tree new)
   :expand ((zip-path-plug path tree)
            (zip-path-plug path new))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-frame-plug
            zip-path-heap-above-p
            heap<-all-l-when-tree-subset-p-of-tree-node
            tree-subset-p-of-tree-nodes-when-tree-subset-p-of-tree-node))

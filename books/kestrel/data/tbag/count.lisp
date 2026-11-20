@@ -40,7 +40,7 @@
 
 (define count (x (bag bagp))
   :returns (count natp
-                  :rule-classes ((:rewrite) (:type-prescription))
+                  :rule-classes :type-prescription
                   :hints (("Goal" :in-theory (enable* break-abstraction))))
   :parents (tbag)
   :short "The number of occurrences of a value in a @(see tbag)."

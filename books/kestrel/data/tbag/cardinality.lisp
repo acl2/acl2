@@ -39,8 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cardinality ((bag bagp))
-  :returns (cardinality natp
-                        :rule-classes ((:rewrite) (:type-prescription)))
+  :returns (cardinality natp :rule-classes :type-prescription)
   :parents (tbag)
   :short "The number of occurrences of all values in a @(see tbag)."
   :long

@@ -132,6 +132,12 @@
   :induct t
   :enable tree-insert)
 
+(defruled mv-of-tree-insert.inp-and-tree-insert.tree$
+  (equal (mv (mv-nth 0 (tree-insert x tree))
+             (mv-nth 1 (tree-insert x tree)))
+         (tree-insert x tree))
+  :expand (tree-insert x tree))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule tree-insert.inp

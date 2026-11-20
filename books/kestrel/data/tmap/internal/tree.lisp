@@ -40,8 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: rename tree-element-p to tree-element-p in tset/internal?
-;; TODO: swap hash and key.
+;; Zipper frames rely on an element beginning with its hash (see zip-frame-p).
 (define tree-element-p (x)
   :returns (yes/no booleanp :rule-classes :type-prescription)
   :short "Recognizer for a tree element."

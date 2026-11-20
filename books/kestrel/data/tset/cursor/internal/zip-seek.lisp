@@ -327,15 +327,6 @@
 ;; So at the hole of an unsuccessful search, the values before are those below
 ;; the sought value, and the values after are those above it.
 
-(defruledl tree-in-of-zip-plug-when-tree-empty-p-of-focus
-  (implies (tree-empty-p (zip->focus zip))
-           (equal (tree-in y (zip-plug zip))
-                  (or (and (member-equal y (zip-before zip)) t)
-                      (and (member-equal y (zip-after zip)) t))))
-  :enable (tree-in-becomes-member-equal-of-tree-in-order
-           tree-in-order-of-zip-plug-split-at-cursor)
-  :disable member-equal-of-tree-in-order-under-iff)
-
 (defruledl in-of-zip-oset-before-of-zip-seek-when-not-tree-search-in
   (implies (and (bstp (zip-plug (zip-seek x zip)))
                 (not (tree-search-in x (zip->focus zip)))
@@ -343,7 +334,8 @@
            (equal (set::in y (zip-oset-before (zip-seek x zip)))
                   (and (tree-in y (zip-plug (zip-seek x zip)))
                        (<< y x))))
-  :enable (tree-in-of-zip-plug-when-tree-empty-p-of-focus
+  :enable (tree-in-becomes-member-equal-of-tree-in-order
+           tree-in-order-of-zip-plug-split-at-cursor
            <<-of-car-of-last-of-zip-before-when-zip-brackets-p
            <<-of-arg1-and-car-of-zip-after-when-zip-brackets-p
            data::<<-when-member-equal-and-<<-of-car-of-last
@@ -351,7 +343,8 @@
            data::<<-rules
            acl2::consp-when-member-equal
            not-member-equal-of-zip-before-when-member-equal-of-zip-after)
-  :disable zip-plug-of-zip-seek)
+  :disable (zip-plug-of-zip-seek
+            member-equal-of-tree-in-order-under-iff))
 
 (defruledl in-of-zip-oset-after-of-zip-seek-when-not-tree-search-in
   (implies (and (bstp (zip-plug (zip-seek x zip)))
@@ -360,7 +353,8 @@
            (equal (set::in y (zip-oset-after (zip-seek x zip)))
                   (and (tree-in y (zip-plug (zip-seek x zip)))
                        (<< x y))))
-  :enable (tree-in-of-zip-plug-when-tree-empty-p-of-focus
+  :enable (tree-in-becomes-member-equal-of-tree-in-order
+           tree-in-order-of-zip-plug-split-at-cursor
            <<-of-car-of-last-of-zip-before-when-zip-brackets-p
            <<-of-arg1-and-car-of-zip-after-when-zip-brackets-p
            data::<<-when-member-equal-and-<<-of-car-of-last
@@ -368,7 +362,8 @@
            data::<<-rules
            acl2::consp-when-member-equal
            not-member-equal-of-zip-after-when-member-equal-of-zip-before)
-  :disable zip-plug-of-zip-seek)
+  :disable (zip-plug-of-zip-seek
+            member-equal-of-tree-in-order-under-iff))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +373,8 @@
                   (and (tree-in y tree)
                        (<< y x))))
   :cases ((tree-in x tree))
-  :enable in-of-zip-oset-before-of-zip-seek-when-not-tree-search-in)
+  :enable (in-of-zip-oset-before-of-zip-seek-when-not-tree-search-in
+           in-of-zip-oset-before-when-bstp))
 
 (defrule in-of-zip-oset-after-of-zip-seek-of-zip-root
   (implies (bstp tree)
@@ -386,7 +382,8 @@
                   (and (tree-in y tree)
                        (<< x y))))
   :cases ((tree-in x tree))
-  :enable in-of-zip-oset-after-of-zip-seek-when-not-tree-search-in)
+  :enable (in-of-zip-oset-after-of-zip-seek-when-not-tree-search-in
+           in-of-zip-oset-after-when-bstp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -425,36 +422,14 @@
 
 ;; The elements of the focus are bracketed by the path, in a search tree.
 
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->val head))
-                (<<-all-r (tree-element->val head) right)))
-  :rule-classes :forward-chaining)
-
-(local
-  (define zip-path-plug-induction ((path zip-frame-listp)
-                                   (tree treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        tree
-      (zip-path-plug-induction (rest path)
-                               (zip-frame-plug (first path) tree)))))
-
-(defruled zip-path-brackets-p-when-tree-in
+(defruledl zip-path-brackets-p-when-tree-in
   (implies (and (bstp (zip-path-plug path tree))
                 (tree-in x tree))
            (zip-path-brackets-p x path))
-  :induct (zip-path-plug-induction path tree)
+  :induct (zip-path-plug path tree)
   :expand ((zip-path-plug path tree))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug)
+           zip-frame-plug
            zip-path-brackets-p
            <<-when-<<-all-l-and-tree-in
            <<-when-<<-all-r-and-tree-in))
@@ -496,13 +471,6 @@
            zip-descend-left-of-zip-ascend-one-when-from-left
            zip-descend-right-of-zip-ascend-one-when-not-from-left
            data::<<-rules))
-
-(defrulel zip-of-focus-and-nil-when-not-consp-of-path
-  (implies (not (consp (zip->path zip)))
-           (equal (zip (zip->focus zip) nil)
-                  (zip-fix zip)))
-  :use zip-of-zip-accessors
-  :disable zip-of-zip-accessors)
 
 (defruled zip-seek-of-zip-root-of-zip-plug
   (implies (zip-path-brackets-p x (zip->path zip))

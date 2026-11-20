@@ -238,3 +238,8 @@
          (cursor-fix cursor))
   :cases ((entryp cursor))
   :enable cursor-extensionality-when-entryp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy update-entry-extra-rules
+  '(update-entry-when-not-entryp))

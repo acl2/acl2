@@ -47,26 +47,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Library extensions
-
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->key head))
-                (<<-all-r (tree-element->key head) right)))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-parts-when-heapp-of-tree-node-forward-chaining
-  (implies (heapp (tree-node head left right))
-           (and (heapp left)
-                (heapp right)
-                (heap<-all-l left (tree-element->key head))
-                (heap<-all-l right (tree-element->key head))))
-  :rule-classes :forward-chaining)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (local (xdoc::set-default-parents zipper))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -583,6 +563,14 @@
          (zip-omap-after zip))
   :enable zip-omap-after)
 
+(theory-invariant
+  (incompatible! (:definition zip-omap-before)
+                 (:rewrite tree-omap-of-zip-tree-before)))
+
+(theory-invariant
+  (incompatible! (:definition zip-omap-after)
+                 (:rewrite tree-omap-of-zip-tree-after)))
+
 (defrule assoc-of-zip-omap-before-under-iff
   (iff (omap::assoc key (zip-omap-before zip))
        (assoc-equal key (zip-before zip)))
@@ -626,16 +614,6 @@
   :disable tree-omap-of-zip-tree-after)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-arg2-when-heapp-of-zip-path-plug-forward-chaining
-  (implies (heapp (zip-path-plug path tree))
-           (heapp tree))
-  :rule-classes :forward-chaining)
 
 (local
   (define zip-path-tree-before-induction ((path zip-frame-listp)

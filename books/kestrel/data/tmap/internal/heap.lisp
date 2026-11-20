@@ -383,6 +383,14 @@
               (heap<-all-l right (tree-element->key head))))
   :enable heapp)
 
+(defrule heapp-of-parts-when-heapp-of-tree-node-forward-chaining
+  (implies (heapp (tree-node head left right))
+           (and (heapp left)
+                (heapp right)
+                (heap<-all-l left (tree-element->key head))
+                (heap<-all-l right (tree-element->key head))))
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled heap<-of-tree->head-and-tree->head-of-tree->left

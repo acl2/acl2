@@ -157,7 +157,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule not-in-of-keys-of-entry-key-and-before
+(defrule not-in-of-entry-key-and-keys-of-before
   (implies (entryp cursor)
            (not (tset::in (entry-key cursor) (keys (before cursor)))))
   :use (:instance <<-of-arg1-and-entry-key-when-in-of-keys-of-before
@@ -165,7 +165,7 @@
   :disable <<-of-arg1-and-entry-key-when-in-of-keys-of-before
   :enable data::<<-rules)
 
-(defrule not-in-of-keys-of-entry-key-and-after
+(defrule not-in-of-entry-key-and-keys-of-after
   (implies (entryp cursor)
            (not (tset::in (entry-key cursor) (keys (after cursor)))))
   :use (:instance <<-of-entry-key-when-in-of-keys-of-after

@@ -162,9 +162,9 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see tmap) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule."))
+      "Two @(see tmap)s are equal exactly when every @(tsee lookup) agrees on
+       them, for every key and default. Enable this rule to prove an equality
+       that way."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by extensionality-no-backchain-limit)
 

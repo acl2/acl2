@@ -461,36 +461,14 @@
 
 ;; The keys of the focus are bracketed by the path, in a search tree.
 
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->key head))
-                (<<-all-r (tree-element->key head) right)))
-  :rule-classes :forward-chaining)
-
-(local
-  (define zip-path-plug-induction ((path zip-frame-listp)
-                                   (tree treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        tree
-      (zip-path-plug-induction (rest path)
-                               (zip-frame-plug (first path) tree)))))
-
-(defruled zip-path-brackets-p-when-in-of-tree-key-set
+(defruledl zip-path-brackets-p-when-in-of-tree-key-set
   (implies (and (bstp (zip-path-plug path tree))
                 (tset::in key (tree-key-set tree)))
            (zip-path-brackets-p key path))
-  :induct (zip-path-plug-induction path tree)
+  :induct (zip-path-plug path tree)
   :expand ((zip-path-plug path tree))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug)
+           zip-frame-plug
            zip-path-brackets-p
            <<-when-<<-all-l-and-in-of-tree-key-set
            <<-when-<<-all-r-and-in-of-tree-key-set))
@@ -532,13 +510,6 @@
            zip-descend-left-of-zip-ascend-one-when-from-left
            zip-descend-right-of-zip-ascend-one-when-not-from-left
            data::<<-rules))
-
-(defrulel zip-of-focus-and-nil-when-not-consp-of-path
-  (implies (not (consp (zip->path zip)))
-           (equal (zip (zip->focus zip) nil)
-                  (zip-fix zip)))
-  :use zip-of-zip-accessors
-  :disable zip-of-zip-accessors)
 
 (defruled zip-seek-of-zip-root-of-zip-plug
   (implies (zip-path-brackets-p x (zip->path zip))

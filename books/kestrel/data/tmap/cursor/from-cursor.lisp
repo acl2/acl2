@@ -97,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule in-of-keys-of-entry-key
+(defrule in-of-entry-key-and-keys-of-from-cursor
   (implies (entryp cursor)
            (tset::in (entry-key cursor) (keys (from-cursor cursor))))
   :enable in-of-keys-of-from-cursor-becomes-in-of-keys-of-before-or-entry-key-or-after)
@@ -154,3 +154,9 @@
            in-of-tree-key-set-of-zip-plug-split-at-cursor
            assoc-equal-of-zip-after-when-assoc-equal-and-bstp
            break-abstraction))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy from-cursor-extra-rules
+  '(in-of-keys-of-from-cursor-becomes-in-of-keys-of-before-or-entry-key-or-after
+    lookup-of-from-cursor-becomes-lookup-of-before-or-entry-val-or-after))

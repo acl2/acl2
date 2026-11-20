@@ -56,11 +56,12 @@
   (let ((focus (zip->focus zip)))
     (if (mbt (not (tree-empty-p focus)))
         (let ((head (tree->head focus)))
-          (zip (tree-node (tree-element (tree-element->hash head)
-                                        (tree-element->key head)
-                                        val)
-                          (tree->left focus)
-                          (tree->right focus))
+          (zip (tree-node-with-hint (tree-element (tree-element->hash head)
+                                                  (tree-element->key head)
+                                                  val)
+                                    (tree->left focus)
+                                    (tree->right focus)
+                                    focus)
                (zip->path zip)))
       (zip-fix zip))))
 
@@ -166,25 +167,13 @@
         (:instance heap<-all-l-when-subset-of-tree-key-sets
                    (tree y) (sub x) (x key))))
 
-(local
-  (define zip-path-plug-induction ((path zip-frame-listp)
-                                   (tree treep)
-                                   (new treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        (list tree new)
-      (zip-path-plug-induction
-        (rest path)
-        (zip-frame-plug (first path) tree)
-        (zip-frame-plug (first path) new)))))
-
 (defruledl tree-key-set-of-zip-path-plug-when-equal-of-tree-key-sets
   (implies (equal (tree-key-set new) (tree-key-set tree))
            (equal (tree-key-set (zip-path-plug path new))
                   (tree-key-set (zip-path-plug path tree))))
-  :induct (zip-path-plug-induction path tree new)
-  :enable (zip-path-plug
+  :induct (zip-path-plug-bi-induction path tree new)
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-path-plug
            zip-frame-plug))
 
 (defruledl bstp-of-zip-path-plug-when-equal-of-tree-key-sets
@@ -192,8 +181,9 @@
                 (equal (bstp new) (bstp tree)))
            (equal (bstp (zip-path-plug path new))
                   (bstp (zip-path-plug path tree))))
-  :induct (zip-path-plug-induction path tree new)
-  :enable (zip-path-plug
+  :induct (zip-path-plug-bi-induction path tree new)
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-path-plug
            zip-frame-plug
            <<-all-l-when-subset-of-tree-key-sets
            <<-all-r-when-subset-of-tree-key-sets
@@ -205,8 +195,9 @@
                 (equal (heapp new) (heapp tree)))
            (equal (heapp (zip-path-plug path new))
                   (heapp (zip-path-plug path tree))))
-  :induct (zip-path-plug-induction path tree new)
-  :enable (zip-path-plug
+  :induct (zip-path-plug-bi-induction path tree new)
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-path-plug
            zip-frame-plug
            heap<-all-l-when-subset-of-tree-key-sets
            equal-of-heap<-all-l-when-equal-of-tree-key-sets))

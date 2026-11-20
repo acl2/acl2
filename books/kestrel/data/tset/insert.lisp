@@ -887,11 +887,12 @@
   ((x acl2-numberp)
    (set acl2-number-setp))
   (mbe :logic (insert? x set)
-       :exec (mv-let (inp set$)
-                     (acl2-number-tree-insert x set)
-               (mv inp set$)))
+       :exec (acl2-number-tree-insert x set))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable* in
+  :inline t
+  :guard-hints (("Goal" :use (:instance mv-of-tree-insert.inp-and-tree-insert.tree$
+                                        (tree set))
+                        :in-theory (enable* in
                                             insert
                                             set-all-acl2-numberp
                                             break-abstraction))))
@@ -902,11 +903,12 @@
   ((x symbolp)
    (set symbol-setp))
   (mbe :logic (insert? x set)
-       :exec (mv-let (inp set$)
-                     (symbol-tree-insert x set)
-               (mv inp set$)))
+       :exec (symbol-tree-insert x set))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable* in
+  :inline t
+  :guard-hints (("Goal" :use (:instance mv-of-tree-insert.inp-and-tree-insert.tree$
+                                        (tree set))
+                        :in-theory (enable* in
                                             insert
                                             set-all-symbolp
                                             break-abstraction))))
@@ -917,11 +919,12 @@
   ((x eqlablep)
    (set eqlable-setp))
   (mbe :logic (insert? x set)
-       :exec (mv-let (inp set$)
-                     (eqlable-tree-insert x set)
-               (mv inp set$)))
+       :exec (eqlable-tree-insert x set))
   :enabled t
-  :guard-hints (("Goal" :in-theory (enable* in
+  :inline t
+  :guard-hints (("Goal" :use (:instance mv-of-tree-insert.inp-and-tree-insert.tree$
+                                        (tree set))
+                        :in-theory (enable* in
                                             insert
                                             set-all-eqlablep
                                             break-abstraction))))

@@ -17,6 +17,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/fty/string-set" :dir :system)
+(include-book "kestrel/data/tset/cursor/defs" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "collect-idents")

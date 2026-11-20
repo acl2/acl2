@@ -90,7 +90,7 @@
            tree-delete
            data::<<-rules))
 
-(defruled tree-delete-of-zip-path-plug
+(defruledl tree-delete-of-zip-path-plug
   (implies (zip-path-brackets-p key path)
            (equal (tree-delete key (zip-path-plug path tree))
                   (zip-path-plug path (tree-delete key tree))))

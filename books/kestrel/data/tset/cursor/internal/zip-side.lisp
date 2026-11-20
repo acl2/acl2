@@ -40,22 +40,6 @@
 
 ;; Library extensions
 
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->val head))
-                (<<-all-r (tree-element->val head) right)))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-parts-when-heapp-of-tree-node-forward-chaining
-  (implies (heapp (tree-node head left right))
-           (and (heapp left)
-                (heapp right)
-                (heap<-all-l left (tree-element->val head))
-                (heap<-all-l right (tree-element->val head))))
-  :rule-classes :forward-chaining)
-
 (defruledl tree-subset-p-of-tree-nodes-sharing-left
   (implies (tree-subset-p acc tree)
            (tree-subset-p (tree-node head sibling acc)
@@ -488,6 +472,14 @@
          (zip-oset-after zip))
   :enable zip-oset-after)
 
+(theory-invariant
+  (incompatible! (:definition zip-oset-before)
+                 (:rewrite tree-oset-of-zip-tree-before)))
+
+(theory-invariant
+  (incompatible! (:definition zip-oset-after)
+                 (:rewrite tree-oset-of-zip-tree-after)))
+
 (defrule in-of-zip-oset-before
   (iff (set::in x (zip-oset-before zip))
        (member-equal x (zip-before zip)))
@@ -529,16 +521,6 @@
   :disable tree-oset-of-zip-tree-after)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-arg2-when-heapp-of-zip-path-plug-forward-chaining
-  (implies (heapp (zip-path-plug path tree))
-           (heapp tree))
-  :rule-classes :forward-chaining)
 
 (local
   (define zip-path-tree-before-induction ((path zip-frame-listp)

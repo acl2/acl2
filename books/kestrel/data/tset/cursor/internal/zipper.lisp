@@ -274,6 +274,13 @@
            zipp
            irr-zip))
 
+(defrule zip-of-focus-and-nil-when-not-consp-of-path
+  (implies (not (consp (zip->path zip)))
+           (equal (zip (zip->focus zip) nil)
+                  (zip-fix zip)))
+  :use zip-of-zip-accessors
+  :disable zip-of-zip-accessors)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define zip-path-plug
@@ -315,19 +322,35 @@
   :induct t
   :enable zip-path-plug)
 
-(defrule bstp-of-arg2-when-bstp-of-zip-path-plug
+(defrule bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
   (implies (bstp (zip-path-plug path tree))
            (bstp tree))
+  :rule-classes :forward-chaining
   :induct t
   :enable (zip-path-plug
            zip-frame-plug))
 
-(defrule heapp-of-arg2-when-heapp-of-zip-path-plug
+(defrule heapp-of-arg2-when-heapp-of-zip-path-plug-forward-chaining
   (implies (heapp (zip-path-plug path tree))
            (heapp tree))
+  :rule-classes :forward-chaining
   :induct t
   :enable (zip-path-plug
            zip-frame-plug))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define zip-path-plug-bi-induction
+  ((path zip-frame-listp)
+   (tree0 treep)
+   (tree1 treep))
+  :short "Induction scheme for plugging two trees into the same path."
+  (if (acl2::endp path)
+      (list tree0 tree1)
+    (zip-path-plug-bi-induction (rest path)
+                                (zip-frame-plug (first path) tree0)
+                                (zip-frame-plug (first path) tree1)))
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

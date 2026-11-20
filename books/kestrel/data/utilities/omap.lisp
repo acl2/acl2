@@ -346,16 +346,14 @@
   :enable (last
            omap::mapp))
 
-;; The first and last keys of an omap are bound to its first and last pairs,
-;; and they differ unless the omap has a single pair.
+;; The first key of a list is bound to its first pair, and the last key of an
+;; omap to its last pair. The two keys of an omap differ unless it has a single
+;; pair.
 
-(defruled assoc-equal-of-caar-when-omapp
-  (implies (and (omap::mapp l)
-                (consp l))
-           (equal (assoc-equal (caar l) l)
-                  (car l)))
-  :enable (assoc-equal
-           omap::mapp))
+(defruled assoc-equal-of-caar
+  (equal (assoc-equal (caar l) l)
+         (car l))
+  :enable assoc-equal)
 
 (defruled <<-of-caar-and-caar-of-last-when-omapp
   (implies (and (omap::mapp l)
@@ -375,8 +373,7 @@
            <<-rules))
 
 (defruled assoc-equal-of-caar-of-last-when-omapp
-  (implies (and (omap::mapp l)
-                (consp l))
+  (implies (omap::mapp l)
            (equal (assoc-equal (caar (last l)) l)
                   (car (last l))))
   :induct (last l)

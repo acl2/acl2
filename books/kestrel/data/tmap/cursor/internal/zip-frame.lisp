@@ -380,8 +380,8 @@
      "A path is such a list, ordered from the frame nearest the focus to the
       frame of the root."))
   (if (consp x)
-      (and (zip-frame-p (car x))
-           (zip-frame-listp (cdr x)))
+      (and (zip-frame-p (first x))
+           (zip-frame-listp (rest x)))
     (null x)))
 
 ;;;;;;;;;;;;;;;;;;;;

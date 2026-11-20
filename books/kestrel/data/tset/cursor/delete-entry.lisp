@@ -19,6 +19,7 @@
 (include-book "before-after-defs")
 (include-book "from-cursor-defs")
 (include-book "begin-end-defs")
+(include-book "seek-min-max-defs")
 (include-book "seek-defs")
 (include-book "nexts-prevs-defs")
 (include-book "internal/zip-delete-entry-defs")
@@ -41,6 +42,7 @@
 (local (include-book "from-cursor"))
 (local (include-book "extensionality"))
 (local (include-book "begin-end"))
+(local (include-book "seek-min-max"))
 (local (include-book "seek"))
 (local (include-book "nexts-prevs"))
 (local (include-book "internal/zipper"))
@@ -115,6 +117,11 @@
   (not (entryp (delete-entry cursor)))
   :enable delete-entry)
 
+(defrule entry-of-delete-entry
+  (equal (entry (delete-entry cursor))
+         nil)
+  :enable entry-when-not-entryp)
+
 (defrule from-cursor-of-delete-entry
   (implies (entryp cursor)
            (equal (from-cursor (delete-entry cursor))
@@ -151,6 +158,14 @@
          (emptyp (after cursor)))
   :enable endp)
 
+(defrule minp-of-delete-entry
+  (not (minp (delete-entry cursor)))
+  :enable minp)
+
+(defrule maxp-of-delete-entry
+  (not (maxp (delete-entry cursor)))
+  :enable maxp)
+
 (defrule nexts-of-delete-entry
   (implies (entryp cursor)
            (equal (nexts (delete-entry cursor))
@@ -162,3 +177,8 @@
            (equal (prevs (delete-entry cursor))
                   (- (prevs cursor) 1)))
   :enable prevs)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-entry-extra-rules
+  '(delete-entry-when-not-entryp))

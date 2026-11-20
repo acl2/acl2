@@ -177,9 +177,9 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see tbag) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule.")
+      "Two @(see tbag)s are equal exactly when every element has the same
+       @(tsee count) in both. Enable this rule to prove an equality that
+       way.")
     (xdoc::p
       "A bag is determined by its multiplicities alone, with no side condition
        on which elements are present: an element absent from the bag and an

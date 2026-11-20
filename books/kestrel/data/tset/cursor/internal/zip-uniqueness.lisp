@@ -98,7 +98,8 @@
                 (equal (zip-value zip1) (zip-value zip2)))
            (equal (zip-oset-after zip1) (zip-oset-after zip2)))
   :enable (set::double-containment
-           set::pick-a-point-subset-strategy)
+           set::pick-a-point-subset-strategy
+           in-of-zip-oset-after-when-bstp)
   :disable in-of-zip-oset-after)
 
 (defruledl zip-after-when-same-value
@@ -113,14 +114,12 @@
         zip-oset-after-when-same-value))
 
 (defrule zip-uniqueness-when-same-value
-  (implies (and (zipp zip1)
-                (zipp zip2)
-                (bstp (zip-plug zip1))
+  (implies (and (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
                 (not (tree-empty-p (zip->focus zip1)))
                 (not (tree-empty-p (zip->focus zip2)))
                 (equal (zip-value zip1) (zip-value zip2)))
-           (equal zip1 zip2))
+           (equal (zip-fix zip1) (zip-fix zip2)))
   :rule-classes nil
   :use (zip-uniqueness
         zip-after-when-same-value))

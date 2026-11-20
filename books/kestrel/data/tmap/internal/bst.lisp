@@ -549,6 +549,14 @@
               (<<-all-r (tree-element->key head) right)))
   :enable bstp)
 
+(defrule bstp-of-parts-when-bstp-of-tree-node-forward-chaining
+  (implies (bstp (tree-node head left right))
+           (and (bstp left)
+                (bstp right)
+                (<<-all-l left (tree-element->key head))
+                (<<-all-r (tree-element->key head) right)))
+  :rule-classes :forward-chaining)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled <<-of-tree->head-tree->left-and-tree->head

@@ -26,5 +26,4 @@
           zip-seek-loop
           acl2-number-zip-seek-loop
           symbol-zip-seek-loop
-          eqlable-zip-seek-loop
-          zip-path-brackets-p))
+          eqlable-zip-seek-loop))

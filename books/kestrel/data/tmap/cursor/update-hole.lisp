@@ -14,14 +14,22 @@
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+
 (include-book "../map-defs")
+(include-book "../keys-defs")
+(include-book "../size-defs")
 (include-book "../min-max-defs")
 (include-book "../update-defs")
 (include-book "cursor-defs")
 (include-book "entry-defs")
 (include-book "before-after-defs")
 (include-book "from-cursor-defs")
+(include-book "begin-end-defs")
+(include-book "seek-min-max-defs")
 (include-book "seek-defs")
+(include-book "nexts-prevs-defs")
 (include-book "update-entry-defs")
 (include-book "internal/zip-update-hole-defs")
 
@@ -47,7 +55,10 @@
 (local (include-book "before-after"))
 (local (include-book "from-cursor"))
 (local (include-book "extensionality"))
+(local (include-book "begin-end"))
+(local (include-book "seek-min-max"))
 (local (include-book "seek"))
+(local (include-book "nexts-prevs"))
 (local (include-book "update-entry"))
 (local (include-book "internal/zipper"))
 (local (include-book "internal/zip-seek"))
@@ -124,12 +135,12 @@
            (tree-empty-p (zip->focus cursor)))
   :enable entryp)
 
-(defruledl in-of-keys-of-from-cursor-when-not-entryp
+(defruled in-of-keys-of-from-cursor-when-not-entryp
   (implies (and (not (entryp cursor))
                 (or (emptyp (before cursor))
-                    (<< (max-key (before cursor)) key))
+                    (<< (tset::max (keys (before cursor))) key))
                 (or (emptyp (after cursor))
-                    (<< key (min-key (after cursor)))))
+                    (<< key (tset::min (keys (after cursor))))))
            (not (tset::in key (keys (from-cursor cursor)))))
   :use (:instance entryp-of-seek
                   (x key)
@@ -225,6 +236,36 @@
   :enable (update-hole
            extensionality
            data::<<-rules))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule beginp-of-update-hole
+  (not (beginp (update-hole key val cursor)))
+  :enable beginp)
+
+(defrule endp-of-update-hole
+  (not (endp (update-hole key val cursor)))
+  :enable endp)
+
+(defrule minp-of-update-hole
+  (equal (minp (update-hole key val cursor))
+         (emptyp (before (seek key (from-cursor cursor)))))
+  :enable minp)
+
+(defrule maxp-of-update-hole
+  (equal (maxp (update-hole key val cursor))
+         (emptyp (after (seek key (from-cursor cursor)))))
+  :enable maxp)
+
+(defrule nexts-of-update-hole
+  (equal (nexts (update-hole key val cursor))
+         (+ 1 (size (after (seek key (from-cursor cursor))))))
+  :enable nexts)
+
+(defrule prevs-of-update-hole
+  (equal (prevs (update-hole key val cursor))
+         (+ 1 (size (before (seek key (from-cursor cursor))))))
+  :enable prevs)
 
 ;;;;;;;;;;;;;;;;;;;;
 

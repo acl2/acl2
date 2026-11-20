@@ -12,6 +12,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
 (include-book "internal/doc")
+(include-book "cursor/internal/doc")
 (include-book "top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -70,7 +71,19 @@
         (xdoc::td "@(tsee restrict)")
         (xdoc::td "@($O(m\\log(n/m))$)")))
     (xdoc::p
-      "(where @($m < n$))."))
+      "(where @($m < n$)).")
+    (xdoc::p
+      "To iterate over the entries of a map, use a @(see cursor). In "
+      (xdoc::seetopic "omap::omaps" "omaps")
+      ", one uses @(tsee omap::head) and @(tsee omap::tail). While there are
+       corresponding functions on @(see tmap)s (@(tsee min) and @(tsee
+       delete)), it would be inefficient to use them for iteration. Instead,
+       create a @(see cursor) with @(tsee seek-min), then read each entry with
+       @(tsee entry-key) and @(tsee entry-val) (or @(tsee entry)) and move on
+       with @(tsee next). To walk the other way, start from @(tsee seek-max)
+       and use @(tsee prev). If you are going to iterate over the entire map
+       (i.e. you don't need to ``exit early''), you could also use @(tsee
+       to-omap). All these methods of iteration take @($O(n)$) time."))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

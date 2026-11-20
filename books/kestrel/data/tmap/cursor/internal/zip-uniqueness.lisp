@@ -103,14 +103,12 @@
            data::omap-assoc-becomes-assoc-equal))
 
 (defrule zip-uniqueness-when-same-key
-  (implies (and (zipp zip1)
-                (zipp zip2)
-                (bstp (zip-plug zip1))
+  (implies (and (bstp (zip-plug zip1))
                 (equal (zip-plug zip1) (zip-plug zip2))
                 (not (tree-empty-p (zip->focus zip1)))
                 (not (tree-empty-p (zip->focus zip2)))
                 (equal (zip-key zip1) (zip-key zip2)))
-           (equal zip1 zip2))
+           (equal (zip-fix zip1) (zip-fix zip2)))
   :rule-classes nil
   :use (zip-uniqueness
         zip-after-when-same-key))

@@ -38,6 +38,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Library extensions
+
+(defrulel cons-of-arg1-and-cdr-of-assoc-equal-when-omapp
+  (implies (and (omap::mapp map)
+                (assoc-equal key map))
+           (equal (cons key (cdr (assoc-equal key map)))
+                  (assoc-equal key map)))
+  :enable omap::alistp-when-mapp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; The in-order sequence of a search tree is an omap. These put that fact,
 ;; cut at the cursor, where the omap rules about append can find it.
 
@@ -131,6 +142,23 @@
            data::not-assoc-equal-of-suffix-when-omapp-of-append
            data::<<-rules))
 
+;; Over a search tree, the tree's lookup, cut at the cursor.
+
+(defruledl tree-lookup-of-zip-plug-split-at-cursor
+  (implies (bstp (zip-plug zip))
+           (equal (tree-lookup key (zip-plug zip))
+                  (cond ((assoc-equal key (zip-before zip))
+                         (cdr (assoc-equal key (zip-before zip))))
+                        ((and (not (tree-empty-p (zip->focus zip)))
+                              (equal key (zip-key zip)))
+                         (zip-val zip))
+                        (t (cdr (assoc-equal key (zip-after zip)))))))
+  :use (:instance assoc-equal-of-tree-in-order-when-bstp
+                  (tree (zip-plug zip)))
+  :enable tree-in-order-of-zip-plug-split-at-cursor
+  :disable (assoc-equal-of-tree-in-order-when-bstp
+            tree-in-order-of-zip-plug))
+
 (defrule assoc-equal-of-zip-before-when-bstp
   (implies (and (bstp (zip-plug zip))
                 (not (tree-empty-p (zip->focus zip))))
@@ -139,12 +167,8 @@
                            (<< key (zip-key zip)))
                       (cons key (tree-lookup key (zip-plug zip)))
                     nil)))
-  :use (:instance assoc-equal-of-tree-in-order-when-bstp
-                  (tree (zip-plug zip)))
   :enable (assoc-equal-of-zip-before-under-iff-when-bstp
-           tree-in-order-of-zip-plug-split-at-cursor)
-  :disable (assoc-equal-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+           tree-lookup-of-zip-plug-split-at-cursor))
 
 (defrule assoc-equal-of-zip-after-when-bstp
   (implies (and (bstp (zip-plug zip))
@@ -154,17 +178,12 @@
                            (<< (zip-key zip) key))
                       (cons key (tree-lookup key (zip-plug zip)))
                     nil)))
-  :cases ((assoc-equal key (zip-after zip)))
-  :use (:instance assoc-equal-of-tree-in-order-when-bstp
-                  (tree (zip-plug zip)))
   :enable (assoc-equal-of-zip-after-under-iff-when-bstp
            assoc-equal-of-zip-before-under-iff-when-bstp
-           tree-in-order-of-zip-plug-split-at-cursor
-           data::<<-rules)
-  :disable (assoc-equal-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+           tree-lookup-of-zip-plug-split-at-cursor
+           data::<<-rules))
 
-(defrule assoc-of-zip-omap-before-when-bstp
+(defruled assoc-of-zip-omap-before-when-bstp
   (implies (and (bstp (zip-plug zip))
                 (not (tree-empty-p (zip->focus zip))))
            (equal (omap::assoc key (zip-omap-before zip))
@@ -175,7 +194,7 @@
   :enable (zip-omap-before-becomes-zip-before
            data::omap-assoc-becomes-assoc-equal))
 
-(defrule assoc-of-zip-omap-after-when-bstp
+(defruled assoc-of-zip-omap-after-when-bstp
   (implies (and (bstp (zip-plug zip))
                 (not (tree-empty-p (zip->focus zip))))
            (equal (omap::assoc key (zip-omap-after zip))
@@ -219,25 +238,17 @@
                 (bstp (zip-plug zip)))
            (equal (assoc-equal key (zip-before zip))
                   (cons key (tree-lookup key (zip-plug zip)))))
-  :cases ((tree-empty-p (zip->focus zip)))
-  :use (:instance assoc-equal-of-tree-in-order-when-bstp
-                  (tree (zip-plug zip)))
-  :enable tree-in-order-of-zip-plug-split-at-cursor
-  :disable (assoc-equal-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+  :enable tree-lookup-of-zip-plug-split-at-cursor
+  :disable assoc-equal-of-zip-before-when-bstp)
 
 (defruled assoc-equal-of-zip-after-when-assoc-equal-and-bstp
   (implies (and (assoc-equal key (zip-after zip))
                 (bstp (zip-plug zip)))
            (equal (assoc-equal key (zip-after zip))
                   (cons key (tree-lookup key (zip-plug zip)))))
-  :cases ((tree-empty-p (zip->focus zip)))
-  :use (:instance assoc-equal-of-tree-in-order-when-bstp
-                  (tree (zip-plug zip)))
-  :enable (tree-in-order-of-zip-plug-split-at-cursor
+  :enable (tree-lookup-of-zip-plug-split-at-cursor
            not-assoc-equal-of-zip-before-when-assoc-equal-of-zip-after)
-  :disable (assoc-equal-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+  :disable assoc-equal-of-zip-after-when-bstp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -262,11 +273,6 @@
                 (not (tree-empty-p (zip->focus zip))))
            (equal (tree-lookup (zip-key zip) (zip-plug zip))
                   (zip-val zip)))
-  :use (:instance assoc-equal-of-tree-in-order-when-bstp
-                  (key (zip-key zip))
-                  (tree (zip-plug zip)))
-  :enable (tree-in-order-of-zip-plug-split-at-cursor
-           zip-key+val-becomes-cons-of-zip-key-and-zip-val
-           data::<<-rules)
-  :disable (assoc-equal-of-tree-in-order-when-bstp
-            tree-in-order-of-zip-plug))
+  :enable tree-lookup-of-zip-plug-split-at-cursor
+  :disable (assoc-equal-of-zip-before-when-bstp
+            assoc-equal-of-zip-after-when-bstp))

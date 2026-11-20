@@ -118,7 +118,7 @@
            in-of-keys-of-after-becomes-assoc-equal
            emptyp-of-after-becomes-not-consp
            bstp-of-zip-plug-of-cursor-fix
-           data::assoc-equal-of-caar-when-omapp
+           data::assoc-equal-of-caar
            data::car-under-iff-when-omapp
            data::not-<<-of-arg1-and-caar-when-assoc-equal))
 

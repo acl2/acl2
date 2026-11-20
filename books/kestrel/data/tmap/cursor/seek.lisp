@@ -278,15 +278,15 @@
                   (cursor-fix cursor)))
   :enable cursor-extensionality-when-entryp)
 
-(defrule seek-of-min-key
-  (equal (seek (min-key map) map)
+(defrule seek-of-min-of-keys
+  (equal (seek (tset::min (keys map)) map)
          (seek-min map))
   :enable (cursor-extensionality
            extensionality
            entry-key-of-seek))
 
-(defrule seek-of-max-key
-  (equal (seek (max-key map) map)
+(defrule seek-of-max-of-keys
+  (equal (seek (tset::max (keys map)) map)
          (seek-max map))
   :enable (cursor-extensionality
            extensionality
@@ -309,8 +309,8 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by seek-when-emptyp)
 
-(defruled seek-when-<<-of-arg1-and-min-key
-  (implies (<< x (min-key map))
+(defruled seek-when-<<-of-arg1-and-min-of-keys
+  (implies (<< x (tset::min (keys map)))
            (equal (seek x map)
                   (begin map)))
   :enable (cursor-extensionality
@@ -320,18 +320,15 @@
            tset::<<-when-in-and-<<-of-arg1-and-min
            data::<<-rules))
 
-;; The hypothesis of a cheap rule is checked without rewriting, so it is stated
-;; on the key set, as it appears once min-key or max-key has opened.
-
-(defrule seek-when-<<-of-arg1-and-min-key-cheap
+(defrule seek-when-<<-of-arg1-and-min-of-keys-cheap
   (implies (<< x (tset::min (keys map)))
            (equal (seek x map)
                   (begin map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable seek-when-<<-of-arg1-and-min-key)
+  :by seek-when-<<-of-arg1-and-min-of-keys)
 
-(defruled seek-when-<<-of-max-key-and-arg1
-  (implies (<< (max-key map) x)
+(defruled seek-when-<<-of-max-of-keys-and-arg1
+  (implies (<< (tset::max (keys map)) x)
            (equal (seek x map)
                   (end map)))
   :enable (cursor-extensionality
@@ -341,12 +338,12 @@
            tset::<<-when-in-and-<<-of-max
            data::<<-rules))
 
-(defrule seek-when-<<-of-max-key-and-arg1-cheap
+(defrule seek-when-<<-of-max-of-keys-and-arg1-cheap
   (implies (<< (tset::max (keys map)) x)
            (equal (seek x map)
                   (end map)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :enable seek-when-<<-of-max-key-and-arg1)
+  :by seek-when-<<-of-max-of-keys-and-arg1)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -385,6 +382,9 @@
            tset::<<-when-in-and-<<-of-max
            tset::<<-when-in-and-<<-of-arg1-and-min
            data::<<-rules))
+
+;; The hypotheses of a cheap rule are checked without rewriting, so they are
+;; stated on the key sets, as they appear once min-key or max-key has opened.
 
 (defrule seek-of-from-cursor-when-not-entryp-cheap
   (implies (and (not (entryp cursor))
@@ -443,6 +443,6 @@
 (defthy seek-extra-rules
   '(entry-key-of-seek
     seek-when-emptyp
-    seek-when-<<-of-arg1-and-min-key
-    seek-when-<<-of-max-key-and-arg1
+    seek-when-<<-of-arg1-and-min-of-keys
+    seek-when-<<-of-max-of-keys-and-arg1
     seek-of-from-cursor-when-not-entryp))

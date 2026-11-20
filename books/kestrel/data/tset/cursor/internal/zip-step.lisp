@@ -27,19 +27,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Library extensions
-
-(defruledl zip-of-focus-and-nil-when-path-not-consp
-  (implies (not (consp (zip->path zip)))
-           (equal (zip (zip->focus zip) nil)
-                  (zip-fix zip)))
-  :enable (zip
-           zip->focus
-           zip-fix
-           irr-zip))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (local (xdoc::set-default-parents zipper))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -446,8 +433,7 @@
   :enable (zip-ascend-to-left-frame
            zip-path-no-left-frames-p
            zip-root
-           zip-plug
-           zip-of-focus-and-nil-when-path-not-consp))
+           zip-plug))
 
 (defruledl zip-root-of-zip-plug-becomes-zip-ascend-to-right-frame
   (implies (zip-path-no-right-frames-p (zip->path zip))
@@ -457,8 +443,7 @@
   :enable (zip-ascend-to-right-frame
            zip-path-no-right-frames-p
            zip-root
-           zip-plug
-           zip-of-focus-and-nil-when-path-not-consp))
+           zip-plug))
 
 (defruledl zip-rightmost-hole-of-ascend-to-left-frame-when-no-left-frames
   (implies (zip-path-no-left-frames-p (zip->path zip))

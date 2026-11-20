@@ -12,6 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "../in-defs")
 (include-book "../cardinality-defs")
 (include-book "cursor-defs")
 (include-book "entry-defs")
@@ -19,6 +20,7 @@
 (include-book "from-cursor-defs")
 (include-book "begin-end-defs")
 (include-book "seek-min-max-defs")
+(include-book "seek-defs")
 (include-book "next-prev-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
@@ -35,32 +37,39 @@
 (local (include-book "begin-end"))
 (local (include-book "step"))
 (local (include-book "seek-min-max"))
+(local (include-book "seek"))
 (local (include-book "next-prev"))
 (local (include-book "partition"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nexts ((cursor cursorp))
-  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :returns (measure natp :rule-classes :type-prescription)
   :parents (cursor)
   :short "The number of entries at or after a @(see cursor)."
   :long
-  (xdoc::topstring-p
-    "This is a measure for a walk with @(tsee next): it decreases until the
-     cursor is at @(tsee end).")
+  (xdoc::topstring
+   (xdoc::p
+     "This is a measure for a walk with @(tsee next): it decreases until the
+      cursor is at @(tsee end).")
+   (xdoc::p
+     "Time complexity: @($O(n)$)."))
   (+ (cardinality (after cursor))
      (if (entryp cursor) 1 0)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define prevs ((cursor cursorp))
-  :returns (measure natp :rule-classes (:rewrite :type-prescription))
+  :returns (measure natp :rule-classes :type-prescription)
   :parents (cursor)
   :short "The number of entries at or before a @(see cursor)."
   :long
-  (xdoc::topstring-p
-    "This is a measure for a walk with @(tsee prev): it decreases until the
-     cursor is at @(tsee begin).")
+  (xdoc::topstring
+   (xdoc::p
+     "This is a measure for a walk with @(tsee prev): it decreases until the
+      cursor is at @(tsee begin).")
+   (xdoc::p
+     "Time complexity: @($O(n)$)."))
   (+ (cardinality (before cursor))
      (if (entryp cursor) 1 0)))
 
@@ -279,6 +288,20 @@
   (<= (prevs (seek-min set)) 1)
   :rule-classes :linear
   :enable prevs-of-seek-min)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrule nexts-of-seek
+  (equal (nexts (seek x set))
+         (+ (cardinality (after (seek x set)))
+            (if (in x set) 1 0)))
+  :enable nexts)
+
+(defrule prevs-of-seek
+  (equal (prevs (seek x set))
+         (+ (cardinality (before (seek x set)))
+            (if (in x set) 1 0)))
+  :enable prevs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

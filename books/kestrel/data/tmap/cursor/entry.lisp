@@ -121,7 +121,11 @@
   :returns (mv key val)
   :parents (cursor)
   :short "The @(tsee entry-key) and @(tsee entry-val)."
+  :long
+  (xdoc::topstring-p
+    "This function is enabled by default.")
   (mv (entry-key cursor) (entry-val cursor))
+  :enabled t
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

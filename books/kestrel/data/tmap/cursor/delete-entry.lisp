@@ -12,13 +12,17 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+
 (include-book "../map-defs")
+(include-book "../keys-defs")
 (include-book "../delete-defs")
 (include-book "cursor-defs")
 (include-book "entry-defs")
 (include-book "before-after-defs")
 (include-book "from-cursor-defs")
 (include-book "begin-end-defs")
+(include-book "seek-min-max-defs")
 (include-book "seek-defs")
 (include-book "nexts-prevs-defs")
 (include-book "update-entry-defs")
@@ -49,6 +53,7 @@
 (local (include-book "from-cursor"))
 (local (include-book "extensionality"))
 (local (include-book "begin-end"))
+(local (include-book "seek-min-max"))
 (local (include-book "seek"))
 (local (include-book "nexts-prevs"))
 (local (include-book "update-entry"))
@@ -124,6 +129,16 @@
   (not (entryp (delete-entry cursor)))
   :enable delete-entry)
 
+(defrule entry-key-of-delete-entry
+  (equal (entry-key (delete-entry cursor))
+         nil)
+  :enable entry-key-when-not-entryp)
+
+(defrule entry-val-of-delete-entry
+  (equal (entry-val (delete-entry cursor))
+         nil)
+  :enable entry-val-when-not-entryp)
+
 (defrule from-cursor-of-delete-entry
   (implies (entryp cursor)
            (equal (from-cursor (delete-entry cursor))
@@ -164,6 +179,14 @@
          (emptyp (after cursor)))
   :enable endp)
 
+(defrule minp-of-delete-entry
+  (not (minp (delete-entry cursor)))
+  :enable minp)
+
+(defrule maxp-of-delete-entry
+  (not (maxp (delete-entry cursor)))
+  :enable maxp)
+
 (defrule nexts-of-delete-entry
   (implies (entryp cursor)
            (equal (nexts (delete-entry cursor))
@@ -178,22 +201,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule update-hole-of-entry-key-and-entry-val-and-delete-entry
+(defrule update-hole-of-entry-key-and-delete-entry
   (implies (entryp cursor)
-           (equal (update-hole (entry-key cursor)
-                               (entry-val cursor)
-                               (delete-entry cursor))
-                  (cursor-fix cursor)))
-  :enable (cursor-extensionality-when-entryp
-           extensionality))
+           (equal (update-hole (entry-key cursor) val (delete-entry cursor))
+                  (update-entry val cursor)))
+  :enable cursor-extensionality-when-entryp)
 
 (defrule delete-entry-of-update-hole
   (equal (delete-entry (update-hole key val cursor))
          (seek key (delete key (from-cursor cursor))))
   :enable delete-entry)
 
+(defruled delete-entry-of-update-hole-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (tset::max (keys (before cursor))) key))
+                (or (emptyp (after cursor))
+                    (<< key (tset::min (keys (after cursor))))))
+           (equal (delete-entry (update-hole key val cursor))
+                  (cursor-fix cursor)))
+  :enable (delete-when-not-in-of-keys
+           in-of-keys-of-from-cursor-when-not-entryp))
+
 (defrule delete-entry-of-update-entry
   (equal (delete-entry (update-entry val cursor))
          (delete-entry cursor))
   :cases ((entryp cursor))
   :enable delete-entry)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthy delete-entry-extra-rules
+  '(delete-entry-when-not-entryp))

@@ -331,7 +331,7 @@
 
 (defrule tail-of-to-oset
   (equal (set::tail (to-oset set))
-         (to-oset (delete (min set) set)))
+         (set::delete (min set) (to-oset set)))
   :enable data::delete-when-equal-of-head)
 
 (add-to-ruleset from-oset-theory '(tail-of-to-oset))

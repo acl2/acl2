@@ -63,7 +63,8 @@
       just after it. At @(tsee end) there is nothing after, and the cursor
       stays put.")
    (xdoc::p
-     "Time complexity: @($O(\\log(n))$) in the worst case."))
+     "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$)
+      amortized over a walk."))
   (zip-step-forward (cursor-fix cursor))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))
@@ -83,7 +84,8 @@
       just before it. At @(tsee begin) there is nothing before, and the cursor
       stays put.")
    (xdoc::p
-     "Time complexity: @($O(\\log(n))$) in the worst case."))
+     "Time complexity: @($O(\\log(n))$) in the worst case, and @($O(1)$)
+      amortized over a walk."))
   (zip-step-backward (cursor-fix cursor))
   :inline t
   :guard-hints (("Goal" :in-theory (enable* break-abstraction))))

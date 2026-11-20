@@ -37,8 +37,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A walk in the recommended style: it tests for an entry, and its guard says
-;; that any hole it is at is the end, which a walk from @(tsee seek-min) with
-;; @(tsee next) maintains.
+;; that any hole it is at is the end, which a walk from seek-min with next
+;; maintains.
 
 (define cursor-any-evenp ((cursor cursorp))
   :guard (or (entryp cursor)

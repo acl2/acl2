@@ -26,13 +26,17 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
+(local (include-book "kestrel/data/tset/in" :dir :system))
+
 (local (include-book "../map"))
 (local (include-book "../keys"))
 (local (include-book "../update"))
 (local (include-book "../delete"))
 (local (include-book "../min-max"))
+(local (include-book "../submap"))
 (local (include-book "cursor"))
 (local (include-book "entry"))
+(local (include-book "from-cursor"))
 (local (include-book "begin-end"))
 (local (include-book "step"))
 
@@ -129,6 +133,22 @@
            endp
            not))
 
+(defrule beginp-of-next
+  (equal (beginp (next cursor))
+         (emptyp (from-cursor cursor)))
+  :cases ((entryp cursor)
+          (endp cursor))
+  :use ((:instance tset::not-emptyp-when-in
+                   (x (entry-key cursor))
+                   (set (keys (from-cursor cursor))))
+        (:instance submap-when-emptyp-of-arg2
+                   (x (after cursor))
+                   (y (from-cursor cursor))))
+  :enable (next
+           beginp
+           before-when-endp)
+  :disable submap-when-emptyp-of-arg2)
+
 (defrule before-of-next
   (implies (entryp cursor)
            (equal (before (next cursor))
@@ -173,6 +193,22 @@
   :enable (prev
            beginp
            not))
+
+(defrule endp-of-prev
+  (equal (endp (prev cursor))
+         (emptyp (from-cursor cursor)))
+  :cases ((entryp cursor)
+          (beginp cursor))
+  :use ((:instance tset::not-emptyp-when-in
+                   (x (entry-key cursor))
+                   (set (keys (from-cursor cursor))))
+        (:instance submap-when-emptyp-of-arg2
+                   (x (before cursor))
+                   (y (from-cursor cursor))))
+  :enable (prev
+           endp
+           after-when-beginp)
+  :disable submap-when-emptyp-of-arg2)
 
 (defrule after-of-prev
   (implies (entryp cursor)

@@ -12,7 +12,6 @@
 
 (include-book "../set-defs")
 (include-book "../cardinality-defs")
-(include-book "../min-max-defs")
 (include-book "../insert-defs")
 (include-book "../delete-defs")
 (include-book "../union-defs")
@@ -26,14 +25,9 @@
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
-(local (include-book "kestrel/data/utilities/total-order/min" :dir :system))
-(local (include-book "kestrel/data/utilities/total-order/max" :dir :system))
-
 (local (include-book "../set"))
 (local (include-book "../in"))
 (local (include-book "../cardinality"))
-(local (include-book "../min-max"))
 (local (include-book "../insert"))
 (local (include-book "../delete"))
 (local (include-book "../union"))
@@ -157,21 +151,6 @@
   :rule-classes :linear
   :enable (cardinality-of-from-cursor
            acl2::fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled entry-becomes-min-of-diff
-  (implies (entryp cursor)
-           (equal (entry cursor)
-                  (min (diff (from-cursor cursor) (before cursor)))))
-  :enable min-<<)
-
-(defruled entry-becomes-max-of-diff
-  (implies (entryp cursor)
-           (equal (entry cursor)
-                  (max (diff (from-cursor cursor) (after cursor)))))
-  :enable (max-<<
-           data::<<-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -15,6 +15,7 @@
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
 
 (include-book "../set-defs")
+(include-book "../cardinality-defs")
 (include-book "../min-max-defs")
 (include-book "../insert-defs")
 (include-book "../delete-defs")
@@ -22,7 +23,10 @@
 (include-book "entry-defs")
 (include-book "before-after-defs")
 (include-book "from-cursor-defs")
+(include-book "begin-end-defs")
+(include-book "seek-min-max-defs")
 (include-book "seek-defs")
+(include-book "nexts-prevs-defs")
 (include-book "delete-entry-defs")
 (include-book "internal/zip-insert-hole-defs")
 
@@ -44,7 +48,10 @@
 (local (include-book "before-after"))
 (local (include-book "from-cursor"))
 (local (include-book "extensionality"))
+(local (include-book "begin-end"))
+(local (include-book "seek-min-max"))
 (local (include-book "seek"))
+(local (include-book "nexts-prevs"))
 (local (include-book "delete-entry"))
 (local (include-book "internal/zipper"))
 (local (include-book "internal/zip-seek"))
@@ -108,7 +115,7 @@
            (tree-empty-p (zip->focus cursor)))
   :enable entryp)
 
-(defruledl in-of-from-cursor-when-not-entryp
+(defruled in-of-from-cursor-when-not-entryp
   (implies (and (not (entryp cursor))
                 (or (emptyp (before cursor))
                     (<< (max (before cursor)) x))
@@ -199,10 +206,51 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defrule beginp-of-insert-hole
+  (not (beginp (insert-hole x cursor)))
+  :enable beginp)
+
+(defrule endp-of-insert-hole
+  (not (endp (insert-hole x cursor)))
+  :enable endp)
+
+(defrule minp-of-insert-hole
+  (equal (minp (insert-hole x cursor))
+         (emptyp (before (seek x (from-cursor cursor)))))
+  :enable minp)
+
+(defrule maxp-of-insert-hole
+  (equal (maxp (insert-hole x cursor))
+         (emptyp (after (seek x (from-cursor cursor)))))
+  :enable maxp)
+
+(defrule nexts-of-insert-hole
+  (equal (nexts (insert-hole x cursor))
+         (+ 1 (cardinality (after (seek x (from-cursor cursor))))))
+  :enable nexts)
+
+(defrule prevs-of-insert-hole
+  (equal (prevs (insert-hole x cursor))
+         (+ 1 (cardinality (before (seek x (from-cursor cursor))))))
+  :enable prevs)
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defrule delete-entry-of-insert-hole
   (equal (delete-entry (insert-hole x cursor))
          (seek x (delete x (from-cursor cursor))))
   :enable delete-entry)
+
+(defruled delete-entry-of-insert-hole-when-not-entryp
+  (implies (and (not (entryp cursor))
+                (or (emptyp (before cursor))
+                    (<< (max (before cursor)) x))
+                (or (emptyp (after cursor))
+                    (<< x (min (after cursor)))))
+           (equal (delete-entry (insert-hole x cursor))
+                  (cursor-fix cursor)))
+  :enable (delete-when-not-in
+           in-of-from-cursor-when-not-entryp))
 
 (defrule insert-hole-of-entry-and-delete-entry
   (implies (entryp cursor)

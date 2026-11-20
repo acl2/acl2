@@ -41,6 +41,7 @@
 (local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "kestrel/data/utilities/fixed-size-words/u32" :dir :system))
+(local (include-book "kestrel/data/utilities/omap" :dir :system))
 (local (include-book "kestrel/data/utilities/total-order/total-order" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -266,45 +267,6 @@
 ;; Replacing the focus by a tree with one more key keeps the order invariant,
 ;; when the path brackets the key.
 
-(defrulel bstp-of-arg2-when-bstp-of-zip-path-plug-forward-chaining
-  (implies (bstp (zip-path-plug path tree))
-           (bstp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-arg2-when-heapp-of-zip-path-plug-forward-chaining
-  (implies (heapp (zip-path-plug path tree))
-           (heapp tree))
-  :rule-classes :forward-chaining)
-
-(defrulel bstp-of-parts-when-bstp-of-tree-node-forward-chaining
-  (implies (bstp (tree-node head left right))
-           (and (bstp left)
-                (bstp right)
-                (<<-all-l left (tree-element->key head))
-                (<<-all-r (tree-element->key head) right)))
-  :rule-classes :forward-chaining)
-
-(defrulel heapp-of-parts-when-heapp-of-tree-node-forward-chaining
-  (implies (heapp (tree-node head left right))
-           (and (heapp left)
-                (heapp right)
-                (heap<-all-l left (tree-element->key head))
-                (heap<-all-l right (tree-element->key head))))
-  :rule-classes :forward-chaining)
-
-(local
-  (define zip-path-plug-induction ((path zip-frame-listp)
-                                   (tree treep)
-                                   (new treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        (list tree new)
-      (zip-path-plug-induction
-        (rest path)
-        (zip-frame-plug (first path) tree)
-        (zip-frame-plug (first path) new)))))
-
 (defruledl bstp-of-zip-path-plug-when-subset-of-insert
   (implies (and (bstp (zip-path-plug path tree))
                 (bstp new)
@@ -312,10 +274,11 @@
                 (tset::subset (tree-key-set new)
                               (tset::insert key (tree-key-set tree))))
            (bstp (zip-path-plug path new)))
-  :induct (zip-path-plug-induction path tree new)
+  :induct (zip-path-plug-bi-induction path tree new)
   :expand ((zip-path-plug path tree)
            (zip-path-plug path new))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-frame-plug
            zip-path-brackets-p
            <<-all-l-when-subset-of-insert-of-tree-key-set
            <<-all-r-when-subset-of-insert-of-tree-key-set))
@@ -336,24 +299,15 @@
         (and (heap< key (tree-element->key (zip-frame->elem (first path))))
              (zip-path-heap-above-p key (rest path))))))
 
-(local
-  (define zip-path-plug-induction1 ((path zip-frame-listp)
-                                    (tree treep))
-    :verify-guards nil
-    :enabled t
-    (if (acl2::endp path)
-        tree
-      (zip-path-plug-induction1 (rest path)
-                                (zip-frame-plug (first path) tree)))))
-
 (defruledl zip-path-heap-above-p-when-heap<-of-head
   (implies (and (heapp (zip-path-plug path tree))
                 (not (tree-empty-p tree))
                 (heap< key (tree-element->key (tree->head tree))))
            (zip-path-heap-above-p key path))
-  :induct (zip-path-plug-induction1 path tree)
+  :induct (zip-path-plug path tree)
   :expand ((zip-path-plug path tree))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug)
+           zip-frame-plug
            zip-path-heap-above-p
            heap<-rules))
 
@@ -376,10 +330,11 @@
                 (tset::subset (tree-key-set new)
                               (tset::insert key (tree-key-set tree))))
            (heapp (zip-path-plug path new)))
-  :induct (zip-path-plug-induction path tree new)
+  :induct (zip-path-plug-bi-induction path tree new)
   :expand ((zip-path-plug path tree)
            (zip-path-plug path new))
-  :enable (zip-frame-plug
+  :enable ((:induction zip-path-plug-bi-induction)
+           zip-frame-plug
            zip-path-heap-above-p
            heap<-all-l-when-subset-of-insert-of-tree-key-set))
 
@@ -415,14 +370,25 @@
                    (tree (zip-path-plug path tree)))
         (:instance in-of-tree-key-set-of-zip-path-plug)))
 
+;; In a search tree, no key of a plugged tree is also bound before it.
+
+(defruledl not-assoc-equal-of-zip-path-before-when-in-of-tree-key-set
+  (implies (and (bstp (zip-path-plug path tree))
+                (tset::in key (tree-key-set tree)))
+           (not (assoc-equal key (zip-path-before path))))
+  :use ((:instance omapp-of-tree-in-order-when-bstp
+                   (tree (zip-path-plug path tree)))
+        (:instance in-of-tree-key-set-becomes-assoc-equal-of-tree-in-order))
+  :enable data::not-assoc-equal-of-prefix-when-omapp-of-append
+  :disable omapp-of-tree-in-order-when-bstp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The new node, plugged in place of the tree it was split from, adds its key
 ;; and changes nothing else.
 
 (defruledl in-of-tree-key-set-of-zip-path-plug-of-new-node
-  (implies (and (bstp (zip-path-plug path tree))
-                (not (tset::in key (tree-key-set (zip-path-plug path tree)))))
+  (implies (bstp (zip-path-plug path tree))
            (equal (tset::in x
                             (tree-key-set
                               (zip-path-plug
@@ -441,8 +407,7 @@
                         path
                         (tree-node (tree-element hash key val)
                                    (mv-nth 1 (tree-split key tree))
-                                   (mv-nth 2 (tree-split key tree)))))
-                (not (tset::in key (tree-key-set (zip-path-plug path tree)))))
+                                   (mv-nth 2 (tree-split key tree))))))
            (equal (tree-lookup x
                                (zip-path-plug
                                  path
@@ -454,6 +419,7 @@
                     (tree-lookup x (zip-path-plug path tree)))))
   :enable (tree-lookup-of-zip-path-plug
            in-of-tree-key-set-of-zip-path-plug
+           not-assoc-equal-of-zip-path-before-when-in-of-tree-key-set
            data::<<-rules))
 
 (defruledl subset-of-tree-key-set-of-new-node
@@ -550,9 +516,8 @@
            data::<<-rules)
   :disable zip-path-brackets-p-of-path-of-zip-ascend-while-lower)
 
-(defruledl in-of-tree-key-set-of-zip-plug-of-zip-update-hole-when-not-in
-  (implies (and (bstp (zip-plug zip))
-                (not (tset::in key (tree-key-set (zip-plug zip)))))
+(defruledl in-of-tree-key-set-of-zip-plug-of-zip-update-hole-when-bstp
+  (implies (bstp (zip-plug zip))
            (equal (tset::in x (tree-key-set
                                 (zip-plug (zip-update-hole key val zip))))
                   (or (equal x key)
@@ -566,8 +531,7 @@
 
 (defruledl tree-lookup-of-zip-plug-of-zip-update-hole-when-brackets
   (implies (and (bstp (zip-plug zip))
-                (zip-path-brackets-p key (zip->path zip))
-                (not (tset::in key (tree-key-set (zip-plug zip)))))
+                (zip-path-brackets-p key (zip->path zip)))
            (equal (tree-lookup x (zip-plug (zip-update-hole key val zip)))
                   (if (equal x key)
                       val
@@ -603,8 +567,7 @@
            zip-path-brackets-p))
 
 (defrule in-of-tree-key-set-of-zip-plug-of-zip-update-hole-of-zip-seek
-  (implies (and (bstp tree)
-                (not (tset::in key (tree-key-set tree))))
+  (implies (bstp tree)
            (equal (tset::in x
                             (tree-key-set
                               (zip-plug
@@ -614,11 +577,10 @@
                                   (zip-seek key (zip-root tree))))))
                   (or (equal x key)
                       (tset::in x (tree-key-set tree)))))
-  :enable in-of-tree-key-set-of-zip-plug-of-zip-update-hole-when-not-in)
+  :enable in-of-tree-key-set-of-zip-plug-of-zip-update-hole-when-bstp)
 
 (defrule tree-lookup-of-zip-plug-of-zip-update-hole-of-zip-seek
-  (implies (and (bstp tree)
-                (not (tset::in key (tree-key-set tree))))
+  (implies (bstp tree)
            (equal (tree-lookup x
                                (zip-plug
                                  (zip-update-hole

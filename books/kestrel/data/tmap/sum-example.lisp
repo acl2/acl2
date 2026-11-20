@@ -47,11 +47,10 @@
 ;; Deleting a key which is there makes the map smaller. TMAP has no size
 ;; law for delete, so read it off the key set, where TSET has one.
 
-(defrulel in-of-keys-of-min-key-when-not-emptyp
+(defrulel in-of-min-of-keys-when-not-emptyp
   (implies (not (emptyp map))
-           (tset::in (min-key map) (keys map)))
-  :enable (min-key$inline
-           tset::in-of-min
+           (tset::in (tset::min (keys map)) (keys map)))
+  :enable (tset::in-of-min
            emptyp-of-keys))
 
 (defrulel size-of-delete-when-in-of-keys
@@ -98,9 +97,9 @@
       the form a proof wants. It executes as a single forward walk with a
       @(see cursor), at @($O(n)$) rather than @($O(n \\log(n))$)."))
   :measure (size map)
-  ;; Keep `size' and `min-key' folded, so the linear rule above fires on the
-  ;; measure conjecture rather than the goal dropping to the key set.
-  :hints (("Goal" :in-theory (disable size$inline min-key$inline)
+  ;; Keep `size' folded, so the linear rule above fires on the measure
+  ;; conjecture rather than the goal dropping to the key set.
+  :hints (("Goal" :in-theory (disable size$inline)
                   :use (:instance size-of-delete-when-in-of-keys
                                   (key (min-key map)))))
   ;; Deferred: the mbe obligation is the correctness of the walk, which is

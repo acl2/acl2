@@ -112,7 +112,7 @@
            (not (member-equal (zip-value zip) (zip-after zip))))
   :enable data::not-member-equal-of-suffix-when-osetp-of-append)
 
-(defrule in-of-zip-oset-before-when-bstp
+(defruled in-of-zip-oset-before-when-bstp
   (implies (and (bstp (zip-plug zip))
                 (not (tree-empty-p (zip->focus zip))))
            (equal (set::in x (zip-oset-before zip))
@@ -125,7 +125,7 @@
            data::<<-rules)
   :disable member-equal-of-tree-in-order-under-iff)
 
-(defrule in-of-zip-oset-after-when-bstp
+(defruled in-of-zip-oset-after-when-bstp
   (implies (and (bstp (zip-plug zip))
                 (not (tree-empty-p (zip->focus zip))))
            (equal (set::in x (zip-oset-after zip))

@@ -157,9 +157,8 @@
   :long
   (xdoc::topstring
     (xdoc::p
-      "This definition is equivalent to @(see tset) equality. It is often
-       useful to prove equality by rewriting to this quantifier-based form.
-       To do so, just enable the @('extensionality') rule."))
+      "Two @(see tset)s are equal exactly when they have the same members.
+       Enable this rule to prove an equality that way."))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
   :by extensionality-no-backchain-limit)
 

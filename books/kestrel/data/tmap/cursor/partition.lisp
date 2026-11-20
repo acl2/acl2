@@ -10,6 +10,9 @@
 
 (include-book "std/util/defrule" :dir :system)
 
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
 (include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 
 (include-book "../map-defs")
@@ -41,13 +44,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruledl subset-of-keys-of-before-and-keys-of-from-cursor
+(defrule subset-of-keys-of-before-and-keys-of-from-cursor
   (tset::subset (keys (before cursor))
                 (keys (from-cursor cursor)))
   :enable (tset::pick-a-point
            in-of-keys-of-from-cursor-becomes-in-of-keys-of-before-or-entry-key-or-after))
 
-(defruledl diff-of-keys-of-from-cursor-and-keys-of-before
+(defruled diff-of-keys-of-from-cursor-and-keys-of-before
   (equal (tset::diff (keys (from-cursor cursor))
                      (keys (before cursor)))
          (if (entryp cursor)
@@ -67,7 +70,6 @@
                   (x (keys (from-cursor cursor)))
                   (y (keys (before cursor))))
   :enable (diff-of-keys-of-from-cursor-and-keys-of-before
-           subset-of-keys-of-before-and-keys-of-from-cursor
            tset::intersect-when-subset-arg1-arg2
            tset::intersect-when-subset-arg2-arg1
            acl2::fix)
@@ -108,4 +110,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthy partition-extra-rules
-  '(cardinality-of-keys-of-from-cursor))
+  '(diff-of-keys-of-from-cursor-and-keys-of-before
+    cardinality-of-keys-of-from-cursor))

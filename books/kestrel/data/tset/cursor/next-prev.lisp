@@ -27,9 +27,13 @@
 (local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "../set"))
+(local (include-book "../in"))
+(local (include-book "../subset"))
+(local (include-book "../insert"))
 (local (include-book "../delete"))
 (local (include-book "cursor"))
 (local (include-book "entry"))
+(local (include-book "from-cursor"))
 (local (include-book "begin-end"))
 (local (include-book "step"))
 
@@ -126,6 +130,22 @@
            endp
            not))
 
+(defrule beginp-of-next
+  (equal (beginp (next cursor))
+         (emptyp (from-cursor cursor)))
+  :cases ((entryp cursor)
+          (endp cursor))
+  :use ((:instance not-emptyp-when-in
+                   (x (entry cursor))
+                   (set (from-cursor cursor)))
+        (:instance subset-when-emptyp-of-arg2
+                   (x (after cursor))
+                   (y (from-cursor cursor))))
+  :enable (next
+           beginp
+           before-when-endp)
+  :disable subset-when-emptyp-of-arg2)
+
 (defrule before-of-next
   (implies (entryp cursor)
            (equal (before (next cursor))
@@ -162,6 +182,22 @@
   :enable (prev
            beginp
            not))
+
+(defrule endp-of-prev
+  (equal (endp (prev cursor))
+         (emptyp (from-cursor cursor)))
+  :cases ((entryp cursor)
+          (beginp cursor))
+  :use ((:instance not-emptyp-when-in
+                   (x (entry cursor))
+                   (set (from-cursor cursor)))
+        (:instance subset-when-emptyp-of-arg2
+                   (x (before cursor))
+                   (y (from-cursor cursor))))
+  :enable (prev
+           endp
+           after-when-beginp)
+  :disable subset-when-emptyp-of-arg2)
 
 (defrule after-of-prev
   (implies (entryp cursor)
