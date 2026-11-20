@@ -1986,8 +1986,8 @@
      len-of-bv-array-write
      all-unsigned-byte-p-of-bv-array-write
      true-listp-of-bv-array-write
-;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
-;bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
+     ;; bitxor-of-bv-array-read-and-bv-array-read-constant-arrays-alt
+     ;; bitxor-of-bv-array-read-and-bv-array-read-constant-arrays
      bvxor-list-base  ;move
      bvxor-list-unroll ;move
      bv-array-read-of-0-arg1
@@ -2096,8 +2096,8 @@
 (defun bit-blast-rules ()
   (declare (xargs :guard t))
   (append (bit-blast-rules-basic)
-          '(blast-bvmult-into-bvplus-constant-version-arg1 ;
-            blast-bvmult-into-bvplus-constant-version-arg2 ;
+          '(blast-bvmult-into-bvplus-constant-version-arg1
+            blast-bvmult-into-bvplus-constant-version-arg2
             bvplus-becomes-ripple-carry-adder
             ripple-carry-adder-recursive
             ripple-carry-adder-base
@@ -2161,13 +2161,12 @@
 (defun yet-more-rules-non-jvm ()
   (declare (xargs :guard t))
   '(true-listp-of-myif
-
     integerp-of-myif
+    unsigned-byte-p-of-myif ;can be expensive?!
+    len-of-myif
 
     all-unsigned-byte-p-of-cons
-    unsigned-byte-p-of-myif ;can be expensive?!
     ;;myif-of-constant-lists ;trying without mon jul  5 21:14:49 2010
-    len-of-myif
 
 ;    logext-list-does-nothing
     ;;all-signed-byte-p-when-all-unsigned-byte-p
