@@ -82,19 +82,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(std::defprojection byte-list-fix (x ienv)
-  :guard (and (ienvp ienv) (byte-listp x ienv))
+(define byte-list-fix ((bytes (byte-listp bytes ienv)) (ienv ienvp))
   :returns (fixed-bytes (byte-listp fixed-bytes ienv))
   :short "Fixer for @(tsee byte-listp)."
-  (byte-fix x ienv)
+  (mbe :logic (cond ((endp bytes) nil)
+                    (t (cons (byte-fix (car bytes) ienv)
+                             (byte-list-fix (cdr bytes) ienv))))
+       :exec bytes)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :induct (len bytes) :in-theory (enable len)))
 
   ///
+
+  (std::defprojection byte-list-fix (x ienv)
+    (byte-fix x ienv)
+    :already-definedp t)
 
   (defrule byte-list-fix-when-byte-listp
     (implies (byte-listp x ienv)
              (equal (byte-list-fix x ienv)
                     x))
-    :induct t)
-
-  (fty::deffixequiv byte-list-fix
-    :args ((ienv ienvp))))
+    :induct t))
