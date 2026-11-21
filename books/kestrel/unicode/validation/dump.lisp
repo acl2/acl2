@@ -12,6 +12,7 @@
 
 (include-book "../xid")
 (include-book "../pattern-white-space")
+(include-book "../white-space")
 (include-book "../bidi-controls")
 (include-book "../normalization")
 (include-book "../stream-safe")
@@ -98,6 +99,7 @@
 ;   ass     its augmented script set: ALL, or the four-letter codes
 ;           of its elements, the scripts first, in the order of the codes,
 ;           and then those of Hanb, Hntl, Jpan and Kore that it has
+;   wspace  1 if it has White_Space, 0 otherwise
 ;
 ; Numbers are in decimal; the code points of a sequence, and the items
 ; of a set, are separated by spaces.
@@ -247,7 +249,8 @@
                   (princ$ "ALL" channel state)
                 (dump-strings
                  (writing-system-list-codes (script-set-of->members set))
-                 channel state))))
+                 channel state)))
+       (state (dump-flag (white-space-p cp ver) channel state)))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -272,7 +275,7 @@
        (state (princ$ "ids;idc;sc;scx;bc;blk;dd;" channel state))
        (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty;"
                       channel state))
-       (state (princ$ "skel;skelk;skelm;ass" channel state))
+       (state (princ$ "skel;skelk;skelm;ass;wspace" channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))
