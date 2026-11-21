@@ -12,6 +12,7 @@
 
 (include-book "ispace-validator-correctness")
 (include-book "dimension-polynomials-properties")
+(include-book "ispace-equivalence-checker-correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,4 +24,5 @@
    (xdoc::p
     "This is work in progress."))
   :order-subtopics (ispace-validator-correctness
-                    dimension-polynomials-properties))
+                    dimension-polynomials-properties
+                    ispace-equivalence-checker-correctness))
