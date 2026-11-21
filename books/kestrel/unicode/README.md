@@ -91,6 +91,7 @@ validated.
 | `mixed-numbers` | Mixed-number detection: whether a list has decimal digits of more than one system (`mixed-number-systems-p`). |
 | `identifier-chunks` | The identifier word boundaries of UTS #55 (`identifier-word-boundary-p`) and the chunks of an identifier (`identifier-chunks`), with the proofs that the chunks put together are the identifier and that no chunk is empty. |
 | `pattern-white-space` | `Pattern_White_Space`. |
+| `white-space` | `White_Space` (`white-space-p`): the spaces and line separators of ordinary text, which is another set than `Pattern_White_Space`. |
 | `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `bidi-class` | `Bidi_Class` in full (`code-point-bidi-class`), and the proof that it agrees with the table of the explicit formatting classes of `bidi-controls`. |
@@ -179,6 +180,13 @@ over the tables, and so re-checked whenever a version is added:
 - `pattern-white-space-p-alt-def`, `bidi-control-p-alt-def`,
   `bidi-explicit-formatting-class-alt-def`: these properties are the same
   eleven, twelve and nine code points in every supported version.
+- `white-space-p-alt-def`: `White_Space` is the same twenty-five code
+  points in every supported version.
+  `white-space-p-when-pattern-white-space-p`: a code point with
+  `Pattern_White_Space` has `White_Space`, unless it is U+200E or U+200F.
+  `white-space-p-in-terms-of-general-category`: the code points with
+  `White_Space` are those whose `General_Category` is `Zs`, `Zl` or `Zp`,
+  with U+0009 to U+000D and U+0085.
 - Composing the decomposition of a Hangul syllable gives the syllable back
   (checked for all 11,172 syllables).  The Hangul functions take a
   `hangul-syllable`, which is a fixtype, so their theorems have no
@@ -593,6 +601,7 @@ supported version, and nothing else of this library.
 | `general-category-changes`, `general-category-changes-of-assigned`, and the theorem that the `General_Category` of an assigned code point stays the same, with one exception | `general-category-changes` | `general-category`, `range-operations`, and the books that those load | `derived-general-category` |
 | `ranges-union`, `ranges-intersection`, `ranges-difference`, `ranges-complement`, `ranges-normalize`, `range-list-code-points` | `range-operations` | `code-points`, `ranges` | none |
 | `pattern-white-space-p` | `pattern-white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
+| `white-space-p` | `white-space` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `pattern-syntax-p` | `pattern-syntax` | `code-points`, `versions`, `ranges` | `prop-list` |
 | `default-ignorable-p` | `default-ignorable` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `variation-selector-p`, `join-control-p`, `noncharacter-p`, `deprecated-p`, `prepended-concatenation-mark-p` | `variation-selectors`, `join-controls`, `noncharacters`, `deprecated`, `prepended-concatenation-marks` (one book each) | `code-points`, `versions`, `ranges` | `prop-list` |
@@ -843,7 +852,8 @@ For example 19.0.0 (this is how 18.0.0 was added):
 4. In each book that selects tables by version (`general-category`, `xid`,
    `id`, `id-compat-math`, `scripts`, `bidi-class`, `blocks`, `emoji`,
    `decimal-digits`, `identifier-status`, `confusables`,
-   `pattern-white-space`, `pattern-syntax`, `bidi-controls`,
+   `pattern-white-space`, `white-space`, `pattern-syntax`,
+   `bidi-controls`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
    `combining-classes`, `decompositions`, `compositions`, `composing-pairs`,
@@ -1087,12 +1097,14 @@ differences:
 
 Not compared with another implementation, in any version: `Block`,
 `Identifier_Type`, `Other_ID_Start`, `Other_ID_Continue`,
-`ID_Compat_Math_Start` and `ID_Compat_Math_Continue`.  What the library
-has about them is the data files and the theorems: the last four are
-proved to be short lists of code points, which the documentation shows;
-the identifier types are proved to agree with the identifier status,
-which is compared; nothing checks the blocks beyond the checks of the
-generator.
+`ID_Compat_Math_Start`, `ID_Compat_Math_Continue` and `White_Space`.
+What the library has about them is the data files and the theorems: the
+last five are proved to be short lists of code points, which the
+documentation shows, and `White_Space` is also proved to be the
+separators of `General_Category`, which is compared, with six control
+characters; the identifier types are proved to agree with the identifier
+status, which is compared; nothing checks the blocks beyond the checks of
+the generator.
 
 The skeletons and the script sets of UTS #39, which were added on
 2026-11-20 too, were compared on that day, for every code point
@@ -1235,7 +1247,7 @@ The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.
 
-Certifying all the 112 books from scratch, the tests and the generated
+Certifying all the 113 books from scratch, the tests and the generated
 tables included, took a little over three and a half minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged

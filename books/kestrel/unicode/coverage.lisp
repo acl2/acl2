@@ -128,6 +128,9 @@
      "@('General_Category') [UAX #44, Table 12]:
       see @(see general-category-property).")
     (xdoc::li
+     "@('White_Space') [UAX #44, Table 9]:
+      see @(see white-space).")
+    (xdoc::li
      "@('Canonical_Combining_Class'),
       @('Decomposition_Type') and @('Decomposition_Mapping'),
       @('Full_Composition_Exclusion'),
@@ -269,7 +272,8 @@
      "From [Unicode] and [UAX #44]:
       the names of characters and their aliases;
       case mappings, case folding,
-      and the properties @('Lowercase') and @('Uppercase');
+      and the properties @('Alphabetic'), @('Lowercase'), @('Uppercase'),
+      @('Cased'), @('Case_Ignorable') and @('Grapheme_Extend');
       numeric values other than those of the decimal digits;
       paired brackets and mirroring;
       @('Joining_Type') and the other properties
@@ -408,6 +412,18 @@
       See @(tsee xid-start-p), @(tsee xid-continue-p),
       @(tsee join-control-p), @(tsee nfc)
       and @(tsee pattern-white-space-p).
+      The standard library of Rust is another matter:
+      its test for white space in a character
+      is the property @('White_Space')
+      [The Rust Standard Library, `char::is_whitespace'],
+      which is here (see @(tsee white-space-p));
+      its tests for letters and for letter case
+      are the properties @('Alphabetic'), @('Lowercase')
+      and @('Uppercase'),
+      and its conversions of case are the case mappings,
+      none of which is here.
+      So this library is not sufficient for a model
+      of those functions of the standard library.
       The warnings of the Rust compiler
       about identifiers that can be confused with each other
       and about identifiers that mix scripts

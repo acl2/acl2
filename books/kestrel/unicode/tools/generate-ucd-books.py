@@ -727,7 +727,7 @@ def book_prop_list(version, sources):
                  "Prepended_Concatenation_Mark", "Pattern_Syntax",
                  "Other_ID_Start", "Other_ID_Continue",
                  "ID_Compat_Math_Start", "ID_Compat_Math_Continue",
-                 "Regional_Indicator"]:
+                 "Regional_Indicator", "White_Space"]:
         book.rule()
         book.range_list(name.lower().replace("_", "-"),
                         binary_property(source, parsed, name), name)

@@ -156,6 +156,38 @@
 (test (not (pattern-white-space-p #x3000 *v16*))) ; IDEOGRAPHIC SPACE
 (test (not (pattern-white-space-p (char-code #\a) *v17*)))
 
+; White_Space.
+
+(test (white-space-p (char-code #\Space) *v16*))
+(test (white-space-p (char-code #\Tab) *v17*))
+(test (white-space-p (char-code #\Newline) *v18*))
+(test (white-space-p #x0085 *v16*)) ; NEXT LINE
+(test (white-space-p #x00A0 *v16*)) ; NO-BREAK SPACE
+(test (white-space-p #x1680 *v17*)) ; OGHAM SPACE MARK
+(test (white-space-p #x2003 *v17*)) ; EM SPACE
+(test (white-space-p #x2028 *v18*)) ; LINE SEPARATOR
+(test (white-space-p #x3000 *v18*)) ; IDEOGRAPHIC SPACE
+(test (not (white-space-p #x200B *v17*))) ; ZERO WIDTH SPACE
+(test (not (white-space-p #x200E *v17*))) ; LEFT-TO-RIGHT MARK
+(test (not (white-space-p #x180E *v17*))) ; MONGOLIAN VOWEL SEPARATOR
+(test (not (white-space-p #xFEFF *v17*))) ; ZERO WIDTH NO-BREAK SPACE
+(test (not (white-space-p (char-code #\a) *v17*)))
+(test (equal (range-list-size (white-space-ranges *v16*)) 25))
+(test (equal (range-list-size (white-space-ranges *v17*)) 25))
+(test (equal (range-list-size (white-space-ranges *v18*)) 25))
+
+; The code points with Pattern_White_Space and not White_Space,
+; and the number of those with White_Space and not Pattern_White_Space.
+
+(test (equal (range-list-code-points
+              (ranges-difference (pattern-white-space-ranges *v17*)
+                                 (white-space-ranges *v17*)))
+             '(#x200E #x200F)))
+(test (equal (range-list-size
+              (ranges-difference (white-space-ranges *v17*)
+                                 (pattern-white-space-ranges *v17*)))
+             16))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Bidirectional controls.
