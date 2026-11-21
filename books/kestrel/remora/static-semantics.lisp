@@ -15,6 +15,7 @@
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
+(include-book "ispace-equivalence-rewriting")
 (include-book "shape-ordering")
 (include-book "type-validity")
 (include-book "type-equivalence")
@@ -44,6 +45,7 @@
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations
+                    ispace-equivalence-rewriting
                     shape-ordering
                     type-validity
                     type-equivalence
