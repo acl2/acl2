@@ -28,16 +28,17 @@
   (xdoc::topstring
    (xdoc::p
     "We prove that the normalization rules realize
-     the reductions of the sugar constructs
-     claimed in @(see type-equivalence-definition):
+     the reductions claimed in @(see type-equivalence-definition),
+     which eliminate
      array type variables,
+     scalar types,
      bracket types,
      n-ary function types,
      and n-ary universal, product, and sum types.
      To do that, we introduce predicates to formalize
      the absence of these constructs,
      and functions to witness the ability to perform the reductions,
-     one for each kind of sugar construct, plus their composition,
+     one for each kind of construct, plus their composition,
      similarly to @(see ispace-equivalence-normalizations).")
    (xdoc::p
     "Unlike ispace equivalence,
@@ -268,16 +269,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(define-sk type-eq-to-noarrayvar-nobracket-nonaries-p (type)
+(define-sk type-eq-to-noarrayvar-noscalar-nobracket-nonaries-p (type)
   :returns (yes/no booleanp)
   :short "Check whether a type is equivalent to one without
           array type variables,
+          scalar types,
           bracket types,
           and n-ary function, universal, product, and sum types
           outside the bodies of binder types."
   (exists (type1)
           (and (type-eq type type1)
                (type-noarrayvarp type1)
+               (type-noscalarp type1)
                (type-nobracketp type1)
                (type-nofunnp type1)
                (type-noforallnp type1)
@@ -2408,23 +2411,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defruled type-eq-to-noarrayvar-nobracket-nonaries-p-when-typep
+(defruled type-eq-to-noarrayvar-noscalar-nobracket-nonaries-p-when-typep
   :short "Every type is equivalent to one without
           array type variables,
+          scalar types,
           bracket types,
           and n-ary function, universal, product, and sum types
           outside the bodies of binder types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a corollary of composing the six transformations,
+    "This is a corollary of composing the seven transformations,
      in the order:
      decompose array type variables,
      eliminate bracket types,
      unarize n-ary function types,
      unarize n-ary universal types,
      unarize n-ary product types,
-     unarize n-ary sum types.
+     unarize n-ary sum types,
+     eliminate scalar types.
      Each transformation establishes its own status,
      and preserves the statuses established by the preceding ones.")
    (xdoc::p
@@ -2432,14 +2437,23 @@
      (see @(tsee dim-eq-to-binadd-binmul-unisub-p-when-dimp-and-nonullsubp)),
      and like the analogous corollary for shapes
      (see @(see ispace-equivalence-normalizations)),
-     any order of the six transformations works,
-     because each transformation preserves
-     the statuses established by the other five.")
+     any order of the first six transformations works,
+     because each of them preserves
+     the statuses established by the other five.
+     But the elimination of scalar types
+     must come after the unarization of n-ary function types:
+     the latter introduces scalar types (see the rule @('fun2m')),
+     i.e. it does not preserve the absence of scalar types.
+     So we eliminate scalar types last.
+     The unarizations of n-ary universal, product, and sum types
+     also introduce scalar types,
+     but only in the bodies of binder types,
+     which the predicates do not inspect.")
    (xdoc::p
     "This validates the intention of all the normalization rules together,
      described in @(see type-equivalence-definition)."))
   (implies (typep type)
-           (type-eq-to-noarrayvar-nobracket-nonaries-p type))
+           (type-eq-to-noarrayvar-noscalar-nobracket-nonaries-p type))
   :prep-lemmas
   ((defrule lemma
      (implies (and (typep type)
@@ -2448,10 +2462,11 @@
                    (equal type3 (mv-nth 0 (unarize-funs-in-type type2)))
                    (equal type4 (mv-nth 0 (unarize-foralls-in-type type3)))
                    (equal type5 (mv-nth 0 (unarize-pis-in-type type4)))
-                   (equal type6 (mv-nth 0 (unarize-sigmas-in-type type5))))
-              (type-eq-to-noarrayvar-nobracket-nonaries-p type))
-     :use ((:instance type-eq-to-noarrayvar-nobracket-nonaries-p-suff
-                      (type1 type6))
+                   (equal type6 (mv-nth 0 (unarize-sigmas-in-type type5)))
+                   (equal type7 (mv-nth 0 (unscalar-in-type type6))))
+              (type-eq-to-noarrayvar-noscalar-nobracket-nonaries-p type))
+     :use ((:instance type-eq-to-noarrayvar-noscalar-nobracket-nonaries-p-suff
+                      (type1 type7))
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (decompose-array-vars-in-type type)))
                       (_type1 type)
@@ -2475,5 +2490,9 @@
            (:instance type-eq-when-proof-validp
                       (proof (mv-nth 1 (unarize-sigmas-in-type type5)))
                       (_type1 type5)
-                      (_type2 type6)))
+                      (_type2 type6))
+           (:instance type-eq-when-proof-validp
+                      (proof (mv-nth 1 (unscalar-in-type type6)))
+                      (_type1 type6)
+                      (_type2 type7)))
      :enable type-eq-trans-swapped)))
