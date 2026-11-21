@@ -144,6 +144,8 @@
 
   :verify-guards :after-returns
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual normalize-dims-in-shapes/ispaces))

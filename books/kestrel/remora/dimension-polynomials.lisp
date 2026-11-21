@@ -432,6 +432,8 @@
 
   :verify-guards :after-returns
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual dims-to-polys))
