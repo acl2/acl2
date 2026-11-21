@@ -247,10 +247,23 @@
      from which they are proved, by induction on the remaining operands,
      with the first operand changing in the induction hypotheses:
      an operation on three or more operands is first left-associated
-     and then right-associated.
-     They are restricted to the case in which the remaining operands
-     are neither none nor exactly one explicit operand:
-     otherwise, they would rewrite unary and binary operations forever.")
+     and then right-associated.")
+   (xdoc::p
+    "The rules @('add-cons') and @('mul-cons')
+     hold for every list of remaining operands,
+     but they have @(tsee syntaxp) hypotheses that restrict their application.
+     The right side of each rule is a binary operation,
+     whose list of operands is
+     a @(tsee cons) of the first operand and a singleton list:
+     it is an instance of the left side of the rule,
+     which would thus apply to its own result, forever.
+     So the hypothesis prevents the rule from applying
+     to a binary operation, i.e. when the term for the remaining operands
+     is a @(tsee cons) whose second argument is @('nil').
+     The hypothesis also prevents the rule from applying
+     to a unary operation, i.e. when that term is @('nil'):
+     the rule would turn it into a binary operation
+     whose second operand is the operation with no operands.")
    (xdoc::p
     "The rule @('mul-of-append') is about
      the multiplication of two appended lists of operands.
@@ -863,10 +876,7 @@
      a list of dimensions, shapes, or ispaces with a first element
      into the binary concatenation of
      the shape built from the first element
-     and the shape built from the remaining elements;
-     they are restricted, similarly to the analogous rules for dimensions
-     (see @(see dim-eq-equiv-rewrite-rules)),
-     so that they do not rewrite forever.
+     and the shape built from the remaining elements.
      The rule @('append-cons') generalizes @('append3m'),
      from which it is proved
      like the analogous rules for dimensions.
@@ -874,15 +884,30 @@
      to the case of a single dimension.
      The rule @('splice-cons') is uniform over the kinds of ispaces.")
    (xdoc::p
+    "These three rules have @(tsee syntaxp) hypotheses
+     that restrict their application,
+     for the same reason as the analogous rules for dimensions
+     (see @(see dim-eq-equiv-rewrite-rules)):
+     their right sides contain instances of their left sides,
+     so the rules would apply to their own results, forever.
+     The right side of @('append-cons') is a binary concatenation,
+     so its hypothesis is like the ones of the rules for dimensions.
+     The right sides of @('dims-cons') and @('splice-cons')
+     contain the shape built from the first element alone,
+     i.e. from a @(tsee cons) of the first element and @('nil'):
+     their hypotheses prevent the rules from applying
+     when the term for the remaining elements is @('nil').")
+   (xdoc::p
     "The rule @('append-of-append') is about
      the concatenation of two appended lists of shapes.")
    (xdoc::p
     "The last three rules are about shapes built from
      no dimensions, shapes, or ispaces,
      expressed via lists that are not @(tsee cons) pairs.
-     The one for concatenations is restricted to
-     the case in which the list is not explicitly @('nil'):
-     otherwise, it would rewrite the empty concatenation to itself forever."))
+     The one for concatenations has a @(tsee syntaxp) hypothesis
+     that prevents it from applying when the term for the list is @('nil'):
+     its right side is the concatenation of @('nil'),
+     which the rule would rewrite to itself, forever."))
 
   ;; rules that correspond to defining inference rules:
 
