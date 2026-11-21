@@ -1051,6 +1051,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection dim-poly-list-sum-properties
+  :short "Properties of the sum of lists of polynomials."
+
+  (defruled dim-poly-list-sum-of-nil
+    (equal (dim-poly-list-sum nil)
+           nil))
+
+  (defruled dim-poly-list-sum-of-cons
+    (equal (dim-poly-list-sum (cons poly polys))
+           (dim-poly-add poly (dim-poly-list-sum polys)))
+    :enable dim-poly-list-sum))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection dim-poly-list-product-properties
+  :short "Properties of the product of lists of polynomials."
+
+  (defruled dim-poly-list-product-of-nil
+    (equal (dim-poly-list-product nil)
+           (dim-poly-const 1)))
+
+  (defruled dim-poly-list-product-of-cons
+    (equal (dim-poly-list-product (cons poly polys))
+           (dim-poly-mul poly (dim-poly-list-product polys)))
+    :enable dim-poly-list-product))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection dims-to-polys-properties
   :short "Properties of the translation of dimensions into polynomials."
   :long
@@ -1061,10 +1089,7 @@
    (xdoc::p
     "We also prove theorems that express
      the translation of each kind of dimension,
-     and of empty and non-empty lists of dimensions,
-     along with theorems that express
-     the sum and the product of
-     empty and non-empty lists of polynomials.
+     and of empty and non-empty lists of dimensions.
      The theorem for subtractions is expressed in terms of
      the list of the polynomials of the operands,
      so that the polynomial is manifestly determined by that list."))
@@ -1077,24 +1102,6 @@
       (dim-poly-list-canonicalp (dim-list-to-poly-list dims))
       :flag dim-list-to-poly-list)
     :hints (("Goal" :in-theory (enable dim-to-poly dim-list-to-poly-list))))
-
-  (defruled dim-poly-list-sum-of-nil
-    (equal (dim-poly-list-sum nil)
-           nil))
-
-  (defruled dim-poly-list-sum-of-cons
-    (equal (dim-poly-list-sum (cons poly polys))
-           (dim-poly-add poly (dim-poly-list-sum polys)))
-    :enable dim-poly-list-sum)
-
-  (defruled dim-poly-list-product-of-nil
-    (equal (dim-poly-list-product nil)
-           (dim-poly-const 1)))
-
-  (defruled dim-poly-list-product-of-cons
-    (equal (dim-poly-list-product (cons poly polys))
-           (dim-poly-mul poly (dim-poly-list-product polys)))
-    :enable dim-poly-list-product)
 
   (defruled dim-list-to-poly-list-of-nil
     (equal (dim-list-to-poly-list nil)
