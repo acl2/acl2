@@ -19,6 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(local (in-theory (enable typep-when-result-not-error
+                          type-listp-when-result-not-error)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ type-validator
   :parents (validator)
   :short "Validator of types."
@@ -37,13 +42,18 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define check-type ((type typep) (ienv ispace-senvp) (tenv type-senvp))
-    :returns (yes/no booleanp)
+    :returns (new-type type-resultp)
     :parents (type-validator check-types)
     :short "Check a type."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We return @('t') if the check is successful, otherwise @('nil').")
+      "If the check is successful, we return a type; otherwise, an error.
+       For now, the returned type is always the same as the input type;
+       but we plan to extend this function
+       to lift atom-kinded types to scalar types (see @(tsee type))
+       where array-kinded types are needed,
+       so that the returned type makes that lifting explicit.")
      (xdoc::p
       "A variable must be in the environment.")
      (xdoc::p
@@ -80,28 +90,46 @@
        in the environment extended with the bound ispace variables."))
     (type-case
      type
-     :var (consp (omap::assoc type.var (type-senv->types tenv)))
-     :base t
-     :scalar (and (check-type type.elem ienv tenv)
-                  (type-atom-kindp type.elem))
-     :array (and (check-type type.elem ienv tenv)
-                 (type-atom-kindp type.elem)
-                 (check-ispace type.ispace ienv))
-     :bracket (and (check-type type.elem ienv tenv)
-                   (type-atom-kindp type.elem)
-                   (check-ispace-list type.ispaces ienv))
-     :fun (and (check-type type.in ienv tenv)
-               (check-type type.out ienv tenv))
-     :funn (and (check-type-list type.in ienv tenv)
-                (check-type type.out ienv tenv))
-     :forall (check-type type.body ienv (type-senv-add-var type.param tenv))
-     :foralln (check-type type.body ienv (type-senv-add-vars type.params tenv))
-     :pi (check-type type.body (ispace-senv-add-var type.param ienv) tenv)
-     :pin (check-type type.body (ispace-senv-add-vars type.params ienv) tenv)
-     :sigma (check-type type.body (ispace-senv-add-var type.param ienv) tenv)
-     :sigman (check-type type.body
-                         (ispace-senv-add-vars type.params ienv)
-                         tenv))
+     :var (b* (((unless (consp (omap::assoc type.var (type-senv->types tenv))))
+                (reserr nil)))
+            (type-fix type))
+     :base (type-fix type)
+     :scalar (b* (((ok elem) (check-type type.elem ienv tenv))
+                  ((unless (type-atom-kindp type.elem)) (reserr nil)))
+               (type-scalar elem))
+     :array (b* (((ok elem) (check-type type.elem ienv tenv))
+                 ((unless (type-atom-kindp type.elem)) (reserr nil))
+                 ((unless (check-ispace type.ispace ienv)) (reserr nil)))
+              (make-type-array :elem elem :ispace type.ispace))
+     :bracket (b* (((ok elem) (check-type type.elem ienv tenv))
+                   ((unless (type-atom-kindp type.elem)) (reserr nil))
+                   ((unless (check-ispace-list type.ispaces ienv))
+                    (reserr nil)))
+                (make-type-bracket :elem elem :ispaces type.ispaces))
+     :fun (b* (((ok in) (check-type type.in ienv tenv))
+               ((ok out) (check-type type.out ienv tenv)))
+            (make-type-fun :in in :out out))
+     :funn (b* (((ok in) (check-type-list type.in ienv tenv))
+                ((ok out) (check-type type.out ienv tenv)))
+             (make-type-funn :in in :out out))
+     :forall (b* ((tenv (type-senv-add-var type.param tenv))
+                  ((ok body) (check-type type.body ienv tenv)))
+               (make-type-forall :param type.param :body body))
+     :foralln (b* ((tenv (type-senv-add-vars type.params tenv))
+                   ((ok body) (check-type type.body ienv tenv)))
+                (make-type-foralln :params type.params :body body))
+     :pi (b* ((ienv (ispace-senv-add-var type.param ienv))
+              ((ok body) (check-type type.body ienv tenv)))
+           (make-type-pi :param type.param :body body))
+     :pin (b* ((ienv (ispace-senv-add-vars type.params ienv))
+               ((ok body) (check-type type.body ienv tenv)))
+            (make-type-pin :params type.params :body body))
+     :sigma (b* ((ienv (ispace-senv-add-var type.param ienv))
+                 ((ok body) (check-type type.body ienv tenv)))
+              (make-type-sigma :param type.param :body body))
+     :sigman (b* ((ienv (ispace-senv-add-vars type.params ienv))
+                  ((ok body) (check-type type.body ienv tenv)))
+               (make-type-sigman :params type.params :body body)))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,20 +137,25 @@
   (define check-type-list ((types type-listp)
                            (ienv ispace-senvp)
                            (tenv type-senvp))
-    :returns (yes/no booleanp)
+    :returns (new-types type-list-resultp)
     :parents (type-validator check-types)
     :short "Check a list of types."
     :long
     (xdoc::topstring
      (xdoc::p
-      "We check each type in turn,
-       returning @('t') iff they are all valid."))
-    (or (endp types)
-        (and (check-type (car types) ienv tenv)
-             (check-type-list (cdr types) ienv tenv)))
+      "We check each type in turn.
+       If all the checks are successful,
+       we return the resulting types, in the same order;
+       otherwise, we return an error."))
+    (b* (((when (endp types)) nil)
+         ((ok type) (check-type (car types) ienv tenv))
+         ((ok types) (check-type-list (cdr types) ienv tenv)))
+      (cons type types))
     :measure (type-list-count types))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  :verify-guards :after-returns
 
   ///
 

@@ -81,7 +81,7 @@
      by lifting atom types to scalar (i.e. zero-ranked) array types,
      our type validity rules are stricter,
      requiring the lifting to be explicit:
-     the explicit lifting can be performed as part of type inference.")
+     the explicit lifting is performed by validation.")
    (xdoc::p
     "Since nullary function types stand for their output types,
      we have a rule @('fun0') for nullary function types,
