@@ -24,7 +24,7 @@
 (include-book "expression-validity")
 (include-book "static-environments")
 (include-book "validator")
-(include-book "ispace-validator-correctness")
+(include-book "validator-correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,4 +54,4 @@
                     expression-validity
                     static-environments
                     validator
-                    ispace-validator-correctness))
+                    validator-correctness))

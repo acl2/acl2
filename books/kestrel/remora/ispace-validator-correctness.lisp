@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ ispace-validator-correctness
-  :parents (static-semantics)
+  :parents (validator-correctness)
   :short "Correctness of the ispace validator
           with respect to ispace validity."
   :long
