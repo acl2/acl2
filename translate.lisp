@@ -21887,7 +21887,7 @@
                                fn0))
                          ((assoc-eq fn flet-alist) ; so fn is not fn0
                           (msg "~x0 is a macro abbreviating ~x1, which is ~
-                                bound by a superior FLET MACROLET form"
+                                bound by a superior FLET or MACROLET form"
                                fn0
                                fn))
                          ((member-eq fn *ec-call-bad-ops*)

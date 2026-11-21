@@ -110753,8 +110753,8 @@ it."
  @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
  @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
 
- <p>The termination analysis for some instances of @(tsee loop$-recursion) was
- faulty as demonstrated in the @(see community-books)
+ <p>Termination analysis involving @(tsee loop$) was sometimes faulty, as
+ demonstrated in the @(see community-books)
  @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
  @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
  @('system/tests/loop-recursion-plain-target-subst.lisp'), and
@@ -110845,10 +110845,10 @@ it."
  @('not') as a tau predicate instead of only treating it as negation. See @(see
  community-book) @('system/tests/tau-not-recognizer-conjunctive.lisp').</p>
 
- <p>Fixed a soundness bug in the implementation of @(tsee apply$) for badged
- @(':')@(tsee program) mode functions applied to the wrong number of arguments.
- The original implementation failed to check that the list of arguments was a
- @(tsee true-listp).  See @(see community-book)
+ <p>Fixed a soundness bug in the implementation of @(tsee apply$) for @(see
+ badge)d functions applied to the wrong number of arguments.  The original
+ implementation failed to check that the list of arguments was a @(tsee
+ true-listp).  See @(see community-book)
  @('system/tests/apply-string-args-take.lisp').</p>
 
  <p>Fixed a soundness bug in @(tsee defwarrant) allowing it to issue a warrant
@@ -110982,8 +110982,9 @@ it."
  @('system/tests/reader-error*.*'); thanks to Eric McCarthy and AI for that
  PR.</p>
 
- <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder).
- The following example shows why.</p>
+ <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder),
+ except when inside a @(see wormhole) as when inside @(see break-rewrite).  The
+ following example shows why.</p>
 
  @({
  (verify (equal x x))
