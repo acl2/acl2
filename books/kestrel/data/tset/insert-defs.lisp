@@ -1,0 +1,44 @@
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "std/osets/defs" :dir :system)
+
+(include-book "internal/from-oset-defs")
+(include-book "internal/insert-defs")
+(include-book "set-defs")
+(include-book "in-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "insert"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defredundant
+  :names (insert-macro-loop
+          insert-macro-fn
+          insert$inline
+          insert
+          singleton-with-hash
+          singleton
+          insert-all
+          from-list
+          set-macro-fn
+          set
+          from-oset
+          insert-=
+          insert-eq
+          insert-eql
+          insert-with-hash
+          insert?
+          insert?$inline
+          insert?-=
+          insert?-eq
+          insert?-eql
+          ))

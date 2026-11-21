@@ -8,9 +8,9 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/update-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/update-defs" :dir :system)
 
 (include-book "adj-list-defs")
 

@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,15 +30,14 @@
 ;; the three is constrained, so this is just a pair of conses; the type exists
 ;; to name the slots, not to restrict them.
 ;;
-;; The slot order matters. Edges are collected into treesets, which order their
+;; The slot order matters. Edges are collected into tsets, which order their
 ;; elements by <<, and << compares conses by their cars first. Source first,
 ;; then target, then label is therefore the order in which an in-order walk of
 ;; an adjacency list visits the edges, so the edge set of an adjacency list
 ;; comes out already sorted, and the edges out of a node are contiguous in it.
 
 (define edgep (x)
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (graph)
   :short "Recognizer for the edges of a @(see graph)."
   (and (consp x)
@@ -46,10 +45,6 @@
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule edgep-type-prescription
-  (booleanp (edgep x))
-  :rule-classes ((:type-prescription :typed-term (edgep x))))
 
 (defruled edgep-compound-recognizer
   (implies (edgep x)
@@ -65,7 +60,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-edge ()
-  :type-prescription :none
   :returns (edge edgep
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   (list* nil nil nil))
@@ -78,7 +72,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge-fix ((edge edgep))
-  :type-prescription :none
   :returns (edge$ edgep)
   :parents (edgep)
   :short "Fixer for edges."
@@ -113,8 +106,7 @@
 (define edge-equiv
   ((x edgep)
    (y edgep))
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (edgep)
   :short "Equivalence of edges up to @(tsee edge-fix)."
   (equal (edge-fix x)
@@ -125,10 +117,6 @@
   (defequiv edge-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule edge-equiv-type-prescription
-  (booleanp (edge-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (edge-equiv x y))))
 
 (defrule edge-fix-when-edge-equiv-congruence
   (implies (edge-equiv edge0 edge1)
@@ -199,7 +187,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define edge (from to label)
-  :type-prescription :none
   :returns (edge edgep :hints (("Goal" :in-theory (enable edgep))))
   :parents (edgep)
   :short "Construct an edge from its source, target, and label."

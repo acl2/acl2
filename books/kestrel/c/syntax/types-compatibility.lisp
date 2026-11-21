@@ -14,27 +14,27 @@
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-(include-book "kestrel/data/treemap/submap-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treeset/product-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/submap-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tset/product-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
 
 (acl2::controlled-configuration)
 
 (local (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system))
-(local (include-book "kestrel/data/treemap/delete" :dir :system))
-(local (include-book "kestrel/data/treemap/submap" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/product" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/induction" :dir :system))
+(local (include-book "kestrel/data/tmap/delete" :dir :system))
+(local (include-book "kestrel/data/tmap/submap" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/product" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/induction" :dir :system))
 
 (local (include-book "kestrel/utilities/arith-fix-and-equiv" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
@@ -279,13 +279,13 @@
                      (assumed (uid-pair-sfix assumed))
                      (pair (make-uid-pair :first x.uid :second y.uid))
                      ;; The pair is already assumed compatible.
-                     ((when (treeset::in pair assumed))
+                     ((when (tset::in pair assumed))
                       t)
                      (completions (type-completions-fix completions))
                      ((mv x-foundp x-members)
-                      (treemap::lookup? x.uid completions))
+                      (tmap::lookup? x.uid completions))
                      ((mv y-foundp y-members)
-                      (treemap::lookup? y.uid completions))
+                      (tmap::lookup? y.uid completions))
                      ;; An incomplete struct is compatible
                      ;; with any struct with the same tag.
                      ((unless (and x-foundp y-foundp))
@@ -294,7 +294,7 @@
                     x-members
                     y-members
                     completions
-                    (treeset::insert pair assumed)
+                    (tset::insert pair assumed)
                     ienv))
                 :untagged nil)
               :untagged
@@ -333,8 +333,8 @@
                      (completions (type-completions-fix completions))
                      ;; An incomplete union is compatible
                      ;; with any union with the same tag.
-                     ((unless (and (treemap::in x.uid completions)
-                                   (treemap::in y.uid completions)))
+                     ((unless (and (tmap::in x.uid completions)
+                                   (tmap::in y.uid completions)))
                       t))
                   ;; The members must correspond in some order,
                   ;; which we do not check yet.
@@ -378,11 +378,11 @@
             (3and (type-integer-3p x) :unknown)
           (type-equiv x y))))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (max (type-count x) (type-count y))))
 
@@ -413,11 +413,11 @@
              (type-struni-member-list-compatible-3p-aux
                (rest x) (rest y) completions assumed ienv)))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (max (type-struni-member-list-count x)
                    (type-struni-member-list-count y))))
@@ -520,11 +520,11 @@
                        ienv))
         :otherwise t))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (max (type-params-count x)
                    (type-params-count y))))
@@ -551,18 +551,18 @@
              (type-list-compatible-3p-aux
                (rest x) (rest y) completions assumed ienv)))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (max (type-list-count x)
                    (type-list-count y))))
 
   :hints (("Goal" :in-theory (e/d (max)
-                                  (treeset::cardinality-of-delete-when-in
-                                   treeset::cardinality-of-diff))))
+                                  (tset::cardinality-of-delete-when-in
+                                   tset::cardinality-of-diff))))
   :verify-guards :after-returns
   :flag-local nil
   ///
@@ -680,8 +680,8 @@
 
 (defthm-type/type-list-compatible-3p-aux-flag
   (defthm type-compatible-3p-aux-when-submap
-    (implies (treemap::submap (type-completions-fix completions1)
-                              (type-completions-fix completions))
+    (implies (tmap::submap (type-completions-fix completions1)
+                           (type-completions-fix completions))
              (3truth<= (type-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-compatible-3p-aux
@@ -692,8 +692,8 @@
                        (type-compatible-3p-aux
                          x y completions1 assumed ienv)))))
   (defthm type-struni-member-list-compatible-3p-aux-when-submap
-    (implies (treemap::submap (type-completions-fix completions1)
-                              (type-completions-fix completions))
+    (implies (tmap::submap (type-completions-fix completions1)
+                           (type-completions-fix completions))
              (3truth<= (type-struni-member-list-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-struni-member-list-compatible-3p-aux
@@ -704,8 +704,8 @@
                        (type-struni-member-list-compatible-3p-aux
                          x y completions1 assumed ienv)))))
   (defthm type-params-compatible-3p-aux-when-submap
-    (implies (treemap::submap (type-completions-fix completions1)
-                              (type-completions-fix completions))
+    (implies (tmap::submap (type-completions-fix completions1)
+                           (type-completions-fix completions))
              (3truth<= (type-params-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-params-compatible-3p-aux
@@ -716,8 +716,8 @@
                        (type-params-compatible-3p-aux
                          x y completions1 assumed ienv)))))
   (defthm type-list-compatible-3p-aux-when-submap
-    (implies (treemap::submap (type-completions-fix completions1)
-                              (type-completions-fix completions))
+    (implies (tmap::submap (type-completions-fix completions1)
+                           (type-completions-fix completions))
              (3truth<= (type-list-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-list-compatible-3p-aux
@@ -729,7 +729,7 @@
                          x y completions1 assumed ienv)))))
   :hints (("Goal"
            :in-theory
-           (enable treemap::lookup-when-submap-and-in-of-keys
+           (enable tmap::lookup-when-submap-and-in-of-keys
                    type-compatible-3p-aux
                    type-struni-member-list-compatible-3p-aux
                    type-params-compatible-3p-aux
@@ -744,64 +744,64 @@
                 x y completions assumed ienv)
               (type-compatible-3p-aux
                 x y completions
-                (treeset::union (uid-pair-sfix assumed)
-                                (uid-pair-sfix extra))
+                (tset::union (uid-pair-sfix assumed)
+                             (uid-pair-sfix extra))
                 ienv))
     :flag type-compatible-3p-aux
     :hints ('(:expand ((type-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix extra))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix extra))
                          ienv)))))
   (defthm type-struni-member-list-compatible-3p-aux-of-union
     (3truth<= (type-struni-member-list-compatible-3p-aux
                 x y completions assumed ienv)
               (type-struni-member-list-compatible-3p-aux
                 x y completions
-                (treeset::union (uid-pair-sfix assumed)
-                                (uid-pair-sfix extra))
+                (tset::union (uid-pair-sfix assumed)
+                             (uid-pair-sfix extra))
                 ienv))
     :flag type-struni-member-list-compatible-3p-aux
     :hints ('(:expand ((type-struni-member-list-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-struni-member-list-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix extra))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix extra))
                          ienv)))))
   (defthm type-params-compatible-3p-aux-of-union
     (3truth<= (type-params-compatible-3p-aux
                 x y completions assumed ienv)
               (type-params-compatible-3p-aux
                 x y completions
-                (treeset::union (uid-pair-sfix assumed)
-                                (uid-pair-sfix extra))
+                (tset::union (uid-pair-sfix assumed)
+                             (uid-pair-sfix extra))
                 ienv))
     :flag type-params-compatible-3p-aux
     :hints ('(:expand ((type-params-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-params-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix extra))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix extra))
                          ienv)))))
   (defthm type-list-compatible-3p-aux-of-union
     (3truth<= (type-list-compatible-3p-aux
                 x y completions assumed ienv)
               (type-list-compatible-3p-aux
                 x y completions
-                (treeset::union (uid-pair-sfix assumed)
-                                (uid-pair-sfix extra))
+                (tset::union (uid-pair-sfix assumed)
+                             (uid-pair-sfix extra))
                 ienv))
     :flag type-list-compatible-3p-aux
     :hints ('(:expand ((type-list-compatible-3p-aux
                          x y completions assumed ienv)
                        (type-list-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix extra))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix extra))
                          ienv)))))
   :hints (("Goal"
            :in-theory
@@ -812,8 +812,8 @@
                    type/type-list-compatible-3p-aux-flag))))
 
 (defrule type-compatible-3p-aux-when-subset
-  (implies (treeset::subset (uid-pair-sfix assumed)
-                            (uid-pair-sfix assumed2))
+  (implies (tset::subset (uid-pair-sfix assumed)
+                         (uid-pair-sfix assumed2))
            (3truth<= (type-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-compatible-3p-aux
@@ -823,8 +823,8 @@
   :disable type-compatible-3p-aux-of-union)
 
 (defrule type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (treeset::subset (uid-pair-sfix assumed)
-                            (uid-pair-sfix assumed2))
+  (implies (tset::subset (uid-pair-sfix assumed)
+                         (uid-pair-sfix assumed2))
            (3truth<= (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-struni-member-list-compatible-3p-aux
@@ -834,8 +834,8 @@
   :disable type-struni-member-list-compatible-3p-aux-of-union)
 
 (defrule type-params-compatible-3p-aux-when-subset
-  (implies (treeset::subset (uid-pair-sfix assumed)
-                            (uid-pair-sfix assumed2))
+  (implies (tset::subset (uid-pair-sfix assumed)
+                         (uid-pair-sfix assumed2))
            (3truth<= (type-params-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-params-compatible-3p-aux
@@ -845,8 +845,8 @@
   :disable type-params-compatible-3p-aux-of-union)
 
 (defrule type-list-compatible-3p-aux-when-subset
-  (implies (treeset::subset (uid-pair-sfix assumed)
-                            (uid-pair-sfix assumed2))
+  (implies (tset::subset (uid-pair-sfix assumed)
+                         (uid-pair-sfix assumed2))
            (3truth<= (type-list-compatible-3p-aux
                        x y completions assumed ienv)
                      (type-list-compatible-3p-aux
@@ -863,15 +863,15 @@
 (defrule 3possibly-type-compatible-3p-aux-when-submap-fix
   (implies (and (3possibly (type-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3possibly (type-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-compatible-3p-aux-when-submap
   :disable type-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3possibly (type-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -883,15 +883,15 @@
 (defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-submap-fix
   (implies (and (3possibly (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3possibly (type-struni-member-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-submap
   :disable type-struni-member-list-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3possibly (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -903,15 +903,15 @@
 (defrule 3possibly-type-params-compatible-3p-aux-when-submap-fix
   (implies (and (3possibly (type-params-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3possibly (type-params-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-params-compatible-3p-aux-when-submap
   :disable type-params-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-params-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3possibly (type-params-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -923,15 +923,15 @@
 (defrule 3possibly-type-list-compatible-3p-aux-when-submap-fix
   (implies (and (3possibly (type-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3possibly (type-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-list-compatible-3p-aux-when-submap
   :disable type-list-compatible-3p-aux-when-submap)
 
 (defrule 3possibly-type-list-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3possibly (type-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -943,15 +943,15 @@
 (defrule 3definitely-type-compatible-3p-aux-when-submap-fix
   (implies (and (3definitely (type-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3definitely (type-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-compatible-3p-aux-when-submap
   :disable type-compatible-3p-aux-when-submap)
 
 (defrule 3definitely-type-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3definitely (type-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -963,15 +963,15 @@
 (defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-submap-fix
   (implies (and (3definitely (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3definitely (type-struni-member-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-submap
   :disable type-struni-member-list-compatible-3p-aux-when-submap)
 
 (defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3definitely (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -984,15 +984,15 @@
 (defrule 3definitely-type-params-compatible-3p-aux-when-submap-fix
   (implies (and (3definitely (type-params-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3definitely (type-params-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-params-compatible-3p-aux-when-submap
   :disable type-params-compatible-3p-aux-when-submap)
 
 (defrule 3definitely-type-params-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3definitely (type-params-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1004,15 +1004,15 @@
 (defrule 3definitely-type-list-compatible-3p-aux-when-submap-fix
   (implies (and (3definitely (type-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treemap::submap (type-completions-fix completions1)
-                                 (type-completions-fix completions)))
+                (tmap::submap (type-completions-fix completions1)
+                              (type-completions-fix completions)))
            (3definitely (type-list-compatible-3p-aux
                    x y completions1 assumed ienv)))
   :use type-list-compatible-3p-aux-when-submap
   :disable type-list-compatible-3p-aux-when-submap)
 
 (defrule 3definitely-type-list-compatible-3p-aux-when-submap
-  (implies (and (treemap::submap completions1 completions)
+  (implies (and (tmap::submap completions1 completions)
                 (type-completions-p completions)
                 (3definitely (type-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1024,15 +1024,15 @@
 (defrule 3possibly-type-compatible-3p-aux-when-subset-fix
   (implies (and (3possibly (type-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3possibly (type-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-compatible-3p-aux-when-subset
   :disable type-compatible-3p-aux-when-subset)
 
 (defrule 3possibly-type-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3possibly (type-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1044,15 +1044,15 @@
 (defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-subset-fix
   (implies (and (3possibly (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3possibly (type-struni-member-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-subset
   :disable type-struni-member-list-compatible-3p-aux-when-subset)
 
 (defrule 3possibly-type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3possibly (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1064,15 +1064,15 @@
 (defrule 3possibly-type-params-compatible-3p-aux-when-subset-fix
   (implies (and (3possibly (type-params-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3possibly (type-params-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-params-compatible-3p-aux-when-subset
   :disable type-params-compatible-3p-aux-when-subset)
 
 (defrule 3possibly-type-params-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3possibly (type-params-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1084,15 +1084,15 @@
 (defrule 3possibly-type-list-compatible-3p-aux-when-subset-fix
   (implies (and (3possibly (type-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3possibly (type-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-list-compatible-3p-aux-when-subset
   :disable type-list-compatible-3p-aux-when-subset)
 
 (defrule 3possibly-type-list-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3possibly (type-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1104,15 +1104,15 @@
 (defrule 3definitely-type-compatible-3p-aux-when-subset-fix
   (implies (and (3definitely (type-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3definitely (type-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-compatible-3p-aux-when-subset
   :disable type-compatible-3p-aux-when-subset)
 
 (defrule 3definitely-type-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3definitely (type-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1124,15 +1124,15 @@
 (defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-subset-fix
   (implies (and (3definitely (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3definitely (type-struni-member-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-struni-member-list-compatible-3p-aux-when-subset
   :disable type-struni-member-list-compatible-3p-aux-when-subset)
 
 (defrule 3definitely-type-struni-member-list-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3definitely (type-struni-member-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1145,15 +1145,15 @@
 (defrule 3definitely-type-params-compatible-3p-aux-when-subset-fix
   (implies (and (3definitely (type-params-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3definitely (type-params-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-params-compatible-3p-aux-when-subset
   :disable type-params-compatible-3p-aux-when-subset)
 
 (defrule 3definitely-type-params-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3definitely (type-params-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1165,15 +1165,15 @@
 (defrule 3definitely-type-list-compatible-3p-aux-when-subset-fix
   (implies (and (3definitely (type-list-compatible-3p-aux
                        x y completions assumed ienv))
-                (treeset::subset (uid-pair-sfix assumed)
-                                 (uid-pair-sfix assumed2)))
+                (tset::subset (uid-pair-sfix assumed)
+                              (uid-pair-sfix assumed2)))
            (3definitely (type-list-compatible-3p-aux
                    x y completions assumed2 ienv)))
   :use type-list-compatible-3p-aux-when-subset
   :disable type-list-compatible-3p-aux-when-subset)
 
 (defrule 3definitely-type-list-compatible-3p-aux-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-pair-setp assumed2)
                 (3definitely (type-list-compatible-3p-aux
                        x y completions assumed ienv)))
@@ -1199,16 +1199,16 @@
        (completions (type-completions-fix completions))
        (assumed (uid-pair-sfix assumed))
        ((mv x-foundp x-members)
-        (treemap::lookup? pair.first completions))
+        (tmap::lookup? pair.first completions))
        ((mv y-foundp y-members)
-        (treemap::lookup? pair.second completions))
+        (tmap::lookup? pair.second completions))
        ((unless (and x-foundp y-foundp))
         t))
     (type-struni-member-list-compatible-3p-aux
       x-members
       y-members
       completions
-      (treeset::insert (uid-pair-fix pair) assumed)
+      (tset::insert (uid-pair-fix pair) assumed)
       ienv)))
 
 ;; The comparison of the members of a pair of complete structure types
@@ -1217,15 +1217,15 @@
 
 (defruled type-struni-member-list-compatible-3p-aux-becomes-uid-pair
   (implies
-    (and (treeset::in first
-                      (treemap::keys (type-completions-fix completions)))
-         (treeset::in second
-                      (treemap::keys (type-completions-fix completions))))
+    (and (tset::in first
+                   (tmap::keys (type-completions-fix completions)))
+         (tset::in second
+                   (tmap::keys (type-completions-fix completions))))
     (equal (type-struni-member-list-compatible-3p-aux
-             (treemap::lookup first (type-completions-fix completions))
-             (treemap::lookup second (type-completions-fix completions))
+             (tmap::lookup first (type-completions-fix completions))
+             (tmap::lookup second (type-completions-fix completions))
              completions
-             (treeset::insert (uid-pair first second) (uid-pair-sfix assumed))
+             (tset::insert (uid-pair first second) (uid-pair-sfix assumed))
              ienv)
            (uid-pair-compatible-3p-aux (uid-pair first second)
                                        completions assumed ienv)))
@@ -1235,8 +1235,8 @@
 ;; as the check it makes is.
 
 (defrule uid-pair-compatible-3p-aux-when-subset
-  (implies (treeset::subset (uid-pair-sfix assumed)
-                            (uid-pair-sfix assumed2))
+  (implies (tset::subset (uid-pair-sfix assumed)
+                         (uid-pair-sfix assumed2))
            (3truth<= (uid-pair-compatible-3p-aux
                        pair completions assumed ienv)
                      (uid-pair-compatible-3p-aux
@@ -1253,18 +1253,18 @@
   :short "Conjoin the comparisons of @(tsee uid-pair-compatible-3p-aux)
           over a set of pairs of @(see UID)s."
   (b* ((pairs (uid-pair-sfix pairs))
-       ((when (treeset::emptyp pairs))
+       ((when (tset::emptyp pairs))
         t)
-       (pair (treeset::min pairs)))
+       (pair (tset::min pairs)))
     (3and (uid-pair-compatible-3p-aux pair completions assumed ienv)
           (uid-pair-set-compatible-3p-aux
-            (treeset::delete pair pairs) completions assumed ienv)))
-  :measure (treeset::cardinality (uid-pair-sfix pairs))
+            (tset::delete pair pairs) completions assumed ienv)))
+  :measure (tset::cardinality (uid-pair-sfix pairs))
   :verify-guards :after-returns)
 
 (defrule uid-pair-set-compatible-3p-aux-of-empty
   (equal (uid-pair-set-compatible-3p-aux
-           (treeset::empty) completions assumed ienv)
+           (tset::empty) completions assumed ienv)
          t)
   :enable uid-pair-set-compatible-3p-aux)
 
@@ -1273,13 +1273,13 @@
 ;; The conjunction does not depend on the order of the elements.
 
 (defruled uid-pair-set-compatible-3p-aux-when-in
-  (implies (treeset::in pair (uid-pair-sfix pairs))
+  (implies (tset::in pair (uid-pair-sfix pairs))
            (equal (uid-pair-set-compatible-3p-aux
                    pairs completions assumed ienv)
                   (3and (uid-pair-compatible-3p-aux
                          pair completions assumed ienv)
                         (uid-pair-set-compatible-3p-aux
-                         (treeset::delete pair (uid-pair-sfix pairs))
+                         (tset::delete pair (uid-pair-sfix pairs))
                          completions assumed ienv))))
   :induct (uid-pair-set-induction pairs pair)
   :enable (uid-pair-set-induction
@@ -1287,27 +1287,27 @@
   :prep-lemmas
   ((define uid-pair-set-induction (pairs pair)
      (b* ((pairs (uid-pair-sfix pairs))
-          ((when (or (treeset::emptyp pairs)
-                     (not (treeset::in pair pairs))))
+          ((when (or (tset::emptyp pairs)
+                     (not (tset::in pair pairs))))
            t))
-       (and (uid-pair-set-induction (treeset::delete (treeset::min pairs) pairs)
+       (and (uid-pair-set-induction (tset::delete (tset::min pairs) pairs)
                                     pair)
-            (uid-pair-set-induction (treeset::delete pair pairs)
-                                    (treeset::min pairs))))
-     :measure (treeset::cardinality (uid-pair-sfix pairs))
+            (uid-pair-set-induction (tset::delete pair pairs)
+                                    (tset::min pairs))))
+     :measure (tset::cardinality (uid-pair-sfix pairs))
      :verify-guards nil)))
 
 (defrule uid-pair-set-compatible-3p-aux-of-insert
   (implies (and (uid-pair-setp pairs)
                 (uid-pairp pair))
            (equal (uid-pair-set-compatible-3p-aux
-                    (treeset::insert pair pairs) completions assumed ienv)
+                    (tset::insert pair pairs) completions assumed ienv)
                   (3and (uid-pair-compatible-3p-aux
                           pair completions assumed ienv)
                         (uid-pair-set-compatible-3p-aux
                           pairs completions assumed ienv))))
   :use ((:instance uid-pair-set-compatible-3p-aux-when-in
-                   (pairs (treeset::insert pair pairs)))
+                   (pairs (tset::insert pair pairs)))
         uid-pair-set-compatible-3p-aux-when-in))
 
 ;; Splitting the conjunction over a set into a subset and the difference.
@@ -1315,21 +1315,21 @@
 (defruled uid-pair-set-compatible-3p-aux-when-subset
   (implies (and (uid-pair-setp d)
                 (uid-pair-setp e)
-                (treeset::subset d e))
+                (tset::subset d e))
            (equal (uid-pair-set-compatible-3p-aux e completions assumed ienv)
                   (3and (uid-pair-set-compatible-3p-aux
                           d completions assumed ienv)
                         (uid-pair-set-compatible-3p-aux
-                          (treeset::diff e d) completions assumed ienv))))
-  :induct (treeset::min-delete-induction d)
+                          (tset::diff e d) completions assumed ienv))))
+  :induct (tset::min-delete-induction d)
   :enable (uid-pair-set-compatible-3p-aux
-           treeset::diff-of-arg1-and-delete-when-in-of-arg1
-           treeset::min-delete-induction))
+           tset::diff-of-arg1-and-delete-when-in-of-arg1
+           tset::min-delete-induction))
 
 ;; The conjunction over a set is below each of its members.
 
 (defrule 3truth<=-of-uid-pair-set-compatible-3p-aux-when-in
-  (implies (treeset::in pair (uid-pair-sfix pairs))
+  (implies (tset::in pair (uid-pair-sfix pairs))
            (3truth<= (uid-pair-set-compatible-3p-aux
                        pairs completions assumed ienv)
                      (uid-pair-compatible-3p-aux
@@ -1350,9 +1350,9 @@
 ;; then for the comparison of a pair and for the conjunction over a set.
 
 (defrule 3truth<=-of-uid-pair-set-compatible-3p-aux-when-in-and-subset
-  (implies (and (treeset::in pair (uid-pair-sfix pairs))
-                (treeset::subset (uid-pair-sfix base)
-                                 (uid-pair-sfix assumed)))
+  (implies (and (tset::in pair (uid-pair-sfix pairs))
+                (tset::subset (uid-pair-sfix base)
+                              (uid-pair-sfix assumed)))
            (3truth<= (uid-pair-set-compatible-3p-aux
                        pairs completions base ienv)
                      (uid-pair-compatible-3p-aux
@@ -1363,16 +1363,16 @@
 
 (defthm-type/type-list-compatible-3p-aux-flag
   (defthmd 3truth<=-of-type-compatible-3p-aux-of-union
-    (implies (and (treeset::subset (uid-pair-sfix base)
-                                   (uid-pair-sfix assumed))
+    (implies (and (tset::subset (uid-pair-sfix base)
+                                (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                   pairs completions base ienv))
                   (not (3truth<= 3vl (type-compatible-3p-aux
                                        x y completions assumed ienv))))
              (3truth<= (type-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix pairs))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix pairs))
                          ienv)
                        (type-compatible-3p-aux
                          x y completions assumed ienv)))
@@ -1381,50 +1381,50 @@
                          x y completions assumed ienv)
                        (type-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix pairs))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix pairs))
                          ienv)))))
   (defthmd 3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
-    (implies (and (treeset::subset (uid-pair-sfix base)
-                                   (uid-pair-sfix assumed))
+    (implies (and (tset::subset (uid-pair-sfix base)
+                                (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                   pairs completions base ienv))
                   (not (3truth<= 3vl (type-struni-member-list-compatible-3p-aux
                                        x y completions assumed ienv))))
              (3truth<= (type-struni-member-list-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix pairs))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix pairs))
                          ienv)
                        (type-struni-member-list-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-struni-member-list-compatible-3p-aux)
   (defthmd 3truth<=-of-type-params-compatible-3p-aux-of-union
-    (implies (and (treeset::subset (uid-pair-sfix base)
-                                   (uid-pair-sfix assumed))
+    (implies (and (tset::subset (uid-pair-sfix base)
+                                (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                   pairs completions base ienv))
                   (not (3truth<= 3vl (type-params-compatible-3p-aux
                                        x y completions assumed ienv))))
              (3truth<= (type-params-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix pairs))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix pairs))
                          ienv)
                        (type-params-compatible-3p-aux
                          x y completions assumed ienv)))
     :flag type-params-compatible-3p-aux)
   (defthmd 3truth<=-of-type-list-compatible-3p-aux-of-union
-    (implies (and (treeset::subset (uid-pair-sfix base)
-                                   (uid-pair-sfix assumed))
+    (implies (and (tset::subset (uid-pair-sfix base)
+                                (uid-pair-sfix assumed))
                   (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                   pairs completions base ienv))
                   (not (3truth<= 3vl (type-list-compatible-3p-aux
                                        x y completions assumed ienv))))
              (3truth<= (type-list-compatible-3p-aux
                          x y completions
-                         (treeset::union (uid-pair-sfix assumed)
-                                         (uid-pair-sfix pairs))
+                         (tset::union (uid-pair-sfix assumed)
+                                      (uid-pair-sfix pairs))
                          ienv)
                        (type-list-compatible-3p-aux
                          x y completions assumed ienv)))
@@ -1439,7 +1439,7 @@
             type/type-list-compatible-3p-aux-flag))))
 
 (defruled 3truth<=-of-uid-pair-compatible-3p-aux-of-union
-  (implies (and (treeset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
+  (implies (and (tset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
                 (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                 pairs completions base ienv))
                 (not (3truth<= 3vl (uid-pair-compatible-3p-aux
@@ -1449,45 +1449,45 @@
                           z))
            (3truth<= (uid-pair-compatible-3p-aux
                        pair completions
-                       (treeset::union (uid-pair-sfix assumed)
-                                       (uid-pair-sfix pairs))
+                       (tset::union (uid-pair-sfix assumed)
+                                    (uid-pair-sfix pairs))
                        ienv)
                      z))
   :enable (uid-pair-compatible-3p-aux
            acl2::transitivity-of-3truth<=-swapped)
   :use (:instance
          3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
-         (x (treemap::lookup (uid-pair->first pair)
-                             (type-completions-fix completions)))
-         (y (treemap::lookup (uid-pair->second pair)
-                             (type-completions-fix completions)))
-         (assumed (treeset::insert (uid-pair-fix pair)
-                                   (uid-pair-sfix assumed)))))
+         (x (tmap::lookup (uid-pair->first pair)
+                          (type-completions-fix completions)))
+         (y (tmap::lookup (uid-pair->second pair)
+                          (type-completions-fix completions)))
+         (assumed (tset::insert (uid-pair-fix pair)
+                                (uid-pair-sfix assumed)))))
 
 (defruled 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
   (implies (and (uid-pair-setp pairs2)
-                (treeset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
+                (tset::subset (uid-pair-sfix base) (uid-pair-sfix assumed))
                 (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                 pairs completions base ienv))
                 (not (3truth<= 3vl (uid-pair-set-compatible-3p-aux
                                      pairs2 completions assumed ienv))))
            (3truth<= (uid-pair-set-compatible-3p-aux
                        pairs2 completions
-                       (treeset::union (uid-pair-sfix assumed)
-                                       (uid-pair-sfix pairs))
+                       (tset::union (uid-pair-sfix assumed)
+                                    (uid-pair-sfix pairs))
                        ienv)
                      (uid-pair-set-compatible-3p-aux
                        pairs2 completions assumed ienv)))
   :hints
   (("Goal"
-    :induct (treeset::min-delete-induction pairs2)
+    :induct (tset::min-delete-induction pairs2)
     :in-theory
-    (enable treeset::min-delete-induction
+    (enable tset::min-delete-induction
             uid-pair-set-compatible-3p-aux
             3truth<=-of-uid-pair-compatible-3p-aux-of-union))
    ("Subgoal *1/2"
     :cases ((3truth<= 3vl (uid-pair-compatible-3p-aux
-                            (treeset::min pairs2) completions assumed ienv))))))
+                            (tset::min pairs2) completions assumed ienv))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -1501,7 +1501,7 @@
                  (visited$
                   (and (uid-pair-setp visited$)
                        (implies (uid-pair-setp visited)
-                                (treeset::subset visited visited$)))))
+                                (tset::subset visited visited$)))))
     :short "Executable counterpart of @(tsee type-compatible-3p-aux)."
     :long
     (xdoc::topstring
@@ -1551,20 +1551,20 @@
                      ((when (and same-tunit? (not c23p?)))
                       (mv nil visited))
                      (pair (make-uid-pair :first x.uid :second y.uid))
-                     ((when (treeset::in pair visited))
+                     ((when (tset::in pair visited))
                       (mv t visited))
                      (completions (type-completions-fix completions))
                      ((mv x-foundp x-members)
-                      (treemap::lookup? x.uid completions))
+                      (tmap::lookup? x.uid completions))
                      ((mv y-foundp y-members)
-                      (treemap::lookup? y.uid completions))
+                      (tmap::lookup? y.uid completions))
                      ((unless (and x-foundp y-foundp))
                       (mv t visited)))
                   (type-struni-member-list-compatible-3p-exec
                     x-members
                     y-members
                     completions
-                    (treeset::insert pair visited)
+                    (tset::insert pair visited)
                     ienv))
                 :untagged (mv nil visited))
               :untagged
@@ -1599,8 +1599,8 @@
                      ((when (and same-tunit? (not c23p?)))
                       (mv nil visited))
                      (completions (type-completions-fix completions))
-                     ((unless (and (treemap::in x.uid completions)
-                                   (treemap::in y.uid completions)))
+                     ((unless (and (tmap::in x.uid completions)
+                                   (tmap::in y.uid completions)))
                       (mv t visited)))
                   (mv :unknown visited))
                 :untagged (mv nil visited))
@@ -1636,7 +1636,7 @@
                 (type-compatible-3p-exec x.ret y.ret completions visited ienv))
                ((unless rets) (mv nil visited))
                (visited (if (mbt (and (uid-pair-setp visited1)
-                                      (treeset::subset visited visited1)))
+                                      (tset::subset visited visited1)))
                             visited1
                           visited))
                ((mv params visited)
@@ -1650,11 +1650,11 @@
             (mv (3and (type-integer-3p x) :unknown) visited)
           (mv (type-equiv x y) visited))))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix visited)))
               (max (type-count x) (type-count y))))
 
@@ -1668,7 +1668,7 @@
                  (visited$
                   (and (uid-pair-setp visited$)
                        (implies (uid-pair-setp visited)
-                                (treeset::subset visited visited$)))))
+                                (tset::subset visited visited$)))))
     :short "Executable counterpart of
             @(tsee type-struni-member-list-compatible-3p-aux)."
     (b* ((visited (uid-pair-sfix visited))
@@ -1685,7 +1685,7 @@
             member-x.type member-y.type completions visited ienv))
          ((unless first) (mv nil visited))
          (visited (if (mbt (and (uid-pair-setp visited1)
-                                (treeset::subset visited visited1)))
+                                (tset::subset visited visited1)))
                       visited1
                     visited))
          ((mv rest visited)
@@ -1693,11 +1693,11 @@
             (rest x) (rest y) completions visited ienv)))
       (mv (3and first rest) visited))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix visited)))
               (max (type-struni-member-list-count x)
                    (type-struni-member-list-count y))))
@@ -1711,7 +1711,7 @@
                  (visited$
                   (and (uid-pair-setp visited$)
                        (implies (uid-pair-setp visited)
-                                (treeset::subset visited visited$)))))
+                                (tset::subset visited visited$)))))
     :short "Executable counterpart of @(tsee type-params-compatible-3p-aux)."
     (b* ((visited (uid-pair-sfix visited)))
       (type-params-case
@@ -1764,11 +1764,11 @@
                          ienv))
           :otherwise (mv t visited))))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix visited)))
               (max (type-params-count x)
                    (type-params-count y))))
@@ -1782,7 +1782,7 @@
                  (visited$
                   (and (uid-pair-setp visited$)
                        (implies (uid-pair-setp visited)
-                                (treeset::subset visited visited$)))))
+                                (tset::subset visited visited$)))))
     :short "Executable counterpart of @(tsee type-list-compatible-3p-aux)."
     (b* ((visited (uid-pair-sfix visited))
          ((when (endp x))
@@ -1794,7 +1794,7 @@
             (first x) (first y) completions visited ienv))
          ((unless first) (mv nil visited))
          (visited (if (mbt (and (uid-pair-setp visited1)
-                                (treeset::subset visited visited1)))
+                                (tset::subset visited visited1)))
                       visited1
                     visited))
          ((mv rest visited)
@@ -1802,18 +1802,18 @@
             (rest x) (rest y) completions visited ienv)))
       (mv (3and first rest) visited))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix visited)))
               (max (type-list-count x)
                    (type-list-count y))))
 
   :hints (("Goal" :in-theory (e/d (max)
-                                  (treeset::cardinality-of-delete-when-in
-                                   treeset::cardinality-of-diff))))
+                                  (tset::cardinality-of-delete-when-in
+                                   tset::cardinality-of-diff))))
   :ruler-extenders :all
   :verify-guards :after-returns
   :flag-local nil
@@ -1834,40 +1834,40 @@
 
 (defruled 3truth<=-and-uid-pair-set-compatible-3p-aux-of-diff
   (implies (and (3truth<= p (uid-pair-set-compatible-3p-aux
-                              (treeset::diff s1 (uid-pair-sfix s))
+                              (tset::diff s1 (uid-pair-sfix s))
                               completions s ienv))
                 (3truth<= b1 (uid-pair-set-compatible-3p-aux
-                               (treeset::diff s2 s1) completions s1 ienv))
+                               (tset::diff s2 s1) completions s1 ienv))
                 (3truth<= b b1)
                 (uid-pair-setp s1)
                 (uid-pair-setp s2)
-                (treeset::subset (uid-pair-sfix s) s1)
-                (treeset::subset s1 s2)
+                (tset::subset (uid-pair-sfix s) s1)
+                (tset::subset s1 s2)
                 (not (3truth<= p (uid-pair-set-compatible-3p-aux
-                                   (treeset::diff s2 (uid-pair-sfix s))
+                                   (tset::diff s2 (uid-pair-sfix s))
                                    completions s ienv))))
            (3truth<= b
                      (uid-pair-set-compatible-3p-aux
-                       (treeset::diff s2 (uid-pair-sfix s))
+                       (tset::diff s2 (uid-pair-sfix s))
                        completions s ienv)))
   :use ((:instance uid-pair-set-compatible-3p-aux-when-subset
-                   (d (treeset::diff s1 (uid-pair-sfix s)))
-                   (e (treeset::diff s2 (uid-pair-sfix s)))
+                   (d (tset::diff s1 (uid-pair-sfix s)))
+                   (e (tset::diff s2 (uid-pair-sfix s)))
                    (assumed s))
         (:instance 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
                    (3vl p)
-                   (pairs2 (treeset::diff s2 s1))
+                   (pairs2 (tset::diff s2 s1))
                    (assumed s)
-                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (pairs (tset::diff s1 (uid-pair-sfix s)))
                    (base s)))
   :enable (acl2::transitivity-of-3truth<=-swapped
-           treeset::diff-of-diff-and-diff-becomes-diff-of-union))
+           tset::diff-of-diff-and-diff-becomes-diff-of-union))
 
 (defruled 3and-of-type-struni-member-list-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
-                (treeset::subset (uid-pair-sfix s) s1)
+                (tset::subset (uid-pair-sfix s) s1)
                 (3truth<= p (uid-pair-set-compatible-3p-aux
-                              (treeset::diff s1 (uid-pair-sfix s))
+                              (tset::diff s1 (uid-pair-sfix s))
                               completions s ienv)))
            (equal (3and p (type-struni-member-list-compatible-3p-aux
                             x y completions s1 ienv))
@@ -1877,7 +1877,7 @@
           3truth<=-of-type-struni-member-list-compatible-3p-aux-of-union
           (3vl p)
           (assumed s)
-          (pairs (treeset::diff s1 (uid-pair-sfix s)))
+          (pairs (tset::diff s1 (uid-pair-sfix s)))
           (base s))
         (:instance acl2::antisymmetry-of-3truth<=-weak
                    (x (3and p (type-struni-member-list-compatible-3p-aux
@@ -1888,9 +1888,9 @@
 
 (defruled 3and-of-type-params-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
-                (treeset::subset (uid-pair-sfix s) s1)
+                (tset::subset (uid-pair-sfix s) s1)
                 (3truth<= p (uid-pair-set-compatible-3p-aux
-                              (treeset::diff s1 (uid-pair-sfix s))
+                              (tset::diff s1 (uid-pair-sfix s))
                               completions s ienv)))
            (equal (3and p (type-params-compatible-3p-aux
                             x y completions s1 ienv))
@@ -1899,7 +1899,7 @@
   :use ((:instance 3truth<=-of-type-params-compatible-3p-aux-of-union
                    (3vl p)
                    (assumed s)
-                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (pairs (tset::diff s1 (uid-pair-sfix s)))
                    (base s))
         (:instance acl2::antisymmetry-of-3truth<=-weak
                    (x (3and p (type-params-compatible-3p-aux
@@ -1910,9 +1910,9 @@
 
 (defruled 3and-of-type-list-compatible-3p-aux-of-visited
   (implies (and (uid-pair-setp s1)
-                (treeset::subset (uid-pair-sfix s) s1)
+                (tset::subset (uid-pair-sfix s) s1)
                 (3truth<= p (uid-pair-set-compatible-3p-aux
-                              (treeset::diff s1 (uid-pair-sfix s))
+                              (tset::diff s1 (uid-pair-sfix s))
                               completions s ienv)))
            (equal (3and p (type-list-compatible-3p-aux
                             x y completions s1 ienv))
@@ -1921,7 +1921,7 @@
   :use ((:instance 3truth<=-of-type-list-compatible-3p-aux-of-union
                    (3vl p)
                    (assumed s)
-                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (pairs (tset::diff s1 (uid-pair-sfix s)))
                    (base s))
         (:instance acl2::antisymmetry-of-3truth<=-weak
                    (x (3and p (type-list-compatible-3p-aux
@@ -1932,28 +1932,28 @@
 
 (defruled 3truth<=-of-uid-pair-compatible-3p-aux-and-set-of-diff
   (b* ((comparison (uid-pair-compatible-3p-aux pair completions s ienv))
-       (visited (treeset::insert pair (uid-pair-sfix s))))
+       (visited (tset::insert pair (uid-pair-sfix s))))
     (implies (and (3truth<= comparison
                             (uid-pair-set-compatible-3p-aux
-                              (treeset::diff s1 visited)
+                              (tset::diff s1 visited)
                               completions visited ienv))
                   (uid-pairp pair)
                   (uid-pair-setp s1)
-                  (not (treeset::in pair (uid-pair-sfix s)))
-                  (treeset::subset visited s1))
+                  (not (tset::in pair (uid-pair-sfix s)))
+                  (tset::subset visited s1))
              (3truth<= comparison
                        (uid-pair-set-compatible-3p-aux
-                         (treeset::diff s1 (uid-pair-sfix s))
+                         (tset::diff s1 (uid-pair-sfix s))
                          completions s ienv))))
   :use ((:instance 3truth<=-of-uid-pair-set-compatible-3p-aux-of-union
                    (3vl (uid-pair-compatible-3p-aux pair completions s ienv))
-                   (pairs2 (treeset::diff s1 (treeset::insert
-                                               pair (uid-pair-sfix s))))
+                   (pairs2 (tset::diff s1 (tset::insert
+                                            pair (uid-pair-sfix s))))
                    (assumed s)
-                   (pairs (treeset::insert pair (treeset::empty)))
+                   (pairs (tset::insert pair (tset::empty)))
                    (base s))
         (:instance uid-pair-set-compatible-3p-aux-when-in
-                   (pairs (treeset::diff s1 (uid-pair-sfix s)))
+                   (pairs (tset::diff s1 (uid-pair-sfix s)))
                    (assumed s))))
 
 (defthm-type/type-list-compatible-3p-exec-flag
@@ -1965,7 +1965,7 @@
                   (type-compatible-3p-aux x y completions visited ienv))
            (3truth<= 3vl
                      (uid-pair-set-compatible-3p-aux
-                       (treeset::diff visited$ visited)
+                       (tset::diff visited$ visited)
                        completions visited ienv))))
     :flag type-compatible-3p-exec
     :hints ('(:expand ((type-compatible-3p-exec x y completions visited ienv)
@@ -1981,7 +1981,7 @@
                     x y completions visited ienv))
            (3truth<= 3vl
                      (uid-pair-set-compatible-3p-aux
-                       (treeset::diff visited$ visited)
+                       (tset::diff visited$ visited)
                        completions visited ienv))))
     :flag type-struni-member-list-compatible-3p-exec
     :hints ('(:expand ((type-struni-member-list-compatible-3p-exec
@@ -1997,7 +1997,7 @@
                     x y completions visited ienv))
            (3truth<= 3vl
                      (uid-pair-set-compatible-3p-aux
-                       (treeset::diff visited$ visited)
+                       (tset::diff visited$ visited)
                        completions visited ienv))))
     :flag type-params-compatible-3p-exec
     :hints ('(:expand ((type-params-compatible-3p-exec
@@ -2013,7 +2013,7 @@
                     x y completions visited ienv))
            (3truth<= 3vl
                      (uid-pair-set-compatible-3p-aux
-                       (treeset::diff visited$ visited)
+                       (tset::diff visited$ visited)
                        completions visited ienv))))
     :flag type-list-compatible-3p-exec
     :hints ('(:expand ((type-list-compatible-3p-exec
@@ -2174,10 +2174,10 @@
      (xdoc::li
       "Two tagged union types are compared as if
        they were declared in separate translation units [C23:6.2.7/1]."))))
-  (mbe :logic (type-compatible-3p-aux x y completions (treeset::empty) ienv)
+  (mbe :logic (type-compatible-3p-aux x y completions (tset::empty) ienv)
        :exec (b* (((mv 3vl &)
                    (type-compatible-3p-exec
-                     x y completions (treeset::empty) ienv)))
+                     x y completions (tset::empty) ienv)))
                3vl))
 
   ///
@@ -2196,12 +2196,12 @@
            (type-compatible-3p x y completions ienv))
     :enable type-compatible-3p
     :use (:instance type-compatible-3p-aux-symmetric
-                    (assumed (treeset::empty)))
+                    (assumed (tset::empty)))
     :disable type-compatible-3p-aux-symmetric)
 
   (defrule type-compatible-3p-when-submap
-    (implies (treemap::submap (type-completions-fix completions1)
-                              (type-completions-fix completions))
+    (implies (tmap::submap (type-completions-fix completions1)
+                           (type-completions-fix completions))
              (3truth<= (type-compatible-3p x y completions ienv)
                        (type-compatible-3p x y completions1 ienv)))
     :enable (type-compatible-3p
@@ -2209,14 +2209,14 @@
 
   (defrule 3possibly-type-compatible-3p-when-submap-fix
     (implies (and (3possibly (type-compatible-3p x y completions ienv))
-                  (treemap::submap (type-completions-fix completions1)
-                                   (type-completions-fix completions)))
+                  (tmap::submap (type-completions-fix completions1)
+                                (type-completions-fix completions)))
              (3possibly (type-compatible-3p x y completions1 ienv)))
     :use type-compatible-3p-when-submap
     :disable type-compatible-3p-when-submap)
 
   (defrule 3possibly-type-compatible-3p-when-submap
-    (implies (and (treemap::submap completions1 completions)
+    (implies (and (tmap::submap completions1 completions)
                   (type-completions-p completions)
                   (3possibly (type-compatible-3p x y completions ienv)))
              (3possibly (type-compatible-3p x y completions1 ienv)))
@@ -2225,14 +2225,14 @@
 
   (defrule 3definitely-type-compatible-3p-when-submap-fix
     (implies (and (3definitely (type-compatible-3p x y completions ienv))
-                  (treemap::submap (type-completions-fix completions1)
-                                   (type-completions-fix completions)))
+                  (tmap::submap (type-completions-fix completions1)
+                                (type-completions-fix completions)))
              (3definitely (type-compatible-3p x y completions1 ienv)))
     :use type-compatible-3p-when-submap
     :disable type-compatible-3p-when-submap)
 
   (defrule 3definitely-type-compatible-3p-when-submap
-    (implies (and (treemap::submap completions1 completions)
+    (implies (and (tmap::submap completions1 completions)
                   (type-completions-p completions)
                   (3definitely (type-compatible-3p x y completions ienv)))
              (3definitely (type-compatible-3p x y completions1 ienv)))
@@ -2447,11 +2447,11 @@
                 (b* ((completions (type-completions-fix completions))
                      (assumed (uid-triple-sfix assumed))
                      ((mv x-foundp x-members)
-                      (treemap::lookup? x.uid completions))
+                      (tmap::lookup? x.uid completions))
                      ((mv y-foundp y-members)
-                      (treemap::lookup? y.uid completions))
+                      (tmap::lookup? y.uid completions))
                      ((mv composite-foundp composite-members)
-                      (treemap::lookup? composite.uid completions))
+                      (tmap::lookup? composite.uid completions))
                      ((when (and (not x-foundp) (not y-foundp)))
                       ;; Both inputs are incomplete,
                       ;; so the composite must be as well.
@@ -2475,14 +2475,14 @@
                                               :second y.uid
                                               :third composite.uid))
                      ;; The triple is already assumed.
-                     ((when (treeset::in triple assumed))
+                     ((when (tset::in triple assumed))
                       t))
                   (type-struni-member-list-composite-conditions-3p
                     x-members
                     y-members
                     composite-members
                     completions
-                    (treeset::insert triple assumed)
+                    (tset::insert triple assumed)
                     ienv))
                 :untagged
                 (type-struni-member-list-composite-conditions-3p
@@ -2510,11 +2510,11 @@
                 (b* ((completions (type-completions-fix completions))
                      (assumed (uid-triple-sfix assumed))
                      ((mv x-foundp x-members)
-                      (treemap::lookup? x.uid completions))
+                      (tmap::lookup? x.uid completions))
                      ((mv y-foundp y-members)
-                      (treemap::lookup? y.uid completions))
+                      (tmap::lookup? y.uid completions))
                      ((mv composite-foundp composite-members)
-                      (treemap::lookup? composite.uid completions))
+                      (tmap::lookup? composite.uid completions))
                      ((when (and (not x-foundp) (not y-foundp)))
                       ;; Both inputs are incomplete,
                       ;; so the composite must be as well.
@@ -2538,7 +2538,7 @@
                                               :second y.uid
                                               :third composite.uid))
                      ;; The triple is already assumed.
-                     ((when (treeset::in triple assumed))
+                     ((when (tset::in triple assumed))
                       t))
                   ;; Members may correspond in any order,
                   ;; not checked yet.
@@ -2563,11 +2563,11 @@
       ;; The result is definite only if both cases give the same answer.
       (3join composite-is-input conditions-by-kind))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys (treeset::product keys keys)))
+                    (tset::product keys (tset::product keys keys)))
                   (uid-triple-sfix assumed)))
               (+ (type-count x)
                  (type-count y)
@@ -2608,11 +2608,11 @@
                (rest x) (rest y) (rest composite)
                completions assumed ienv)))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys (treeset::product keys keys)))
+                    (tset::product keys (tset::product keys keys)))
                   (uid-triple-sfix assumed)))
               (+ (type-struni-member-list-count x)
                  (type-struni-member-list-count y)
@@ -2661,11 +2661,11 @@
           (type-list-equal-3p composite.params prototype.params)
         nil))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys (treeset::product keys keys)))
+                    (tset::product keys (tset::product keys keys)))
                   (uid-triple-sfix assumed)))
               (+ (type-params-count x)
                  (type-params-count y)
@@ -2696,19 +2696,19 @@
                (rest x) (rest y) (rest composite)
                completions assumed ienv)))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys (treeset::product keys keys)))
+                    (tset::product keys (tset::product keys keys)))
                   (uid-triple-sfix assumed)))
               (+ (type-list-count x)
                  (type-list-count y)
                  (type-list-count composite))))
 
   :hints (("Goal" :in-theory (e/d (max)
-                                  (treeset::cardinality-of-delete-when-in
-                                   treeset::cardinality-of-diff))))
+                                  (tset::cardinality-of-delete-when-in
+                                   tset::cardinality-of-diff))))
   :ruler-extenders :all
   :verify-guards :after-returns
   :flag-local nil
@@ -2856,8 +2856,8 @@
                 x y composite completions assumed ienv)
               (type-composite-conditions-3p
                 x y composite completions
-                (treeset::union (uid-triple-sfix assumed)
-                                (uid-triple-sfix extra))
+                (tset::union (uid-triple-sfix assumed)
+                             (uid-triple-sfix extra))
                 ienv))
     :flag type-composite-conditions-3p
     :hints ('(:expand
@@ -2865,16 +2865,16 @@
                  x y composite completions assumed ienv)
                (type-composite-conditions-3p
                  x y composite completions
-                 (treeset::union (uid-triple-sfix assumed)
-                                 (uid-triple-sfix extra))
+                 (tset::union (uid-triple-sfix assumed)
+                              (uid-triple-sfix extra))
                  ienv)))))
   (defthm type-struni-member-list-composite-conditions-3p-of-union
     (3truth<= (type-struni-member-list-composite-conditions-3p
                 x y composite completions assumed ienv)
               (type-struni-member-list-composite-conditions-3p
                 x y composite completions
-                (treeset::union (uid-triple-sfix assumed)
-                                (uid-triple-sfix extra))
+                (tset::union (uid-triple-sfix assumed)
+                             (uid-triple-sfix extra))
                 ienv))
     :flag type-struni-member-list-composite-conditions-3p
     :hints ('(:expand
@@ -2882,16 +2882,16 @@
                  x y composite completions assumed ienv)
                (type-struni-member-list-composite-conditions-3p
                  x y composite completions
-                 (treeset::union (uid-triple-sfix assumed)
-                                 (uid-triple-sfix extra))
+                 (tset::union (uid-triple-sfix assumed)
+                              (uid-triple-sfix extra))
                  ienv)))))
   (defthm type-params-composite-conditions-3p-of-union
     (3truth<= (type-params-composite-conditions-3p
                 x y composite completions assumed ienv)
               (type-params-composite-conditions-3p
                 x y composite completions
-                (treeset::union (uid-triple-sfix assumed)
-                                (uid-triple-sfix extra))
+                (tset::union (uid-triple-sfix assumed)
+                             (uid-triple-sfix extra))
                 ienv))
     :flag type-params-composite-conditions-3p
     :hints ('(:expand
@@ -2899,16 +2899,16 @@
                  x y composite completions assumed ienv)
                (type-params-composite-conditions-3p
                  x y composite completions
-                 (treeset::union (uid-triple-sfix assumed)
-                                 (uid-triple-sfix extra))
+                 (tset::union (uid-triple-sfix assumed)
+                              (uid-triple-sfix extra))
                  ienv)))))
   (defthm type-list-composite-conditions-3p-of-union
     (3truth<= (type-list-composite-conditions-3p
                 x y composite completions assumed ienv)
               (type-list-composite-conditions-3p
                 x y composite completions
-                (treeset::union (uid-triple-sfix assumed)
-                                (uid-triple-sfix extra))
+                (tset::union (uid-triple-sfix assumed)
+                             (uid-triple-sfix extra))
                 ienv))
     :flag type-list-composite-conditions-3p
     :hints ('(:expand
@@ -2916,8 +2916,8 @@
                  x y composite completions assumed ienv)
                (type-list-composite-conditions-3p
                  x y composite completions
-                 (treeset::union (uid-triple-sfix assumed)
-                                 (uid-triple-sfix extra))
+                 (tset::union (uid-triple-sfix assumed)
+                              (uid-triple-sfix extra))
                  ienv)))))
   :hints (("Goal"
            :in-theory
@@ -2928,8 +2928,8 @@
                    type/type-list-composite-conditions-3p-flag))))
 
 (defrule type-composite-conditions-3p-when-subset
-  (implies (treeset::subset (uid-triple-sfix assumed)
-                            (uid-triple-sfix assumed2))
+  (implies (tset::subset (uid-triple-sfix assumed)
+                         (uid-triple-sfix assumed2))
            (3truth<= (type-composite-conditions-3p
                        x y composite completions assumed ienv)
                      (type-composite-conditions-3p
@@ -2939,8 +2939,8 @@
   :disable type-composite-conditions-3p-of-union)
 
 (defrule type-struni-member-list-composite-conditions-3p-when-subset
-  (implies (treeset::subset (uid-triple-sfix assumed)
-                            (uid-triple-sfix assumed2))
+  (implies (tset::subset (uid-triple-sfix assumed)
+                         (uid-triple-sfix assumed2))
            (3truth<= (type-struni-member-list-composite-conditions-3p
                        x y composite completions assumed ienv)
                      (type-struni-member-list-composite-conditions-3p
@@ -2950,8 +2950,8 @@
   :disable type-struni-member-list-composite-conditions-3p-of-union)
 
 (defrule type-params-composite-conditions-3p-when-subset
-  (implies (treeset::subset (uid-triple-sfix assumed)
-                            (uid-triple-sfix assumed2))
+  (implies (tset::subset (uid-triple-sfix assumed)
+                         (uid-triple-sfix assumed2))
            (3truth<= (type-params-composite-conditions-3p
                        x y composite completions assumed ienv)
                      (type-params-composite-conditions-3p
@@ -2961,8 +2961,8 @@
   :disable type-params-composite-conditions-3p-of-union)
 
 (defrule type-list-composite-conditions-3p-when-subset
-  (implies (treeset::subset (uid-triple-sfix assumed)
-                            (uid-triple-sfix assumed2))
+  (implies (tset::subset (uid-triple-sfix assumed)
+                         (uid-triple-sfix assumed2))
            (3truth<= (type-list-composite-conditions-3p
                        x y composite completions assumed ienv)
                      (type-list-composite-conditions-3p
@@ -2979,15 +2979,15 @@
 (defrule 3possibly-type-composite-conditions-3p-when-subset-fix
   (implies (and (3possibly (type-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3possibly (type-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-composite-conditions-3p-when-subset
   :disable type-composite-conditions-3p-when-subset)
 
 (defrule 3possibly-type-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3possibly (type-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3000,15 +3000,15 @@
   3possibly-type-struni-member-list-composite-conditions-3p-when-subset-fix
   (implies (and (3possibly (type-struni-member-list-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3possibly (type-struni-member-list-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-struni-member-list-composite-conditions-3p-when-subset
   :disable type-struni-member-list-composite-conditions-3p-when-subset)
 
 (defrule 3possibly-type-struni-member-list-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3possibly (type-struni-member-list-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3021,15 +3021,15 @@
 (defrule 3possibly-type-params-composite-conditions-3p-when-subset-fix
   (implies (and (3possibly (type-params-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3possibly (type-params-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-params-composite-conditions-3p-when-subset
   :disable type-params-composite-conditions-3p-when-subset)
 
 (defrule 3possibly-type-params-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3possibly (type-params-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3041,15 +3041,15 @@
 (defrule 3possibly-type-list-composite-conditions-3p-when-subset-fix
   (implies (and (3possibly (type-list-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3possibly (type-list-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-list-composite-conditions-3p-when-subset
   :disable type-list-composite-conditions-3p-when-subset)
 
 (defrule 3possibly-type-list-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3possibly (type-list-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3061,15 +3061,15 @@
 (defrule 3definitely-type-composite-conditions-3p-when-subset-fix
   (implies (and (3definitely (type-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3definitely (type-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-composite-conditions-3p-when-subset
   :disable type-composite-conditions-3p-when-subset)
 
 (defrule 3definitely-type-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3definitely (type-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3082,15 +3082,15 @@
   3definitely-type-struni-member-list-composite-conditions-3p-when-subset-fix
   (implies (and (3definitely (type-struni-member-list-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3definitely (type-struni-member-list-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-struni-member-list-composite-conditions-3p-when-subset
   :disable type-struni-member-list-composite-conditions-3p-when-subset)
 
 (defrule 3definitely-type-struni-member-list-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3definitely (type-struni-member-list-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3104,15 +3104,15 @@
 (defrule 3definitely-type-params-composite-conditions-3p-when-subset-fix
   (implies (and (3definitely (type-params-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3definitely (type-params-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-params-composite-conditions-3p-when-subset
   :disable type-params-composite-conditions-3p-when-subset)
 
 (defrule 3definitely-type-params-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3definitely (type-params-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3124,15 +3124,15 @@
 (defrule 3definitely-type-list-composite-conditions-3p-when-subset-fix
   (implies (and (3definitely (type-list-composite-conditions-3p
                        x y composite completions assumed ienv))
-                (treeset::subset (uid-triple-sfix assumed)
-                                 (uid-triple-sfix assumed2)))
+                (tset::subset (uid-triple-sfix assumed)
+                              (uid-triple-sfix assumed2)))
            (3definitely (type-list-composite-conditions-3p
                    x y composite completions assumed2 ienv)))
   :use type-list-composite-conditions-3p-when-subset
   :disable type-list-composite-conditions-3p-when-subset)
 
 (defrule 3definitely-type-list-composite-conditions-3p-when-subset
-  (implies (and (treeset::subset assumed assumed2)
+  (implies (and (tset::subset assumed assumed2)
                 (uid-triple-setp assumed2)
                 (3definitely (type-list-composite-conditions-3p
                        x y composite completions assumed ienv)))
@@ -3168,14 +3168,14 @@
          (type-compatible-3p composite x completions ienv)
          (type-compatible-3p composite y completions ienv)
          (type-composite-conditions-3p
-           x y composite completions (treeset::empty) ienv)))
+           x y composite completions (tset::empty) ienv)))
 
 (defrule type-composite-3p-symmetric
   (equal (type-composite-3p y x composite completions ienv)
          (type-composite-3p x y composite completions ienv))
   :enable type-composite-3p
   :use (:instance type-composite-conditions-3p-symmetric
-                  (assumed (treeset::empty)))
+                  (assumed (tset::empty)))
   :disable type-composite-conditions-3p-symmetric)
 
 (defrule type-composite-3p-under-iff-when-same
@@ -3285,7 +3285,7 @@
                  (assumed$
                   (and (uid-pair-setp assumed$)
                        (implies (uid-pair-setp assumed)
-                                (treeset::subset assumed assumed$)))))
+                                (tset::subset assumed assumed$)))))
     :short "Check whether the first of two types is the composite
             that @(tsee type-composite-aux) constructs from them,
             in this order."
@@ -3360,7 +3360,7 @@
                ((unless yes/no)
                 (mv nil assumed))
                (assumed (if (mbt (and (uid-pair-setp assumed1)
-                                      (treeset::subset assumed assumed1)))
+                                      (tset::subset assumed assumed1)))
                             assumed1
                           assumed)))
             (type-params-composite-input-p
@@ -3378,9 +3378,9 @@
               x.tag/members
               :tagged
               (b* (((mv x-foundp x-members)
-                    (treemap::lookup? x.uid completions))
+                    (tmap::lookup? x.uid completions))
                    ((mv y-foundp y-members)
-                    (treemap::lookup? y.uid completions))
+                    (tmap::lookup? y.uid completions))
                    ;; A complete input is the composite with an incomplete one,
                    ;; and the first of two incomplete ones.
                    ((unless y-foundp)
@@ -3389,11 +3389,11 @@
                     (mv nil assumed))
                    ;; Both inputs are complete.
                    (pair (make-uid-pair :first x.uid :second y.uid))
-                   ((when (treeset::in pair assumed))
+                   ((when (tset::in pair assumed))
                     (mv t assumed)))
                 (type-struni-member-list-composite-input-p
                   x-members y-members completions
-                  (treeset::insert pair assumed)))
+                  (tset::insert pair assumed)))
               :untagged
               (type-struni-member-list-composite-input-p
                 x.tag/members.members
@@ -3412,22 +3412,22 @@
             ;; and the first of two incomplete or of two complete ones,
             ;; as complete unions are not composed yet.
             (b* (((mv x-foundp &)
-                  (treemap::lookup? x.uid completions))
+                  (tmap::lookup? x.uid completions))
                  ((when x-foundp)
                   (mv t assumed))
                  ((mv y-foundp &)
-                  (treemap::lookup? y.uid completions)))
+                  (tmap::lookup? y.uid completions)))
               (mv (not y-foundp) assumed))
             :untagged (mv t assumed))
           :otherwise (mv t assumed))
         :enum (mv t assumed)
         :otherwise (mv (not (type-case y :enum)) assumed)))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (+ (type-count x) (type-count y))))
 
@@ -3440,7 +3440,7 @@
                  (assumed$
                   (and (uid-pair-setp assumed$)
                        (implies (uid-pair-setp assumed)
-                                (treeset::subset assumed assumed$)))))
+                                (tset::subset assumed assumed$)))))
     :short "Check whether the first of two lists of members
             consists of the composites that
             @(tsee type-struni-member-list-composite-aux) constructs,
@@ -3458,17 +3458,17 @@
          ((unless yes/no)
           (mv nil assumed))
          (assumed (if (mbt (and (uid-pair-setp assumed1)
-                                (treeset::subset assumed assumed1)))
+                                (tset::subset assumed assumed1)))
                       assumed1
                     assumed)))
       (type-struni-member-list-composite-input-p
         (rest x) (rest y) completions assumed))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (+ (type-struni-member-list-count x)
                  (type-struni-member-list-count y))))
@@ -3481,7 +3481,7 @@
                  (assumed$
                   (and (uid-pair-setp assumed$)
                        (implies (uid-pair-setp assumed)
-                                (treeset::subset assumed assumed$)))))
+                                (tset::subset assumed assumed$)))))
     :short "Check whether the first of two parameter portions
             of function types is the one that
             @(tsee type-params-composite-aux) constructs,
@@ -3505,11 +3505,11 @@
               (not (type-params-case y :old-style)))
           assumed))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (+ (type-params-count x) (type-params-count y))))
 
@@ -3521,7 +3521,7 @@
                  (assumed$
                   (and (uid-pair-setp assumed$)
                        (implies (uid-pair-setp assumed)
-                                (treeset::subset assumed assumed$)))))
+                                (tset::subset assumed assumed$)))))
     :short "Check whether the first of two lists of types
             consists of the composites that
             @(tsee type-list-composite-aux) constructs,
@@ -3536,22 +3536,22 @@
          ((unless yes/no)
           (mv nil assumed))
          (assumed (if (mbt (and (uid-pair-setp assumed1)
-                                (treeset::subset assumed assumed1)))
+                                (tset::subset assumed assumed1)))
                       assumed1
                     assumed)))
       (type-list-composite-input-p (rest x) (rest y) completions assumed))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix completions))))
-                    (treeset::product keys keys))
+                    (tset::product keys keys))
                   (uid-pair-sfix assumed)))
               (+ (type-list-count x) (type-list-count y))))
 
   :hints (("Goal" :in-theory (e/d (nfix)
-                                  (treeset::cardinality-of-delete-when-in
-                                   treeset::cardinality-of-diff))))
+                                  (tset::cardinality-of-delete-when-in
+                                   tset::cardinality-of-diff))))
   :ruler-extenders :all
   :verify-guards :after-returns
   :flag-local nil
@@ -3587,7 +3587,7 @@
                  (composites$
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
-                                (treemap::submap composites composites$))))
+                                (tmap::submap composites composites$))))
                  (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct a composite of two compatible types
@@ -3737,8 +3737,8 @@
                   x.ret y.ret original-completions completions composites
                   inputs tunit? next-uid-num))
                (composites (if (mbt (and (uid-pair-uid-mapp composites1)
-                                         (treemap::submap composites
-                                                          composites1)))
+                                         (tmap::submap composites
+                                                       composites1)))
                                composites1
                              composites))
                ((mv params completions composites inputs next-uid-num)
@@ -3763,9 +3763,9 @@
               x.tag/members
               :tagged
               (b* (((mv x-foundp x-members)
-                    (treemap::lookup? x.uid original-completions))
+                    (tmap::lookup? x.uid original-completions))
                    ((mv y-foundp y-members)
-                    (treemap::lookup? y.uid original-completions))
+                    (tmap::lookup? y.uid original-completions))
                    ;; A complete input is the composite with an incomplete one,
                    ;; and the first of two incomplete ones.
                    ((unless y-foundp)
@@ -3776,7 +3776,7 @@
                    ;; the composite of the pair, if built already.
                    (pair (make-uid-pair :first x.uid :second y.uid))
                    ((mv foundp composite-uid)
-                    (treemap::lookup? pair composites))
+                    (tmap::lookup? pair composites))
                    ((when foundp)
                     (mv (make-type-struct :uid composite-uid
                                           :tag/members x.tag/members)
@@ -3787,21 +3787,21 @@
                    ;; An input whose members are the composites
                    ;; is the composite,
                    ;; which is already known for the pairs in INPUTS.
-                   ((when (treeset::in pair inputs))
+                   ((when (tset::in pair inputs))
                     (mv x completions composites inputs next-uid-num))
                    ((mv x-inputp x-inputs)
                     (type-struni-member-list-composite-input-p
                       x-members y-members original-completions
-                      (treeset::insert pair inputs)))
+                      (tset::insert pair inputs)))
                    ((when x-inputp)
                     (mv x completions composites x-inputs next-uid-num))
                    (swapped (uid-pair-swap pair))
-                   ((when (treeset::in swapped inputs))
+                   ((when (tset::in swapped inputs))
                     (mv y completions composites inputs next-uid-num))
                    ((mv y-inputp y-inputs)
                     (type-struni-member-list-composite-input-p
                       y-members x-members original-completions
-                      (treeset::insert swapped inputs)))
+                      (tset::insert swapped inputs)))
                    ((when y-inputp)
                     (mv y completions composites y-inputs next-uid-num))
                    ;; Otherwise, a new structure type,
@@ -3809,13 +3809,13 @@
                    ;; so that the pair reached again through them gets it.
                    (composite-uid (uid-local next-uid-num tunit?))
                    (next-uid-num (1+ next-uid-num))
-                   (composites (treemap::update pair composite-uid composites))
+                   (composites (tmap::update pair composite-uid composites))
                    ((mv members completions composites inputs next-uid-num)
                     (type-struni-member-list-composite-aux
                       x-members y-members original-completions completions
                       composites inputs tunit? next-uid-num))
                    (completions
-                    (treemap::update composite-uid members completions)))
+                    (tmap::update composite-uid members completions)))
                 (mv (make-type-struct :uid composite-uid
                                       :tag/members x.tag/members)
                     completions
@@ -3865,11 +3865,11 @@
             ;; The members of two complete ones may correspond in any order,
             ;; which is not handled yet, and the first is returned.
             (b* (((mv x-foundp &)
-                  (treemap::lookup? x.uid original-completions))
+                  (tmap::lookup? x.uid original-completions))
                  ((when x-foundp)
                   (mv x completions composites inputs next-uid-num))
                  ((mv y-foundp &)
-                  (treemap::lookup? y.uid original-completions))
+                  (tmap::lookup? y.uid original-completions))
                  ((when y-foundp)
                   (mv y completions composites inputs next-uid-num)))
               (mv x completions composites inputs next-uid-num))
@@ -3883,12 +3883,12 @@
             (mv y completions composites inputs next-uid-num)
           (mv x completions composites inputs next-uid-num))))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix original-completions))))
-                    (treeset::product keys keys))
-                  (treemap::keys (uid-pair-uid-mfix composites))))
+                    (tset::product keys keys))
+                  (tmap::keys (uid-pair-uid-mfix composites))))
               (+ (type-count x) (type-count y))))
 
   (define type-struni-member-list-composite-aux
@@ -3905,7 +3905,7 @@
                  (composites$
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
-                                (treemap::submap composites composites$))))
+                                (tmap::submap composites composites$))))
                  (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the composites of the corresponding members
@@ -3930,7 +3930,7 @@
             member-x.type member-y.type original-completions completions
             composites inputs tunit? next-uid-num))
          (composites (if (mbt (and (uid-pair-uid-mapp composites1)
-                                   (treemap::submap composites composites1)))
+                                   (tmap::submap composites composites1)))
                          composites1
                        composites))
          ((mv members completions composites inputs next-uid-num)
@@ -3944,12 +3944,12 @@
           inputs
           next-uid-num))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix original-completions))))
-                    (treeset::product keys keys))
-                  (treemap::keys (uid-pair-uid-mfix composites))))
+                    (tset::product keys keys))
+                  (tmap::keys (uid-pair-uid-mfix composites))))
               (+ (type-struni-member-list-count x)
                  (type-struni-member-list-count y))))
 
@@ -3966,7 +3966,7 @@
                  (composites$
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
-                                (treemap::submap composites composites$))))
+                                (tmap::submap composites composites$))))
                  (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the parameter portion of a composite function type
@@ -4012,12 +4012,12 @@
           (mv y completions composites inputs next-uid-num)))
       (mv x completions composites inputs next-uid-num))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix original-completions))))
-                    (treeset::product keys keys))
-                  (treemap::keys (uid-pair-uid-mfix composites))))
+                    (tset::product keys keys))
+                  (tmap::keys (uid-pair-uid-mfix composites))))
               (+ (type-params-count x) (type-params-count y))))
 
   (define type-list-composite-aux ((x type-listp)
@@ -4033,7 +4033,7 @@
                  (composites$
                   (and (uid-pair-uid-mapp composites$)
                        (implies (uid-pair-uid-mapp composites)
-                                (treemap::submap composites composites$))))
+                                (tmap::submap composites composites$))))
                  (inputs$ uid-pair-setp)
                  (next-uid-num$ natp))
     :short "Construct the composites of the corresponding elements
@@ -4054,7 +4054,7 @@
             (first x) (first y) original-completions completions composites
             inputs tunit? next-uid-num))
          (composites (if (mbt (and (uid-pair-uid-mapp composites1)
-                                   (treemap::submap composites composites1)))
+                                   (tmap::submap composites composites1)))
                          composites1
                        composites))
          ((mv types completions composites inputs next-uid-num)
@@ -4063,16 +4063,16 @@
             inputs tunit? next-uid-num)))
       (mv (cons type types) completions composites inputs next-uid-num))
     :measure (two-nats-measure
-              (treeset::cardinality
-                (treeset::diff
-                  (let ((keys (treemap::keys
+              (tset::cardinality
+                (tset::diff
+                  (let ((keys (tmap::keys
                                 (type-completions-fix original-completions))))
-                    (treeset::product keys keys))
-                  (treemap::keys (uid-pair-uid-mfix composites))))
+                    (tset::product keys keys))
+                  (tmap::keys (uid-pair-uid-mfix composites))))
               (+ (type-list-count x) (type-list-count y))))
 
-  :hints (("Goal" :in-theory (disable treeset::cardinality-of-delete-when-in
-                                      treeset::cardinality-of-diff)))
+  :hints (("Goal" :in-theory (disable tset::cardinality-of-delete-when-in
+                                      tset::cardinality-of-diff)))
   :verify-guards :after-returns
   :flag-local nil
   ///

@@ -12,7 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "graph-defs")
 (include-book "nodes-defs")
@@ -23,11 +23,11 @@
 (include-book "internal/add-node-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
 
 (local (include-book "graph"))
 (local (include-book "nodes"))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define add-node (node (graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))
@@ -72,7 +71,7 @@
 
 (defrule nodes-of-add-node
   (equal (nodes (add-node node graph))
-         (treeset::insert node (nodes graph)))
+         (tset::insert node (nodes graph)))
   :enable (nodes
            add-node
            graphp
@@ -94,19 +93,19 @@
 (defrule labels-of-add-node
   (equal (labels x y (add-node node graph))
          (labels x y graph))
-  :enable treeset::extensionality-polar)
+  :enable tset::extensionality-polar)
 
 (defrule successors-of-add-node
   (equal (successors x (add-node node graph))
          (successors x graph))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels)
   :disable emptyp-of-labels)
 
 (defrule predecessors-of-add-node
   (equal (predecessors y (add-node node graph))
          (predecessors y graph))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels)
   :disable emptyp-of-labels)
 

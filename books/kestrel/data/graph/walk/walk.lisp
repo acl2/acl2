@@ -13,19 +13,19 @@
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "../edge-defs")
 (include-book "step-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "step"))
@@ -42,8 +42,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walkp (x)
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Recognizer for walks."
   :long
@@ -64,10 +63,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(defrule walkp-type-prescription
-  (booleanp (walkp x))
-  :rule-classes ((:type-prescription :typed-term (walkp x))))
-
 (defruled walkp-compound-recognizer
   (implies (walkp x)
            (consp x))
@@ -82,7 +77,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-walk ()
-  :type-prescription :none
   :returns (walk walkp
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   (cons nil nil))
@@ -95,7 +89,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-fix ((walk walkp))
-  :type-prescription :none
   :returns (walk$ walkp)
   :parents (walkp)
   :short "Fixer for walks."
@@ -129,8 +122,7 @@
 (define walk-equiv
   ((x walkp)
    (y walkp))
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walkp)
   :short "Equivalence of walks up to @(tsee walk-fix)."
   (equal (walk-fix x)
@@ -141,10 +133,6 @@
   (defequiv walk-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule walk-equiv-type-prescription
-  (booleanp (walk-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (walk-equiv x y))))
 
 (defrule walk-fix-when-walk-equiv-congruence
   (implies (walk-equiv walk0 walk1)
@@ -201,7 +189,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk (start (steps step-listp))
-  :type-prescription :none
   :returns (walk walkp :hints (("Goal" :in-theory (enable walkp))))
   :parents (walkp)
   :short "Construct a walk from its start and its steps."
@@ -293,24 +280,23 @@
 ;; The set of edges a list of steps follows, when taken from the given node.
 
 (define steps-edges (from (steps step-listp))
-  :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (walk-edges)
   :short "The set of edges a list of steps follows, when taken from a node."
   (if (consp steps)
-      (treeset::insert (edge from
-                             (step->to (car steps))
-                             (step->label (car steps)))
-                       (steps-edges (step->to (car steps)) (cdr steps)))
-    (treeset::empty))
+      (tset::insert (edge from
+                          (step->to (car steps))
+                          (step->label (car steps)))
+                    (steps-edges (step->to (car steps)) (cdr steps)))
+    (tset::empty))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule steps-edges-of-append
   (equal (steps-edges from (append steps0 steps1))
-         (treeset::union (steps-edges from steps0)
-                         (steps-edges (steps-end from steps0) steps1)))
+         (tset::union (steps-edges from steps0)
+                      (steps-edges (steps-end from steps0) steps1)))
   :induct t
   :enable (steps-edges
            steps-end
@@ -319,8 +305,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define walk-edges ((walk walkp))
-  :type-prescription :none
-  :returns (edges treeset::setp)
+  :returns (edges tset::setp)
   :parents (walkp)
   :short "The set of edges a walk follows."
   :long
@@ -346,7 +331,7 @@
 (defrule walk-edges-when-not-consp-of-walk->steps
   (implies (not (consp (walk->steps walk)))
            (equal (walk-edges walk)
-                  (treeset::empty)))
+                  (tset::empty)))
   :enable (walk-edges
            steps-edges))
 

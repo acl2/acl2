@@ -12,12 +12,13 @@
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (include-book "std/omaps/core" :dir :system)
 
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/butlast" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -284,17 +285,184 @@
            <<-rules
            <<-of-caars-when-omapp-of-append))
 
-;; An omap has no duplicate keys, so a key is bound in the tail exactly when it
-;; is bound somewhere and is not the first key. The omap mirror of
-;; @(tsee member-equal-of-cdr-when-osetp).
+;; So every key of a prefix is below every key of what follows.
+
+(defruled <<-across-append-of-keys-when-omapp
+  (implies (and (omap::mapp (append a b))
+                (assoc-equal x a)
+                (assoc-equal y b))
+           (<< x y))
+  :cases ((equal y (caar b)))
+  :use (<<-across-append-when-omapp
+        (:instance omapp-of-suffix-when-omapp-of-append (x a) (y b))
+        (:instance <<-of-caar-when-assoc-equal-of-cdr (l b) (x y)))
+  :enable (assoc-equal
+           <<-rules))
+
+;; An omap has no duplicate keys, so no key is bound on both sides of an
+;; append.
+
+(defruled not-assoc-equal-of-prefix-when-omapp-of-append
+  (implies (and (omap::mapp (append a b))
+                (assoc-equal x b))
+           (not (assoc-equal x a)))
+  :use (:instance <<-across-append-of-keys-when-omapp (y x))
+  :enable <<-rules)
+
+(defruled not-assoc-equal-of-suffix-when-omapp-of-append
+  (implies (and (omap::mapp (append a b))
+                (assoc-equal x a))
+           (not (assoc-equal x b)))
+  :enable not-assoc-equal-of-prefix-when-omapp-of-append)
+
+;; Likewise, a binding in the tail is a binding anywhere but at the first key.
+;; The omap mirror of @(tsee member-equal-of-cdr-when-osetp).
 
 (defruled assoc-equal-of-cdr-when-omapp
   (implies (omap::mapp l)
-           (iff (assoc-equal x (cdr l))
-                (and (not (equal x (caar l)))
-                     (assoc-equal x l))))
+           (equal (assoc-equal x (cdr l))
+                  (if (equal x (caar l))
+                      nil
+                    (assoc-equal x l))))
   :use (:instance <<-of-caar-when-assoc-equal-of-cdr
                   (x (caar l)))
   :enable (omap::mapp
            assoc-equal
            <<-rules))
+
+;; The first and last elements of a nonempty omap are pairs, not @('nil').
+
+(defruled car-under-iff-when-omapp
+  (implies (omap::mapp l)
+           (iff (car l)
+                (consp l)))
+  :enable omap::mapp)
+
+(defruled car-of-last-under-iff-when-omapp
+  (implies (omap::mapp l)
+           (iff (car (last l))
+                (consp l)))
+  :induct (last l)
+  :enable (last
+           omap::mapp))
+
+;; The first key of a list is bound to its first pair, and the last key of an
+;; omap to its last pair. The two keys of an omap differ unless it has a single
+;; pair.
+
+(defruled assoc-equal-of-caar
+  (equal (assoc-equal (caar l) l)
+         (car l))
+  :enable assoc-equal)
+
+(defruled <<-of-caar-and-caar-of-last-when-omapp
+  (implies (and (omap::mapp l)
+                (consp (cdr l)))
+           (<< (caar l) (caar (last l))))
+  :induct (last l)
+  :enable (last
+           omap::mapp
+           <<-rules))
+
+(defruled equal-of-caar-of-last-and-caar-when-omapp
+  (implies (omap::mapp l)
+           (equal (equal (caar (last l)) (caar l))
+                  (not (consp (cdr l)))))
+  :use <<-of-caar-and-caar-of-last-when-omapp
+  :enable (last
+           <<-rules))
+
+(defruled assoc-equal-of-caar-of-last-when-omapp
+  (implies (omap::mapp l)
+           (equal (assoc-equal (caar (last l)) l)
+                  (car (last l))))
+  :induct (last l)
+  :enable (last
+           assoc-equal
+           omap::mapp
+           equal-of-caar-of-last-and-caar-when-omapp
+           <<-rules))
+
+;; Likewise, a binding in all but the last pair is a binding anywhere but at
+;; the last key. The omap mirror of @(tsee member-equal-of-butlast-when-osetp).
+
+(defruled assoc-equal-of-butlast-when-omapp
+  (implies (omap::mapp l)
+           (equal (assoc-equal x (butlast l 1))
+                  (if (equal x (caar (last l)))
+                      nil
+                    (assoc-equal x l))))
+  :induct (last l)
+  :enable (last
+           assoc-equal
+           omapp-of-cdr-when-omapp
+           equal-of-caar-of-last-and-caar-when-omapp))
+
+;; A key of an omap is below whatever its last key is below, and above
+;; whatever its first key is above.
+
+(defrulel <<-of-caar-when-<<-of-caar-of-last
+  (implies (and (omap::mapp l)
+                (<< (caar (last l)) y))
+           (<< (caar l) y))
+  :induct (last l)
+  :enable (last
+           omap::mapp
+           <<-rules))
+
+(defruled <<-when-assoc-equal-and-<<-of-caar-of-last
+  (implies (and (assoc-equal x l)
+                (omap::mapp l)
+                (<< (caar (last l)) y))
+           (<< x y))
+  :induct (last l)
+  :enable (last
+           assoc-equal
+           omapp-of-cdr-when-omapp))
+
+(defruled <<-when-assoc-equal-and-<<-of-arg1-and-caar
+  (implies (and (assoc-equal y l)
+                (omap::mapp l)
+                (<< x (caar l)))
+           (<< x y))
+  :induct (assoc-equal y l)
+  :enable (assoc-equal
+           omap::mapp
+           <<-rules))
+
+;; So no key of an omap is below its first key or above its last.
+
+(defruled not-<<-of-arg1-and-caar-when-assoc-equal
+  (implies (and (assoc-equal x l)
+                (omap::mapp l))
+           (not (<< x (caar l))))
+  :use (:instance <<-when-assoc-equal-and-<<-of-arg1-and-caar
+                  (y x))
+  :enable <<-rules)
+
+(defruled not-<<-of-caar-of-last-when-assoc-equal
+  (implies (and (assoc-equal x l)
+                (omap::mapp l))
+           (not (<< (caar (last l)) x)))
+  :use (:instance <<-when-assoc-equal-and-<<-of-caar-of-last
+                  (y x))
+  :enable <<-rules)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The head key of an omap is its least key, and deleting it leaves the tail.
+
+(defruled head-key-becomes-head-of-keys
+  (equal (mv-nth 0 (omap::head map))
+         (set::head (omap::keys map)))
+  :induct (omap::keys map)
+  :enable (omap::keys
+           omap::head-tail-order
+           set::head-insert)
+  :disable omap::update-of-head-and-tail)
+
+(defruled delete-when-equal-of-head-key
+  (implies (equal x (mv-nth 0 (omap::head map)))
+           (equal (omap::delete x map)
+                  (omap::tail map)))
+  :enable omap::delete)

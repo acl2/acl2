@@ -14,14 +14,14 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -33,21 +33,21 @@
 (include-book "walk-in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
-(local (include-book "kestrel/data/treeset/generic-typed" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/generic-typed" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "step"))
@@ -73,7 +73,6 @@
   (xdoc::topstring-p
     "This is the specification of @(tsee reachable+p), to which it is equal.
      It is not executable.")
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (exists (walk)
     (non-exec
       (and (walk-in walk graph)
@@ -82,8 +81,6 @@
            (consp (walk->steps walk))))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t reachable+p-sk)))
 
 (defrule reachable+p-sk-when-equiv-congruence
   (implies (equiv graph0 graph1)
@@ -106,40 +103,40 @@
 
 (define reachable+p-search
   (to
-   (frontier treeset::setp)
-   (expanded treeset::setp)
+   (frontier tset::setp)
+   (expanded tset::setp)
    (graph graphp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (reachable+p)
   :short "Search from a frontier for a node, stopping when it is found."
-  (b* (((when (treeset::emptyp frontier))
+  (b* (((when (tset::emptyp frontier))
         nil)
-       (node (treeset::min frontier))
+       (node (tset::min frontier))
        ((when (equal node to))
         t)
-       (frontier (treeset::delete node frontier))
-       ((when (treeset::in node expanded))
-        (reachable+p-search to frontier expanded graph))
-       (expanded (treeset::insert node expanded)))
+       (frontier (tset::delete node frontier))
+       ((mv expandedp expanded) (tset::insert? node expanded))
+       ((when expandedp)
+        (reachable+p-search to frontier expanded graph)))
     (reachable+p-search to
-                        (treeset::union
+                        (tset::union
                           frontier
-                          (treeset::diff (successors node graph)
-                                         expanded))
+                          (tset::diff (successors node graph)
+                                      expanded))
                         expanded
                         graph))
   :measure (acl2::two-nats-measure
-             (treeset::cardinality (treeset::diff (nodes graph) expanded))
-             (treeset::cardinality frontier))
+             (tset::cardinality (tset::diff (nodes graph) expanded))
+             (tset::cardinality frontier))
   :hints (("Goal" :in-theory (e/d (nfix
-                                   treeset::cardinality-of-delete
-                                   treeset::equal-of-cardinality-and-0-becomes-emptyp)
-                                  (treeset::cardinality-of-diff)))))
+                                   tset::cardinality-of-delete
+                                   tset::equal-of-cardinality-and-0-becomes-emptyp)
+                                  (tset::cardinality-of-diff)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule reachable+p-search-when-equiv-of-arg2-congruence
-  (implies (treeset::equiv frontier0 frontier1)
+  (implies (tset::equiv frontier0 frontier1)
            (equal (reachable+p-search to frontier0 expanded graph)
                   (reachable+p-search to frontier1 expanded graph)))
   :rule-classes :congruence
@@ -147,7 +144,7 @@
            (reachable+p-search to frontier1 expanded graph)))
 
 (defrule reachable+p-search-when-equiv-of-arg3-congruence
-  (implies (treeset::equiv expanded0 expanded1)
+  (implies (tset::equiv expanded0 expanded1)
            (equal (reachable+p-search to frontier expanded0 graph)
                   (reachable+p-search to frontier expanded1 graph)))
   :rule-classes :congruence
@@ -167,10 +164,10 @@
 ;; that search would expand it.
 
 (defruledl reachable+p-search-becomes-in-of-successors+-search
-  (implies (not (treeset::in to expanded))
+  (implies (not (tset::in to expanded))
            (equal (reachable+p-search to frontier expanded graph)
-                  (treeset::in to
-                               (successors+-search frontier expanded graph))))
+                  (tset::in to
+                            (successors+-search frontier expanded graph))))
   :induct (reachable+p-search to frontier expanded graph)
   :enable (reachable+p-search
            successors+-search))
@@ -178,7 +175,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define reachable+p (from to (graph graphp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if there is a walk of at least one step from one node to
           another in a @(see graph)."
@@ -196,10 +193,10 @@
        target. Time complexity: @($O((n + m)\\log(n))$) in the worst case,
        where @($n$) is the number of nodes and @($m$) the number of pairs of
        nodes joined by an edge."))
-  (mbe :logic (treeset::in to (successors+ from graph))
+  (mbe :logic (tset::in to (successors+ from graph))
        :exec (reachable+p-search to
                                  (successors from graph)
-                                 (treeset::empty)
+                                 (tset::empty)
                                  graph))
   :guard-hints
   (("Goal"
@@ -218,7 +215,7 @@
 ;; Membership in the nodes reachable from a node is written as reachability.
 
 (defrule in-of-successors+
-  (equal (treeset::in to (successors+ from graph))
+  (equal (tset::in to (successors+ from graph))
          (reachable+p from to graph))
   :enable reachable+p)
 
@@ -233,12 +230,12 @@
 ;; least label of the edges to the successor.
 
 (defrulel reachable+p-sk-when-in-of-successors
-  (implies (treeset::in to (successors from graph))
+  (implies (tset::in to (successors from graph))
            (reachable+p-sk from to graph))
   :use (:instance reachable+p-sk-suff
                   (walk (walk-snoc (walk from nil)
                                    to
-                                   (treeset::min (labels from to graph))))))
+                                   (tset::min (labels from to graph))))))
 
 ;; A walk to a node and a walk from it join into one walk.
 
@@ -258,18 +255,18 @@
 ;; node the search returns is.
 
 (local
-  (define set-all-reachable+p-sk (from (set treeset::setp) graph)
-    :returns (yes/no booleanp)
-    (or (treeset::emptyp set)
-        (and (reachable+p-sk from (treeset::min set) graph)
+  (define set-all-reachable+p-sk (from (set tset::setp) graph)
+    :returns (yes/no booleanp :rule-classes :type-prescription)
+    (or (tset::emptyp set)
+        (and (reachable+p-sk from (tset::min set) graph)
              (set-all-reachable+p-sk from
-                                     (treeset::delete (treeset::min set) set)
+                                     (tset::delete (tset::min set) set)
                                      graph)))
-    :measure (treeset::cardinality set)
+    :measure (tset::cardinality set)
     :verify-guards nil))
 
 (defrulel set-all-reachable+p-sk-when-equiv-of-arg2-congruence
-  (implies (treeset::equiv set0 set1)
+  (implies (tset::equiv set0 set1)
            (equal (set-all-reachable+p-sk from set0 graph)
                   (set-all-reachable+p-sk from set1 graph)))
   :rule-classes :congruence
@@ -286,70 +283,70 @@
 
 (defrulel reachable+p-sk-when-set-all-reachable+p-sk-and-in
   (implies (and (set-all-reachable+p-sk from set graph)
-                (treeset::in x set))
+                (tset::in x set))
            (reachable+p-sk from x graph))
   :use (:instance
          (:functional-instance
-           treeset::genericp-when-set-all-genericp-and-in
-           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
-           (treeset::set-all-genericp
+           tset::genericp-when-set-all-genericp-and-in
+           (tset::genericp (lambda (x) (reachable+p-sk from x graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-sk from set graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-sk)
 
 (defrulel set-all-reachable+p-sk-of-insert
-  (equal (set-all-reachable+p-sk from (treeset::insert x set) graph)
+  (equal (set-all-reachable+p-sk from (tset::insert x set) graph)
          (and (reachable+p-sk from x graph)
               (set-all-reachable+p-sk from set graph)))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-insert
-           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-insert
+           (tset::genericp (lambda (x) (reachable+p-sk from x graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-sk from set graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-sk)
 
 (defrulel set-all-reachable+p-sk-of-delete
   (implies (set-all-reachable+p-sk from set graph)
-           (set-all-reachable+p-sk from (treeset::delete x set) graph))
+           (set-all-reachable+p-sk from (tset::delete x set) graph))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-delete
-           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-delete
+           (tset::genericp (lambda (x) (reachable+p-sk from x graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-sk from set graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-sk)
 
 (defrulel set-all-reachable+p-sk-of-union
-  (equal (set-all-reachable+p-sk from (treeset::union x y) graph)
+  (equal (set-all-reachable+p-sk from (tset::union x y) graph)
          (and (set-all-reachable+p-sk from x graph)
               (set-all-reachable+p-sk from y graph)))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-union
-           (treeset::genericp (lambda (x) (reachable+p-sk from x graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-union
+           (tset::genericp (lambda (x) (reachable+p-sk from x graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-sk from set graph))))
-         (treeset::x x)
-         (treeset::y y))
+         (tset::x x)
+         (tset::y y))
   :enable set-all-reachable+p-sk)
 
 ;; The successors of the start, and of any reachable node, are reachable.
 
 (defrulel set-all-reachable+p-sk-when-subset-of-successors-of-arg1
-  (implies (treeset::subset set (successors from graph))
+  (implies (tset::subset set (successors from graph))
            (set-all-reachable+p-sk from set graph))
   :induct t
   :enable set-all-reachable+p-sk)
 
 (defruledl set-all-reachable+p-sk-when-subset-of-successors
   (implies (and (reachable+p-sk from x graph)
-                (treeset::subset set (successors x graph)))
+                (tset::subset set (successors x graph)))
            (set-all-reachable+p-sk from set graph))
   :induct (set-all-reachable+p-sk from set graph)
   :enable set-all-reachable+p-sk)
@@ -357,14 +354,14 @@
 (defrulel set-all-reachable+p-sk-of-diff-of-successors
   (implies (reachable+p-sk from x graph)
            (set-all-reachable+p-sk from
-                                   (treeset::diff
+                                   (tset::diff
                                      (successors x graph)
                                      set)
                                    graph))
   :enable set-all-reachable+p-sk-when-subset-of-successors)
 
 (defrulel reachable+p-sk-when-in-of-successors+-search
-  (implies (and (treeset::in to (successors+-search frontier expanded graph))
+  (implies (and (tset::in to (successors+-search frontier expanded graph))
                 (set-all-reachable+p-sk from frontier graph)
                 (set-all-reachable+p-sk from expanded graph))
            (reachable+p-sk from to graph))
@@ -385,30 +382,30 @@
 ;; nodes reachable from the start form such a set.
 
 (defrulel subset-of-successors-when-subset-of-successors-of-set-and-in
-  (implies (and (treeset::subset (successors-of-set set graph) y)
-                (treeset::in x set))
-           (treeset::subset (successors x graph) y))
-  :use (:instance treeset::subset-transitivity
+  (implies (and (tset::subset (successors-of-set set graph) y)
+                (tset::in x set))
+           (tset::subset (successors x graph) y))
+  :use (:instance tset::subset-transitivity
                   (x (successors x graph))
                   (y (successors-of-set set graph))
                   (z y))
-  :disable treeset::subset-transitivity)
+  :disable tset::subset-transitivity)
 
 (defrulel in-of-steps-end-when-subset-of-successors-of-set
-  (implies (and (treeset::subset (successors-of-set set graph) set)
-                (treeset::subset (successors from graph) set)
+  (implies (and (tset::subset (successors-of-set set graph) set)
+                (tset::subset (successors from graph) set)
                 (consp steps)
-                (treeset::subset (steps-edges from steps) (edges graph)))
-           (treeset::in (steps-end from steps) set))
+                (tset::subset (steps-edges from steps) (edges graph)))
+           (tset::in (steps-end from steps) set))
   :induct t
   :enable (steps-end
            steps-edges))
 
 (defruledl in-when-reachable+p-sk-and-subset-of-successors-of-set
   (implies (and (reachable+p-sk from to graph)
-                (treeset::subset (successors from graph) set)
-                (treeset::subset (successors-of-set set graph) set))
-           (treeset::in to set))
+                (tset::subset (successors from graph) set)
+                (tset::subset (successors-of-set set graph) set))
+           (tset::in to set))
   :use (:instance in-of-steps-end-when-subset-of-successors-of-set
                   (steps (walk->steps (reachable+p-sk-witness from to graph))))
   :enable (reachable+p-sk
@@ -450,7 +447,7 @@
 ;; A successor is reachable, along an edge to it.
 
 (defrule reachable+p-when-in-of-successors
-  (implies (treeset::in to (successors from graph))
+  (implies (tset::in to (successors from graph))
            (reachable+p from to graph))
   :enable reachable+p-becomes-reachable+p-sk)
 
@@ -474,8 +471,8 @@
 
 (defrule in-of-nodes-when-reachable+p-forward-chaining
   (implies (reachable+p from to graph)
-           (and (treeset::in from (nodes graph))
-                (treeset::in to (nodes graph))))
+           (and (tset::in from (nodes graph))
+                (tset::in to (nodes graph))))
   :rule-classes :forward-chaining
   :enable (reachable+p
            successors+-when-not-in-of-nodes)
@@ -486,9 +483,9 @@
 
 (defruled in-when-reachable+p-and-subset-of-successors-of-set
   (implies (and (reachable+p from to graph)
-                (treeset::subset (successors from graph) set)
-                (treeset::subset (successors-of-set set graph) set))
-           (treeset::in to set))
+                (tset::subset (successors from graph) set)
+                (tset::subset (successors-of-set set graph) set))
+           (tset::in to set))
   :enable (reachable+p-becomes-reachable+p-sk
            in-when-reachable+p-sk-and-subset-of-successors-of-set))
 
@@ -496,9 +493,9 @@
 ;; node which is not one of them.
 
 (defruled reachable+p-when-not-in-of-successors-of-set
-  (implies (and (treeset::subset (successors-of-set set graph) set)
-                (treeset::in from set)
-                (not (treeset::in to (successors-of-set set graph))))
+  (implies (and (tset::subset (successors-of-set set graph) set)
+                (tset::in from set)
+                (not (tset::in to (successors-of-set set graph))))
            (not (reachable+p from to graph)))
   :enable in-when-reachable+p-and-subset-of-successors-of-set)
 
@@ -510,33 +507,33 @@
 ;; predecessor of the end.
 
 (defrulel in-when-subset-of-predecessors-of-set-and-in-of-predecessors
-  (implies (and (treeset::subset (predecessors-of-set set graph) set)
-                (treeset::in x set)
-                (treeset::in from (predecessors x graph)))
-           (treeset::in from set))
-  :use (:instance treeset::subset-transitivity
+  (implies (and (tset::subset (predecessors-of-set set graph) set)
+                (tset::in x set)
+                (tset::in from (predecessors x graph)))
+           (tset::in from set))
+  :use (:instance tset::subset-transitivity
                   (x (predecessors x graph))
                   (y (predecessors-of-set set graph))
                   (z set))
   :disable (in-of-predecessors
-            treeset::subset-transitivity))
+            tset::subset-transitivity))
 
 (defruledl in-of-start-when-subset-of-predecessors-of-set
-  (implies (and (treeset::subset (predecessors-of-set set graph) set)
-                (treeset::subset (predecessors (steps-end from steps) graph)
-                                 set)
+  (implies (and (tset::subset (predecessors-of-set set graph) set)
+                (tset::subset (predecessors (steps-end from steps) graph)
+                              set)
                 (consp steps)
-                (treeset::subset (steps-edges from steps) (edges graph)))
-           (treeset::in from set))
+                (tset::subset (steps-edges from steps) (edges graph)))
+           (tset::in from set))
   :induct (steps-end from steps)
   :enable (steps-end
            steps-edges))
 
 (defruled in-when-reachable+p-and-subset-of-predecessors-of-set
   (implies (and (reachable+p from to graph)
-                (treeset::subset (predecessors to graph) set)
-                (treeset::subset (predecessors-of-set set graph) set))
-           (treeset::in from set))
+                (tset::subset (predecessors to graph) set)
+                (tset::subset (predecessors-of-set set graph) set))
+           (tset::in from set))
   :use (:instance in-of-start-when-subset-of-predecessors-of-set
                   (steps (walk->steps (reachable+p-sk-witness from to graph))))
   :enable (reachable+p-becomes-reachable+p-sk
@@ -551,18 +548,18 @@
 ;; reaches the node, so every node the search returns does.
 
 (local
-  (define set-all-reachable+p-to ((set treeset::setp) to graph)
-    :returns (yes/no booleanp)
-    (or (treeset::emptyp set)
-        (and (reachable+p (treeset::min set) to graph)
-             (set-all-reachable+p-to (treeset::delete (treeset::min set) set)
+  (define set-all-reachable+p-to ((set tset::setp) to graph)
+    :returns (yes/no booleanp :rule-classes :type-prescription)
+    (or (tset::emptyp set)
+        (and (reachable+p (tset::min set) to graph)
+             (set-all-reachable+p-to (tset::delete (tset::min set) set)
                                      to
                                      graph)))
-    :measure (treeset::cardinality set)
+    :measure (tset::cardinality set)
     :verify-guards nil))
 
 (defrulel set-all-reachable+p-to-when-equiv-of-arg1-congruence
-  (implies (treeset::equiv set0 set1)
+  (implies (tset::equiv set0 set1)
            (equal (set-all-reachable+p-to set0 to graph)
                   (set-all-reachable+p-to set1 to graph)))
   :rule-classes :congruence
@@ -579,72 +576,72 @@
 
 (defrulel reachable+p-when-set-all-reachable+p-to-and-in
   (implies (and (set-all-reachable+p-to set to graph)
-                (treeset::in x set))
+                (tset::in x set))
            (reachable+p x to graph))
   :use (:instance
          (:functional-instance
-           treeset::genericp-when-set-all-genericp-and-in
-           (treeset::genericp (lambda (x) (reachable+p x to graph)))
-           (treeset::set-all-genericp
+           tset::genericp-when-set-all-genericp-and-in
+           (tset::genericp (lambda (x) (reachable+p x to graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-to set to graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-to)
 
 (defrulel set-all-reachable+p-to-of-insert
-  (equal (set-all-reachable+p-to (treeset::insert x set) to graph)
+  (equal (set-all-reachable+p-to (tset::insert x set) to graph)
          (and (reachable+p x to graph)
               (set-all-reachable+p-to set to graph)))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-insert
-           (treeset::genericp (lambda (x) (reachable+p x to graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-insert
+           (tset::genericp (lambda (x) (reachable+p x to graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-to set to graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-to)
 
 (defrulel set-all-reachable+p-to-of-delete
   (implies (set-all-reachable+p-to set to graph)
-           (set-all-reachable+p-to (treeset::delete x set) to graph))
+           (set-all-reachable+p-to (tset::delete x set) to graph))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-delete
-           (treeset::genericp (lambda (x) (reachable+p x to graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-delete
+           (tset::genericp (lambda (x) (reachable+p x to graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-to set to graph))))
-         (treeset::set set)
-         (treeset::x x))
+         (tset::set set)
+         (tset::x x))
   :enable set-all-reachable+p-to)
 
 (defrulel set-all-reachable+p-to-of-union
-  (equal (set-all-reachable+p-to (treeset::union x y) to graph)
+  (equal (set-all-reachable+p-to (tset::union x y) to graph)
          (and (set-all-reachable+p-to x to graph)
               (set-all-reachable+p-to y to graph)))
   :use (:instance
          (:functional-instance
-           treeset::set-all-genericp-of-union
-           (treeset::genericp (lambda (x) (reachable+p x to graph)))
-           (treeset::set-all-genericp
+           tset::set-all-genericp-of-union
+           (tset::genericp (lambda (x) (reachable+p x to graph)))
+           (tset::set-all-genericp
              (lambda (set) (set-all-reachable+p-to set to graph))))
-         (treeset::x x)
-         (treeset::y y))
+         (tset::x x)
+         (tset::y y))
   :enable set-all-reachable+p-to)
 
 ;; The predecessors of the node, and of any node reaching it, reach it.
 
 (defruledl reachable+p-when-in-of-predecessors
-  (implies (treeset::in from (predecessors to graph))
+  (implies (tset::in from (predecessors to graph))
            (reachable+p from to graph)))
 
 (defruledl reachable+p-when-reachable+p-and-in-of-predecessors
   (implies (and (reachable+p x to graph)
-                (treeset::in from (predecessors x graph)))
+                (tset::in from (predecessors x graph)))
            (reachable+p from to graph)))
 
 (defrulel set-all-reachable+p-to-when-subset-of-predecessors-of-arg2
-  (implies (treeset::subset set (predecessors to graph))
+  (implies (tset::subset set (predecessors to graph))
            (set-all-reachable+p-to set to graph))
   :induct t
   :enable (set-all-reachable+p-to
@@ -653,7 +650,7 @@
 
 (defruledl set-all-reachable+p-to-when-subset-of-predecessors
   (implies (and (reachable+p x to graph)
-                (treeset::subset set (predecessors x graph)))
+                (tset::subset set (predecessors x graph)))
            (set-all-reachable+p-to set to graph))
   :induct (set-all-reachable+p-to set to graph)
   :enable (set-all-reachable+p-to
@@ -662,13 +659,13 @@
 
 (defrulel set-all-reachable+p-to-of-diff-of-predecessors
   (implies (reachable+p x to graph)
-           (set-all-reachable+p-to (treeset::diff (predecessors x graph) set)
+           (set-all-reachable+p-to (tset::diff (predecessors x graph) set)
                                    to
                                    graph))
   :enable set-all-reachable+p-to-when-subset-of-predecessors)
 
 (defrulel reachable+p-when-in-of-predecessors+-search
-  (implies (and (treeset::in from
+  (implies (and (tset::in from
                             (predecessors+-search frontier expanded graph))
                 (set-all-reachable+p-to frontier to graph)
                 (set-all-reachable+p-to expanded to graph))
@@ -680,7 +677,7 @@
 ;; reachability.
 
 (defrule in-of-predecessors+
-  (equal (treeset::in from (predecessors+ to graph))
+  (equal (tset::in from (predecessors+ to graph))
          (reachable+p from to graph))
   :use (:instance in-when-reachable+p-and-subset-of-predecessors-of-set
                   (set (predecessors+ to graph)))
@@ -692,27 +689,27 @@
 
 (defrule subset-of-successors+-and-successors+-when-reachable+p
   (implies (reachable+p from node graph)
-           (treeset::subset (successors+ node graph)
-                            (successors+ from graph)))
-  :enable treeset::pick-a-point-polar)
+           (tset::subset (successors+ node graph)
+                         (successors+ from graph)))
+  :enable tset::pick-a-point-polar)
 
 (defrule subset-of-predecessors+-and-predecessors+-when-reachable+p
   (implies (reachable+p node to graph)
-           (treeset::subset (predecessors+ node graph)
-                            (predecessors+ to graph)))
-  :enable treeset::pick-a-point-polar)
+           (tset::subset (predecessors+ node graph)
+                         (predecessors+ to graph)))
+  :enable tset::pick-a-point-polar)
 
 (defrule subset-of-successors-and-successors+-when-reachable+p
   (implies (reachable+p from node graph)
-           (treeset::subset (successors node graph)
-                            (successors+ from graph)))
-  :enable treeset::pick-a-point-polar)
+           (tset::subset (successors node graph)
+                         (successors+ from graph)))
+  :enable tset::pick-a-point-polar)
 
 (defrule subset-of-predecessors-and-predecessors+-when-reachable+p
   (implies (reachable+p node to graph)
-           (treeset::subset (predecessors node graph)
-                            (predecessors+ to graph)))
-  :enable treeset::pick-a-point-polar)
+           (tset::subset (predecessors node graph)
+                         (predecessors+ to graph)))
+  :enable tset::pick-a-point-polar)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

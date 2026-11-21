@@ -16,8 +16,8 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (include-book "kestrel/abstract-domains/many-valued-logics/3vl" :dir :system)
-(include-book "kestrel/data/treemap/iter-defs" :dir :system)
-(include-book "kestrel/data/treemap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "kestrel/utilities/ordinals" :dir :system)
@@ -40,11 +40,11 @@
 (local (acl2::controlled-configuration :hooks nil))
 (local (include-book "std/basic/controlled-configuration" :dir :system))
 
-(local (include-book "kestrel/data/treemap/top" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
+(local (include-book "kestrel/data/tmap/top" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -326,7 +326,7 @@
                 (rest members) struct-uid)))
     (if (and member.name?
              (eq (sts-splittablep member.type struct-uid) t))
-        (treeset::insert member.name? names)
+        (tset::insert member.name? names)
       names))
   :verify-guards :after-returns)
 
@@ -349,7 +349,7 @@
        ((c$::type-struni-member member) (first members)))
     (or (not member.name?)
         (acl2::3definitely (sts-splittablep member.type struct-uid))
-        (not (treeset::in member.name? right-members))
+        (not (tset::in member.name? right-members))
         (sts-any-left-members-p (rest members) struct-uid right-members)))
   :verify-guards :after-returns)
 
@@ -370,7 +370,7 @@
        ((c$::type-struni-member member) (first members)))
     (or (and member.name?
              (or (acl2::3definitely (sts-splittablep member.type struct-uid))
-                 (and (treeset::in member.name? right-members) t)))
+                 (and (tset::in member.name? right-members) t)))
         (sts-any-right-members-p (rest members) struct-uid right-members)))
   :verify-guards :after-returns)
 
@@ -400,7 +400,7 @@
   (b* (((when (endp members)) nil)
        ((c$::type-struni-member member) (first members)))
     (or (and (or (not member.name?)
-                 (not (treeset::in member.name? right-members)))
+                 (not (tset::in member.name? right-members)))
              (not (acl2::3definitely (sts-splittablep member.type struct-uid)))
              (type-may-refer-to-struct-spec-p
                member.type
@@ -725,22 +725,22 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define sts-check-completions-loop
-  ((iter treemap::iterp)
+  ((cursor tmap::cursorp)
    (struct-uid c$::uidp))
-  :guard (and (not (treemap::before-firstp iter))
-              (c$::type-completions-p (treemap::from-iter iter)))
+  :guard (and (c$::type-completions-p (tmap::from-cursor cursor))
+              (or (tmap::entryp cursor)
+                  (tmap::endp cursor)))
   :returns (er? maybe-msgp)
-  :short "Iterator loop implementing @(tsee sts-check-completions)."
-  :measure (treemap::nexts iter)
-  (b* (((when (mbe :logic (not (treemap::has-valuep iter))
-                   :exec (treemap::after-lastp iter)))
+  :short "Cursor loop implementing @(tsee sts-check-completions)."
+  :measure (tmap::nexts cursor)
+  (b* (((when (not (tmap::entryp cursor)))
         nil)
        (msg? (sts-check-completion-members
-               (treemap::entry-val iter)
+               (tmap::entry-val cursor)
                struct-uid
-               (c$::uid-equiv (treemap::entry-key iter) struct-uid)))
+               (c$::uid-equiv (tmap::entry-key cursor) struct-uid)))
        ((when msg?) msg?))
-    (sts-check-completions-loop (treemap::next iter) struct-uid)))
+    (sts-check-completions-loop (tmap::next cursor) struct-uid)))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -758,45 +758,46 @@
     "The logical definition walks the map
      by repeatedly removing its least key.
      The executable definition is a single forward pass
-     with an iterator (see @(tsee sts-check-completions-loop))."))
-  :measure (treemap::size completions)
+     with a cursor (see @(tsee sts-check-completions-loop))."))
+  :measure (tmap::size completions)
   :verify-guards nil
   (mbe :logic
-       (b* (((when (treemap::emptyp completions))
+       (b* (((when (tmap::emptyp completions))
              nil)
-            (entry-uid (treemap::min-key completions))
-            (members (treemap::min-val completions))
+            (entry-uid (tmap::min-key completions))
+            (members (tmap::min-val completions))
             (msg? (sts-check-completion-members
                     members
                     struct-uid
                     (c$::uid-equiv entry-uid struct-uid)))
             ((when msg?) msg?))
-         (sts-check-completions (treemap::delete entry-uid completions)
+         (sts-check-completions (tmap::delete entry-uid completions)
                                 struct-uid))
-       :exec (sts-check-completions-loop (treemap::iter-min completions)
+       :exec (sts-check-completions-loop (tmap::seek-min completions)
                                          struct-uid))
 
   ///
 
   (defruled sts-check-completions-loop-becomes-sts-check-completions
-    (implies (not (treemap::before-firstp iter))
-             (equal (sts-check-completions-loop iter struct-uid)
-                    (if (treemap::has-valuep iter)
+    (implies (or (tmap::entryp cursor)
+                 (tmap::endp cursor))
+             (equal (sts-check-completions-loop cursor struct-uid)
+                    (if (tmap::entryp cursor)
                         (b* ((msg? (sts-check-completion-members
-                                     (treemap::entry-val iter)
+                                     (tmap::entry-val cursor)
                                      struct-uid
-                                     (c$::uid-equiv (treemap::entry-key iter)
+                                     (c$::uid-equiv (tmap::entry-key cursor)
                                                     struct-uid))))
                           (or msg?
-                              (sts-check-completions (treemap::after iter)
+                              (sts-check-completions (tmap::after cursor)
                                                      struct-uid)))
                       nil)))
-    :induct (sts-check-completions-loop iter struct-uid)
+    :induct (sts-check-completions-loop cursor struct-uid)
     :enable sts-check-completions-loop
-    :expand ((sts-check-completions (treemap::after iter) struct-uid)))
+    :expand ((sts-check-completions (tmap::after cursor) struct-uid)))
 
-  (defrule sts-check-completions-loop-of-iter-min
-    (equal (sts-check-completions-loop (treemap::iter-min completions)
+  (defrule sts-check-completions-loop-of-seek-min
+    (equal (sts-check-completions-loop (tmap::seek-min completions)
                                        struct-uid)
            (sts-check-completions completions struct-uid))
     :enable sts-check-completions-loop-becomes-sts-check-completions
@@ -988,8 +989,8 @@
                   (retmsg$ "A member designator was expected within ~
                             the split struct type."))
                  (sub-name (c$::designor-dot->name next))
-                 (rightp (and (treeset::in sub-name
-                                           (sts-split-state->right-set st))
+                 (rightp (and (tset::in sub-name
+                                        (sts-split-state->right-set st))
                               t)))
               (retok :route
                      (cons (if rightp right-first left-first) rest)
@@ -1067,7 +1068,7 @@
                    desiniter
                    (sts-split-state->dialect st))))
        (name (c$::designor-dot->name designor)))
-    (retok (and (treeset::in name (sts-split-state->right-set st)) t))))
+    (retok (and (tset::in name (sts-split-state->right-set st)) t))))
 
 (define struct-declor-sts-rightp
   ((struct-declor struct-declorp)
@@ -1086,7 +1087,7 @@
        ((unless struct-declor.declor?)
         nil)
        (name (declor->ident struct-declor.declor?)))
-    (and (treeset::in name (sts-split-state->right-set st)) t)))
+    (and (tset::in name (sts-split-state->right-set st)) t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1100,7 +1101,7 @@
        ((when (endp struct-declors)) acc)
        ((struct-declor sd) (car struct-declors))
        (acc (if sd.declor?
-                (treeset::insert (declor->ident sd.declor?) acc)
+                (tset::insert (declor->ident sd.declor?) acc)
               acc)))
     (struct-declor-list-collect-names (cdr struct-declors) acc))
   :measure (struct-declor-list-count struct-declors)
@@ -1147,7 +1148,7 @@
        ((when (endp members)) acc)
        ((c$::type-struni-member member) (first members))
        (acc (if member.name?
-                (treeset::insert (ident-fix member.name?) acc)
+                (tset::insert (ident-fix member.name?) acc)
               (type-case
                 member.type
                 :struct (c$::type-struni-tag/members-case
@@ -1183,7 +1184,7 @@
     whose members are instead collected syntactically.")
   (b* ((completions (sts-split-state->completions st))
        ((mv foundp members)
-        (treemap::lookup? (c$::uid-fix host-uid) completions))
+        (tmap::lookup? (c$::uid-fix host-uid) completions))
        ((unless foundp) nil))
     (type-struni-member-list-collect-names
       (c$::type-struni-member-list-fix members)
@@ -1465,7 +1466,7 @@
        (right-name (if freshenp
                        (fresh-ident name member-names)
                      name))
-       (member-names (treeset::insert right-name member-names))
+       (member-names (tset::insert right-name member-names))
        (st (change-sts-split-state
              st
              :member-map (member-map-add enclosing-uid
@@ -1715,7 +1716,7 @@
                     (retok (make-expr-member :arg left-arg :name expr.name)
                            (make-expr-member :arg right-arg? :name expr.name)
                            st))
-                   (rightp (treeset::in expr.name (sts-split-state->right-set st)))
+                   (rightp (tset::in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                            (b* ((member-expr (make-expr-member :arg right-arg?
                                                                :name expr.name)))
@@ -1763,7 +1764,7 @@
                     (retok (make-expr-memberp :arg left-arg :name expr.name)
                            (make-expr-memberp :arg right-arg? :name expr.name)
                            st))
-                   (rightp (treeset::in expr.name (sts-split-state->right-set st)))
+                   (rightp (tset::in expr.name (sts-split-state->right-set st)))
                    (expr (if rightp
                              (b* ((memberp-expr
                                     (make-expr-memberp :arg right-arg?
@@ -3185,7 +3186,7 @@
              (right-ident (fresh-ident dirdeclor.ident st.blacklist))
              (st (change-sts-split-state
                    st
-                   :blacklist (treeset::insert right-ident st.blacklist)
+                   :blacklist (tset::insert right-ident st.blacklist)
                    :ident-map (omap::update uid? right-ident st.ident-map))))
           (retok t
                  (dirdeclor-fix dirdeclor)
@@ -5084,8 +5085,8 @@
                   more than one scope found: ~x0"
                  scopes))
        (scope (first scopes))
-       (info? (treemap::lookup (c$::ident-fix tag)
-                               (c$::valid-scope->tag scope))))
+       (info? (tmap::lookup (c$::ident-fix tag)
+                            (c$::valid-scope->tag scope))))
     (retok info?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5431,7 +5432,7 @@
        (primary-tag? (c$::type-struct->tag? primary-type))
        (info (c$::trans-ensemble->info code.trans-units))
        (completions (c$::trans-ensemble-vinfo->completions info))
-       (right-set (treeset::from-list right-members))
+       (right-set (tset::from-list right-members))
        ((mv incompletep primary-members)
         (c$::type-struni-tag/members->members
           (c$::type-struct->tag/members primary-type)
@@ -5439,21 +5440,21 @@
           completions))
        (invalid-members
          (and (not incompletep)
-              (treeset::diff
+              (tset::diff
                 right-set
                 (type-struni-member-list-collect-names primary-members nil))))
-       ((unless (treeset::emptyp invalid-members))
+       ((unless (tset::emptyp invalid-members))
         (retmsg$ "The names ~x0 in :RIGHT-MEMBERS are not members of the ~
                   selected struct type."
                  (map-ident->unwrap invalid-members)))
        (direct-splittable-members
          (sts-direct-splittable-member-names primary-members primary-uid))
        (selected-splittable-members
-         (treeset::intersect right-set direct-splittable-members))
+         (tset::intersect right-set direct-splittable-members))
        ;; Directly splittable members of the target are forced into both
        ;; output struct types, so they do not participate in ordinary member
        ;; routing even when the user lists them in :right-members.
-       (right-set (treeset::diff right-set selected-splittable-members))
+       (right-set (tset::diff right-set selected-splittable-members))
        (map (trans-ensemble->units code.trans-units))
        (blacklist (filepath-trans-unit-map-collect-idents map))
        (right-name
@@ -5467,7 +5468,7 @@
              :dialect (c$::ienv->dialect code.ienv)
              :ienv code.ienv
              :blacklist (if primary-tag?
-                            (treeset::insert right-name blacklist)
+                            (tset::insert right-name blacklist)
                           blacklist)
              :ident-map nil
              :warnings nil
@@ -5476,7 +5477,7 @@
              :completions completions
              ;; Set per translation unit, in sts-split-trans-units.
              :vtable (c$::irr-valid-table)))
-       (st (if (treeset::emptyp selected-splittable-members)
+       (st (if (tset::emptyp selected-splittable-members)
                st
              (sts-split-state-add-warning
                (msg$ "The splittable self-referential members ~x0 were ~

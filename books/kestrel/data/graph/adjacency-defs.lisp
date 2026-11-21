@@ -8,8 +8,8 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")

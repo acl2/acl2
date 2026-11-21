@@ -38,8 +38,8 @@
 (include-book "fty-transsum")
 (include-book "kestrel/fty/fty-set" :dir :system)
 (include-book "kestrel/fty/fty-omap" :dir :system)
-(include-book "kestrel/fty/fty-treeset" :dir :system)
-(include-book "kestrel/fty/fty-treemap" :dir :system)
+(include-book "kestrel/fty/fty-tset" :dir :system)
+(include-book "kestrel/fty/fty-tmap" :dir :system)
 (include-book "fty-sugar")
 (include-book "std/util/deflist-base" :dir :system)
 (include-book "std/util/defalist-base" :dir :system)
@@ -230,8 +230,8 @@
                            (change-flexalist al :strategy :drop-keys)))
             (defset      (parse-flexset (cdar x) xvar our-fixtypes fixtypes state))
             (defomap     (parse-flexomap (cdar x) xvar our-fixtypes fixtypes state))
-            (deftreeset  (parse-flextreeset (cdar x) xvar our-fixtypes fixtypes state))
-            (deftreemap  (parse-flextreemap (cdar x) xvar our-fixtypes fixtypes state))
+            (deftset     (parse-flextset (cdar x) xvar our-fixtypes fixtypes state))
+            (deftmap     (parse-flextmap (cdar x) xvar our-fixtypes fixtypes state))
             (otherwise (er hard? 'parse-flextypelist
                            "Recognized flextypes are ~x0, not ~x1~%"
                            *known-flextype-generators* (caar x))))
@@ -293,8 +293,8 @@
                     :recp (flextypelist-recp types))))
 
 (defun flextypelist-predicate-defs (types)
-  ;; Each kind's flex*-predicate-def returns a LIST of defines (a treeset
-  ;; member contributes two mutually recursive ones, a treemap member three).
+  ;; Each kind's flex*-predicate-def returns a LIST of defines (a tset
+  ;; member contributes two mutually recursive ones, a tmap member three).
   (if (atom types)
       nil
     (append (with-flextype-bindings (x (car types))
@@ -305,7 +305,7 @@
   (b* (((flextypes x) x)
        (defs (flextypelist-predicate-defs x.types)))
     ;; Wrap in (defines ...) whenever there is more than one predicate DEFINE
-    ;; (not more than one type) -- a single :treeset type already yields two.
+    ;; (not more than one type) -- a single :tset type already yields two.
     (if (atom (cdr defs))
         `(,(car defs)
           (local (in-theory (disable . ,(flextypelist-predicates x.types)))))
@@ -1185,19 +1185,19 @@
   `(make-event (defset-fn ',form state)))
 
 
-(defun deftreeset-fn (whole state)
+(defun deftset-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
-       (x (parse-flextreeset (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (parse-flextset (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (member :count (cdr whole))
               x
-            (change-flextreeset x
-                                :count nil
-                                :kwd-alist (remove1-assoc-eq
-                                            :post-acc-events
-                                            (flextreeset->kwd-alist x)))))
-       ((flextreeset x) x)
+            (change-flextset x
+                             :count nil
+                             :kwd-alist (remove1-assoc-eq
+                                         :post-acc-events
+                                         (flextset->kwd-alist x)))))
+       ((flextset x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :no-count (not x.count)
@@ -1205,23 +1205,23 @@
                                   :recp x.recp)))
     (deftypes-events flextypes state)))
 
-(defmacro deftreeset (&whole form &rest args)
+(defmacro deftset (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (deftreeset-fn ',form state)))
+  `(make-event (deftset-fn ',form state)))
 
-(defun deftreemap-fn (whole state)
+(defun deftmap-fn (whole state)
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
-       (x (parse-flextreemap (cdr whole) nil our-fixtypes fixtype-al state))
+       (x (parse-flextmap (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (member :count (cdr whole))
               x
-            (change-flextreemap x
-                                :count nil
-                                :kwd-alist (remove1-assoc-eq
-                                            :post-acc-events
-                                            (flextreemap->kwd-alist x)))))
-       ((flextreemap x) x)
+            (change-flextmap x
+                             :count nil
+                             :kwd-alist (remove1-assoc-eq
+                                         :post-acc-events
+                                         (flextmap->kwd-alist x)))))
+       ((flextmap x) x)
        (flextypes (make-flextypes :name x.name
                                   :types (list x)
                                   :no-count (not x.count)
@@ -1229,9 +1229,9 @@
                                   :recp x.recp)))
     (deftypes-events flextypes state)))
 
-(defmacro deftreemap (&whole form &rest args)
+(defmacro deftmap (&whole form &rest args)
   (declare (ignore args))
-  `(make-event (deftreemap-fn ',form state)))
+  `(make-event (deftmap-fn ',form state)))
 
 
 (defun defomap-fn (whole state)

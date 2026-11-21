@@ -107757,6 +107757,22 @@ Bug Fixes From AI via Eric Smith
   comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
   [30m[47macl2.lisp[0m[0m.
 
+  Fixed a bug in the maintenance of the compiled lambda cache related
+  to undoing.  By using a quoted lambda containing an undefined
+  function it was possible to produce a cache line with [30m[47m:status
+  :GOOD) even if the lambda mentioned an undefined function.  This
+  was caused the lambda is applied (and guard verified) while the
+  undefined function is being defined.  In that case, the lambda was
+  assigned an @(':abs-event-no[0m[0m that was lower than that of the newly
+  defined function, so that when the function is undone, the cache
+  line remained marked [30m[47m:status :GOOD[0m[0m.  Now, retraction of the world
+  marks every cache line as [30m[47m:status :UNKNOWN[0m[0m and lines will be
+  re-validated if and when their lambdas are applied.  See
+  [community-books]
+  [30m[47msystem/tests/cl-cache-failed-defun-good-line.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-local-defun-good-line.lisp[0m[0m, and
+  [30m[47msystem/tests/cl-cache-make-event-expansion-good-line.lisp[0m[0m.
+
 
 Other Bug Fixes
 

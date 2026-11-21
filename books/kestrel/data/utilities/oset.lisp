@@ -11,10 +11,11 @@
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (include-book "std/osets/top" :dir :system)
 
+(local (include-book "kestrel/lists-light/butlast" :dir :system))
 (local (include-book "kestrel/lists-light/last" :dir :system))
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -55,6 +56,12 @@
   (implies (setp l)
            (setp (cdr l)))
   :enable setp)
+
+(defruled delete-when-equal-of-head
+  (implies (equal x (set::head oset))
+           (equal (set::delete x oset)
+                  (set::tail oset)))
+  :enable set::delete)
 
 ;; Splitting an oset: both halves of an append are osets themselves.
 
@@ -106,8 +113,35 @@
            append
            <<-of-cars-when-osetp-of-append))
 
-;; An oset has no duplicates, so membership in the tail is membership anywhere
-;; but at the head.
+;; So every element of a prefix is below every element of what follows.
+
+(defruled <<-across-append-of-members-when-osetp
+  (implies (and (setp (append a b))
+                (member-equal x a)
+                (member-equal y b))
+           (<< x y))
+  :cases ((equal y (car b)))
+  :use (<<-across-append-when-osetp
+        (:instance setp-of-suffix-when-osetp-of-append (x a) (y b))
+        (:instance <<-of-car-when-member-equal-of-cdr (l b) (x y)))
+  :enable <<-rules)
+
+;; An oset has no duplicates, so no element is on both sides of an append.
+
+(defruled not-member-equal-of-prefix-when-osetp-of-append
+  (implies (and (setp (append a b))
+                (member-equal x b))
+           (not (member-equal x a)))
+  :use (:instance <<-across-append-of-members-when-osetp (y x))
+  :enable <<-rules)
+
+(defruled not-member-equal-of-suffix-when-osetp-of-append
+  (implies (and (setp (append a b))
+                (member-equal x a))
+           (not (member-equal x b)))
+  :enable not-member-equal-of-prefix-when-osetp-of-append)
+
+;; Likewise, membership in the tail is membership anywhere but at the head.
 
 (defruled member-equal-of-cdr-when-osetp
   (implies (setp l)
@@ -116,4 +150,62 @@
                      (member-equal x l))))
   :enable (setp
            set::not-member-when-smaller
+           <<-rules))
+
+;; Likewise, membership in all but the last element is membership anywhere but
+;; at the last.
+
+(defrulel member-equal-of-car-of-last
+  (implies (consp l)
+           (member-equal (car (last l)) l))
+  :induct (last l)
+  :enable last)
+
+(defrulel not-equal-of-car-of-last-when-osetp-of-cons
+  (implies (and (setp (cons a b))
+                (consp b))
+           (not (equal a (car (last b)))))
+  :use (:instance <<-of-car-when-member-equal-of-cdr
+                  (l (cons a b))
+                  (x (car (last b))))
+  :enable <<-rules)
+
+(defruled member-equal-of-butlast-when-osetp
+  (implies (setp l)
+           (iff (member-equal x (butlast l 1))
+                (and (not (equal x (car (last l))))
+                     (member-equal x l))))
+  :induct (last l)
+  :enable (last
+           setp-of-cdr-when-osetp))
+
+;; An element of an oset is below whatever its last element is below, and above
+;; whatever its first element is above.
+
+(defrulel <<-of-car-when-<<-of-car-of-last
+  (implies (and (setp l)
+                (<< (car (last l)) y))
+           (<< (car l) y))
+  :induct (last l)
+  :enable (last
+           setp
+           <<-rules))
+
+(defruled <<-when-member-equal-and-<<-of-car-of-last
+  (implies (and (member-equal x l)
+                (setp l)
+                (<< (car (last l)) y))
+           (<< x y))
+  :induct (last l)
+  :enable (last
+           setp-of-cdr-when-osetp))
+
+(defruled <<-when-member-equal-and-<<-of-arg1-and-car
+  (implies (and (member-equal y l)
+                (setp l)
+                (<< x (car l)))
+           (<< x y))
+  :induct (member-equal y l)
+  :enable (member-equal
+           setp
            <<-rules))
