@@ -13,6 +13,7 @@
 (include-book "ispace-validator")
 (include-book "type-validator")
 (include-book "dimension-polynomials")
+(include-book "dimension-polynomials-properties")
 (include-book "ispace-equivalence-checker")
 (include-book "type-equivalence-checker")
 (include-book "ispace-matcher")
@@ -43,6 +44,7 @@
   :order-subtopics (ispace-validator
                     type-validator
                     dimension-polynomials
+                    dimension-polynomials-properties
                     ispace-equivalence-checker
                     type-equivalence-checker
                     ispace-matcher
