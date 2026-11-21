@@ -36,6 +36,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define type-lift-if-atom ((type typep))
+  :returns (new-type typep)
+  :short "Lift an atom-kinded type to a scalar type,
+          leaving an array-kinded type unchanged."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used where an array-kinded type is expected,
+     to make explicit the lifting of
+     an atom-kinded type that stands for a scalar type
+     (see @(tsee type)).
+     The resulting type is always array-kinded."))
+  (if (type-atom-kindp type)
+      (type-scalar type)
+    (type-fix type)))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(std::defprojection type-list-lift-if-atom ((x type-listp))
+  :returns (new-types type-listp)
+  :short "Lift @(tsee type-lift-if-atom) to lists."
+  (type-lift-if-atom x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines check-types
   :short "Check types and lists of types."
 
@@ -48,12 +73,12 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "If the check is successful, we return a type; otherwise, an error.
-       For now, the returned type is always the same as the input type;
-       but we plan to extend this function
-       to lift atom-kinded types to scalar types (see @(tsee type))
-       where array-kinded types are needed,
-       so that the returned type makes that lifting explicit.")
+      "If the check is successful, we return the type
+       with the lifting of atom-kinded types to scalar types made explicit
+       (see @(tsee type-lift-if-atom)),
+       wherever the type validity rules require array-kinded types
+       (see @(tsee type-validity-definition));
+       otherwise, we return an error.")
      (xdoc::p
       "A variable must be in the environment.")
      (xdoc::p
@@ -71,23 +96,37 @@
        and its ispaces are valid.")
      (xdoc::p
       "The atom-kind requirement on the element type of
-       a scalar, array, or bracket type is the only kind constraint:
+       a scalar, array, or bracket type is the only kind constraint
+       that makes the check fail:
        as explained in @(tsee type),
        an atom-kinded type may otherwise be used
        wherever an array-kinded type is expected,
-       being auto-lifted to a zero-rank array type.")
+       in which case we lift it to a scalar type.")
      (xdoc::p
       "A function type is valid iff
-       its input types and its output type are all valid.")
+       its input types and its output type are all valid.
+       The input types and the output type are expected to be array-kinded:
+       we lift the ones that are atom-kinded.
+       The exception is the output type of a nullary function type,
+       which we do not lift:
+       a nullary function type stands for its output type
+       (see @(tsee type)),
+       which may have either kind.")
      (xdoc::p
       "A universal type is valid iff its body is valid
-       in the environment extended with the bound type variables.")
+       in the environment extended with the bound type variables.
+       The body is expected to be array-kinded:
+       we lift it if it is atom-kinded.")
      (xdoc::p
       "A product type is valid iff its body is valid
-       in the environment extended with the bound ispace variables.")
+       in the environment extended with the bound ispace variables.
+       The body is expected to be array-kinded:
+       we lift it if it is atom-kinded.")
      (xdoc::p
       "A sum type is valid iff its body is valid
-       in the environment extended with the bound ispace variables."))
+       in the environment extended with the bound ispace variables.
+       The body is expected to be array-kinded:
+       we lift it if it is atom-kinded."))
     (type-case
      type
      :var (b* (((unless (consp (omap::assoc type.var (type-senv->types tenv))))
@@ -108,28 +147,38 @@
                 (make-type-bracket :elem elem :ispaces type.ispaces))
      :fun (b* (((ok in) (check-type type.in ienv tenv))
                ((ok out) (check-type type.out ienv tenv)))
-            (make-type-fun :in in :out out))
+            (make-type-fun :in (type-lift-if-atom in)
+                           :out (type-lift-if-atom out)))
      :funn (b* (((ok in) (check-type-list type.in ienv tenv))
                 ((ok out) (check-type type.out ienv tenv)))
-             (make-type-funn :in in :out out))
+             (make-type-funn :in (type-list-lift-if-atom in)
+                             :out (if (consp type.in)
+                                      (type-lift-if-atom out)
+                                    out)))
      :forall (b* ((tenv (type-senv-add-var type.param tenv))
                   ((ok body) (check-type type.body ienv tenv)))
-               (make-type-forall :param type.param :body body))
+               (make-type-forall :param type.param
+                                 :body (type-lift-if-atom body)))
      :foralln (b* ((tenv (type-senv-add-vars type.params tenv))
                    ((ok body) (check-type type.body ienv tenv)))
-                (make-type-foralln :params type.params :body body))
+                (make-type-foralln :params type.params
+                                   :body (type-lift-if-atom body)))
      :pi (b* ((ienv (ispace-senv-add-var type.param ienv))
               ((ok body) (check-type type.body ienv tenv)))
-           (make-type-pi :param type.param :body body))
+           (make-type-pi :param type.param
+                         :body (type-lift-if-atom body)))
      :pin (b* ((ienv (ispace-senv-add-vars type.params ienv))
                ((ok body) (check-type type.body ienv tenv)))
-            (make-type-pin :params type.params :body body))
+            (make-type-pin :params type.params
+                           :body (type-lift-if-atom body)))
      :sigma (b* ((ienv (ispace-senv-add-var type.param ienv))
                  ((ok body) (check-type type.body ienv tenv)))
-              (make-type-sigma :param type.param :body body))
+              (make-type-sigma :param type.param
+                               :body (type-lift-if-atom body)))
      :sigman (b* ((ienv (ispace-senv-add-vars type.params ienv))
                   ((ok body) (check-type type.body ienv tenv)))
-               (make-type-sigman :params type.params :body body)))
+               (make-type-sigman :params type.params
+                                 :body (type-lift-if-atom body))))
     :measure (type-count type))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
