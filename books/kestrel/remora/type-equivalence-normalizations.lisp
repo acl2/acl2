@@ -1334,13 +1334,6 @@
                                 type-eq-fun2m-validp
                                 ispace-eq-refl))))
 
-  (defret type-atom-kindp-of-unarize-funs-in-type
-    (equal (type-atom-kindp new-type)
-           (type-atom-kindp type))
-    :hints (("Goal"
-             :induct t
-             :expand ((type-atom-kindp type)))))
-
   (defret type-nofunnp-of-unarize-funs-in-type
     (type-nofunnp new-type)
     :hints (("Goal"
