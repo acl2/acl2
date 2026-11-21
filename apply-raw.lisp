@@ -1244,6 +1244,22 @@
 
 ; The fix was to limit the search for nil to just :size elements.
 
+; In addition, as illustrated in 
+
+; cl-cache-failed-defun-good-line.lisp
+; cl-cache-local-defun-good-line.lisp
+; cl-cache-make-event-expansion-good-line.lisp
+
+; it was possible, using an ill-formed quoted constant lambda object to produce
+; a cache line marked :GOOD even though the lambda mentioned an undefined
+; function.  The basic flaw was that if the lambda constant is applied (and
+; guard verified) while the undefined function was being introduced, the cache
+; line got an :abs-event-no that was lower than the introduced function.  Thus
+; when the introduced function was undone, the :GOOD cache line remained.  This
+; was fixed by making a retraction of the world reset EVERY cache line to
+; :status :unknown, which means it will be re-validated if possible if that
+; line is ever used.  This seems inefficient but elegant.
+
   (and (consp *cl-cache*)
        (let ((cl-cache *cl-cache*)
              (lines (access cl-cache *cl-cache* :alist))
@@ -1269,10 +1285,6 @@
                  with i = 0
                  until (or (null line)
                            (> (setq i (+ 1 i)) size))
-                 when
-                 (and (eq (access cl-cache-line line :status) :GOOD)
-                      (< evno
-                         (access cl-cache-line line :absolute-event-number)))
                  do
                  (setf (access-cl-cache-line line :absolute-event-number) nil)
                  (setf (access-cl-cache-line line :status) :UNKNOWN))))
