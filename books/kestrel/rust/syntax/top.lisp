@@ -22,6 +22,7 @@
 (include-book "extra-grammatical-restrictions")
 (include-book "lexer")
 (include-book "tokenizer")
+(include-book "token-tree-builder")
 (include-book "differential-testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -61,8 +62,8 @@
      Unicode identifiers and their normalization,
      and the processing of the input file
      (UTF-8 decoding, CRLF normalization, a leading shebang).
-     Token trees have their representation,
-     well-formedness, and flattening,
-     but not yet the builder that groups tokens into trees.
+     The token-tree builder groups the tokens into token trees,
+     by matching delimiters;
+     it is proved to invert the flattening of well-formed token trees.
      Parsing and printing are future work."))
   :order-subtopics t)
