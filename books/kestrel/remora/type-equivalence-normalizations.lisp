@@ -2289,6 +2289,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defruled type-eq-to-noscalar-p-when-typep
+  :short "Every type is equivalent to one
+          without scalar types outside the bodies of binder types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of the rule @('scalar'),
+     described in @(see type-equivalence-definition)."))
+  (implies (typep type)
+           (type-eq-to-noscalar-p type))
+  :use ((:instance type-eq-to-noscalar-p-suff
+                   (type1 (mv-nth 0 (unscalar-in-type type))))
+        (:instance type-eq-when-proof-validp
+                   (proof (mv-nth 1 (unscalar-in-type type)))
+                   (_type1 type)
+                   (_type2 (mv-nth 0 (unscalar-in-type type))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (defruled type-eq-to-nobracket-p-when-typep
   :short "Every type is equivalent to one
           without bracket types outside the bodies of binder types."
@@ -2386,25 +2405,6 @@
                    (_type1 type)
                    (_type2
                     (mv-nth 0 (unarize-sigmas-in-type type))))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled type-eq-to-noscalar-p-when-typep
-  :short "Every type is equivalent to one
-          without scalar types outside the bodies of binder types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This validates the intention of the rule @('scalar'),
-     described in @(see type-equivalence-definition)."))
-  (implies (typep type)
-           (type-eq-to-noscalar-p type))
-  :use ((:instance type-eq-to-noscalar-p-suff
-                   (type1 (mv-nth 0 (unscalar-in-type type))))
-        (:instance type-eq-when-proof-validp
-                   (proof (mv-nth 1 (unscalar-in-type type)))
-                   (_type1 type)
-                   (_type2 (mv-nth 0 (unscalar-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
