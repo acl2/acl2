@@ -18,6 +18,7 @@
 (include-book "prepended-concatenation-marks")
 (include-book "pattern-syntax")
 (include-book "pattern-white-space")
+(include-book "white-space")
 (include-book "bidi-controls")
 (include-book "xid")
 (include-book "combining-classes")
@@ -88,6 +89,20 @@
      "No code point has both @('Pattern_Syntax')
       and @('XID_Continue'), or @('XID_Start'):
       a character of syntax is never a character of an identifier."))
+   (xdoc::p
+    "About the @('White_Space') property (see @(see white-space)):")
+   (xdoc::ul
+    (xdoc::li
+     "A code point that has @('Pattern_White_Space')
+      has @('White_Space'),
+      unless it is one of the two directional marks.")
+    (xdoc::li
+     "The code points that have @('White_Space')
+      are those whose @('General_Category') is
+      @('Space_Separator') (@('Zs')), @('Line_Separator') (@('Zl'))
+      or @('Paragraph_Separator') (@('Zp')),
+      and six control characters.
+      See @(see white-space-relations)."))
    (xdoc::p
     "About @('ID_Start') and @('ID_Continue') (see @(see id-properties)):")
    (xdoc::ul
@@ -406,6 +421,87 @@
     (implies (pattern-white-space-p cp ver)
              (not (xid-start-p cp ver)))
     :rule-classes (:rewrite :forward-chaining)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection white-space-relations
+  :short "Theorems that relate @('White_Space')
+          to @('Pattern_White_Space') and to @('General_Category')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A code point that has @('Pattern_White_Space')
+     has @('White_Space') too,
+     unless it is U+200E LEFT-TO-RIGHT MARK or U+200F RIGHT-TO-LEFT MARK,
+     which are format characters and not spaces.")
+   (xdoc::p
+    "The code points that have @('White_Space') are the separators,
+     that is, those whose @('General_Category') is
+     @('Space_Separator') (@('Zs')), @('Line_Separator') (@('Zl'))
+     or @('Paragraph_Separator') (@('Zp')),
+     and six control characters:
+     the five from U+0009 to U+000D, and U+0085.
+     The second theorem is proved by evaluating, on the tables,
+     that the two lists of ranges cover the same code points."))
+
+  (defrule white-space-p-when-pattern-white-space-p
+    (implies (and (pattern-white-space-p cp ver)
+                  (not (equal (code-point-fix cp) #x200E))
+                  (not (equal (code-point-fix cp) #x200F)))
+             (white-space-p cp ver))
+    :enable (pattern-white-space-p-alt-def
+             white-space-p-alt-def)
+    :disable (pattern-white-space-p white-space-p))
+
+  (defrulel white-space-ranges-as-general-categories
+    (equal (ranges-normalize (white-space-ranges ver))
+           (ranges-normalize
+            (append
+             (general-category-ranges (general-category-space-separator)
+                                      ver)
+             (general-category-ranges (general-category-line-separator)
+                                      ver)
+             (general-category-ranges (general-category-paragraph-separator)
+                                      ver)
+             (list (range #x0009 #x000D)
+                   (range #x0085 #x0085)))))
+    :enable (white-space-ranges
+             general-category-ranges
+             general-category-runs))
+
+  (defruled white-space-p-in-terms-of-general-category
+    (equal (white-space-p cp ver)
+           (b* ((gc (code-point-general-category cp ver))
+                (cp (code-point-fix cp)))
+             (or (general-category-separator-p gc)
+                 (and (<= #x0009 cp)
+                      (<= cp #x000D))
+                 (equal cp #x0085))))
+    :enable (white-space-p
+             general-category-separator-p
+             code-point-in-general-category-ranges
+             equal-of-general-category-space-separator
+             equal-of-general-category-line-separator
+             equal-of-general-category-paragraph-separator
+             code-point-in-range-p)
+    :disable (code-point-in-ranges-p-of-ranges-normalize
+              (:e general-category-space-separator)
+              (:e general-category-line-separator)
+              (:e general-category-paragraph-separator))
+    :use ((:instance code-point-in-ranges-p-of-ranges-normalize
+                     (ranges (white-space-ranges ver)))
+          (:instance
+           code-point-in-ranges-p-of-ranges-normalize
+           (ranges
+            (append
+             (general-category-ranges (general-category-space-separator)
+                                      ver)
+             (general-category-ranges (general-category-line-separator)
+                                      ver)
+             (general-category-ranges (general-category-paragraph-separator)
+                                      ver)
+             (list (range #x0009 #x000D)
+                   (range #x0085 #x0085))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
