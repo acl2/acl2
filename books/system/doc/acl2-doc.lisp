@@ -110870,6 +110870,20 @@ it."
  described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
  ACL2 source file @('acl2.lisp').</p>
 
+ <p>Fixed a bug in the maintenance of the compiled lambda cache related to
+ undoing.  By using a quoted lambda containing an undefined function it was
+ possible to produce a cache line with @(':status :GOOD) even if the lambda
+ mentioned an undefined function.  This was caused the lambda is applied (and
+ guard verified) while the undefined function is being defined.  In that case,
+ the lambda was assigned an @(':abs-event-no') that was lower than that of the
+ newly defined function, so that when the function is undone, the cache line
+ remained marked @(':status :GOOD').  Now, retraction of the world marks every
+ cache line as @(':status :UNKNOWN') and lines will be re-validated if and when
+ their lambdas are applied.  See @(see community-books)
+ @('system/tests/cl-cache-failed-defun-good-line.lisp'),
+ @('system/tests/cl-cache-local-defun-good-line.lisp'), and
+ @('system/tests/cl-cache-make-event-expansion-good-line.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2

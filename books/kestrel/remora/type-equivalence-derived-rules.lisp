@@ -96,56 +96,89 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection type-eq-cong-scalar-array
+(defsection type-eq-cong-scalar
   :short "Congruence of type equivalence with respect to
-          the element types of scalar array types."
+          the element types of scalar types."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is an instance of the rule @('array')
-     with the empty shape as ispace, on both sides,
-     which is equivalent to itself via reflexivity."))
+    "The rule @('scalar') reduces a scalar type to
+     the array type with the same element type and no dimensions.
+     This derived rule rewrites the element type of a scalar type:
+     it reduces the scalar type to the array type,
+     rewrites the element type via the rule @('array'),
+     and reduces the array type back to a scalar type via symmetry,
+     chaining the three steps via transitivity."))
 
-  (define type-eq-proof-cong-scalar-array (type1
-                                           type2
-                                           (premise1-proof type-eq-proofp))
+  (define type-eq-proof-cong-scalar (type1
+                                     type2
+                                     (premise1-proof type-eq-proofp))
     :returns (proof type-eq-proofp)
     :parents nil
-    (make-type-eq-proof-array
-     :type1 type1
-     :type2 type2
-     :ispace1 (ispace-shape (shape-dims nil))
-     :ispace2 (ispace-shape (shape-dims nil))
-     :premise1-proof premise1-proof)
+    (b* (((unless (and (typep type1)
+                       (typep type2)))
+          (type-eq-proof-refl nil))
+         (ispace (ispace-shape (shape-dims nil))))
+      (make-type-eq-proof-trans
+       :type1 (type-scalar type1)
+       :type2 (type-array type1 ispace)
+       :type3 (type-scalar type2)
+       :premise1-proof (make-type-eq-proof-scalar :type type1)
+       :premise2-proof
+       (make-type-eq-proof-trans
+        :type1 (type-array type1 ispace)
+        :type2 (type-array type2 ispace)
+        :type3 (type-scalar type2)
+        :premise1-proof
+        (make-type-eq-proof-array :type1 type1
+                                  :type2 type2
+                                  :ispace1 ispace
+                                  :ispace2 ispace
+                                  :premise1-proof premise1-proof)
+        :premise2-proof
+        (make-type-eq-proof-symm
+         :type1 (type-scalar type2)
+         :type2 (type-array type2 ispace)
+         :premise1-proof (make-type-eq-proof-scalar :type type2)))))
 
     ///
 
-    (defret type-eq-proof-validp-of-type-eq-proof-cong-scalar-array
+    (defret type-eq-proof-validp-of-type-eq-proof-cong-scalar
       (implies (type-eq-proof-validp premise1-proof type1 type2)
                (type-eq-proof-validp proof
-                                     (type-scalar-array type1)
-                                     (type-scalar-array type2)))
+                                     (type-scalar type1)
+                                     (type-scalar type2)))
       :hints
       (("Goal"
         :in-theory (enable* type-equivalence-definition-validp-defs
                             typep-when-type-eq-proof-validp
-                            ispace-eq-refl
-                            type-scalar-array)))))
+                            ispace-eq-refl))))
 
-  (defruled type-eq-cong-scalar-array
+    (defret type-eq-proof-validp-of-type-eq-proof-cong-scalar-when-scalar
+      (implies (and (typep type)
+                    (type-case type :scalar)
+                    (equal type1 (type-scalar->elem type))
+                    (type-eq-proof-validp premise1-proof type1 type2))
+               (type-eq-proof-validp proof
+                                     type
+                                     (type-scalar type2)))
+      :hints
+      (("Goal" :use type-eq-proof-validp-of-type-eq-proof-cong-scalar))))
+
+  (defruled type-eq-cong-scalar
     (implies (type-eq type1 type2)
-             (type-eq (type-scalar-array type1) (type-scalar-array type2)))
+             (type-eq (type-scalar type1) (type-scalar type2)))
     :use ((:instance type-eq (type1 type1) (type2 type2))
           (:instance type-eq-when-proof-validp
-                     (proof (type-eq-proof-cong-scalar-array
+                     (proof (type-eq-proof-cong-scalar
                              type1 type2 (type-eq-proof type1 type2)))
-                     (_type1 (type-scalar-array type1))
-                     (_type2 (type-scalar-array type2)))))
+                     (_type1 (type-scalar type1))
+                     (_type2 (type-scalar type2)))))
 
-  (defmacro make-type-eq-proof-cong-scalar-array (&key type1
-                                                       type2
-                                                       premise1-proof)
-    `(type-eq-proof-cong-scalar-array ,type1 ,type2 ,premise1-proof)))
+  (defmacro make-type-eq-proof-cong-scalar (&key type1
+                                                 type2
+                                                 premise1-proof)
+    `(type-eq-proof-cong-scalar ,type1 ,type2 ,premise1-proof)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,7 +459,7 @@
     "The rule @('fun2m') reduces an n-ary function type
      with two or more input types to
      a unary function type from the first input type
-     to the scalar array type of
+     to the scalar type of
      the n-ary function type with the remaining input types.
      This derived rule rewrites the first input type
      and the n-ary function type with the remaining input types
@@ -434,7 +467,7 @@
      so that the rule can be applied inductively along the input types):
      it reduces the n-ary function type to the unary function type,
      rewrites the components of the latter via the rule @('fun')
-     (the output type via @(tsee type-eq-cong-scalar-array)),
+     (the output type via @(tsee type-eq-cong-scalar)),
      and reduces back to an n-ary function type via symmetry,
      chaining the three steps via transitivity.")
    (xdoc::p
@@ -467,7 +500,7 @@
          (rest2 (type-funn types-in2 type-out2)))
       (make-type-eq-proof-trans
        :type1 (type-funn (cons type-in1 types-in1) type-out1)
-       :type2 (type-fun type-in1 (type-scalar-array rest1))
+       :type2 (type-fun type-in1 (type-scalar rest1))
        :type3 (type-funn (cons type-in2 types-in2) type-out2)
        :premise1-proof (make-type-eq-proof-fun2m :type-in1 type-in1
                                                  :type-in2 (car types-in1)
@@ -475,24 +508,24 @@
                                                  :type-out type-out1)
        :premise2-proof
        (make-type-eq-proof-trans
-        :type1 (type-fun type-in1 (type-scalar-array rest1))
-        :type2 (type-fun type-in2 (type-scalar-array rest2))
+        :type1 (type-fun type-in1 (type-scalar rest1))
+        :type2 (type-fun type-in2 (type-scalar rest2))
         :type3 (type-funn (cons type-in2 types-in2) type-out2)
         :premise1-proof
         (make-type-eq-proof-fun
          :type-in1 type-in1
          :type-in2 type-in2
-         :type-out1 (type-scalar-array rest1)
-         :type-out2 (type-scalar-array rest2)
+         :type-out1 (type-scalar rest1)
+         :type-out2 (type-scalar rest2)
          :premise1-proof premise1-proof
-         :premise2-proof (make-type-eq-proof-cong-scalar-array
+         :premise2-proof (make-type-eq-proof-cong-scalar
                           :type1 rest1
                           :type2 rest2
                           :premise1-proof premise2-proof))
         :premise2-proof
         (make-type-eq-proof-symm
          :type1 (type-funn (cons type-in2 types-in2) type-out2)
-         :type2 (type-fun type-in2 (type-scalar-array rest2))
+         :type2 (type-fun type-in2 (type-scalar rest2))
          :premise1-proof (make-type-eq-proof-fun2m :type-in1 type-in2
                                                    :type-in2 (car types-in2)
                                                    :types-in (cdr types-in2)
@@ -522,19 +555,17 @@
                   (type-eq-proof-fun
                    type-in1
                    type-in2
-                   (type-scalar-array (type-funn types-in1 type-out1))
-                   (type-scalar-array (type-funn types-in2 type-out2))
+                   (type-scalar (type-funn types-in1 type-out1))
+                   (type-scalar (type-funn types-in2 type-out2))
                    premise1-proof
-                   (type-eq-proof-cong-scalar-array
+                   (type-eq-proof-cong-scalar
                     (type-funn types-in1 type-out1)
                     (type-funn types-in2 type-out2)
                     premise2-proof))
                   (type-fun type-in1
-                            (type-scalar-array
-                             (type-funn types-in1 type-out1)))
+                            (type-scalar (type-funn types-in1 type-out1)))
                   (type-fun type-in2
-                            (type-scalar-array
-                             (type-funn types-in2 type-out2)))))
+                            (type-scalar (type-funn types-in2 type-out2)))))
         :in-theory (enable* type-equivalence-definition-validp-defs
                             typep-when-type-eq-proof-validp)))))
 

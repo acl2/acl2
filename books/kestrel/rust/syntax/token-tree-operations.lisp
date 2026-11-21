@@ -33,8 +33,8 @@
    (xdoc::p
     "Delimiter tokens must not appear at leaves:
      they are represented structurally, by delimited groups.
-     The token-tree builder in the lexing layer
-     will be proved to produce only well-formed trees."))
+     The token-tree builder produces only well-formed trees
+     (see @(see token-tree-builder))."))
 
   (define token-tree-wfp ((tree token-treep))
     :returns (yes/no booleanp)
@@ -69,10 +69,12 @@
      the tokens of its subtrees,
      and its closing delimiter token,
      reconstructed with their stored spans.
-     This is the specification anchor
-     for the token-tree builder in the lexing layer:
+     Flattening, with well-formedness, specifies the token-tree builder
+     (see @(see token-tree-builder)):
      building trees from a token sequence and flattening them
-     must yield the original sequence."))
+     yields the original sequence,
+     and building from the flattening of well-formed trees
+     yields those trees."))
 
   (define token-tree->tokens ((tree token-treep))
     :returns (tokens token+span-listp)

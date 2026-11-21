@@ -23,7 +23,8 @@
 
 (defxdoc+ differential-testing
   :parents (syntax-for-tools)
-  :short "How the lexer and the tokenizer are tested
+  :short "How the lexer, the tokenizer, and the token-tree builder
+          are tested
           against rustc and against the Rust Reference's interpreter."
   :long
   (xdoc::topstring
@@ -37,7 +38,8 @@
      rustc is the definition of what lexes,
      and it is a program, not a specification.
      So that part is tested,
-     by running our lexer and tokenizer and rustc on the same inputs
+     by running our lexer, tokenizer, and token-tree builder,
+     and rustc, on the same inputs
      and comparing the results.
      A test that finds a disagreement leads to a correction of ours,
      or, where the Reference had led us to the wrong behavior,
@@ -73,12 +75,28 @@
    (xdoc::ul
     (xdoc::li
      "Delimiters.
-      rustc's lexer also groups the tokens by their delimiters
-      (see @(see token-trees)), which ours does not do yet.
-      So rustc rejects an input whose delimiters do not balance,
-      and it counts a delimited group as one argument.
-      On our side, the tokens are counted in the same way,
-      and an input whose delimiters do not balance counts as rejected.")
+      rustc's lexer also groups the tokens by their delimiters,
+      into token trees:
+      it rejects an input whose delimiters do not match,
+      and the macro counts a delimited group as one argument.
+      On our side this is the token-tree builder
+      (see @(see token-tree-builder)), which runs after the tokenizer.
+      Since the input is between the parentheses of the macro invocation,
+      the builder is given the tokens of the input
+      between an opening and a closing parenthesis, as rustc has them.
+      If it rejects them, rustc must reject the input,
+      and the first error that rustc reports about delimiters
+      must be of the kind that the builder reports
+      (a closing delimiter of the wrong kind,
+      a delimiter that is not closed,
+      or a closing delimiter that closes nothing).
+      Otherwise, what is counted is the token trees
+      that the builder puts between the two parentheses.
+      An input like @(') (') closes the parenthesis of the invocation
+      and opens another:
+      then rustc builds token trees without error
+      and rejects the input in a later phase,
+      and the builder must accept the tokens too.")
     (xdoc::li
      "Doc comments.
       rustc turns each doc comment into an attribute
@@ -149,7 +167,10 @@
       Other categories combine chosen pieces
       (a literal of each kind, a suffix, and something right after it),
       or list single cases.
-      There are about 188,000 such inputs.")
+      For the token-tree builder,
+      one category is all the strings of up to five characters
+      over the six delimiters and @('a').
+      There are about 212,000 such inputs.")
     (xdoc::li
      "Source files of published crates,
       taken from a local cargo registry.")
@@ -174,7 +195,7 @@
      with a @('README.md') that gives the commands.
      The ACL2 side is the book @('tests/harness/driver'),
      which reads a file of inputs,
-     runs the lexer and the tokenizer on each,
+     runs the lexer, the tokenizer, and the token-tree builder on each,
      and writes a file of results.
      The inputs and the results are not in the repository:
      the scripts generate them,
@@ -183,22 +204,34 @@
      only the ACL2 side runs again, which takes seconds.")
    (xdoc::h3 "Results")
    (xdoc::p
-    "At this time of writing, on the 188,010 short inputs:")
+    "At this time of writing, on the 211,713 short inputs:")
    (xdoc::ul
     (xdoc::li
-     "Our lexer and tokenizer agree with rustc 1.87.0,
+     "Our lexer, tokenizer, and token-tree builder
+      agree with rustc 1.87.0,
       in each of the two editions,
       on all the inputs but 16.
       Those 16 have non-ASCII identifiers,
-      which our lexer does not cover yet.")
+      which our lexer does not cover yet.
+      On the 23,381 inputs where the builder reports an error,
+      rustc's first error about delimiters is of the same kind.")
     (xdoc::li
-     "The CSTs of the 138,216 inputs that lex
+     "The CSTs of the 161,919 inputs that lex
       satisfy the executable conjuncts of the specification.")
     (xdoc::li
-     "rustc 1.100.0 agrees with rustc 1.87.0 on all the inputs
-      but the 148 that have, in an identifier,
+     "rustc 1.100.0 accepts the same inputs as rustc 1.87.0,
+      with the same counts,
+      but for the 148 that have, in an identifier,
       a character that Unicode 17 added;
-      rustc 1.87.0 uses Unicode 16.")
+      rustc 1.87.0 uses Unicode 16.
+      The two differ in the errors that they report about delimiters,
+      on 7,035 inputs:
+      where closing delimiters of the wrong kind
+      are followed, further on, by a closing delimiter that closes nothing,
+      rustc 1.87.0 reports all these errors, in that order,
+      and rustc 1.100.0 leaves out some of the first ones.
+      On 5,921 of those inputs it reports only the last one.
+      Our builder reports the first error, as rustc 1.87.0 does.")
     (xdoc::li
      "The Reference's interpreter agrees with rustc 1.100.0
       on all the inputs but one, @('/*!/*/')
@@ -210,10 +243,12 @@
       the 148 above, the 16 of the first item,
       and @('/*!/*/'), which our lexer rejects, as rustc does."))
    (xdoc::p
-    "On 251 source files, of 300 to 12,000 bytes each,
-     38 of them with block doc comments,
+    "On 495 source files, of 300 to 12,000 bytes each,
+     36 of them with block doc comments,
      our tokenizer and rustc 1.87.0, in edition 2021,
-     count the same number of tokens in every file.")
+     count the same number of tokens in every file,
+     and our builder accepts the tokens of every file:
+     about 285,000 tokens, in about 40,700 delimited groups.")
    (xdoc::h3 "Limits")
    (xdoc::p
     "These tests are evidence, not proof:
