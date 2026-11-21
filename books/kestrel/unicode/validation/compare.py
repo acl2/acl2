@@ -100,7 +100,7 @@ def main():
                  "nchar", "dep", "pcm", "psyn", "ids", "idc", "sc", "scx",
                  "bc", "blk", "dd", "emoji", "epres", "emod", "ebase",
                  "ecomp", "extpict", "ri", "idst", "idty", "skel", "skelk",
-                 "skelm", "ass"]:
+                 "skelm", "ass", "wspace"]:
         if name not in index:
             die("%s: no column %s" % (sys.argv[1], name))
 

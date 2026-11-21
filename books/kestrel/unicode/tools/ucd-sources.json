@@ -1,5 +1,21 @@
 {
   "16.0.0": {
+    "BidiBrackets.txt": {
+      "sha256": "b8f32554c6f658821fb0ee742d21c5b1f2086b9bf13071fed04894b022f93d67",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/BidiBrackets.txt"
+    },
+    "BidiCharacterTest.txt": {
+      "sha256": "d04a51a90052dcd71c4e91ee5b3a9d973ee35c12406b5a99875ac8163c8f2804",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/BidiCharacterTest.txt"
+    },
+    "BidiMirroring.txt": {
+      "sha256": "d7afdadd1bbd66f5a663ac0e8f7958f18fd9491fc0bc59ec5877cb82db71db7d",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/BidiMirroring.txt"
+    },
+    "BidiTest.txt": {
+      "sha256": "93e5eb9d88ca89dcf895f5576486a3363762ad2aa8f2db2fa56fe60cb82b9520",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/BidiTest.txt"
+    },
     "Blocks.txt": {
       "sha256": "f3907b395d410f1b97342292ca6bc83dd12eb4b205f2a0c48efdef99e517d7b0",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/Blocks.txt"
@@ -74,6 +90,22 @@
     }
   },
   "17.0.0": {
+    "BidiBrackets.txt": {
+      "sha256": "dadbaf38a0d0246e5b805bf8725cb81b7c621f93d030595635f5ba2c2f179428",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/BidiBrackets.txt"
+    },
+    "BidiCharacterTest.txt": {
+      "sha256": "a3e6e905ab5afbe318a96df5401d0372a04cd73ef139ab5e3cf0ae241c255488",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/BidiCharacterTest.txt"
+    },
+    "BidiMirroring.txt": {
+      "sha256": "a2f16fb873ab4fcdf3221cb1a8a85a134ddd6ed03603181823ff5206af3741ce",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/BidiMirroring.txt"
+    },
+    "BidiTest.txt": {
+      "sha256": "888bdfc8090652272d1f859cdb00ae659e2dc6c26740be61ef1d03998a687620",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/BidiTest.txt"
+    },
     "Blocks.txt": {
       "sha256": "c0edefaf1a19771e830a82735472716af6bf3c3975f6c2a23ffbe2580fbbcb15",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/Blocks.txt"
@@ -148,6 +180,22 @@
     }
   },
   "18.0.0": {
+    "BidiBrackets.txt": {
+      "sha256": "4b3b62e4a14b84ee752808c810c602534921c09a4a1bf78cfbee566d66c125b3",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/BidiBrackets.txt"
+    },
+    "BidiCharacterTest.txt": {
+      "sha256": "045b24d2c8ab066951bd32fe8c6b4de34647f72b5b1c7df0265f24ab53573e01",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/BidiCharacterTest.txt"
+    },
+    "BidiMirroring.txt": {
+      "sha256": "cd54810ebf52f0e61a730c8b9cb25975de6c85f6d788a559b416afd548923fd6",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/BidiMirroring.txt"
+    },
+    "BidiTest.txt": {
+      "sha256": "9af2f882a4ab50912e388f069a673b94eacd82fa6d07d20a3ff7f3c759e905aa",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/BidiTest.txt"
+    },
     "Blocks.txt": {
       "sha256": "a58f8d322f3c5e254f9f97b1cbf76a454a7e02de6ac35619a5e4f27aaabfd553",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/Blocks.txt"

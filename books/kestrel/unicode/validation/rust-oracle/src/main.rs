@@ -270,6 +270,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         "nfkc@unicode-normalization",
         "gc@unicode-properties",
         "emoji_status@unicode-properties",
+        "wspace@std",
     ];
     if cfg!(feature = "have-unicode-script") {
         columns.extend(["sc@unicode-script", "scx@unicode-script"]);
@@ -312,6 +313,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             "ecomp@regex-syntax",
             "extpict@regex-syntax",
             "ri@regex-syntax",
+            "wspace@regex-syntax",
         ]);
     }
     #[cfg(feature = "have-regex-syntax")]
@@ -336,6 +338,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         regex_syntax_set("Emoji_Component"),
         regex_syntax_set("Extended_Pictographic"),
         regex_syntax_set("Regional_Indicator"),
+        regex_syntax_set("White_Space"),
     ];
 
     writeln!(out, "#cp;{}", columns.join(";"))?;
@@ -346,7 +349,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
         };
         write!(
             out,
-            "{cp};{};{};{};{};{};{};{};{};{};{};{};{:?}",
+            "{cp};{};{};{};{};{};{};{};{};{};{};{};{:?};{}",
             flag(unicode_ident::is_xid_start(c)),
             flag(unicode_ident::is_xid_continue(c)),
             flag(ra_ap_rustc_lexer::is_id_start(c)),
@@ -359,6 +362,7 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
             join(std::iter::once(c).nfkc()),
             general_category_abbreviation(c),
             unicode_properties::UnicodeEmoji::emoji_status(c),
+            flag(c.is_whitespace()),
         )?;
         #[cfg(feature = "have-unicode-script")]
         write!(

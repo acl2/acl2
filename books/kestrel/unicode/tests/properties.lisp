@@ -1666,3 +1666,107 @@
                    (general-category-ranges
                     (general-category-titlecase-letter) *v18*)))
              31))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Paired brackets and mirroring glyphs.
+
+(test (equal (code-point-bidi-bracket #x28 *v17*) (bidi-bracket-open #x29)))
+(test (equal (code-point-bidi-bracket #x29 *v17*) (bidi-bracket-close #x28)))
+(test (equal (code-point-bidi-bracket #x3C *v17*) nil)) ; LESS-THAN SIGN
+(test (equal (code-point-bidi-bracket #xAB *v17*) nil)) ; a quotation mark
+(test (equal (code-point-bidi-mirroring-glyph #x28 *v17*) #x29))
+(test (equal (code-point-bidi-mirroring-glyph #x3C *v17*) #x3E))
+(test (equal (code-point-bidi-mirroring-glyph #x61 *v17*) nil))
+
+; U+222B INTEGRAL is drawn mirrored in text from right to left,
+; but no character has the mirrored glyph.
+
+(test (equal (code-point-bidi-mirroring-glyph #x222B *v17*) nil))
+
+; The pairs that Unicode 18.0.0 adds.
+
+(test (equal (code-point-bidi-bracket #x2E62 *v17*) nil))
+(test (equal (code-point-bidi-bracket #x2E62 *v18*)
+             (bidi-bracket-open #x2E63)))
+(test (equal (code-point-bidi-mirroring-glyph #x221D *v17*) nil))
+(test (equal (code-point-bidi-mirroring-glyph #x221D *v18*) #x1DB10))
+(test (equal (treemap::size (bidi-brackets *v16*)) 128))
+(test (equal (treemap::size (bidi-brackets *v18*)) 130))
+(test (equal (treemap::size (bidi-mirroring-glyphs *v17*)) 428))
+(test (equal (treemap::size (bidi-mirroring-glyphs *v18*)) 438))
+
+; The two angle brackets that have canonical equivalents
+; have the identifiers of those in bracket pairs.
+
+(test (equal (code-point-bidi-bracket-role #x2329 *v17*)
+             (bidi-bracket-role-open #x3009)))
+(test (equal (code-point-bidi-bracket-role #x3008 *v17*)
+             (bidi-bracket-role-open #x3009)))
+(test (equal (code-point-bidi-bracket-role #x232A *v17*)
+             (bidi-bracket-role-close #x3009)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The Unicode Bidirectional Algorithm.
+; All the lines of the two conformance files are checked
+; in the books bidi-test and bidi-character-test;
+; these are a few examples to read.
+
+(defconst *ltr* (paragraph-direction-left-to-right))
+(defconst *rtl* (paragraph-direction-right-to-left))
+(defconst *first-strong* (paragraph-direction-first-strong))
+
+; A Latin letter and two Hebrew letters.
+
+(test (equal (bidi-levels '(#x61 #x5D0 #x5D1) *ltr* *v17*) '(0 1 1)))
+(test (equal (bidi-display-order '(#x61 #x5D0 #x5D1) *ltr* *v17*)
+             '(0 2 1)))
+(test (equal (bidi-levels '(#x61 #x5D0 #x5D1) *rtl* *v17*) '(2 1 1)))
+(test (equal (bidi-display-order '(#x61 #x5D0 #x5D1) *rtl* *v17*)
+             '(2 1 0)))
+(test (equal (bidi-levels '(#x61 #x5D0 #x5D1) *first-strong* *v17*)
+             '(0 1 1)))
+(test (equal (bidi-levels '(#x5D0 #x61) *first-strong* *v17*) '(1 2)))
+
+; Text with no character written from right to left is not reordered.
+
+(test (equal (bidi-display-order (ascii "f(x) = 2*y;") *ltr* *v17*)
+             '(0 1 2 3 4 5 6 7 8 9 10)))
+
+; Two Arabic-Indic digits with a space between them are reordered,
+; though no letter is written from right to left.
+
+(test (equal (bidi-display-order '(#x661 #x20 #x662) *ltr* *v17*)
+             '(2 1 0)))
+
+; An override from right to left reverses Latin letters.
+; The override itself, U+202E, has no level and is not displayed.
+
+(test (equal (bidi-levels '(#x61 #x202E #x62 #x63) *ltr* *v17*)
+             '(0 nil 1 1)))
+(test (equal (bidi-display-order '(#x61 #x202E #x62 #x63) *ltr* *v17*)
+             '(0 3 2)))
+
+; An isolate from right to left, U+2067, ended by U+2069.
+
+(test (equal (bidi-display-order '(#x61 #x2067 #x62 #x21 #x2069 #x63)
+                                 *ltr* *v17*)
+             '(0 1 3 2 4 5)))
+
+; Brackets around Hebrew, after Latin, in a paragraph from left to right:
+; the brackets go with the Latin text.
+
+(test (equal (bidi-levels '(#x61 #x28 #x5D0 #x29) *ltr* *v17*)
+             '(0 0 1 0)))
+
+; Two paragraphs, cut at U+2029 PARAGRAPH SEPARATOR,
+; each with its own direction.
+
+(test (equal (bidi-levels '(#x5D0 #x61 #x2029 #x61 #x5D0)
+                          *first-strong* *v17*)
+             '(1 2 1 0 1)))
+(test (equal (bidi-display-order '(#x5D0 #x61 #x2029 #x61 #x5D0)
+                                 *first-strong* *v17*)
+             '(2 1 0 3 4)))
+(test (equal (bidi-display-order nil *ltr* *v17*) nil))
