@@ -261,3 +261,22 @@
 
 (assert-event (equal (len *regional-indicator-v16.0.0*) 1))
 (assert-event (equal (range-list-size *regional-indicator-v16.0.0*) 26))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; White_Space: 10 ranges, 25 code points.
+
+(defconst *white-space-v16.0.0*
+  (list (range #x0009 #x000D)
+        (range #x0020 #x0020)
+        (range #x0085 #x0085)
+        (range #x00A0 #x00A0)
+        (range #x1680 #x1680)
+        (range #x2000 #x200A)
+        (range #x2028 #x2029)
+        (range #x202F #x202F)
+        (range #x205F #x205F)
+        (range #x3000 #x3000)))
+
+(assert-event (equal (len *white-space-v16.0.0*) 10))
+(assert-event (equal (range-list-size *white-space-v16.0.0*) 25))

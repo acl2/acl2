@@ -33,6 +33,7 @@
 (include-book "identifier-type-tables")
 (include-book "identifier-status")
 (include-book "pattern-white-space")
+(include-book "white-space")
 (include-book "pattern-syntax")
 (include-book "bidi-controls")
 (include-book "default-ignorable")
@@ -176,6 +177,11 @@
       which defines white space:
       see @(see pattern-white-space).")
     (xdoc::li
+     "The @('White_Space') property,
+      which has the spaces of ordinary text,
+      and is not the same as @('Pattern_White_Space'):
+      see @(see white-space).")
+    (xdoc::li
      "The @('Pattern_Syntax') property,
       which defines the characters of syntax:
       see @(see pattern-syntax).")
@@ -305,6 +311,8 @@
     (xdoc::li
      "@('kestrel/unicode/pattern-white-space')
       for @(tsee pattern-white-space-p),
+      @('kestrel/unicode/white-space')
+      for @(tsee white-space-p),
       and @('kestrel/unicode/pattern-syntax')
       for @(tsee pattern-syntax-p).")
     (xdoc::li
@@ -479,6 +487,7 @@
                     identifier-word-boundaries
                     scripts
                     pattern-white-space
+                    white-space
                     bidi-controls
                     bidi-class-property
                     tables))
