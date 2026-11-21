@@ -25,7 +25,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ dimension-polynomials-properties
-  :parents (validator)
+  :parents (validator-correctness)
   :short "Properties of the polynomials in the dimension variables."
   :long
   (xdoc::topstring

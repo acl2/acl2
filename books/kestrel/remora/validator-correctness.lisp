@@ -11,6 +11,7 @@
 (in-package "REMORA")
 
 (include-book "ispace-validator-correctness")
+(include-book "dimension-polynomials-properties")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -21,4 +22,5 @@
   (xdoc::topstring
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (ispace-validator-correctness))
+  :order-subtopics (ispace-validator-correctness
+                    dimension-polynomials-properties))
