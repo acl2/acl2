@@ -289,3 +289,104 @@
                                          (decimal-digit-map-fix map))))
     (if in? value nil))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum bidi-bracket
+  :short "Fixtype of what the Unicode Character Database says
+          about a paired bracket."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the value of two properties together [UAX #9, Section 3.1.3]:
+     @('Bidi_Paired_Bracket_Type'),
+     which says whether the bracket is an opening one (@('Open'))
+     or a closing one (@('Close')),
+     and @('Bidi_Paired_Bracket'),
+     which is the other bracket of the pair,
+     here called the partner.
+     For example, U+0028 LEFT PARENTHESIS is an opening bracket
+     whose partner is U+0029 RIGHT PARENTHESIS.")
+   (xdoc::p
+    "A code point that is not a paired bracket has
+     the @('Bidi_Paired_Bracket_Type') @('None')
+     and no @('Bidi_Paired_Bracket');
+     see @(tsee bidi-bracket-option)."))
+  (:open ((partner code-point)))
+  (:close ((partner code-point)))
+  :pred bidi-bracket-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption bidi-bracket-option
+  bidi-bracket
+  :short "Fixtype of optional values of the paired bracket properties."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The value @('nil') is for a code point that is not a paired bracket."))
+  :pred bidi-bracket-option-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreemap bidi-bracket-map
+  :short "Fixtype of maps from code points
+          to values of the paired bracket properties."
+  :key-type code-point
+  :val-type bidi-bracket
+  :pred bidi-bracket-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define bidi-bracket-map-lookup ((cp code-point-p)
+                                 (map bidi-bracket-mapp))
+  :returns (bracket? bidi-bracket-option-p)
+  :short "Look up a code point in a map of paired bracket properties."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') if the code point is not in the map."))
+  (b* (((mv in? bracket) (treemap::lookup? (code-point-fix cp)
+                                           (bidi-bracket-map-fix map))))
+    (if in? bracket nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption code-point-option
+  code-point
+  :short "Fixtype of optional code points."
+  :pred code-point-option-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreemap mirroring-map
+  :short "Fixtype of maps from code points to code points,
+          for the @('Bidi_Mirroring_Glyph') property."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the table of the code points
+     that have a @('Bidi_Mirroring_Glyph') [UAX #9, Section 7]:
+     the code point of a character
+     whose glyph is the mirror image of the glyph of the first.
+     For example, U+003C LESS-THAN SIGN is mapped
+     to U+003E GREATER-THAN SIGN."))
+  :key-type code-point
+  :val-type code-point
+  :pred mirroring-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define mirroring-map-lookup ((cp code-point-p)
+                              (map mirroring-mapp))
+  :returns (mirror? code-point-option-p)
+  :short "Look up a code point in a map of mirroring glyphs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is @('nil') if the code point is not in the map."))
+  (b* (((mv in? mirror) (treemap::lookup? (code-point-fix cp)
+                                          (mirroring-map-fix map))))
+    (if in? mirror nil))
+  :hooks (:fix))

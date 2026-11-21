@@ -112,6 +112,10 @@ UCD_FILES = {
     "security/IdentifierStatus.txt": True,
     "security/IdentifierType.txt": True,
     "security/confusables.txt": True,
+    "BidiBrackets.txt": True,
+    "BidiMirroring.txt": True,
+    "BidiTest.txt": True,
+    "BidiCharacterTest.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
     "PropertyValueAliases.txt": False,
@@ -1573,6 +1577,103 @@ def book_confusables(version, sources):
     return book
 
 
+def book_bidi_brackets(version, sources):
+    source = sources["BidiBrackets.txt"]
+    book = Book(version, "bidi-brackets",
+                "Bidi_Paired_Bracket and Bidi_Paired_Bracket_Type,"
+                " from BidiBrackets.txt.",
+                [source], ["maps"], ["std/util/defconsts"])
+    bracket = {}
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 3 or fields[2] not in ("o", "c"):
+            die("%s: not 'code point; code point; o or c'" % where)
+        cp, hi = parse_cp_range(fields[0], where)
+        partner, hi2 = parse_cp_range(fields[1], where)
+        if hi != cp or hi2 != partner:
+            die("%s: a range" % where)
+        if cp in bracket:
+            die("%s: U+%04X listed twice" % (where, cp))
+        bracket[cp] = (partner, fields[2])
+    # Each bracket is the partner of its partner, which is of the other
+    # type.
+    for cp, (partner, kind) in sorted(bracket.items()):
+        if partner not in bracket or bracket[partner][0] != cp \
+           or bracket[partner][1] == kind:
+            die("%s: U+%04X and U+%04X are not a pair"
+                % (source.relpath, cp, partner))
+    book.comment(
+        "The paired brackets (UAX #9, Section 3.1.3): a map from a code\n"
+        "point to its Bidi_Paired_Bracket_Type, which is Open or Close,\n"
+        "with its Bidi_Paired_Bracket, which is the other bracket of the\n"
+        "pair.  A code point that is not in the map has the type None.\n"
+        "%d entries." % len(bracket))
+    book.blank()
+    book.tree_map("bidi-bracket",
+                  ["(cons %s (bidi-bracket-%s %s))"
+                   % (hexcp(cp), "open" if kind == "o" else "close",
+                      hexcp(partner))
+                   for cp, (partner, kind) in sorted(bracket.items())],
+                  False, "bidi-bracket-mapp")
+    return book
+
+
+def book_bidi_mirroring(version, sources):
+    source = sources["BidiMirroring.txt"]
+    book = Book(version, "bidi-mirroring",
+                "Bidi_Mirroring_Glyph, from BidiMirroring.txt.",
+                [source], ["maps"], ["std/util/defconsts"])
+    mirror = {}
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 2:
+            die("%s: not 'code point; code point'" % where)
+        cp, hi = parse_cp_range(fields[0], where)
+        glyph, hi2 = parse_cp_range(fields[1], where)
+        if hi != cp or hi2 != glyph:
+            die("%s: a range" % where)
+        if cp in mirror:
+            die("%s: U+%04X listed twice" % (where, cp))
+        mirror[cp] = glyph
+    # Cross-check with field 9 of UnicodeData.txt: a character with a
+    # Bidi_Mirroring_Glyph has Bidi_Mirrored=Y.
+    mirrored = set()
+    for number, line in enumerate(sources["UnicodeData.txt"].lines,
+                                  start=1):
+        fields = line.split(";")
+        if len(fields) > 9 and fields[9] == "Y":
+            mirrored.add(int(fields[0], 16))
+    for cp in sorted(mirror):
+        if cp not in mirrored:
+            die("%s: U+%04X has a mirroring glyph"
+                " but not Bidi_Mirrored=Y" % (source.relpath, cp))
+    book.comment(
+        "The mirroring glyphs (UAX #9, Section 7): a map from a code\n"
+        "point to its Bidi_Mirroring_Glyph, which is the code point of a\n"
+        "character whose glyph is the mirror image of its own.\n"
+        "A code point that is not in the map has no Bidi_Mirroring_Glyph.\n"
+        "The comments of the file, which point out the pairs that are\n"
+        "only a best fit, are not recorded.\n"
+        "%d entries.  %d characters have Bidi_Mirrored=Y in\n"
+        "UnicodeData.txt; those not in the map have no character with\n"
+        "the mirrored glyph."
+        % (len(mirror), len(mirrored)))
+    book.blank()
+    book.tree_map("bidi-mirroring",
+                  ["(%s . %s)" % (hexcp(cp), hexcp(glyph))
+                   for cp, glyph in sorted(mirror.items())],
+                  True, "mirroring-mapp")
+    return book
+
+
 BOOKS = [book_derived_core_properties,
          book_prop_list,
          book_derived_combining_class,
@@ -1587,7 +1688,266 @@ BOOKS = [book_derived_core_properties,
          book_identifier_status,
          book_identifier_type,
          book_confusables,
+         book_bidi_brackets,
+         book_bidi_mirroring,
          book_normalization_test]
+
+
+###############################################################################
+# The conformance tests of the Unicode Bidirectional Algorithm.
+#
+# BidiTest.txt and BidiCharacterTest.txt have the same test cases in all
+# the versions that this script has been run for; only their comments
+# differ.  So their books are written once, in data/bidi/, and not once
+# per version.  The script writes them from the files of the version it
+# is run for: if a version changes a test case, --check fails for the
+# other versions, and the two books have to be made per version.
+
+# One character for each value of Bidi_Class, in the test books.
+BIDI_CLASS_LETTERS = {
+    "L": "L", "R": "R", "AL": "A", "EN": "E", "ES": "s", "ET": "t",
+    "AN": "N", "CS": "c", "NSM": "M", "BN": "b", "B": "B", "S": "S",
+    "WS": "W", "ON": "O", "LRE": "e", "LRO": "o", "RLE": "f", "RLO": "p",
+    "PDF": "d", "LRI": "i", "RLI": "j", "FSI": "k", "PDI": "q"}
+
+# The characters that stand for the code points of BidiCharacterTest.txt
+# in its test book, in the order of the code points.
+BIDI_TEST_ALPHABET = ("0123456789"
+                      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                      "abcdefghijklmnopqrstuvwxyz"
+                      "!#$%&()*+,-./:;<=>?@[]^_{}~")
+
+
+def shared_book(name, title, relpath, manifest, includes):
+    """A book for a file that is the same in every version."""
+    versions = sorted(v for v in manifest if relpath in manifest[v])
+    book = Book(", ".join(versions), name, title, [], includes,
+                ["std/util/defconsts"])
+    index = book.lines.index("; Unicode version: " + ", ".join(versions))
+    lines = ["; Unicode versions: " + ", ".join(versions) + ".",
+             "; The file has the same test cases in each of them;",
+             "; its comments differ."]
+    for v in versions:
+        lines.append("; Source: " + manifest[v][relpath]["url"])
+        lines.append("; SHA-256: " + manifest[v][relpath]["sha256"])
+    book.lines[index:index + 1] = lines
+    return book
+
+
+def wrap_strings(text, indent, width=68):
+    """TEXT as Lisp strings of at most WIDTH characters, one per line."""
+    pieces = [text[i:i + width] for i in range(0, len(text), width)]
+    return ("\n" + " " * indent).join('"%s"' % p for p in pieces)
+
+
+def lisp_list(items, indent=4):
+    """A quoted list of ITEMS, on several lines if it is long; the
+    lines after the first are indented by INDENT and two more."""
+    rows = ["'("]
+    for item in items:
+        if len(rows[-1]) + len(item) + indent + 2 > 78:
+            rows[-1] = rows[-1].rstrip()
+            rows.append(" " * (indent + 2))
+        rows[-1] += item + " "
+    return "\n".join(rows).rstrip() + ")"
+
+
+def emit_group(lines, head, inputs):
+    """Emit one group of test cases: HEAD, then the inputs as strings."""
+    lines.append("   (%s" % head)
+    text = "'(" + wrap_strings("".join(inputs), 6) + "))"
+    for piece in text.split("\n"):
+        lines.append("    " + piece.lstrip(" ") if piece.startswith("'")
+                     else piece)
+
+
+def book_bidi_test(version, sources, manifest):
+    source = sources["BidiTest.txt"]
+    book = shared_book("bidi-test",
+                       "The conformance test of the Unicode Bidirectional"
+                       " Algorithm on\n; bidirectional classes,"
+                       " BidiTest.txt.",
+                       "BidiTest.txt", manifest, ["tests/bidi-test-types"])
+    groups = {}
+    levels = order = None
+    count = runs = 0
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("@Levels:"):
+            levels = tuple(line[len("@Levels:"):].split())
+            continue
+        if line.startswith("@Reorder:"):
+            order = tuple(line[len("@Reorder:"):].split())
+            continue
+        if line.startswith("@"):
+            die("%s: unknown line" % where)
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 2 or levels is None or order is None:
+            die("%s: not 'classes; bitset'" % where)
+        classes = fields[0].split()
+        bitset = int(fields[1])
+        if not classes or len(classes) != len(levels) \
+           or not 1 <= bitset <= 7:
+            die("%s: bad test case" % where)
+        for c in classes:
+            if c not in BIDI_CLASS_LETTERS:
+                die("%s: unknown class %s" % (where, c))
+        for x in levels:
+            if x != "x" and not x.isdigit():
+                die("%s: bad level" % where)
+        if sorted(int(x) for x in order) != \
+           [i for i, x in enumerate(levels) if x != "x"]:
+            die("%s: the order is not that of the characters with levels"
+                % where)
+        groups.setdefault((levels, order, bitset), []).append(
+            "".join(BIDI_CLASS_LETTERS[c] for c in classes))
+        count += 1
+        runs += bin(bitset).count("1")
+    book.comment(
+        "Each line of the file is a list of bidirectional classes and a\n"
+        "set of paragraph directions, under two lines that give the\n"
+        "expected levels and the expected order of display.  Here the\n"
+        "lines with the same expected levels, the same expected order and\n"
+        "the same set of directions are put together in a group:\n"
+        "\n"
+        "  (bidi-test-group LEVELS ORDER DIRECTIONS INPUTS)\n"
+        "\n"
+        "LEVELS has a level, or nil for a character that rule X9 removes,\n"
+        "for each character.  ORDER is the list of the positions of the\n"
+        "characters from left to right.  DIRECTIONS is the number of the\n"
+        "file: 1 for the direction found by rules P2 and P3, plus 2 for\n"
+        "left to right, plus 4 for right to left.  INPUTS is a list of\n"
+        "strings which, put end to end, are the inputs of the group, one\n"
+        "after the other; each input has as many characters as LEVELS\n"
+        "has elements, one for each class:")
+    for name, letter in BIDI_CLASS_LETTERS.items():
+        book.comment("  %s  %s" % (letter, name))
+    book.comment(
+        "The book ../../tests/bidi-test runs the tests.\n"
+        "%d lines of the file, in %d groups; %d tests, counting each\n"
+        "direction of each line."
+        % (count, len(groups), runs))
+    book.blank()
+    lines = book.lines
+    lines.append("(defconsts *bidi-test*")
+    lines.append("  (list")
+    for (levels, order, bitset), inputs in groups.items():
+        emit_group(lines,
+                   "bidi-test-group\n    %s\n    %s\n    %d"
+                   % (lisp_list("nil" if x == "x" else x for x in levels),
+                      lisp_list(order), bitset),
+                   inputs)
+    lines[-1] += "))"
+    lines.append("")
+    book.assert_equal("(len *bidi-test*)", len(groups))
+    return book
+
+
+def book_bidi_character_test(version, sources, manifest):
+    source = sources["BidiCharacterTest.txt"]
+    book = shared_book("bidi-character-test",
+                       "The conformance test of the Unicode Bidirectional"
+                       " Algorithm on\n; characters,"
+                       " BidiCharacterTest.txt.",
+                       "BidiCharacterTest.txt", manifest,
+                       ["tests/bidi-test-types"])
+    cases = []
+    used = set()
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 5:
+            die("%s: not five fields" % where)
+        cps = [parse_cp_range(f, where)[0] for f in fields[0].split()]
+        direction = int(fields[1])
+        level = int(fields[2])
+        levels = tuple(fields[3].split())
+        order = tuple(fields[4].split())
+        if not cps or len(cps) != len(levels) \
+           or direction not in (0, 1, 2) or level not in (0, 1):
+            die("%s: bad test case" % where)
+        for x in levels:
+            if x != "x" and not x.isdigit():
+                die("%s: bad level" % where)
+        if sorted(int(x) for x in order) != \
+           [i for i, x in enumerate(levels) if x != "x"]:
+            die("%s: the order is not that of the characters with levels"
+                % where)
+        used.update(cps)
+        cases.append((cps, direction, level, levels, order))
+    alphabet = sorted(used)
+    if len(alphabet) > len(BIDI_TEST_ALPHABET):
+        die("%s: %d different code points, more than this script has"
+            " characters for" % (source.relpath, len(alphabet)))
+    letter = {cp: BIDI_TEST_ALPHABET[i] for i, cp in enumerate(alphabet)}
+    groups = {}
+    for cps, direction, level, levels, order in cases:
+        groups.setdefault((direction, level, levels, order), []).append(
+            "".join(letter[cp] for cp in cps))
+    book.comment(
+        "Each line of the file is a list of code points, a paragraph\n"
+        "direction, and the expected paragraph embedding level, levels\n"
+        "and order of display.  Here the lines with the same direction\n"
+        "and the same expected results are put together in a group:\n"
+        "\n"
+        "  (bidi-character-test-group DIRECTION PARAGRAPH-LEVEL LEVELS\n"
+        "                             ORDER INPUTS)\n"
+        "\n"
+        "DIRECTION is the number of the file: 0 for left to right, 1 for\n"
+        "right to left, 2 for the direction found by rules P2 and P3.\n"
+        "LEVELS has a level, or nil for a character that rule X9 removes,\n"
+        "for each character.  ORDER is the list of the positions of the\n"
+        "characters from left to right.  INPUTS is a list of strings\n"
+        "which, put end to end, are the inputs of the group, one after\n"
+        "the other; each input has as many characters as LEVELS has\n"
+        "elements.  A character of an input stands for a code point: the\n"
+        "first constant below has the characters, and the second has\n"
+        "their code points, in the same order.\n"
+        "The book ../../tests/bidi-character-test runs the tests.\n"
+        "%d lines of the file, in %d groups, with %d different code\n"
+        "points."
+        % (len(cases), len(groups), len(alphabet)))
+    book.blank()
+    lines = book.lines
+    lines.append("(defconst *bidi-character-test-characters*")
+    lines.append("  (concatenate")
+    lines.append("   'string")
+    lines.append("   " + wrap_strings(BIDI_TEST_ALPHABET[:len(alphabet)],
+                                     3, 62)
+                 + "))")
+    lines.append("")
+    lines.append("(defconst *bidi-character-test-code-points*")
+    row = "  '("
+    for i, cp in enumerate(alphabet):
+        item = hexcp(cp)
+        if len(row) + len(item) + 1 > 76:
+            lines.append(row.rstrip())
+            row = "    "
+        row += item + " "
+    lines.append(row.rstrip() + "))")
+    lines.append("")
+    lines.append("(defconsts *bidi-character-test*")
+    lines.append("  (list")
+    for (direction, level, levels, order), inputs in groups.items():
+        emit_group(lines,
+                   "bidi-character-test-group %d %d\n    %s\n    %s"
+                   % (direction, level,
+                      lisp_list("nil" if x == "x" else x for x in levels),
+                      lisp_list(order)),
+                   inputs)
+    lines[-1] += "))"
+    lines.append("")
+    book.assert_equal("(len *bidi-character-test*)", len(groups))
+    return book
+
+
+SHARED_BOOKS = [book_bidi_test, book_bidi_character_test]
 
 
 CERT_ACL2 = """\
@@ -1685,6 +2045,11 @@ def main():
     for make in BOOKS:
         book = make(version, sources)
         outputs[out_dir / (book.name + ".lisp")] = book.text()
+    shared_dir = LIBRARY / "data" / "bidi"
+    outputs[shared_dir / "cert.acl2"] = CERT_ACL2
+    for make in SHARED_BOOKS:
+        book = make(version, sources, manifest)
+        outputs[shared_dir / (book.name + ".lisp")] = book.text()
 
     different = 0
     for path, text in outputs.items():

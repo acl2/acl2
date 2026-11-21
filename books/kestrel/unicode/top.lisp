@@ -36,6 +36,7 @@
 (include-book "white-space")
 (include-book "pattern-syntax")
 (include-book "bidi-controls")
+(include-book "bidirectional-algorithm")
 (include-book "default-ignorable")
 (include-book "variation-selectors")
 (include-book "join-controls")
@@ -195,6 +196,14 @@
       from left to right or from right to left:
       see @(see bidi-class-property).")
     (xdoc::li
+     "The paired brackets and the mirroring glyphs:
+      see @(see bidi-paired-brackets) and @(see bidi-mirroring).")
+    (xdoc::li
+     "The Unicode Bidirectional Algorithm,
+      which says in what order a text is displayed
+      when it has characters written from right to left:
+      see @(see bidirectional-algorithm).")
+    (xdoc::li
      "The emoji properties and the regional indicators:
       see @(see emoji).")
     (xdoc::li
@@ -329,6 +338,20 @@
      "@('kestrel/unicode/bidi-controls') for @(tsee bidi-control-p),
       @(tsee bidi-explicit-formatting-p)
       and @(tsee bidi-explicit-formatting-class).")
+    (xdoc::li
+     "@('kestrel/unicode/bidi-brackets')
+      for @(tsee code-point-bidi-bracket),
+      and @('kestrel/unicode/bidi-mirroring')
+      for @(tsee code-point-bidi-mirroring-glyph),
+      which loads @('bidi-brackets').")
+    (xdoc::li
+     "@('kestrel/unicode/bidirectional-algorithm')
+      for @(tsee bidi-levels) and @(tsee bidi-display-order),
+      which loads @('bidi-class'), @('bidi-brackets'),
+      @('bidi-mirroring') and @('decompositions').
+      The rules are in six books that it loads,
+      from @('bidi-characters') to @('bidi-reordering'):
+      see @(see bidirectional-algorithm).")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc),
@@ -490,6 +513,9 @@
                     white-space
                     bidi-controls
                     bidi-class-property
+                    bidi-paired-brackets
+                    bidi-mirroring
+                    bidirectional-algorithm
                     tables))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

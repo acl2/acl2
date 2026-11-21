@@ -58,6 +58,18 @@ validated.
   traditional Han with Latin, Japanese and Korean.  They are not values
   of the `Script` property; UTS #39 adds them to the sets of scripts that
   it compares.
+- An embedding level, or level, is the number that the Unicode
+  Bidirectional Algorithm gives to each character: text at an even level
+  is displayed from left to right, text at an odd level from right to
+  left.  The rules of the algorithm have short names in UAX #9: `P1` to
+  `P3` (paragraphs), `X1` to `X10` (explicit formatting characters), `W1`
+  to `W7` (weak types, that is, numbers), `N0` to `N2` (neutral types,
+  that is, brackets, spaces and punctuation), `I1` and `I2` (implicit
+  levels), `L1` to `L4` (lines and reordering).  `sos` and `eos` are the
+  directions assumed before the start and after the end of a sequence of
+  characters.  An isolate is a stretch of text that the characters
+  `LRI`, `RLI` or `FSI` open and `PDI` closes, and that the text around
+  it treats as one neutral character.
 - UAX: Unicode Standard Annex.  UAX #9 is the Unicode Bidirectional
   Algorithm, UAX #15 is Unicode Normalization Forms, UAX #24 is Unicode
   Script Property, UAX #31 is Unicode Identifiers and Syntax, UAX #44 is
@@ -95,6 +107,15 @@ validated.
 | `pattern-syntax` | `Pattern_Syntax`. |
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `bidi-class` | `Bidi_Class` in full (`code-point-bidi-class`), and the proof that it agrees with the table of the explicit formatting classes of `bidi-controls`. |
+| `bidi-brackets` | `Bidi_Paired_Bracket_Type` and `Bidi_Paired_Bracket` (`code-point-bidi-bracket`), with the proof that each paired bracket is the partner of its partner. |
+| `bidi-mirroring` | `Bidi_Mirroring_Glyph` (`code-point-bidi-mirroring-glyph`), with the proofs that the mirroring glyph of a mirroring glyph is the first code point, and that the partner of a paired bracket is its mirroring glyph. |
+| `bidirectional-algorithm` | The Unicode Bidirectional Algorithm of UAX #9: the resolved levels of a list of code points (`bidi-levels`) and the order in which it is displayed (`bidi-display-order`).  It loads the six books of the rules, below. |
+| `bidi-characters` | What the algorithm looks at in a character (the type `bidi-char`), the direction of a paragraph, and rules P2 and P3. |
+| `bidi-explicit-levels` | Rules X1 to X8: the levels and the overrides that the explicit formatting characters give. |
+| `bidi-weak-types` | Rules W1 to W7. |
+| `bidi-neutral-types` | The bracket pairs of UAX #9 (BD16) and rules N0 to N2. |
+| `bidi-resolved-levels` | Rules X9 and X10 (the isolating run sequences), I1, I2 and L1: the resolved levels of a paragraph (`bidi-paragraph-levels`). |
+| `bidi-reordering` | Rules P1 and L2, and the two functions on lists of code points. |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
@@ -131,7 +152,8 @@ validated.
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and three books from the data files of UTS #39. |
-| `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`. |
+| `data/bidi/` | **Generated**: the two conformance files of the bidirectional algorithm, which are the same for all the supported versions. |
+| `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`, `BidiTest.txt` and `BidiCharacterTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
 | `validation/` | Tools to compare the library, on every code point, with other implementations. |
 
@@ -485,6 +507,18 @@ About scripts, bidirectional classes, emoji, digits and blocks:
   formatting classes that `bidi-controls` has.
   `general-category-when-bidi-class-nonspacing-mark`: a code point of
   class `NSM` is a nonspacing or an enclosing mark.
+- `code-point-bidi-bracket-of-partner-when-open`,
+  `code-point-bidi-bracket-of-partner-when-close`: the partner of an
+  opening paired bracket is a closing paired bracket whose partner is the
+  first one, and the other way round.
+  `code-point-bidi-mirroring-glyph-of-code-point-bidi-mirroring-glyph`:
+  the mirroring glyph of a mirroring glyph is the first code point.
+  `code-point-bidi-mirroring-glyph-when-bracket`: the partner of a paired
+  bracket is its mirroring glyph.
+- About the bidirectional algorithm itself there are, so far, only the
+  theorems that its results have the right types and lengths, such as
+  `len-of-bidi-paragraph-levels`.  What says that the definitions are
+  right is the conformance tests (see "Validation").
 - `emoji-p-when-emoji-presentation-p` (and the same for the modifiers,
   the modifier bases and the regional indicators);
   `extended-pictographic-p-or-emoji-component-p-when-emoji-p`: an emoji is
@@ -606,6 +640,9 @@ supported version, and nothing else of this library.
 | `default-ignorable-p` | `default-ignorable` | `code-points`, `versions`, `ranges` | `derived-core-properties` |
 | `variation-selector-p`, `join-control-p`, `noncharacter-p`, `deprecated-p`, `prepended-concatenation-mark-p` | `variation-selectors`, `join-controls`, `noncharacters`, `deprecated`, `prepended-concatenation-marks` (one book each) | `code-points`, `versions`, `ranges` | `prop-list` |
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
+| `code-point-bidi-bracket`; the type `bidi-bracket` | `bidi-brackets` | `versions`, `maps` | `bidi-brackets` |
+| `code-point-bidi-mirroring-glyph` | `bidi-mirroring` | `bidi-brackets`, and the books that it loads | `bidi-brackets`, `bidi-mirroring` |
+| `bidi-levels`, `bidi-display-order`, `bidi-paragraph-levels`, `bidi-paragraph-embedding-level`; the types `bidi-char` and `paragraph-direction` | `bidirectional-algorithm` | `bidi-reordering` and the five other books of the rules, `bidi-class`, `bidi-brackets`, `bidi-mirroring`, `decompositions`, and the books that those load | `derived-bidi-class`, `bidi-brackets`, `bidi-mirroring`, `unicode-data` |
 | `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | `composes-with-following-p`, `composes-with-previous-p`; the type `code-point-set` | `composing-pairs` | `compositions`, and the books that it loads | `unicode-data`, `derived-normalization-props` |
 | `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
@@ -719,6 +756,10 @@ of UTS #39:
 | `IdentifierStatus.txt` of UTS #39 | `identifier-status` | `Identifier_Status` |
 | `IdentifierType.txt` of UTS #39 | `identifier-type` | `Identifier_Type` |
 | `confusables.txt` of UTS #39 | `confusables` | the prototypes of confusable characters |
+| `BidiBrackets.txt` | `bidi-brackets` | `Bidi_Paired_Bracket_Type` with `Bidi_Paired_Bracket` |
+| `BidiMirroring.txt` | `bidi-mirroring` | `Bidi_Mirroring_Glyph` |
+| `BidiTest.txt` | `bidi-test`, in `data/bidi/` | The conformance test vectors on bidirectional classes, once for all versions |
+| `BidiCharacterTest.txt` | `bidi-character-test`, in `data/bidi/` | The conformance test vectors on code points, once for all versions |
 | `NormalizationTest.txt` | `normalization-test` | The conformance test vectors |
 
 Three more files are read only to interpret or cross-check those:
@@ -813,7 +854,9 @@ files.
 The six files that were added later (`Scripts.txt`,
 `ScriptExtensions.txt`, `Blocks.txt`, `emoji/emoji-data.txt`, and two
 files of UTS #39) were downloaded from `www.unicode.org` on 2026-11-19,
-for each version, and `confusables.txt` on 2026-11-20.
+for each version, and `confusables.txt`, `BidiBrackets.txt`,
+`BidiMirroring.txt`, `BidiTest.txt` and `BidiCharacterTest.txt` on
+2026-11-20.
 
 To repeat that check for a version:
 
@@ -853,7 +896,7 @@ For example 19.0.0 (this is how 18.0.0 was added):
    `id`, `id-compat-math`, `scripts`, `bidi-class`, `blocks`, `emoji`,
    `decimal-digits`, `identifier-status`, `confusables`,
    `pattern-white-space`, `white-space`, `pattern-syntax`,
-   `bidi-controls`,
+   `bidi-controls`, `bidi-brackets`, `bidi-mirroring`,
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
    `combining-classes`, `decompositions`, `compositions`, `composing-pairs`,
@@ -869,7 +912,16 @@ For example 19.0.0 (this is how 18.0.0 was added):
    the revision for 18.0.0, change `augment-script-extensions` in
    `mixed-scripts`, with a condition on the version.
 6. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
-   `quick-check-v18.0.0.lisp`, changing the version.
+   `quick-check-v18.0.0.lisp`, changing the version, and add to
+   `bidi-character-test.lisp` the assertion for the new version.
+   Then run the generator with `--check` for each of the older versions.
+   If it says that a book of `data/bidi/` differs, the new version has
+   changed a test case of `BidiTest.txt` or `BidiCharacterTest.txt`:
+   the two books then have to be written per version (the functions
+   `book_bidi_test` and `book_bidi_character_test` of the generator),
+   and the revision of UAX #9 for the new version has to be read for
+   the rule that changed.  Read its list of modifications in any case:
+   the algorithm of this library is the one of revisions 50 to 52.
 7. Certify `top` and `tests/*`.  This checks the invariants of the new
    tables, re-proves for the new version the theorems listed above (if one
    fails, that is a real change in Unicode to look at), and runs the
@@ -954,8 +1006,33 @@ there is no formal specification to prove that against.  The evidence is:
   18.0 in the file `DerivedAge.txt` of the Unicode Character Database,
   which the library does not read (counted with a script on 2026-11-19).
 
-The conformance test takes about ten seconds per version, and the
-quick-check test about twenty.
+- `bidi-test`: **all of `BidiTest.txt`**, the conformance test of the
+  bidirectional algorithm on bidirectional classes: 490,846 lines, each in
+  the one, two or three paragraph directions that it asks for, which
+  makes 770,241 tests of the resolved levels and of the order of display.
+  The file covers every sequence of up to four classes, and some longer
+  ones.  It has no code points, and it is the same for the three
+  versions, so it is run once.
+- `bidi-character-test`: **all of `BidiCharacterTest.txt`**, the
+  conformance test on code points, which is the one that has paired
+  brackets: 91,707 lines, each checked for the paragraph embedding level,
+  the resolved levels and the order of display, in each of the three
+  versions.
+
+The conformance test of normalization takes about ten seconds per
+version, and the quick-check test about twenty.  The two conformance
+tests of the bidirectional algorithm take about two seconds and about
+ten seconds.
+
+The two conformance files of the bidirectional algorithm have the same
+test cases in Unicode 16.0.0, 17.0.0 and 18.0.0; only their comments
+differ.  So the generator writes them once, in `data/bidi/`, in a compact
+form: the lines with the same expected results are grouped, and each
+bidirectional class or code point is one character of a string.  The
+two books take 3.2 MB.  The rules of UAX #9 are also the same in the
+three versions (revisions 50, 51 and 52 of UAX #9 differ in their
+explanations), so the algorithm is defined once, and a version comes in
+only through the properties of the code points.
 
 ### Comparison with independent implementations (`validation/`)
 
@@ -1097,14 +1174,21 @@ differences:
 
 Not compared with another implementation, in any version: `Block`,
 `Identifier_Type`, `Other_ID_Start`, `Other_ID_Continue`,
-`ID_Compat_Math_Start`, `ID_Compat_Math_Continue` and `White_Space`.
-What the library has about them is the data files and the theorems: the
-last five are proved to be short lists of code points, which the
-documentation shows, and `White_Space` is also proved to be the
-separators of `General_Category`, which is compared, with six control
-characters; the identifier types are proved to agree with the identifier
-status, which is compared; nothing checks the blocks beyond the checks of
-the generator.
+`ID_Compat_Math_Start` and `ID_Compat_Math_Continue`.  What the library
+has about them is the data files and the theorems: the last four are
+proved to be short lists of code points, which the documentation shows;
+the identifier types are proved to agree with the identifier status,
+which is compared; nothing checks the blocks beyond the checks of the
+generator.
+
+`White_Space` was compared on 2026-11-20, for every code point but the
+surrogates (`validation/dump.lisp` writes one more column for it), with
+`char::is_whitespace` of the Rust standard library in the oracle of each
+version, and for 16.0.0 also with `regex-syntax`; the earlier comparisons
+of every code point were run again.  No differences.  The standard
+library has its own tables, for the version of Unicode of the toolchain
+that builds the oracle (rustc 1.97.0); the property is the same in
+the three supported versions.
 
 The skeletons and the script sets of UTS #39, which were added on
 2026-11-20 too, were compared on that day, for every code point
@@ -1224,7 +1308,10 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 800 topics.
+With this, the library has about 1,100 topics.  The books of the
+bidirectional algorithm have some 300 of them: their functions, and
+twenty-five small types whose generated topics, about fifteen at most for
+one type, are under the line.
 
 ## Performance
 
@@ -1246,9 +1333,14 @@ on the ranges of each of the thirty values, takes well under a second.
 The normalization functions are meant for identifiers and the like: they are
 not tail recursive, and reordering a run of *n* combining marks takes time
 quadratic in *n*.
+The functions of the bidirectional algorithm are written to be read next
+to UAX #9, not for speed: they find a character by its position by going
+through the list, so a paragraph of *n* characters takes time quadratic in
+*n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
+on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 113 books from scratch, the tests and the generated
-tables included, took a little over three and a half minutes with two jobs
+Certifying all the 133 books from scratch, the tests and the generated
+tables included, took about four and a half minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
 sum with 179 cases) and `normalization-across-versions` (22 seconds).

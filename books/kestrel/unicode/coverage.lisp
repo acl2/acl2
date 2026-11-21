@@ -94,6 +94,18 @@
       whether text is in that format:
       see @(see stream-safe)."))
    (xdoc::p
+    "From [UAX #9], the Unicode Bidirectional Algorithm:")
+   (xdoc::ul
+    (xdoc::li
+     "The rules that give each character of a text
+      its embedding level and its place on the display
+      [UAX #9, Section 3]:
+      P1 to P3, X1 to X10, W1 to W7, N0 to N2, I1 and I2, L1 and L2.
+      See @(see bidirectional-algorithm).
+      The two conformance files of the Unicode Character Database
+      for this algorithm are checked in full
+      when the library is certified."))
+   (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul
     (xdoc::li
@@ -148,6 +160,11 @@
       see @(see bidi-controls), which has the explicit directional
       formatting characters [UAX #9, Sections 2.1 to 2.5],
       and @(see bidi-class-property), which has the whole property.")
+    (xdoc::li
+     "@('Bidi_Paired_Bracket_Type') and @('Bidi_Paired_Bracket')
+      [UAX #9, Section 3.1.3], and @('Bidi_Mirroring_Glyph')
+      [UAX #9, Section 7]:
+      see @(see bidi-paired-brackets) and @(see bidi-mirroring).")
     (xdoc::li
      "@('Script') and @('Script_Extensions') [UAX #24]:
       see @(see scripts).")
@@ -275,7 +292,7 @@
       and the properties @('Alphabetic'), @('Lowercase'), @('Uppercase'),
       @('Cased'), @('Case_Ignorable') and @('Grapheme_Extend');
       numeric values other than those of the decimal digits;
-      paired brackets and mirroring;
+      the property @('Bidi_Mirrored');
       @('Joining_Type') and the other properties
       that describe how characters join;
       and every property that is not named
@@ -316,9 +333,16 @@
       the theorems are about the supported versions,
       and are checked again for each version that is added.")
     (xdoc::li
-     "[UAX #9], the bidirectional algorithm:
-      the library has the bidirectional class of each character,
-      and does not say in which order text is displayed.")
+     "From [UAX #9]:
+      the breaking of a paragraph into lines,
+      so that each paragraph is taken to be on one line;
+      rule L3, about combining marks;
+      rule L4, which draws characters as their mirror image;
+      the shaping of Arabic letters [UAX #9, Section 3.5];
+      and the higher-level protocols [UAX #9, Section 4.3]
+      other than giving the direction of a paragraph.
+      There are no theorems yet about the order of display:
+      the rules are defined and tested, not reasoned about.")
     (xdoc::li
      "[UAX #29], text segmentation:
       grapheme clusters, words and sentences.
