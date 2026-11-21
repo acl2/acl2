@@ -73,6 +73,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(fty::deffold-reduce noscalarp
+  :short "Check if there are no scalar types in types,
+          outside the bodies of binder types."
+  :types (types)
+  :result booleanp
+  :default t
+  :combine and
+  :override
+  ((type :scalar nil)
+   (type :forall t)
+   (type :foralln t)
+   (type :pi t)
+   (type :pin t)
+   (type :sigma t)
+   (type :sigman t))
+  :name ast-noscalarp)
+
+;;;;;;;;;;;;;;;;;;;;
+
 (fty::deffold-reduce nobracketp
   :short "Check if there are no bracket types in types,
           outside the bodies of binder types."
@@ -173,6 +192,18 @@
   (exists (type1)
           (and (type-eq type type1)
                (type-noarrayvarp type1)))
+  :guard-hints (("Goal" :in-theory (enable typep-when-type-eq))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define-sk type-eq-to-noscalar-p (type)
+  :returns (yes/no booleanp)
+  :short "Check whether a type is equivalent to
+          one without scalar types
+          outside the bodies of binder types."
+  (exists (type1)
+          (and (type-eq type type1)
+               (type-noscalarp type1)))
   :guard-hints (("Goal" :in-theory (enable typep-when-type-eq))))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -305,7 +336,7 @@
      :scalar (b* (((mv new-elem proof)
                    (decompose-array-vars-in-type type.elem)))
                (mv (type-scalar new-elem)
-                   (make-type-eq-proof-scalar
+                   (make-type-eq-proof-cong-scalar
                     :type1 type.elem
                     :type2 new-elem
                     :premise1-proof proof)))
@@ -414,7 +445,6 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-array-var-validp
@@ -581,7 +611,7 @@
      :scalar (b* (((mv new-elem proof)
                    (unbracket-in-type type.elem)))
                (mv (type-scalar new-elem)
-                   (make-type-eq-proof-scalar
+                   (make-type-eq-proof-cong-scalar
                     :type1 type.elem
                     :type2 new-elem
                     :premise1-proof proof)))
@@ -702,7 +732,6 @@
                                 type-eq-refl-validp
                                 types-eq-refl-validp
                                 type-eq-trans-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-bracket-validp
@@ -841,12 +870,12 @@
      according to the rule @('fun1');
      and a function type with two or more inputs is turned into
      a unary function type from the first input
-     to the scalar array type of
+     to the scalar type of
      the function type with the remaining inputs,
      according to the rule @('fun2m').
      The components of the resulting unary function type
      are rewritten via the congruence rule @('fun')
-     (the scalar array type via @(tsee type-eq-cong-scalar-array)),
+     (the scalar type via @(tsee type-eq-cong-scalar)),
      with the two steps chained via the rule @('trans').
      Since the function type with the remaining inputs
      is a constructed n-ary function type,
@@ -868,11 +897,7 @@
      and the absence of n-ary universal, product, and sum types,
      which this function does not affect.")
    (xdoc::p
-    "We also show that this function preserves the kind of the type.
-     This is needed to verify the guards of this function,
-     because the scalar array types built by this function
-     require the element types to have the atom kind;
-     thus, guard verification is deferred until after that theorem."))
+    "We also show that this function preserves the kind of the type."))
   (type-case
    type
    :var (mv (type-var type.var)
@@ -881,7 +906,7 @@
              (type-eq-proof-refl (type-base type.type)))
    :scalar (b* (((mv new-elem proof) (unarize-funs-in-type type.elem)))
              (mv (type-scalar new-elem)
-                 (make-type-eq-proof-scalar
+                 (make-type-eq-proof-cong-scalar
                   :type1 type.elem
                   :type2 new-elem
                   :premise1-proof proof)))
@@ -943,8 +968,8 @@
                                  :premise2-proof proof-out)))))
         (rest-type (type-funn (cdr type.in) type.out))
         ((mv new-rest proof-rest) (unarize-funs-in-type rest-type))
-        (mid-type (type-fun type-in (type-scalar-array rest-type)))
-        (new-type (type-fun new-in (type-scalar-array new-rest))))
+        (mid-type (type-fun type-in (type-scalar rest-type)))
+        (new-type (type-fun new-in (type-scalar new-rest))))
      (mv new-type
          (make-type-eq-proof-trans
           :type1 (type-funn type.in type.out)
@@ -958,10 +983,10 @@
           :premise2-proof (make-type-eq-proof-fun
                            :type-in1 type-in
                            :type-in2 new-in
-                           :type-out1 (type-scalar-array rest-type)
-                           :type-out2 (type-scalar-array new-rest)
+                           :type-out1 (type-scalar rest-type)
+                           :type-out2 (type-scalar new-rest)
                            :premise1-proof proof-in
-                           :premise2-proof (make-type-eq-proof-cong-scalar-array
+                           :premise2-proof (make-type-eq-proof-cong-scalar
                                             :type1 rest-type
                                             :type2 new-rest
                                             :premise1-proof proof-rest)))))
@@ -983,7 +1008,7 @@
                     (type-count (type-funn (cdr (type-funn->in type))
                                            (type-funn->out type)))
                     (type-list-count (type-funn->in type)))))
-  :verify-guards nil
+  :verify-guards :after-returns
 
   ///
 
@@ -995,7 +1020,6 @@
              :in-theory (enable type-eq-proof-validp
                                 type-eq-refl-validp
                                 type-eq-trans-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-fun0-validp
@@ -1010,13 +1034,11 @@
              :induct t
              :expand ((type-atom-kindp type)))))
 
-  (verify-guards unarize-funs-in-type)
-
   (defret type-nofunnp-of-unarize-funs-in-type
     (type-nofunnp new-type)
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nofunnp-rules type-scalar-array))
+             :in-theory (enable* ast-nofunnp-rules))
             '(:expand ((type-nofunnp type)
                        (:free (p b) (type-nofunnp (type-forall p b)))
                        (:free (p b) (type-nofunnp (type-foralln p b)))
@@ -1030,7 +1052,7 @@
              (type-noarrayvarp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-noarrayvarp-rules type-scalar-array))
+             :in-theory (enable* ast-noarrayvarp-rules))
             '(:expand ((type-noarrayvarp type)
                        (:free (p b) (type-noarrayvarp (type-forall p b)))
                        (:free (p b) (type-noarrayvarp (type-foralln p b)))
@@ -1044,7 +1066,7 @@
              (type-nobracketp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nobracketp-rules type-scalar-array))
+             :in-theory (enable* ast-nobracketp-rules))
             '(:expand ((type-nobracketp type)
                        (:free (p b) (type-nobracketp (type-forall p b)))
                        (:free (p b) (type-nobracketp (type-foralln p b)))
@@ -1058,7 +1080,7 @@
              (type-noforallnp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-noforallnp-rules type-scalar-array))
+             :in-theory (enable* ast-noforallnp-rules))
             '(:expand ((type-noforallnp type)
                        (:free (p b) (type-noforallnp (type-forall p b)))
                        (:free (p b) (type-noforallnp (type-foralln p b)))
@@ -1072,7 +1094,7 @@
              (type-nopinp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nopinp-rules type-scalar-array))
+             :in-theory (enable* ast-nopinp-rules))
             '(:expand ((type-nopinp type)
                        (:free (p b) (type-nopinp (type-forall p b)))
                        (:free (p b) (type-nopinp (type-foralln p b)))
@@ -1086,7 +1108,7 @@
              (type-nosigmanp new-type))
     :hints (("Goal"
              :induct t
-             :in-theory (enable* ast-nosigmanp-rules type-scalar-array))
+             :in-theory (enable* ast-nosigmanp-rules))
             '(:expand ((type-nosigmanp type)
                        (:free (p b) (type-nosigmanp (type-forall p b)))
                        (:free (p b) (type-nosigmanp (type-foralln p b)))
@@ -1106,7 +1128,7 @@
    (xdoc::p
     "Each n-ary universal type is turned into
      a unary universal type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      either the unary universal type of the second parameter
      (rule @('forall2'))
      or the n-ary universal type of the remaining parameters
@@ -1145,7 +1167,7 @@
      :scalar (b* (((mv new-elem proof)
                    (unarize-foralls-in-type type.elem)))
                (mv (type-scalar new-elem)
-                   (make-type-eq-proof-scalar
+                   (make-type-eq-proof-cong-scalar
                     :type1 type.elem
                     :type2 new-elem
                     :premise1-proof proof)))
@@ -1197,7 +1219,7 @@
                    (params (cddr type.params)))
                 (if (endp params)
                     (mv (type-forall param1
-                                     (type-scalar-array
+                                     (type-scalar
                                       (type-forall param2 type.body)))
                         (make-type-eq-proof-forall2
                          :param1 param1
@@ -1205,7 +1227,7 @@
                          :type type.body))
                   (mv (type-forall
                        param1
-                       (type-scalar-array
+                       (type-scalar
                         (type-foralln (cons param2 params) type.body)))
                       (make-type-eq-proof-forall3m
                        :param1 param1
@@ -1274,7 +1296,6 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-forall2-validp
@@ -1422,7 +1443,7 @@
                (type-eq-proof-refl (type-base type.type)))
      :scalar (b* (((mv new-elem proof) (unarize-pis-in-type type.elem)))
                (mv (type-scalar new-elem)
-                   (make-type-eq-proof-scalar
+                   (make-type-eq-proof-cong-scalar
                     :type1 type.elem
                     :type2 new-elem
                     :premise1-proof proof)))
@@ -1475,13 +1496,13 @@
                (params (cddr type.params)))
             (if (endp params)
                 (mv (type-pi param1
-                             (type-scalar-array (type-pi param2 type.body)))
+                             (type-scalar (type-pi param2 type.body)))
                     (make-type-eq-proof-pi2
                      :param1 param1
                      :param2 param2
                      :type type.body))
               (mv (type-pi param1
-                           (type-scalar-array
+                           (type-scalar
                             (type-pin (cons param2 params) type.body)))
                   (make-type-eq-proof-pi3m
                    :param1 param1
@@ -1545,7 +1566,6 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-pi2-validp
@@ -1694,7 +1714,7 @@
      :scalar (b* (((mv new-elem proof)
                    (unarize-sigmas-in-type type.elem)))
                (mv (type-scalar new-elem)
-                   (make-type-eq-proof-scalar
+                   (make-type-eq-proof-cong-scalar
                     :type1 type.elem
                     :type2 new-elem
                     :premise1-proof proof)))
@@ -1754,7 +1774,7 @@
                   (params (cddr type.params)))
                (if (endp params)
                    (mv (type-sigma param1
-                                   (type-scalar-array
+                                   (type-scalar
                                     (type-sigma param2 type.body)))
                        (make-type-eq-proof-sigma2
                         :param1 param1
@@ -1762,7 +1782,7 @@
                         :type type.body))
                  (mv (type-sigma
                       param1
-                      (type-scalar-array
+                      (type-scalar
                        (type-sigman (cons param2 params) type.body)))
                      (make-type-eq-proof-sigma3m
                       :param1 param1
@@ -1823,7 +1843,6 @@
                                 types-eq-proof-validp
                                 type-eq-refl-validp
                                 types-eq-refl-validp
-                                type-eq-scalar-validp
                                 type-eq-array-validp
                                 type-eq-fun-validp
                                 type-eq-sigma2-validp
@@ -1944,6 +1963,310 @@
                        (:free (p b) (type-nopinp (type-sigma p b)))
                        (:free (p b) (type-nopinp (type-sigman p b))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines unscalar-in-types
+  :short "Turn types into equivalent ones
+          without scalar types outside the bodies of binder types,
+          and construct proof trees demonstrating the equivalence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each scalar type is turned into
+     the array type with the same element type and no dimensions,
+     according to the rule @('scalar');
+     the element type is rewritten
+     via the congruence rule @('array'),
+     with the two steps chained via the rule @('trans').
+     The function on lists of types serves to rewrite
+     the input types of n-ary function types.")
+   (xdoc::p
+    "We show that the resulting types are equivalent to the argument ones.
+     This is done via the constructed proof trees.")
+   (xdoc::p
+    "We show that the resulting types have no scalar types
+     outside the bodies of binder types.")
+   (xdoc::p
+    "We also show that these functions preserve
+     the absence of array type variables,
+     the absence of bracket types,
+     the absence of n-ary function types,
+     and the absence of n-ary universal, product, and sum types,
+     which these functions do not affect."))
+
+  (define unscalar-in-type ((type typep))
+    :returns (mv (new-type typep)
+                 (proof type-eq-proofp))
+    :parents (type-equivalence-normalizations unscalar-in-types)
+    :short "Turn a type into an equivalent one
+            without scalar types outside the bodies of binder types,
+            and construct a proof tree demonstrating the equivalence."
+    (type-case
+     type
+     :var (mv (type-var type.var)
+              (type-eq-proof-refl (type-var type.var)))
+     :base (mv (type-base type.type)
+               (type-eq-proof-refl (type-base type.type)))
+     :scalar (b* ((ispace (ispace-shape (shape-dims nil)))
+                  ((mv new-elem proof)
+                   (unscalar-in-type type.elem))
+                  (mid-type (type-array type.elem ispace))
+                  (new-type (type-array new-elem ispace)))
+               (mv new-type
+                   (make-type-eq-proof-trans
+                    :type1 (type-scalar type.elem)
+                    :type2 mid-type
+                    :type3 new-type
+                    :premise1-proof (make-type-eq-proof-scalar
+                                     :type type.elem)
+                    :premise2-proof (make-type-eq-proof-array
+                                     :type1 type.elem
+                                     :type2 new-elem
+                                     :ispace1 ispace
+                                     :ispace2 ispace
+                                     :premise1-proof proof))))
+     :array (b* (((mv new-elem proof)
+                  (unscalar-in-type type.elem)))
+              (mv (type-array new-elem type.ispace)
+                  (make-type-eq-proof-array
+                   :type1 type.elem
+                   :type2 new-elem
+                   :ispace1 type.ispace
+                   :ispace2 type.ispace
+                   :premise1-proof proof)))
+     :bracket (b* (((mv new-elem proof)
+                    (unscalar-in-type type.elem)))
+                (mv (type-bracket new-elem type.ispaces)
+                    (make-type-eq-proof-cong-bracket
+                     :type1 type.elem
+                     :type2 new-elem
+                     :ispaces type.ispaces
+                     :premise1-proof proof)))
+     :fun (b* (((mv new-in proof-in)
+                (unscalar-in-type type.in))
+               ((mv new-out proof-out)
+                (unscalar-in-type type.out)))
+            (mv (type-fun new-in new-out)
+                (make-type-eq-proof-fun
+                 :type-in1 type.in
+                 :type-in2 new-in
+                 :type-out1 type.out
+                 :type-out2 new-out
+                 :premise1-proof proof-in
+                 :premise2-proof proof-out)))
+     :funn (b* (((mv new-ins proof-ins)
+                 (unscalar-in-type-list type.in))
+                ((mv new-out proof-out)
+                 (unscalar-in-type type.out)))
+             (mv (type-funn new-ins new-out)
+                 (make-type-eq-proof-cong-funn
+                  :types-in1 type.in
+                  :types-in2 new-ins
+                  :type-out1 type.out
+                  :type-out2 new-out
+                  :premise1-proof proof-ins
+                  :premise2-proof proof-out)))
+     :forall (mv (type-forall type.param type.body)
+                 (type-eq-proof-refl (type-forall type.param type.body)))
+     :foralln (mv (type-foralln type.params type.body)
+                  (type-eq-proof-refl (type-foralln type.params type.body)))
+     :pi (mv (type-pi type.param type.body)
+             (type-eq-proof-refl (type-pi type.param type.body)))
+     :pin (mv (type-pin type.params type.body)
+              (type-eq-proof-refl (type-pin type.params type.body)))
+     :sigma (mv (type-sigma type.param type.body)
+                (type-eq-proof-refl (type-sigma type.param type.body)))
+     :sigman (mv (type-sigman type.params type.body)
+                 (type-eq-proof-refl (type-sigman type.params type.body))))
+    :measure (type-count type))
+
+  (define unscalar-in-type-list ((types type-listp))
+    :returns (mv (new-types type-listp)
+                 (proof types-eq-proofp))
+    :parents (type-equivalence-normalizations unscalar-in-types)
+    :short "Turn a list of types into an equivalent one
+            without scalar types outside the bodies of binder types,
+            and construct a proof tree demonstrating the equivalence."
+    (b* (((when (endp types)) (mv nil (types-eq-proof-refl nil)))
+         ((mv new-type proof1) (unscalar-in-type (car types)))
+         ((mv new-types proof2) (unscalar-in-type-list (cdr types))))
+      (mv (cons new-type new-types)
+          (make-types-eq-proof-cong-cons
+           :type1 (type-fix (car types))
+           :type2 new-type
+           :types1 (type-list-fix (cdr types))
+           :types2 new-types
+           :premise1-proof proof1
+           :premise2-proof proof2)))
+    :measure (type-list-count types)
+
+    ///
+
+    (defret len-of-unscalar-in-type-list
+      (equal (len new-types)
+             (len types))
+      :hints (("Goal"
+               :induct (len types)
+               :in-theory (enable (:induction len))))))
+
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv-mutual unscalar-in-types)
+
+  (defret-mutual type-eq-proof-validp-of-unscalar-in-types
+    (defret type-eq-proof-validp-of-unscalar-in-type
+      (implies (typep type)
+               (type-eq-proof-validp proof type new-type))
+      :fn unscalar-in-type)
+    (defret types-eq-proof-validp-of-unscalar-in-type-list
+      (implies (type-listp types)
+               (types-eq-proof-validp proof types new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable type-eq-proof-validp
+                                types-eq-proof-validp
+                                type-eq-refl-validp
+                                types-eq-refl-validp
+                                type-eq-trans-validp
+                                type-eq-array-validp
+                                type-eq-fun-validp
+                                type-eq-scalar-validp
+                                types-eq-cong-cons-validp
+                                ispace-eq-refl))))
+
+  (defret-mutual type-noscalarp-of-unscalar-in-types
+    (defret type-noscalarp-of-unscalar-in-type
+      (type-noscalarp new-type)
+      :fn unscalar-in-type)
+    (defret type-list-noscalarp-of-unscalar-in-type-list
+      (type-list-noscalarp new-types)
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-noscalarp-rules))
+            '(:expand ((type-noscalarp type)
+                       (:free (p b) (type-noscalarp (type-forall p b)))
+                       (:free (p b) (type-noscalarp (type-foralln p b)))
+                       (:free (p b) (type-noscalarp (type-pi p b)))
+                       (:free (p b) (type-noscalarp (type-pin p b)))
+                       (:free (p b) (type-noscalarp (type-sigma p b)))
+                       (:free (p b) (type-noscalarp (type-sigman p b)))))))
+
+  (defret-mutual type-noarrayvarp-of-unscalar-in-types
+    (defret type-noarrayvarp-of-unscalar-in-type
+      (implies (type-noarrayvarp type)
+               (type-noarrayvarp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-noarrayvarp-of-unscalar-in-type-list
+      (implies (type-list-noarrayvarp types)
+               (type-list-noarrayvarp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-noarrayvarp-rules))
+            '(:expand ((type-noarrayvarp type)
+                       (:free (p b) (type-noarrayvarp (type-forall p b)))
+                       (:free (p b) (type-noarrayvarp (type-foralln p b)))
+                       (:free (p b) (type-noarrayvarp (type-pi p b)))
+                       (:free (p b) (type-noarrayvarp (type-pin p b)))
+                       (:free (p b) (type-noarrayvarp (type-sigma p b)))
+                       (:free (p b) (type-noarrayvarp (type-sigman p b)))))))
+
+  (defret-mutual type-nobracketp-of-unscalar-in-types
+    (defret type-nobracketp-of-unscalar-in-type
+      (implies (type-nobracketp type)
+               (type-nobracketp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-nobracketp-of-unscalar-in-type-list
+      (implies (type-list-nobracketp types)
+               (type-list-nobracketp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nobracketp-rules))
+            '(:expand ((type-nobracketp type)
+                       (:free (p b) (type-nobracketp (type-forall p b)))
+                       (:free (p b) (type-nobracketp (type-foralln p b)))
+                       (:free (p b) (type-nobracketp (type-pi p b)))
+                       (:free (p b) (type-nobracketp (type-pin p b)))
+                       (:free (p b) (type-nobracketp (type-sigma p b)))
+                       (:free (p b) (type-nobracketp (type-sigman p b)))))))
+
+  (defret-mutual type-nofunnp-of-unscalar-in-types
+    (defret type-nofunnp-of-unscalar-in-type
+      (implies (type-nofunnp type)
+               (type-nofunnp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-nofunnp-of-unscalar-in-type-list
+      (implies (type-list-nofunnp types)
+               (type-list-nofunnp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nofunnp-rules))
+            '(:expand ((type-nofunnp type)
+                       (:free (p b) (type-nofunnp (type-forall p b)))
+                       (:free (p b) (type-nofunnp (type-foralln p b)))
+                       (:free (p b) (type-nofunnp (type-pi p b)))
+                       (:free (p b) (type-nofunnp (type-pin p b)))
+                       (:free (p b) (type-nofunnp (type-sigma p b)))
+                       (:free (p b) (type-nofunnp (type-sigman p b)))))))
+
+  (defret-mutual type-noforallnp-of-unscalar-in-types
+    (defret type-noforallnp-of-unscalar-in-type
+      (implies (type-noforallnp type)
+               (type-noforallnp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-noforallnp-of-unscalar-in-type-list
+      (implies (type-list-noforallnp types)
+               (type-list-noforallnp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-noforallnp-rules))
+            '(:expand ((type-noforallnp type)
+                       (:free (p b) (type-noforallnp (type-forall p b)))
+                       (:free (p b) (type-noforallnp (type-foralln p b)))
+                       (:free (p b) (type-noforallnp (type-pi p b)))
+                       (:free (p b) (type-noforallnp (type-pin p b)))
+                       (:free (p b) (type-noforallnp (type-sigma p b)))
+                       (:free (p b) (type-noforallnp (type-sigman p b)))))))
+
+  (defret-mutual type-nopinp-of-unscalar-in-types
+    (defret type-nopinp-of-unscalar-in-type
+      (implies (type-nopinp type)
+               (type-nopinp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-nopinp-of-unscalar-in-type-list
+      (implies (type-list-nopinp types)
+               (type-list-nopinp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nopinp-rules))
+            '(:expand ((type-nopinp type)
+                       (:free (p b) (type-nopinp (type-forall p b)))
+                       (:free (p b) (type-nopinp (type-foralln p b)))
+                       (:free (p b) (type-nopinp (type-pi p b)))
+                       (:free (p b) (type-nopinp (type-pin p b)))
+                       (:free (p b) (type-nopinp (type-sigma p b)))
+                       (:free (p b) (type-nopinp (type-sigman p b)))))))
+
+  (defret-mutual type-nosigmanp-of-unscalar-in-types
+    (defret type-nosigmanp-of-unscalar-in-type
+      (implies (type-nosigmanp type)
+               (type-nosigmanp new-type))
+      :fn unscalar-in-type)
+    (defret type-list-nosigmanp-of-unscalar-in-type-list
+      (implies (type-list-nosigmanp types)
+               (type-list-nosigmanp new-types))
+      :fn unscalar-in-type-list)
+    :hints (("Goal"
+             :in-theory (enable* ast-nosigmanp-rules))
+            '(:expand ((type-nosigmanp type)
+                       (:free (p b) (type-nosigmanp (type-forall p b)))
+                       (:free (p b) (type-nosigmanp (type-foralln p b)))
+                       (:free (p b) (type-nosigmanp (type-pi p b)))
+                       (:free (p b) (type-nosigmanp (type-pin p b)))
+                       (:free (p b) (type-nosigmanp (type-sigma p b)))
+                       (:free (p b) (type-nosigmanp (type-sigman p b))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled type-eq-to-noarrayvar-p-when-typep
@@ -2063,6 +2386,25 @@
                    (_type1 type)
                    (_type2
                     (mv-nth 0 (unarize-sigmas-in-type type))))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defruled type-eq-to-noscalar-p-when-typep
+  :short "Every type is equivalent to one
+          without scalar types outside the bodies of binder types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This validates the intention of the rule @('scalar'),
+     described in @(see type-equivalence-definition)."))
+  (implies (typep type)
+           (type-eq-to-noscalar-p type))
+  :use ((:instance type-eq-to-noscalar-p-suff
+                   (type1 (mv-nth 0 (unscalar-in-type type))))
+        (:instance type-eq-when-proof-validp
+                   (proof (mv-nth 1 (unscalar-in-type type)))
+                   (_type1 type)
+                   (_type2 (mv-nth 0 (unscalar-in-type type))))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
