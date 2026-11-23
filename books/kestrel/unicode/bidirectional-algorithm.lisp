@@ -10,8 +10,7 @@
 
 (in-package "UNICODE")
 
-(include-book "bidi-reordering")
-(include-book "bidi-mirroring")
+(include-book "bidi-left-to-right")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -65,11 +64,20 @@
       see @(see bidi-neutral-types).")
     (xdoc::li
      "L2, which reverses stretches of text according to the levels:
-      see @(see bidi-reordering)."))
+      see @(see bidi-reordering).")
+    (xdoc::li
+     "L3, which puts combining marks after their base characters,
+      and L4, which draws some characters as their mirror image:
+      see @(see bidi-displayed-text)."))
    (xdoc::p
     "The functions to use are @(tsee bidi-levels)
      and @(tsee bidi-display-order),
-     on a list of code points in a version of Unicode.
+     on a list of code points in a version of Unicode,
+     for the levels and for the order
+     of the characters that have a level;
+     and @(tsee bidi-display),
+     for the whole text as it is displayed,
+     with the characters that the algorithm gives no level.
      The rules themselves are defined on what the algorithm
      looks at in a character, which is its bidirectional class
      and its part in a pair of brackets
@@ -92,12 +100,8 @@
       and rules L1 and L2 are then applied to each line
       [UAX #9, Section 3.4].")
     (xdoc::li
-     "Rule L3, about the place of combining marks,
-      rule L4, which draws some characters as their mirror image
-      (the property that it uses is here, but the rule is not),
-      and the shaping of Arabic letters [UAX #9, Section 3.5].
-      These are about how the characters are drawn,
-      not about their order.")
+     "The shaping of Arabic letters [UAX #9, Section 3.5],
+      which is about how the characters are drawn.")
     (xdoc::li
      "The higher-level protocols [UAX #9, Section 4.3],
       except that the direction of a paragraph can be given,
@@ -112,11 +116,41 @@
      when the books of the library are certified,
      the first on bidirectional classes
      and the second on code points, for each supported version.
-     About the algorithm itself, this library proves so far
-     only that its results have the right types and lengths."))
+     The two files test the levels and the order;
+     they do not test rules L3 and L4
+     or the place of the characters without a level,
+     where the specification leaves some room:
+     see @(see bidi-displayed-text) for the choices made here.")
+   (xdoc::p
+    "About the algorithm itself, this library proves the following:")
+   (xdoc::ul
+    (xdoc::li
+     "The algorithm only rearranges.
+      The order of display is a permutation of the positions
+      of the characters that have a level:
+      each of them is displayed once
+      (see @(see bidi-rearrangement)).
+      And the text as displayed, before rule L4,
+      has the code points of the text as stored, in another order,
+      so it has the same length
+      (see @(see bidi-display-theorems)).")
+    (xdoc::li
+     "Text with no character
+      that can make text be displayed from right to left,
+      in a paragraph that is not set from right to left,
+      is displayed as it is stored:
+      every level is even, the order of display is the stored order,
+      and no character is replaced
+      (see @(see right-to-left-free) and @(see bidi-left-to-right)).
+      The condition is on the @('Bidi_Class') of each character,
+      so it can be checked without running the algorithm.")))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
                     bidi-neutral-types
                     bidi-resolved-levels
-                    bidi-reordering))
+                    bidi-reordering
+                    bidi-displayed-text
+                    bidi-rearrangement
+                    right-to-left-free
+                    bidi-left-to-right))
