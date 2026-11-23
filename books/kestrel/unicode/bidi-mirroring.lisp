@@ -88,14 +88,19 @@
 
 (defsection bidi-mirroring-theorems
   :short "The mirroring glyph of a mirroring glyph is the first code point,
-          and the partner of a paired bracket is its mirroring glyph."
+          the partner of a paired bracket is its mirroring glyph,
+          and a mirroring glyph is a scalar value."
   :long
   (xdoc::topstring
    (xdoc::p
     "So the code points with a mirroring glyph come in pairs,
      and each paired bracket (see @(see bidi-paired-brackets))
      is the mirror image of its partner.
-     We prove both by checking them on every code point, for each version;
+     No mirroring glyph is a surrogate code point,
+     so replacing characters by their mirroring glyphs
+     keeps a list of scalar values a list of scalar values.
+     We prove the three by checking them on every code point,
+     for each version;
      so adding a version checks them for that version."))
 
   (local
@@ -106,6 +111,8 @@
        (and (or (not mirror?)
                 (equal (code-point-bidi-mirroring-glyph mirror? ver)
                        (code-point-fix cp)))
+            (or (not mirror?)
+                (scalar-value-p mirror?))
             (or (not bracket?)
                 (equal mirror?
                        (bidi-bracket-case bracket?
@@ -139,6 +146,13 @@
       (implies mirror?
                (equal (code-point-bidi-mirroring-glyph mirror? ver)
                       (code-point-fix cp))))
+    :enable mirror-ok
+    :use mirror-ok-holds)
+
+  (defrule scalar-value-p-of-code-point-bidi-mirroring-glyph
+    (b* ((mirror? (code-point-bidi-mirroring-glyph cp ver)))
+      (implies mirror?
+               (scalar-value-p mirror?)))
     :enable mirror-ok
     :use mirror-ok-holds)
 

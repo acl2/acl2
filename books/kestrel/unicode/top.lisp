@@ -61,6 +61,7 @@
 (include-book "identifier-status-normalization")
 (include-book "confusables")
 (include-book "skeleton")
+(include-book "bidi-skeleton")
 (include-book "mixed-scripts")
 (include-book "confusable-kinds")
 (include-book "mixed-numbers")
@@ -122,11 +123,12 @@
       see @(see identifier-status).")
     (xdoc::li
      "Confusable strings, that is, strings that look alike:
-      the prototypes of characters, the skeleton of a string,
+      the prototypes of characters,
+      the skeleton and the bidirectional skeleton of a string,
       and the three classes of confusable strings,
       of Unicode Security Mechanisms:
-      see @(see confusables), @(see confusable-detection)
-      and @(see confusable-kinds).")
+      see @(see confusables), @(see confusable-detection),
+      @(see bidirectional-skeleton) and @(see confusable-kinds).")
     (xdoc::li
      "Mixed-script detection and mixed-number detection,
       of the same specification:
@@ -201,7 +203,10 @@
     (xdoc::li
      "The Unicode Bidirectional Algorithm,
       which says in what order a text is displayed
-      when it has characters written from right to left:
+      when it has characters written from right to left,
+      with the theorems that it only rearranges the text
+      and that it leaves a text as it is stored
+      when no character of the text can start text from right to left:
       see @(see bidirectional-algorithm).")
     (xdoc::li
      "The emoji properties and the regional indicators:
@@ -304,7 +309,11 @@
       @('kestrel/unicode/skeleton') for @(tsee internal-skeleton),
       @(tsee skeleton) and @(tsee confusable-p),
       which loads @('confusables'), @('normalization'),
-      @('default-ignorable') and @('bidi-class');
+      @('default-ignorable') and @('right-to-left-free');
+      @('kestrel/unicode/bidi-skeleton') for @(tsee bidi-skeleton)
+      and @(tsee bidi-confusable-p),
+      which loads @('skeleton') and the books
+      of the bidirectional algorithm;
       @('kestrel/unicode/mixed-scripts')
       for @(tsee resolved-script-set) and @(tsee single-script-p),
       which loads @('scripts');
@@ -346,12 +355,18 @@
       which loads @('bidi-brackets').")
     (xdoc::li
      "@('kestrel/unicode/bidirectional-algorithm')
-      for @(tsee bidi-levels) and @(tsee bidi-display-order),
+      for @(tsee bidi-levels), @(tsee bidi-display-order)
+      and @(tsee bidi-display),
       which loads @('bidi-class'), @('bidi-brackets'),
-      @('bidi-mirroring') and @('decompositions').
-      The rules are in six books that it loads,
-      from @('bidi-characters') to @('bidi-reordering'):
-      see @(see bidirectional-algorithm).")
+      @('bidi-mirroring'), @('decompositions') and @('general-category').
+      The rules are in seven books that it loads,
+      from @('bidi-characters') to @('bidi-display'),
+      and the theorems about them
+      in @('bidi-rearrangement') and @('bidi-left-to-right'):
+      see @(see bidirectional-algorithm).
+      @('kestrel/unicode/right-to-left-free')
+      for @(tsee right-to-left-free-p),
+      which loads only @('bidi-class').")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc),

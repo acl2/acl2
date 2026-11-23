@@ -3,8 +3,9 @@
 An ACL2 model of the parts of the Unicode Standard that the lexers of
 programming languages need: code points, the identifier and white space
 properties, normalization, scripts, the bidirectional classes and controls,
-the properties that say which characters are safe in identifiers, and the
-detection of strings that look alike or that mix scripts.  It is a shared
+the bidirectional algorithm, the properties that say which characters are
+safe in identifiers, and the detection of strings that look alike or that
+mix scripts.  It is a shared
 library: nothing in it is specific to one language.
 
 The documentation is in XDOC (topic `unicode::unicode`); this file covers
@@ -97,7 +98,8 @@ validated.
 | `identifier-status` | `Identifier_Status` (`identifier-allowed-p`) and `Identifier_Type` (`code-point-identifier-types`) of UTS #39, with the proof that a code point is allowed exactly when all its types are `Inclusion` or `Recommended`. |
 | `identifier-status-normalization` | The proof that NFKC changes no allowed code point, and changes every code point that has the type `Not_NFKC`. |
 | `confusables` | The prototypes of confusable characters (`prototype`), from the data of UTS #39, with the proof that each code point of a prototype is its own prototype. |
-| `skeleton` | The internal skeleton of a string (`internal-skeleton`): NFD, removal of the default ignorable code points, prototypes, NFD.  The proof that taking it twice is the same as taking it once in 18.0.0, and in 16.0.0 and 17.0.0 except for thirteen code points.  The skeleton (`skeleton`) and the confusable strings (`confusable-p`), for the lists that have no code point that starts right-to-left text. |
+| `skeleton` | The internal skeleton of a string (`internal-skeleton`): NFD, removal of the default ignorable code points, prototypes, NFD.  The proof that taking it twice is the same as taking it once in 18.0.0, and in 16.0.0 and 17.0.0 except for thirteen code points.  The skeleton (`skeleton`) and the confusable strings (`confusable-p`), for the lists that have no code point that starts right-to-left text; this book does not load the bidirectional algorithm. |
+| `bidi-skeleton` | The bidirectional skeleton of a string, for every list of code points and each direction of the paragraph (`bidi-skeleton`), and the strings that are confusable for a direction (`bidi-confusable-p`).  The proof that `skeleton` and `confusable-p` agree with them on the lists that satisfy their guard. |
 | `confusable-kinds` | The three classes of confusable strings: single-script, mixed-script and whole-script confusables. |
 | `mixed-scripts` | Mixed-script detection: the augmented script set of a code point, the resolved script set of a list (`resolved-script-set`), and whether a list is single-script (`single-script-p`). |
 | `mixed-numbers` | Mixed-number detection: whether a list has decimal digits of more than one system (`mixed-number-systems-p`). |
@@ -108,14 +110,18 @@ validated.
 | `bidi-controls` | `Bidi_Control`, and the explicit directional formatting characters with their `Bidi_Class`. |
 | `bidi-class` | `Bidi_Class` in full (`code-point-bidi-class`), and the proof that it agrees with the table of the explicit formatting classes of `bidi-controls`. |
 | `bidi-brackets` | `Bidi_Paired_Bracket_Type` and `Bidi_Paired_Bracket` (`code-point-bidi-bracket`), with the proof that each paired bracket is the partner of its partner. |
-| `bidi-mirroring` | `Bidi_Mirroring_Glyph` (`code-point-bidi-mirroring-glyph`), with the proofs that the mirroring glyph of a mirroring glyph is the first code point, and that the partner of a paired bracket is its mirroring glyph. |
-| `bidirectional-algorithm` | The Unicode Bidirectional Algorithm of UAX #9: the resolved levels of a list of code points (`bidi-levels`) and the order in which it is displayed (`bidi-display-order`).  It loads the six books of the rules, below. |
+| `bidi-mirroring` | `Bidi_Mirroring_Glyph` (`code-point-bidi-mirroring-glyph`), with the proofs that the mirroring glyph of a mirroring glyph is the first code point, that the partner of a paired bracket is its mirroring glyph, and that a mirroring glyph is a scalar value. |
+| `bidirectional-algorithm` | The Unicode Bidirectional Algorithm of UAX #9: the resolved levels of a list of code points (`bidi-levels`), the order in which it is displayed (`bidi-display-order`), and the whole text as it is displayed (`bidi-display`).  It loads the seven books of the rules and the three books of theorems, below. |
 | `bidi-characters` | What the algorithm looks at in a character (the type `bidi-char`), the direction of a paragraph, and rules P2 and P3. |
 | `bidi-explicit-levels` | Rules X1 to X8: the levels and the overrides that the explicit formatting characters give. |
 | `bidi-weak-types` | Rules W1 to W7. |
 | `bidi-neutral-types` | The bracket pairs of UAX #9 (BD16) and rules N0 to N2. |
 | `bidi-resolved-levels` | Rules X9 and X10 (the isolating run sequences), I1, I2 and L1: the resolved levels of a paragraph (`bidi-paragraph-levels`). |
-| `bidi-reordering` | Rules P1 and L2, and the two functions on lists of code points. |
+| `bidi-reordering` | Rules P1 and L2, and the functions `bidi-levels` and `bidi-display-order` on lists of code points. |
+| `bidi-display` | The whole text as it is displayed, with the characters that rule X9 removes (UAX #9, Section 5.2), rule L3 and rule L4: the characters in the order of display with their levels (`bidi-arrange`), and the code points after mirroring (`bidi-display`).  The proofs that the text is only rearranged before rule L4, and that it keeps its length. |
+| `bidi-rearrangement` | The proof that the order of display is a permutation of the positions of the characters that have a level. |
+| `right-to-left-free` | The code points that can make text be displayed from right to left (`right-to-left-code-point-p`), and the lists that have none (`right-to-left-free-p`).  It loads only `bidi-class`. |
+| `bidi-left-to-right` | The proofs that a list that satisfies `right-to-left-free-p`, in a paragraph that is not set from right to left, gets only even levels and is displayed as it is stored. |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
@@ -155,13 +161,12 @@ validated.
 | `data/bidi/` | **Generated**: the two conformance files of the bidirectional algorithm, which are the same for all the supported versions. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`, `BidiTest.txt` and `BidiCharacterTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
-| `validation/` | Tools to compare the library, on every code point, with other implementations. |
+| `validation/` | Tools to compare the library, on every code point, with other implementations, and to compare the displayed text of random strings with ICU. |
 
 What is not modeled is listed, specification by specification, in the
 documentation topic `unicode-coverage` (book `coverage`).  Among other
-things: character names, case mappings, the bidirectional algorithm (and
-so the skeleton of a string that has right-to-left characters), text
-segmentation, emoji sequences, and collation.  That topic is also the
+things: character names, case mappings, text segmentation, emoji
+sequences, and collation.  That topic is also the
 only place where the library names programming languages: it says, for C,
 Java, Python, Rust, Scheme and Remora, whether the library has all that
 their lexical rules take from Unicode.
@@ -515,10 +520,8 @@ About scripts, bidirectional classes, emoji, digits and blocks:
   the mirroring glyph of a mirroring glyph is the first code point.
   `code-point-bidi-mirroring-glyph-when-bracket`: the partner of a paired
   bracket is its mirroring glyph.
-- About the bidirectional algorithm itself there are, so far, only the
-  theorems that its results have the right types and lengths, such as
-  `len-of-bidi-paragraph-levels`.  What says that the definitions are
-  right is the conformance tests (see "Validation").
+  `scalar-value-p-of-code-point-bidi-mirroring-glyph`: a mirroring glyph
+  is not a surrogate.
 - `emoji-p-when-emoji-presentation-p` (and the same for the modifiers,
   the modifier bases and the regional indicators);
   `extended-pictographic-p-or-emoji-component-p-when-emoji-p`: an emoji is
@@ -583,21 +586,60 @@ About the chunks of an identifier (UTS #55):
   `not-script-set-empty-p-of-code-point-augmented-script-set`: a single
   code point is never mixed-script.
 
-`skeleton` and `confusable-p` are the functions of the specification only
-for the lists that satisfy their guard, `right-to-left-free-p`: no code
-point of class `R`, `AL`, `AN`, `RLE`, `RLO` or `RLI`.  A list of code
-points below U+0590, where the Hebrew block starts, satisfies it
-(`right-to-left-free-p-when-all-below-590`).  For those lists the
-skeleton of the specification, which first puts the characters in the
-order of display, is the internal skeleton, because they are displayed in
-the order in which they are stored.  **That is not a theorem here**: the
-library does not have the bidirectional algorithm.  It is a claim that was
-tested with an implementation of the algorithm (see "Validation").  The
-skeleton of the other lists is not modeled.  The specification states the
-condition with the classes `R` and `AL` only.  The test shows that this
-is not enough: U+0661, a space and U+0662 (class `AN`, the Arabic-Indic
-digits) are displayed with U+0662 first, and after U+202E RIGHT-TO-LEFT
-OVERRIDE (class `RLO`) the letters a, b are displayed as b, a.
+About the Unicode Bidirectional Algorithm.  What says that the
+definitions are right is the conformance tests (see "Validation"); these
+theorems are about what the algorithm does:
+
+- `perm-of-bidi-display-order` (and `perm-of-bidi-order-of-levels`,
+  `perm-of-bidi-paragraph-order`): the order of display is a permutation
+  of the positions of the characters that have a level, and
+  `no-duplicatesp-equal-of-bidi-positions-with-level`: no position is
+  there twice.  So each such character is displayed exactly once.  The
+  relation is `perm` of `kestrel/lists-light/perm`.
+- `perm-of-bidi-arrange`: the code points of the text in the order of
+  display, with every character kept, after rules L2 and L3, are a
+  permutation of the code points of the text.  `len-of-bidi-display`:
+  rule L4 then replaces code points in place, so the displayed text has
+  the length of the text.  `scalar-value-listp-of-bidi-display`: a list of
+  scalar values is displayed as a list of scalar values.
+- `bidi-levels-even-p-of-bidi-levels-when-right-to-left-free-p`,
+  `bidi-display-order-when-right-to-left-free-p`,
+  `bidi-display-when-right-to-left-free-p`: a list that satisfies
+  `right-to-left-free-p` (no code point of class `R`, `AL`, `AN`, `RLE`,
+  `RLO` or `RLI`), in a paragraph from left to right or whose direction is
+  that of its first strong character, gets only even levels; its order of
+  display is the stored order; and `bidi-display` returns it unchanged.
+  The condition looks only at the `Bidi_Class` of each code point.  A list
+  of code points below U+0590, where the Hebrew block starts, satisfies
+  it (`right-to-left-free-p-when-all-below-590`).
+
+About the bidirectional skeleton:
+
+- `bidi-skeleton-when-right-to-left-free-p`,
+  `bidi-confusable-p-when-right-to-left-free-p`: for the lists that
+  satisfy `right-to-left-free-p`, and a direction that is not from right
+  to left, the bidirectional skeleton is `skeleton`, which is the internal
+  skeleton, and `bidi-confusable-p` is `confusable-p`.  So `skeleton` and
+  `confusable-p`, whose guard is that condition, are the functions of the
+  specification on their guard, and they do not need the algorithm; for
+  any other list, the skeleton of the specification is `(bidi-skeleton cps
+  (paragraph-direction-left-to-right) ver)`.
+- `nfd-memberp-of-bidi-skeleton`, `scalar-value-listp-of-bidi-skeleton`;
+  `bidi-confusable-p-reflexive`, `-symmetric`, `-transitive`.
+- The specification states the condition of the first theorem with the
+  classes `R` and `AL` only (UTS #39, Section 4, "a fast path").  That is
+  not enough, and the tests have a counterexample for each of the four
+  other classes: U+0661, a space and U+0662 (class `AN`, the Arabic-Indic
+  digits) are displayed with U+0662 first; after U+202E RIGHT-TO-LEFT
+  OVERRIDE (class `RLO`) the letters a, b are displayed as b, a; and after
+  U+202B RIGHT-TO-LEFT EMBEDDING (class `RLE`) or U+2067 RIGHT-TO-LEFT
+  ISOLATE (class `RLI`), an exclamation mark and a question mark are
+  displayed with the question mark first.  None of these lists has a
+  character of class `R` or `AL`, and for each the bidirectional skeleton
+  is not the internal skeleton.
+- The three classes of confusable strings (`confusable-kinds`) are still
+  defined with `confusable-p`, so only for the lists that satisfy its
+  guard.
 
 And about two versions, besides the theorems listed further up:
 `stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
@@ -626,7 +668,9 @@ supported version, and nothing else of this library.
 | `identifier-allowed-p`, `code-point-identifier-types`, `identifier-type-ranges`; the type `identifier-type` | `identifier-status` | `code-points`, `versions`, `ranges`, `runs`, `identifier-type-tables` | `identifier-status`, `identifier-type` |
 | The theorems that relate the identifier status and types to NFKC | `identifier-status-normalization` | `property-relations`, `quick-check-theorems`, and the books that those load | the tables of those books |
 | `prototype`, `replace-by-prototypes` | `confusables` | `versions`, `maps` | `confusables` |
-| `internal-skeleton`, `skeleton`, `confusable-p`, `right-to-left-free-p` | `skeleton` | `confusables`, `normalization`, `default-ignorable`, `bidi-class`, and the books that those load | the tables of those books |
+| `internal-skeleton`, `skeleton`, `confusable-p` | `skeleton` | `confusables`, `normalization`, `default-ignorable`, `right-to-left-free`, and the books that those load | the tables of those books |
+| `bidi-skeleton`, `bidi-confusable-p` | `bidi-skeleton` | `skeleton`, `bidi-left-to-right`, and the books that those load | the tables of those books |
+| `right-to-left-free-p`, `right-to-left-code-point-p` | `right-to-left-free` | `bidi-class`, and the books that it loads | `derived-bidi-class` |
 | `single-script-confusable-p`, `mixed-script-confusable-p`, `whole-script-confusable-p` | `confusable-kinds` | `skeleton`, `mixed-scripts`, and the books that those load | the tables of those books |
 | `code-point-augmented-script-set`, `resolved-script-set`, `single-script-p`, `mixed-script-p`; the types `writing-system` and `script-set` | `mixed-scripts` | `scripts`, and the books that it loads | `scripts`, `script-extensions` |
 | `decimal-digit-zeros`, `mixed-number-systems-p` | `mixed-numbers` | `decimal-digits`, and the books that it loads | `unicode-data` |
@@ -642,7 +686,7 @@ supported version, and nothing else of this library.
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `code-point-bidi-bracket`; the type `bidi-bracket` | `bidi-brackets` | `versions`, `maps` | `bidi-brackets` |
 | `code-point-bidi-mirroring-glyph` | `bidi-mirroring` | `bidi-brackets`, and the books that it loads | `bidi-brackets`, `bidi-mirroring` |
-| `bidi-levels`, `bidi-display-order`, `bidi-paragraph-levels`, `bidi-paragraph-embedding-level`; the types `bidi-char` and `paragraph-direction` | `bidirectional-algorithm` | `bidi-reordering` and the five other books of the rules, `bidi-class`, `bidi-brackets`, `bidi-mirroring`, `decompositions`, and the books that those load | `derived-bidi-class`, `bidi-brackets`, `bidi-mirroring`, `unicode-data` |
+| `bidi-levels`, `bidi-display-order`, `bidi-display`, `bidi-arrange`, `bidi-paragraph-levels`, `bidi-paragraph-embedding-level`; the types `bidi-char`, `paragraph-direction` and `bidi-shown-char`; the theorems about the algorithm | `bidirectional-algorithm` | `bidi-display` and the six other books of the rules, `bidi-rearrangement`, `right-to-left-free`, `bidi-left-to-right`, `bidi-class`, `bidi-brackets`, `bidi-mirroring`, `decompositions`, `general-category`, `kestrel/lists-light/perm`, and the books that those load | `derived-bidi-class`, `bidi-brackets`, `bidi-mirroring`, `unicode-data`, `derived-general-category` |
 | `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | `composes-with-following-p`, `composes-with-previous-p`; the type `code-point-set` | `composing-pairs` | `compositions`, and the books that it loads | `unicode-data`, `derived-normalization-props` |
 | `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
@@ -1225,12 +1269,14 @@ earlier comparisons of every code point were run again.  No differences:
   18.0.0 oracle reports 2,529 code points that differ in the skeleton and
   13,010 in the augmented script set.
 
-The guard of `skeleton` rests on a claim about the Unicode Bidirectional
-Algorithm, which the library does not have: a text with no character of
-class `R`, `AL`, `AN`, `RLE`, `RLO` or `RLI` is displayed, in a paragraph
-from left to right, in the order in which it is stored.  The claim was
-tested on 2026-11-20 with `unicode-bidi` 0.3.18 (Unicode 16.0.0), by
-`oracle 16.0.0 display-order`, which `validation/run.sh` runs:
+The guard of `skeleton` rests on a fact about the Unicode Bidirectional
+Algorithm: a text with no character of class `R`, `AL`, `AN`, `RLE`, `RLO`
+or `RLI` is displayed, in a paragraph from left to right, in the order in
+which it is stored.  That is a theorem of the library since 2026-11-23
+(`bidi-display-order-when-right-to-left-free-p`).  Before the library had
+the algorithm it was a claim, which was tested on 2026-11-20 with
+`unicode-bidi` 0.3.18 (Unicode 16.0.0), by `oracle 16.0.0 display-order`,
+which `validation/run.sh` still runs:
 
 - All 67,368,420 strings of one to six characters over twenty characters
   of sixteen of the seventeen other classes are displayed in the order in
@@ -1242,13 +1288,87 @@ tested on 2026-11-20 with `unicode-bidi` 0.3.18 (Unicode 16.0.0), by
   has one character of the class is displayed in another order: the test
   prints one for each.
 
-So the claim is tested, not proved, and only on short strings.
+So that implementation of the algorithm agrees with the theorem on those
+strings.
 
-Not compared with another implementation: the resolved script set of a
-list, the three classes of confusable strings, and mixed-number
-detection, which are short definitions on top of what is compared; the
-tests have the examples of UTS #39 for each.  The chunks of an
-identifier are not compared with another implementation either.  The
+The text as it is displayed with every character kept (`bidi-display`,
+which the bidirectional skeleton uses) depends on things that UAX #9 and
+UTS #39 leave open and that the conformance files do not test: the place
+of the characters that rule X9 removes, and what rule L3 does exactly.
+The documentation topic `bidi-displayed-text` states what the library
+does.  It was compared on 2026-11-23 with ICU 74.2, by the script
+`validation/icu-display.py` and the book `validation/compare-display`.
+That ICU has Unicode 15.1.0, so the strings are made of 35 characters whose
+properties have not changed since: characters of all the bidirectional
+classes but `B`, among them paired brackets, other mirrored characters,
+two combining marks and the formatting characters.  The strings are
+random, of one to eight characters, each in a paragraph from left to
+right, from right to left, or with the direction of its first strong
+character.  ICU is asked for the levels and for the reordered text, with
+the options that keep combining marks with their base characters and
+that replace mirrored characters, which are rules L3 and L4.  The results
+are the same for the three supported versions:
+
+- Of 30,000 strings with none of the characters that rule X9 removes,
+  29,948 are displayed in the same way by ICU and by `bidi-display`.  For
+  the other 52, ICU does not give the levels that this library gives,
+  which are the levels of the conformance files.
+- Of 20,000 strings that can have those characters, 16,573 are displayed
+  in the same way, and for 64 the levels of ICU are not those of this
+  library.  The other 3,363 are displayed in the same way once each
+  character that rule X9 removes takes the level of the character after
+  it, as ICU does, instead of the level of the character before it, as
+  UAX #9, Section 5.2, describes and as `bidi-display` does.  The rule
+  says that the place of those characters is not specified.
+- No string differs for another reason.
+
+Two examples of the levels of ICU 74.2 that are not those of the
+conformance files.  For U+2067, U+05B0, U+003E, U+0009 in a paragraph
+from right to left, it gives 1 1 1 1, and `BidiTest.txt` has 1 3 3 1 for
+the classes of these characters (`RLI NSM ON S`); the order of display is
+the same, but the combining mark is next to another character at its
+level.  For line 86 of `BidiCharacterTest.txt`, `05D0 0028 05D1 0029
+0331` in a paragraph from left to right, it gives 1 1 1 1 0, and the file
+has 1 1 1 1 1.
+
+The comparison changed one definition: at first, combining marks at a
+right-to-left level with no base character next to them were left in the
+order that rule L2 gives them, which is the opposite of the stored order.
+ICU puts them back in the stored order, like the marks that have a base,
+and now `bidi-move-marks` does too; the rule does not speak of such
+marks.  Two differences are left as they are.  One is the place of the
+characters that rule X9 removes, above.  The other is a text of several
+paragraphs, which the comparison does not cover: ICU orders the whole
+text as one line, so that two paragraphs from right to left come out
+with the second one first, and `bidi-display` displays each paragraph by
+itself and puts them one after the other.  Neither matters for the
+skeleton of an identifier.
+
+To repeat the comparison with ICU (it needs `acl2`, `python3` and the
+shared library `libicuuc`):
+
+```
+cert.pl validation/compare-display
+validation/icu-display.py 11 30000 8 kept > /tmp/icu-kept.lsp
+validation/icu-display.py 7 20000 8 > /tmp/icu-all.lsp
+```
+
+and then, in ACL2, for each version:
+
+```
+(include-book "validation/compare-display")
+(in-package "UNICODE")
+(compare-display (version-v16.0.0) "/tmp/icu-kept.lsp" state)
+(compare-display (version-v16.0.0) "/tmp/icu-all.lsp" state)
+```
+
+Not compared with another implementation: the bidirectional skeleton as
+a whole (its two parts are, above: the displayed text and the internal
+skeleton; and the tests have the worked example of UTS #39); the
+resolved script set of a list, the three classes of confusable strings,
+and mixed-number detection, which are short definitions on top of what is
+compared; the tests have the examples of UTS #39 for each.  The chunks of
+an identifier are not compared with another implementation either.  The
 tests have the thirteen examples of the table of UTS #55, Section
 5.1.2.1, and that is all the evidence there is that the definition is the
 one the specification means.  The file
@@ -1308,9 +1428,9 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,100 topics.  The books of the
-bidirectional algorithm have some 300 of them: their functions, and
-twenty-five small types whose generated topics, about fifteen at most for
+With this, the library has about 1,160 topics.  The books of the
+bidirectional algorithm have some 360 of them: their functions, and
+twenty-seven small types whose generated topics, about fifteen at most for
 one type, are under the line.
 
 ## Performance
@@ -1339,8 +1459,8 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 133 books from scratch, the tests and the generated
-tables included, took about four and a half minutes with two jobs
+Certifying all the 139 books from scratch, the tests and the generated
+tables included, took about five and a half minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
 sum with 179 cases) and `normalization-across-versions` (22 seconds).

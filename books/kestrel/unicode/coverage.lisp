@@ -104,7 +104,25 @@
       See @(see bidirectional-algorithm).
       The two conformance files of the Unicode Character Database
       for this algorithm are checked in full
-      when the library is certified."))
+      when the library is certified.")
+    (xdoc::li
+     "The whole text as it is displayed:
+      the levels of the characters that rule X9 removes,
+      as [UAX #9, Section 5.2] describes them,
+      rule L3, which puts combining marks after their base characters,
+      and rule L4, as the replacement of a character
+      by its @('Bidi_Mirroring_Glyph').
+      See @(see bidi-displayed-text),
+      which states how the rules are read where they leave room.")
+    (xdoc::li
+     "Theorems about the algorithm:
+      that it only rearranges the text,
+      and that a text with no character of the classes
+      @('R'), @('AL'), @('AN'), @('RLE'), @('RLO') and @('RLI')
+      is displayed as it is stored
+      unless the paragraph is set from right to left.
+      See @(see bidi-rearrangement), @(see bidi-display-theorems)
+      and @(see bidi-left-to-right)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul
@@ -200,12 +218,22 @@
       see @(see confusables), @(tsee internal-skeleton)
       and @(see skeleton-idempotence).")
     (xdoc::li
+     "The bidirectional skeleton of a string,
+      for the three directions of a paragraph,
+      and the strings that are confusable for a direction
+      [UTS #39, Section 4], for every string:
+      see @(see bidirectional-skeleton).
+      The skeleton and the confusable strings of that section
+      are the case of the direction from left to right.")
+    (xdoc::li
      "The skeleton of a string and the confusable strings
-      [UTS #39, Section 4],
+      [UTS #39, Section 4], without the bidirectional algorithm,
       for the strings that have no right-to-left character,
       no Arabic-Indic digit or other character of class @('AN'),
       and no explicit formatting character that starts right-to-left text,
-      and the three classes of confusable strings:
+      with the proof that this is the bidirectional skeleton
+      for those strings;
+      and, for those strings, the three classes of confusable strings:
       see @(see confusable-detection) and @(see confusable-kinds).")
     (xdoc::li
      "Mixed-script detection [UTS #39, Section 5.1]:
@@ -336,22 +364,17 @@
      "From [UAX #9]:
       the breaking of a paragraph into lines,
       so that each paragraph is taken to be on one line;
-      rule L3, about combining marks;
-      rule L4, which draws characters as their mirror image;
       the shaping of Arabic letters [UAX #9, Section 3.5];
       and the higher-level protocols [UAX #9, Section 4.3]
-      other than giving the direction of a paragraph.
-      There are no theorems yet about the order of display:
-      the rules are defined and tested, not reasoned about.")
+      other than giving the direction of a paragraph.")
     (xdoc::li
      "[UAX #29], text segmentation:
       grapheme clusters, words and sentences.
       Also [UAX #14], line breaking.")
     (xdoc::li
      "From [UTS #39]:
-      the bidirectional skeleton,
-      and so the skeleton and the confusability
-      of the strings that are not displayed
+      the three classes of confusable strings
+      for the strings that are not displayed
       in the order in which they are stored;
       whether a string has a whole-script confusable at all
       [UTS #39, Section 4.1];
@@ -476,12 +499,11 @@
       the emoji properties of [UTS #51],
       the scripts of characters, a block,
       the values of the decimal digits,
-      and, of [UTS #39], the skeleton of a string
-      that is displayed in the order in which it is stored,
+      and, of [UTS #39], the skeleton
+      and the bidirectional skeleton of a string,
       mixed-script detection and mixed-number detection,
       which are modeled.
-      It also takes the bidirectional skeleton of [UTS #39],
-      grapheme clusters, emoji sequences,
+      It also takes grapheme clusters, emoji sequences,
       and the names of characters,
       which are not.")))
   :order-subtopics t)

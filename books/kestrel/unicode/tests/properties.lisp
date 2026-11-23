@@ -1770,3 +1770,171 @@
                                  *first-strong* *v17*)
              '(2 1 0 3 4)))
 (test (equal (bidi-display-order nil *ltr* *v17*) nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The whole text as it is displayed, with every character kept.
+
+; Text with no character that can start text from right to left
+; is displayed as it is stored, unless the paragraph is from right to left.
+; These are instances of the theorem bidi-display-when-right-to-left-free-p.
+
+(test (equal (bidi-display (ascii "f(x) = 2*y;") *ltr* *v17*)
+             (ascii "f(x) = 2*y;")))
+(test (equal (bidi-display (ascii "f(x) = 2*y;") *first-strong* *v17*)
+             (ascii "f(x) = 2*y;")))
+
+; In a paragraph from right to left, the last character comes first.
+
+(test (equal (bidi-display (ascii "f(x) = 2*y;") *rtl* *v17*)
+             (ascii ";f(x) = 2*y")))
+
+; Each of the six classes that right-to-left-free-p excludes
+; can change the order by itself, in a paragraph from left to right.
+; Class R: two Hebrew letters after a Latin one.
+
+(test (equal (bidi-display '(#x61 #x5D0 #x5D1) *ltr* *v17*)
+             '(#x61 #x5D1 #x5D0)))
+
+; Class AL: two Arabic letters after a Latin one.
+
+(test (equal (bidi-display '(#x61 #x627 #x628) *ltr* *v17*)
+             '(#x61 #x628 #x627)))
+
+; Class AN: two Arabic-Indic digits with a space between them.
+
+(test (equal (bidi-display '(#x661 #x20 #x662) *ltr* *v17*)
+             '(#x662 #x20 #x661)))
+
+; Class RLE: an exclamation mark and a question mark
+; after U+202B RIGHT-TO-LEFT EMBEDDING.
+
+(test (equal (bidi-display '(#x61 #x202B #x21 #x3F) *ltr* *v17*)
+             '(#x61 #x202B #x3F #x21)))
+
+; Class RLO: two Latin letters after U+202E RIGHT-TO-LEFT OVERRIDE.
+; The override has no level of its own: it is kept,
+; at the level of the character before it.
+
+(test (equal (bidi-display '(#x61 #x202E #x62 #x63) *ltr* *v17*)
+             '(#x61 #x202E #x63 #x62)))
+
+; Class RLI: the same two marks between U+2067 RIGHT-TO-LEFT ISOLATE
+; and U+2069 POP DIRECTIONAL ISOLATE.
+
+(test (equal (bidi-display '(#x61 #x2067 #x21 #x3F #x2069) *ltr* *v17*)
+             '(#x61 #x2067 #x3F #x21 #x2069)))
+
+; Rule L3.  Alef with two combining marks, then bet with one:
+; bet comes first, and each letter is followed by its marks,
+; in the order in which they are stored.
+
+(test (equal (bidi-display '(#x5D0 #x301 #x302 #x5D1 #x303) *ltr* *v17*)
+             '(#x5D1 #x303 #x5D0 #x301 #x302)))
+
+; Two marks with no base before them, in a paragraph from right to left,
+; stay in the order in which they are stored.
+
+(test (equal (bidi-display '(#x301 #x302 #x5D0) *rtl* *v17*)
+             '(#x5D0 #x301 #x302)))
+
+; Rule L4.  The parentheses around bet, after alef, are at an odd level:
+; each is replaced by the other.
+
+(test (equal (bidi-display '(#x5D0 #x28 #x5D1 #x29) *ltr* *v17*)
+             '(#x28 #x5D1 #x29 #x5D0)))
+
+; Two paragraphs, each displayed by itself, one after the other.
+
+(test (equal (bidi-display '(#x5D0 #x61 #x2029 #x61 #x5D0 #x5D1)
+                           *first-strong* *v17*)
+             '(#x2029 #x61 #x5D0 #x61 #x5D1 #x5D0)))
+
+; Before rule L4, the characters with their levels.
+
+(test (equal (bidi-arrange '(#x61 #x5D0 #x5D1) *ltr* *v17*)
+             (list (bidi-shown-char #x61 0)
+                   (bidi-shown-char #x5D1 1)
+                   (bidi-shown-char #x5D0 1))))
+(test (equal (bidi-display nil *ltr* *v17*) nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The bidirectional skeleton.
+
+; The example of [UTS #39, Section 4].
+; S1 is A, 1, <, shin, sin dot; S2 is Alpha, shin, holam haser, >, 1.
+; In a paragraph from left to right both are displayed as
+; a capital letter, the digit one, a less-than sign, shin and a mark,
+; and they have the same bidirectional skeleton:
+; A, l, <, shin, U+0307 COMBINING DOT ABOVE.
+
+(defconst *uts39-s1* '(#x41 #x31 #x3C #x5E9 #x5C2))
+(defconst *uts39-s2* '(#x391 #x5E9 #x5BA #x3E #x31))
+
+(test (equal (bidi-display *uts39-s1* *ltr* *v17*)
+             '(#x41 #x31 #x3C #x5E9 #x5C2)))
+(test (equal (bidi-display *uts39-s2* *ltr* *v17*)
+             '(#x391 #x31 #x3C #x5E9 #x5BA)))
+(test (equal (bidi-skeleton *uts39-s1* *ltr* *v17*)
+             '(#x41 #x6C #x3C #x5E9 #x307)))
+(test (equal (bidi-skeleton *uts39-s2* *ltr* *v17*)
+             '(#x41 #x6C #x3C #x5E9 #x307)))
+(test (bidi-confusable-p *uts39-s1* *uts39-s2* *ltr* *v16*))
+(test (bidi-confusable-p *uts39-s1* *uts39-s2* *ltr* *v17*))
+(test (bidi-confusable-p *uts39-s1* *uts39-s2* *ltr* *v18*))
+
+; The specification notes that they are not confusable
+; in a paragraph from right to left.
+
+(test (not (bidi-confusable-p *uts39-s1* *uts39-s2* *rtl* *v16*)))
+(test (not (bidi-confusable-p *uts39-s1* *uts39-s2* *rtl* *v17*)))
+(test (not (bidi-confusable-p *uts39-s1* *uts39-s2* *rtl* *v18*)))
+(test (equal (bidi-skeleton *uts39-s1* *rtl* *v17*)
+             '(#x5E9 #x307 #x3E #x41 #x6C)))
+(test (equal (bidi-skeleton *uts39-s2* *rtl* *v17*)
+             '(#x6C #x3C #x5E9 #x307 #x41)))
+
+; For a list that satisfies right-to-left-free-p,
+; the bidirectional skeleton for a direction that is not from right to left
+; is the skeleton: instances of bidi-skeleton-when-right-to-left-free-p
+; and of bidi-confusable-p-when-right-to-left-free-p.
+
+(test (equal (bidi-skeleton *paypal-with-cyrillic-a* *ltr* *v17*)
+             (skeleton *paypal-with-cyrillic-a* *v17*)))
+(test (bidi-confusable-p *paypal* *paypal-with-cyrillic-a*
+                         *first-strong* *v17*))
+
+; The specification says that the bidirectional skeleton
+; for the direction from left to right is the internal skeleton
+; when the string has no character of class R or AL.
+; That is not so: here are four lists with no such character,
+; one for each of the classes AN, RLE, RLO and RLI,
+; whose bidirectional skeleton is not their internal skeleton.
+; The prototype of U+0661 ARABIC-INDIC DIGIT ONE is the letter l;
+; the formatting characters are default ignorable.
+
+(test (equal (bidi-skeleton '(#x661 #x20 #x662) *ltr* *v17*)
+             '(#x662 #x20 #x6C)))
+(test (equal (internal-skeleton '(#x661 #x20 #x662) *v17*)
+             '(#x6C #x20 #x662)))
+(test (equal (bidi-skeleton '(#x61 #x202B #x21 #x3F) *ltr* *v17*)
+             '(#x61 #x3F #x21)))
+(test (equal (internal-skeleton '(#x61 #x202B #x21 #x3F) *v17*)
+             '(#x61 #x21 #x3F)))
+(test (equal (bidi-skeleton '(#x61 #x202E #x62 #x63) *ltr* *v17*)
+             '(#x61 #x63 #x62)))
+(test (equal (internal-skeleton '(#x61 #x202E #x62 #x63) *v17*)
+             '(#x61 #x62 #x63)))
+(test (equal (bidi-skeleton '(#x61 #x2067 #x21 #x3F #x2069) *ltr* *v17*)
+             '(#x61 #x3F #x21)))
+(test (equal (internal-skeleton '(#x61 #x2067 #x21 #x3F #x2069) *v17*)
+             '(#x61 #x21 #x3F)))
+
+; So a, U+202E RIGHT-TO-LEFT OVERRIDE, b, c, which is displayed as a, c, b,
+; is confusable with a, c, b and not with a, b, c.
+
+(test (bidi-confusable-p '(#x61 #x202E #x62 #x63) '(#x61 #x63 #x62)
+                         *ltr* *v17*))
+(test (not (bidi-confusable-p '(#x61 #x202E #x62 #x63) '(#x61 #x62 #x63)
+                              *ltr* *v17*)))

@@ -197,8 +197,9 @@
      in the order in which they are displayed from left to right;
      the position of a character is the number of characters before it
      in the line.
-     The characters without a level are not displayed
-     and their positions are not in the result.
+     The characters without a level are left out:
+     their positions are not in the result
+     (see @(see bidi-displayed-text) for the text with every character).
      If no character has an odd level,
      nothing is reversed and the order is that of the text."))
   (b* ((items (bidi-display-items levels 0))
