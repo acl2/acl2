@@ -24,6 +24,7 @@
 (include-book "tokenizer")
 (include-book "token-tree-builder")
 (include-book "input-format")
+(include-book "source-units")
 (include-book "differential-testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,5 +70,10 @@
      CRLF normalization, a leading shebang),
      from the bytes of a source file,
      which it is proved to keep in full.
+     A source unit holds the text of a file
+     with all its lexemes, whitespace and comments included;
+     the spans of tokens are offsets into that text,
+     and every source unit that is made is checked
+     to give back its text from its lexemes.
      Parsing and printing are future work."))
   :order-subtopics t)

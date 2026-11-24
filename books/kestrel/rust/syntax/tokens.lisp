@@ -492,7 +492,7 @@
   (xdoc::topstring
    (xdoc::p
     "A lexeme is a token or trivia:
-     whitespace, or a non-doc comment.
+     whitespace, a non-doc comment, or a shebang.
      The lexer produces lexemes;
      tokenization filters out the trivia.
      Keeping the trivia, with its text,
@@ -502,11 +502,20 @@
      A comment lexeme stores whether it is block-form
      and its content text
      (between the opening and closing markers, exclusive);
-     nested block comments are a single comment lexeme."))
+     nested block comments are a single comment lexeme.")
+   (xdoc::p
+    "A shebang lexeme stores the text after the @('#!').
+     A shebang is not a lexeme of the lexical grammar,
+     and the lexer does not produce one:
+     it starts after the shebang (see @(tsee shebang-length)).
+     There is a lexeme for it so that the lexemes of a source unit
+     cover all of its text (see @(see source-units));
+     a source unit has at most one, the first of its lexemes."))
   (:token ((token token)))
   (:whitespace ((content string)))
   (:comment ((block bool)
              (content string)))
+  (:shebang ((content string)))
   :pred lexemep)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -529,6 +538,35 @@
   :true-listp t
   :elementp-of-nil nil
   :pred lexeme-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod lexeme+span
+  :short "Fixtype of lexemes with spans."
+  ((lexeme lexeme)
+   (span span))
+  :pred lexeme+span-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-lexeme+span
+  :short "A lexeme-with-span witness."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(see rust::irr-edition) for
+     the purpose of these witnesses."))
+  :type lexeme+span-p
+  :body (make-lexeme+span :lexeme (irr-lexeme) :span (irr-span)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist lexeme+span-list
+  :short "Fixtype of lists of lexemes with spans."
+  :elt-type lexeme+span
+  :true-listp t
+  :elementp-of-nil nil
+  :pred lexeme+span-listp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

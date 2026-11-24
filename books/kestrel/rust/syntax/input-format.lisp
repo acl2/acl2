@@ -11,7 +11,6 @@
 (in-package "RUST$")
 
 (include-book "tokenizer")
-(include-book "token-tree-builder")
 (include-book "unicode-characters")
 
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
@@ -131,7 +130,7 @@
     "The fourth step does not change the text.
      A shebang stays in the source text,
      and @(tsee shebang-length) says how long it is;
-     @(tsee tokenize-source-text) starts lexing after it.
+     lexing starts after it.
      This is also how rustc works:
      its positions are offsets into the text of the file
      after the first three steps,
@@ -140,10 +139,11 @@
      so the tokens after it are in the lines
      that they are in when the file is shown.")
    (xdoc::p
-    "@(tsee tokenize-rust-from-bytes) and @(tsee tokenize-rust-from-file)
-     go from the bytes of a file, or from a file, to tokens with spans;
-     @(tsee build-token-trees-from-bytes)
-     and @(tsee build-token-trees-from-file) go on to token trees.")
+    "A source text is lexed and tokenized into a source unit,
+     which keeps the source text with its lexemes and their spans:
+     see @(see source-units) for this,
+     and for going from the bytes of a file, or from a file,
+     to tokens and to token trees.")
    (xdoc::h3 "Which files")
    (xdoc::p
     "rustc 1.87.0 does the four steps for
@@ -336,6 +336,25 @@
            code-points-to-utf-8-bytes
            utf8-partition-when-utf8=>ustring-not-fail
            uni-scalar-value-listp-of-utf8=>ustring))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define utf-8-string-to-code-points ((string stringp))
+  :returns (text acl2::nat-list-resultp)
+  :short "Decode an ACL2 string that holds UTF-8 into code points."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The characters of the string are taken as bytes, by their codes.
+     The text of a token, and of any other lexeme, is such a string
+     (see @(see tokenizer)).
+     It is an error if the bytes are not valid UTF-8."))
+  (utf-8-bytes-to-code-points (acl2::string=>nats (str-fix string)))
+  :prepwork
+  ((defrulel byte-listp-of-string=>nats
+     (byte-listp (acl2::string=>nats string))
+     :use (:instance unsigned-byte-listp-8-is-byte-listp
+                     (x (acl2::string=>nats string))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -801,90 +820,3 @@
 
   (defret no-line-feed-in-shebang
     (not (member-equal #xa (take length (nat-list-fix text))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Entry points.
-
-(define tokenize-source-text ((stext source-textp)
-                              (edition rust::editionp)
-                              (file stringp))
-  :returns (tokens token+span-list-resultp)
-  :short "Lex and tokenize a source text."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the text starts with a shebang, lexing starts after it.
-     The spans of the tokens are positions in the source text:
-     after a shebang, the next position is
-     in the first line, at the column that is the shebang's length.")
-   (xdoc::p
-    "The file name is used only in the positions of the spans."))
-  (b* ((text (source-text->text stext))
-       (shebang (shebang-length text))
-       (trees (lexemize-rust (nthcdr shebang text)))
-       ((when (reserrp trees)) (reserrf-push trees))
-       (pos (position-init file))
-       (pos (if (zp shebang)
-                pos
-              (position-inc-column shebang pos))))
-    (tokenize-lexeme-csts trees pos edition))
-  :guard-hints
-  (("Goal" :in-theory (enable abnf::tree-listp-when-result-not-error))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tokenize-rust-from-bytes ((bytes byte-listp)
-                                 (edition rust::editionp)
-                                 (file stringp))
-  :returns (tokens token+span-list-resultp)
-  :short "Lex and tokenize the bytes of a source file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The file name is used only in the positions of the spans."))
-  (b* ((stext (source-text-from-bytes bytes))
-       ((when (reserrp stext)) (reserrf-push stext)))
-    (tokenize-source-text stext edition file)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tokenize-rust-from-file ((path stringp)
-                                (edition rust::editionp)
-                                state)
-  :returns (mv (tokens token+span-list-resultp) state)
-  :short "Lex and tokenize a source file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The path is also the file name in the positions of the spans."))
-  (b* (((mv stext state) (source-text-from-file path state))
-       ((when (reserrp stext)) (mv (reserrf-push stext) state)))
-    (mv (tokenize-source-text stext edition path) state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define build-token-trees-from-bytes ((bytes byte-listp)
-                                     (edition rust::editionp)
-                                     (file stringp))
-  :returns (trees token-tree-list-resultp)
-  :short "Lex and tokenize the bytes of a source file,
-          and build token trees."
-  (b* ((tokens (tokenize-rust-from-bytes bytes edition file))
-       ((when (reserrp tokens)) (reserrf-push tokens)))
-    (build-token-trees tokens))
-  :guard-hints
-  (("Goal" :in-theory (enable token+span-listp-when-result-not-error))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define build-token-trees-from-file ((path stringp)
-                                    (edition rust::editionp)
-                                    state)
-  :returns (mv (trees token-tree-list-resultp) state)
-  :short "Lex and tokenize a source file, and build token trees."
-  (b* (((mv tokens state) (tokenize-rust-from-file path edition state))
-       ((when (reserrp tokens)) (mv (reserrf-push tokens) state)))
-    (mv (build-token-trees tokens) state))
-  :guard-hints
-  (("Goal" :in-theory (enable token+span-listp-when-result-not-error))))

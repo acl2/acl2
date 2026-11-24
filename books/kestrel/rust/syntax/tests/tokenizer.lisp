@@ -21,7 +21,7 @@
 ; Abbreviations for the tests.
 
 (defmacro toks (string &optional (edition '(rust::edition-2024)))
-  `(tokenize-rust-from-string ,string ,edition "test.rs"))
+  `(tokenize-rust-from-string ,string ,edition))
 
 ; The list of bare tokens (spans stripped), or :error.
 
@@ -286,8 +286,7 @@
 
 (assert-event
  (equal (toks-only (tokenize-rust (list #x22 #xe9 #x22) ; e with acute accent
-                                  (rust::edition-2024)
-                                  "test.rs"))
+                                  (rust::edition-2024)))
         (list (str-tok (str-kind-plain)
                        nil
                        (acl2::implode (list (code-char #xc3) (code-char #xa9)))
@@ -357,51 +356,78 @@ x += 2;"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Spans: lines advance at line feeds, columns count code points.
+; Spans: offsets into the input, counted in code points,
+; from the start of a token to just after its end.
+; The whitespace and the comments between tokens count.
+
+; The start and the end of the span of a token with span.
+
+(defun span-offsets (token+span)
+  (b* ((span (token+span->span token+span)))
+    (cons (span->start span) (span->end span))))
+
+; The line and the column of an offset in a list of code points.
+
+(defun line+column (offset nats)
+  (b* ((pos (position-of-offset offset nats)))
+    (cons (position->line pos) (position->column pos))))
 
 (assert-event
  (b* ((tokens+spans (toks "a
 bc"))
       ((when (reserrp tokens+spans)) nil)
-      ((list ts1 ts2) tokens+spans)
-      (span1 (token+span->span ts1))
-      (span2 (token+span->span ts2)))
-   (and (equal (position->line (span->start span1)) 1)
-        (equal (position->column (span->start span1)) 0)
-        (equal (position->line (span->end span1)) 1)
-        (equal (position->column (span->end span1)) 0)
-        (equal (position->line (span->start span2)) 2)
-        (equal (position->column (span->start span2)) 0)
-        (equal (position->line (span->end span2)) 2)
-        (equal (position->column (span->end span2)) 1))))
-
-; Non-ASCII whitespace (LINE SEPARATOR) counts as one column, not a line.
+      ((list ts1 ts2) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 1))
+        (equal (span-offsets ts2) '(2 . 4)))))
 
 (assert-event
- (b* ((tokens+spans (tokenize-rust (list #x61 #x2028 #x62)
-                                   (rust::edition-2024)
-                                   "test.rs"))
+ (b* ((tokens+spans (toks "a /* c */ b// d
+  c"))
+      ((when (reserrp tokens+spans)) nil)
+      ((list ts1 ts2 ts3) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 1))
+        (equal (span-offsets ts2) '(10 . 11))
+        (equal (span-offsets ts3) '(18 . 19)))))
+
+; Positions are computed from offsets:
+; lines advance at line feeds, columns count code points.
+
+(assert-event
+ (b* ((nats (acl2::string=>nats "a
+bc")))
+   (and (equal (line+column 0 nats) '(1 . 0)) ; a
+        (equal (line+column 1 nats) '(1 . 1)) ; the line feed
+        (equal (line+column 2 nats) '(2 . 0)) ; b
+        (equal (line+column 3 nats) '(2 . 1)) ; c
+        (equal (line+column 4 nats) '(2 . 2))))) ; the end
+
+; Non-ASCII whitespace (LINE SEPARATOR) counts as one code point,
+; and as one column, not a line.
+
+(assert-event
+ (b* ((nats (list #x61 #x2028 #x62))
+      (tokens+spans (tokenize-rust nats (rust::edition-2024)))
       ((when (reserrp tokens+spans)) nil)
       ((list ts1 ts2) tokens+spans))
    (and (equal (token+span->token ts1) (token-ident "a" nil))
         (equal (token+span->token ts2) (token-ident "b" nil))
-        (equal (position->column (span->start (token+span->span ts2))) 2))))
+        (equal (span-offsets ts2) '(2 . 3))
+        (equal (line+column 2 nats) '(1 . 2)))))
 
 ; A string literal can span lines.
 
 (assert-event
- (b* ((tokens+spans (toks "\"a
-b\" c"))
+ (b* ((string "\"a
+b\" c")
+      (nats (acl2::string=>nats string))
+      (tokens+spans (toks string))
       ((when (reserrp tokens+spans)) nil)
-      ((list ts1 ts2) tokens+spans)
-      (span1 (token+span->span ts1))
-      (span2 (token+span->span ts2)))
-   (and (equal (position->line (span->start span1)) 1)
-        (equal (position->column (span->start span1)) 0)
-        (equal (position->line (span->end span1)) 2)
-        (equal (position->column (span->end span1)) 1)
-        (equal (position->line (span->start span2)) 2)
-        (equal (position->column (span->start span2)) 3))))
+      ((list ts1 ts2) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 5))
+        (equal (line+column 0 nats) '(1 . 0)) ; the opening quote
+        (equal (line+column 4 nats) '(2 . 1)) ; the closing quote
+        (equal (span-offsets ts2) '(6 . 7))
+        (equal (line+column 6 nats) '(2 . 3))))) ; c
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
