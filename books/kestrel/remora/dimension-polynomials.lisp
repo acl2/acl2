@@ -77,7 +77,7 @@
      and two dimensions are equivalent exactly when
      they are turned into the same polynomial,
      i.e. when they have the same canonical form.
-     We have not formally proved these facts yet."))
+     This is proved in @(see ispace-equivalence-checker-correctness)."))
   :order-subtopics t
   :default-parent t)
 
@@ -431,6 +431,8 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :flag-local nil
 
   ///
 

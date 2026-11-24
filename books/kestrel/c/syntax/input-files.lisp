@@ -631,7 +631,7 @@
     "The internal preprocessor is excluded by the guard:
      it may preserve @('#include') directives,
      and disambiguating those involves other files."))
-  (b* (((reterr) (irr-trans-unit) (treemap::empty) (treemap::empty) state)
+  (b* (((reterr) (irr-trans-unit) (tmap::empty) (tmap::empty) state)
        (file (filepath->string path))
        ;; BASE-DIR never ends with / (unless it is just /),
        ;; because input processing removes the ending slash.
@@ -654,13 +654,13 @@
        ((erp tunit)
         (parse-file path (filedata->bytes data) (ienv->dialect ienv) t))
        ((when (eq process :parse))
-        (retok tunit (treemap::empty) (treemap::empty) state))
+        (retok tunit (tmap::empty) (tmap::empty) state))
        ((mv erp tunit & &)
         (dimb-trans-unit tunit (init-dstate path ienv) nil nil nil 1000000000))
        ((when erp)
         (reterr (msg "Error in translation unit ~x0: ~@1" file erp)))
        ((when (eq process :disambiguate))
-        (retok tunit (treemap::empty) (treemap::empty) state))
+        (retok tunit (tmap::empty) (tmap::empty) state))
        ((mv erp tunit externals completions)
         (valid-trans-unit path tunit ienv))
        ((when erp)

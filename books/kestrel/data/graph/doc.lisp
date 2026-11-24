@@ -41,10 +41,10 @@
        particular is expensive to build.")
     (xdoc::p
       "A graph is represented as an adjacency list: a "
-      (xdoc::seetopic "acl2::treemap" "treemap")
-      " from each node to a treemap from each of its successors to the
+      (xdoc::seetopic "acl2::tmap" "tmap")
+      " from each node to a tmap from each of its successors to the
        nonempty "
-      (xdoc::seetopic "acl2::treeset" "treeset")
+      (xdoc::seetopic "acl2::tset" "tset")
       " of labels on the edges between them. Following the edges out of a node
        is therefore cheap, but finding the edges into a node means visiting
        every node. A program which needs a node's predecessors should maintain

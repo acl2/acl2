@@ -24,14 +24,14 @@
 (include-book "kestrel/data/graph/nodes-defs" :dir :system)
 (include-book "kestrel/data/graph/successors-defs" :dir :system)
 (include-book "kestrel/data/graph/walk/reachable-defs" :dir :system)
-(include-book "kestrel/data/treeset/cardinality-defs" :dir :system)
-(include-book "kestrel/data/treeset/delete-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treeset/fty" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/min-max-defs" :dir :system)
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/union-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tset/fty" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
 
 (include-book "kestrel/fty/deffold-reduce" :dir :system)
 
@@ -47,13 +47,13 @@
 (local (include-book "kestrel/data/graph/add-node" :dir :system))
 (local (include-book "kestrel/data/graph/graph" :dir :system))
 (local (include-book "kestrel/data/graph/nodes" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,11 +140,11 @@
   ;; <type>-fix-when-<kind> rules (e.g. struct-declon-fix-when-empty) rewrite
   ;; a fixed AST of a kind without fields to a ground constructor call, and
   ;; the fold functions are then evaluated on it, giving nil, while the other
-  ;; side of the equation stays (treeset::empty). Remove this once
+  ;; side of the equation stays (tset::empty). Remove this once
   ;; deffold-reduce disables the executable counterparts of the fold
   ;; functions in those proofs.
 
-  (local (in-theory (enable (:e treeset::empty))))
+  (local (in-theory (enable (:e tset::empty))))
 
   (fty::deffold-reduce callees
     :short "Definition of the functions which collect the call graph nodes
@@ -167,46 +167,46 @@
          [C17:6.9.1/10]."))
     :types (c$::exprs/decls/stmts
             fundef)
-    :result treeset::setp
-    :default (treeset::empty)
-    :combine treeset::union
+    :result tset::setp
+    :default (tset::empty)
+    :combine tset::union
     :override
-    ((expr :funcall (treeset::insert (cg-callee-node expr.fun)
-                                     (treeset::union
-                                       (expr-callees expr.fun)
-                                       (expr-list-callees expr.args))))
-     (c$::stmt :asm (treeset::set nil)))
+    ((expr :funcall (tset::insert (cg-callee-node expr.fun)
+                                  (tset::union
+                                    (expr-callees expr.fun)
+                                    (expr-list-callees expr.args))))
+     (c$::stmt :asm (tset::set nil)))
     :name abstract-syntax-callees))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define cg-add-call-edges (caller (callees treeset::setp) (graph graph::graphp))
+(define cg-add-call-edges (caller (callees tset::setp) (graph graph::graphp))
   :returns (graph$ graph::graphp)
   :short "Add an edge from a caller to each node in a set."
-  (if (treeset::emptyp callees)
+  (if (tset::emptyp callees)
       (graph::fix graph)
     (cg-add-call-edges caller
-                    (treeset::delete (treeset::min callees) callees)
-                    (graph::add-edge caller (treeset::min callees) nil graph)))
-  :measure (treeset::cardinality callees))
+                    (tset::delete (tset::min callees) callees)
+                    (graph::add-edge caller (tset::min callees) nil graph)))
+  :measure (tset::cardinality callees))
 
-(define cg-add-unknown-edges ((nodes treeset::setp) (graph graph::graphp))
+(define cg-add-unknown-edges ((nodes tset::setp) (graph graph::graphp))
   :returns (graph$ graph::graphp)
   :short "Add an edge from each node in a set to @('nil')."
-  (if (treeset::emptyp nodes)
+  (if (tset::emptyp nodes)
       (graph::fix graph)
-    (cg-add-unknown-edges (treeset::delete (treeset::min nodes) nodes)
-                       (graph::add-edge (treeset::min nodes) nil nil graph)))
-  :measure (treeset::cardinality nodes))
+    (cg-add-unknown-edges (tset::delete (tset::min nodes) nodes)
+                       (graph::add-edge (tset::min nodes) nil nil graph)))
+  :measure (tset::cardinality nodes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define fundef-call-graph ((fundef fundefp)
                            (graph graph::graphp)
-                           (defined treeset::setp))
+                           (defined tset::setp))
   :guard (fundef-annop fundef)
   :returns (mv (graph$ graph::graphp)
-               (defined$ treeset::setp))
+               (defined$ tset::setp))
   :short "Add the edges of a function definition to the call graph."
   :long
   (xdoc::topstring-p
@@ -215,28 +215,28 @@
     (mv (cg-add-call-edges caller
                         (fundef-callees fundef)
                         (graph::add-node caller graph))
-        (treeset::insert caller defined)))
+        (tset::insert caller defined)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define ext-declon-call-graph ((declon ext-declonp)
                                (graph graph::graphp)
-                               (defined treeset::setp))
+                               (defined tset::setp))
   :guard (ext-declon-annop declon)
   :returns (mv (graph$ graph::graphp)
-               (defined$ treeset::setp))
+               (defined$ tset::setp))
   :short "Add the edges of an external declaration to the call graph."
   (ext-declon-case
     declon
     :fundef (fundef-call-graph declon.fundef graph defined)
-    :otherwise (mv (graph::fix graph) (treeset::fix defined)))
+    :otherwise (mv (graph::fix graph) (tset::fix defined)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define trans-item-call-graph ((item trans-itemp)
                                (graph graph::graphp)
-                               (defined treeset::setp))
+                               (defined tset::setp))
   :guard (trans-item-annop item)
   :returns (mv (graph$ graph::graphp)
-               (defined$ treeset::setp))
+               (defined$ tset::setp))
   :short "Add the edges of a translation unit item to the call graph."
   :long
   (xdoc::topstring-p
@@ -246,23 +246,23 @@
     item
     :declon (ext-declon-call-graph item.declon graph defined)
     :include (prog2$ (raise "Internal error: unexpected #include directive.")
-                     (mv (graph::fix graph) (treeset::fix defined)))
+                     (mv (graph::fix graph) (tset::fix defined)))
     :cond (prog2$ (raise "Internal error: unexpected conditional directive.")
-                  (mv (graph::fix graph) (treeset::fix defined)))
-    :otherwise (mv (graph::fix graph) (treeset::fix defined)))
+                  (mv (graph::fix graph) (tset::fix defined)))
+    :otherwise (mv (graph::fix graph) (tset::fix defined)))
   :no-function nil
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 
 (define trans-item-list-call-graph ((items trans-item-listp)
                                     (graph graph::graphp)
-                                    (defined treeset::setp))
+                                    (defined tset::setp))
   :guard (trans-item-list-annop items)
   :returns (mv (graph$ graph::graphp)
-               (defined$ treeset::setp))
+               (defined$ tset::setp))
   :short "Add the edges of a list of translation unit items to the call
           graph."
   (b* (((when (endp items))
-        (mv (graph::fix graph) (treeset::fix defined)))
+        (mv (graph::fix graph) (tset::fix defined)))
        ((mv graph defined)
         (trans-item-call-graph (first items) graph defined)))
     (trans-item-list-call-graph (rest items) graph defined))
@@ -270,14 +270,14 @@
 
 (define filepath-trans-unit-map-call-graph ((map filepath-trans-unit-mapp)
                                             (graph graph::graphp)
-                                            (defined treeset::setp))
+                                            (defined tset::setp))
   :guard (filepath-trans-unit-map-annop map)
   :returns (mv (graph$ graph::graphp)
-               (defined$ treeset::setp))
+               (defined$ tset::setp))
   :short "Add the edges of a map of translation units to the call graph."
   (b* ((map (c$::filepath-trans-unit-map-fix map))
        ((when (omap::emptyp map))
-        (mv (graph::fix graph) (treeset::fix defined)))
+        (mv (graph::fix graph) (tset::fix defined)))
        ((mv graph defined)
         (trans-item-list-call-graph (trans-unit->items (omap::head-val map))
                                     graph
@@ -298,10 +298,10 @@
   (b* (((mv graph defined)
         (filepath-trans-unit-map-call-graph (trans-ensemble->units ensemble)
                                             (graph::empty)
-                                            (treeset::empty))))
-    (cg-add-unknown-edges (treeset::delete nil
-                                        (treeset::diff (graph::nodes graph)
-                                                       defined))
+                                            (tset::empty))))
+    (cg-add-unknown-edges (tset::delete nil
+                                        (tset::diff (graph::nodes graph)
+                                                    defined))
                        graph))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

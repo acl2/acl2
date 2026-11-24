@@ -110,7 +110,10 @@
      (see @(see keywords)).
      Tokenization also enforces [SC5]:
      a raw identifier or raw lifetime must not be
-     @('crate'), @('self'), @('super'), or @('Self').")
+     @('crate'), @('self'), @('super'), or @('Self').
+     And it enforces [SC15], which depends on the edition too:
+     in edition 2024, a @('#') immediately followed by
+     another @('#') or by a string literal is rejected.")
    (xdoc::p
     "Since Rust source is Unicode,
      the text stored in lexeme and token fixtype values
@@ -273,9 +276,9 @@
      Doc comments are doc-comment tokens
      (they become attributes during parsing),
      whose content is the text after
-     the @('///') or @('//!') marker.
-     The block doc comment forms
-     are not yet in the grammar slice."))
+     the @('///') or @('//!') marker,
+     or between the @('/**') or @('/*!') marker
+     and the @('*/') marker."))
   (b* (((fty::okf sub) (abnf::check-tree-nonleaf-1-1 tree "comment"))
        ((fty::okf rulename?) (abnf::check-tree-nonleaf? sub))
        (nats (abs-symbols-to-nats (abnf::tree->string sub))))
@@ -305,6 +308,20 @@
            ((fty::okf content)
             (code-points-to-utf-8-string (butlast (nthcdr 2 nats) 2))))
         (lexeme-comment t content)))
+     ((equal rulename? "outer-block-doc")
+      (b* (((unless (and (>= (len nats) 5)
+                         (prefixp (list #x2f #x2a #x2a) nats))) ; /** ... */
+            (reserrf (list :no-outer-block-doc-markers nats)))
+           ((fty::okf content)
+            (code-points-to-utf-8-string (butlast (nthcdr 3 nats) 2))))
+        (lexeme-token (token-doc-comment (doc-style-outer) t content))))
+     ((equal rulename? "inner-block-doc")
+      (b* (((unless (and (>= (len nats) 5)
+                         (prefixp (list #x2f #x2a #x21) nats))) ; /*! ... */
+            (reserrf (list :no-inner-block-doc-markers nats)))
+           ((fty::okf content)
+            (code-points-to-utf-8-string (butlast (nthcdr 3 nats) 2))))
+        (lexeme-token (token-doc-comment (doc-style-inner) t content))))
      (t (reserrf (list :unexpected-comment-kind rulename?))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -782,6 +799,33 @@
 
 ; Tokenization: abstraction + span threading + trivia filtering.
 
+(define lexeme-csts-reserved-guard-p ((tree abnf::treep)
+                                      (next abnf::treep)
+                                      (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :short "Check if a lexeme CST and the one right after it
+          start a reserved guard, in the given edition [SC15]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "There are reserved guards in edition 2024 only.
+     Two lexemes start one when the first is a @('#')
+     and the text of the second starts with
+     @('#') or with a double quote
+     (see @(tsee lexeme-cst-reserved-guard-okp)
+     for the declarative form of this condition).
+     The second is then another @('#'), or a string literal:
+     no other lexeme starts with those characters."))
+  (b* ((nats (abs-symbols-to-nats (abnf::tree->string tree)))
+       (next-nats (abs-symbols-to-nats (abnf::tree->string next))))
+    (and (rust::edition-case edition :2021 nil :2024 t)
+         (equal nats (list #x23)) ; #
+         (consp next-nats)
+         (or (eql (car next-nats) #x23) ; #
+             (eql (car next-nats) #x22))))) ; "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define tokenize-lexeme-csts ((trees abnf::tree-listp)
                               (pos positionp)
                               (edition rust::editionp))
@@ -794,12 +838,19 @@
      and ends (inclusive) at its last code point;
      the running position then continues after the lexeme.
      Trivia lexemes (whitespace and non-doc comments)
-     advance the position but produce no token."))
+     advance the position but produce no token.")
+   (xdoc::p
+    "In edition 2024, it is an error if a lexeme and the next one
+     start a reserved guard [SC15]
+     (see @(tsee lexeme-csts-reserved-guard-p))."))
   (b* ((trees (abnf::tree-list-fix trees))
        (pos (position-fix pos))
        (edition (rust::edition-fix edition))
        ((when (endp trees)) nil)
        (tree (car trees))
+       ((when (and (consp (cdr trees))
+                   (lexeme-csts-reserved-guard-p tree (cadr trees) edition)))
+        (reserrf (list :reserved-guard (abnf::tree-fix tree))))
        ((fty::okf lexeme) (abs-lexeme tree edition))
        (nats (abs-symbols-to-nats (abnf::tree->string tree)))
        ((unless (consp nats))

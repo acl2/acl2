@@ -107642,8 +107642,8 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/cl-cache-full-ring-hang-loop.lisp[0m[0m and
   [30m[47msystem/tests/cl-cache-invalidation-semantics.lisp[0m[0m.
 
-  The termination analysis for some instances of [30m[47m[loop$-recursion][0m[0m was
-  faulty as demonstrated in the [community-books]
+  Termination analysis involving [30m[47m[loop$][0m[0m was sometimes faulty, as
+  demonstrated in the [community-books]
   [30m[47msystem/tests/loop-in-let-double-subst-rejects-valid-defun.lisp[0m[0m,
   [30m[47msystem/tests/loop-recursion-double-subst-clause-processor.lisp[0m[0m,
   [30m[47msystem/tests/loop-recursion-plain-target-subst.lisp[0m[0m, and
@@ -107719,6 +107719,59 @@ Bug Fixes From AI via Eric Smith
   system function [30m[47mwarrant-function-namep[0m[0m).  See [community-books]
   [30m[47msystem/tests/fake-warrant-defpkg.lisp[0m[0m and
   [30m[47msystem/tests/fake-warrant-name-import.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a proof of [30m[47mnil[0m[0m manifested when a
+  singleton tau interval is derived that includes one of the
+  constants known not to be in the tau.  See [community-books]
+  [30m[47msystem/tests/tau-singleton-ignores-neg-evgs-signature.lisp[0m[0m and
+  [30m[47msystem/tests/tau-singleton-ignores-neg-evgs.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a proof of [30m[47mnil[0m[0m manifested when [30m[47m(booleanp
+  (not x))[0m[0m is proved as rule, tricking tau into classifying [30m[47mnot[0m[0m as a
+  tau predicate instead of only treating it as negation. See
+  [community-book] [30m[47msystem/tests/tau-not-recognizer-conjunctive.lisp[0m[0m.
+
+  Fixed a soundness bug in the implementation of [30m[47m[apply$][0m[0m for [badge]d
+  functions applied to the wrong number of arguments.  The original
+  implementation failed to check that the list of arguments was a
+  [30m[47m[true-listp][0m[0m.  See [community-book]
+  [30m[47msystem/tests/apply-string-args-take.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[defwarrant][0m[0m allowing it to issue a warrant
+  for some functions calling constrained functions whose constraints
+  depend on [30m[47m[apply$][0m[0m.  See [community-books]
+  [30m[47msystem/tests/apply-equivalence-witness-g1-warrant.lisp[0m[0m and
+  [30m[47msystem/tests/defwarrant-constrained-callee.lisp[0m[0m.
+
+  Added several function symbols, generally related to evaluation, to
+  the list of built-in untouchable function symbols
+  ([30m[47m*initial-untouchable-fns*[0m[0m), and added [30m[47mboot-strap-flg[0m[0m to the list
+  of built-in state global variable symbols
+  ([30m[47m*initial-untouchable-vars*[0m[0m).  This fixes several unsound
+  behaviors.  See [community-books] directory
+  [30m[47msystem/tests/untouchables/[0m[0m.
+
+  (CCL only) Added a workaround from AI for unsoundnesss involving
+  [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |
+  https://github.com/Clozure/ccl/issues/733}, as described in a
+  comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
+  [30m[47macl2.lisp[0m[0m.
+
+  Fixed a bug in the maintenance of the compiled lambda cache related
+  to undoing.  By using a quoted lambda containing an undefined
+  function it was possible to produce a cache line with [30m[47m:status
+  :GOOD) even if the lambda mentioned an undefined function.  This
+  was caused the lambda is applied (and guard verified) while the
+  undefined function is being defined.  In that case, the lambda was
+  assigned an @(':abs-event-no[0m[0m that was lower than that of the newly
+  defined function, so that when the function is undone, the cache
+  line remained marked [30m[47m:status :GOOD[0m[0m.  Now, retraction of the world
+  marks every cache line as [30m[47m:status :UNKNOWN[0m[0m and lines will be
+  re-validated if and when their lambdas are applied.  See
+  [community-books]
+  [30m[47msystem/tests/cl-cache-failed-defun-good-line.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-local-defun-good-line.lisp[0m[0m, and
+  [30m[47msystem/tests/cl-cache-make-event-expansion-good-line.lisp[0m[0m.
 
 
 Other Bug Fixes
@@ -107820,8 +107873,9 @@ Other Bug Fixes
   [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
   McCarthy and AI for that PR.
 
-  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder].  The
-  following example shows why.
+  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder],
+  except when inside a [wormhole] as when inside [break-rewrite].
+  The following example shows why.
 
     (verify (equal x x))
     (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal

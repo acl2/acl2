@@ -13,7 +13,7 @@
 (include-book "tools/rulesets" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,18 +34,13 @@
 ;; an edge is a step, and an edge is a cons of its source onto a step.
 
 (define stepp (x)
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Recognizer for the steps of a walk in a @(see graph)."
   (consp x)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule stepp-type-prescription
-  (booleanp (stepp x))
-  :rule-classes ((:type-prescription :typed-term (stepp x))))
 
 (defruled stepp-compound-recognizer
   (equal (stepp x)
@@ -61,7 +56,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define irr-step ()
-  :type-prescription :none
   :returns (step stepp
                  :hints (("Goal" :in-theory (enable* break-abstraction))))
   (cons nil nil))
@@ -74,7 +68,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-fix ((step stepp))
-  :type-prescription :none
   :returns (step$ stepp)
   :parents (stepp)
   :short "Fixer for steps."
@@ -109,8 +102,7 @@
 (define step-equiv
   ((x stepp)
    (y stepp))
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (stepp)
   :short "Equivalence of steps up to @(tsee step-fix)."
   (equal (step-fix x)
@@ -121,10 +113,6 @@
   (defequiv step-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule step-equiv-type-prescription
-  (booleanp (step-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (step-equiv x y))))
 
 (defrule step-fix-when-step-equiv-congruence
   (implies (step-equiv step0 step1)
@@ -177,7 +165,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step (to label)
-  :type-prescription :none
   :returns (step stepp :hints (("Goal" :in-theory (enable stepp))))
   :parents (stepp)
   :short "Construct a step from the node it leads to and the label of the
@@ -230,7 +217,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define step-listp (x)
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (stepp)
   :short "Recognizer for true lists of steps."
   (if (consp x)
@@ -300,8 +287,7 @@
 (define step-list-equiv
   ((x step-listp)
    (y step-listp))
-  :type-prescription :none
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (step-listp)
   :short "Equivalence of lists of steps up to @(tsee step-list-fix)."
   (equal (step-list-fix x)
@@ -312,10 +298,6 @@
   (defequiv step-list-equiv))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(defrule step-list-equiv-type-prescription
-  (booleanp (step-list-equiv x y))
-  :rule-classes ((:type-prescription :typed-term (step-list-equiv x y))))
 
 (defrule step-list-fix-when-step-list-equiv-congruence
   (implies (step-list-equiv steps0 steps1)

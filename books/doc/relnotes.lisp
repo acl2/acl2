@@ -389,22 +389,22 @@
     " hash algorithm fuses the serialization with the hash algorithm.")
 
    (xdoc::p
-    "The @(see treeset) library performance was improved.
-     The @(tsee treeset::from-oset) function is now linear complexity.
-     @(tsee treeset::from-list) now builds by first sorting into an @('oset')
+    "The @(see tset) library performance was improved.
+     The @(tsee tset::from-oset) function is now linear complexity.
+     @(tsee tset::from-list) now builds by first sorting into an @('oset')
      rather than naively inserting one element at a time.
-     The @(tsee treeset::subset) is now implemented
-     similarly to @(tsee treeset::diff).")
+     The @(tsee tset::subset) is now implemented
+     similarly to @(tsee tset::diff).")
 
    (xdoc::p
-    "The @(see treeset::iterator) was rewritten.
+    "The @(see tset::cursor) was rewritten.
      The new implementation is based on zippers,
      and allows bidirectional traversal.")
 
    (xdoc::p
-    "A new data structure, @(see treemap)s, was introduced,
+    "A new data structure, @(see tmap)s, was introduced,
      representing finite maps with ordered keys.
-     This closely mirrors @(see treeset)s.")
+     This closely mirrors @(see tset)s.")
 
    (xdoc::p
     "Benchmark suites were added for various operations in the library.")
@@ -438,7 +438,7 @@
    (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
 
    (xdoc::p
-    "The @(see fty::deftreeset) and @(see fty::deftreemap) type generators
+    "The @(see fty::deftset) and @(see fty::deftmap) type generators
      were introduced.")
 
    (xdoc::p
@@ -778,7 +778,7 @@
    (xdoc::p
     "Data-lib is a library for efficient data structures. Currently, it only
      includes "
-    (xdoc::seetopic "treeset::treeset" "treesets")
+    (xdoc::seetopic "tset::tset" "tsets")
     ", a tree-based implementation of finite sets, and the supporting "
     (xdoc::seetopic "hash::hashes" "hash")
     " function.")

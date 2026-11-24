@@ -10,12 +10,12 @@
 
 ; This grammar covers the lexical structure of Rust
 ; [Reference; rustc 1.87.0] for a first slice:
-; whitespace, comments (except block doc comments),
+; whitespace, comments,
 ; identifiers (ASCII-only for now), lifetimes,
 ; integer and float literals,
 ; character, byte, string, byte-string, and C-string literals
 ; (including their raw forms), punctuation, and delimiters.
-; Not yet covered: block doc comments and the shebang line.
+; The shebang line is not in this grammar: the lexer starts after it.
 
 ; The input to this grammar is a sequence of Unicode scalar values,
 ; i.e. code points excluding the surrogate range %xD800-DFFF;
@@ -38,16 +38,22 @@
 ;       lexemes (grammar match plus the other side conditions) that
 ;       match a prefix of the remaining input, lexing takes a
 ;       longest one.
-; [SC2] Block comment closing: the block-comment rule below
-;       overapproximates; a valid block comment ends at the first
-;       point where its "/*"-"*/" nesting depth returns to zero.
+; [SC2] Block comment closing: the rules for block comments below,
+;       doc comments or not, overapproximate; a valid block comment
+;       ends at the first point where its "/*"-"*/" nesting depth
+;       returns to zero.
 ;       (This condition constrains the candidate set over which
 ;       [SC1] maximizes; without it, maximal munch would overshoot
 ;       to a later "*/".)
-; [SC3] Bare carriage return: CR not immediately followed by LF
-;       must not occur in doc comments; not yet formalized.
-;       (The literal rules below exclude it from literals too,
-;       except within a string continuation.)
+; [SC3] Carriage return in doc comments: a doc comment, line or
+;       block, that contains a carriage return must be rejected.
+;       The rules below let a doc comment extend over a carriage
+;       return, as rustc's lexer does before it rejects the input;
+;       a doc comment does not end at the carriage return.
+;       (A carriage return before a line feed does not reach this
+;       grammar: the two become a line feed before lexing.  The
+;       literal rules below exclude a carriage return from literals
+;       too, except within a string continuation.)
 ; [SC4] Identifiers: the ASCII-only identifier rules below are
 ;       placeholders for Unicode XID_Start / XID_Continue
 ;       (Unicode 16.0.0) with NFC normalization.  The XID tables
@@ -127,6 +133,11 @@
 ;       [SC2], this condition constrains the candidate set over
 ;       which [SC1] maximizes; unlike [SC2], it depends on the
 ;       input after the candidate.)
+; [SC15] Reserved guards: in edition 2024, a "#" immediately
+;       followed by another "#" or by a double quote must be
+;       rejected [Reference; reserved guards]; in edition 2021,
+;       such text is separate tokens.  Like [SC6], this condition
+;       depends on the edition.
 ;
 ; Where [Reference] and rustc differ, or [Reference] leaves open
 ; what rustc does, this grammar follows rustc; the xdoc topic
@@ -190,6 +201,8 @@ comment = line-comment
         / outer-line-doc
         / inner-line-doc
         / block-comment
+        / outer-block-doc
+        / inner-block-doc
 
 line-comment = "//" [ ( not-slash-bang-lf / "//" ) *not-lf ]
 
@@ -197,12 +210,39 @@ outer-line-doc = "///" [ not-slash-lf *not-lf ] ; [SC3]
 
 inner-line-doc = "//!" *not-lf ; [SC3]
 
-; Block comments nest: block-item includes block-comment.
-; The rule overapproximates: see [SC2].
+; The rules for the three kinds of block comments
+; also reproduce rustc's classification:
+; "/*!" begins an inner block doc comment;
+; "/**" followed by a character other than "*" and "/"
+; begins an outer block doc comment;
+; and every other block comment is a plain one,
+; in particular "/**/", "/***/", and those that begin with "/***".
+; (After "/**", a "/" ends the comment "/**/".)
+; The three rules follow BLOCK_COMMENT, OUTER_BLOCK_DOC, and
+; INNER_BLOCK_DOC of [Reference; comments].
 
-block-comment = "/*" *block-item "*/" ; [SC2]
+block-comment = "/*" block-first-item *block-item "*/" ; [SC2]
+              / "/**/"
+              / "/***/"
 
-block-item = block-comment
+block-first-item = block-comment-or-doc
+                 / not-star-bang
+                 / "**"
+
+outer-block-doc = "/**" not-star-slash *block-item "*/" ; [SC2] [SC3]
+
+inner-block-doc = "/*!" *block-item "*/" ; [SC2] [SC3]
+
+; Block comments nest: block-item includes block-comment-or-doc,
+; a block comment of any of the three kinds, nested in another.
+; In [Reference; comments], BlockCommentOrDoc is the choice of the
+; three rules above; here it is a single rule for all block comments,
+; since the kind of a nested comment makes no difference.
+; The rules with block-item overapproximate: see [SC2].
+
+block-comment-or-doc = "/*" *block-item "*/" ; [SC2]
+
+block-item = block-comment-or-doc
            / not-star-slash
            / "*"
            / "/"
@@ -450,6 +490,8 @@ not-slash-bang-lf = %x0-9 / %xB-20 / %x22-2E / %x30-D7FF / %xE000-10FFFF
 not-slash-lf = %x0-9 / %xB-2E / %x30-D7FF / %xE000-10FFFF
 
 not-star-slash = %x0-29 / %x2B-2E / %x30-D7FF / %xE000-10FFFF
+
+not-star-bang = %x0-20 / %x22-29 / %x2B-D7FF / %xE000-10FFFF
 
 nonzero-hex-digit = %x31-39 / %x41-46 / %x61-66
 

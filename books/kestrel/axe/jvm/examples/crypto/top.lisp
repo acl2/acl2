@@ -1,6 +1,6 @@
 ; Top file for Axe JVM crypto examples
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,7 @@
 
 #|
 (include-book "aes-128-encrypt-light-and-spec")
+(include-book "aes-128-encrypt-light-and-spec-alt")
 (include-book "aes-128-encrypt-regular-and-spec")
 (include-book "aes-128-encrypt-regular-and-spec-alt")
 |#

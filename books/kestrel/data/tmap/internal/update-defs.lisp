@@ -1,0 +1,31 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TMAP")
+
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
+(include-book "kestrel/data/tset/internal/heap-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
+
+(include-book "keys-defs")
+(include-book "rotate-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "update"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defredundant
+  :names (tree-update
+          tree-singleton
+          tree-update-with-hash
+          acl2-number-tree-update
+          symbol-tree-update
+          eqlable-tree-update))

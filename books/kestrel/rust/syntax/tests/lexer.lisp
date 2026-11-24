@@ -64,6 +64,8 @@
 
 (test-lex-fail "foo#bar")
 (test-lex-fail "r#1") ; r would be an identifier followed by #
+(test-lex-fail "r#_") ; likewise: a lone underscore is not an identifier
+(test-lex "r#_a" 1) ; but _a is one
 (test-lex "r #foo" 4) ; but with whitespace: r, ws, #, foo
 
 ; Comments, including the ////-related classification quirks.
@@ -94,14 +96,57 @@ x" 3) ; comment, whitespace (line feed), identifier
 (test-lex "/*/ */" 1)
 (test-lex "/**/*/" 3) ; comment, *, /
 
-; The same holds in block doc comments,
-; which the grammar does not tell from other block comments yet.
+; The same holds in block doc comments.
 
 (test-lex-fail "/*!/*/")
 (test-lex-fail "/** /*/")
 (test-lex-fail "/*! /*/ */")
 (test-lex "/*! a /* b */ c */" 1)
 (test-lex "/** a /* b */ c */" 1)
+
+; Block doc comments: "/*!" begins an inner one, and "/**" an outer one
+; unless a "*" or a "/" follows it.  Each is one lexeme, like a plain
+; block comment; the tokenizer tests check which kind each one is.
+
+(test-lex "/** doc */" 1)
+(test-lex "/**a*/" 1)
+(test-lex "/*! doc */" 1)
+(test-lex "/*!*/" 1)
+(test-lex "/***/" 1)
+(test-lex "/****/" 1)
+(test-lex "/*** not doc */" 1)
+(test-lex "/***/ */" 4) ; comment, space, *, /
+(test-lex "/**/ */" 4) ; comment, space, *, /
+(test-lex "/** a */ b /*! c */" 5) ; doc, space, b, space, doc
+(test-lex-fail "/**")
+(test-lex-fail "/*!")
+(test-lex-fail "/** a")
+(test-lex-fail "/*! a /* b */")
+
+; A doc comment, line or block, must not contain a carriage return [SC3];
+; a plain comment may.  (A carriage return before a line feed
+; does not reach the lexer.)
+
+(defmacro test-lex-nats (nats n)
+  `(assert-event
+    (b* ((trees (lexemize-rust ,nats)))
+      (and (not (reserrp trees))
+           (equal (len trees) ,n)))))
+
+(defmacro test-lex-nats-fail (nats)
+  `(assert-event (reserrp (lexemize-rust ,nats))))
+
+(test-lex-nats-fail (list #x2f #x2f #x2f #x61 #xd #x62)) ; ///a CR b
+(test-lex-nats-fail (list #x2f #x2f #x21 #x61 #xd #x62)) ; //!a CR b
+(test-lex-nats-fail (list #x2f #x2a #x2a #x20 #xd #x2a #x2f)) ; /** CR*/
+(test-lex-nats-fail (list #x2f #x2a #x21 #xd #x2a #x2f)) ; /*! CR*/
+(test-lex-nats-fail ; /** /* CR */ */, a nested comment in a doc comment
+ (list #x2f #x2a #x2a #x20 #x2f #x2a #xd #x2a #x2f #x2a #x2f))
+(test-lex-nats (list #x2f #x2f #x61 #xd #x62) 1) ; //a CR b
+(test-lex-nats (list #x2f #x2f #x2f #x2f #xd) 1) ; //// CR
+(test-lex-nats (list #x2f #x2a #xd #x2a #x2f) 1) ; /* CR*/
+(test-lex-nats (list #x2f #x2a #x2a #x2a #xd #x2a #x2f) 1) ; /*** CR*/
+(test-lex-nats (list #x2f #x2f #x2f #x61 #xa #xd #x62) 3) ; ///a LF CR b
 
 ; Integer literals, including the [SC7] reserved forms.
 

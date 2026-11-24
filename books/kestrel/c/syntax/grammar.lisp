@@ -131,21 +131,23 @@
      and the Clang constructs are captured based on [CLE] and [CLA],
      but these documents do not use a grammar notation,
      so the relationship is less direct than for the standard constructs.
-     However, we depart from the official syntax
+     However, we depart from the official syntax (extending it)
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
    (xdoc::p
-    "[C23] presents a lexical grammar [C23:A.2]
-     and a phrase structure grammar [C23:A.3].
+    "[C17] [C23] present
+     a lexical grammar [C17:A.1] [C23:A.2]
+     and a phrase structure grammar [C17:A.2] [C23:A.3].
      This is a typical two-level grammar structure for programming languages:
      the first grammar describes how a sequence of characters
      is organized into lexical units (identifiers, constants, etc.),
      and the second grammar describes how the sequence of those lexical units
      is organized into higher-level constructs (expressions, statements, etc.).
      In C, the lexical organization is more complicated than other languages,
-     because of preprocessing [C23:A.4] and other features.
+     because of preprocessing [C17:A.3] [C23:A.4] and other features.
      In fact, the complete syntactic (and semantic) processing of code
-     is described as consisting of 8 translation phases [C23:5.2.1.2].")
+     is described as consisting of 8 translation phases
+     [C17:5.1.1.2] [C23:5.2.1.2].")
    (xdoc::p
     "We regard our grammar rules as defining three phases:
      one for the lexical organization,
@@ -155,15 +157,15 @@
    (xdoc::p
     "Our ABNF grammar rules do not consider
      the translation of trigraph sequences
-     handled in the first phase in [C17:5.1.1.2]
-     (which, incidentally, has been removed in [C23:5.2.1.2]),
-     and the splicing of lines in the second phase in [C23:5.2.1.2].
+     handled in the phase 1 in [C17:5.1.1.2]
+     (which has been removed in [C23:5.2.1.2]),
+     and the splicing of lines in the phase 2 in [C17:5.1.1.2] [C23:5.2.1.2].
      These are simple transformations that can be performed
      prior to the language recognition described by our ABNF grammar rules,
      along with UTF-8 decoding of bytes into Unicode scalar values.
      Our ABNF grammar rules do not capture the requirement that
      a non-empty file ends with a new-line character
-     (see phase 3 in [C23:5.2.1.2]);
+     (see phase 3 in [C17:5.1.1.2] [C23:5.2.1.2]);
      this can be easily enforced outside the grammar as well;
      furthermore, GCC relaxes that requirement "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
@@ -173,15 +175,15 @@
      since Clang expressly aims at being compatible with GCC
      (and running Clang confirms that).")
    (xdoc::p
-    "Phase 6 in [C23:5.2.1.2] requires that
+    "Phase 6 in [C17:5.1.1.2] [C23:5.2.1.2] requires that
      adjacent string literals are concatenated.
      This does not affect the lexing of the code,
      since string literals are tokens,
      but the parser needs to accept adjacent string literals.
      In our (phrase structure) grammar, we accommodate this
      by allowing one or more string literals
-     where the grammar in [C23] allows one
-     (the phrase grammar in [C23] corresponds to translation phase 7,
+     where the grammar in [C17] [C23] allows one
+     (the phrase grammar in [C17] [C23] corresponds to translation phase 7,
      which comes after adjacent string literal concatenation in phase 6).")
    (xdoc::p
     "See the documentation comments in the files @('grammar/*.abnf')

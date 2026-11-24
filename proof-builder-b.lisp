@@ -4900,8 +4900,8 @@
                      (cond (outputp
                             (io? prove nil state
                                  (new-pc-depth)
-                                 (fms0 "~|~%[[~x0> Executing ~
-                                            proof-builder instructions]]~%~%"
+                                 (fms0 "~|~%[[~x0> Executing proof-builder ~
+                                        instructions]]~%~%"
                                        (list (cons #\0 new-pc-depth)))))
                            (t state))
                      (pc-assign next-pc-enabled-array-suffix
@@ -4939,15 +4939,15 @@
                                   (io? error nil state
                                        (name)
                                        (fms0 "~%Saving proof-builder error ~
-                                            state; see :DOC instructions.  To ~
-                                            retrieve:~|~x0"
+                                              state; see :DOC instructions.  ~
+                                              To retrieve:~|~x0"
                                              (list (cons #\0 `(retrieve ,name)))))
                                   (save-fn name (ss-alist) state)
                                   (er soft ctx
                                       "The above :INSTRUCTIONS hint failed.  ~
-                                     For a discussion of ``failed'', follow ~
-                                     the link to the SEQUENCE command under ~
-                                     :DOC proof-builder-commands."))))
+                                       For a discussion of ``failed'', follow ~
+                                       the link to the SEQUENCE command under ~
+                                       :DOC proof-builder-commands."))))
                               (t (value (proof-builder-clause-list
                                          state)))))))
              (cond (erp (silent-error state))

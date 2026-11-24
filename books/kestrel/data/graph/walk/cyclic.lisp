@@ -13,10 +13,10 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -25,21 +25,21 @@
 (include-book "reachable-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/min-max" :dir :system))
-(local (include-book "kestrel/data/treeset/delete" :dir :system))
-(local (include-book "kestrel/data/treeset/union" :dir :system))
-(local (include-book "kestrel/data/treeset/intersect" :dir :system))
-(local (include-book "kestrel/data/treeset/diff" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
-(local (include-book "kestrel/data/treeset/cardinality" :dir :system))
-(local (include-book "kestrel/data/treemap/map" :dir :system))
-(local (include-book "kestrel/data/treemap/keys" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/min-max" :dir :system))
+(local (include-book "kestrel/data/tset/delete" :dir :system))
+(local (include-book "kestrel/data/tset/union" :dir :system))
+(local (include-book "kestrel/data/tset/intersect" :dir :system))
+(local (include-book "kestrel/data/tset/diff" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/cardinality" :dir :system))
+(local (include-book "kestrel/data/tmap/map" :dir :system))
+(local (include-book "kestrel/data/tmap/keys" :dir :system))
 
 (local (include-book "../graph"))
 (local (include-book "../nodes"))
@@ -58,13 +58,10 @@
   (xdoc::topstring-p
     "This is the specification of @(tsee cyclicp), to which it is equal. It
      is not executable.")
-  :returns (yes/no booleanp :rule-classes :type-prescription)
   (exists (node)
     (non-exec (reachable+p node node graph))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t cyclicp-sk)))
 
 (defrule cyclicp-sk-when-equiv-congruence
   (implies (equiv graph0 graph1)
@@ -82,7 +79,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define cyclicp ((graph graphp))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   :parents (walks)
   :short "Check if a @(see graph) has a cycle."
   :long
@@ -99,9 +96,9 @@
     (xdoc::p
       "Time complexity: @($O((n + m)\\log(n))$), where @($n$) is the number of
        nodes and @($m$) the number of pairs of nodes joined by an edge."))
-  (mbe :logic (not (treeset::emptyp (kahn-remaining (nodes graph) graph)))
+  (mbe :logic (not (tset::emptyp (kahn-remaining (nodes graph) graph)))
        :exec (b* (((mv - remaining) (kahn graph)))
-               (not (treeset::emptyp remaining)))))
+               (not (tset::emptyp remaining)))))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -120,10 +117,10 @@
 ;; remaining, so the node itself is not.
 
 (defruledl reachable+p-when-not-in-of-kahn-remaining
-  (implies (and (treeset::subset (successors-of-set remaining graph)
-                                 remaining)
-                (treeset::in node remaining)
-                (not (treeset::in node (kahn-remaining remaining graph))))
+  (implies (and (tset::subset (successors-of-set remaining graph)
+                              remaining)
+                (tset::in node remaining)
+                (not (tset::in node (kahn-remaining remaining graph))))
            (not (reachable+p node node graph)))
   :induct (kahn-remaining remaining graph)
   :enable (kahn-remaining
@@ -131,7 +128,7 @@
 
 (defruledl not-emptyp-of-kahn-remaining-when-cyclicp-sk
   (implies (cyclicp-sk graph)
-           (not (treeset::emptyp (kahn-remaining (nodes graph) graph))))
+           (not (tset::emptyp (kahn-remaining (nodes graph) graph))))
   :use (:instance reachable+p-when-not-in-of-kahn-remaining
                   (node (cyclicp-sk-witness graph))
                   (remaining (nodes graph)))
@@ -153,25 +150,25 @@
   :enable cyclicp-sk-suff)
 
 (local
-  (define find-node-on-cycle ((set treeset::setp) graph)
-    (b* (((when (treeset::emptyp set))
+  (define find-node-on-cycle ((set tset::setp) graph)
+    (b* (((when (tset::emptyp set))
           nil)
-         (node (treeset::min set))
+         (node (tset::min set))
          ((when (reachable+p node node graph))
           node))
-      (find-node-on-cycle (treeset::intersect set (predecessors+ node graph))
+      (find-node-on-cycle (tset::intersect set (predecessors+ node graph))
                           graph))
-    :measure (treeset::cardinality set)
-    :hints (("Goal" :use (:instance treeset::in-of-min-when-subset
-                                    (treeset::set set)
-                                    (treeset::y (predecessors+
-                                                  (treeset::min set)
-                                                  graph)))
-                    :in-theory (disable treeset::in-of-min-when-subset)))
+    :measure (tset::cardinality set)
+    :hints (("Goal" :use (:instance tset::in-of-min-when-subset
+                                    (tset::set set)
+                                    (tset::y (predecessors+
+                                               (tset::min set)
+                                               graph)))
+                    :in-theory (disable tset::in-of-min-when-subset)))
     :verify-guards nil))
 
 (defrulel find-node-on-cycle-when-equiv-of-arg1-congruence
-  (implies (treeset::equiv set0 set1)
+  (implies (tset::equiv set0 set1)
            (equal (find-node-on-cycle set0 graph)
                   (find-node-on-cycle set1 graph)))
   :rule-classes :congruence
@@ -182,11 +179,11 @@
 ;; predecessors.
 
 (defrulel in-of-successors-of-set-of-intersect
-  (implies (and (treeset::subset (predecessors node graph) set2)
-                (treeset::in node (successors-of-set set graph)))
-           (treeset::in node
-                        (successors-of-set (treeset::intersect set set2)
-                                           graph)))
+  (implies (and (tset::subset (predecessors node graph) set2)
+                (tset::in node (successors-of-set set graph)))
+           (tset::in node
+                     (successors-of-set (tset::intersect set set2)
+                                        graph)))
   :enable in-of-successors-of-set-becomes-not-emptyp-of-intersect)
 
 ;; So in a set whose nodes are all successors of its nodes, the nodes reaching
@@ -194,27 +191,27 @@
 ;; nodes.
 
 (defrulel emptyp-of-intersect-and-predecessors+
-  (implies (treeset::in node (successors-of-set set graph))
-           (not (treeset::emptyp
-                  (treeset::intersect set (predecessors+ node graph)))))
+  (implies (tset::in node (successors-of-set set graph))
+           (not (tset::emptyp
+                  (tset::intersect set (predecessors+ node graph)))))
   :use (:instance in-of-successors-of-set-of-intersect
                   (set2 (predecessors+ node graph)))
-  :expand (successors-of-set (treeset::intersect set (predecessors+ node graph))
+  :expand (successors-of-set (tset::intersect set (predecessors+ node graph))
                              graph)
   :disable in-of-successors-of-set-of-intersect)
 
 (defrulel subset-of-intersect-and-successors-of-set-of-intersect
-  (implies (treeset::subset set (successors-of-set set graph))
-           (treeset::subset
-             (treeset::intersect set (predecessors+ node graph))
+  (implies (tset::subset set (successors-of-set set graph))
+           (tset::subset
+             (tset::intersect set (predecessors+ node graph))
              (successors-of-set
-               (treeset::intersect set (predecessors+ node graph))
+               (tset::intersect set (predecessors+ node graph))
                graph)))
-  :enable treeset::pick-a-point-polar)
+  :enable tset::pick-a-point-polar)
 
 (defrulel reachable+p-of-find-node-on-cycle
-  (implies (and (treeset::subset set (successors-of-set set graph))
-                (not (treeset::emptyp set)))
+  (implies (and (tset::subset set (successors-of-set set graph))
+                (not (tset::emptyp set)))
            (reachable+p (find-node-on-cycle set graph)
                         (find-node-on-cycle set graph)
                         graph))
@@ -223,8 +220,8 @@
 
 (defruledl subset-of-arg1-and-successors-of-set-when-not-cyclicp-sk
   (implies (and (not (cyclicp-sk graph))
-                (not (treeset::emptyp set)))
-           (not (treeset::subset set (successors-of-set set graph))))
+                (not (tset::emptyp set)))
+           (not (tset::subset set (successors-of-set set graph))))
   :use (:instance reachable+p-when-not-cyclicp-sk
                   (node (find-node-on-cycle set graph)))
   :disable reachable+p-when-not-cyclicp-sk)
@@ -233,14 +230,14 @@
 ;; nodes.
 
 (defrulel subset-of-kahn-remaining-and-successors-of-set
-  (treeset::subset (kahn-remaining remaining graph)
-                   (successors-of-set (kahn-remaining remaining graph) graph))
+  (tset::subset (kahn-remaining remaining graph)
+                (successors-of-set (kahn-remaining remaining graph) graph))
   :induct t
   :enable kahn-remaining)
 
 (defruledl emptyp-of-kahn-remaining-when-not-cyclicp-sk
   (implies (not (cyclicp-sk graph))
-           (treeset::emptyp (kahn-remaining remaining graph)))
+           (tset::emptyp (kahn-remaining remaining graph)))
   :use (:instance subset-of-arg1-and-successors-of-set-when-not-cyclicp-sk
                   (set (kahn-remaining remaining graph))))
 

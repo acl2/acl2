@@ -520,31 +520,31 @@
                                      `(len ,x.xvar))
                                  type.name))))
 
-(define visitor-treeset-body (type x)
-  ;; NYI: a defvisitor over a treeset member would need treeset iteration.
-  ;; (deftreeset *clique membership* is supported; visiting one is not yet.)
+(define visitor-tset-body (type x)
+  ;; NYI: a defvisitor over a tset member would need tset iteration.
+  ;; (deftset *clique membership* is supported; visiting one is not yet.)
   (declare (ignorable x))
-  (b* (((flextreeset type)))
+  (b* (((flextset type)))
     (er hard? 'defvisitor
-        "defvisitor does not yet support treeset members (~x0)." type.name)))
+        "defvisitor does not yet support tset members (~x0)." type.name)))
 
-(define visitor-treeset-measure (type x mrec)
-  ;; Unreached (visitor-treeset-body errors first); present only so visitor-def
-  ;; certifies with a :treeset case.
+(define visitor-tset-measure (type x mrec)
+  ;; Unreached (visitor-tset-body errors first); present only so visitor-def
+  ;; certifies with a :tset case.
   (declare (ignorable type x mrec))
   nil)
 
-(define visitor-treemap-body (type x)
-  ;; NYI: a defvisitor over a treemap member would need treemap iteration.
-  ;; (deftreemap *clique membership* is supported; visiting one is not yet.)
+(define visitor-tmap-body (type x)
+  ;; NYI: a defvisitor over a tmap member would need tmap iteration.
+  ;; (deftmap *clique membership* is supported; visiting one is not yet.)
   (declare (ignorable x))
-  (b* (((flextreemap type)))
+  (b* (((flextmap type)))
     (er hard? 'defvisitor
-        "defvisitor does not yet support treemap members (~x0)." type.name)))
+        "defvisitor does not yet support tmap members (~x0)." type.name)))
 
-(define visitor-treemap-measure (type x mrec)
-  ;; Unreached (visitor-treemap-body errors first); present only so visitor-def
-  ;; certifies with a :treemap case.
+(define visitor-tmap-measure (type x mrec)
+  ;; Unreached (visitor-tmap-body errors first); present only so visitor-def
+  ;; certifies with a :tmap case.
   (declare (ignorable type x mrec))
   nil)
 

@@ -13,7 +13,9 @@ usage: compare.py TESTSDIR RUSTCDIR ACL2OUT.lsp [--out FILE] [--examples N]
                   [CATEGORY...]
 
 Compares, per test, whether both sides accept the input and, if so,
-whether the numbers of top-level token trees agree.  Prints the totals,
+whether the numbers of top-level token trees agree.  When the ACL2 side
+reports an error about delimiters, rustc's first error about delimiters
+must be of the same kind.  Prints the totals,
 then the disagreements grouped by kind, known gap, and rustc's message,
 with a few examples each; --out also writes all of them as JSON.
 
@@ -27,13 +29,44 @@ import argparse, collections, json, os, re
 
 def known_gaps(text):
     tags = []
-    if '/**' in text or '/*!' in text:
-        tags.append('block-doc')
-    if '\r' in text and ('///' in text or '//!' in text):
-        tags.append('doc-cr')
     if any(ord(ch) > 127 for ch in text):
         tags.append('non-ascii')
     return tags
+
+
+# rustc's errors about delimiters, and the driver's names for them.
+DELIM = (('mismatched closing delimiter', ':MISMATCHED'),
+         ('this file contains an unclosed delimiter', ':UNCLOSED'),
+         ('unexpected closing delimiter', ':UNEXPECTED'))
+
+
+def delim_errors(errs):
+    """The kinds of rustc's errors about delimiters, in the order reported."""
+    return [k for e in errs for (p, k) in DELIM if e.startswith(p)]
+
+
+def compare(ours, r):
+    """How the driver's result compares with rustc's result r."""
+    theirs = delim_errors(r['errs'])
+    if ours is None:
+        return 'missing from the ACL2 results'
+    if ours == ':ERR':
+        return 'agree' if not r['ok'] else 'rustc accepts, ACL2 rejects'
+    if ours in (':MISMATCHED', ':UNCLOSED', ':UNEXPECTED'):
+        if r['ok']:
+            return 'rustc accepts, ACL2 has a delimiter error'
+        if not theirs:
+            return 'rustc has no delimiter error, ACL2 has one'
+        return 'agree' if theirs[0] == ours else 'delimiter errors differ'
+    if ours == ':SPLIT':  # rustc builds the token trees and rejects later
+        if r['ok']:
+            return 'rustc accepts, ACL2: the input closes the probe'
+        return 'agree' if not theirs else 'rustc has a delimiter error, ACL2 has none'
+    if not ours.isdigit():
+        return 'unexpected ACL2 result'
+    if not r['ok']:
+        return 'rustc rejects, ACL2 accepts'
+    return 'agree' if r['n'] == int(ours) else 'counts differ'
 
 
 def main():
@@ -47,7 +80,7 @@ def main():
     a = ap.parse_args()
 
     acl2 = {}
-    for m in re.finditer(r'\("([^"]+)"\s+(:ERR|:UNBAL|\d+)\)', open(a.acl2_out).read()):
+    for m in re.finditer(r'\("([^"]+)"\s+(:[A-Z]+|\d+)\)', open(a.acl2_out).read()):
         acl2[m.group(1)] = m.group(2)
 
     totals, rows = collections.Counter(), []
@@ -59,16 +92,7 @@ def main():
                  for t in json.load(open(os.path.join(a.tests_dir, fn), encoding='utf-8'))}
         for tid, r in json.load(open(os.path.join(a.rustc_dir, fn))).items():
             ours = acl2.get(tid)
-            if ours is None:
-                kind = 'missing from the ACL2 results'
-            elif ours == ':UNBAL':  # rustc rejects these while building token trees
-                kind = 'agree' if not r['ok'] else 'rustc accepts, ACL2 has unbalanced delimiters'
-            elif ours == ':ERR':
-                kind = 'agree' if not r['ok'] else 'rustc accepts, ACL2 rejects'
-            elif not r['ok']:
-                kind = 'rustc rejects, ACL2 accepts'
-            else:
-                kind = 'agree' if r['n'] == int(ours) else 'counts differ'
+            kind = compare(ours, r)
             totals[kind] += 1
             if kind != 'agree':
                 rows.append({'cat': cat, 'kind': kind, 'known': known_gaps(texts[tid]),

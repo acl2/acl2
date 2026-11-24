@@ -14,7 +14,7 @@
 (include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
-(include-book "kestrel/fty/deftreeset" :dir :system)
+(include-book "kestrel/fty/deftset" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -211,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreeset ident-set
+(fty::deftset ident-set
   :short "Fixtype of sets of identifiers."
   :elt-type ident
   :pred ident-setp
@@ -221,14 +221,14 @@
   (defrulel ident-setp-of-insert-all
     (implies (and (ident-listp idents)
                   (ident-setp set))
-             (ident-setp (treeset::insert-all idents set)))
+             (ident-setp (tset::insert-all idents set)))
     :induct t
-    :enable treeset::insert-all)
+    :enable tset::insert-all)
 
   (defrule ident-setp-of-from-list
     (implies (ident-listp idents)
-             (ident-setp (treeset::from-list idents)))
-    :enable treeset::from-list))
+             (ident-setp (tset::from-list idents)))
+    :enable tset::from-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

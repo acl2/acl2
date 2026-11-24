@@ -8,7 +8,7 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "graph-defs")
 (include-book "nodes-defs")

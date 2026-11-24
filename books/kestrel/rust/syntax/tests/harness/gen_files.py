@@ -18,15 +18,12 @@ registry, ~/.cargo/registry/src) and writes up to MAXFILES files of
 
 Files that start with a byte order mark or a shebang line are skipped:
 the probe of run_rustc.py puts the text in the middle of a file, where
-rustc does not remove them.  Files with block doc comments are skipped
-too, since the lexer does not cover those yet; delete SKIP when it does.
+rustc does not remove them.
 
 With a fourth argument, a regular expression, only files whose text
 it matches are selected (e.g. to select files with float literals).
 """
 import json, os, re, sys
-
-SKIP = re.compile(r'/\*\*|/\*!')
 
 
 def main():
@@ -45,7 +42,7 @@ def main():
                 if 300 <= size <= 12000:
                     cands.append(p)
     cands.sort()
-    sel, skipped = [], 0
+    sel = []
     # With a filter, look at every candidate and thin the matches afterwards.
     for p in cands[::1 if only else max(1, len(cands) // (maxfiles * 6))]:
         try:
@@ -53,9 +50,6 @@ def main():
         except (OSError, UnicodeDecodeError):
             continue
         if text.startswith('\ufeff') or (text.startswith('#!') and not text.startswith('#![')):
-            continue
-        if SKIP.search(text):
-            skipped += 1
             continue
         if only and not only.search(text):
             continue
@@ -66,7 +60,7 @@ def main():
         sel = [sel[i * len(sel) // maxfiles] for i in range(maxfiles)]
     sel = [dict(t, id='file:%d' % i) for i, t in enumerate(sel)]
     json.dump(sel, open(out, 'w', encoding='utf-8'), ensure_ascii=True)
-    print(f'{len(cands)} candidates, {len(sel)} selected, {skipped} skipped for uncovered syntax, '
+    print(f'{len(cands)} candidates, {len(sel)} selected, '
           f'{sum(len(t["text"]) for t in sel)} characters')
 
 
