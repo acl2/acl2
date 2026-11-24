@@ -1229,10 +1229,20 @@ $(document).ready(function()
                           xindexObj.loadFromXindex(xindex);
                           xindex_loaded = true;
                       });
-                      const xsltLoad = loadJS("./render.js").then(() => {
-                          const xsltDecoded = atob(xslt_base64);
-                          xdocRenderer.init(xsltDecoded);
-                      });
+                      // Browsers without a built-in XSLTProcessor get a
+                      // WebAssembly implementation (lib/xslt-polyfill), which
+                      // must finish loading before its first use.
+                      let hasNativeXslt = true;
+                      try { new XSLTProcessor(); } catch { hasNativeXslt = false; }
+                      const polyfillLoad = hasNativeXslt
+                          ? Promise.resolve()
+                          : loadJS("./lib/xslt-polyfill/xslt-polyfill.min.js")
+                              .then(() => xsltPolyfillReady());
+                      const xsltLoad = Promise.all([polyfillLoad, loadJS("./render.js")])
+                          .then(() => {
+                              const xsltDecoded = atob(xslt_base64);
+                              xdocRenderer.init(xsltDecoded);
+                          });
                       // Ensure that both the index and the XSL template are loaded before
                       // continuing.
                       Promise.all([xindexLoad, xsltLoad]).then(_ => {

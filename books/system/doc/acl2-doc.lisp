@@ -110753,8 +110753,8 @@ it."
  @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
  @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
 
- <p>The termination analysis for some instances of @(tsee loop$-recursion) was
- faulty as demonstrated in the @(see community-books)
+ <p>Termination analysis involving @(tsee loop$) was sometimes faulty, as
+ demonstrated in the @(see community-books)
  @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
  @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
  @('system/tests/loop-recursion-plain-target-subst.lisp'), and
@@ -110845,10 +110845,10 @@ it."
  @('not') as a tau predicate instead of only treating it as negation. See @(see
  community-book) @('system/tests/tau-not-recognizer-conjunctive.lisp').</p>
 
- <p>Fixed a soundness bug in the implementation of @(tsee apply$) for badged
- @(':')@(tsee program) mode functions applied to the wrong number of arguments.
- The original implementation failed to check that the list of arguments was a
- @(tsee true-listp).  See @(see community-book)
+ <p>Fixed a soundness bug in the implementation of @(tsee apply$) for @(see
+ badge)d functions applied to the wrong number of arguments.  The original
+ implementation failed to check that the list of arguments was a @(tsee
+ true-listp).  See @(see community-book)
  @('system/tests/apply-string-args-take.lisp').</p>
 
  <p>Fixed a soundness bug in @(tsee defwarrant) allowing it to issue a warrant
@@ -110869,6 +110869,20 @@ it."
  href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
  described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
  ACL2 source file @('acl2.lisp').</p>
+
+ <p>Fixed a bug in the maintenance of the compiled lambda cache related to
+ undoing.  By using a quoted lambda containing an undefined function it was
+ possible to produce a cache line with @(':status :GOOD) even if the lambda
+ mentioned an undefined function.  This was caused the lambda is applied (and
+ guard verified) while the undefined function is being defined.  In that case,
+ the lambda was assigned an @(':abs-event-no') that was lower than that of the
+ newly defined function, so that when the function is undone, the cache line
+ remained marked @(':status :GOOD').  Now, retraction of the world marks every
+ cache line as @(':status :UNKNOWN') and lines will be re-validated if and when
+ their lambdas are applied.  See @(see community-books)
+ @('system/tests/cl-cache-failed-defun-good-line.lisp'),
+ @('system/tests/cl-cache-local-defun-good-line.lisp'), and
+ @('system/tests/cl-cache-make-event-expansion-good-line.lisp').</p>
 
  <h3>Other Bug Fixes</h3>
 
@@ -110968,8 +110982,9 @@ it."
  @('system/tests/reader-error*.*'); thanks to Eric McCarthy and AI for that
  PR.</p>
 
- <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder).
- The following example shows why.</p>
+ <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder),
+ except when inside a @(see wormhole) as when inside @(see break-rewrite).  The
+ following example shows why.</p>
 
  @({
  (verify (equal x x))

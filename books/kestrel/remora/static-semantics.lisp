@@ -10,20 +10,21 @@
 
 (in-package "REMORA")
 
-(include-book "static-environments")
-(include-book "validator")
-(include-book "ispace-validator-correctness")
 (include-book "ispace-validity")
 (include-book "ispace-validity-derived-rules")
-(include-book "type-validity")
 (include-book "ispace-equivalence")
 (include-book "ispace-equivalence-derived-rules")
 (include-book "ispace-equivalence-normalizations")
+(include-book "ispace-equivalence-rewriting")
 (include-book "shape-ordering")
+(include-book "type-validity")
 (include-book "type-equivalence")
 (include-book "type-equivalence-derived-rules")
 (include-book "type-equivalence-normalizations")
 (include-book "expression-validity")
+(include-book "static-environments")
+(include-book "validator")
+(include-book "validator-correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,17 +40,18 @@
      we also provide an executable validator,
      that is meant to be equivalent to those inference rules;
      we plan to prove this equivalence."))
-  :order-subtopics (static-environments
-                    validator
-                    ispace-validator-correctness
-                    ispace-validity
+  :order-subtopics (ispace-validity
                     ispace-validity-derived-rules
-                    type-validity
                     ispace-equivalence
                     ispace-equivalence-derived-rules
                     ispace-equivalence-normalizations
+                    ispace-equivalence-rewriting
                     shape-ordering
+                    type-validity
                     type-equivalence
                     type-equivalence-derived-rules
                     type-equivalence-normalizations
-                    expression-validity))
+                    expression-validity
+                    static-environments
+                    validator
+                    validator-correctness))

@@ -628,7 +628,7 @@
       its rules include the forms that only edition 2024 reserves.")
     (xdoc::p
      "We have run the interpreter of the version for Rust 1.100.0
-      on about 188,000 short inputs
+      on about 212,000 short inputs
       (see @(see differential-testing)),
       and compared it with rustc 1.100.0 in edition 2024,
       on whether each input lexes and into how many tokens.

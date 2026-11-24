@@ -1401,7 +1401,7 @@
     (mv-let
      (eofp erp keyp form state)
      (let ((in-verify-flg (f-get-global 'in-verify-flg state)))
-       (cond ((natp in-verify-flg) ; (in-verify state)
+       (cond (in-verify-flg
 
 ; The following code can get us back into the proof-builder by way of the use
 ; of (invoke-restart 'continue) in our-abort, even when there is a raw Lisp
@@ -3789,7 +3789,8 @@
                              (ld-query-control-alist state))))
                      (cond ((f-get-global 'in-verify-flg state)
                             (er soft ctx
-                                "It is illegal to call LD in this context."))
+                                "It is illegal to call LD when inside the ~
+                                 proof-builder."))
                            (t (ld-loop-simple state)))))
 
 (defun puff-fn1 (cd ctx state)

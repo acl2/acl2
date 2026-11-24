@@ -1916,6 +1916,8 @@
       (if flg
           (mv t seen)
           (apply$-reachablep-lst (fargs term) wrld seen))))
+   ((member-eq (ffn-symb term) seen)
+    (mv nil seen))
    ((member-eq (ffn-symb term) *apply$-userfn-callers*)
     (mv t seen))
    (t (mv-let (flg seen)
