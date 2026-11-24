@@ -2952,7 +2952,8 @@
     (b* (((reterr) (irr-enum-spec) (irr-dstate))
          ((enum-spec enumspec) enumspec)
          ((erp new-enumers dstate) (dimb-enumer-list enumspec.enumers dstate)))
-      (retok (make-enum-spec :name? enumspec.name?
+      (retok (make-enum-spec :attribs enumspec.attribs
+                             :name? enumspec.name?
                              :enumers new-enumers
                              :final-comma enumspec.final-comma)
              dstate))

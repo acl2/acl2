@@ -1622,7 +1622,8 @@
          ((enum-spec enumspec) enumspec)
          ((mv enumers env)
           (const-prop-enumer-list enumspec.enumers env)))
-      (mv (make-enum-spec :name? enumspec.name?
+      (mv (make-enum-spec :attribs enumspec.attribs
+                          :name? enumspec.name?
                           :enumers enumers
                           :final-comma enumspec.final-comma)
           env))

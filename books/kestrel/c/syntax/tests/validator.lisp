@@ -1607,6 +1607,23 @@ void bar() {
 } my_union_t;
 ")
 
+(test-valid
+ "typedef enum __attribute__((flag_enum, enum_extensibility(open))) {
+  PERM_LOAD = 1,
+  PERM_STORE = 2
+} perms_t;
+
+perms_t p = PERM_LOAD;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+ "typedef enum __attribute__((flag_enum, enum_extensibility(open))) {
+  PERM_LOAD = 1,
+  PERM_STORE = 2
+} perms_t;
+")
+
 ;; Example taken from [GCCM:6.11.6.1]
 ;; https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html
 (test-valid-fail

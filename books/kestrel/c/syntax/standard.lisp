@@ -215,6 +215,8 @@
                         (struct-declon-member->declors struct-declon))
                        (endp (struct-declon-member->attribs struct-declon))))
    (struct-declon :empty nil)
+   (enum-spec (and (endp (enum-spec->attribs enum-spec))
+                   (enumer-list-standardp (enum-spec->enumers enum-spec))))
    (attrib nil)
    (attrib-spec nil)
    (init-declor (and (declor-standardp (init-declor->declor init-declor))

@@ -6895,7 +6895,8 @@
                    (enum-spec-fix enumspec)))
          ((erp new-enumers types vstate)
           (valid-enumer-list enumspec.enumers vstate)))
-      (retok (make-enum-spec :name? enumspec.name?
+      (retok (make-enum-spec :attribs enumspec.attribs
+                             :name? enumspec.name?
                              :enumers new-enumers
                              :final-comma enumspec.final-comma)
              types

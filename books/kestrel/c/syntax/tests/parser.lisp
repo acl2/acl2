@@ -1910,6 +1910,12 @@ error (int __status, int __errnum, const char *__format, ...)
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+(test-parse
+ parse-*-translation-item
+ "enum __attribute__((packed)) color { RED, GREEN, BLUE };
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-translation-unit

@@ -2720,8 +2720,13 @@
      (xdoc::p
       "To make this definition simpler,
        we allow an absent name and no enumerators,
-       even though this is disallowed in the concrete syntax."))
-    ((name? ident-option)
+       even though this is disallowed in the concrete syntax.")
+     (xdoc::p
+      "As a GCC extension, we allow zero or more attribute specifiers.
+       In the concrete syntax, these come just after @('enum');
+       see the ABNF grammar."))
+    ((attribs attrib-spec-list) ; GCC extension
+     (name? ident-option)
      (enumers enumer-list)
      (final-comma bool))
     :pred enum-specp

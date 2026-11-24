@@ -3450,6 +3450,12 @@
       "We ensure that the enumeration specifier is not empty,
        i.e. that there is a name or a non-empty list of enumerators."))
     (b* (((enum-spec enumspec) enumspec)
+         (pstate (if (consp enumspec.attribs)
+                     (b* ((pstate (print-attrib-spec-list enumspec.attribs
+                                                          pstate))
+                          (pstate (print-astring " " pstate)))
+                       pstate)
+                   pstate))
          ((unless (or (ident-option-case enumspec.name? :some)
                       enumspec.enumers))
           (raise "Misusage error: empty enumeration specifiers.")

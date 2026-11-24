@@ -140,6 +140,9 @@
 ; Presumably, it may make it easier to write certain macros.
 ; Semantically, it amounts to nothing, i.e. it is ignored.
 
+; As a GCC extension, we allow attributes just after 'enum'
+; in an enumeration specifier.
+
 ; As a GCC extension, we allow range designators
 ; (see https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
 ; Since they extend standard single-element designators,
@@ -249,9 +252,17 @@ struct-declarator-list = struct-declarator
 struct-declarator = declarator
                   / [ declarator ] ":" constant-expression
 
-enum-specifier = %s"enum" [ identifier ] "{" enumerator-list "}"
-               / %s"enum" [ identifier ] "{" enumerator-list "," "}"
-               / %s"enum" identifier
+enum-specifier = %s"enum"
+                 *attribute-specifier ; GCC extension
+                 [ identifier ]
+                 "{" enumerator-list "}"
+               / %s"enum"
+                 *attribute-specifier ; GCC extension
+                 [ identifier ]
+                 "{" enumerator-list "," "}"
+               / %s"enum"
+                 *attribute-specifier ; GCC extension
+                 identifier
 
 enumerator-list = enumerator
                 / enumerator-list "," enumerator
