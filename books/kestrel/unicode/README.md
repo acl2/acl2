@@ -87,7 +87,7 @@ validated.
 
 | Book | Contents |
 |------|----------|
-| `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values. |
+| `code-points` | Code points and scalar values, as natural numbers (never ACL2 characters). Surrogates are code points but not scalar values.  The types of their lists, and of lists of lists of code points. |
 | `versions` | The supported versions of Unicode, as a type, and the order in which they were released (`version<=`). |
 | `general-category` | `General_Category`: `code-point-general-category`, the ranges of the code points that have a value (`general-category-ranges`), and `assigned-p`. |
 | `general-category-changes` | The code points whose `General_Category` is not the same in two versions (`general-category-changes`), and those of them that are assigned in the first version (`general-category-changes-of-assigned`), as lists of ranges; the proof that in the supported versions the `General_Category` of an assigned code point is the same in every later version, with one exception, U+0295. |
@@ -111,7 +111,7 @@ validated.
 | `bidi-class` | `Bidi_Class` in full (`code-point-bidi-class`), and the proof that it agrees with the table of the explicit formatting classes of `bidi-controls`. |
 | `bidi-brackets` | `Bidi_Paired_Bracket_Type` and `Bidi_Paired_Bracket` (`code-point-bidi-bracket`), with the proof that each paired bracket is the partner of its partner. |
 | `bidi-mirroring` | `Bidi_Mirroring_Glyph` (`code-point-bidi-mirroring-glyph`), with the proofs that the mirroring glyph of a mirroring glyph is the first code point, that the partner of a paired bracket is its mirroring glyph, and that a mirroring glyph is a scalar value. |
-| `bidirectional-algorithm` | The Unicode Bidirectional Algorithm of UAX #9: the resolved levels of a list of code points (`bidi-levels`), the order in which it is displayed (`bidi-display-order`), and the whole text as it is displayed (`bidi-display`).  It loads the seven books of the rules and the three books of theorems, below. |
+| `bidirectional-algorithm` | The Unicode Bidirectional Algorithm of UAX #9: the resolved levels of a list of code points (`bidi-levels`), the order in which it is displayed (`bidi-display-order`), and the whole text as it is displayed (`bidi-display`).  It loads the seven books of the rules and the four books of theorems, below. |
 | `bidi-characters` | What the algorithm looks at in a character (the type `bidi-char`), the direction of a paragraph, and rules P2 and P3. |
 | `bidi-explicit-levels` | Rules X1 to X8: the levels and the overrides that the explicit formatting characters give. |
 | `bidi-weak-types` | Rules W1 to W7. |
@@ -122,6 +122,7 @@ validated.
 | `bidi-rearrangement` | The proof that the order of display is a permutation of the positions of the characters that have a level. |
 | `right-to-left-free` | The code points that can make text be displayed from right to left (`right-to-left-code-point-p`), and the lists that have none (`right-to-left-free-p`).  It loads only `bidi-class`. |
 | `bidi-left-to-right` | The proofs that a list that satisfies `right-to-left-free-p`, in a paragraph that is not set from right to left, gets only even levels and is displayed as it is stored. |
+| `bidi-confinement` | Confinement: a clean cut of a text (`bidi-clean-cut-p`), a text cut into segments whose cuts are all clean (`bidi-confined-p`), and the proof that such a text is displayed segment by segment.  Conditions on the segments, on the bidirectional classes and the bracket pairs only, under which a plain text is confined (`bidi-guarded-segments-p`, `bidi-plain-p`); that they are enough is tested, not yet proved. |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
@@ -612,6 +613,25 @@ theorems are about what the algorithm does:
   The condition looks only at the `Bidi_Class` of each code point.  A list
   of code points below U+0590, where the Hebrew block starts, satisfies
   it (`right-to-left-free-p-when-all-below-590`).
+- `perm-of-take-of-bidi-arrange-paragraph-when-bidi-clean-cut-p`: in a
+  paragraph from left to right, if the character before a place of the
+  text or the character after it has level 0 (a clean cut,
+  `bidi-clean-cut-p`), then the characters displayed to the left of that
+  place are the characters stored before it, in another order.  So rules
+  L2 and L3 move no character across a clean cut.
+- `perm-of-take-of-bidi-arrange-paragraph-when-bidi-confined-p`: a text
+  cut into segments is confined (`bidi-confined-p`) when the cuts between
+  its segments are all clean.  A confined text is displayed segment by
+  segment: for every k, the display begins with the characters of the
+  first k segments, in another order.
+- **Not a theorem yet**: that a plain text whose segments are guarded
+  (`bidi-plain-p`, `bidi-guarded-segments-p`) is confined.  The predicate
+  states three conditions on each segment that has a character of class
+  `R`, `AL` or `AN`: after it, the first character of class `L`, `R`,
+  `AL`, `EN` or `AN` is of class `L`; the character right after it is
+  not of class `ET` or `NSM`; and no bracket pair opens inside it and
+  closes after it.  The claim is tested exhaustively on short texts (see
+  "Tests").
 
 About the bidirectional skeleton:
 
@@ -686,7 +706,7 @@ supported version, and nothing else of this library.
 | `bidi-control-p`, `bidi-explicit-formatting-p`, `bidi-explicit-formatting-class` | `bidi-controls` | `code-points`, `versions`, `ranges`, `maps` | `prop-list`, `derived-bidi-class` |
 | `code-point-bidi-bracket`; the type `bidi-bracket` | `bidi-brackets` | `versions`, `maps` | `bidi-brackets` |
 | `code-point-bidi-mirroring-glyph` | `bidi-mirroring` | `bidi-brackets`, and the books that it loads | `bidi-brackets`, `bidi-mirroring` |
-| `bidi-levels`, `bidi-display-order`, `bidi-display`, `bidi-arrange`, `bidi-paragraph-levels`, `bidi-paragraph-embedding-level`; the types `bidi-char`, `paragraph-direction` and `bidi-shown-char`; the theorems about the algorithm | `bidirectional-algorithm` | `bidi-display` and the six other books of the rules, `bidi-rearrangement`, `right-to-left-free`, `bidi-left-to-right`, `bidi-class`, `bidi-brackets`, `bidi-mirroring`, `decompositions`, `general-category`, `kestrel/lists-light/perm`, and the books that those load | `derived-bidi-class`, `bidi-brackets`, `bidi-mirroring`, `unicode-data`, `derived-general-category` |
+| `bidi-levels`, `bidi-display-order`, `bidi-display`, `bidi-arrange`, `bidi-paragraph-levels`, `bidi-paragraph-embedding-level`; the types `bidi-char`, `paragraph-direction` and `bidi-shown-char`; `bidi-confined-p`, `bidi-guarded-segments-p`; the theorems about the algorithm | `bidirectional-algorithm` | `bidi-display` and the six other books of the rules, `bidi-rearrangement`, `right-to-left-free`, `bidi-left-to-right`, `bidi-confinement`, `bidi-class`, `bidi-brackets`, `bidi-mirroring`, `decompositions`, `general-category`, `kestrel/lists-light/perm`, `std/lists/flatten`, and the books that those load | `derived-bidi-class`, `bidi-brackets`, `bidi-mirroring`, `unicode-data`, `derived-general-category` |
 | `nfd`, `nfc`, `nfkd`, `nfkc`; `nfd-memberp` and the other three; `canonical-equivalent-p`, `compatibility-equivalent-p` | `normalization` | `code-points`, `versions`, `ranges`, `maps`, `hangul`, `combining-classes`, `decompositions`, `compositions` | `unicode-data`, `derived-combining-class`, `derived-normalization-props` |
 | `composes-with-following-p`, `composes-with-previous-p`; the type `code-point-set` | `composing-pairs` | `compositions`, and the books that it loads | `unicode-data`, `derived-normalization-props` |
 | `normalization-inert-p`, and the theorems about normalization around an inert code point | `normalization-inert` | `composing-pairs`, `normalization`, `pattern-white-space`, and the books that those load | the tables of `normalization`, and `prop-list` |
@@ -1062,11 +1082,24 @@ there is no formal specification to prove that against.  The evidence is:
   brackets: 91,707 lines, each checked for the paragraph embedding level,
   the resolved levels and the order of display, in each of the three
   versions.
+- `bidi-confinement`: the claim that a plain text whose segments are
+  guarded is confined, on every text of one to four characters over
+  sixteen characters (one for each of the twelve bidirectional classes
+  that a plain text can have, and two kinds of paired brackets), with
+  every way of cutting the text: 435,434 cases with guarded segments at
+  length four, all confined.  Lengths one to three are run for the three
+  versions and length four for 17.0.0; the sixteen characters have the
+  same properties in the three.  Then examples: for each of the
+  conditions, a text that fails it and is not confined; and a confined
+  text one of whose segments is not displayed as it would be alone.  The
+  same check at length five, 12,592,378 cases with guarded segments and
+  none that is not confined, was run once, on 2026-11-23, outside the
+  certified books.
 
 The conformance test of normalization takes about ten seconds per
 version, and the quick-check test about twenty.  The two conformance
 tests of the bidirectional algorithm take about two seconds and about
-ten seconds.
+ten seconds, and the confinement test about ten seconds.
 
 The two conformance files of the bidirectional algorithm have the same
 test cases in Unicode 16.0.0, 17.0.0 and 18.0.0; only their comments
@@ -1428,8 +1461,8 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,160 topics.  The books of the
-bidirectional algorithm have some 360 of them: their functions, and
+With this, the library has about 1,180 topics.  The books of the
+bidirectional algorithm have some 375 of them: their functions, and
 twenty-seven small types whose generated topics, about fifteen at most for
 one type, are under the line.
 
@@ -1459,8 +1492,8 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 139 books from scratch, the tests and the generated
-tables included, took about five and a half minutes with two jobs
+Certifying all the 141 books from scratch, the tests and the generated
+tables included, took about five minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
 sum with 179 cases) and `normalization-across-versions` (22 seconds).

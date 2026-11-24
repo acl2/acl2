@@ -204,9 +204,11 @@
      "The Unicode Bidirectional Algorithm,
       which says in what order a text is displayed
       when it has characters written from right to left,
-      with the theorems that it only rearranges the text
-      and that it leaves a text as it is stored
-      when no character of the text can start text from right to left:
+      with the theorems that it only rearranges the text,
+      that it leaves a text as it is stored
+      when no character of the text can start text from right to left,
+      and that it displays a text segment by segment
+      when the text is cut where the levels allow it:
       see @(see bidirectional-algorithm).")
     (xdoc::li
      "The emoji properties and the regional indicators:
@@ -362,7 +364,8 @@
       The rules are in seven books that it loads,
       from @('bidi-characters') to @('bidi-display'),
       and the theorems about them
-      in @('bidi-rearrangement') and @('bidi-left-to-right'):
+      in @('bidi-rearrangement'), @('bidi-left-to-right')
+      and @('bidi-confinement'):
       see @(see bidirectional-algorithm).
       @('kestrel/unicode/right-to-left-free')
       for @(tsee right-to-left-free-p),

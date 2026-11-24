@@ -13,6 +13,7 @@
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/unicode-light/surrogates" :dir :system)
 (include-book "kestrel/utilities/integers-from-to" :dir :system)
+(include-book "std/lists/flatten" :dir :system)
 (include-book "std/util/deffixer" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -123,6 +124,29 @@
              (nat-listp x))
     :induct t
     :enable nat-listp))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist code-point-list-list
+  :short "Fixtype of lists of lists of code points."
+  :elt-type code-point-list
+  :true-listp t
+  :elementp-of-nil t
+  :pred code-point-list-listp
+
+  ///
+
+  (defrule code-point-listp-of-flatten
+    (implies (code-point-list-listp x)
+             (code-point-listp (acl2::flatten x)))
+    :induct t
+    :enable acl2::flatten)
+
+  (defrule flatten-of-code-point-list-list-fix
+    (equal (acl2::flatten (code-point-list-list-fix x))
+           (code-point-list-fix (acl2::flatten x)))
+    :induct t
+    :enable (acl2::flatten code-point-list-list-fix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

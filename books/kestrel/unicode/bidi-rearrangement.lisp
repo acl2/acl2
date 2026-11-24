@@ -204,6 +204,14 @@
               acl2::perm-of-cons-arg2
               acl2::perm-of-append))
 
+  (defrule perm-of-positions-of-bidi-reorder-items
+    (acl2::perm (bidi-display-item-list-positions
+                 (bidi-reorder-items items level lowest))
+                (bidi-display-item-list-positions items))
+    :use (:instance shifted-positions-of-bidi-reorder-items (offset 0))
+    :enable shifted-positions
+    :disable shifted-positions-of-bidi-reorder-items)
+
   (defruledl shifted-positions-of-bidi-display-items
     (equal (shifted-positions (bidi-display-items levels 0) offset)
            (bidi-positions-with-level levels offset))

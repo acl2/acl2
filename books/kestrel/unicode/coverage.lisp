@@ -116,13 +116,22 @@
       which states how the rules are read where they leave room.")
     (xdoc::li
      "Theorems about the algorithm:
-      that it only rearranges the text,
-      and that a text with no character of the classes
+      that it only rearranges the text;
+      that a text with no character of the classes
       @('R'), @('AL'), @('AN'), @('RLE'), @('RLO') and @('RLI')
       is displayed as it is stored
-      unless the paragraph is set from right to left.
-      See @(see bidi-rearrangement), @(see bidi-display-theorems)
-      and @(see bidi-left-to-right)."))
+      unless the paragraph is set from right to left;
+      and that, in a paragraph from left to right,
+      it does not move a character across a place of the text
+      where the character on one side has level 0,
+      so that a text cut into segments at such places
+      is displayed segment by segment.
+      See @(see bidi-rearrangement), @(see bidi-display-theorems),
+      @(see bidi-left-to-right) and @(see bidi-confinement).
+      The conditions on the segments
+      under which the cuts between them are such places
+      are defined and tested, not proved:
+      see @(see bidi-guarded-segments)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul

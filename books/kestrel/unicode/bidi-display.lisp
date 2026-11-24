@@ -601,6 +601,21 @@
              fix)
     :expand ((bidi-positions-with-level levels 0)))
 
+  (defruled bidi-shown-chars-at-of-bidi-positions-with-level-when-shorter
+    (implies (and (nat-listp levels)
+                  (<= (len levels) (len shown)))
+             (equal (bidi-shown-chars-at (bidi-positions-with-level levels 0)
+                                         shown)
+                    (bidi-shown-char-list-fix (take (len levels) shown))))
+    :induct (two-lists-induction levels shown)
+    :enable (bidi-shown-chars-at
+             bidi-shown-char-at
+             bidi-shown-char-list-fix
+             take
+             len
+             fix)
+    :expand ((bidi-positions-with-level levels 0)))
+
   ;; A paragraph and the rest of the text make the text.
 
   (local
@@ -638,26 +653,26 @@
              (equal (len (bidi-order-of-levels levels))
                     (len levels))))
 
-  (defrulel len-of-bidi-shown-chars-at
+  (defrule len-of-bidi-shown-chars-at
     (equal (len (bidi-shown-chars-at positions shown))
            (len positions))
     :induct t
     :enable (bidi-shown-chars-at len))
 
-  (defrulel len-of-bidi-move-marks
+  (defrule len-of-bidi-move-marks
     (implies (true-listp pending)
              (equal (len (bidi-move-marks shown pending ver))
                     (+ (len pending) (len shown))))
     :induct t
     :enable (bidi-move-marks len fix))
 
-  (defrulel len-of-bidi-mirror-chars
+  (defrule len-of-bidi-mirror-chars
     (equal (len (bidi-mirror-chars shown ver))
            (len shown))
     :induct t
     :enable (bidi-mirror-chars len))
 
-  (defrulel len-of-bidi-arrange-paragraph
+  (defrule len-of-bidi-arrange-paragraph
     (equal (len (bidi-arrange-paragraph cps direction ver))
            (len cps))
     :enable (bidi-arrange-paragraph fix))
@@ -702,7 +717,7 @@
     :disable (acl2::perm-of-cons-arg1
               acl2::perm-of-cons-arg2))
 
-  (defrulel perm-of-bidi-shown-chars-at-when-perm
+  (defrule perm-of-bidi-shown-chars-at-when-perm
     (implies (acl2::perm positions positions-equiv)
              (acl2::perm (bidi-shown-chars-at positions shown)
                          (bidi-shown-chars-at positions-equiv shown)))
@@ -725,7 +740,7 @@
     :disable (acl2::perm-of-cons-arg1
               acl2::perm-of-cons-arg2))
 
-  (defrulel perm-of-bidi-shown-char-list-code-points-when-perm
+  (defrule perm-of-bidi-shown-char-list-code-points-when-perm
     (implies (acl2::perm shown shown-equiv)
              (acl2::perm (bidi-shown-char-list-code-points shown)
                          (bidi-shown-char-list-code-points shown-equiv)))
@@ -737,7 +752,7 @@
     :disable (acl2::perm-of-cons-arg1
               acl2::perm-of-cons-arg2))
 
-  (defrulel perm-of-bidi-move-marks
+  (defrule perm-of-bidi-move-marks
     (implies (true-listp pending)
              (acl2::perm (bidi-move-marks shown pending ver)
                          (append (bidi-shown-char-list-fix pending)
@@ -748,7 +763,7 @@
               acl2::perm-of-cons-arg2
               acl2::perm-of-append))
 
-  (defrulel perm-of-bidi-arrange-paragraph
+  (defrule perm-of-bidi-arrange-paragraph
     (acl2::perm (bidi-shown-char-list-code-points
                  (bidi-arrange-paragraph cps direction ver))
                 (code-point-list-fix cps))

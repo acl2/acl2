@@ -11,6 +11,7 @@
 (in-package "UNICODE")
 
 (include-book "bidi-left-to-right")
+(include-book "bidi-confinement")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +144,17 @@
       and no character is replaced
       (see @(see right-to-left-free) and @(see bidi-left-to-right)).
       The condition is on the @('Bidi_Class') of each character,
-      so it can be checked without running the algorithm.")))
+      so it can be checked without running the algorithm.")
+    (xdoc::li
+     "The algorithm does not move a character across a clean cut.
+      In a paragraph from left to right,
+      if the character before a place of the text
+      or the character after it has level 0,
+      the characters stored before that place
+      are the characters displayed to the left of it, in another order.
+      So a text cut into segments at such places
+      is displayed segment by segment
+      (see @(see bidi-confinement)).")))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
@@ -153,4 +164,5 @@
                     bidi-displayed-text
                     bidi-rearrangement
                     right-to-left-free
-                    bidi-left-to-right))
+                    bidi-left-to-right
+                    bidi-confinement))
