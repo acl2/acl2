@@ -252,15 +252,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deflist code-point-list-list
-  :short "Fixtype of lists of lists of code points."
-  :elt-type code-point-list
-  :true-listp t
-  :elementp-of-nil t
-  :pred code-point-list-listp)
-
-;;;;;;;;;;;;;;;;;;;;
-
 (define identifier-chunks-from ((before code-point-listp)
                                 (after code-point-listp)
                                 (ver versionp))
