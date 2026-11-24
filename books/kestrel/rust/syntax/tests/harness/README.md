@@ -141,6 +141,21 @@ lexeme CSTs violate an executable conjunct of `rust$::lexing-okp`
 (every conjunct except maximal munch); there should be none.
 It also takes the converted whole files.
 
+## The lexemes against the text
+
+    (rust$::rv-go-reprint "/data/tests.lsp" (rust::edition-2021) state)
+    (rust$::rv-go-reprint "/data/tests.lsp" (rust::edition-2024) state)
+
+This returns the number of inputs that lex and tokenize,
+and the ids of those whose lexemes, with their spans,
+do not tile the input (`rust$::lexeme+span-list-tiles-p`):
+some lexeme does not give back, from its components,
+the code points at its span.
+There should be none.
+It is the check that the making of a source unit ends with
+(`rust$::source-unit-wfp`), which is not yet proved to always succeed.
+It also takes the converted whole files.
+
 ## Another version of rustc
 
 `run_rustc.py` takes the compiler from the environment variable `RUSTC`,
@@ -183,7 +198,7 @@ Build it with its output outside the books, and run it:
 The Reference's rules have no editions and always apply the reserved
 guards, so its results correspond to edition 2024.
 Its results also hold where each token starts and ends.
-To compare those with the ACL2 lexer:
+To compare those with the spans of the ACL2 tokens:
 
     (rust$::rv-go-bounds "/data/tests.lsp" "/data/acl2-bounds.lsp" state)
 
@@ -261,6 +276,9 @@ is one of the lexer's.
 For each file the driver writes
 `:utf8`, `:err`, `:mismatched`, `:unclosed`, `:unexpected`, or `:ok`,
 and the length of the shebang (0 if there is none).
+The driver makes a source unit of each file that lexes and tokenizes;
+it writes `:reprint` if that fails, which should not happen
+(the lexemes then do not give back the text).
 
 Whether a file starts with a shebang shows in its class
 only when the first line has an error;

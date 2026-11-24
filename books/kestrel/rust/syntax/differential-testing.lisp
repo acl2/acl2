@@ -249,6 +249,21 @@
      every conjunct of the specification that can be executed,
      which is all of them but maximal munch,
      must hold of the CSTs that the lexer returns.")
+   (xdoc::h3 "The lexemes against the text")
+   (xdoc::p
+    "A third use of the inputs is for the tokenizer,
+     and does not involve rustc either.
+     A source unit must give back its text from its lexemes
+     (see @(see source-units)):
+     each lexeme, from its own components,
+     has the code points that are at its span.
+     The functions that make source units check this,
+     and it is not yet proved that the check never fails.
+     So the tests run the same check on each input
+     that lexes and tokenizes,
+     and on the whole files, which go through the making of a source unit.
+     The token boundaries that are compared
+     with the Reference's interpreter are the spans of the tokens.")
    (xdoc::h3 "How to run the tests")
    (xdoc::p
     "The scripts are in the directory @('tests/harness') of this library,
@@ -280,6 +295,10 @@
      "The CSTs of the 161,919 inputs that lex
       satisfy the executable conjuncts of the specification.")
     (xdoc::li
+     "The lexemes of the inputs that lex and tokenize,
+      161,867 in edition 2021 and 160,086 in edition 2024,
+      give back the text of the input, each lexeme at its span.")
+    (xdoc::li
      "rustc 1.100.0 accepts the same inputs as rustc 1.87.0,
       with the same counts,
       but for the 148 that have, in an identifier,
@@ -309,7 +328,8 @@
      our tokenizer and rustc 1.87.0, in edition 2021,
      count the same number of tokens in every file,
      and our builder accepts the tokens of every file:
-     about 285,000 tokens, in about 40,700 delimited groups.")
+     about 285,000 tokens, in about 40,700 delimited groups.
+     The lexemes of every file give back its text.")
    (xdoc::p
     "On the 31,120 generated whole files, for the input format:")
    (xdoc::ul
@@ -319,7 +339,9 @@
       16,170 files are not valid UTF-8,
       3,523 have an error of the lexer,
       1,497 have a delimiter that is not closed,
-      and 9,930 have none of these.")
+      and 9,930 have none of these.
+      The 11,427 files of the last two classes are made into source units,
+      and the check of each one succeeds.")
     (xdoc::li
      "Of the 7,194 probes for the shebang,
       3,343 have an outcome in rustc 1.87.0 that tells

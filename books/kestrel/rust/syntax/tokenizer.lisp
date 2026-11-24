@@ -55,6 +55,12 @@
   :ok token+span-list
   :pred token+span-list-resultp)
 
+(fty::defresult lexeme+span-list-result
+  :parents (tokenizer)
+  :short "Fixtype of errors and lists of lexemes with spans."
+  :ok lexeme+span-list
+  :pred lexeme+span-list-resultp)
+
 ; See lexer.lisp for why :no-function nil (fty::reserrf uses __function__).
 (acl2::controlled-configuration :no-function nil)
 
@@ -74,13 +80,14 @@
                           lexemep-when-result-not-error
                           tokenp-when-result-not-error
                           lexeme-listp-when-result-not-error
-                          token+span-listp-when-result-not-error)))
+                          token+span-listp-when-result-not-error
+                          lexeme+span-listp-when-result-not-error)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ tokenizer
   :parents (syntax-for-tools)
-  :short "Rust tokenizer: from lexeme CSTs to tokens with spans."
+  :short "Rust tokenizer: from lexeme CSTs to lexemes and tokens with spans."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -88,12 +95,17 @@
      lexeme concrete syntax trees (CSTs).
      The tokenizer abstracts those CSTs to
      the lexeme and token fixtypes (see @(see tokens)),
-     computes source spans by threading positions
-     through the lexeme texts,
-     and filters out the trivia
-     (whitespace and non-doc comments),
-     yielding the token-with-span list
-     that feeds token-tree construction and parsing.")
+     and computes their spans (see @(see spans))
+     by adding up the lengths of the lexeme texts.
+     This gives every lexeme with its span,
+     whitespace and comments included,
+     which is what a source unit keeps (see @(see source-units)).
+     Filtering out the trivia
+     (whitespace and non-doc comments)
+     yields the token-with-span list
+     that feeds token-tree construction and parsing.
+     The span of a token is the same
+     whether or not the trivia is kept.")
    (xdoc::p
     "The CST abstraction functions follow the style of
      the Remora and Leo CST-to-AST abstractors:
@@ -121,9 +133,7 @@
      is the UTF-8 encoding of the source code points,
      as an ACL2 string of (8-bit) characters;
      for ASCII text this is the text itself.
-     Positions count code points, not bytes:
-     a line feed moves to the next line,
-     and every other code point advances the column by one."))
+     Spans count code points, not bytes."))
   :order-subtopics t
   :default-parent t)
 
@@ -193,62 +203,6 @@
          (cons (car syms) (abs-symbols-to-nats (cdr syms))))
         (t (abs-symbols-to-nats (cdr syms))))
   :measure (len syms))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Position threading and spans.
-
-(define position-advance ((nat natp) (pos positionp))
-  :returns (new-pos positionp)
-  :short "Advance a position over one code point."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "A line feed moves to the next line;
-     every other code point advances the column by one.
-     (Like rustc, we do not treat
-     a carriage return as a line terminator:
-     rustc normalizes CRLF to LF before lexing,
-     and any other carriage return is
-     a whitespace character like a space or a tab,
-     not a line break.)"))
-  (if (eql (lnfix nat) #x0a)
-      (position-inc-line 1 pos)
-    (position-inc-column 1 pos)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define position-advance-to-last ((nats nat-listp) (pos positionp))
-  :guard (consp nats)
-  :returns (mv (last-pos positionp)
-               (next-pos positionp))
-  :short "Advance a position over a nonempty list of code points,
-          returning the positions of the last code point
-          and of the one after it."
-  (b* ((nats (nat-list-fix nats))
-       (pos (position-fix pos))
-       ((unless (consp nats)) (mv pos pos)) ; guard excludes this
-       (nat (car nats))
-       ((when (endp (cdr nats))) (mv pos (position-advance nat pos))))
-    (position-advance-to-last (cdr nats) (position-advance nat pos)))
-  :measure (len nats))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define span-of-nats ((nats nat-listp) (pos positionp))
-  :guard (consp nats)
-  :returns (mv (span spanp)
-               (next-pos positionp))
-  :short "Span of a nonempty list of code points starting at a position,
-          and the position just after it."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The span's (inclusive) ending position is
-     that of the last code point."))
-  (b* (((mv last-pos next-pos) (position-advance-to-last nats pos)))
-    (mv (make-span :start (position-fix pos) :end last-pos)
-        next-pos)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -797,7 +751,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tokenization: abstraction + span threading + trivia filtering.
+; Tokenization: abstraction + spans + trivia filtering.
 
 (define lexeme-csts-reserved-guard-p ((tree abnf::treep)
                                       (next abnf::treep)
@@ -826,25 +780,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tokenize-lexeme-csts ((trees abnf::tree-listp)
-                              (pos positionp)
-                              (edition rust::editionp))
-  :returns (tokens token+span-list-resultp)
-  :short "Turn a list of lexeme CSTs into a list of tokens with spans."
+(define lexeme-csts-to-lexemes ((trees abnf::tree-listp)
+                                (offset natp)
+                                (edition rust::editionp))
+  :returns (lexemes lexeme+span-list-resultp)
+  :short "Turn a list of lexeme CSTs into a list of lexemes with spans."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each lexeme's span starts at the running position
-     and ends (inclusive) at its last code point;
-     the running position then continues after the lexeme.
-     Trivia lexemes (whitespace and non-doc comments)
-     advance the position but produce no token.")
+    "The CSTs are those of consecutive lexemes,
+     the first of which starts at the given offset.
+     Each lexeme's span starts at the running offset
+     and ends (exclusive) after its last code point,
+     where the next lexeme starts.
+     Every lexeme is kept, trivia too
+     (whitespace and non-doc comments).")
    (xdoc::p
     "In edition 2024, it is an error if a lexeme and the next one
      start a reserved guard [SC15]
      (see @(tsee lexeme-csts-reserved-guard-p))."))
   (b* ((trees (abnf::tree-list-fix trees))
-       (pos (position-fix pos))
+       (offset (lnfix offset))
        (edition (rust::edition-fix edition))
        ((when (endp trees)) nil)
        (tree (car trees))
@@ -855,15 +811,12 @@
        (nats (abs-symbols-to-nats (abnf::tree->string tree)))
        ((unless (consp nats))
         (reserrf (list :empty-lexeme (abnf::tree-fix tree))))
-       ((mv span next-pos) (span-of-nats nats pos))
-       ((fty::okf rest-tokens)
-        (tokenize-lexeme-csts (cdr trees) next-pos edition)))
-    (lexeme-case lexeme
-                 :token (cons (make-token+span :token lexeme.token
-                                               :span span)
-                              rest-tokens)
-                 :whitespace rest-tokens
-                 :comment rest-tokens))
+       (end (+ offset (len nats)))
+       ((fty::okf rest-lexemes)
+        (lexeme-csts-to-lexemes (cdr trees) end edition)))
+    (cons (make-lexeme+span :lexeme lexeme
+                            :span (make-span :start offset :end end))
+          rest-lexemes))
   :measure (len trees)
   ; The fix congruences are proved by expanding the definition
   ; on both sides of each equality (no induction is needed,
@@ -874,35 +827,83 @@
 
   ///
 
-  (fty::deffixequiv tokenize-lexeme-csts
+  (fty::deffixequiv lexeme-csts-to-lexemes
     :hints
     (("Goal"
       :expand
-      ((tokenize-lexeme-csts trees pos edition)
-       (tokenize-lexeme-csts (abnf::tree-list-fix trees) pos edition)
-       (tokenize-lexeme-csts trees (position-fix pos) edition)
-       (tokenize-lexeme-csts trees pos (rust::edition-fix edition)))))))
+      ((lexeme-csts-to-lexemes trees offset edition)
+       (lexeme-csts-to-lexemes (abnf::tree-list-fix trees) offset edition)
+       (lexeme-csts-to-lexemes trees (nfix offset) edition)
+       (lexeme-csts-to-lexemes trees offset (rust::edition-fix edition)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme+span-list->tokens ((lexemes lexeme+span-listp))
+  :returns (tokens token+span-listp)
+  :short "The tokens, with their spans,
+          among a list of lexemes with spans."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The lexemes that are not tokens are left out:
+     whitespace, non-doc comments, and a shebang.
+     Each token keeps the span that it has as a lexeme."))
+  (b* ((lexemes (lexeme+span-list-fix lexemes))
+       ((when (endp lexemes)) nil)
+       ((lexeme+span lexeme+span) (car lexemes))
+       (lexeme lexeme+span.lexeme)
+       (tokens (lexeme+span-list->tokens (cdr lexemes))))
+    (lexeme-case lexeme
+                 :token (cons (make-token+span :token lexeme.token
+                                               :span lexeme+span.span)
+                              tokens)
+                 :whitespace tokens
+                 :comment tokens
+                 :shebang tokens))
+  :measure (len lexemes))
+
+; These come after the function, and not with it,
+; because they use its fixing theorem.
+
+(defrule lexeme+span-list->tokens-when-not-consp
+  (implies (not (consp lexemes))
+           (equal (lexeme+span-list->tokens lexemes)
+                  nil))
+  :enable lexeme+span-list->tokens)
+
+(defrule lexeme+span-list->tokens-of-cons
+  (equal (lexeme+span-list->tokens (cons lexeme+span lexemes))
+         (if (lexeme-case (lexeme+span->lexeme lexeme+span) :token)
+             (cons (make-token+span
+                    :token (lexeme-token->token
+                            (lexeme+span->lexeme lexeme+span))
+                    :span (lexeme+span->span lexeme+span))
+                   (lexeme+span-list->tokens lexemes))
+           (lexeme+span-list->tokens lexemes)))
+  :expand (lexeme+span-list->tokens (cons lexeme+span lexemes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tokenize-rust ((input nat-listp)
-                       (edition rust::editionp)
-                       (file stringp))
+                       (edition rust::editionp))
   :returns (tokens token+span-list-resultp)
   :short "Lex and tokenize a list of Unicode code points."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The file name is used only in the positions of the spans."))
+    "The spans of the tokens are offsets into the input.
+     See @(see source-units) for the lexing and tokenization
+     of the text of a source file,
+     which also keeps the whitespace and the comments."))
   (b* ((trees (lexemize-rust input))
-       ((when (reserrp trees)) (reserrf-push trees)))
-    (tokenize-lexeme-csts trees (position-init file) edition)))
+       ((when (reserrp trees)) (reserrf-push trees))
+       ((fty::okf lexemes) (lexeme-csts-to-lexemes trees 0 edition)))
+    (lexeme+span-list->tokens lexemes)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define tokenize-rust-from-string ((string stringp)
-                                  (edition rust::editionp)
-                                  (file stringp))
+                                  (edition rust::editionp))
   :returns (tokens token+span-list-resultp)
   :short "Lex and tokenize an ACL2 string."
   :long
@@ -911,4 +912,4 @@
     "As with @(tsee lexemize-rust-from-string),
      the string's character codes are used directly as code points,
      which is only appropriate when they are all below 128."))
-  (tokenize-rust (acl2::string=>nats (str-fix string)) edition file))
+  (tokenize-rust (acl2::string=>nats (str-fix string)) edition))
