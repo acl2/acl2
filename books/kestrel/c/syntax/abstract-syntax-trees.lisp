@@ -1254,10 +1254,13 @@
      These are captured by adding underscore information
      to the @(':volatile') case.")
    (xdoc::p
-    "we also include the GCC extensions for x86 named address spaces.
+    "We also include the GCC extensions for x86 named address spaces.
      See the ABNF grammar.")
    (xdoc::p
     "We also include the Clang extensions for nullability qualifiers.
+     See the ABNF grammar.")
+   (xdoc::p
+    "We also include the CHERI extension @('__capability').
      See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
@@ -1269,6 +1272,7 @@
   (:null-unspecified ())
   (:nullable ())
   (:nullable-result ())
+  (:capability ())
   :pred type-qualp
   :layout :fulltree)
 

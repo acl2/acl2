@@ -557,8 +557,9 @@
    (xdoc::p
     "All type qualifiers consist of single keywords.")
    (xdoc::p
-    "We also compare the token against the GCC and Clang keywords.
-     Note that these are keywords only if GCC/Clang extensions are supported:
+    "We also compare the token against the GCC, Clang, and CHERI keywords.
+     Note that these are keywords only if
+     the corresponding extensions are supported:
      @(tsee lex-identifier/keyword) checks grammatical identifiers
      against keywords depending on the C dialect."))
   (or (token-keywordp token? "const")
@@ -574,7 +575,8 @@
       (token-keywordp token? "_Nonnull")
       (token-keywordp token? "_Null_unspecified")
       (token-keywordp token? "_Nullable")
-      (token-keywordp token? "_Nullable_result"))
+      (token-keywordp token? "_Nullable_result")
+      (token-keywordp token? "__capability"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -609,6 +611,7 @@
         ((token-keywordp token "_Null_unspecified") (type-qual-null-unspecified))
         ((token-keywordp token "_Nullable") (type-qual-nullable))
         ((token-keywordp token "_Nullable_result") (type-qual-nullable-result))
+        ((token-keywordp token "__capability") (type-qual-capability))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 

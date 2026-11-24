@@ -133,6 +133,7 @@
    (type-qual :null-unspecified nil)
    (type-qual :nullable nil)
    (type-qual :nullable-result nil)
+   (type-qual :capability nil)
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
    (expr :unary (and (expr-standardp (expr-unary->arg expr))

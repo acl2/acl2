@@ -3136,3 +3136,15 @@ int f(void) { return (*p)[2][0]; }
  "int f(void *q) { return (*(int *__attribute__((vector_size(16))))q)[0]; }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; CHERI extensions.
+
+;; The __capability qualifier, after the * and before the type.
+(test-valid
+ "char * __capability p;
+__capability char *q;
+void f(void) { p = q; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))

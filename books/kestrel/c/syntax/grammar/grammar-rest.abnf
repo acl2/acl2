@@ -60,6 +60,10 @@
 ; the type-qualifier-and-attribute-specifier-list in a pointer after the '*',
 ; but we enforce this outside the grammar.
 
+; As a CHERI extension,
+; we include the '__capability' type qualifier,
+; which makes a pointer a capability.
+
 ; As a GCC extension, we allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
@@ -264,6 +268,7 @@ type-qualifier = %s"const"
                / %s"__seg_fs" ; GCC extension
                / %s"__seg_gs" ; GCC extension
                / nullability-qualifier ; Clang extension
+               / %s"__capability" ; CHERI extension
 
 nullability-qualifier = %s"_Nonnull"
                       / %s"_Null_unspecified"

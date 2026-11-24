@@ -1717,7 +1717,8 @@
    :nonnull (print-astring "_Nonnull" pstate)
    :null-unspecified (print-astring "_Null_unspecified" pstate)
    :nullable (print-astring "_Nullable" pstate)
-   :nullable-result (print-astring "_Nullable_result" pstate))
+   :nullable-result (print-astring "_Nullable_result" pstate)
+   :capability (print-astring "__capability" pstate))
   :hooks (:fix)
 
   ///
