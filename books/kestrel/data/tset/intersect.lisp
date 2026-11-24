@@ -433,6 +433,32 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :by intersect-when-subset-arg2-arg1)
 
+(defrule equal-of-intersect-and-arg1
+  (implies (and (equiv x$$ (double-rewrite x$))
+                (equal x$$ x))
+           (equal (equal (intersect x y) x$)
+                  (and (setp x$)
+                       (subset x y))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
+
+(defrule equal-of-intersect-and-arg2
+  (implies (and (equiv y$$ (double-rewrite y$))
+                (equal y$$ y))
+           (equal (equal (intersect x y) y$)
+                  (and (setp y$)
+                       (subset y x))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 0))))
+
+(defruled subset-becomes-equal-of-intersect
+  (equal (subset x y)
+         (equal (intersect x y) (fix x))))
+
+(theory-invariant (incompatible! (:rewrite subset-becomes-equal-of-intersect)
+                                 (:rewrite equal-of-intersect-and-arg1)))
+
+(theory-invariant (incompatible! (:rewrite subset-becomes-equal-of-intersect)
+                                 (:rewrite equal-of-intersect-and-arg2)))
+
 ;;;;;;;;;;;;;;;;;;;;
 
 (defrule set-all-genericp-of-intersect-when-set-all-genericp-of-arg1
