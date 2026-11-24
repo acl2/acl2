@@ -18,10 +18,11 @@
 
 ; Tests of the input format:
 ; UTF-8 decoding, the byte order mark, CRLF normalization, the shebang,
-; and the entry points from the bytes of a file and from a file.
+; and the reading of a file.
 ; What is expected here is what rustc 1.87.0 does:
-; each case that is marked with a name, like [B2],
+; each case that is marked with a name, like [S1],
 ; is a case of harness/input_format.py, which runs it through rustc.
+; The tests of the tokens of whole files are with those of source units.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -67,55 +68,9 @@
 (defmacro test-shebang (text length)
   `(assert-event (equal (shebang-length ,text) ,length)))
 
-; The list of bare tokens (spans stripped) of the bytes of a file,
-; or :error.
-
-(defun toks-only-aux (tokens+spans)
-  (if (atom tokens+spans)
-      nil
-    (cons (token+span->token (car tokens+spans))
-          (toks-only-aux (cdr tokens+spans)))))
-
-(defun toks-only (tokens+spans)
-  (if (reserrp tokens+spans)
-      :error
-    (toks-only-aux tokens+spans)))
-
-(defmacro file-toks (bytes)
-  `(tokenize-rust-from-bytes ,bytes (rust::edition-2021) "test.rs"))
-
-(defmacro test-file-tokens (bytes expected)
-  `(assert-event (equal (toks-only (file-toks ,bytes)) ,expected)))
-
-(defmacro test-file-fail (bytes)
-  `(assert-event (reserrp (file-toks ,bytes))))
-
-(defmacro str-tok (kind raw text)
-  `(token-lit (lit-str (make-str-lit :kind ,kind
-                                     :raw ,raw
-                                     :text ,text
-                                     :suffix ""))))
-
-; The tokens of "pub fn f(){}", which many cases end with.
+; A function, which many cases end with.
 
 (defconst *f* "pub fn f(){}")
-
-(defconst *f-tokens*
-  (list (token-keyword "pub")
-        (token-keyword "fn")
-        (token-ident "f" nil)
-        (token-open-delim (delim-paren))
-        (token-close-delim (delim-paren))
-        (token-open-delim (delim-brace))
-        (token-close-delim (delim-brace))))
-
-; Line and column of the start of a token.
-
-(defun start-line (token+span)
-  (position->line (span->start (token+span->span token+span))))
-
-(defun start-column (token+span)
-  (position->column (span->start (token+span->span token+span))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,168 +337,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tokens from the bytes of a file.
-
-(test-file-tokens nil nil)
-(test-file-tokens (nats *f*) *f-tokens*)
-
-; The byte order mark: one, at the start.
-
-(test-file-tokens (nats *bom* *f*) *f-tokens*) ; [B1]
-(test-file-fail (nats *bom* *bom* *f*)) ; [B2]
-(test-file-fail (nats *f* *bom*)) ; [B3]
-(test-file-tokens *bom* nil) ; [B8]
-(test-file-fail (nats " " *bom* *f*)) ; [B10]
-(test-file-tokens (nats "// " *bom* *lf* *f*) *f-tokens*) ; [B11]
-(test-file-tokens (nats *bom* *cr* *lf* *f*) *f-tokens*) ; [B14]
-(test-file-tokens (nats "\"" *bom* "\"") ; [B9]
-                  (list (str-tok (str-kind-plain)
-                                 nil
-                                 (acl2::implode (list (code-char #xef)
-                                                      (code-char #xbb)
-                                                      (code-char #xbf))))))
-
-; Carriage returns.  Before a line feed they are gone;
-; elsewhere they are whitespace, but errors in doc comments and literals.
-
-(test-file-tokens (nats *f* *cr* *lf*) *f-tokens*) ; [C1]
-(test-file-tokens (nats "pub" *cr* "fn f(){}") *f-tokens*) ; [C2]
-(test-file-tokens (nats "pub" *cr* *cr* *lf* "fn f(){}") *f-tokens*) ; [C16]
-(test-file-tokens (nats "pub" *lf* *cr* "fn f(){}") *f-tokens*) ; [C19]
-(test-file-tokens (nats "// c" *cr* *cr* *lf* *f*) *f-tokens*) ; [C11]
-(test-file-tokens (nats "// c" *cr* *lf* *f* "// d" *cr* *lf*) ; [C22]
-                  *f-tokens*)
-(test-file-tokens (nats "/// a" *cr* *lf* *f*) ; [C3]
-                  (cons (token-doc-comment (doc-style-outer) nil " a")
-                        *f-tokens*))
-(test-file-fail (nats "/// a" *cr* *cr* *lf* *f*)) ; [C4]
-(test-file-tokens (nats "/** a" *cr* *lf* " b */" *f*) ; [C14]
-                  (cons (token-doc-comment (doc-style-outer) t " a
- b ")
-                        *f-tokens*))
-(test-file-fail (nats "/** a" *cr* " b */" *f*)) ; [C15]
-(test-file-tokens (nats "\"a" *cr* *lf* "b\"") ; [C5]
-                  (list (str-tok (str-kind-plain) nil "a
-b")))
-(test-file-tokens (nats "r\"a" *cr* *lf* "b\"") ; [C6]
-                  (list (str-tok (str-kind-plain) 0 "a
-b")))
-(test-file-tokens (nats "b\"a" *cr* *lf* "b\"") ; [C10]
-                  (list (str-tok (str-kind-byte) nil "a
-b")))
-(test-file-tokens (nats "c\"a" *cr* *lf* "b\"") ; [C20]
-                  (list (str-tok (str-kind-c) nil "a
-b")))
-(test-file-tokens (nats "\"a\\" *cr* *lf* "   b\"") ; [C9]
-                  (list (str-tok (str-kind-plain) nil "a\\
-   b")))
-(test-file-fail (nats "\"a" *cr* "b\"")) ; [C7]
-(test-file-fail (nats "\"a" *cr* *cr* *lf* "b\"")) ; [C8]
-(test-file-fail (nats "r\"a" *cr* *cr* *lf* "b\"")) ; [C17]
-(test-file-fail (nats "\"a" *cr* *cr* *lf* *lf* "b\"")) ; [C18]
-(test-file-fail (nats "\"a\\" *cr* *cr* *lf* "   b\"")) ; [C23]
-
-; A character that is not part of any token.
-
-(test-file-fail (nats #x0 *f*)) ; [U17]
-(test-file-tokens (nats "// " #x0 *lf* *f*) *f-tokens*) ; [U8]
-
-; Bytes that are not valid UTF-8, wherever they are.
-
-(test-file-fail (nats "// " #xff *lf* *f*)) ; [U1]
-(test-file-tokens (nats "// " '(#xf0 #x9f #x98 #x80) *lf* *f*) ; [U6]
-                  *f-tokens*)
-(test-file-tokens (nats "// " '(#xef #xbf #xbe) *lf* *f*) ; [U7]
-                  *f-tokens*)
-(test-file-tokens (nats "// " '(#xf4 #x8f #xbf #xbf) *lf* *f*) ; [U16]
-                  *f-tokens*)
-
-; The shebang is not lexed: what is in it does not matter.
-
-(test-file-tokens (nats "#!/usr/bin/env rustx \"" *lf* *f*) *f-tokens*) ; [S1]
-(test-file-tokens (nats "#!") nil) ; [S2]
-(test-file-tokens (nats "#!" *lf* *f*) *f-tokens*) ; [S3]
-(test-file-tokens (nats "#!/x \"") nil) ; [S17]
-(test-file-tokens (nats "#!/x \"" *cr* *lf* *f*) *f-tokens*) ; [S7]
-(test-file-tokens (nats "#!/x \"" *cr* *cr* *lf* *f*) *f-tokens*) ; [S18]
-(test-file-tokens (nats *bom* "#!/x \"" *lf* *f*) *f-tokens*) ; [B4]
-(test-file-tokens (nats "#!/* unterminated" *lf* *f*) *f-tokens*) ; [S9]
-(test-file-tokens (nats "#!/** unterminated" *lf* *f*) *f-tokens*) ; [S10]
-(test-file-tokens (nats "#!/*! unterminated" *lf* *f*) *f-tokens*) ; [S11]
-(test-file-tokens (nats "#!/*/ \"" *lf* *f*) *f-tokens*) ; [S15]
-(test-file-tokens (nats "#!/**") nil) ; [S21]
-(test-file-tokens (nats "#!/* c */") nil) ; [S23]
-(test-file-tokens (nats "#!/** d */" *attr* " \"" *lf* *f*)
-                  *f-tokens*) ; [S-removed-block-outer-doc]
-(test-file-tokens (nats "#!" '(#xc2 #xa0) *attr* " \"" *lf* *f*)
-                  *f-tokens*) ; [S-removed-u00a0]
-
-; Only the first line is a shebang, and only at the start.
-
-(test-file-fail (nats " #!/x \"" *lf* *f*)) ; [S4]
-(test-file-fail (nats *lf* "#!/x \"" *lf* *f*)) ; [S5]
-(test-file-fail (nats "#!/a \"" *lf* "#!/b \"" *lf* *f*)) ; [S6]
-(test-file-fail (nats "#![allow(unused)]" *lf* "#!/x \"" *lf* *f*)) ; [S20]
-
-; An inner attribute is lexed.
-
-(test-file-tokens (nats "#![a]" *lf* *f*)
-                  (list* (token-punct "#")
-                         (token-punct "!")
-                         (token-open-delim (delim-bracket))
-                         (token-ident "a" nil)
-                         (token-close-delim (delim-bracket))
-                         *f-tokens*))
-(test-file-fail (nats "#![ \"" *lf* *f*)) ; [S16]
-(test-file-fail (nats "#!/* c */" *attr* " \"" *lf* *f*)) ; [S-removed-block]
-(test-file-fail (nats "#! " *attr* " \"" *lf* *f*)) ; [S-removed-space]
-
-; The tokens after a shebang are in the lines of the file:
-; the first token here starts line 2, at column 0.
-
-(assert-event
- (b* ((tokens+spans (file-toks (nats "#!/usr/bin/env rustx" *lf* *f*)))
-      ((when (reserrp tokens+spans)) nil)
-      (first (car tokens+spans)))
-   (and (equal (token+span->token first) (token-keyword "pub"))
-        (equal (start-line first) 2)
-        (equal (start-column first) 0))))
-
-; A carriage return that was removed does not count in the columns,
-; and the byte order mark does not either.
-
-(assert-event
- (b* ((tokens+spans (file-toks (nats *bom* "a" *cr* *lf* " b")))
-      ((when (reserrp tokens+spans)) nil)
-      ((list a b) tokens+spans))
-   (and (equal (start-line a) 1)
-        (equal (start-column a) 0)
-        (equal (start-line b) 2)
-        (equal (start-column b) 1))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Token trees from the bytes of a file.
-
-(assert-event
- (b* ((trees (build-token-trees-from-bytes (nats "#!/x (" *lf* *f*)
-                                           (rust::edition-2021)
-                                           "test.rs")))
-   (and (not (reserrp trees))
-        (equal (len trees) 5))))
-
-(assert-event
- (reserrp (build-token-trees-from-bytes (nats *f* " (")
-                                        (rust::edition-2021)
-                                        "test.rs")))
-
-(assert-event
- (reserrp (build-token-trees-from-bytes '(#xff)
-                                        (rust::edition-2021)
-                                        "test.rs")))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Files.
 
 ; The sample file has 24,776 characters, all ASCII, and no carriage return.
@@ -559,35 +352,9 @@ b")))
        state))
  state)
 
-(assert!-stobj
- (b* (((mv tokens state)
-       (tokenize-rust-from-file "../../samples/aes_fixslice_encrypt.rs"
-                                (rust::edition-2021)
-                                state)))
-   (mv (and (not (reserrp tokens))
-            (equal (len tokens) 5769))
-       state))
- state)
-
-(assert!-stobj
- (b* (((mv trees state)
-       (build-token-trees-from-file "../../samples/aes_fixslice_encrypt.rs"
-                                    (rust::edition-2024)
-                                    state)))
-   (mv (and (not (reserrp trees))
-            (equal (len trees) 193))
-       state))
- state)
-
 ; A file that does not exist.
 
 (assert!-stobj
  (b* (((mv stext state) (source-text-from-file "no-such-file.rs" state)))
    (mv (reserrp stext) state))
- state)
-
-(assert!-stobj
- (b* (((mv tokens state)
-       (tokenize-rust-from-file "no-such-file.rs" (rust::edition-2021) state)))
-   (mv (reserrp tokens) state))
  state)

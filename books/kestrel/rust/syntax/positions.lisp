@@ -15,6 +15,7 @@
 
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
@@ -24,15 +25,24 @@
 
 (defxdoc+ positions
   :parents (syntax-for-tools)
-  :short "Positions of characters in files."
+  :short "Positions in source texts, as lines and columns."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce data structures that describe
-     positions of characters in files.
-     These underlie the spans that our tokens and
-     abstract syntax carry (see @(see spans));
-     they play the role of rustc's source-map locations."))
+    "A place in a source text is an offset:
+     the number of code points of the text that come before it.
+     Tokens and syntax trees refer to the text by offsets
+     (see @(see spans)).
+     For a person, a place is a line and a column.
+     We introduce positions, which are pairs of a line and a column,
+     and the function that gives the position of an offset in a text.
+     So positions are not stored with the tokens:
+     they are computed from offsets, where a message needs them.")
+   (xdoc::p
+    "A line ends with a line feed, which is its last character.
+     Every other code point takes one column, a carriage return too:
+     in a source text, a carriage return is not part of a line ending
+     (see @(see input-format))."))
   :order-subtopics t
   :default-parent t)
 
@@ -43,19 +53,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A position within a file is specified by
-     a combination of a line number and a column number.
+    "A position is a line number and a column number.
      We number lines from 1 and columns from 0.
      (For error messages, rustc displays both lines and columns from 1;
-     any such adjustment belongs in message formatting, not here.)")
-   (xdoc::p
-    "We also include an indication of the file that the position refers to,
-     for now represented as a string, which we use for a file path.
-     In memory it is just a pointer, repeated in every position,
-     and it supports better execution speed,
-     at the cost of a little extra memory usage."))
-  ((file string)
-   (line pos)
+     any such adjustment belongs in message formatting, not here.)
+     Columns count code points."))
+  ((line pos)
    (column nat))
   :pred positionp
   :layout :fulltree)
@@ -70,7 +73,7 @@
     "See @(see rust::irr-edition) for
      the purpose of these witnesses."))
   :type positionp
-  :body (make-position :file "" :line 1 :column 0))
+  :body (make-position :line 1 :column 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,16 +103,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define position-init ((file stringp))
+(define position-init ()
   :returns (pos positionp)
-  :short "Initial position in a file."
+  :short "Position of the start of a text."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is at line 1 and column 0.")
-   (xdoc::p
-    "The file information is passed as input."))
-  (make-position :file file :line 1 :column 0)
+    "This is at line 1 and column 0."))
+  (make-position :line 1 :column 0)
   :inline t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,6 +141,61 @@
                    :column 0)
   :inline t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define position-advance ((nat natp) (pos positionp))
+  :returns (new-pos positionp)
+  :short "Advance a position over one code point."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A line feed moves to the next line;
+     every other code point advances the column by one.
+     (Like rustc, we do not treat
+     a carriage return as a line terminator:
+     rustc normalizes CRLF to LF before lexing,
+     and any other carriage return is
+     a whitespace character like a space or a tab,
+     not a line break.)"))
+  (if (eql (lnfix nat) #x0a)
+      (position-inc-line 1 pos)
+    (position-inc-column 1 pos)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define position-advance-over ((count natp) (nats nat-listp) (pos positionp))
+  :returns (new-pos positionp)
+  :short "Advance a position over the first code points of a list."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The position is advanced over @('count') code points,
+     or over all of them if there are fewer."))
+  (b* ((count (lnfix count))
+       (nats (nat-list-fix nats))
+       ((when (or (equal count 0) (endp nats))) (position-fix pos)))
+    (position-advance-over (1- count)
+                           (cdr nats)
+                           (position-advance (car nats) pos)))
+  :measure (nfix count))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define position-of-offset ((offset natp) (text nat-listp))
+  :returns (pos positionp)
+  :short "Position of an offset in a text."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the line and the column of the code point at that offset,
+     or of the end of the text if the offset is its length:
+     the line is 1 more than the number of line feeds before the offset,
+     and the column is the number of code points
+     between the last of those line feeds and the offset.
+     An offset beyond the end of the text
+     gives the position of the end of the text."))
+  (position-advance-over offset text (position-init)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define position-to-msg ((pos positionp))
@@ -150,8 +206,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used in user-oriented error messages.
-     It consists of file, line, and column, separated by colons."))
-  (msg "~s0:~x1:~x2"
-       (position->file pos)
+     It consists of line and column, separated by a colon."))
+  (msg "~x0:~x1"
        (position->line pos)
        (position->column pos)))

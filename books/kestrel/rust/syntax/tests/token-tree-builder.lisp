@@ -23,7 +23,7 @@
 ; Abbreviations for the tests.
 
 (defmacro toks (string)
-  `(tokenize-rust-from-string ,string (rust::edition-2024) "test.rs"))
+  `(tokenize-rust-from-string ,string (rust::edition-2024)))
 
 ; The token trees of a string, or an error
 ; (from the tokenizer or from the builder).
@@ -73,10 +73,10 @@
 (defmacro test-trees-fail (string kind)
   `(assert-event (equal (car (trees-error (trees ,string))) ,kind)))
 
-; The column where a token with span starts.
+; The offset where a token with span starts.
 
-(defun start-column (token+span)
-  (position->column (span->start (token+span->span token+span))))
+(defun start-offset (token+span)
+  (span->start (token+span->span token+span)))
 
 ; Tokens used in several tests.
 
@@ -259,7 +259,7 @@
  (b* (((list kind open) (trees-error (trees "a { [ b (c"))))
    (and (equal kind :unclosed-delimiter)
         (equal (token+span->token open) (token-open-delim (delim-paren)))
-        (equal (start-column open) 8))))
+        (equal (start-offset open) 8))))
 
 ; The closing delimiter that closes nothing.
 
@@ -267,7 +267,7 @@
  (b* (((list kind close) (trees-error (trees "(a) b ] c"))))
    (and (equal kind :unexpected-closing-delimiter)
         (equal (token+span->token close) (token-close-delim (delim-bracket)))
-        (equal (start-column close) 6))))
+        (equal (start-offset close) 6))))
 
 ; The opening delimiter and the closing delimiter that do not match.
 
@@ -275,30 +275,36 @@
  (b* (((list kind open close) (trees-error (trees "a (b [c) ]"))))
    (and (equal kind :mismatched-closing-delimiter)
         (equal (token+span->token open) (token-open-delim (delim-bracket)))
-        (equal (start-column open) 5)
+        (equal (start-offset open) 5)
         (equal (token+span->token close) (token-close-delim (delim-paren)))
-        (equal (start-column close) 7))))
+        (equal (start-offset close) 7))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; A delimited group records the spans of its two delimiters.
+; A delimited group records the spans of its two delimiters:
+; here the parenthesis at line 1, column 2,
+; and the one at line 2, column 3.
 
 (assert-event
- (b* ((trees (trees "a (b
-  c) d"))
+ (b* ((string "a (b
+  c) d")
+      (nats (acl2::string=>nats string))
+      (trees (trees string))
       ((when (reserrp trees)) nil)
       ((list & group &) trees)
       ((unless (token-tree-case group :delimited)) nil)
       (open (token-tree-delimited->open-span group))
-      (close (token-tree-delimited->close-span group)))
-   (and (equal (position->line (span->start open)) 1)
-        (equal (position->column (span->start open)) 2)
-        (equal (position->line (span->end open)) 1)
-        (equal (position->column (span->end open)) 2)
-        (equal (position->line (span->start close)) 2)
-        (equal (position->column (span->start close)) 3)
-        (equal (position->line (span->end close)) 2)
-        (equal (position->column (span->end close)) 3))))
+      (close (token-tree-delimited->close-span group))
+      (open-pos (position-of-offset (span->start open) nats))
+      (close-pos (position-of-offset (span->start close) nats)))
+   (and (equal (span->start open) 2)
+        (equal (span->end open) 3)
+        (equal (span->start close) 8)
+        (equal (span->end close) 9)
+        (equal (position->line open-pos) 1)
+        (equal (position->column open-pos) 2)
+        (equal (position->line close-pos) 2)
+        (equal (position->column close-pos) 3))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -339,14 +345,16 @@
 ; that the error ends with:
 ; the opening delimiter that is not closed, or the closing delimiter.
 
-(defun start-line (token+span)
-  (position->line (span->start (token+span->span token+span))))
+(defun start-line (token+span string)
+  (position->line (position-of-offset (start-offset token+span)
+                                      (acl2::string=>nats string))))
 
 (defmacro test-trees-fail-at (string kind line)
   `(assert-event
-    (b* ((error (trees-error (trees ,string))))
+    (b* ((string ,string)
+         (error (trees-error (trees string))))
       (and (equal (car error) ,kind)
-           (equal (start-line (car (last error))) ,line)))))
+           (equal (start-line (car (last error)) string) ,line)))))
 
 ; macro-mismatched-delim-brace-paren.rs:
 ; rustc reports "mismatched closing delimiter: `)`".

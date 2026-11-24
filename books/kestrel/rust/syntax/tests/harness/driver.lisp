@@ -13,7 +13,7 @@
 (include-book "../../tokenizer")
 (include-book "../../token-tree-builder")
 (include-book "../../extra-grammatical-restrictions")
-(include-book "../../input-format")
+(include-book "../../source-units")
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/file-io-light/write-objects-to-file" :dir :system)
@@ -32,8 +32,10 @@
 (local (in-theory (enable abnf::tree-listp-when-result-not-error
                           lexemep-when-result-not-error
                           token+span-listp-when-result-not-error
+                          lexeme+span-listp-when-result-not-error
                           token-tree-listp-when-result-not-error
-                          source-textp-when-result-not-error)))
+                          source-textp-when-result-not-error
+                          source-unitp-when-result-not-error)))
 
 (defrulel nat-listp-of-nthcdr
   (implies (nat-listp x)
@@ -192,7 +194,7 @@
 (define rv-run1 ((nats nat-listp) (edition rust::editionp))
   :parents nil
   (b* ((nats (rv-normalize nats))
-       (toks (tokenize-rust nats edition "t"))
+       (toks (tokenize-rust nats edition))
        ((when (reserrp toks)) :err)
        (trees (build-token-trees (rv-probe-tokens toks)))
        ((when (reserrp trees)) (rv-delim-error trees))
@@ -237,7 +239,7 @@
           (list :lexerr
                 (take (min 20 pos) (nthcdr (nfix (- pos 20)) nats))
                 (take (min 30 (len rest)) rest))))
-       (toks (tokenize-rust nats (rust::edition-2021) "t"))
+       (toks (tokenize-rust nats (rust::edition-2021)))
        ((when (reserrp toks)) (list :tokerr))
        ((when (reserrp (build-token-trees toks))) :unbal))
     (rv-deep-count toks 0)))
@@ -306,34 +308,28 @@
 ; Token boundaries: (rv-go-bounds in out state) writes, for each test,
 ; ("id" :err), ("id" :unbal), or ("id" (start . end) ...) with the
 ; code-point offsets of each token in the input (end exclusive),
+; which are the start and the end of its span,
 ; in edition 2024, the one that the Reference's rules correspond to.
 ; compare_bounds.py compares them with the tokens of the Reference's
 ; interpreter (reference-driver).  It returns the number of tests.
 
-(define rv-bounds-aux ((trees abnf::tree-listp) (pos natp) (acc true-listp))
+(define rv-bounds-aux ((tokens token+span-listp) (acc true-listp))
   :returns (bounds true-listp :hyp (true-listp acc))
   :parents nil
-  (if (endp trees)
+  (if (endp tokens)
       (revappend acc nil)
-    (b* ((tree (car trees))
-         (end (+ (lnfix pos) (len (abnf::tree->string tree))))
-         (lexeme (abs-lexeme tree (rust::edition-2024))))
-      (rv-bounds-aux (cdr trees)
-                     end
-                     (if (and (not (reserrp lexeme))
-                              (equal (lexeme-kind lexeme) :token))
-                         (cons (cons pos end) acc)
-                       acc)))))
+    (b* ((span (token+span->span (car tokens))))
+      (rv-bounds-aux (cdr tokens)
+                     (cons (cons (span->start span) (span->end span))
+                           acc)))))
 
 (define rv-bounds1 ((nats nat-listp))
   :parents nil
   (b* ((nats (rv-normalize nats))
-       (trees (lexemize-rust nats))
-       ((when (reserrp trees)) :err)
-       (toks (tokenize-rust nats (rust::edition-2024) "t"))
+       (toks (tokenize-rust nats (rust::edition-2024)))
        ((when (reserrp toks)) :err)
        ((when (reserrp (build-token-trees toks))) :unbal))
-    (rv-bounds-aux trees 0 nil)))
+    (rv-bounds-aux toks nil)))
 
 (define rv-bounds ((tests rv-test-listp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -353,6 +349,47 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The lexemes against the text: (rv-go-reprint in edition state) returns
+; a list of the number of inputs that lex and tokenize,
+; and the ids of those among them whose lexemes, with their spans,
+; do not tile the input (see lexeme+span-list-tiles-p):
+; some lexeme does not give back, from its components,
+; the code points at its span.
+; There should be no such ids.
+; This is the check that the making of a source unit fails on;
+; here it is run on inputs that are not whole files.
+
+(define rv-reprint ((tests rv-test-listp)
+                    (edition rust::editionp)
+                    (n natp)
+                    (bad true-listp))
+  :returns (mv (n-tokenized natp :hyp (natp n))
+               (bad-ids true-listp :hyp (true-listp bad)))
+  :parents nil
+  (if (endp tests)
+      (mv n (revappend bad nil))
+    (b* ((nats (rv-normalize (cdar tests)))
+         (trees (lexemize-rust nats))
+         ((when (reserrp trees)) (rv-reprint (cdr tests) edition n bad))
+         (lexemes (lexeme-csts-to-lexemes trees 0 edition))
+         ((when (reserrp lexemes)) (rv-reprint (cdr tests) edition n bad)))
+      (rv-reprint (cdr tests)
+                  edition
+                  (1+ n)
+                  (if (lexeme+span-list-tiles-p lexemes nats 0)
+                      bad
+                    (cons (caar tests) bad)))))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-reprint ((in stringp) (edition rust::editionp) state)
+  :returns (mv summary state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       ((mv n bad) (rv-reprint tests edition 0 nil)))
+    (mv (list n bad) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The input layer: (rv-go-input in out edition state) reads the tests
 ; of input_format.py, in which the naturals of a test are
 ; the bytes of a whole file, and writes, for each test, ("id" x n),
@@ -361,6 +398,9 @@
 ; and x is one of the following.
 ; - :utf8 if the bytes are not valid UTF-8.
 ; - :err if the lexer or tokenizer rejects the file.
+; - :reprint if the lexer and the tokenizer accept the file
+;   but there is no source unit: the lexemes do not give back the text.
+;   This should not happen.
 ; - :mismatched, :unclosed, or :unexpected if the token-tree builder
 ;   rejects the tokens of the file, with that kind of error.
 ; - :ok otherwise.
@@ -369,12 +409,18 @@
 (define rv-input1 ((bytes nat-listp) (edition rust::editionp))
   :parents nil
   (b* (((unless (byte-listp bytes)) (list :not-bytes 0))
-       (stext (source-text-from-bytes bytes))
-       ((when (reserrp stext)) (list :utf8 0))
-       (shebang (shebang-length (source-text->text stext)))
-       (toks (tokenize-source-text stext edition "t"))
-       ((when (reserrp toks)) (list :err shebang))
-       (trees (build-token-trees toks))
+       (source (source-text-from-bytes bytes))
+       ((when (reserrp source)) (list :utf8 0))
+       (text (source-text->text source))
+       (shebang (shebang-length text))
+       (unit (source-unit-from-source-text source edition "t"))
+       ((when (reserrp unit))
+        (b* ((trees (lexemize-rust (nthcdr shebang text)))
+             ((when (reserrp trees)) (list :err shebang))
+             (lexemes (lexeme-csts-to-lexemes trees shebang edition))
+             ((when (reserrp lexemes)) (list :err shebang)))
+          (list :reprint shebang)))
+       (trees (source-unit-token-trees unit))
        ((when (reserrp trees)) (list (rv-delim-error trees) shebang)))
     (list :ok shebang)))
 
