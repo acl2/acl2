@@ -60,7 +60,8 @@
   (xdoc::topstring
    (xdoc::p
     "The lexer turns a sequence of Unicode scalar values
-     (natural numbers; UTF-8 decoding happens elsewhere)
+     (natural numbers; see @(see input-format)
+     for how they come from the bytes of a source file)
      into a sequence of lexeme concrete syntax trees (CSTs)
      of the ABNF lexical grammar (see @(see grammar)).
      The lexing functions follow the @(tsee fty::defresult) style
@@ -6087,6 +6088,8 @@
      this covers all ASCII inputs.
      Non-ASCII whitespace, comment content, and literal content
      need Unicode input, i.e. a call of @(tsee lexemize-rust)
-     on code points, until the UTF-8 layer is in place
-     (identifiers are ASCII-only for now)."))
+     on code points
+     (identifiers are ASCII-only for now).
+     The code points of a source file are obtained from its bytes
+     with the functions of @(see input-format)."))
   (lexemize-rust (acl2::string=>nats (str-fix string))))

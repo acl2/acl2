@@ -16,15 +16,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; This book only documents the differential tests.
-; The scripts, and the ACL2 book that runs the lexer and tokenizer on
+; The scripts, and the ACL2 book that runs the front end on
 ; the test inputs, are in tests/harness; its README.md has the commands.
-; The numbers in the section on results are from 2026-11-19:
+; The numbers in the section on results are from 2026-11-23:
 ; update them, with the versions, when the comparison is run again.
 
 (defxdoc+ differential-testing
   :parents (syntax-for-tools)
-  :short "How the lexer, the tokenizer, and the token-tree builder
-          are tested
+  :short "How the input format, the lexer, the tokenizer,
+          and the token-tree builder are tested
           against rustc and against the Rust Reference's interpreter."
   :long
   (xdoc::topstring
@@ -106,19 +106,19 @@
       and an inner one as the three of @('#![doc = \"...\"]').")
     (xdoc::li
      "What precedes lexing.
-      rustc removes a byte order mark and a shebang line
-      from the start of a file,
+      rustc removes a byte order mark from the start of a file,
+      skips a shebang there,
       and turns each carriage return followed by a line feed
-      into a line feed.
-      Our lexer does none of this
-      (it will be the task of a layer before it).
+      into a line feed
+      (see @(see input-format)).
       The inputs are placed in the middle of a file,
-      where rustc does not remove the first two,
-      and the carriage returns are removed from such pairs
-      before the inputs go to our lexer.
+      where only the last of these applies;
+      on our side, the function for that step,
+      @(tsee normalize-crlf), is applied to each input before lexing.
       A line feed is added at the end of each input, on both sides,
       so that a line comment at the end of an input
-      does not take in the text after it.")
+      does not take in the text after it.
+      The start of a file is tested with whole files, as said below.")
     (xdoc::li
      "Editions.
       Each input is run in the editions 2021 and 2024, on both sides.
@@ -126,6 +126,50 @@
       a reserved guard [SC15]
       (@('##'), or @('#') right before a string literal),
       which only edition 2024 rejects."))
+   (xdoc::h3 "Whole files, for the input format")
+   (xdoc::p
+    "The steps that precede lexing (see @(see input-format))
+     apply to a file as a whole,
+     so they are tested on whole files, given as bytes,
+     which rustc compiles as they are.
+     Then rustc's parser and the phases after it see the tokens,
+     and most of these files are not valid programs;
+     but rustc reports the errors of its lexer before the others.
+     So we compare the class of each file:
+     its bytes are not valid UTF-8;
+     or the lexer rejects it;
+     or the delimiters do not match, with the kind of error;
+     or none of these,
+     which is the case when no error that rustc reports
+     is one of its lexer's.")
+   (xdoc::p
+    "The class of a file shows whether the file starts with a shebang
+     only when its first line has an error of the lexer.
+     To see it otherwise, some of the files are probes:
+     after @('#!') and a text under test,
+     they continue in a way that makes rustc show
+     whether it removed the first line.
+     One kind continues with an inner attribute
+     and the definition of a function, on the first line,
+     and a call of the function on the next line:
+     if the file compiles, the first line is there, as an attribute;
+     if rustc does not find the function, the line was removed.
+     The other kind continues with an attribute
+     and the opening quote of a string that is never closed:
+     if the file compiles, the line was removed;
+     if rustc reports the string, and the first line holds it,
+     the line was not removed.
+     Any other outcome says nothing about the shebang.
+     On our side, the answer is whether
+     @(tsee shebang-length) is 0 for the text of the file.")
+   (xdoc::p
+    "Some facts about the input format involve more than one file,
+     or a difference between two versions of rustc:
+     which of the steps rustc does for the file of a module,
+     and for a file that @('include!') or @('include_str!') names.
+     For these there are cases written by hand,
+     each with the result expected of rustc,
+     which a script checks.")
    (xdoc::h3 "Oracles")
    (xdoc::p
     "The authority is rustc, at the version that the library follows,
@@ -172,6 +216,22 @@
       over the six delimiters and @('a').
       There are about 212,000 such inputs.")
     (xdoc::li
+     "Whole files, generated, for the input format: about 31,000.
+      The probes for the shebang have, as the text under test,
+      every sequence of up to two pieces out of 39
+      (whitespace characters, comments of each kind,
+      and other characters),
+      and every sequence of three pieces out of 12 of them;
+      some also have something before the @('#!'),
+      such as a byte order mark or a space.
+      Other files are @('#!') followed by each string
+      of up to four characters over a small alphabet.
+      For UTF-8, the files have, in a comment,
+      each sequence of up to three bytes out of 25,
+      chosen at the ends of the ranges
+      that matter in the encoding,
+      and some sequences of four bytes.")
+    (xdoc::li
      "Source files of published crates,
       taken from a local cargo registry.")
     (xdoc::li
@@ -195,7 +255,8 @@
      with a @('README.md') that gives the commands.
      The ACL2 side is the book @('tests/harness/driver'),
      which reads a file of inputs,
-     runs the lexer, the tokenizer, and the token-tree builder on each,
+     runs the input layer (for whole files),
+     the lexer, the tokenizer, and the token-tree builder on each,
      and writes a file of results.
      The inputs and the results are not in the repository:
      the scripts generate them,
@@ -249,6 +310,39 @@
      count the same number of tokens in every file,
      and our builder accepts the tokens of every file:
      about 285,000 tokens, in about 40,700 delimited groups.")
+   (xdoc::p
+    "On the 31,120 generated whole files, for the input format:")
+   (xdoc::ul
+    (xdoc::li
+     "Our front end and rustc 1.87.0, in each of the two editions,
+      put every file in the same class:
+      16,170 files are not valid UTF-8,
+      3,523 have an error of the lexer,
+      1,497 have a delimiter that is not closed,
+      and 9,930 have none of these.")
+    (xdoc::li
+     "Of the 7,194 probes for the shebang,
+      3,343 have an outcome in rustc 1.87.0 that tells
+      whether rustc took the first line as a shebang:
+      it did in 2,002 and it did not in 1,341.
+      On each of them @(tsee shebang-length) says the same.")
+    (xdoc::li
+     "rustc 1.100.0 reports the same errors as rustc 1.87.0
+      on every one of these files."))
+   (xdoc::p
+    "The 168 cases written by hand come out as expected
+     in rustc 1.87.0 and in rustc 1.100.0.
+     Ten of them have a different result in the two versions,
+     for two reasons (see @(see input-format)):
+     a shebang in a file that @('include!') reads
+     as an expression or as statements,
+     which only rustc 1.87.0 skips;
+     and three dashes at the start of a file,
+     which rustc 1.87.0 lexes as three tokens
+     and rustc 1.100.0 as the start of a frontmatter,
+     a feature that it then rejects as unstable.
+     In the second case both versions reject the file,
+     with different errors.")
    (xdoc::h3 "Limits")
    (xdoc::p
     "These tests are evidence, not proof:
@@ -259,6 +353,9 @@
      The comparison with rustc sees only the number of tokens,
      and the one that sees their boundaries
      is with a description of a later version of Rust.
+     On whole files the comparison sees less:
+     the class of the file,
+     and the shebang where a probe's outcome tells.
      And the tests do not take the place of
      the proof that the lexer satisfies its specification,
      since the specification includes maximal munch,
