@@ -98,7 +98,10 @@ ACL2 !>(print-switch stobj-table)
   (((proc-ids)   => *)
    ((pick st)    => *)
    ((ready * st) => *  :formals (p st) :guard (symbolp p))
-   ((exec * st)  => st :formals (p st) :guard (symbolp p))
+   ((exec * st)  => st :formals (p st) :guard (symbolp p)
+; Matt K. mod to accommodate fix for ACL2 8.7 soundness bug from defattach and invariant-risk:
+    :invariant-risk t
+    )
    ((rank * st)  => *  :formals (p st) :guard (symbolp p)))
   
   (local (define proc-ids  () (list t)))
@@ -183,7 +186,9 @@ ACL2 !>(print-switch stobj-table)
   :true-listp t)
 
 (encapsulate
-  (((p-exec * st) => (mv * st) :formals (p st) :guard (symbolp p))
+  (((p-exec * st) => (mv * st) :formals (p st) :guard (symbolp p)
+; Matt K. mod to accommodate fix for ACL2 8.7 soundness bug from defattach and invariant-risk:
+    :invariant-risk t)
    ((p-rank * st) => *         :formals (p st) :guard (symbolp p))
    ((p-done * st) => *         :formals (p st) :guard (symbolp p))
    ((p-ids)       => *))
@@ -388,6 +393,8 @@ ACL2 !>(print-switch stobj-table)
 
 (encapsulate
   (((perform-prot-op * * * st) => st
+; Matt K. mod to accommodate fix for ACL2 8.7 soundness bug from defattach and invariant-risk:
+    :invariant-risk t
     :formals (lock op proc st) :guard (and (symbolp lock) (symbolp proc))))
 
   (local (define perform-prot-op (lock op proc st)

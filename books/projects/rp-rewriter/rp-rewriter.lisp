@@ -738,12 +738,14 @@
   (encapsulate
     ((rp-rw-preprocessor (term context rp-state state)
                          (mv t rp-state)
+                         :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
                          :guard (and (rp-termp term)
                                      (valid-rp-state-syntaxp rp-state))
                          :stobjs (state rp-state)
                          :transparent t)
      (rp-rw-postprocessor (term context rp-state state)
                           (mv t rp-state)
+                          :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
                           :guard (and (rp-termp term)
                                       (valid-rp-state-syntaxp rp-state))
                           :stobjs (state rp-state)

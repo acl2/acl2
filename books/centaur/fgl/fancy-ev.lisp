@@ -66,6 +66,7 @@
              (w state)))))
 (encapsulate
   (((fancy-ev-primitive * * interp-st state) => (mv * * interp-st state)
+    :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
     :formals (fn args interp-st state)
     :guard (and (pseudo-fnsym-p fn)
                 (true-listp args)

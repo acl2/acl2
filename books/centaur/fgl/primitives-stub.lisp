@@ -664,6 +664,7 @@
 
 (encapsulate
   (((fgl-primitive-fncall-stub * * * interp-st state) => (mv * * interp-st state)
+    :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
     :formals (primfn origfn args interp-st state)
     :guard (and (pseudo-fnsym-p primfn)
                 (pseudo-fnsym-p origfn)
@@ -671,6 +672,7 @@
                 (interp-st-bfrs-ok interp-st)
                 (interp-st-bfr-listp (fgl-objectlist-bfrlist args))))
    ((fgl-meta-fncall-stub * * * interp-st state) => (mv * * * * * interp-st state)
+    :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
     :formals (primfn origfn args interp-st state)
     :guard (and (pseudo-fnsym-p primfn)
                 (pseudo-fnsym-p origfn)

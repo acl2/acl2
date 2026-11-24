@@ -25642,6 +25642,17 @@ Miscellaneous Remarks, with discussion of possible user errors.
   relevant documentation see [with-global-stobj], specifically the
   section on ``Constrained Functions and Defattach''.
 
+  The notion of [invariant-risk] must be preserved through attachments.
+  Enforcement of this requirement can produce the following error
+  message.
+
+    ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+    for F, because G has invariant-risk but F was not introduced with a
+    specification of :INVARIANT-RISK T.  See :DOC defattach.
+
+  See [invariant-risk] for how the use of [30m[47m:invariant-risk t[0m[0m in a
+  function's [signature] can avoid this error.
+
   We conclude with an example promised above, showing why it is
   necessary in general to unattach all function symbols in an
   existing attachment nest when unattaching any one of those function
@@ -63264,6 +63275,34 @@ Eliminating invariant-risk checking done by specific functions
   [30m[47m[set-check-invariant-risk][0m[0m, it is probably much safer to remove it
   only for the functions in a given book or [30m[47m[encapsulate][0m[0m event.  See
   [set-register-invariant-risk] for how to do that.
+
+
+Interaction with Attachments
+
+  When you invoke [30m[47m[defattach][0m[0m, say, [30m[47m(defattach f g)[0m[0m, you might see the
+  following error.
+
+    ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+    for F, because G has invariant-risk but F was not introduced with a
+    specification of :INVARIANT-RISK T.  See :DOC invariant-risk.
+
+  The workaround is to specify [30m[47m:invariant-risk t[0m[0m in the [30m[47m[encapsulate][0m[0m
+  event that introduces [30m[47mf[0m[0m, specifically, in the signature for [30m[47mf[0m[0m; see
+  [signature].  For example:
+
+    (encapsulate
+      (((f * st) => st :invariant-risk t ...))
+      (local (defun f (v st) ...)))
+
+  The [30m[47mdefattach[0m[0m example above illustrates the case that the proposed
+  attachment [30m[47mg[0m[0m has [invariant-risk], for example because it updates a
+  [stobj] field that has a non-trival type; see [invariant-risk].
+  The concern is that a [program]-mode function call will lead to an
+  ill-[guard]ed call of [30m[47mf[0m[0m that leads to an ill-guarded call of [30m[47mg[0m[0m that
+  violates an invariant.  When the signature of a function symbol [30m[47mf[0m[0m
+  includes [30m[47m:invariant-risk t[0m[0m, ACL2 makes a note that [30m[47mf[0m[0m has
+  invariant-risk, which allows [30m[47mf[0m[0m to receive an attachment that has
+  invariant-risk ([30m[47mg[0m[0m, in our example).
 
 
 Subtopics
@@ -107773,6 +107812,19 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/cl-cache-local-defun-good-line.lisp[0m[0m, and
   [30m[47msystem/tests/cl-cache-make-event-expansion-good-line.lisp[0m[0m.
 
+  Fixed a soundness bug due to a failure to track [invariant-risk]
+  after the use of [30m[47m[defattach][0m[0m.  See [community-books]
+  [30m[47msystem/tests/defattach-invariant-risk.lisp[0m[0m,
+  [30m[47msystem/tests/absstobj-attached-exec-invariant-risk-a.lisp[0m[0m, and
+  [30m[47msystem/tests/absstobj-attached-exec-invariant-risk-b.lisp[0m[0m.  A new
+  keyword for [signature]s, [30m[47m:[0m[0m[30m[47m[invariant-risk][0m[0m, is required when
+  constraining a function in order for it to get an attachment that
+  has invariant-risk; see [signature].  Technical implementation
+  note: As noted by AI, it is insufficient for [30m[47m(defattach f g)[0m[0m to
+  note invariant-risk for [30m[47mf[0m[0m, because existing [program]-mode callers
+  of [30m[47mf[0m[0m will already have *1* functions (see [evaluation]) that fail
+  to account for invariant-risk.
+
 
 Other Bug Fixes
 
@@ -142405,21 +142457,22 @@ Extended Example
   values starting with a keyword.  In this case [30m[47m((fn x1 ... xn) =>
   val)[0m[0m must be a legal signature as described above.  The legal
   keywords in [30m[47mk[0m[0m are generally [30m[47m:GUARD[0m[0m and [30m[47m:FORMALS[0m[0m, but see remarks at
-  the end of this topic regarding [30m[47m:GLOBAL-STOBJS[0m[0m and [30m[47m:TRANSPARENT[0m[0m
-  and, for ACL2(r), [30m[47m:CLASSICALP[0m[0m.  The value following [30m[47m:FORMALS[0m[0m is to
-  be the list of formal parameters of [30m[47mfn[0m[0m, which must be consistent
-  with the parameters specified in [30m[47m(fn x1 ... xn)[0m[0m: they must both
-  specify the same arity (number of formal parameters) and the same
-  [stobj] inputs.  The value following [30m[47m:GUARD[0m[0m is a term that is to be
-  the [guard] of [30m[47mfn[0m[0m.  Note that this guard is never actually
-  evaluated, and is not subject to the guard verification performed
-  on functions introduced by [30m[47m[defun][0m[0m (see [verify-guards]).  Said
-  differently: this guard need not itself have a guard of [30m[47mt[0m[0m.  Indeed,
-  the guard is only used for attachments; see [defattach].  Note that
-  if [30m[47m:GUARD[0m[0m is supplied, then [30m[47m:FORMALS[0m[0m must also be supplied as a
-  list of distinct variables that includes all variables occurring
-  free in the specified guard.  One final observation about guards:
-  if the [30m[47m:GUARD[0m[0m keyword is omitted, then the guard defaults to [30m[47mT[0m[0m.
+  the end of this topic regarding [30m[47m:GLOBAL-STOBJS[0m[0m and [30m[47m:TRANSPARENT[0m[0m,
+  [30m[47m:INVARIANT-RISK[0m[0m, and, for ACL2(r), [30m[47m:CLASSICALP[0m[0m.  The value
+  following [30m[47m:FORMALS[0m[0m is to be the list of formal parameters of [30m[47mfn[0m[0m,
+  which must be consistent with the parameters specified in [30m[47m(fn x1
+  ... xn)[0m[0m: they must both specify the same arity (number of formal
+  parameters) and the same [stobj] inputs.  The value following
+  [30m[47m:GUARD[0m[0m is a term that is to be the [guard] of [30m[47mfn[0m[0m.  Note that this
+  guard is never actually evaluated, and is not subject to the guard
+  verification performed on functions introduced by [30m[47m[defun][0m[0m (see
+  [verify-guards]).  Said differently: this guard need not itself
+  have a guard of [30m[47mt[0m[0m.  Indeed, the guard is only used for attachments;
+  see [defattach].  Note that if [30m[47m:GUARD[0m[0m is supplied, then [30m[47m:FORMALS[0m[0m
+  must also be supplied as a list of distinct variables that includes
+  all variables occurring free in the specified guard.  One final
+  observation about guards: if the [30m[47m:GUARD[0m[0m keyword is omitted, then
+  the guard defaults to [30m[47mT[0m[0m.
 
   Before ACL2 supported user-declared single-threaded objects there was
   only one single-threaded object: ACL2's built-in notion of [30m[47m[state][0m[0m.
@@ -142461,12 +142514,15 @@ Extended Example
   As promised above, we conclude with a remark about additional
   keywords.  The keyword [30m[47m:GLOBAL-STOBJS[0m[0m specifies the use of the
   macro, [30m[47mwith-global-stobj[0m[0m, in attachments (see [defattach]); see
-  [30m[47m[with-global-stobj][0m[0m for explanation of this keyword.  The keyword
-  [30m[47m:TRANSPARENT[0m[0m specifies transparent functions; see
-  [transparent-functions].  Finally, the keyword [30m[47m:CLASSICALP[0m[0m is legal
-  for ACL2(r) only (see [real]).  The value of this keyword must be [30m[47mt[0m[0m
-  (the default) or [30m[47mnil[0m[0m, indicating respectively whether [30m[47mfn[0m[0m is
-  classical or not.")
+  [30m[47m[with-global-stobj][0m[0m for explanation of this keyword.  Each of the
+  remaining keywords must be followed by a Boolean value, with the
+  following effect when that value is [30m[47mT[0m[0m.  The keyword [30m[47m:TRANSPARENT[0m[0m
+  specifies transparent functions; see [transparent-functions].  The
+  keyword [30m[47m:INVARIANT-RISK[0m[0m specifies that [30m[47mfn[0m[0m is considered to have
+  [invariant-risk], which can be important for a subsequent use of
+  [defattach]; see [invariant-risk].  Finally, the keyword
+  [30m[47m:CLASSICALP[0m[0m is legal for ACL2(r) only (see [real]) and specifies
+  that [30m[47mfn[0m[0m is classical.")
  (SIGNED-BYTE-P
   (NUMBERS ACL2-BUILT-INS)
   "Recognizer for signed integers that fit in a specified bit width

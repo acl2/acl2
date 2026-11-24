@@ -22324,6 +22324,18 @@ href='http://www.cs.utexas.edu/users/moore/classes/index.html'>here</a>.</li>
  documentation see @(see with-global-stobj), specifically the section on
  ``Constrained Functions and Defattach''.</p>
 
+ <p>The notion of @(see invariant-risk) must be preserved through attachments.
+ Enforcement of this requirement can produce the following error message.</p>
+
+ @({
+ ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+ for F, because G has invariant-risk but F was not introduced with a
+ specification of :INVARIANT-RISK T.  See :DOC defattach.
+ })
+
+ <p>See @(see invariant-risk) for how the use of @(':invariant-risk t') in a
+ function's @(see signature) can avoid this error.</p>
+
  <p>We conclude with an example promised above, showing why it is necessary in
  general to unattach all function symbols in an existing attachment nest when
  unattaching any one of those function symbols.  Consider the following
@@ -59656,7 +59668,38 @@ tables in the current Hons Space."
  Rather than removing invariant-risk checking for <i>all</i> functions at
  runtime with @(tsee set-check-invariant-risk), it is probably much safer to
  remove it only for the functions in a given book or @(tsee encapsulate) event.
- See @(see set-register-invariant-risk) for how to do that.</p>")
+ See @(see set-register-invariant-risk) for how to do that.</p>
+
+ <h3>Interaction with Attachments</h3>
+
+ <p>When you invoke @(tsee defattach), say, @('(defattach f g)'), you might see
+ the following error.</p>
+
+ @({
+ ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+ for F, because G has invariant-risk but F was not introduced with a
+ specification of :INVARIANT-RISK T.  See :DOC invariant-risk.
+ })
+
+ <p>The workaround is to specify @(':invariant-risk t') in the @(tsee
+ encapsulate) event that introduces @('f'), specifically, in the signature for
+ @('f'); see @(see signature).  For example:</p>
+
+ @({
+ (encapsulate
+   (((f * st) => st :invariant-risk t ...))
+   (local (defun f (v st) ...)))
+ })
+
+ <p>The @('defattach') example above illustrates the case that the proposed
+ attachment @('g') has @(see invariant-risk), for example because it updates a
+ @(see stobj) field that has a non-trival type; see @(see invariant-risk).  The
+ concern is that a @(see program)-mode function call will lead to an ill-@(see
+ guard)ed call of @('f') that leads to an ill-guarded call of @('g') that
+ violates an invariant.  When the signature of a function symbol @('f')
+ includes @(':invariant-risk t'), ACL2 makes a note that @('f') has
+ invariant-risk, which allows @('f') to receive an attachment that has
+ invariant-risk (@('g'), in our example).</p>")
 
 (defxdoc invariant-risk-details
   :parents (invariant-risk)
@@ -110884,6 +110927,19 @@ it."
  @('system/tests/cl-cache-local-defun-good-line.lisp'), and
  @('system/tests/cl-cache-make-event-expansion-good-line.lisp').</p>
 
+ <p>Fixed a soundness bug due to a failure to track @(see invariant-risk) after
+ the use of @(tsee defattach).  See @(see community-books)
+ @('system/tests/defattach-invariant-risk.lisp'),
+ @('system/tests/absstobj-attached-exec-invariant-risk-a.lisp'), and
+ @('system/tests/absstobj-attached-exec-invariant-risk-b.lisp').  A new keyword
+ for @(see signature)s, @(':')@(tsee invariant-risk), is required when
+ constraining a function in order for it to get an attachment that has
+ invariant-risk; see @(see signature).  Technical implementation note: As noted
+ by AI, it is insufficient for @('(defattach f g)') to note invariant-risk for
+ @('f'), because existing @(see program)-mode callers of @('f') will already
+ have *1* functions (see @(see evaluation)) that fail to account for
+ invariant-risk.</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -142990,16 +143046,16 @@ work on <tt>(q x)</tt>.</p>
  and values starting with a keyword.  In this case @('((fn x1 ... xn) => val)')
  must be a legal signature as described above.  The legal keywords in @('k')
  are generally @(':GUARD') and @(':FORMALS'), but see remarks at the end of
- this topic regarding @(':GLOBAL-STOBJS') and @(':TRANSPARENT') and, for
- ACL2(r), @(':CLASSICALP').  The value following @(':FORMALS') is to be the
- list of formal parameters of @('fn'), which must be consistent with the
- parameters specified in @('(fn x1 ... xn)'): they must both specify the same
- arity (number of formal parameters) and the same @(see stobj) inputs.  The
- value following @(':GUARD') is a term that is to be the @(see guard) of
- @('fn').  Note that this guard is never actually evaluated, and is not subject
- to the guard verification performed on functions introduced by @(tsee
- defun) (see @(see verify-guards)).  Said differently: this guard need not
- itself have a guard of @('t').  Indeed, the guard is only used for
+ this topic regarding @(':GLOBAL-STOBJS') and @(':TRANSPARENT'),
+ @(':INVARIANT-RISK'), and, for ACL2(r), @(':CLASSICALP').  The value following
+ @(':FORMALS') is to be the list of formal parameters of @('fn'), which must be
+ consistent with the parameters specified in @('(fn x1 ... xn)'): they must
+ both specify the same arity (number of formal parameters) and the same @(see
+ stobj) inputs.  The value following @(':GUARD') is a term that is to be the
+ @(see guard) of @('fn').  Note that this guard is never actually evaluated,
+ and is not subject to the guard verification performed on functions introduced
+ by @(tsee defun) (see @(see verify-guards)).  Said differently: this guard
+ need not itself have a guard of @('t').  Indeed, the guard is only used for
  attachments; see @(see defattach).  Note that if @(':GUARD') is supplied, then
  @(':FORMALS') must also be supplied as a list of distinct variables that
  includes all variables occurring free in the specified guard.  One final
@@ -143049,12 +143105,14 @@ work on <tt>(q x)</tt>.</p>
  <p>As promised above, we conclude with a remark about additional keywords.
  The keyword @(':GLOBAL-STOBJS') specifies the use of the macro,
  @('with-global-stobj'), in attachments (see @(see defattach)); see @(tsee
- with-global-stobj) for explanation of this keyword.  The keyword
- @(':TRANSPARENT') specifies transparent functions; see @(see
- transparent-functions).  Finally, the keyword @(':CLASSICALP') is legal for
- ACL2(r) only (see @(see real)).  The value of this keyword must be @('t') (the
- default) or @('nil'), indicating respectively whether @('fn') is classical or
- not.</p>")
+ with-global-stobj) for explanation of this keyword.  Each of the remaining
+ keywords must be followed by a Boolean value, with the following effect when
+ that value is @('T').  The keyword @(':TRANSPARENT') specifies transparent
+ functions; see @(see transparent-functions).  The keyword @(':INVARIANT-RISK')
+ specifies that @('fn') is considered to have @(see invariant-risk), which can
+ be important for a subsequent use of @(see defattach); see @(see
+ invariant-risk).  Finally, the keyword @(':CLASSICALP') is legal for ACL2(r)
+ only (see @(see real)) and specifies that @('fn') is classical.</p>")
 
 (defxdoc signed-byte-p
   :parents (numbers acl2-built-ins)

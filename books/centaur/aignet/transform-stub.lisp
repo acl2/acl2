@@ -151,6 +151,7 @@ description.</p>")
        :long <long>)
      (encapsulate
        (((apply-<name>-transform <extra-formals-*> aignet aignet2 * * state) => (mv aignet2 * state)
+         :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
          :guard <encap-guard>
          :formals (<extra-args> aignet aignet2 config output-ranges state)))
 

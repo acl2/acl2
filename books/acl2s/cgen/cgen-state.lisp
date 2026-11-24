@@ -373,7 +373,9 @@ cgen-state"
 
 ; [2016-04-03 Sun] Added placeholder for fixer-arrangement which gives back a
 ; fixer/elim-binding as a b*-binding that can be used in simple-search
-(defstub fixer-arrangement (* * * *  state) => (mv * * state))
+(defstub fixer-arrangement (* * * *  state) => (mv * * state)
+; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7:
+  :invariant-risk t)
 (defun fixer-arrangement/dummy (hyps concl vl ctx state)
   (declare (ignore hyps concl vl ctx))
   (declare (xargs :stobjs (state)))
@@ -381,7 +383,9 @@ cgen-state"
 (defattach (fixer-arrangement fixer-arrangement/dummy))
 
 ; [2017-08-17 Thu] This can be either attached to a gl backend or a greedy algo.
-(defstub fxri-let*-soln (* * * * * state) => (mv * * state))
+(defstub fxri-let*-soln (* * * * * state) => (mv * * state)
+  :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
+  )
 (defun fxri-let*-soln/dummy (flits term->f-lits-lst relevant-terms fxri{} vl state)
   (declare (ignore flits term->f-lits-lst relevant-terms fxri{} vl))
   (declare (xargs :stobjs (state)))

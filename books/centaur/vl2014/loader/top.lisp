@@ -750,6 +750,7 @@ you might want to attach some other kind of report here.</p>
 
   (encapsulate
     (((vl-load-summary * *) => *
+      :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
       :formals (config result)
       :guard (and (vl-loadconfig-p config)
                   (vl-loadresult-p result))))

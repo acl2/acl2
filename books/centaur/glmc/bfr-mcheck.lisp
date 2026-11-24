@@ -727,6 +727,7 @@
 
 (encapsulate
   (((bfr-mcheck * * * * *) => (mv * * *)
+    :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
     :formals (prop constr updates initstp max-bvar)
     :guard (and (bfr-updates-p updates)
                 (natp max-bvar))))
