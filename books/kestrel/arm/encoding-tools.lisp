@@ -373,3 +373,34 @@
               (bits (second item)))
           (cons `(unsigned-byte-p ,bits (lookup-eq ',var args)) ;; implies that the var is bound in the args
                 (make-instruction-arg-conjuncts (rest pattern))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun is-good-encoding-pattern-alistp (alist allowed-overlaps)
+  (declare (xargs :guard (and (encoding-pattern-alistp alist)
+                              (keyword-doublet-listp allowed-overlaps))))
+  (and (no-duplicatesp-equal (strip-cars alist))
+       (all-patterns-incompatiblep alist allowed-overlaps)
+       ; the patterns must be pairwise disjoint (we compute the masks and check) ; todo: first divide the set as indicated by a tree of splitters (bits or slices).  for a splitter, all (remaining) patterns must have fully concrete values
+       ))
+
+;; todo: pass in the overlaps
+(defun good-encoding-pattern-alistp (alist allowed-overlaps)
+  (declare (xargs :guard (keyword-doublet-listp allowed-overlaps)))
+  (and (encoding-pattern-alistp alist)
+       (is-good-encoding-pattern-alistp alist allowed-overlaps)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun make-instruction-arg-predicates (alist allowed-overlaps)
+  (declare (xargs :guard (and (keyword-doublet-listp allowed-overlaps)
+                              (good-encoding-pattern-alistp alist allowed-overlaps))))
+  (if (endp alist)
+      nil
+    (let* ((entry (first alist))
+           (mnemonic (car entry))
+           (pattern (cdr entry)))
+      (cons `(defund ,(pack-in-package "ARM" mnemonic '-argsp) (args)
+               (declare (xargs :guard (symbol-alistp args)))
+               (and ,@(make-instruction-arg-conjuncts pattern)))
+            (make-instruction-arg-predicates (rest alist) allowed-overlaps)))))

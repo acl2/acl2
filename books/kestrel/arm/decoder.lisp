@@ -20,7 +20,7 @@
                            acl2::bvand-type
                            symbol-alistp)))
 
-(defun make-alist-for-fields (highbit pat)
+(defund make-alist-for-fields (highbit pat)
   (declare (xargs :guard (and (encoding-patternp pat)
                               (equal highbit (+ -1 (encoding-pattern-size pat))))
                   :guard-hints (("Goal" :in-theory (enable encoding-pattern-size)))))
@@ -38,8 +38,8 @@
                   ,(make-alist-for-fields (- highbit size) (rest pat))))))))
 
 ;; for now this is linear, but see about for the idea of using a tree of splitters
-(defun make-decoding-cases (alist)
-  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
+(defund make-decoding-cases (alist)
+  (declare (xargs :guard (encoding-pattern-alistp alist)))
   (if (endp alist)
       nil
     (cons (let* ((entry (first alist))
@@ -56,8 +56,8 @@
                   )))
           (make-decoding-cases (rest alist)))))
 
-(defun make-good-inst-cases (alist)
-  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
+(defund make-good-inst-cases (alist)
+  (declare (xargs :guard (encoding-pattern-alistp alist)))
   (if (endp alist)
       nil
     (let* ((entry (first alist))
@@ -67,8 +67,9 @@
       (cons `(,mnemonic (,(pack-in-package "ARM" mnemonic '-argsp) args))
             (make-good-inst-cases (rest alist))))))
 
-(defun make-good-inst-names (alist)
-  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
+;; avoid passing in the allowed-overlaps?
+(defund make-good-inst-names (alist)
+  (declare (xargs :guard (encoding-pattern-alistp alist)))
   (if (endp alist)
       nil
     (let* ((entry (first alist))
@@ -90,9 +91,9 @@
  (defthm unsigned-byte-p-1-of-getbit
    (unsigned-byte-p 1 (getbit n x))))
 
-(defun make-decoder (name alist)
+(defund make-decoder (name alist)
   (declare (xargs :guard (and (symbolp name)
-                              (good-encoding-pattern-alistp alist))))
+                              (encoding-pattern-alistp alist))))
   `(progn
      ;; ,@(make-instruction-arg-predicates alist)
 

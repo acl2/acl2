@@ -559,38 +559,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: pass in the overlaps
-(defun is-good-encoding-pattern-alistp (alist)
-  (declare (xargs :guard (encoding-pattern-alistp alist)))
-  (and (no-duplicatesp-equal (strip-cars alist))
-       (all-patterns-incompatiblep alist *allowed-encoding-overlaps*)
-       ; the patterns must be pairwise disjoint (we compute the masks and check) ; todo: first divide the set as indicated by a tree of splitters (bits or slices).  for a splitter, all (remaining) patterns must have fully concrete values
-       ))
-
-;; todo: pass in the overlaps
-(defun good-encoding-pattern-alistp (alist)
-  (declare (xargs :guard t))
-  (and (encoding-pattern-alistp alist)
-       (is-good-encoding-pattern-alistp alist)))
-
 (defconst *desugared-patterns* (desugar-patterns *patterns*))
 
 ;move
-(assert-event (good-encoding-pattern-alistp *desugared-patterns*))
+(assert-event (good-encoding-pattern-alistp *desugared-patterns* *allowed-encoding-overlaps*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun make-instruction-arg-predicates (alist)
-  (declare (xargs :guard (good-encoding-pattern-alistp alist)))
-  (if (endp alist)
-      nil
-    (let* ((entry (first alist))
-           (mnemonic (car entry))
-           (pattern (cdr entry)))
-      (cons `(defund ,(pack-in-package "ARM" mnemonic '-argsp) (args)
-               (declare (xargs :guard (symbol-alistp args)))
-               (and ,@(make-instruction-arg-conjuncts pattern)))
-            (make-instruction-arg-predicates (rest alist))))))
-
 ;; Makes predicates like add-immediate-argsp:
-(make-event `(progn ,@(make-instruction-arg-predicates *desugared-patterns*)))
+(make-event `(progn ,@(make-instruction-arg-predicates *desugared-patterns* *allowed-encoding-overlaps*)))
