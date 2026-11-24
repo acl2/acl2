@@ -351,6 +351,69 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defsection bidi-brackets-are-neutral
+  :short "Every paired bracket has the bidirectional class @('ON')
+          (Other Neutral)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The file @('BidiBrackets.txt') of the Unicode Character Database
+     says that the stability policy guarantees this.
+     The Unicode Bidirectional Algorithm asks, of a bracket of a pair,
+     both that it is a paired bracket and that its class is @('ON')
+     when the pairs are looked for [UAX #9, BD14 and BD15];
+     by this theorem the second condition can only fail
+     for a bracket whose class a rule of the algorithm has changed.
+     We prove the theorem by checking it on every code point,
+     for each version;
+     so adding a version checks it for that version."))
+
+  (local
+   (define bracket-class-ok ((cp code-point-p) (ver versionp))
+     :returns (yes/no booleanp)
+     (or (not (code-point-bidi-bracket cp ver))
+         (equal (bidi-class-kind (code-point-bidi-class cp ver))
+                :other-neutral))
+     :hooks nil))
+
+  (local
+   (std::deflist bracket-class-ok-listp (x ver)
+     :guard (and (code-point-listp x)
+                 (versionp ver))
+     (bracket-class-ok x ver)))
+
+  (defrulel bracket-class-ok-listp-of-all-code-points
+    (bracket-class-ok-listp (all-code-points) (version-fix ver))
+    :enable (version-fix-in-terms-of-version-case
+             (:e all-code-points))
+    :disable bracket-class-ok-listp-of-cons)
+
+  (defrulel bracket-class-ok-holds
+    (bracket-class-ok cp ver)
+    :rule-classes nil
+    :use (:instance bracket-class-ok-when-member-equal-of-bracket-class-ok-listp
+                    (acl2::a (code-point-fix cp))
+                    (x (all-code-points))
+                    (ver (version-fix ver)))
+    :enable bracket-class-ok)
+
+  (defrule code-point-bidi-class-when-code-point-bidi-bracket
+    (implies (code-point-bidi-bracket cp ver)
+             (equal (bidi-class-kind (code-point-bidi-class cp ver))
+                    :other-neutral))
+    :enable bracket-class-ok
+    :use bracket-class-ok-holds)
+
+  (defrule code-point-bidi-class-when-bracket-role
+    (implies (not (equal (bidi-bracket-role-kind
+                          (code-point-bidi-bracket-role cp ver))
+                         :none))
+             (equal (bidi-class-kind (code-point-bidi-class cp ver))
+                    :other-neutral))
+    :enable code-point-bidi-bracket-role))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define code-point-bidi-char ((cp code-point-p) (ver versionp))
   :returns (char bidi-char-p)
   :short "A code point as the Unicode Bidirectional Algorithm sees it,

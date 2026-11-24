@@ -66,7 +66,8 @@
      that can be checked on the bidirectional classes alone
      and under which a text is confined:
      see @(see bidi-guarded-segments).
-     That they are enough is tested, and not yet proved."))
+     That they are enough is a theorem:
+     see @(see bidi-guarded-segments-theorem)."))
   :order-subtopics (bidi-clean-cut-p
                     bidi-clean-cut-theorem
                     bidi-clean-cuts-p
@@ -1092,16 +1093,17 @@
       (see @(tsee bidi-bracket-pairs-closed-p))."))
    (xdoc::p
     "The predicate is @(tsee bidi-guarded-segments-p).
-     The claim is that a plain text whose segments satisfy it is confined.
-     <b>This claim is not a theorem of this library yet.</b>
-     It is checked, when the library is certified,
-     on every text of one to four characters
-     over sixteen characters, with every way of cutting the text:
-     one character for each of the twelve classes that a plain text can have,
-     and two kinds of paired brackets
-     (see the file @('tests/bidi-confinement.lisp')).
-     The same tests have, for each condition,
-     a text that fails only that condition and is not confined.")
+     A plain text whose segments satisfy it is confined:
+     that is the theorem of the book @('bidi-guarded-theorem')
+     (see @(see bidi-guarded-segments-theorem)).
+     Each condition is needed:
+     the file @('tests/bidi-confinement.lisp') has, for each of them,
+     a text that fails only that condition and is not confined.
+     The same file checks the theorem by running the algorithm
+     on every text of one to four characters over sixteen characters,
+     with every way of cutting the text:
+     one character for each of the twelve classes
+     that a plain text can have, and two kinds of paired brackets.")
    (xdoc::p
     "The conditions do not make each segment be displayed
      as it would be alone;

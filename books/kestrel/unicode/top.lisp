@@ -364,8 +364,8 @@
       The rules are in seven books that it loads,
       from @('bidi-characters') to @('bidi-display'),
       and the theorems about them
-      in @('bidi-rearrangement'), @('bidi-left-to-right')
-      and @('bidi-confinement'):
+      in @('bidi-rearrangement'), @('bidi-left-to-right'),
+      @('bidi-confinement') and @('bidi-guarded-theorem'):
       see @(see bidirectional-algorithm).
       @('kestrel/unicode/right-to-left-free')
       for @(tsee right-to-left-free-p),

@@ -128,10 +128,12 @@
       is displayed segment by segment.
       See @(see bidi-rearrangement), @(see bidi-display-theorems),
       @(see bidi-left-to-right) and @(see bidi-confinement).
-      The conditions on the segments
-      under which the cuts between them are such places
-      are defined and tested, not proved:
-      see @(see bidi-guarded-segments)."))
+      For a plain text (see @(tsee bidi-plain-p)),
+      conditions on the bidirectional classes of the characters
+      and on the bracket pairs of the text
+      are proved to make the cuts between the segments such places:
+      see @(see bidi-guarded-segments)
+      and @(see bidi-guarded-segments-theorem)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul

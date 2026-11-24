@@ -12,6 +12,7 @@
 
 (include-book "bidi-left-to-right")
 (include-book "bidi-confinement")
+(include-book "bidi-guarded-theorem")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +155,17 @@
       are the characters displayed to the left of it, in another order.
       So a text cut into segments at such places
       is displayed segment by segment
-      (see @(see bidi-confinement)).")))
+      (see @(see bidi-confinement)).")
+    (xdoc::li
+     "For a plain text (see @(tsee bidi-plain-p)),
+      there are conditions on the segments
+      under which every cut between two segments is such a place.
+      They are on the @('Bidi_Class') of each character
+      and on the bracket pairs of the text,
+      so they can be checked without running the algorithm;
+      the proof goes through the rules one by one
+      (see @(see bidi-guarded-segments)
+      and @(see bidi-guarded-segments-theorem)).")))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types

@@ -10,10 +10,12 @@
 
 ; Tests of confinement.
 ;
-; The claim that a plain text whose segments are guarded is confined
-; is not a theorem of the library yet.  Here it is checked on every text
+; That a plain text whose segments are guarded is confined is a theorem
+; of the library (book bidi-guarded-theorem.lisp).
+; Here it is also checked, by running the algorithm, on every text
 ; of one to four characters over sixteen characters,
-; with every way of cutting the text into segments.
+; with every way of cutting the text into segments;
+; and examples show that each of the conditions is needed.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
