@@ -23,6 +23,7 @@
 (include-book "lexer")
 (include-book "tokenizer")
 (include-book "token-tree-builder")
+(include-book "input-format")
 (include-book "differential-testing")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,11 +60,14 @@
      and @(see related-lexer-descriptions) relates our grammar
      to other descriptions of Rust's lexical structure.
      Still to come are
-     Unicode identifiers and their normalization,
-     and the processing of the input file
-     (UTF-8 decoding, CRLF normalization, a leading shebang).
+     Unicode identifiers and their normalization.
      The token-tree builder groups the tokens into token trees,
      by matching delimiters;
      it is proved to invert the flattening of well-formed token trees.
+     The input format covers what precedes lexing
+     (UTF-8 decoding, the byte order mark,
+     CRLF normalization, a leading shebang),
+     from the bytes of a source file,
+     which it is proved to keep in full.
      Parsing and printing are future work."))
   :order-subtopics t)

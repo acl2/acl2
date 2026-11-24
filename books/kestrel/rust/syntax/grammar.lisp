@@ -132,9 +132,11 @@
      as represented by the natural numbers in
      @('#x0-#xD7FF') union @('#xE000-#x10FFFF').
      The input to the grammar is assumed to be
-     a sequence of code point integers;
-     decoding UTF-8 bytes into code points
-     is outside the scope of the grammar."))
+     a sequence of code point integers.
+     The steps that lead to it from the bytes of a source file
+     (UTF-8 decoding, the byte order mark, CR LF, and the shebang)
+     are outside the scope of the grammar:
+     see @(see input-format)."))
   :file "grammar/lexical-grammar.abnf"
   :untranslate t
   :well-formed t
@@ -207,6 +209,27 @@
      The last section of this topic says
      what became of these cases in a later version of the Reference.")
    (xdoc::h3 "Where the Reference says one thing and rustc does another")
+   (xdoc::desc
+    "A doc comment between the @('#!') that starts a file and a @('[')"
+    (xdoc::p
+     "The Reference says that a file that begins with @('#!')
+      begins with a "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/input-format.html#shebang-removal"
+      "shebang")
+     ", which is removed,
+      unless the @('#!') is followed by a @('[') token,
+      ignoring intervening comments or whitespace:
+      then it is the start of an inner attribute, and nothing is removed.
+      rustc ignores the comments that are not doc comments,
+      and does not ignore a doc comment.
+      So when a file begins with @('#!/** d */[allow(unused)]'),
+      rustc takes its first line as a shebang,
+      and accepts the file if the other lines are a program,
+      whatever the rest of the first line is;
+      by the Reference, the first line would stay, and be an error.
+      We take it as a shebang, as rustc does
+      (see @(tsee shebang-length))."))
    (xdoc::desc
     "The characters @('/*') inside a block comment"
     (xdoc::p
@@ -299,6 +322,24 @@
       We reject it, by the side condition [SC12]
       (see @(tsee lexeme-cst-lifetime-quote-okp))."))
    (xdoc::h3 "Where the Reference is ambiguous or contradicts itself")
+   (xdoc::desc
+    "A carriage return before a carriage return and a line feed"
+    (xdoc::p
+     "The Reference says that, before lexing,
+      each carriage return immediately followed by a line feed
+      is "
+     (xdoc::ahref
+      "https://doc.rust-lang.org/1.87.0/reference/input-format.html#crlf-normalization"
+      "replaced")
+     " by the line feed,
+      and that the other carriage returns are left in place.
+      It does not say whether this is done again on the result:
+      when a carriage return precedes such a pair,
+      replacing the pair puts that carriage return
+      immediately before a line feed.
+      rustc goes through the text once, so that carriage return stays;
+      in a string literal or a doc comment it is then an error.
+      We do the same (see @(tsee normalize-crlf))."))
    (xdoc::desc
     "A carriage return in a doc comment"
     (xdoc::p
@@ -470,6 +511,16 @@
      The exception is @('/*') inside a block doc comment:
      those rules reject @('/* a /*/'), as rustc does,
      but they accept @('/*!/*/') and @('/** /*/'), which rustc rejects.")
+   (xdoc::p
+    "The two cases about what precedes lexing
+     are not among those that we ran through the interpreter;
+     for them we have read that version of the Reference.
+     It says that the replacement of carriage returns
+     happens once, not repeatedly,
+     and it has a rule for the shebang,
+     in which only whitespace and comments that are not doc comments
+     may come between the @('#!') and the @('[') of an inner attribute:
+     both as in rustc.")
    (xdoc::p
     "Two of the cases remain in the text of that version,
      though not in its rules.

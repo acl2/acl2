@@ -15,7 +15,7 @@
 ; integer and float literals,
 ; character, byte, string, byte-string, and C-string literals
 ; (including their raw forms), punctuation, and delimiters.
-; Not yet covered: the shebang line.
+; The shebang line is not in this grammar: the lexer starts after it.
 
 ; The input to this grammar is a sequence of Unicode scalar values,
 ; i.e. code points excluding the surrogate range %xD800-DFFF;

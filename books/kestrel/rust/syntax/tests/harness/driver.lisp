@@ -13,15 +13,17 @@
 (include-book "../../tokenizer")
 (include-book "../../token-tree-builder")
 (include-book "../../extra-grammatical-restrictions")
+(include-book "../../input-format")
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/file-io-light/write-objects-to-file" :dir :system)
 
-; The ACL2 side of the differential tests of the lexer, the tokenizer,
-; and the token-tree builder
+; The ACL2 side of the differential tests of the input layer, the lexer,
+; the tokenizer, and the token-tree builder
 ; (see the xdoc topic differential-testing, and README.md in this directory).
-; Each entry point reads a file of test inputs written by to_acl2.py,
-; runs the lexer, the tokenizer, and the token-tree builder on each input,
+; Each entry point reads a file of test inputs
+; written by to_acl2.py or by input_format.py,
+; runs the front end on each input,
 ; and writes a file of results, or returns a summary,
 ; for the comparison scripts in this directory.
 ; The functions are not in the manual (:parents nil):
@@ -30,7 +32,8 @@
 (local (in-theory (enable abnf::tree-listp-when-result-not-error
                           lexemep-when-result-not-error
                           token+span-listp-when-result-not-error
-                          token-tree-listp-when-result-not-error)))
+                          token-tree-listp-when-result-not-error
+                          source-textp-when-result-not-error)))
 
 (defrulel nat-listp-of-nthcdr
   (implies (nat-listp x)
@@ -88,6 +91,16 @@
   (b* (((mv & state)
         (acl2::write-objects-to-file results fname 'rv-write state)))
     state))
+
+; The code points of a test of to_acl2.py are those of a piece of a file,
+; as written.  rustc reads the file with the input layer's steps,
+; of which CRLF normalization applies to a piece that is not at the start.
+
+(define rv-normalize ((nats nat-listp))
+  :returns (new-nats nat-listp)
+  :parents nil
+  (b* (((mv new-nats &) (normalize-crlf nats)))
+    new-nats))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -178,7 +191,8 @@
 
 (define rv-run1 ((nats nat-listp) (edition rust::editionp))
   :parents nil
-  (b* ((toks (tokenize-rust nats edition "t"))
+  (b* ((nats (rv-normalize nats))
+       (toks (tokenize-rust nats edition "t"))
        ((when (reserrp toks)) :err)
        (trees (build-token-trees (rv-probe-tokens toks)))
        ((when (reserrp trees)) (rv-delim-error trees))
@@ -216,7 +230,8 @@
 
 (define rv-file1 ((nats nat-listp))
   :parents nil
-  (b* (((mv & rest) (lex-*-lexeme nats))
+  (b* ((nats (rv-normalize nats))
+       ((mv & rest) (lex-*-lexeme nats))
        ((when (consp rest))
         (b* ((pos (nfix (- (len nats) (len rest)))))
           (list :lexerr
@@ -272,7 +287,7 @@
   :parents nil
   (if (endp tests)
       (mv n (revappend bad nil))
-    (b* ((nats (cdar tests))
+    (b* ((nats (rv-normalize (cdar tests)))
          (trees (lexemize-rust nats)))
       (cond ((reserrp trees) (rv-spec (cdr tests) n bad))
             ((rv-spec-okp trees nats) (rv-spec (cdr tests) (1+ n) bad))
@@ -312,7 +327,8 @@
 
 (define rv-bounds1 ((nats nat-listp))
   :parents nil
-  (b* ((trees (lexemize-rust nats))
+  (b* ((nats (rv-normalize nats))
+       (trees (lexemize-rust nats))
        ((when (reserrp trees)) :err)
        (toks (tokenize-rust nats (rust::edition-2024) "t"))
        ((when (reserrp toks)) :err)
@@ -333,4 +349,53 @@
   :parents nil
   (b* (((mv tests state) (rv-read-tests in state))
        (state (rv-write (rv-bounds tests nil) out state)))
+    (mv (len tests) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The input layer: (rv-go-input in out edition state) reads the tests
+; of input_format.py, in which the naturals of a test are
+; the bytes of a whole file, and writes, for each test, ("id" x n),
+; where n is the length of the shebang that the file starts with
+; (0 if it starts with none, or if x is :utf8),
+; and x is one of the following.
+; - :utf8 if the bytes are not valid UTF-8.
+; - :err if the lexer or tokenizer rejects the file.
+; - :mismatched, :unclosed, or :unexpected if the token-tree builder
+;   rejects the tokens of the file, with that kind of error.
+; - :ok otherwise.
+; It returns the number of tests.
+
+(define rv-input1 ((bytes nat-listp) (edition rust::editionp))
+  :parents nil
+  (b* (((unless (byte-listp bytes)) (list :not-bytes 0))
+       (stext (source-text-from-bytes bytes))
+       ((when (reserrp stext)) (list :utf8 0))
+       (shebang (shebang-length (source-text->text stext)))
+       (toks (tokenize-source-text stext edition "t"))
+       ((when (reserrp toks)) (list :err shebang))
+       (trees (build-token-trees toks))
+       ((when (reserrp trees)) (list (rv-delim-error trees) shebang)))
+    (list :ok shebang)))
+
+(define rv-input ((tests rv-test-listp)
+                  (edition rust::editionp)
+                  (acc true-listp))
+  :returns (results true-listp :hyp (true-listp acc))
+  :parents nil
+  (if (endp tests)
+      (revappend acc nil)
+    (rv-input (cdr tests)
+              edition
+              (cons (cons (caar tests) (rv-input1 (cdar tests) edition)) acc)))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-input ((in stringp)
+                     (out stringp)
+                     (edition rust::editionp)
+                     state)
+  :returns (mv (n natp) state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       (state (rv-write (rv-input tests edition nil) out state)))
     (mv (len tests) state)))

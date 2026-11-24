@@ -15,11 +15,11 @@ Each TESTS is a JSON file holding a list of {"id": str, "text": str},
 or a directory of such files.  OUT.lsp holds a single ACL2 object:
 a list with one entry ("id" cp1 cp2 ...) per test.
 
-Two adjustments mirror what rustc sees in the probe of run_rustc.py:
-a line feed is appended (the probe puts one after the input),
-and each CR LF pair becomes LF (rustc normalizes these when it reads
-a file; in our front end this is the job of the input layer,
-which precedes lexing).
+A line feed is appended to each input, as the probe of run_rustc.py
+puts one after the input.  The CR LF pairs stay: the driver replaces
+them with LF, with the function of the input layer, as rustc does when
+it reads a file (this includes the pair that an input ending in CR
+makes with the appended line feed).
 """
 import json, os, sys
 
@@ -40,7 +40,7 @@ def main():
         f.write('(\n')
         for fn in test_files(sys.argv[2:]):
             for t in json.load(open(fn, encoding='utf-8')):
-                text = (t['text'] + '\n').replace('\r\n', '\n')
+                text = t['text'] + '\n'
                 f.write('("%s" %s)\n' % (t['id'], ' '.join(str(ord(ch)) for ch in text)))
                 n += 1
         f.write(')\n')

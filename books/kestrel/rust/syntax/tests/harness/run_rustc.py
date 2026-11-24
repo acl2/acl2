@@ -84,7 +84,8 @@ def run_one(args):
                         '--emit=metadata', '--error-format=json', '--out-dir', d, src],
                        capture_output=True, text=True)
     errs, n = [], None
-    for line in p.stderr.splitlines():
+    # Not splitlines: it also splits at characters that a message can quote.
+    for line in p.stderr.split('\n'):
         if not line.startswith('{'):
             continue
         try:
