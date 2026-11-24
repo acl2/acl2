@@ -61,17 +61,17 @@
   (defthm generic-image-is-image
     (implies (and (in x (generic-dom))
                   (generic-prop)
-                  (force? (zify-prop)))
+                  (force (zify-prop)))
              (in (generic-fn x) (generic-ran))))
   (defthm generic-rel$comprehension
-    (implies (and (force? (zify-prop))
+    (implies (and (force (zify-prop))
                   (generic-prop))
              (equal (in p (generic-rel))
                     (and (in p (prod2 (generic-dom) (generic-ran)))
                          (equal (cdr p) (generic-fn (car p))))))))
 
 (defthm subset-domain-generic-rel-generic-dom
-  (implies (and (force? (zify-prop))
+  (implies (and (force (zify-prop))
                 (generic-prop))
            (subset (domain (generic-rel))
                    (generic-dom)))
@@ -81,7 +81,7 @@
 (defthm subset-generic-dom-domain-generic-rel-lemma
   (implies (and (in x (generic-dom))
                 (generic-prop)
-                (force? (zify-prop)))
+                (force (zify-prop)))
            (in x (domain (generic-rel))))
   :hints (("Goal" :use ((:instance generic-rel$comprehension
                                    (p (cons x (generic-fn x)))))
@@ -89,14 +89,14 @@
 
 (defthm subset-generic-dom-domain-generic-rel
   (implies (and (generic-prop)
-                (force? (zify-prop)))
+                (force (zify-prop)))
            (subset (generic-dom)
                    (domain (generic-rel))))
   :hints (("Goal" :in-theory (enable subset))))
 
 (defthm domain-of-generic-fn-is-generic-dom
   (implies (and (force (generic-prop))
-                (force? (zify-prop)))
+                (force (zify-prop)))
            (equal (domain (generic-rel))
                   (generic-dom)))
   :hints (("Goal" :in-theory (enable extensionality-rewrite))))
@@ -214,7 +214,7 @@
          (all-args (append fn-params args))
          (call (cons name all-args))
          (hyps (and (true-listp xhyps)
-                    (append? (force?-props props)
+                    (append? (force-props props)
                              (pairlis-x1 'force (pairlis-x2 xhyps nil)))))
          (unforced-hyps (append? (props-to-hyps props) xhyps))
          (form
@@ -230,8 +230,8 @@
                    )
 
              (defthm ,(prefix-symbol "FUNP-" name)
-               (implies (and (force? (,name$prop))
-                             (force? (zify-prop))
+               (implies (and (force (,name$prop))
+                             (force (zify-prop))
                              ,@hyps)
                         (funp ,call))
                :hints (("Goal" :in-theory (enable relation-p funp))))
@@ -241,7 +241,7 @@
                                          `(and (,name$prop)
                                                ,@unforced-hyps)
                                        `(,name$prop)))
-                             (force? (zify-prop)))
+                             (force (zify-prop)))
                         (equal (domain ,call)
                                ,dom))
                :hints
@@ -265,7 +265,7 @@
                                      name)
                (implies (and (in ,(car fn-args) ,dom)
                              (force (,name$prop))
-                             (force? (zify-prop))
+                             (force (zify-prop))
                              ,@hyps)
                         (equal (apply ,call ,(car fn-args))
                                (,fn ,@fn-args))))

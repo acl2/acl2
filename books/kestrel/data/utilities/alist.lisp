@@ -11,7 +11,7 @@
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))

@@ -1,0 +1,213 @@
+;; Copyright (C) 2015, University of British Columbia
+;; Written by Yan Peng (December 30th 2019)
+;;
+;; License: A 3-clause BSD license.
+;; See the LICENSE file distributed with ACL2
+;;
+
+(in-package "SMT")
+(include-book "std/util/bstar" :dir :system)
+(include-book "xdoc/top" :dir :system)
+(include-book "std/util/define" :dir :system)
+(include-book "centaur/fty/top" :dir :system)
+
+(include-book "basics")
+(include-book "judgements")
+
+;; -------------------------------------------------------------------
+;;        Functions about path-cond
+
+;; look-up-path-cond will ignore the whole branch of or's and only look for top
+;; level and's
+(define look-up-path-cond-acc ((term pseudo-termp)
+                               (path-cond pseudo-termp)
+                               (supertype-alst type-to-types-alist-p)
+                               (acc pseudo-termp))
+  :returns (type-term pseudo-termp)
+  :measure (acl2-count (pseudo-term-fix path-cond))
+  :verify-guards nil
+  (b* ((term (pseudo-term-fix term))
+       (path-cond (pseudo-term-fix path-cond))
+       (acc (pseudo-term-fix acc))
+       ((if (equal path-cond ''t)) acc)
+       ((if (judgement-of-term path-cond term supertype-alst))
+        `(if ,path-cond ,acc 'nil))
+       ((unless (is-conjunct? path-cond)) acc)
+       ((list* & path-hd path-tl &) path-cond)
+       (new-acc (look-up-path-cond-acc term path-hd supertype-alst acc)))
+    (look-up-path-cond-acc term path-tl supertype-alst new-acc)))
+
+(verify-guards look-up-path-cond-acc)
+
+(defthm correctness-of-lookup-path-cond-acc
+   (implies (and (pseudo-termp term)
+                 (pseudo-termp path-cond)
+                 (pseudo-termp acc)
+                 (type-to-types-alist-p supertype-alst)
+                 (alistp a)
+                 (ev-smtcp path-cond a)
+                 (ev-smtcp acc a))
+            (ev-smtcp (look-up-path-cond-acc term path-cond supertype-alst acc)
+                      a))
+   :hints (("Goal"
+            :in-theory (e/d (look-up-path-cond-acc is-conjunct?)
+                            (implies-of-is-conjunct?
+                             member-equal symbol-listp
+                             consp-of-is-conjunct?
+                             pseudo-term-listp-of-symbol-listp
+                             default-cdr)))))
+
+(define look-up-path-cond ((term pseudo-termp)
+                           (path-cond pseudo-termp)
+                           (supertype-alst type-to-types-alist-p))
+  :returns (type-term pseudo-termp)
+  (look-up-path-cond-acc term path-cond supertype-alst ''t)
+  ///
+  (defthm correctness-of-lookup-path-cond
+    (implies (and (pseudo-termp term)
+                  (pseudo-termp path-cond)
+                  (type-to-types-alist-p supertype-alst)
+                  (alistp a)
+                  (ev-smtcp path-cond a))
+             (ev-smtcp (look-up-path-cond term path-cond supertype-alst)
+                       a))
+    :hints (("Goal"
+             :expand (look-up-path-cond term path-cond supertype-alst)))))
+
+#|
+(look-up-path-cond 'r1
+                   '(if (if (rational-integer-alistp al)
+                            (if (rationalp r1)
+                                (assoc-equal r1 al)
+                              'nil)
+                          'nil)
+                        't
+                      'nil)
+                   '((integerp)
+                     (rationalp)
+                     (rational-integer-alistp)))
+
+(look-up-path-cond 'r1
+                   '(if (if (< r1 '0)
+                            (if (rationalp r1)
+                                (assoc-equal r1 al)
+                              'nil)
+                          'nil)
+                        't
+                      'nil)
+                   '((integerp)
+                     (rationalp)))
+
+(look-up-path-cond 'x
+                   '(if (if x
+                            (if (maybe-integerp x)
+                                't
+                              'nil)
+                          'nil)
+                        't
+                      'nil)
+                   '((integerp)
+                     (rationalp)
+                     (maybe-integerp)))
+
+(look-up-path-cond 'x
+                   '(if (if (not x)
+                            (if (maybe-integerp x)
+                                't
+                              'nil)
+                          'nil)
+                        't
+                      'nil)
+                   '((integerp)
+                     (rationalp)
+                     (maybe-integerp)))
+
+(look-up-path-cond 'x
+                   '(if (not x)
+                        (if x 't (if (maybe-integerp x) 't 'nil))
+                      'nil)
+                   '((integerp)
+                     (rationalp)
+                     (maybe-integerp)))
+|#
+
+(define path-test ((path-cond pseudo-termp)
+                   (expr pseudo-termp))
+  :returns (ok booleanp)
+  :measure (acl2-count (pseudo-term-fix path-cond))
+  (b* ((expr (pseudo-term-fix expr))
+       (path-cond (pseudo-term-fix path-cond))
+       ((if (equal path-cond ''t)) nil)
+       ((if (equal path-cond expr)) t)
+       ((unless (is-conjunct? path-cond)) nil)
+       ((list* & path-hd path-tl &) path-cond))
+    (or (path-test path-hd expr)
+        (path-test path-tl expr)))
+  ///
+  (defthm correctness-of-path-test
+    (implies (and (pseudo-termp expr)
+                  (pseudo-termp path-cond)
+                  (alistp a)
+                  (ev-smtcp path-cond a)
+                  (path-test path-cond expr))
+             (ev-smtcp expr a))
+    :hints (("Goal"
+             :in-theory (e/d (path-test is-conjunct?)
+                             (implies-of-is-conjunct?
+                              consp-of-is-conjunct?
+                              symbol-listp
+                              pseudo-term-listp-of-symbol-listp
+                              acl2::symbol-listp-of-cdr-when-symbol-listp
+                              default-car default-cdr))))))
+
+(define path-test-list ((path-cond pseudo-termp)
+                        (expr-conj pseudo-termp))
+  :returns (ok booleanp)
+  :measure (acl2-count (pseudo-term-fix expr-conj))
+  (b* ((path-cond (pseudo-term-fix path-cond))
+       (expr-conj (pseudo-term-fix expr-conj))
+       ((unless (is-conjunct? expr-conj))
+        (path-test path-cond expr-conj))
+       ((if (equal expr-conj ''t)) t)
+       ((list & expr-hd expr-tl &) expr-conj)
+       (yes? (path-test path-cond expr-hd))
+       ((if yes?) (path-test-list path-cond expr-tl)))
+    nil))
+
+(defthm correctness-of-path-test-list
+  (implies (and (pseudo-termp expr-conj)
+                (pseudo-termp path-cond)
+                (alistp a)
+                (ev-smtcp path-cond a)
+                (path-test-list path-cond expr-conj))
+           (ev-smtcp expr-conj a))
+  :hints (("Goal"
+           :in-theory (e/d (path-test-list is-conjunct?)
+                           (implies-of-is-conjunct?
+                            consp-of-is-conjunct?
+                            symbol-listp
+                            pseudo-term-listp-of-symbol-listp
+                            acl2::symbol-listp-of-cdr-when-symbol-listp
+                            default-car default-cdr)))))
+
+#|
+(path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
+                '(if (integerp x) 't 'nil))
+(path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
+                '(if (rationalp x) 't 'nil))
+(path-test-list '(if (integerp x) (if (null x) 't 'nil) 'nil)
+                '(if x 't 'nil))
+(path-test-list '(if (if (integerp x)
+                         (if (null x) 't 'nil) 'nil)
+                     (rationalp x)
+                   'nil)
+                '(if x (if (integerp x) 't 'nil) 'nil))
+(path-test-list '(IF (IF (RATIONALP R1) 'T 'NIL)
+                     (IF (IF (RATIONAL-INTEGER-ALISTP AL)
+                             'T
+                             'NIL)
+                         'T
+                         'NIL)
+                     'NIL)
+                '(rational-integer-alistp al))
+|#

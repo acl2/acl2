@@ -49,12 +49,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Type equivalence essentially consists of
-     lifting of ispace equivalence (in array types),
+    "Type equivalence in [thesis] and [arxiv] essentially consists of
+     lifting of ispace equivalence (in array-kinded types),
      alpha equivalence of types with binders,
-     and congruence on all types:
-     see the inference rules in [thesis] and [arxiv].
-     For our formalization of Remora, and to be consistent with [impl],
+     and congruence on all types.
+     For our formalization of Remora,
      some additional inference rules are needed.")
    (xdoc::p
     "Besides equivalence of individual types,
@@ -73,18 +72,20 @@
      including the normalization ones,
      and thus neither symmetry nor transitivity is derivable.")
    (xdoc::p
-    "Next we have congruence for scalar types,
-     and congruence for array types,
+    "Next we have congruence for array types,
      which relies on ispace equivalence.
      The rule for array types in [thesis] and [arxiv]
      includes a premise for ispace equivalence,
      but, as noted in @(see ispace-equivalence),
      [thesis] and [arxiv] do not provide
      explicit inference rules for ispace equivalence.
-     We do, and we refer to the predicate defined by those rules.")
+     We do, and we refer to the predicate defined by those rules.
+     Scalar types and bracket types reduce to array types,
+     via separate rules described below.")
    (xdoc::p
     "We formulate congruence for unary function types.
-     N-ary function types reduce to unary ones,
+     N-ary function types reduce to unary ones
+     (or to the output types if N is 0),
      via separate rules described below.")
    (xdoc::p
     "For the same reason,
@@ -106,6 +107,11 @@
      an atom type variable and a shape variable with the same name.
      Rule @('array-var') lets us perform this reduction.")
    (xdoc::p
+    "A scalar type is just another form of
+     an array type with the same element type and no dimensions,
+     used to mark atom-kinded types that are lifted to array-kinded types.
+     The rule @('scalar') supports this reduction.")
+   (xdoc::p
     "A bracket type is sugar for an array type
      with the same element type and with the splice of the bracket's ispaces.
      The rule @('bracket') supports this reduction,
@@ -120,10 +126,10 @@
      (rule @('fun1'));
      and a function type with two or more inputs stands for
      a unary function type from the first input
-     to the scalar array type of
+     to the scalar type of
      the function type with the remaining inputs
      (rule @('fun2m')).
-     The scalar array type is needed because
+     The scalar type is needed because
      the function type with the remaining inputs has the atom kind,
      while the output of a unary function type must have the array kind.")
    (xdoc::p
@@ -131,51 +137,51 @@
      is sugar for a nesting of unary universal types:
      one with exactly two parameters stands for
      a unary universal type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the unary universal type of the second parameter
      (rule @('forall2')),
      and one with three or more parameters stands for
      a unary universal type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the n-ary universal type of the remaining parameters
      (rule @('forall3m')).
      The two rules are separate because
      an n-ary universal type cannot have just one parameter.
-     The scalar array types are needed for the same reason as
+     The scalar types are needed for the same reason as
      in the rules for n-ary function types.")
    (xdoc::p
     "An n-ary product type, which has two or more parameters,
      is sugar for a nesting of unary product types:
      one with exactly two parameters stands for
      a unary product type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the unary product type of the second parameter
      (rule @('pi2')),
      and one with three or more parameters stands for
      a unary product type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the n-ary product type of the remaining parameters
      (rule @('pi3m')).
      The two rules are separate because
      an n-ary product type cannot have just one parameter.
-     The scalar array types are needed for the same reason as
+     The scalar types are needed for the same reason as
      in the rules for n-ary function types.")
    (xdoc::p
     "An n-ary sum type, which has two or more parameters,
      is sugar for a nesting of unary sum types:
      one with exactly two parameters stands for
      a unary sum type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the unary sum type of the second parameter
      (rule @('sigma2')),
      and one with three or more parameters stands for
      a unary sum type of the first parameter
-     whose body is the scalar array type of
+     whose body is the scalar type of
      the n-ary sum type of the remaining parameters
      (rule @('sigma3m')).
      The two rules are separate because
      an n-ary sum type cannot have just one parameter.
-     The scalar array types are needed for the same reason as
+     The scalar types are needed for the same reason as
      in the rules for n-ary function types."))
 
   :preds ((type-eq type1 type2)
@@ -216,13 +222,6 @@
            (types-eq types1 types2)
            (types-eq types2 types3))
           (types-eq types1 types3))
-
-   ;; scalar type congruence:
-
-   (scalar ((typep type1)
-            (typep type2)
-            (type-eq type1 type2))
-           (type-eq (type-scalar type1) (type-scalar type2)))
 
    ;; array type congruence:
 
@@ -372,6 +371,12 @@
                        (tarr (type-var (type-var-atom name))
                              (ispace-shape (shape-var name)))))
 
+   ;; normalization of scalar types:
+
+   (scalar ((typep type))
+           (type-eq (type-scalar type)
+                    (tarr type (ispace-shape (shp)))))
+
    ;; normalization of bracket types:
 
    (bracket ((typep type)
@@ -397,8 +402,8 @@
            (typep type-out))
           (type-eq (type-funn (list* type-in1 type-in2 types-in) type-out)
                    (t-> type-in1
-                        (type-scalar-array
-                         (type-funn (cons type-in2 types-in) type-out)))))
+                        (type-scalar (type-funn (cons type-in2 types-in)
+                                                type-out)))))
 
    ;; normalization of n-ary universal types:
 
@@ -407,8 +412,7 @@
              (typep type))
             (type-eq (type-foralln (list param1 param2) type)
                      (type-forall param1
-                                  (type-scalar-array
-                                   (type-forall param2 type)))))
+                                  (type-scalar (type-forall param2 type)))))
 
    (forall3m ((type-varp param1)
               (type-varp param2)
@@ -417,7 +421,7 @@
               (typep type))
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
-                                   (type-scalar-array
+                                   (type-scalar
                                     (type-foralln (cons param2 params) type)))))
 
    ;; normalization of n-ary product types:
@@ -427,7 +431,7 @@
          (typep type))
         (type-eq (type-pin (list param1 param2) type)
                  (type-pi param1
-                          (type-scalar-array (type-pi param2 type)))))
+                          (type-scalar (type-pi param2 type)))))
 
    (pi3m ((ispace-varp param1)
           (ispace-varp param2)
@@ -436,7 +440,7 @@
           (typep type))
          (type-eq (type-pin (list* param1 param2 params) type)
                   (type-pi param1
-                           (type-scalar-array
+                           (type-scalar
                             (type-pin (cons param2 params) type)))))
 
    ;; normalization of n-ary sum types:
@@ -446,7 +450,7 @@
             (typep type))
            (type-eq (type-sigman (list param1 param2) type)
                     (type-sigma param1
-                                (type-scalar-array (type-sigma param2 type)))))
+                                (type-scalar (type-sigma param2 type)))))
 
    (sigma3m ((ispace-varp param1)
              (ispace-varp param2)
@@ -455,7 +459,7 @@
              (typep type))
             (type-eq (type-sigman (list* param1 param2 params) type)
                      (type-sigma param1
-                                 (type-scalar-array
+                                 (type-scalar
                                   (type-sigman (cons param2 params) type))))))
 
   :guard-hints
@@ -564,14 +568,6 @@
              (types-eq types1 types3))
     :use types-eq-trans
     :enable type-listp-when-types-eq)
-
-  ;; scalar type congruence:
-
-  (defruled type-eq-scalar!
-    (implies (type-eq type1 type2)
-             (type-eq (type-scalar type1) (type-scalar type2)))
-    :use type-eq-scalar
-    :enable typep-when-type-eq)
 
   ;; array type congruence:
 
@@ -725,6 +721,13 @@
                    (ispace-shape (shape-var name))))
     :use (:instance type-eq-array-var (name (str-fix name))))
 
+  ;; normalization of scalar types:
+
+  (defruled type-eq-scalar!
+    (type-eq (type-scalar type)
+             (tarr type (ispace-shape (shp))))
+    :use (:instance type-eq-scalar (type (type-fix type))))
+
   ;; normalization of bracket types:
 
   (defruled type-eq-bracket!
@@ -748,7 +751,7 @@
   (defruled type-eq-fun2m!
     (type-eq (type-funn (list* type-in1 type-in2 types-in) type-out)
              (t-> type-in1
-                  (type-scalar-array
+                  (type-scalar
                    (type-funn (cons type-in2 types-in) type-out))))
     :use (:instance type-eq-fun2m
                     (type-in1 (type-fix type-in1))
@@ -761,7 +764,7 @@
   (defruled type-eq-forall2!
     (type-eq (type-foralln (list param1 param2) type)
              (type-forall param1
-                          (type-scalar-array (type-forall param2 type))))
+                          (type-scalar (type-forall param2 type))))
     :use (:instance type-eq-forall2
                     (param1 (type-var-fix param1))
                     (param2 (type-var-fix param2))
@@ -771,7 +774,7 @@
     (implies (consp params)
              (type-eq (type-foralln (list* param1 param2 params) type)
                       (type-forall param1
-                                   (type-scalar-array
+                                   (type-scalar
                                     (type-foralln (cons param2 params) type)))))
     :use (:instance type-eq-forall3m
                     (param1 (type-var-fix param1))
@@ -784,7 +787,7 @@
   (defruled type-eq-pi2!
     (type-eq (type-pin (list param1 param2) type)
              (type-pi param1
-                      (type-scalar-array (type-pi param2 type))))
+                      (type-scalar (type-pi param2 type))))
     :use (:instance type-eq-pi2
                     (param1 (ispace-var-fix param1))
                     (param2 (ispace-var-fix param2))
@@ -794,7 +797,7 @@
     (implies (consp params)
              (type-eq (type-pin (list* param1 param2 params) type)
                       (type-pi param1
-                               (type-scalar-array
+                               (type-scalar
                                 (type-pin (cons param2 params) type)))))
     :use (:instance type-eq-pi3m
                     (param1 (ispace-var-fix param1))
@@ -807,7 +810,7 @@
   (defruled type-eq-sigma2!
     (type-eq (type-sigman (list param1 param2) type)
              (type-sigma param1
-                         (type-scalar-array (type-sigma param2 type))))
+                         (type-scalar (type-sigma param2 type))))
     :use (:instance type-eq-sigma2
                     (param1 (ispace-var-fix param1))
                     (param2 (ispace-var-fix param2))
@@ -817,7 +820,7 @@
     (implies (consp params)
              (type-eq (type-sigman (list* param1 param2 params) type)
                       (type-sigma param1
-                                  (type-scalar-array
+                                  (type-scalar
                                    (type-sigman (cons param2 params) type)))))
     :use (:instance type-eq-sigma3m
                     (param1 (ispace-var-fix param1))

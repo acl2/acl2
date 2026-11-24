@@ -1,0 +1,38 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "GRAPH")
+
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/min-max-defs" :dir :system)
+(include-book "kestrel/data/tset/cardinality-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/union-defs" :dir :system)
+
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
+
+(include-book "../edge-defs")
+(include-book "adj-list-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "edges"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defredundant
+  :names (labels-edges
+          adjacency-edges
+          adj-list-edges
+          adj-list-edges-to
+          ))

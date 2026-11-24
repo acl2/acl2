@@ -2405,6 +2405,30 @@
 ; variable, and add a ruling test that the value of this new variable is a
 ; member of the target, lst.
 
+; In V8.7 and earlier, this function contained soundness bugs that arose
+; because it sometimes applied LET-bindings (e.g., lambdas) twice.  In
+; particular, there are five calls of all-loop$-scion-quote-lambdas[-lst] below
+; on subterms.  Each call takes an alist binding local variables to values.
+; The all-loop$-scion-quote-quote-lambdas collects, instantiates, and returns
+; every loop$ scion call in the subterm.  But we then proceed to call
+; termination-machine... on those calls and we passed the same alist in again,
+; which caused the loop$ scion calls to be instantiated twice.  This was
+; discovered by AI, which generated four ways to cause the trouble (either by
+; rejecting a legitimate defun or accepting a non-terminating one and proving
+; nil); see these books in books/system/tests/.
+
+; loop-in-let-double-subst-rejects-valid-defun.lisp
+; loop-recursion-double-subst-clause-processor.lisp
+; loop-recursion-plain-target-subst.lisp
+; loop-recursion-double-subst-do-guard.lisp
+
+; So below, when you see calls of all-loop$-scion-quote-quote-lambdas[-lst] in
+; which alist is supplied, the nil alist is used in subsequent processing.  In
+; addition, in the case of a :plain loop$ recursion we extract a target to
+; process and explicitly apply the alist to it before passing the target to
+; all-loop$-scion-quote-lambdas, so in that case we pass nil to that call of
+; all-loop$-scion-quote-lambdas.
+
   (cond
    ((or (variablep body)
         (fquotep body))
@@ -2442,7 +2466,7 @@
            loop$-recursion
            names
            (all-loop$-scion-quote-lambdas-lst (fargs body) alist)
-           alist
+           nil
            tests
            ruler-extenders
            avoid-vars))
@@ -2503,7 +2527,7 @@
            loop$-recursion
            names
            (all-loop$-scion-quote-lambdas (fargn body 1) alist)
-           alist
+           nil
            tests
            ruler-extenders
            avoid-vars))
@@ -2576,6 +2600,10 @@
                  (lamb-body (remove-guard-holders-weak
                              (lambda-object-body lamb)
                              nil))
+
+; Note that target has already had alist applied, so we avoid double
+; substitution when we use target below.
+
                  (target (sublis-var alist (fargn body 2)))
                  (newvar (genvar v "NV" 0 avoid-vars))
                  (avoid-vars (cons newvar avoid-vars))
@@ -2595,8 +2623,8 @@
                     (termination-machine-rec-for-list
                      loop$-recursion
                      names
-                     (all-loop$-scion-quote-lambdas target alist)
-                     alist
+                     (all-loop$-scion-quote-lambdas target nil)
+                     nil
                      tests
                      ruler-extenders
                      avoid-vars))))
@@ -2629,7 +2657,7 @@
 ; The following collects the top-level loop$-scion calls on quoted lambdas in
 ; the globals and the target of a fancy loop$.
                      (all-loop$-scion-quote-lambdas-lst (cdr (fargs body)) alist)
-                     alist
+                     nil
                      tests
                      ruler-extenders
                      avoid-vars))))
@@ -2648,13 +2676,6 @@
         loop$-recursion
         names
         (all-loop$-scion-quote-lambdas body alist)
-
-; In earlier versions of this code the nil, below, was alist.  But alist is
-; applied by all-loop$-scion-quote-lambdas to the body in question, and the
-; only use of alist in termination-machine-rec-for-list and its subrs is to
-; apply it the arg above, so we do not want to instantiate the body a second
-; time.  This bug was found by Eric Smith and Claude.
-
         nil
         tests
         ruler-extenders

@@ -612,7 +612,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap type-completions
+(fty::deftmap type-completions
   :short "A map from @(see UID)s to struct/union members."
   :long
   (xdoc::topstring
@@ -646,7 +646,7 @@
     tag/members
     :tagged (b* ((uid (uid-fix uid))
                  (completions (type-completions-fix completions))
-                 ((mv foundp members) (treemap::lookup? uid completions)))
+                 ((mv foundp members) (tmap::lookup? uid completions)))
               (if foundp
                   (mv nil members)
                 (mv t nil)))

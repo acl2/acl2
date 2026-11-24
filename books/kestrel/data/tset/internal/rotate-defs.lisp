@@ -1,0 +1,22 @@
+; Copyright (C) 2025-2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TSET")
+
+(include-book "tree-defs")
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "rotate"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defredundant
+  :names (rotate-left
+          rotate-right
+          tree-node-rotate-left
+          tree-node-rotate-right))

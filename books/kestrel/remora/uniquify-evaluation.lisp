@@ -231,6 +231,9 @@
            expr-value-list-groundp-of-cons
            expr-value-list-groundp-when-atom))
 
+; Redundant when VALUE-GROUNDNESS already proves it (disabled there).
+(in-theory (enable expr-value-list-groundp-of-expr-value-base-list))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Membership form of the invariant, from which its monotonicity in the
 ; support set and its preservation under the binder extensions follow (a

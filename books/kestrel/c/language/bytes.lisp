@@ -1,0 +1,105 @@
+; C Library
+;
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "C")
+
+(include-book "implementation-environments/top")
+
+(include-book "std/util/defprojection" :dir :system)
+
+(acl2::controlled-configuration)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ bytes
+  :parents (language)
+  :short "Bytes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "In C, a byte consists of @('CHAR_BIT') bits (8 or more)
+     [C17:5.2.4.2.1/1] [C23:5.3.5.3.2],
+     whose number is captured in @(see uchar-formats) in our formalization.
+     Here we provide recognizers and fixers for bytes, and lists thereof,
+     parameterized by an implementation environment."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define bytep (x (ienv ienvp))
+  :returns (yes/no booleanp)
+  :short "Recognize a byte."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We model a byte as a natural number
+     not exceeding the maximum value of @('unsigned char')."))
+  (and (natp x)
+       (<= x (ienv->uchar-max ienv)))
+
+  ///
+
+  (defrule not-bytep-of-nil
+    (not (bytep nil ienv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-fix ((byte (bytep byte ienv)) (ienv ienvp))
+  :returns (fixed-byte (bytep fixed-byte ienv)
+                       :hints (("Goal" :in-theory (enable bytep))))
+  :short "Fixer for @(tsee bytep)."
+  (mbe :logic (if (bytep byte ienv) byte 0)
+       :exec byte)
+
+  ///
+
+  (defrule byte-fix-when-bytep
+    (implies (bytep byte ienv)
+             (equal (byte-fix byte ienv)
+                    byte))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist byte-listp (x ienv)
+  :guard (ienvp ienv)
+  :short "Recognize lists of bytes."
+  (bytep x ienv)
+  :true-listp t
+  :elementp-of-nil nil
+
+  ///
+
+  (fty::deffixequiv byte-listp
+    :args ((ienv ienvp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define byte-list-fix ((bytes (byte-listp bytes ienv)) (ienv ienvp))
+  :returns (fixed-bytes (byte-listp fixed-bytes ienv))
+  :short "Fixer for @(tsee byte-listp)."
+  (mbe :logic (cond ((endp bytes) nil)
+                    (t (cons (byte-fix (car bytes) ienv)
+                             (byte-list-fix (cdr bytes) ienv))))
+       :exec bytes)
+  :verify-guards :after-returns
+  :guard-hints (("Goal" :induct (len bytes) :in-theory (enable len)))
+
+  ///
+
+  (std::defprojection byte-list-fix (x ienv)
+    (byte-fix x ienv)
+    :already-definedp t)
+
+  (defrule byte-list-fix-when-byte-listp
+    (implies (byte-listp bytes ienv)
+             (equal (byte-list-fix bytes ienv)
+                    bytes))
+    :induct t))

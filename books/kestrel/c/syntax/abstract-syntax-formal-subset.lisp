@@ -356,6 +356,8 @@
      :tycompat nil
      :offsetof nil
      :va-arg nil
+     :convertvector nil
+     :bit-cast nil
      :extension nil)
     :measure (expr-count expr))
 

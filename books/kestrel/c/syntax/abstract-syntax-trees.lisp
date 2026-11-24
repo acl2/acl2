@@ -14,7 +14,7 @@
 (include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
-(include-book "kestrel/fty/deftreeset" :dir :system)
+(include-book "kestrel/fty/deftset" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -211,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreeset ident-set
+(fty::deftset ident-set
   :short "Fixtype of sets of identifiers."
   :elt-type ident
   :pred ident-setp
@@ -221,14 +221,14 @@
   (defrulel ident-setp-of-insert-all
     (implies (and (ident-listp idents)
                   (ident-setp set))
-             (ident-setp (treeset::insert-all idents set)))
+             (ident-setp (tset::insert-all idents set)))
     :induct t
-    :enable treeset::insert-all)
+    :enable tset::insert-all)
 
   (defrule ident-setp-of-from-list
     (implies (ident-listp idents)
-             (ident-setp (treeset::from-list idents)))
-    :enable treeset::from-list))
+             (ident-setp (tset::from-list idents)))
+    :enable tset::from-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1738,7 +1738,19 @@
        because its second argument is a type name, not an expression.
        The first argument is an expression.")
      (xdoc::p
-      "As a GCC extesntion, we include
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_convertvector').
+       This is not a regular function,
+       because its second argument is a type name, not an expression.
+       The first argument is an expression.")
+     (xdoc::p
+      "As a Clang extension, we include calls of
+       the built-in function @('__builtin_bit_cast').
+       This is not a regular function,
+       because its first argument is a type name, not an expression.
+       The second argument is an expression.")
+     (xdoc::p
+      "As a GCC extension, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
     (:ident ((ident ident)
@@ -1805,7 +1817,6 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    ;; GCC extensions:
     (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
@@ -1813,6 +1824,10 @@
                 (member member-designor)))
     (:va-arg ((list expr)
               (type tyname)))
+    (:convertvector ((vec expr)
+                     (type tyname)))
+    (:bit-cast ((type tyname)
+                (arg expr)))
     (:extension ((expr expr)))
     :pred exprp
     :layout :fulltree
@@ -1983,6 +1998,9 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       ".")
      (xdoc::p
+      "We also include the GCC extension @('__bf16'),
+       which is a floating type.")
+     (xdoc::p
       "We also include the GCC extension @('__builtin_va_list'),
        whch is a type.
        Although we did not see it in the GCC documentation,
@@ -1993,8 +2011,10 @@
       "As a GCC extension, we allow a structure type specifier with no members,
        and with an optional name; see the ABNF grammar.")
      (xdoc::p
-      "As a GCC extension, we include @('typeof'),
-       along with its variants @('__typeof') and @('__typeof__').
+      "We include @('typeof'),
+       which is standard in C23 [C23:6.7.3.6]
+       and a GCC extension in earlier versions of C,
+       along with its GCC variants @('__typeof') and @('__typeof__').
        The argument may be an expression or a type name,
        and therefore we also need to include the ambiguous possibility.")
      (xdoc::p
@@ -2031,6 +2051,7 @@
     (:float64x ())
     (:float128 ())
     (:float128x ())
+    (:bf16 ())
     (:builtin-va-list ())
     (:struct-empty ((attribs attrib-spec-list)
                     (name? ident-option)

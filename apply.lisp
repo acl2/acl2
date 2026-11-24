@@ -1803,6 +1803,161 @@
           (cond (msg (mv msg nil nil))
                 (t (mv nil nil badge))))))))
 
+(defun collect-non-defun-constraints (constraints origins)
+
+; The two args are a list of constraints and a list of origins, as collected by
+; constraint-info+ (see constraint-info for a comment).  The two lists are the
+; same length.  We collect all the constraints except the one(s) attributed to
+; DEFUN.
+
+  (declare (xargs :mode :program))
+  (cond ((endp constraints) nil)
+        ((and (consp (car origins))
+              (eq (car (car origins)) 'DEFUN))
+         (collect-non-defun-constraints (cdr constraints)
+                                        (cdr origins)))
+        (t (cons (car constraints)
+                 (collect-non-defun-constraints (cdr constraints)
+                                                (cdr origins))))))
+
+(defun collect-constrained-subr-triples1 (fn subrs wrld triples)
+
+; Fn's body calls all the fnnames in subrs.  We collect (fn g g-constraints)
+; for every g in subrs that is constrained, where g-constraints is the list of
+; constraints on g.  g-constraints is always a list and every element is a term
+; -- UNLESS one of the constraints is *unknown-constraints* in which case
+; g-constraints is a singleton list containing that token.
+
+; Warning: The triples we collect are different from the triples
+; constraint-info+ returns, even though we use constraint-info+ below.
+
+; Here is a description, from constraint-info, of the triples (mv flg x
+; origins) it returns and we transform into the triples (list fn g
+; g-constraints) we want.
+
+; Repeating more succinctly: when flg is nil, x is a term and origins is a
+; single token.  When flg is non-nil it is a function name, and one of two
+; cases obtains.  First, x satisfies unknown-constraints-p and origins is nil,
+; or, second, x is a list of terms and origins is an equally long list of
+; origin tokens.
+
+  (declare (xargs :mode :program))
+  (cond ((endp subrs) triples)
+        ((getpropc (car subrs) 'constrainedp nil wrld)
+         (let ((g (car subrs)))
+           (mv-let (flg x origins) 
+             (constraint-info+ g wrld)
+             (cond
+              ((null flg)
+; Origins is either (DEFUN ...) or (DEFCHOOSE ...).
+               (cond ((eq (car origins) 'DEFUN)
+                      (collect-constrained-subr-triples1
+                       fn (cdr subrs) wrld triples))
+                     (t (collect-constrained-subr-triples1
+                         fn (cdr subrs) wrld
+                         (cons (list fn g (list x)) triples)))))
+              ((unknown-constraints-p x)
+
+; If g satisfies unknown constraints, we quit scanning for the constraints of
+; other subrs because having unknown constraints in the answer will cause us to
+; reject the warranting of fn.  We ignore the previously collected triples and
+; just return the singleton list containing this unknown.
+
+               (list (list fn g x)))
+              (t (let ((g-constraints
+                        (collect-non-defun-constraints x origins)))
+                   (collect-constrained-subr-triples1
+                    fn (cdr subrs) wrld
+                    (cons (list fn g g-constraints) triples))))))))
+        (t (collect-constrained-subr-triples1 fn (cdr subrs) wrld triples))))
+
+(defun collect-constrained-subr-triples (fn wrld)
+
+; For every g in the body of fn we collect the triple (fn g g-constraints),
+; where g is a constrained function called by fn and g-constraints is list of
+; constraint terms on g.  However, there is a special case: if any g called by
+; fn has unknown constraints, we return ((fn g x)), where
+; (unknown-constraints-p x).  That is, if some called g has unknown
+; constraints, we do not collect info on every constrained g called by fn.
+
+  (declare (xargs :mode :program))
+  (collect-constrained-subr-triples1 fn
+                                     (all-fnnames (body fn nil wrld))
+                                     wrld nil))
+
+; Recap of where we are in the plan: We are trying to decide whether fn can be
+; warranted.  It has passed the regular test on its measure and the check for
+; bad ancestors.  But now we're considering the constraints on the functions it
+; calls.  We've collect a list of constrained-subr-triples, each element of the
+; form (fn g g-constraints), where g is a constrained function called in the
+; body of fn and g-constraints is its contraints.  We want to know whether
+; apply$ et al are ancestral in any of these constraints.  If there is a g
+; whose constraints are built on apply$, etc., we refuse to warrant fn.  To
+; this end, we now find the first such g.
+
+(mutual-recursion
+
+(defun apply$-reachablep (term wrld seen)
+
+; We answer the question: is apply$ (actually, any fn in
+; *apply$-userfn-callers*) reachable from the bodies of the function symbols
+; mentioned in term.  We return (mv flg seen), where flg is t if apply$ is
+; reachable and nil otherwise.  Seen is an artifact that can be ignored at the
+; top-level.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((variablep term) (mv nil seen))
+   ((fquotep term) (mv nil seen))
+   ((flambdap (ffn-symb term))
+    (mv-let (flg seen)
+      (apply$-reachablep (lambda-body (ffn-symb term))
+                         wrld seen)
+      (if flg
+          (mv t seen)
+          (apply$-reachablep-lst (fargs term) wrld seen))))
+   ((member-eq (ffn-symb term) seen)
+    (mv nil seen))
+   ((member-eq (ffn-symb term) *apply$-userfn-callers*)
+    (mv t seen))
+   (t (mv-let (flg seen)
+        (apply$-reachablep (body (ffn-symb term) nil wrld)
+                           wrld
+                           (cons (ffn-symb term) seen))
+        (if flg
+            (mv t seen)
+            (apply$-reachablep-lst (fargs term) wrld seen))))))
+
+(defun apply$-reachablep-lst (terms wrld seen)
+  (cond ((endp terms) (mv nil seen))
+        (t (mv-let (flg seen)
+             (apply$-reachablep (car terms)
+                                wrld
+                                seen)
+             (if flg
+                 (mv t seen)
+                 (apply$-reachablep-lst (cdr terms) wrld seen)))))))
+
+(defun apply$-reachable-in-constraints (triples wrld seen)
+
+; Triples is a list of triples of the form (fn g g-constraints), where g is a
+; constrained function called in the body of fn and g-constraints is its
+; contraints.  We want to know whether apply$ et al are ancestral in any of
+; these constraints.  We return (mv flg seen), where flg is nil if apply$ is
+; not reachable and is the g of the first triple we encounter such that apply$
+; is reachable from the g's constraints.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((endp triples) (mv nil seen))
+   (t (mv-let (flg seen)
+        (apply$-reachablep-lst (caddr (car triples))
+                               wrld
+                               seen)
+        (if flg
+            (mv (cadr (car triples)) seen)
+            (apply$-reachable-in-constraints (cdr triples) wrld seen))))))
+
 (defun chk-acceptable-defwarrant1 (fn ens wrld)
 
 ; See chk-acceptable-defwarrant.
@@ -1834,7 +1989,6 @@
     (mv t (msg "Defwarrant expects a defined, :logic mode function symbol as ~
                 its argument and ~x0 is not one."
                fn)))
-
 ; Next, we need to find out if the justification of fn, if any, is dependent on
 ; apply$-userfn.  If so, fn can't be warranted UNLESS fn is do$!
 
@@ -1857,38 +2011,69 @@
                      fn
                      bad-fn)))
          (t
-          (let ((body (body fn nil wrld)))
+; Next we check that all constrained functions called by fn are free of
+; dependence on apply$.
+
+          (let ((constrained-subr-triples
+                 (collect-constrained-subr-triples fn wrld)))
+            (cond
+             ((and (consp constrained-subr-triples)
+                   (null (cdr constrained-subr-triples))
+                   (unknown-constraints-p
+                    (caddr (car constrained-subr-triples))))
+
+              (mv t (msg "~x0 cannot be warranted because it calls the ~
+                          constrained function ~x1 which has unknown ~
+                          constraints."
+                         fn
+                         (cadr (car constrained-subr-triples)))))
+             (t
+              (mv-let (flg seen)
+                (apply$-reachable-in-constraints
+                 constrained-subr-triples
+                 wrld
+                 nil)
+                (declare (ignore seen))
+                (cond
+                 (flg
+                  (mv t (msg "~x0 cannot be warranted because it calls the ~
+                              constrained function ~x1 whose constraints ~
+                              depend on apply$ or apply$-userfn."
+                             fn
+                             flg)))
+                 (t
+                  (let ((body (body fn nil wrld)))
 
 ; At this point we know fn is a candidate for either G1 or G2.  It is G1 if its
 ; body doesn't depend on apply$-userfn.  Otherwise, it is G2 if it meets
 ; certain constraints.
 
-            (cond
-             ((null (bad-ancestor
-                     nil ; j-flg (we no longer care about the justification)
-                     body
-                     *apply$-userfn-callers*
-                     wrld))
+                    (cond
+                     ((null (bad-ancestor
+                             nil ; j-flg (we no longer care about the justification)
+                             body
+                             *apply$-userfn-callers*
+                             wrld))
 
 ; Fn is in G1, so we warrant it.
 
-              (mv nil nil)) ; no events necessary
+                      (mv nil nil)) ; no events necessary
 
 ; Fn will be in G2 if we warrant it.  But its justification must fit within
 ; the model's justification of the apply clique.
 
-             (t
-              (mv-let
-                (flg val)
-                (g2-justification fn ens wrld)
+                     (t
+                      (mv-let
+                        (flg val)
+                        (g2-justification fn ens wrld)
 
 ; If flg is t, val is either nil or a list of two events that must be admitted
 ; to justify warranting fn.  If flg nil, val is an error msg and we signal a
 ; soft error.
 
-                (cond
-                 (flg (mv nil val)) ; two events to admit
-                 (t (mv t val)))))))))))))
+                        (cond
+                         (flg (mv nil val)) ; two events to admit
+                         (t (mv t val)))))))))))))))))))
 
 (defun badge-table-guard1 (new-lst old-lst ens wrld)
 

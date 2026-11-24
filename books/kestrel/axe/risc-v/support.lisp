@@ -1,6 +1,6 @@
 ; Support for proofs about 32-bit RISC-V code
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,6 +21,7 @@
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (include-book "kestrel/bv/bvcat2" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
 
 (in-theory (disable floor ash))
 
@@ -237,3 +238,25 @@
 
 
 ;todo: write of the read rule for mem
+
+(local
+  (defthmd bvand-of-4294967294
+    (equal (bvand 32 4294967294 x)
+           (bvcat 31 (slice 31 1 x) 1 0))
+    :hints (("Goal" :use (:instance acl2::split-bv (x (bvchop 32 x)) (n 32) (m 1))))))
+
+;; These have to do with alignment of addresses:
+
+(defthm bvand-of-4294967294-when-equal-of-0-and-bvchop
+  (implies (and (equal 0 (bvchop free x))
+                (posp free))
+           (equal (bvand 32 4294967294 x)
+                  (bvchop 32 x)))
+  :hints (("Goal" :in-theory (enable bvand-of-4294967294))))
+
+(defthm bvand-of-4294967294-when-equal-of-0-and-bvchop-alt
+  (implies (and (equal (bvchop free x) 0)
+                (posp free))
+           (equal (bvand 32 4294967294 x)
+                  (bvchop 32 x)))
+  :hints (("Goal" :in-theory (enable bvand-of-4294967294))))

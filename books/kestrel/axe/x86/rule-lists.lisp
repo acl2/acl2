@@ -2130,7 +2130,7 @@
 
     ;; some of these might become unnecesary after we switch to hiding the signed values
     ;x86isa::add-to-*ip-of-*64-bit-mode*-safe
-    x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ; could generalize
+    x86isa::signed-byte-p-64-of-+-when-canonical-address-p-and-signed-byte-p-16 ; could generalize
     ;;acl2::logext-of-plus-of-logext
     ;;write-of-logext-arg2
     ;;set-rip-of-+-of-logext

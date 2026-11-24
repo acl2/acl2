@@ -1402,6 +1402,11 @@
      (eofp erp keyp form state)
      (let ((in-verify-flg (f-get-global 'in-verify-flg state)))
        (cond (in-verify-flg
+
+; The following code can get us back into the proof-builder by way of the use
+; of (invoke-restart 'continue) in our-abort, even when there is a raw Lisp
+; error, unless we are in a recursive LD.
+
               (pprogn (f-put-global 'in-verify-flg nil state)
                       (cond ((and (eql (f-get-global 'ld-level state) 1)
                                   (eql in-verify-flg 1)
@@ -2063,49 +2068,60 @@
 ;  :hints (("Goal" :do-not '(preprocess))))
 
   (let ((alist (if (assoc-eq 'ld-error-action alist)
-                  alist
-                (acons 'ld-error-action
-                       (let ((action (ld-error-action state)))
-                         (if (and (consp action)
-                                  (eq (car action) :exit))
-                             action
-                           :return!))
-                       alist))))
-    (cond
-     ((not (f-get-global 'ld-okp state))
-      (er soft 'ld
-          "It is illegal to call LD in this context.  See :DOC ~
-           calling-ld-in-bad-contexts."))
-     (t
-      #-acl2-loop-only
-      (cond (*load-compiled-stack*
-             (error "It is illegal to call LD while loading a compiled book, ~
-                     in this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
-                    (book-name-to-filename (caar *load-compiled-stack*)
-                                           (w state)
-                                           'ld)))
-            ((= *ld-level* 0)
-             (return-from
-              ld-fn
-              (let ((complete-flg nil))
-                (unwind-protect
-                    (mv-let (erp val state)
-                      (ld-fn0 alist state bind-flg)
-                      (progn (setq complete-flg t)
-                             (mv erp val state)))
-                  (when (and (not complete-flg)
-                             (not *acl2-panic-exit-status*))
-                    (fms "***NOTE***: An interrupt or error has occurred in ~
-                          the process of cleaning up from an earlier ~
-                          interrupt or error.  This is likely to leave you at ~
-                          the raw Lisp prompt after you abort to the top ~
-                          level.  If so, then execute ~x0 to re-enter the ~
-                          ACL2 read-eval-print loop.~|~%"
-                         (list (cons #\0 '(lp)))
-                         *standard-co*
-                         state
-                         nil)))))))
-      (ld-fn0 alist state bind-flg)))))
+                   alist
+                 (acons 'ld-error-action
+                        (let ((action (ld-error-action state)))
+                          (if (and (consp action)
+                                   (eq (car action) :exit))
+                              action
+                            :return!))
+                        alist)))
+        (in-verify-flg (f-get-global 'in-verify-flg state)))
+    (er-let* ((wormhole-p
+               (if in-verify-flg      ; optimization
+                   (wormhole-p state) ; allow brr etc.
+                 (value nil))))
+      (cond
+       ((and in-verify-flg
+             (not wormhole-p))
+        (er soft 'ld
+            "It is illegal to call LD (directly or indirectly) when inside ~
+             the proof-builder."))
+       ((not (f-get-global 'ld-okp state))
+        (er soft 'ld
+            "It is illegal to call LD (directly or indirectly) in this ~
+             context.  See :DOC calling-ld-in-bad-contexts."))
+       (t
+        #-acl2-loop-only
+        (cond (*load-compiled-stack*
+               (error "It is illegal to call LD while loading a compiled ~
+                       book, in this case:~%~a .~%See :DOC ~
+                       calling-ld-in-bad-contexts."
+                      (book-name-to-filename (caar *load-compiled-stack*)
+                                             (w state)
+                                             'ld)))
+              ((= *ld-level* 0)
+               (return-from
+                ld-fn
+                (let ((complete-flg nil))
+                  (unwind-protect
+                      (mv-let (erp val state)
+                        (ld-fn0 alist state bind-flg)
+                        (progn (setq complete-flg t)
+                               (mv erp val state)))
+                    (when (and (not complete-flg)
+                               (not *acl2-panic-exit-status*))
+                      (fms "***NOTE***: An interrupt or error has occurred in ~
+                            the process of cleaning up from an earlier ~
+                            interrupt or error.  This is likely to leave you ~
+                            at the raw Lisp prompt after you abort to the top ~
+                            level.  If so, then execute ~x0 to re-enter the ~
+                            ACL2 read-eval-print loop.~|~%"
+                           (list (cons #\0 '(lp)))
+                           *standard-co*
+                           state
+                           nil)))))))
+        (ld-fn0 alist state bind-flg))))))
 
 (defmacro ld (standard-oi
               &key
@@ -3747,7 +3763,7 @@
           (value val))
          (t (mv t nil state)))))
 
-(defun ld-simple (forms state)
+(defun ld-simple (forms ctx state)
 
 ; This is a considerable simplification of ld-fn (and ld-fn0, ld-fn1,
 ; ld-fn-body, ld-loop, and especially ld-read-eval-print), which doesn't
@@ -3771,7 +3787,11 @@
                       (ld-query-control-alist
                        (cons '(:redef :y)
                              (ld-query-control-alist state))))
-                     (ld-loop-simple state)))
+                     (cond ((f-get-global 'in-verify-flg state)
+                            (er soft ctx
+                                "It is illegal to call LD when inside the ~
+                                 proof-builder."))
+                           (t (ld-loop-simple state)))))
 
 (defun puff-fn1 (cd ctx state)
 
@@ -3858,7 +3878,7 @@
                     (er-progn
                      (state-global-let*
                       ((guard-checking-on t)) ; agree with include-book
-                      (ld-simple cmds state))
+                      (ld-simple cmds ctx state))
                      (value (cons i
                                   (- (absolute-to-relative-command-number
                                       (max-absolute-command-number (w state))

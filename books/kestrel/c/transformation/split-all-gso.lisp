@@ -189,7 +189,7 @@
             :typedef (init-declor-list-find-gso-candidate declon.declors)
             :otherwise nil)))
      (if (and ident?
-              (treeset::in ident? blacklist))
+              (tset::in ident? blacklist))
          nil
        ident?))
    :statassert nil))
@@ -265,7 +265,7 @@
              (c$::trans-unit-vinfo->table-end (c$::trans-unit->info tunit))))
           ((when erp)
            (trans-unit-find-gso-candidate0 tunit
-                                          (treeset::insert gso blacklist)
+                                          (tset::insert gso blacklist)
                                           (- steps 1)))
           ((unless tag?)
            (reterr t))
@@ -352,7 +352,7 @@
                                          tunits))
           ((when erp)
            (trans-ensemble-split-any-gso0 tunits
-                                              (treeset::insert gso blacklist)
+                                              (tset::insert gso blacklist)
                                               (- steps 1))))
        (retok blacklist tunits$))
      :measure (nfix steps)
@@ -364,7 +364,8 @@
 (define trans-ensemble-split-all-gso
   ((tunits trans-ensemblep)
    (blacklist ident-setp)
-   (ienv c$::ienvp))
+   (ienv c$::ienvp)
+   (strict-merge booleanp))
   :guard (c$::trans-ensemble-annop tunits)
   :returns (mv (er? maybe-msgp)
                (blacklist$ ident-setp)
@@ -373,6 +374,7 @@
    tunits
    blacklist
    ienv
+   strict-merge
    (acl2::the-fixnat (- (expt 2 acl2::*fixnat-bits*) 1)))
 
   :prepwork
@@ -380,6 +382,7 @@
      ((tunits trans-ensemblep)
       (blacklist ident-setp)
       (ienv c$::ienvp)
+      (strict-merge booleanp)
       (steps :type #.acl2::*fixnat-type*))
      :guard (c$::trans-ensemble-annop tunits)
      :returns (mv (er? maybe-msgp)
@@ -403,13 +406,14 @@
           ((erp tunits$)
            (c$::dimb-trans-ensemble tunits$ ienv nil))
           ((erp tunits$)
-           (c$::valid-trans-ensemble tunits$ ienv nil))
+           (c$::valid-trans-ensemble tunits$ ienv strict-merge nil))
           ;; TODO: c$::valid-trans-ensemble should return an annop
           ((unless (c$::trans-ensemble-annop tunits$))
            (retmsg$ "Invalid translation ensemble.")))
        (trans-ensemble-split-all-gso0 tunits$
                                           blacklist
                                           ienv
+                                          strict-merge
                                           (- steps 1)))
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable o< o-finp nfix)))
@@ -427,7 +431,8 @@
        ((erp blacklist tunits)
         (trans-ensemble-split-all-gso code.trans-units
                                           blacklist
-                                          code.ienv)))
+                                          code.ienv
+                                          code.strict-merge)))
     (retok blacklist (change-code-ensemble code :trans-units tunits)))
   :guard-hints (("Goal" :in-theory (enable* c$::abstract-syntax-annop-rules))))
 

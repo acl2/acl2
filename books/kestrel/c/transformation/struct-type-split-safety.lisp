@@ -329,8 +329,8 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((when (treeset::in tystr-tag/mems.tag
-                                        (ident-set-fix tags)))
+       :tagged (b* (((when (tset::in tystr-tag/mems.tag
+                                     (ident-set-fix tags)))
                      nil)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -340,11 +340,11 @@
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
                     ((mv foundp members)
-                     (treemap::lookup? uid
-                                       (c$::type-completions-fix completions)))
+                     (tmap::lookup? uid
+                                    (c$::type-completions-fix completions)))
                     ((unless foundp) nil)
-                    (tags (treeset::insert tystr-tag/mems.tag
-                                           (ident-set-fix tags))))
+                    (tags (tset::insert tystr-tag/mems.tag
+                                        (ident-set-fix tags))))
                  (type-struni-member-list-may-refer-to-struct-spec-p
                   members spec vtable completions tags (1- limit)))
        :untagged (type-struni-member-list-may-refer-to-struct-spec-p
@@ -669,8 +669,8 @@
     (b* (((when (zp limit)) (raise "Internal error: limit exhausted.")))
       (type-struni-tag/members-case
        tystr-tag/mems
-       :tagged (b* (((when (treeset::in tystr-tag/mems.tag
-                                        (ident-set-fix tags)))
+       :tagged (b* (((when (tset::in tystr-tag/mems.tag
+                                     (ident-set-fix tags)))
                      t)
                     ((mv info &)
                      (c$::valid-lookup-tag tystr-tag/mems.tag vtable))
@@ -680,11 +680,11 @@
                             tystr-tag/mems.tag vtable))
                     (uid (c$::valid-tag-info->uid info))
                     ((mv foundp members)
-                     (treemap::lookup? uid
-                                       (c$::type-completions-fix completions)))
+                     (tmap::lookup? uid
+                                    (c$::type-completions-fix completions)))
                     ((unless foundp) t)
-                    (tags (treeset::insert tystr-tag/mems.tag
-                                           (ident-set-fix tags))))
+                    (tags (tset::insert tystr-tag/mems.tag
+                                        (ident-set-fix tags))))
                  (type-struni-member-list-sts-safep members
                                                     nested
                                                     spec
@@ -1249,8 +1249,10 @@
    (xdoc::p
     "We reject
      @('__builtin_types_compatible_p'),
-     @('__builtin_offsetof'), and
-     @('__builtin_va_arg')
+     @('__builtin_offsetof'),
+     @('__builtin_va_arg'),
+     @('__builtin_convertvector'), and
+     @('__builtin_bit_cast')
      out of caution for now.")
    (xdoc::p
     "An expression preceded by @('__extension__') is safe iff
@@ -1413,6 +1415,8 @@
    (expr :tycompat (sts-reject (expr-fix expr)))
    (expr :offsetof (sts-reject (expr-fix expr)))
    (expr :va-arg (sts-reject (expr-fix expr)))
+   (expr :convertvector (sts-reject (expr-fix expr)))
+   (expr :bit-cast (sts-reject (expr-fix expr)))
    (type-spec :atomic (and (tyname-sts-safep type-spec.type
                                              spec
                                              vtable

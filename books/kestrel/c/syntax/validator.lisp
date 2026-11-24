@@ -26,10 +26,11 @@
 (include-book "translation-unit-comparison")
 (include-book "types-compatibility")
 
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "kestrel/data/treemap/iter" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -186,9 +187,9 @@
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
        (new-completions
-        (treemap::update (uid-fix uid)
-                         (type-struni-member-list-fix members)
-                         table.completions)))
+        (tmap::update (uid-fix uid)
+                      (type-struni-member-list-fix members)
+                      table.completions)))
     (change-vstate vstate
                    :table (change-valid-table table
                                               :completions new-completions))))
@@ -289,8 +290,8 @@
      for an identifier with external linkage
      which has been declared in any scope of the translation unit.
      See @(see valid-table)."))
-  (treemap::lookup (ident-fix ident)
-                   (valid-table->externals (vstate->table vstate))))
+  (tmap::lookup (ident-fix ident)
+                (valid-table->externals (vstate->table vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,7 +361,7 @@
        ((valid-table table) vstate.table)
        (new-info (make-valid-ext-info :type type))
        (new-externals
-        (treemap::update (ident-fix ident) new-info table.externals)))
+        (tmap::update (ident-fix ident) new-info table.externals)))
     (change-vstate vstate
                    :table (change-valid-table table
                                               :externals new-externals))))
@@ -402,9 +403,9 @@
         (vstate-fix vstate))
        (scope (car table.scopes))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (treemap::update (ident-fix ident)
-                                       (valid-ord-info-fix info)
-                                       ord-scope))
+       (new-ord-scope (tmap::update (ident-fix ident)
+                                    (valid-ord-info-fix info)
+                                    ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (cons new-scope (cdr table.scopes)))
        (table (change-valid-table table :scopes new-scopes))
@@ -451,9 +452,9 @@
         (irr-vstate))
        (scope (car (last scopes)))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (treemap::update (ident-fix ident)
-                                       (valid-ord-info-fix info)
-                                       ord-scope))
+       (new-ord-scope (tmap::update (ident-fix ident)
+                                    (valid-ord-info-fix info)
+                                    ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (append (butlast scopes 1) (list new-scope)))
        (table (change-valid-table table :scopes new-scopes))
@@ -550,8 +551,8 @@
        ((mv composite completions & & next-uid-num)
         (type-composite x y
                         (vstate->completions vstate)
-                        (treemap::empty)
-                        (treeset::empty)
+                        (tmap::empty)
+                        (tset::empty)
                         (vstate->filepath vstate)
                         vstate.next-uid-num))
        (table (change-valid-table vstate.table :completions completions)))
@@ -603,11 +604,11 @@
 (defirrelevant irr-valid-merge-state
   :short "An irrelevant validator merge state."
   :type valid-merge-statep
-  :body (valid-merge-state (treemap::empty)
-                           (treemap::empty)
-                           (treeset::empty)
-                           (treeset::empty)
-                           (treemap::empty)
+  :body (valid-merge-state (tmap::empty)
+                           (tmap::empty)
+                           (tset::empty)
+                           (tset::empty)
+                           (tmap::empty)
                            0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -622,11 +623,11 @@
      and the local @(see UID)s without translation unit
      allocated during the merging
      are numbered starting from 0."))
-  (make-valid-merge-state :externals (treemap::empty)
-                          :completions (treemap::empty)
-                          :compatible-pairs (treeset::empty)
-                          :composite-inputs (treeset::empty)
-                          :composites (treemap::empty)
+  (make-valid-merge-state :externals (tmap::empty)
+                          :completions (tmap::empty)
+                          :compatible-pairs (tset::empty)
+                          :composite-inputs (tset::empty)
+                          :composites (tmap::empty)
                           :next-uid-num 0)
   :inline t)
 
@@ -1329,7 +1330,7 @@
        ((unless info)
         (retmsg$ "The variable ~x0 is not in scope." (ident-fix var)))
        ((unless (valid-ord-info-case info :objfun))
-        (retmsg$ "The identifier ~x0, used as a variable,is in scope, ~
+        (retmsg$ "The identifier ~x0, used as a variable, is in scope, ~
                   but does not denote an object or function."
                  (ident-fix var))))
     (retok (valid-ord-info-objfun->type info)
@@ -2611,6 +2612,8 @@
       (retok (type-unknown-arithmetic)))
      ((type-spec-list-float128x-p tyspecs)
       (retok (type-unknown-arithmetic)))
+     ((type-spec-list-bf16-p tyspecs)
+      (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16-complex-p tyspecs)
       (retok (type-unknown-arithmetic)))
      ((type-spec-list-float16x-complex-p tyspecs)
@@ -3102,11 +3105,16 @@
      (xdoc::p
       "For the comma operator, we validate both sub-expressions,
        and the resulting type is the one of the second sub-expression
-       [C17:6.5.17/2].")
+       [C17:6.5.17/2],
+       after array-to-pointer and function-to-pointer conversion
+       [C17:6.3.2.1/3-4].")
      (xdoc::p
       "For a statement expression, we push a new scope for the block
        and we validate the block items. We then pop the scope.
-       If a type is returned, that is the type of the expression.
+       If a type is returned,
+       the type of the expression is that type
+       after array-to-pointer and function-to-pointer conversion,
+       as done by GCC and Clang.
        Otherwise, the expression has type @('void'),
        as described in the GCC documentation of statement expressions.")
      (xdoc::p
@@ -3468,12 +3476,14 @@
                    ((erp new-next type types2 vstate)
                     (valid-expr expr.next vstate)))
                 (retok (make-expr-comma :first new-first :next new-next)
-                       type
+                       (type-fpconvert (type-apconvert type))
                        (set::union types1 types2)
                        vstate))
        :stmt (b* (((erp new-cstmt types type? vstate)
                    (valid-comp-stmt expr.stmt nil vstate))
-                  (type (or type? (type-void))))
+                  (type (if type?
+                            (type-fpconvert (type-apconvert type?))
+                          (type-void))))
                (retok (expr-stmt new-cstmt) type types vstate))
        :tycompat (b* (((erp new-type1 & types1 vstate)
                        (valid-tyname expr.type1 vstate))
@@ -3501,6 +3511,23 @@
                         (type-unknown)
                         (set::union list-types type-types)
                         vstate))
+       :convertvector (b* (((erp new-vec & vec-types vstate)
+                            (valid-expr expr.vec vstate))
+                           ((erp new-type & type-types vstate)
+                            (valid-tyname expr.type vstate)))
+                        (retok (make-expr-convertvector :vec new-vec
+                                                        :type new-type)
+                               (type-unknown)
+                               (set::union vec-types type-types)
+                               vstate))
+       :bit-cast (b* (((erp new-type & type-types vstate)
+                       (valid-tyname expr.type vstate))
+                      ((erp new-arg & arg-types vstate)
+                       (valid-expr expr.arg vstate)))
+                   (retok (make-expr-bit-cast :type new-type :arg new-arg)
+                          (type-unknown)
+                          (set::union type-types arg-types)
+                          vstate))
        :extension (b* (((erp new-expr type types vstate)
                         (valid-expr expr.expr vstate)))
                     (retok (expr-extension new-expr) type types vstate))
@@ -3874,8 +3901,15 @@
        This may be exactly what is needed for validation,
        but we will revisit this choice if needed.")
      (xdoc::p
+      "A @('typeof') specifier,
+       or its GCC variant @('__typeof') or @('__typeof__'),
+       determines the type of its expression or type name [C23:6.7.3.6/4].
+       The type returned by @(tsee valid-expr)
+       is the one before array-to-pointer and function-to-pointer conversion,
+       which @('typeof') does not perform [C23:6.3.2.1/3-4].")
+     (xdoc::p
       "For now, for simplicity, we regard
-       all the type specifiers that are GCC extensions
+       all the other type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
        which determines the structure type.
@@ -3995,7 +4029,7 @@
                            (mv nil nil nil))
                           (uid (valid-tag-info->uid info?))
                           ((mv completep &)
-                              (treemap::lookup?
+                              (tmap::lookup?
                                (valid-tag-info->uid info?)
                                (vstate->completions vstate))))
                        (mv uid (valid-tag-info->kind info?) completep)))
@@ -4103,7 +4137,7 @@
                           (mv nil nil nil))
                          (uid (valid-tag-info->uid info?))
                          ((mv completep &)
-                             (treemap::lookup?
+                             (tmap::lookup?
                               (valid-tag-info->uid info?)
                               (vstate->completions vstate))))
                       (mv uid (valid-tag-info->kind info?) completep)))
@@ -4197,6 +4231,7 @@
        :float64x (retok (type-spec-float64x) nil ext-tyspecs nil same-vstate)
        :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-vstate)
        :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-vstate)
+       :bf16 (retok (type-spec-bf16) nil ext-tyspecs nil same-vstate)
        :builtin-va-list (if (endp tyspecs)
                             (retok (type-spec-builtin-va-list)
                                    (type-unknown-builtin)
@@ -4214,7 +4249,7 @@
                                  (mv nil nil nil))
                                 (uid (valid-tag-info->uid info?))
                                 ((mv completep &)
-                                 (treemap::lookup?
+                                 (tmap::lookup?
                                   (valid-tag-info->uid info?)
                                   (vstate->completions vstate))))
                              (mv uid (valid-tag-info->kind info?) completep)))
@@ -4266,20 +4301,28 @@
                               nil
                               nil
                               vstate))
-       :typeof-expr (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
-       :typeof-type (if (endp tyspecs)
-                        (retok (type-spec-fix tyspec)
-                               (type-unknown)
-                               nil
-                               nil
-                               same-vstate)
-                      (reterr msg-bad-preceding))
+       :typeof-expr (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-expr type types vstate)
+                          (valid-expr tyspec.expr vstate)))
+                      (retok (make-type-spec-typeof-expr
+                              :expr new-expr
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
+       :typeof-type (b* (((unless (endp tyspecs))
+                          (reterr msg-bad-preceding))
+                         ((erp new-tyname type types vstate)
+                          (valid-tyname tyspec.type vstate)))
+                      (retok (make-type-spec-typeof-type
+                              :type new-tyname
+                              :uscores tyspec.uscores)
+                             type
+                             nil
+                             types
+                             vstate))
        :auto-type (if (endp tyspecs)
                       (retok (type-spec-fix tyspec)
                              (type-unknown)
@@ -7505,9 +7548,11 @@
      (xdoc::p
       "If validation is successful, we return,
        besides an updated validation table,
-       also two pieces of type information.")
+       also two pieces of type information:
+       @('return-types') and @('last-expr-type?').")
      (xdoc::p
-      "The first piece is the set of types returned by the statement,
+      "The @('return-types') result is the set of types
+       returned by the statement,
        via @('return') statements, with or without expressions.
        This is a set because a statement may contain
        multiple @('return') sub-statements.
@@ -7516,20 +7561,17 @@
        a @('return') statement without an expression
        contributes the type @('void') to the set.")
      (xdoc::p
-      "The second piece of information is as follows.
-       If the statement is either a (possibly labeled) expression statement,
-       or is a (possibly labeled) compound one
-       whose last block item is an expression statement,
-       the second piece of information is the type of that expression.
-       If the statement is not an expression or compound,
-       or it is compound but does not end in an expression statement
-       (including the case in which the compound statement has no block items),
-       the second piece of information is @('nil').
-       The reason for having this second piece of information
-       is to support the validation of GCC statement expressions"
+      "The @('last-expr-type?') result supports the validation of
+       GCC statement expressions "
       (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html"
                    "[GCCM:6.12.1]")
-      ".")
+      ". If the last statement of a statement expression
+       is an expression statement,
+       the statement expression has the type of that expression;
+       otherwise, it has type @('void').
+       Accordingly, if the statement is a statement expression,
+       @('last-expr-type?') is the type of the statement expression.
+       Otherwise, it is @('nil').")
      (xdoc::p
       "To validate a labeled statement,
        we validate its label, and then the enclosed statement.
@@ -7541,8 +7583,9 @@
       "To validate a compound statement,
        we push a new scope for the block,
        and we validate the list of block items.
-       We pop the scope and we return the same results
-       coming from the validation of the block items.")
+       We pop the scope and we return the return types
+       coming from the validation of the block items,
+       and @('nil') as the @('last-expr-type?') result.")
      (xdoc::p
       "To validate an expression statement,
        we validate the expression if present,
@@ -7594,9 +7637,9 @@
                 type?
                 vstate))
        :compound
-       (b* (((erp new-cstmt types type? vstate)
+       (b* (((erp new-cstmt types & vstate)
              (valid-comp-stmt stmt.stmt nil vstate)))
-         (retok (stmt-compound new-cstmt) types type? vstate))
+         (retok (stmt-compound new-cstmt) types nil vstate))
        :expr
        (b* (((erp new-expr? type? types vstate)
              (valid-expr-option stmt.expr? vstate)))
@@ -7811,10 +7854,9 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result.")
+       the @('last-expr-type?') result is the one
+       from the validation of the list of block items
+       (see @(tsee valid-block-item-list)).")
      (xdoc::p
       "The @('fundefp') flag says whether the compound statement
        is the body of a function definition.
@@ -7826,7 +7868,7 @@
     (b* (((reterr) (irr-comp-stmt) nil nil (irr-vstate))
          ((comp-stmt cstmt) cstmt)
          (vstate (if fundefp vstate (vstate-push-scope vstate)))
-         ((erp new-items types last-expr-type? vstate)
+         ((erp new-items types last-expr-type? & vstate)
           (valid-block-item-list cstmt.items vstate))
          (vstate (if fundefp vstate (vstate-pop-scope vstate))))
       (retok (make-comp-stmt :labels cstmt.labels :items new-items)
@@ -7851,13 +7893,9 @@
     (xdoc::topstring
      (xdoc::p
       "If validation is successful, we return the same kind of type results
-       as @(tsee valid-stmt) (see that function's documentation),
-       with the slight modification that
-       the @('last-expr-type?') result is a type exactly when
-       the block item is a compound statement
-       whose last block item is an expression statement,
-       in which case the @('last-expr-type?') result is
-       the type of that expression.")
+       as @(tsee valid-stmt) (see that function's documentation).
+       If the block item is a statement,
+       these are the results of validating the statement.")
      (xdoc::p
       "If the block item is a declaration,
        the @('last-expr-type?') result is @('nil'),
@@ -7890,6 +7928,7 @@
                  (new-items block-item-listp)
                  (return-types type-setp)
                  (last-expr-type? type-optionp)
+                 (null-stmts-p booleanp)
                  (new-vstate vstatep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of block items."
@@ -7899,21 +7938,30 @@
       "If validation is successful, we return the same kind of type results
        as @(tsee valid-stmt) (see that function's documentation),
        with the modification that
-       the @('last-expr-type?') result is a type exactly when
-       the list of block items is not empty
-       and the validation of the last block item
-       returns a type as that result."))
-    (b* (((reterr) nil nil nil (irr-vstate))
-         ((when (endp items)) (retok nil nil nil (vstate-fix vstate)))
-         ((erp new-item types last-expr-type? vstate)
+       the @('last-expr-type?') result is the one
+       from the validation of the last block item
+       that is not a null statement,
+       or @('nil') if there is no such block item.
+       That is, we skip trailing null statements,
+       as GCC and Clang do when determining
+       the last statement of a statement expression;
+       labeled or attributed null statements are not skipped.")
+     (xdoc::p
+      "We also return a flag @('null-stmts-p') saying whether
+       all the block items are null statements,
+       which is the case when there are no block items.
+       If the block items after the first one are all null statements,
+       the @('last-expr-type?') result is the one of the first block item."))
+    (b* (((reterr) nil nil nil nil (irr-vstate))
+         ((when (endp items)) (retok nil nil nil t (vstate-fix vstate)))
+         ((erp new-item types item-last-expr-type? vstate)
           (valid-block-item (car items) vstate))
-         ((when (endp (cdr items)))
-          (retok (list new-item) types last-expr-type? vstate))
-         ((erp new-items more-types last-expr-type? vstate)
+         ((erp new-items more-types last-expr-type? null-stmts-p vstate)
           (valid-block-item-list (cdr items) vstate)))
       (retok (cons new-item new-items)
              (set::union types more-types)
-             last-expr-type?
+             (if null-stmts-p item-last-expr-type? last-expr-type?)
+             (and (block-item-null-stmt-p (car items)) null-stmts-p)
              vstate))
     :measure (acl2::two-nats-measure (block-item-list-count items) 0))
 
@@ -8702,7 +8750,7 @@
      and the type completions from the table,
      for merging with those of other translation units
      (see @(tsee valid-merge-trans-unit))."))
-  (b* (((reterr) (irr-trans-unit) (treemap::empty) (treemap::empty))
+  (b* (((reterr) (irr-trans-unit) (tmap::empty) (tmap::empty))
        (dialect (ienv->dialect ienv))
        (vstate (init-vstate ienv filepath))
        (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
@@ -8725,11 +8773,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-merge-externals-loop ((iter treemap::iterp)
+(define valid-merge-externals-loop ((cursor tmap::cursorp)
                                     (mstate valid-merge-statep)
-                                    (ienv ienvp))
-  :guard (and (not (treemap::before-firstp iter))
-              (valid-externalsp (treemap::from-iter iter)))
+                                    (ienv ienvp)
+                                    (strict-merge booleanp))
+  :guard (and (valid-externalsp (tmap::from-cursor cursor))
+              (or (tmap::entryp cursor)
+                  (tmap::endp cursor)))
   :returns (mv (erp maybe-msgp)
                (new-mstate valid-merge-statep))
   :short "Merge the information about identifiers with external linkage
@@ -8738,7 +8788,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The iterator goes through the information of the translation unit.
+    "The cursor goes through the information of the translation unit.
      An identifier not in the merged information so far is just added.
      Otherwise, the identifier has been declared
      in some previous translation unit,
@@ -8753,6 +8803,22 @@
      avoids a number of checks quadratic in
      the number of translation units that declare the identifier.")
    (xdoc::p
+    "Declarations of an identifier with external linkage
+     with incompatible types in different translation units
+     make the behavior undefined [C17:6.2.7/2],
+     but they do not violate any constraint,
+     and they occur in practical code,
+     which compilers and linkers accept.
+     If @('strict-merge') is @('t'), we reject them.
+     Otherwise, we keep the type merged so far,
+     ignoring the incompatible type in the translation unit.
+     Thus, the merged type is the composite of
+     the types of the first declaration
+     and of the later ones compatible with it,
+     in the order in which the translation units are merged,
+     and it is not necessarily compatible with
+     the types of the other declarations.")
+   (xdoc::p
     "The composite types do not belong to any translation unit,
      so the structure types that they may need
      are allocated local @(see UID)s without translation unit,
@@ -8762,19 +8828,19 @@
      can be compared and composed."))
   (b* (((reterr) (irr-valid-merge-state))
        ((valid-merge-state mstate) mstate)
-       ((when (mbe :logic (not (treemap::has-valuep iter))
-                   :exec (treemap::after-lastp iter)))
+       ((when (not (tmap::entryp cursor)))
         (retok (valid-merge-state-fix mstate)))
-       (ident (treemap::entry-key iter))
-       ((valid-ext-info info) (treemap::entry-val iter))
-       (prev? (treemap::lookup ident mstate.externals))
+       (ident (tmap::entry-key cursor))
+       ((valid-ext-info info) (tmap::entry-val cursor))
+       (prev? (tmap::lookup ident mstate.externals))
        ((unless prev?)
         (valid-merge-externals-loop
-         (treemap::next iter)
+         (tmap::next cursor)
          (change-valid-merge-state
           mstate
-          :externals (treemap::update ident info mstate.externals))
-         ienv))
+          :externals (tmap::update ident info mstate.externals))
+         ienv
+         strict-merge))
        ((valid-ext-info prev) prev?)
        ((mv compatible compatible-pairs)
         (type-compatible-3p-exec prev.type
@@ -8783,10 +8849,16 @@
                                  mstate.compatible-pairs
                                  ienv))
        ((unless (3possibly compatible))
-        (retmsg$ "The identifier ~x0 with external linkage has type ~x1, ~
-                  which is incompatible with its type ~x2 ~
-                  in the translation units validated before."
-                 ident info.type prev.type))
+        (if strict-merge
+            (retmsg$ "The identifier ~x0 with external linkage has type ~x1, ~
+                      which is incompatible with its type ~x2 ~
+                      in the translation units validated before."
+                     ident info.type prev.type)
+          (valid-merge-externals-loop
+           (tmap::next cursor)
+           (change-valid-merge-state mstate :compatible-pairs compatible-pairs)
+           ienv
+           strict-merge)))
        ((mv type completions composites composite-inputs next-uid-num)
         (type-composite prev.type
                         info.type
@@ -8797,11 +8869,11 @@
                         mstate.next-uid-num))
        (externals (if (equal type prev.type)
                       mstate.externals
-                    (treemap::update ident
-                                     (make-valid-ext-info :type type)
-                                     mstate.externals))))
+                    (tmap::update ident
+                                  (make-valid-ext-info :type type)
+                                  mstate.externals))))
     (valid-merge-externals-loop
-     (treemap::next iter)
+     (tmap::next cursor)
      (make-valid-merge-state
       :externals externals
       :completions completions
@@ -8809,15 +8881,17 @@
       :composite-inputs composite-inputs
       :composites composites
       :next-uid-num next-uid-num)
-     ienv))
-  :measure (treemap::nexts iter))
+     ienv
+     strict-merge))
+  :measure (tmap::nexts cursor))
 
 ;;;;;;;;;;;;;;;;;;;;
 
 (define valid-merge-trans-unit ((tu-externals valid-externalsp)
                                 (tu-completions type-completions-p)
                                 (mstate valid-merge-statep)
-                                (ienv ienvp))
+                                (ienv ienvp)
+                                (strict-merge booleanp))
   :returns (mv (erp maybe-msgp)
                (new-mstate valid-merge-statep))
   :short "Merge the information about identifiers with external linkage
@@ -8835,18 +8909,20 @@
     about identifiers with external linkage
     needs the type completions of the translation unit;
     see @(tsee valid-merge-externals-loop).")
-  (b* ((completions (treemap::update* (type-completions-fix tu-completions)
-                                      (valid-merge-state->completions mstate)))
+  (b* ((completions (tmap::update* (type-completions-fix tu-completions)
+                                   (valid-merge-state->completions mstate)))
        (mstate (change-valid-merge-state mstate :completions completions)))
     (valid-merge-externals-loop
-     (treemap::iter-min (valid-externals-fix tu-externals))
+     (tmap::seek-min (valid-externals-fix tu-externals))
      mstate
-     ienv)))
+     ienv
+     strict-merge)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                        (ienv ienvp)
+                                       (strict-merge booleanp)
                                        (keep-going booleanp))
   :guard (filepath-trans-unit-map-unambp tumap)
   :returns (mv (erp maybe-msgp)
@@ -8863,12 +8939,15 @@
      into those of the translation units validated so far,
      in the order of their file paths,
      starting from the initial merge state.
+     The @('strict-merge') flag is described in
+     @(tsee valid-merge-externals-loop).
      We return the merged information."))
   (b* (((mv erp new-tumap mstate)
         (valid-filepath-trans-unit-map-loop
          (omap::keys (filepath-trans-unit-map-fix tumap))
          tumap
          ienv
+         strict-merge
          keep-going
          (init-valid-merge-state)))
        ((valid-merge-state mstate) mstate))
@@ -8879,6 +8958,7 @@
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
       (ienv ienvp)
+      (strict-merge booleanp)
       (keep-going booleanp)
       (mstate valid-merge-statep))
      :guard (and (set::subset paths (omap::keys tumap))
@@ -8898,7 +8978,8 @@
           ((mv erp new-mstate)
            (if erp
                (mv erp (irr-valid-merge-state))
-             (valid-merge-trans-unit tu-externals tu-completions mstate ienv)))
+             (valid-merge-trans-unit
+               tu-externals tu-completions mstate ienv strict-merge)))
           ;; On error, continue with the merge state as it was
           ;; before the translation unit.
           ((when erp)
@@ -8909,6 +8990,7 @@
                        (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                            tumap
                                                            ienv
+                                                           strict-merge
                                                            keep-going
                                                            mstate))
              (retmsg$ "Error in translation unit ~x0: ~@1"
@@ -8918,6 +9000,7 @@
            (valid-filepath-trans-unit-map-loop (set::tail paths)
                                                tumap
                                                ienv
+                                               strict-merge
                                                keep-going
                                                new-mstate)))
        (retok (omap::update path new-tunit new-tumap) mstate))
@@ -8951,6 +9034,7 @@
 
 (define valid-trans-ensemble ((tuens trans-ensemblep)
                               (ienv ienvp)
+                              (strict-merge booleanp)
                               (keep-going booleanp))
   :guard (trans-ensemble-unambp tuens)
   :returns (mv (erp maybe-msgp) (new-tuens trans-ensemblep))
@@ -8963,14 +9047,16 @@
      and we merge the information that concerns
      multiple translation units
      (identifiers with external linkage and type completions),
-     checking that it is consistent across translation units.
+     checking that it is consistent across translation units,
+     according to the @('strict-merge') flag
+     (see @(tsee valid-merge-externals-loop)).
      The merged information is
      the @(tsee trans-ensemble-vinfo) annotation
      on the resulting ensemble."))
   (b* (((reterr) (irr-trans-ensemble))
        (tumap (trans-ensemble->units tuens))
        ((erp new-tumap externals completions)
-        (valid-filepath-trans-unit-map tumap ienv keep-going))
+        (valid-filepath-trans-unit-map tumap ienv strict-merge keep-going))
        (- (if keep-going
               (b* ((len-tumap (omap::size tumap))
                    (len-new-tumap (omap::size new-tumap))

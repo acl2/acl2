@@ -10,7 +10,8 @@
 
 (include-book "deque/top")
 (include-book "hash/top")
-(include-book "treeset/top")
-(include-book "treemap/top")
-(include-book "treebag/top")
+(include-book "tset/top")
+(include-book "tmap/top")
+(include-book "tbag/top")
+(include-book "graph/top")
 (include-book "utilities/top")

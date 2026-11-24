@@ -85,7 +85,7 @@
             :abstract
             (b* ((ident
                    (fresh-ident fresh-ident-base blacklist :force-suffix t)))
-              (retok (treeset::insert ident blacklist)
+              (retok (tset::insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
                        :declor (make-param-declor-nonabstract
@@ -96,7 +96,7 @@
             :none
             (b* ((ident
                    (fresh-ident fresh-ident-base blacklist :force-suffix t)))
-              (retok (treeset::insert ident blacklist)
+              (retok (tset::insert ident blacklist)
                      (c$::change-param-declon
                        (first params)
                        :declor (make-param-declor-nonabstract
@@ -767,6 +767,7 @@
        ((erp valid-trans-units)
         (c$::valid-trans-ensemble (code-ensemble->trans-units code)
                                       (code-ensemble->ienv code)
+                                      (code-ensemble->strict-merge code)
                                       nil))
        ;; TODO: remove after it is proved that validation produces an annotated
        ;; term.

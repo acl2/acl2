@@ -827,3 +827,65 @@
   (if (or (not (consp x)) (not (consp y)) (not (consp z)))
       nil
     (three-cdrs-induct (cdr x) (cdr y) (cdr z))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; More facts about lists, gathered from the proofs about lambda lifting.
+
+(local (include-book "std/lists/sets" :dir :system))
+(local (include-book "std/lists/intersectp" :dir :system))
+
+(defruled string-listp-of-append-simple
+  (implies (and (string-listp a) (string-listp b))
+           (string-listp (append a b)))
+  :induct (len a)
+  :enable (len string-listp append))
+
+(defruled no-duplicatesp-equal-of-append-parts
+  (implies (no-duplicatesp-equal (append a b))
+           (and (no-duplicatesp-equal a)
+                (no-duplicatesp-equal b)))
+  :induct (len a)
+  :enable (len no-duplicatesp-equal append member-equal))
+
+(defruled not-intersectp-when-subsetp-right
+  (implies (and (not (intersectp-equal a p))
+                (subsetp-equal p2 p))
+           (not (intersectp-equal a p2)))
+  :enable (acl2::intersectp-witness-rw acl2::subsetp-member))
+
+(defruled subsetp-equal-of-append-parts
+  (and (subsetp-equal a (append a b))
+       (subsetp-equal b (append a b))))
+
+(defruled not-member-when-not-intersectp
+  (implies (and (not (intersectp-equal l1 l2))
+                (member-equal e l1))
+           (not (member-equal e l2)))
+  :induct (len l1)
+  :expand ((len l1))
+  :enable (len intersectp-equal member-equal))
+
+(defruled list-car-when-singleton
+  (implies (and (consp l) (not (consp (cdr l))) (true-listp l))
+           (equal (list (car l)) l)))
+
+(defruled not-member-when-subsetp-and-not-member
+  (implies (and (subsetp-equal more p)
+                (not (member-equal h p)))
+           (not (member-equal h more)))
+  :enable acl2::subsetp-member)
+
+(defruled intersectp-equal-of-nil-right
+  (not (intersectp-equal x nil)))
+
+(defruled consp-cdr-when-len-at-least-2
+  (implies (<= 2 (len l))
+           (consp (cdr l)))
+  :expand ((len l) (len (cdr l))))
+
+(defruled car-last-of-append-consp
+  (implies (consp b)
+           (equal (car (last (append a b))) (car (last b))))
+  :induct (len a)
+  :enable (last append len))

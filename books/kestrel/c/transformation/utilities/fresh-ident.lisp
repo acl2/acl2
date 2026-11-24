@@ -17,6 +17,7 @@
 (include-book "xdoc/constructors" :dir :system)
 
 (include-book "kestrel/fty/string-set" :dir :system)
+(include-book "kestrel/data/tset/cursor/defs" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
 (include-book "collect-idents")
@@ -24,7 +25,7 @@
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
 
-(local (include-book "kestrel/data/treeset/iter" :dir :system))
+(local (include-book "kestrel/data/tset/cursor/top" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -139,49 +140,49 @@
   :returns (strings acl2::string-setp)
   (mbe :logic
        (b* ((idents (ident-set-fix idents))
-            ((when (treeset::emptyp idents))
+            ((when (tset::emptyp idents))
              nil)
-            (ident (treeset::min idents))
+            (ident (tset::min idents))
             (unwrapped (ident->unwrap ident))
-            (strings (map-ident->unwrap (treeset::delete ident idents))))
+            (strings (map-ident->unwrap (tset::delete ident idents))))
          (if (stringp unwrapped)
              (insert unwrapped strings)
            strings))
-       :exec (map-ident->unwrap-loop (treeset::iter-min idents)))
-  :measure (treeset::cardinality (ident-set-fix idents))
+       :exec (map-ident->unwrap-loop (tset::seek-min idents)))
+  :measure (tset::cardinality (ident-set-fix idents))
   :verify-guards nil
 
   :prepwork
-  ((define map-ident->unwrap-loop ((iter treeset::iterp))
-     :guard (ident-setp (treeset::from-iter iter))
+  ((define map-ident->unwrap-loop ((cursor tset::cursorp))
+     :guard (and (ident-setp (tset::from-cursor cursor))
+                 (or (tset::entryp cursor)
+                     (tset::endp cursor)))
      :returns (strings acl2::string-setp)
      :parents nil
-     (b* (((unless (treeset::has-valuep iter))
+     (b* (((when (not (tset::entryp cursor)))
            nil)
-          (unwrapped (ident->unwrap (treeset::value iter)))
-          (strings (map-ident->unwrap-loop (treeset::next iter))))
+          (unwrapped (ident->unwrap (tset::entry cursor)))
+          (strings (map-ident->unwrap-loop (tset::next cursor))))
        (if (stringp unwrapped)
            (insert unwrapped strings)
          strings))
-     :measure (treeset::nexts iter)
-     :guard-hints (("Goal" :use (:instance treeset::in-of-value
-                                           (treeset::iter iter))))
+     :measure (tset::nexts cursor)
      :verify-guards :after-returns))
 
   ///
 
   (defrulel map-ident->unwrap-loop-of-next
-    (implies (and (treeset::has-valuep iter)
-                  (ident-setp (treeset::after iter)))
-             (equal (map-ident->unwrap-loop (treeset::next iter))
-                    (map-ident->unwrap (treeset::after iter))))
-    :induct (map-ident->unwrap-loop iter)
+    (implies (and (tset::entryp cursor)
+                  (ident-setp (tset::after cursor)))
+             (equal (map-ident->unwrap-loop (tset::next cursor))
+                    (map-ident->unwrap (tset::after cursor))))
+    :induct (map-ident->unwrap-loop cursor)
     :enable (map-ident->unwrap-loop
              map-ident->unwrap))
 
   (verify-guards map-ident->unwrap
     :hints (("Goal"
-             :expand ((map-ident->unwrap-loop (treeset::iter-min idents)))))))
+             :expand ((map-ident->unwrap-loop (tset::seek-min idents)))))))
 
 (define fresh-ident
   ((ident identp)
@@ -230,7 +231,7 @@
                             :number-suffix number-suffix)))
     (cons ident$
           (fresh-idents (rest idents)
-                        (treeset::insert ident$ blacklist)
+                        (tset::insert ident$ blacklist)
                         :force-suffix force-suffix
                         :number-prefix number-prefix
                         :number-suffix number-suffix)))

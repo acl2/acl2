@@ -20,7 +20,7 @@
 (include-book "kestrel/utilities/arith-fix-and-equiv-defs" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
@@ -164,7 +164,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nat-to-bytes ((n natp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a natural number in unsigned LEB128 form."
   :long
   (xdoc::topstring
@@ -209,7 +208,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define nat-to-leb128-groups ((n natp) (m natp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize exactly @('m') 7-bit groups (base-128 digits) of a
           natural number, each with the continuation bit set."
   :long
@@ -316,7 +314,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-contents-to-bytes ((n integerp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize an integer in LEB128 form, without a type tag."
   :long
   (xdoc::topstring
@@ -346,7 +343,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define integer-to-bytes ((n integerp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize an integer."
   :returns (bytes byte-listp)
   (cons *tag-integer* (integer-contents-to-bytes n)))
@@ -362,7 +358,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rational-contents-to-bytes ((n rationalp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a rational number, without a type tag."
   :long
   (xdoc::topstring
@@ -386,7 +381,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define rational-to-bytes ((n rationalp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a rational number."
   :returns (bytes byte-listp)
   (cons *tag-rational* (rational-contents-to-bytes n)))
@@ -402,7 +396,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define complex-rational-to-bytes ((n complex-rationalp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a complex rational number."
   :returns (bytes byte-listp)
   (cons *tag-complex*
@@ -420,7 +413,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define acl2-number-to-bytes ((n acl2-numberp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize an ACL2 number."
   :returns (bytes byte-listp)
   (cond ((integerp n)
@@ -440,7 +432,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define character-contents-to-bytes ((c characterp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a character, without a type tag."
   :long
   (xdoc::topstring
@@ -464,7 +455,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define character-to-bytes ((c characterp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a character."
   :returns (bytes byte-listp)
   (cons *tag-character* (character-contents-to-bytes c)))
@@ -480,7 +470,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define characters-to-bytes ((chars character-listp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a list of characters as their character codes."
   :returns (bytes byte-listp
                   :hints (("Goal" :induct t
@@ -502,7 +491,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string-contents-to-bytes ((str stringp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a string, without a type tag."
   :long
   (xdoc::topstring
@@ -526,7 +514,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define string-to-bytes ((str stringp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a string."
   :returns (bytes byte-listp)
   (cons *tag-string* (string-contents-to-bytes str)))
@@ -542,7 +529,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define symbol-to-bytes ((symbol symbolp))
-  (declare (xargs :type-prescription :none))
   :short "Serialize a symbol."
   :long
   (xdoc::topstring
@@ -577,7 +563,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atom-to-bytes (x)
-  (declare (xargs :type-prescription :none))
   :short "Serialize an atom."
   :guard (not (consp x))
   :returns (bytes byte-listp)
@@ -619,11 +604,11 @@
       (cons *tag-cons*
             (append (to-bytes (car x))
                     (to-bytes (cdr x))))
-    (atom-to-bytes x)))
+    (atom-to-bytes x))
+  ;; Verified below
+  :verify-guards nil)
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t to-bytes)))
 
 (defrule to-bytes-type-prescription
   (and (consp (to-bytes x))
@@ -632,13 +617,14 @@
   :induct t
   :enable to-bytes)
 
+(verify-guards to-bytes)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Eventually, this should be moved to a more neutral location.
 ;; It does not need to be part of this book.
 
 (define no-bad-atoms-p (x)
-  (declare (xargs :type-prescription :none))
   :short "Recognize objects built entirely from good atoms."
   :long
   (xdoc::topstring
@@ -647,17 +633,11 @@
        only on objects satisfying this predicate. Note that a bad atom may
        occur arbitrarily deep within a cons tree, so this cannot be a flat
        condition on @('x') alone."))
-  :returns (yes/no booleanp)
+  :returns (yes/no booleanp :rule-classes :type-prescription)
   (if (consp x)
       (and (no-bad-atoms-p (car x))
            (no-bad-atoms-p (cdr x)))
     (not (bad-atom x))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule no-bad-atoms-p-type-prescription
-  (booleanp (no-bad-atoms-p x))
-  :rule-classes ((:type-prescription :typed-term (no-bad-atoms-p x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

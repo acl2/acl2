@@ -1,0 +1,37 @@
+Experiments for "Formalizing the Connectivity Theorem for the Matrix
+Multiplication Flip Graph in ACL2" (ACL2 Workshop 2026)
+
+Supporting material for the paper's section on working with a language model.
+Nothing here is part of the proof in the parent directory.
+
+Certification
+-------------
+
+  cert.pl -j 4 unassisted/top.lisp cross-check/xcheck-defs.lisp
+
+certifies all 34 books, in about half an hour.
+
+Running the cross-check
+-----------------------
+
+With the books above certified, from cross-check/:
+
+  ACL2_SYSTEM_BOOKS=<books> <acl2> < xcheck-tests.lsp > xcheck-tests.out
+
+runs the sixteen properties with ACL2s cgen at 300 trials each;
+xcheck-tests.out is our transcript of that run.  Fifteen properties hold;
+prop-b-naive is false on purpose and records the flip convention difference
+the paper reports.
+
+  python3 rename.py
+
+regenerates the renamed books of cross-check/ from unassisted/.
+
+Subfolders
+----------
+
+unassisted/     the 24 books produced by the unassisted experiment, as that
+                session produced them, with the README.md it wrote
+cross-check/    the ACL2s cross-check of our connectivity theorem against
+                theirs: the renamed books, xcheck-defs.lisp with the
+                translation and the properties, and xcheck-tests.lsp

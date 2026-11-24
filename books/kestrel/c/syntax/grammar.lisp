@@ -85,11 +85,14 @@
 ; (depends-on "grammar/expressions.abnf")
 ; (depends-on "grammar/expressions-c17.abnf")
 ; (depends-on "grammar/expressions-c23.abnf")
-; (depends-on "grammar/expressions-ext.abnf")
+; (depends-on "grammar/expressions-gcc-clang.abnf")
+; (depends-on "grammar/expressions-clang.abnf")
 ; (depends-on "grammar/expressions-c17-noext.abnf")
 ; (depends-on "grammar/expressions-c23-noext.abnf")
-; (depends-on "grammar/expressions-c17-ext.abnf")
-; (depends-on "grammar/expressions-c23-ext.abnf")
+; (depends-on "grammar/expressions-c17-gcc.abnf")
+; (depends-on "grammar/expressions-c17-clang.abnf")
+; (depends-on "grammar/expressions-c23-gcc.abnf")
+; (depends-on "grammar/expressions-c23-clang.abnf")
 ; (depends-on "grammar/attributes.abnf")
 ; (depends-on "grammar/assembly.abnf")
 ; (depends-on "grammar/grammar-rest.abnf")
@@ -125,26 +128,26 @@
      Our ABNF grammar rules are as similar as possible to
      the grammar rules in [C17] and [C23], for the standard constructs.
      The GCC constructs are captured based on [GCCM] and [GCCL],
+     and the Clang constructs are captured based on [CLE] and [CLA],
      but these documents do not use a grammar notation,
      so the relationship is less direct than for the standard constructs.
-     Currently the grammar only mentions GCC extensions,
-     but most of them also apply to Clang;
-     we plan to assess and explicate the Clang extensions.
-     However, we depart from the official syntax
+     However, we depart from the official syntax (extending it)
      when needed to fulfill the purpose of our C syntax for tools;
      see @(tsee syntax-for-tools).")
    (xdoc::p
-    "[C23] presents a lexical grammar [C23:A.2]
-     and a phrase structure grammar [C23:A.3].
+    "[C17] [C23] present
+     a lexical grammar [C17:A.1] [C23:A.2]
+     and a phrase structure grammar [C17:A.2] [C23:A.3].
      This is a typical two-level grammar structure for programming languages:
      the first grammar describes how a sequence of characters
      is organized into lexical units (identifiers, constants, etc.),
      and the second grammar describes how the sequence of those lexical units
      is organized into higher-level constructs (expressions, statements, etc.).
      In C, the lexical organization is more complicated than other languages,
-     because of preprocessing [C23:A.4] and other features.
+     because of preprocessing [C17:A.3] [C23:A.4] and other features.
      In fact, the complete syntactic (and semantic) processing of code
-     is described as consisting of 8 translation phases [C23:5.2.1.2].")
+     is described as consisting of 8 translation phases
+     [C17:5.1.1.2] [C23:5.2.1.2].")
    (xdoc::p
     "We regard our grammar rules as defining three phases:
      one for the lexical organization,
@@ -154,33 +157,33 @@
    (xdoc::p
     "Our ABNF grammar rules do not consider
      the translation of trigraph sequences
-     handled in the first phase in [C17:5.1.1.2]
-     (which, incidentally, has been removed in [C23:5.2.1.2]),
-     and the splicing of lines in the second phase in [C23:5.2.1.2].
+     handled in the phase 1 in [C17:5.1.1.2]
+     (which has been removed in [C23:5.2.1.2]),
+     and the splicing of lines in the phase 2 in [C17:5.1.1.2] [C23:5.2.1.2].
      These are simple transformations that can be performed
      prior to the language recognition described by our ABNF grammar rules,
      along with UTF-8 decoding of bytes into Unicode scalar values.
      Our ABNF grammar rules do not capture the requirement that
      a non-empty file ends with a new-line character
-     (see phase 3 in [C23:5.2.1.2]);
+     (see phase 3 in [C17:5.1.1.2] [C23:5.2.1.2]);
      this can be easily enforced outside the grammar as well;
      furthermore, GCC relaxes that requirement "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/cpp/Initial-processing.html"
                  "[CPPM:1.2]")
     ", so we do that as well, when GCC extensions are enabled,
-     or also when Clang extensions are enabled,
+     and also when Clang extensions are enabled,
      since Clang expressly aims at being compatible with GCC
      (and running Clang confirms that).")
    (xdoc::p
-    "Phase 6 in [C23:5.2.1.2] requires that
+    "Phase 6 in [C17:5.1.1.2] [C23:5.2.1.2] requires that
      adjacent string literals are concatenated.
      This does not affect the lexing of the code,
      since string literals are tokens,
      but the parser needs to accept adjacent string literals.
      In our (phrase structure) grammar, we accommodate this
      by allowing one or more string literals
-     where the grammar in [C23] allows one
-     (the phrase grammar in [C23] corresponds to translation phase 7,
+     where the grammar in [C17] [C23] allows one
+     (the phrase grammar in [C17] [C23] corresponds to translation phase 7,
      which comes after adjacent string literal concatenation in phase 6).")
    (xdoc::p
     "See the documentation comments in the files @('grammar/*.abnf')
@@ -411,8 +414,11 @@
 (defgrammar expressions-c23
   "expressions in the C23 dialects")
 
-(defgrammar expressions-ext
-  "expressions in the non-standard C dialects (i.e. with extensions)")
+(defgrammar expressions-gcc-clang
+  "expressions in the GCC and Clang dialects")
+
+(defgrammar expressions-clang
+  "expressions in the Clang dialects")
 
 (defgrammar expressions-c17-noext
   "expressions in the C17 dialect without extensions")
@@ -420,11 +426,19 @@
 (defgrammar expressions-c23-noext
   "expressions in the C23 dialect without extensions")
 
-(defgrammar expressions-c17-ext
-  "expressions in the C17 dialects with extensions")
+(defgrammar expressions-c17-gcc
+  "expressions in the C17 dialect with GCC extensions")
 
-(defgrammar expressions-c23-ext
-  "expressions in the C23 dialects with extensions")
+(defgrammar expressions-c17-clang
+  "expressions in the C17 dialects with Clang extensions
+   (with and without CHERI extensions)")
+
+(defgrammar expressions-c23-gcc
+  "expressions in the C23 dialect with GCC extensions")
+
+(defgrammar expressions-c23-clang
+  "expressions in the C23 dialects with Clang extensions
+   (with and without CHERI extensions)")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -578,17 +592,23 @@
      (c::standard-case
       dialect.std
       :c17 (append *grammar-expressions-c17*
-                   (if (or dialect.gcc
-                           dialect.clang)
-                       (append *grammar-expressions-ext*
-                               *grammar-expressions-c17-ext*)
-                     *grammar-expressions-c17-noext*))
+                   (cond (dialect.gcc
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c17-gcc*))
+                         (dialect.clang
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-clang*
+                                  *grammar-expressions-c17-clang*))
+                         (t *grammar-expressions-c17-noext*)))
       :c23 (append *grammar-expressions-c23*
-                   (if (or dialect.gcc
-                           dialect.clang)
-                       (append *grammar-expressions-ext*
-                               *grammar-expressions-c23-ext*)
-                     *grammar-expressions-c23-noext*)))
+                   (cond (dialect.gcc
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-c23-gcc*))
+                         (dialect.clang
+                          (append *grammar-expressions-gcc-clang*
+                                  *grammar-expressions-clang*
+                                  *grammar-expressions-c23-clang*))
+                         (t *grammar-expressions-c23-noext*))))
      ;; attributes:
      *grammar-attributes*
      ;; assembly:

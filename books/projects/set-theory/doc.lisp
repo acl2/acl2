@@ -202,16 +202,13 @@
                    t)))
  })
 
- <p>And here is its expansion (as seen using @(':')@(tsee trans1)), where
- @('(force? x)') is a macro call expanding to @('(force x)') if @('x') is
- either @('(zfc)') or of the form @('(foo$prop)') for some symbol @('foo'), and
- is @('x') otherwise.</p>
+ <p>And here is its expansion (as seen using @(':')@(tsee trans1)).</p>
 
  @({
  (defthmd extensionality
    (implies (and (subset x y)
                  (subset y x)
-                 (force? (zfc)))
+                 (force (zfc)))
             (equal (equal x y) t)))
  })
 
@@ -398,7 +395,7 @@
    :props (domain$prop))
  })
 
- <p>For each symbol @('p') in the list of @(':props'), @('(force? p)') is added
+ <p>For each symbol @('p') in the list of @(':props'), @('(force p)') is added
  as a hypothesis after any existing hypotheses.  The point of @(':props') is
  that if we consider the logic view of ACL2(zfc), then we can ignore those
  properties.</p>
@@ -410,8 +407,8 @@
  introducing @('p') as its hypothesis function, or else with a form
  @('(and (q0) (q1) ... (qk))') where each @('qi') is a key of @('zfc-table').
  An event @('(extend-zfc-table p q0 q1 ... qk)') introduces a new zero-ary
- function symbol, @('p'), which expands to @('(and (force? (q0)) (force? (q1))
- ... (force? (qk)))') and makes the above table entry.  For example, the
+ function symbol, @('p'), which expands to @('(and (force (q0)) (force (q1))
+ ... (force (qk)))') and makes the above table entry.  For example, the
  following event introduces @('zify-prop'), to be used further below, as the
  conjunction of calls of @(tsee force) on @('(prod2$prop)'),
  @('(domain$prop)'), @('(inverse$prop)'), and @('(zfc)'), and makes a suitable
@@ -427,17 +424,17 @@
  @({
  (PROGN (DEFUN ZIFY-PROP NIL
           (DECLARE (XARGS :GUARD T))
-          (AND (FORCE? (PROD2$PROP))
-               (FORCE? (DOMAIN$PROP))
-               (FORCE? (INVERSE$PROP))
-               (FORCE? (ZFC))))
+          (AND (FORCE (PROD2$PROP))
+               (FORCE (DOMAIN$PROP))
+               (FORCE (INVERSE$PROP))
+               (FORCE (ZFC))))
         (IN-THEORY (DISABLE (:E ZIFY-PROP)))
         (TABLE ZFC-TABLE
           'ZIFY-PROP
-          '(AND (FORCE? (PROD2$PROP))
-                (FORCE? (DOMAIN$PROP))
-                (FORCE? (INVERSE$PROP))
-                (FORCE? (ZFC)))))
+          '(AND (FORCE (PROD2$PROP))
+                (FORCE (DOMAIN$PROP))
+                (FORCE (INVERSE$PROP))
+                (FORCE (ZFC)))))
  })
 
  <p>We turn now to the macro @('zfn'), which implements a version of the

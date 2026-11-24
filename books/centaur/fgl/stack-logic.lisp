@@ -151,7 +151,7 @@ passed into a function or bound to a different variable in a lambda.</p>
   :short "A list of scratch objects (type @(see scratchobj)) representing arguments
           to future function calls, etc.")
 
-(fty::defoption maybe-fgl-generic-rule fgl-generic-rule-p)
+(fty::defoption maybe-fgl-rule fgl-rule-p)
 
 
 (fty::defprod minor-frame
@@ -160,7 +160,7 @@ passed into a function or bound to a different variable in a lambda.</p>
   ((bindings fgl-object-bindings-p "The full list of bindings for locally bound variables.")
    (scratch scratchlist-p "The current scratch list.")
    (term pseudo-termp
-               "Debug info identifying the lambda call from which this frame arose,
+         "Debug info identifying the lambda call from which this frame arose,
                 nil if top level of the current rule")
    (term-index acl2::maybe-natp "Depth-first index of the term we're currently looking at within
                      debug-term"
@@ -183,7 +183,7 @@ passed into a function or bound to a different variable in a lambda.</p>
     :short "A major stack frame representing an entirely new namespace such as
             a function definition or rewrite rule."
     ((bindings fgl-object-bindings-p "Top-level variable bindings of the scope.")
-     (rule maybe-fgl-generic-rule-p "Rule applied to make this stack frame.")
+     (rule maybe-fgl-rule-p "Rule applied to make this stack frame.")
      (phase acl2::maybe-natp :rule-classes :type-prescription
             "Hyp number or RHS when greater")
      (minor-stack minor-stack-p :default ',(list (make-minor-frame))
@@ -273,7 +273,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                                                                      frame.bindings))
                            (cdr x)))))
 
-(define stack$a-set-rule ((rule maybe-fgl-generic-rule-p)
+(define stack$a-set-rule ((rule maybe-fgl-rule-p)
                           (x major-stack-p))
   :returns (stack major-stack-p)
   (major-stack-fix (cons (change-major-frame (car x) :rule rule)
@@ -287,9 +287,9 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 (local (defthm fgl-object-bindings-p-of-append
-           (implies (and (fgl-object-bindings-p x)
-                         (fgl-object-bindings-p y))
-                    (fgl-object-bindings-p (append x y)))))
+         (implies (and (fgl-object-bindings-p x)
+                       (fgl-object-bindings-p y))
+                  (fgl-object-bindings-p (append x y)))))
 
 (define stack$a-set-minor-bindings ((bindings fgl-object-bindings-p)
                                     (x major-stack-p))
@@ -337,7 +337,7 @@ passed into a function or bound to a different variable in a lambda.</p>
   :returns (bindings fgl-object-bindings-p)
   (major-frame->bindings (car x)))
 
-                  
+
 
 (define stack$a-nth-frame-bindings ((n natp)
                                     (x major-stack-p))
@@ -352,13 +352,13 @@ passed into a function or bound to a different variable in a lambda.</p>
                                 (x major-stack-p))
   :guard (< n (stack$a-frames x))
   :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
-  :returns (rule maybe-fgl-generic-rule-p)
+  :returns (rule maybe-fgl-rule-p)
   (major-frame->rule (nth (mbe :logic (min (1- (stack$a-frames x)) (nfix n))
                                :exec n)
                           (major-stack-fix x))))
 
 (define stack$a-nth-frame-phase ((n natp)
-                                (x major-stack-p))
+                                 (x major-stack-p))
   :guard (< n (stack$a-frames x))
   :guard-hints (("goal" :in-theory (enable stack$a-frames max)))
   :returns (phase acl2::maybe-natp)
@@ -389,7 +389,7 @@ passed into a function or bound to a different variable in a lambda.</p>
 
 
 (define stack$a-rule ((x major-stack-p))
-  :returns (rule maybe-fgl-generic-rule-p)
+  :returns (rule maybe-fgl-rule-p)
   (major-frame->rule (car x)))
 
 (define stack$a-phase ((x major-stack-p))
@@ -656,6 +656,8 @@ passed into a function or bound to a different variable in a lambda.</p>
   (scratchobj-case x
     :fgl-obj (fgl-object-bfrlist x.val)
     :fgl-objlist (fgl-objectlist-bfrlist x.val)
+    :fgl-arglist (fgl-arglist-bfrlist x.val)
+    :fgl-bindings (fgl-object-bindings-bfrlist x.val)
     :bfr (list x.val)
     :bfrlist x.val
     :cinst (constraint-instance-bfrlist x.val)
@@ -688,10 +690,10 @@ passed into a function or bound to a different variable in a lambda.</p>
                       (equal (<prefix>-bfrlist (scratchobj-<kind>->val x))
                              (scratchobj->bfrlist x))))
           (scratchobj-tmplsubsts (set-difference-equal
-                                      *scratchobj-types*
-                                      (acl2::fal-extract
-                                       '(:bfr :bfrlist :fnsym :formals)
-                                       *scratchobj-types*))))))
+                                  *scratchobj-types*
+                                  (acl2::fal-extract
+                                   '(:bfr :bfrlist :fnsym :formals)
+                                   *scratchobj-types*))))))
 
   (defthm bfrlist-of-scratchobj-bfr->val
     (implies (and (not (member v (scratchobj->bfrlist x)))
@@ -703,7 +705,7 @@ passed into a function or bound to a different variable in a lambda.</p>
                   (scratchobj-case x :bfrlist))
              (not (member v (scratchobj-bfrlist->val x))))))
 
-  
+
 
 (define scratchlist-bfrlist ((x scratchlist-p))
   :returns (bfrs)
@@ -813,6 +815,8 @@ passed into a function or bound to a different variable in a lambda.</p>
   (scratchobj-case x
     :fgl-obj (fgl-object-bfrs-ok x.val)
     :fgl-objlist (fgl-objectlist-bfrs-ok x.val)
+    :fgl-arglist (fgl-arglist-bfrs-ok x.val)
+    :fgl-bindings (fgl-object-bindings-bfrs-ok x.val)
     :bfr (bfr-p x.val)
     :bfrlist (bfr-listp x.val)
     :cinst (constraint-instance-bfrs-ok x.val)
@@ -826,6 +830,8 @@ passed into a function or bound to a different variable in a lambda.</p>
                                    (bfrlist-of-scratchobj-bfrlist->val
                                     bfrlist-of-scratchobj-fgl-obj->val
                                     bfrlist-of-scratchobj-fgl-objlist->val
+                                    bfrlist-of-scratchobj-fgl-arglist->val
+                                    bfrlist-of-scratchobj-fgl-bindings->val
                                     bfrlist-of-scratchobj-bfr->val
                                     bfrlist-of-scratchobj-cinst->val
                                     bfrlist-of-scratchobj-cinstlist->val))))))
@@ -843,3 +849,11 @@ passed into a function or bound to a different variable in a lambda.</p>
     (equal ok
            (bfr-listp (scratchlist-bfrlist x)))
     :hints(("Goal" :in-theory (e/d (scratchlist-bfrlist))))))
+
+
+;; Advance the optional term position recorded by a stack frame.
+
+(define term-index-incr ((n posp) (term-index acl2::maybe-natp))
+  :inline t
+  :returns (new-index natp :rule-classes :type-prescription)
+  (+ (lposfix n) (or (acl2::maybe-natp-fix term-index) -1)))

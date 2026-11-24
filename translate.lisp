@@ -4462,7 +4462,7 @@
 
 (defun warrant-name (fn)
 
-; Warning: Keep this in sync with warrant-name-inverse.  This function is
+; Warning: Keep this in sync with warrant-function-namep.  This function is
 ; purely syntactic.  There is no guarantee that the returned symbol is actually
 ; the defwarrant-created warrant function of fn!  Fn may have no warrant!
 
@@ -4476,28 +4476,18 @@
                 (symbol-name fn))
    fn))
 
-(defun warrant-name-inverse (warrant-fn)
-
-; Warning: Keep this in sync with warrant-name (q.v.).
-
-  (declare (xargs :guard (symbolp warrant-fn)))
-  (let ((warrant-fn-name (symbol-name warrant-fn)))
-    (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
-         (intern-in-package-of-symbol
-          (subseq warrant-fn-name
-                  15 ; (length "APPLY$-WARRANT-")
-                  (length warrant-fn-name))
-          warrant-fn))))
-
 (defun warrant-function-namep (warrant-fn wrld)
 
 ; We check whether warrant-fn is the warrant function of some function, fn.  If
 ; fn has a warrant, its name is APPLY$-WARRANT-fn.  But having a name of that
 ; shape is no guarantee that the function is the warrant function for fn.  (Fn
 ; may have no warrant function and apply$-warrant-fn might have been --
-; maliciously! -- defined by the user.)  Thus, we answer this question by
-; recovering fn from warrant-fn and then looking in the badge-userfn-structure
-; to see whether fn has a warrant.
+; maliciously! -- defined by the user.)  There could also be a package issue;
+; see books/system/tests/fake-warrant-defpkg.lisp and
+; books/system/tests/fake-warrant-name-import.lisp.  Thus, we answer this
+; question by recovering fn from warrant-fn, checking that warrant-fn is indeed
+; the warrant-name of fn, and then looking in the badge-userfn-structure to see
+; whether fn has a warrant.
 
 ; Note: We allow the user to define functions named APPLY$-WARRANT-fn
 ; independently of warrants, but that would preclude the subsequent warranting
@@ -4511,8 +4501,15 @@
 
   (declare (xargs :guard (and (symbolp warrant-fn)
                               (plist-worldp wrld))))
-  (let ((fn (warrant-name-inverse warrant-fn)))
+  (let* ((warrant-fn-name (symbol-name warrant-fn))
+         (fn (and (string-prefixp "APPLY$-WARRANT-" warrant-fn-name)
+                  (intern-in-package-of-symbol
+                   (subseq warrant-fn-name
+                           15 ; (length "APPLY$-WARRANT-")
+                           (length warrant-fn-name))
+                   warrant-fn))))
     (and fn
+         (eq (warrant-name fn) warrant-fn)
          (get-warrantp fn wrld))))
 
 ; We originally defined the apply$-badge and the commonly used generic badges in
@@ -21846,7 +21843,7 @@
                    'return-last 'top-level))))
         (t (mv nil nil))))
 
-(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings)
+(defun chk-return-last-call (key keyp arg2 arg3 wrld x bindings flet-alist)
 
 ; Bindings and x are nil if we are not in translate.
 
@@ -21860,16 +21857,12 @@
                                      (corresponding-inline-fn (car arg3)
                                                               wrld))))
                            (and fn
+                                (not (assoc-eq fn flet-alist))
+                                (not (assoc-eq (car arg3) flet-alist))
                                 (not (member-eq fn *ec-call-bad-ops*))))))))
          (mv-msg t x
-                 "The argument ~x0 is illegal for ~x2, because ~@1.  A call ~
-                  of ~x2 must only be made on an argument of the form (FN ~
-                  ...), where FN is a known function symbol of the current ~
-                  ACL2 world not belonging to the list that is the value of ~
-                  the constant ~x3, or is a macro expanding in a certain ~
-                  direct way (as with defun-inline) to a call of FN$INLINE ~
-                  (i.e., the result of adding suffix \"$INLINE\" to the ~
-                  symbol-name of FN).  See :DOC ec-call."
+                 "The argument ~x0 is illegal for ~x2, because ~@1.  See :DOC ~
+                  ec-call."
                  arg3
                  (let* ((fn0 (and (consp arg3)
                                   (car arg3)))
@@ -21877,14 +21870,26 @@
                                  (symbolp fn0)
                                  (if (function-symbolp fn0 wrld)
                                      fn0
-                                   (corresponding-inline-fn fn0
-                                                            wrld)))))
+                                   (corresponding-inline-fn fn0 wrld)))))
                    (cond ((not (and fn0
                                     (true-listp arg3)))
                           (msg "~x0 does not have the form of a function call"
                                arg3))
                          ((not (symbolp fn0))
                           (msg "~x0 is not a symbol" fn0))
+
+; See books/system/tests/ec-call-under-flet.lisp for why the next two cases,
+; which regard flet, are necessary.
+
+                         ((assoc-eq fn0 flet-alist)
+                          (msg "~x0 is bound by a superior FLET or MACROLET ~
+                                form"
+                               fn0))
+                         ((assoc-eq fn flet-alist) ; so fn is not fn0
+                          (msg "~x0 is a macro abbreviating ~x1, which is ~
+                                bound by a superior FLET or MACROLET form"
+                               fn0
+                               fn))
                          ((member-eq fn *ec-call-bad-ops*)
                           (msg "~x0 belongs to ~x1"
                                fn
@@ -26850,7 +26855,7 @@
 
                          (chk-return-last-call-1 key keyp wrld x bindings))
                         (t (chk-return-last-call key keyp arg2 arg3 wrld x
-                                                 bindings)))
+                                                 bindings flet-alist)))
                   (cond
                    (erp (if (eq erp t)
                             (trans-er ctx "~@0" msg)

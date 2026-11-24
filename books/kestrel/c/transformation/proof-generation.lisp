@@ -38,8 +38,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We collect some proof generation utilities
-     that should be of general use.")
+    "We collect some proof generation utilities of general use.")
    (xdoc::p
     "ACL2 functions that carry out proof-generating transformations
      have certain general inputs and outputs that are independent from
@@ -60,7 +59,7 @@
     (xdoc::li
      "If the execution of the old construct does not yield an error,
       neither does the execution of the new construct,
-      and the two executions return the same results.")
+      and the two executions return equivalent results.")
     (xdoc::li
      "If applicable to the construct,
       the type of the result is consistent with the type, or set of types,
@@ -3066,7 +3065,8 @@
       (implies (and (gout->thm-name gout)
                     (or (not ideclors-thm-name)
                         (and (init-declor-list-obj-block-formalp ideclors)
-                             (init-declor-list-obj-block-formalp ideclors-new))))
+                             (init-declor-list-obj-block-formalp
+                              ideclors-new))))
                (and (b* (((mv okp tyspecs)
                           (check-decl-spec-list-all-typespec specs)))
                       (and okp
@@ -3492,8 +3492,26 @@
     (xdoc::li
      "The main theorem for the function definition,
       saying that, if the execution of the old function does not yield an error,
-      neither does the execition of the new function,
+      neither does the execution of the new function,
       and they return the same results and computation states."))
+   (xdoc::p
+    "The main theorem also says that the type of the result is in
+     the set of types calculated by @(tsee fundef-types)
+     from the body of the function.
+     The return type of the function may not be in that set:
+     for instance, an @('int') function may return
+     an expression of type @('short'),
+     which C converts to @('int'),
+     but our formal semantics of C does not cover this conversion yet.
+     In this situation, the execution of the old function yields an error,
+     and so the theorem holds, given its hypothesis that there is no error.
+     For the proof to work in this situation too,
+     the hints include @(tsee c::type-option-of-stmt-value)
+     and the executable counterpart of @(tsee c::type-of-value-option),
+     which let the prover combine
+     the check on the type of the result in @(tsee c::exec-fun)
+     with the fact, from the theorem for the body,
+     that the type of the value returned by the body is in the set.")
    (xdoc::p
     "We treat the special singleton @('(void)') parameter list
      as an empty list before mapping the parameters
@@ -3684,8 +3702,10 @@
                         (:e ldm-type-set)
                         (:e ldm-comp-stmt)
                         (:e c::tyname-to-type)
+                        (:e c::type-of-value-option)
                         (:e c::block-item-list-nocallsp)
                         (:e set::in)
+                        c::type-option-of-stmt-value
                         c::errorp-of-error
                         c::compustate-frames-number-of-push-frame
                         (:t c::compustate-frames-number)))))

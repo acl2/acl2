@@ -1656,10 +1656,11 @@
 (assert-event (not (xid-start-p #x0301))) ; COMBINING ACUTE ACCENT
 (assert-event (xid-continue-p #x0301))
 
-; ZWNJ and ZWJ are in XID_Continue in the modern UCD
-; (UTS #39 security profiles exclude them, but UAX #31 does not);
-; whether rustc's identifier acceptance matches raw XID_Continue here
-; is to be settled by differential testing when [SC4] is wired in.
+; ZWNJ and ZWJ are in XID_Continue, since Unicode 15.1.0
+; (UTS #39 security profiles exclude them, but UAX #31 does not).
+; rustc accepts them in identifiers, after the first character,
+; although the Rust Reference says that they are not allowed:
+; see the xdoc topic reference-vs-rustc.
 
 (assert-event (not (xid-start-p #x200d))) ; ZERO WIDTH JOINER
 (assert-event (xid-continue-p #x200d))

@@ -271,22 +271,6 @@
 
 ;; (include-book "congruence-rules")
 
-
-(local (defthm fgl-ev-context-equv-forall-extensions-trivial
-         (implies (acl2::rewriting-negative-literal
-                   `(fgl-ev-context-equiv-forall-extensions ,contexts ,obj ,term ,eval-alist))
-                  (iff (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)
-                       (and 
-                        (equal (fgl-ev-context-fix contexts (fgl-ev term eval-alist))
-                               (fgl-ev-context-fix contexts obj))
-                        (hide (fgl-ev-context-equiv-forall-extensions contexts obj term eval-alist)))))
-         :hints (("goal" :expand ((:free (x) (hide x)))
-                  :use ((:instance fgl-ev-context-equiv-forall-extensions-necc
-                         (ext eval-alist)))
-                  :in-theory (disable fgl-ev-context-equiv-forall-extensions-necc)))))
-
-(local (in-theory (disable fgl-ev-context-equiv-forall-extensions)))
-
 (local (defthm equal-of-cons
          (equal (equal (cons x y) z)
                 (and (consp z)
@@ -306,8 +290,8 @@
 (def-fgl-binder-meta fgl-make-isomorphic-binder
   (b* (((mv ok new-x new-y) (fgl-objects-make-isomorphic x y)))
     (mv t 'ans `((ans . ,(g-cons (g-concrete ok)
-                                (g-cons new-x
-                                        (g-cons new-y nil)))))
+                                 (g-cons new-x
+                                         (g-cons new-y nil)))))
         nil interp-st state))
   :formula-check iso-formula-checks
   :origfn fgl-make-isomorphic :formals (x y))

@@ -31923,11 +31923,12 @@ ld) and @(tsee include-book)"
   (ec-call (fn term1 ... termk) :dfs-in 'dfs-in :dfs-out dfs-out)
  })
 
- <p>where @('fn') is a known function symbol other than those in the list that
- is the value of the constant @('*ec-call-bad-ops*').  (But see the Note on
- Inlining below for an exception pertaining to inlining.)  In particular,
- @('fn') is not a macro.  The second form is only relevant for those who use
- @(see df)s and is discussed at the end of this topic.</p>
+ <p>where @('fn') is a known function symbol that is not in the list value of
+ the constant @('*ec-call-bad-ops*') and is not locally bound by @(tsee
+ flet).  (But see the Note on Inlining below for an exception pertaining to
+ inlining.)  In particular, @('fn') is not a macro.  The second form is only
+ relevant for those who use @(see df)s and is discussed at the end of this
+ topic.</p>
 
  <p>Semantically, @('(ec-call (fn term1 ... termk))') equals @('(fn term1
  ... termk)').  However, this use of @('ec-call') has two effects.</p>
@@ -32280,6 +32281,9 @@ ld) and @(tsee include-book)"
  functions to consider memoizing.  Perhaps ACL2 users will contribute further
  documentation on which system functions to memoize for efficiency.</p>
 
+ <p>See @(see induction-coarse-v-fine-grained) for how to control induction
+ schemes to speed up proofs.</p>
+
  <p>The following may be helpful at the level of book certification, and are
  discussed in :doc certify-book-debug.</p>
 
@@ -32288,6 +32292,9 @@ ld) and @(tsee include-book)"
  (set-bad-lisp-consp-memoize nil)
  (set-inhibit-output-lst '(proof-tree event))
  })
+
+ <p>See also @(see fast-cert) for a way to speed up book certification during
+ development of a set of books.</p>
 
  <h3>Programming efficiency</h3>
 
@@ -74525,7 +74532,7 @@ it."
 
  @({
  (defun fn-limit (x1 ... xn limit)
-   (declare ...) ; optional, as usual for defun ; ;
+   (declare ...) ; optional, as usual for defun
    (if (zp limit)
        <base>
      (let ((limit (1- limit)))
@@ -74541,7 +74548,10 @@ it."
  @('<body>') is converted to a translated term (see @(see term)).  In other
  words, the translation of @('<body>') must have the property that the limit
  variable only occurs in recursive calls, and in those calls it occurs exactly
- as the final argument and not in any other arguments.</p>
+ as the final argument and not in any other arguments.  (There are two
+ additional, perhaps obscure restrictions: the body of @('fn-limit') must not
+ use @(tsee ec-call) on any recursive call of that function, and @('fn-limit')
+ must not have @(tsee xargs) specifying @(':loop$-recursion t').)</p>
 
  <p>Such use of a ``limit'' argument to obtain termination is an old trick that
  pre-dates ACL2.  Such ``limited'' functions have traditionally often been
@@ -110053,10 +110063,10 @@ it."
 ; need for a theorem F-IS-G, rather than |F-is-G|.  The error message also
 ; notes that the supporting theorem must be admitted non-locally.
 
-; Made several proof-builder variables and functions untouchable, which can
-; avoid soundness bugs.  For examples see community book
-; system/tests/proof-builder-untouchables.lisp.  Thanks to Eric Smith for
-; passing along this issue from AI.
+; Made several variables and functions untouchable, in particular pertaining to
+; the proof-builder, which can avoid soundness bugs.  For a few examples see
+; community book system/tests/proof-builder-untouchables.lisp.  Thanks to Eric
+; Smith for passing along this issue from AI.
 
 ; Tweaked the definition of built-in function ev-fncall-rec-logical by adding
 ; ec-call wrappers.  See that definition, in ACL2 source file
@@ -110093,6 +110103,13 @@ it."
 ; Lisp evaluation at compile time.  See
 ; books/system/tests/with-debug-untranslated-args.lisp.  Thanks to Eric Smith
 ; for passing along this bug from AI.
+
+; State global in-verify-flg is the ld-level when inside verify, as before.
+; But now it is t instead of nil when inside the proof-builder but not inside
+; verify.  New function (in-verify state) uses in-verify-flg to recognize when
+; we are inside verify.  These changes support the release note item on
+; disallowing the use of verify or retrieve inside the proof-builder (whether
+; or not inside verify).
 
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
@@ -110723,6 +110740,150 @@ it."
  standard input stream.  This could happen in @(':')@(tsee program)-mode code,
  causing an infinite loop in at least one Lisp implementation (SBCL).</p>
 
+ <p>Calls of @(tsee verify) and @(tsee retrieve) are now illegal when made
+ inside the @(see proof-builder).  This change avoids unsoundness: proofs of
+ @('nil') were possible due to the lack of those restrictions.  See for example
+ @(see community-books) files @('system/tests/verify-fn-pc-macro-book.lsp') and
+ @('system/tests/pc-macro-retrieve-fn-error-save.lsp').</p>
+
+ <p>An infinite loop was possible when the compiled lambda cache (see @(tsee
+ print-cl-cache)) is full.  This bug (which was in source function
+ @('invalidate-some-cl-cache-lines')) has been fixed.  See @(see
+ community-books) @('system/tests/cl-cache-full-ring-hang.lisp'),
+ @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
+ @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
+
+ <p>Termination analysis involving @(tsee loop$) was sometimes faulty, as
+ demonstrated in the @(see community-books)
+ @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
+ @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
+ @('system/tests/loop-recursion-plain-target-subst.lisp'), and
+ @('system/tests/loop-recursion-double-subst-do-guard.lisp'), due to the
+ inadvertent double application of substitutions intended to instantiate
+ locally bound variables.  This soundness bug has been fixed: corrected code is
+ in source function @('termination-machine-rec') with comments explaining the
+ mistake.</p>
+
+ <p>Fixed a soundness bug caused by execution of the raw-Lisp stobj creator
+ during a proof about a @(see stobj-table).  See @(see community-book)
+ @('system/tests/star1-stobj-let-creator-non-live.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see provisional-certification) that could occur
+ when changing and recertifying a sub-book before the final certification takes
+ place.  For details see a comment in ACL2 source function
+ @('include-book-alist-uncertified-books').</p>
+
+ <p>Fixed a soundness bug in @(see tau) related to properly encoding the
+ assumption that something is non-@('NIL') when it is also assumed to be not
+ equal to one or more numeric constants.  See @(see community-books)
+ @('system/tests/tau-neg-evgs-nil-first.lisp') and
+ @('system/tests/tau-neg-evgs-nil-first-lower-bound.lisp').</p>
+
+ <p>Fixed a soundness bug in @(see tau) related to failing to detect that
+ adding a new constraint to a tau produces a contradiction.  See @(see
+ community-books)
+ @('system/tests/tau-bound-overwrites-pos-evg.lisp').</p>
+
+ <p>Fixed a @(see tau) bug leading to a hard error, manifested when a tau that
+ asserts its subject is a particular constant is extended to include an
+ interval that does not contain the constant.  This should have caused a
+ contradiction but instead returned a tau that was contradictory but not the
+ canonical tau contradiction.  See @(see community-book)
+ @('system/tests/tau-combine-hard-error.lisp').</p>
+
+ <p>Fixed a @(see tau) soundness bug related to the application of signature
+ rules.  When we apply a signature rule we have to check that the tau of the
+ instance of each variable implies the tau of the hypothesis about that
+ variable.  But these two taus may be computed under different enabled
+ structures and that can affect which tau predicates are known to be true or
+ false for explicit constants.  See @(see community-books)
+ @('system/tests/tau-implies-disabled-exec.lisp'),
+ @('system/tests/tau-implies-pos-evg-ignores-interval.lisp'), and
+ @('system/tests/tau-implies-pos-evg-ignores-recognizers.lisp').</p>
+
+ <p>The @(see tau) system represents the ``universal interval'' by @('nil').
+ But sometimes it has to add a restriction to that interval's domain.  However,
+ that creates an ill-formed interval that could be exploited to prove @('nil').
+ This was fixed by changing @('collect-bounder-args').  See @(see
+ community-books) @('system/tests/tau-bounder-nil-interval.lisp').</p>
+
+ <p>Fixed two soundness bugs in @(tsee memoize-partial) by implementing the
+ following prohibitions on its total function (the one with the
+ &ldquo;limit&rdquo; variable as its last argument).</p>
+
+ <ul>
+
+ <li>The use of @(tsee ec-call) is prohibited on recursive calls of that total
+ function; see @(see community-book)
+ @('system/tests/memoize-partial-ec-call.lisp').</li>
+
+ <li>The use of @(':loop$-recursion t') is prohibited in any @(tsee xargs)
+ declaration of that total function; see @(see community-book)
+ @('system/tests/memoize-partial-loop-flet-capture.lisp').</li>
+
+ </ul>
+
+ <p>Fixed a soundness bug that allowed a @(tsee table) event to supply
+ arbitrary code to run for a function memoized with @(tsee memoize-partial)
+ (or with the @(':total') argument of @(tsee memoize)).  For an example, see
+ @(see community-book) @('system/tests/memoize-partial-table-def.lisp').</p>
+
+ <p>Fixed a soundness bug in the check on whether a symbol @('warrant-fn') is
+ the warrant function of some function, @('fn') (as performed by ACL2 system
+ function @('warrant-function-namep')).  See @(see community-books)
+ @('system/tests/fake-warrant-defpkg.lisp') and
+ @('system/tests/fake-warrant-name-import.lisp').</p>
+
+ <p>Fixed a @(see tau) bug leading to a proof of @('nil') manifested when a
+ singleton tau interval is derived that includes one of the constants known not
+ to be in the tau.  See @(see community-books)
+ @('system/tests/tau-singleton-ignores-neg-evgs-signature.lisp') and
+ @('system/tests/tau-singleton-ignores-neg-evgs.lisp').</p>
+
+ <p>Fixed a @(see tau) bug leading to a proof of @('nil') manifested when
+ @('(booleanp (not x))') is proved as rule, tricking tau into classifying
+ @('not') as a tau predicate instead of only treating it as negation. See @(see
+ community-book) @('system/tests/tau-not-recognizer-conjunctive.lisp').</p>
+
+ <p>Fixed a soundness bug in the implementation of @(tsee apply$) for @(see
+ badge)d functions applied to the wrong number of arguments.  The original
+ implementation failed to check that the list of arguments was a @(tsee
+ true-listp).  See @(see community-book)
+ @('system/tests/apply-string-args-take.lisp').</p>
+
+ <p>Fixed a soundness bug in @(tsee defwarrant) allowing it to issue a warrant
+ for some functions calling constrained functions whose constraints depend on
+ @(tsee apply$).  See @(see community-books)
+ @('system/tests/apply-equivalence-witness-g1-warrant.lisp') and
+ @('system/tests/defwarrant-constrained-callee.lisp').</p>
+
+ <p>Added several function symbols, generally related to evaluation, to the
+ list of built-in untouchable function symbols
+ (@('*initial-untouchable-fns*')), and added @('boot-strap-flg') to the list of
+ built-in state global variable symbols (@('*initial-untouchable-vars*')).
+ This fixes several unsound behaviors.  See @(see community-books) directory
+ @('system/tests/untouchables/').</p>
+
+ <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
+ truncate) and related functions, due to a <a
+ href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
+ described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
+ ACL2 source file @('acl2.lisp').</p>
+
+ <p>Fixed a bug in the maintenance of the compiled lambda cache related to
+ undoing.  By using a quoted lambda containing an undefined function it was
+ possible to produce a cache line with @(':status :GOOD) even if the lambda
+ mentioned an undefined function.  This was caused the lambda is applied (and
+ guard verified) while the undefined function is being defined.  In that case,
+ the lambda was assigned an @(':abs-event-no') that was lower than that of the
+ newly defined function, so that when the function is undone, the cache line
+ remained marked @(':status :GOOD').  Now, retraction of the world marks every
+ cache line as @(':status :UNKNOWN') and lines will be re-validated if and when
+ their lambdas are applied.  See @(see community-books)
+ @('system/tests/cl-cache-failed-defun-good-line.lisp'),
+ @('system/tests/cl-cache-local-defun-good-line.lisp'), and
+ @('system/tests/cl-cache-make-event-expansion-good-line.lisp').</p>
+
  <h3>Other Bug Fixes</h3>
 
  <p>Fixed a soundness bug caused by creation of a character that is not an ACL2
@@ -110810,17 +110971,31 @@ it."
  printed.  This can prevent a raw Lisp error during evaluation.  Thanks to
  Warren Hunt for reporting this bug.</p>
 
- <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader).</p>
-
  <p>Applied fixes from Eric McCarthy for the @(see sharp-f-reader) (Pull
  Request #2086), @(see sharp-u-reader) (Pull Request #2087), and @(see
  sharp-d-reader) (Pull Request #2088).</p>
 
- <p>Avoid clearing standard input &mdash; specifically, @(tsee *standard-oi*)
- &mdash; there is a reader error while reading other than @('*standard-oi*').
- This change closes PR #2099 and includes the tests from that PR in @(see
- community-books) @('system/tests/reader-error*.*'); thanks to Eric McCarthy
- and AI for that PR.</p>
+ <p>When there is a reader error, ACL2 formerly cleared the input stream
+ unconditionally.  Now, that is done only when @(tsee standard-oi) is its
+ initial value, that is, the value of @(tsee *standard-oi*).  This change
+ closes PR #2099 and includes the tests from that PR in @(see community-books)
+ @('system/tests/reader-error*.*'); thanks to Eric McCarthy and AI for that
+ PR.</p>
+
+ <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder),
+ except when inside a @(see wormhole) as when inside @(see break-rewrite).  The
+ following example shows why.</p>
+
+ @({
+ (verify (equal x x))
+ (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
+ :q
+ ; Now the exit command failed to work, so we were stuck in the proof-builder.
+ })
+
+ <p>Fixed a soundness bug caused by permitting @(tsee ec-call) to be used with
+ a function that is locally bound by @(tsee flet).  This now causes an error.
+ See @(see community-book) @('system/tests/ec-call-under-flet.lisp').</p>
 
  <h3>Changes at the System Level</h3>
 
@@ -119958,7 +120133,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
   ADVANCED TOPICS
  })
 
- <p>ENABLING PROGRAMMING WITH STATE</p>
+ <h3>ENABLING PROGRAMMING WITH STATE</h3>
 
  <p>In order to submit a definition that takes @(tsee state) as a formal
  parameter, you must either declare @('state') as a @(':')@(tsee stobj) (see
@@ -119996,7 +120171,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  proof obligation is generated by default.  See the section below entitled ``A
  remark on guards''.</p>
 
- <p>STATE GLOBALS AND THE ACL2 LOGICAL WORLD</p>
+ <h3>STATE GLOBALS AND THE ACL2 LOGICAL WORLD</h3>
 
  <p>Recall (see @(see state)) that one of the fields of the ACL2 state object
  is the global-table, which logically is an alist associating symbols, known as
@@ -120062,7 +120237,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  workaround using @('make-event'); see @(see make-event), in particular the
  section ``Examples Illustrating How to Access State''.</p>
 
- <p>A REMARK ON GUARDS</p>
+ <h3>A REMARK ON GUARDS</h3>
 
  <p>For a function definition (see @(see defun)), if @('state') is specified as
  a @(see stobj) as with the form @('(declare (xargs :stobjs state))'), then the
@@ -120114,7 +120289,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  @(tsee xargs) fields of @(see declare) forms, specifically, for keywords
  @(':guard'), @(':stobjs'), and @(':dfs').</p>
 
- <p>ERRORS AND ERROR TRIPLES</p>
+ <h3>ERRORS AND ERROR TRIPLES</h3>
 
  <p>When evaluation returns three values, where the first two are ordinary
  objects and the third is the ACL2 state, the result may be called an ``error
@@ -120280,7 +120455,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  <p>In the next section we discuss soft errors further, in the context of
  programming.</p>
 
- <p>SEQUENTIAL PROGRAMMING</p>
+ <h3>SEQUENTIAL PROGRAMMING</h3>
 
  <p>This section describes handy ways to modify state in steps, using macros
  that implement a sequence of @(tsee let) or @(tsee mv-let) bindings.  For
@@ -120370,7 +120545,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  @('progn') (or of @('progn!')  either), and the same restriction holds for any
  code to be executed, such as the body of a @(tsee make-event) form.</p>
 
- <p>BINDING VARIABLES USING ERROR TRIPLES</p>
+ <h3>BINDING VARIABLES USING ERROR TRIPLES</h3>
 
  <p>In this section we discuss the macro @('er-let*'), which is a variant of
  the special form, @(tsee let*), that is useful when programming with state.  A
@@ -120416,7 +120591,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  @('er-let*') and simply ignoring the error flag or, more generally, by
  returning a non-erroneous error triple even if the error flag was on.</p>
 
- <p>BINDING STATE GLOBAL VARIABLES</p>
+ <h3>BINDING STATE GLOBAL VARIABLES</h3>
 
  <p>In this section we introduce a utility, @(tsee state-global-let*), that is
  an analogue of @('let*') for state global variables.  Consider the following
@@ -120435,11 +120610,11 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
 
  <p>See @(see state-global-let*) for more complete @(see documentation).</p>
 
- <p>INPUT AND OUTPUT</p>
+ <h3>INPUT AND OUTPUT</h3>
 
  <p>In ACL2, most input and output involves the ACL2 state.  See @(see io).</p>
 
- <p>TIMINGS</p>
+ <h3>TIMINGS</h3>
 
  <p>For how to obtain the time elapsed since the start of the ACL2 session, see
  @(see read-run-time).</p>
@@ -120450,7 +120625,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  <p>To time an evaluation (though this really isn't about state), see @(see
  time$).</p>
 
- <p>ENVIRONMENT AND SYSTEM</p>
+ <h3>ENVIRONMENT AND SYSTEM</h3>
 
  <p>Next, we mention briefly some ways in which ACL2 interacts with its
  environment using the ACL2 state.</p>
@@ -120461,7 +120636,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  <p>For how to run a command in the host operating system, see @(see
  sys-call), @(see sys-call+), and @(see sys-call*).</p>
 
- <p>REMARKS ON EVENTS AND LD</p>
+ <h3>REMARKS ON EVENTS AND LD</h3>
 
  <p>In general, undefined or surprising behavior may occur when using ACL2
  @(see events) or calling @(see ld) in your programs.  In some cases ACL2
@@ -120477,7 +120652,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  @(tsee make-event) expansions; and it is only able to do this in event
  contexts, where it is able to carry out such tracking accurately.</p>
 
- <p>ADVANCED TOPICS</p>
+ <h3>ADVANCED TOPICS</h3>
 
  <p>ACL2 provides the function @('trans-eval') to evaluate an arbitrary form
  (after translating it to a @(see term), i.e., into internal form).  For more
@@ -176361,6 +176536,7 @@ expand function call at the current subterm, without simplifying"
 (defpointer tamep tame)
 (defpointer tamep-functionp tame)
 (defpointer tamep-lambdap tame)
+(defpointer tau tau-system)
 (defpointer thereis$ loop$)
 (defpointer thereis$+ loop$)
 (defpointer time-limit with-prover-time-limit) ; referenced in :doc prove$

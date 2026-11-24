@@ -10,13 +10,13 @@
 
 (in-package "REMORA")
 
+(include-book "portcullis")
+
 (include-book "centaur/fty/top" :dir :system)
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/strings/eqv" :dir :system)
-
-(include-book "portcullis")
 
 (local (include-book "std/basic/ifix" :dir :system))
 (local (include-book "std/basic/nfix" :dir :system))
@@ -34,30 +34,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We define fixtypes for abstract syntax trees (ASTs) for typed Remora,
-     based on
-     [thesis] (Figure 4.1),
-     [arxiv] (Figure 1),
-     [esop] (Figure 6),
-     and primarily [impl].
-     These ASTs are consistent with the "
+    "We define fixtypes for abstract syntax trees (ASTs) for Remora,
+     based on the "
     (xdoc::seetopic "grammar" "ABNF grammar of Remora")
-    ", which is derived from [impl];
-     the relation between these ASTs and the grammar
+    "; the relation between these ASTs and the grammar
      is formalized in @(see syntax-abstraction).")
    (xdoc::p
-    "We use the term `ispace' to refer to what [thesis] calls `index';
-     [impl] also uses `ispace'.
-     The rationale for `ispace' is that it denotes an index space,
-     i.e. a space where indices range;
-     one index over a dimension, zero or more indices over a shape.")
-   (xdoc::p
-    "These ASTs preserve much of the concrete syntax information,
-     so they include both core and non-core constructs.
-     We have defined a characterization of core ASTs
-     and a desugaring transformation from all ASTs to core ASTs.
+    "These ASTs preserve much of the concrete syntax information.
+     In particular, they include both core constructs and sugar.
      The ASTs in [impl] are more abstracted than ours;
-     they contain less sugar.")
+     they contain less sugar.
+     There is currently no official definition of core vs. sugar,
+     but we give a preliminary characterization in @(see abstract-syntax-core),
+     which may change in the future.")
    (xdoc::p
     "Our ASTs contain some information absent from the concrete syntax,
      such as certain type annotations.
@@ -66,7 +55,7 @@
     "Our ASTs are, in certain parts, more general than the concrete syntax,
      e.g. they allow certain required type information to be omitted.
      The concrete syntax of Remora may evolve in that direction,
-     particularly when Remora has type inference.")
+     particularly in combination with type inference.")
    (xdoc::p
     "As a general remark that applies to multiple fixtypes defined here,
      we use ACL2 strings for variable names.
@@ -90,12 +79,7 @@
      can decode the string with @(tsee acl2::utf8=>ustring).
      String equality on names is byte-wise,
      which agrees with code-point-sequence equality,
-     given the assumption that the strings are well-formed UTF-8.")
-   (xdoc::p
-    "The fixtypes for our ASTs do not enforce certain restrictions,
-     such as the non-emptiness of certain lists.
-     We can enforce these restrictions via separate predicates,
-     but we state them in the documentation of the AST fixtypes."))
+     given the assumption that the strings are well-formed UTF-8."))
   :order-subtopics t
   :default-parent t)
 

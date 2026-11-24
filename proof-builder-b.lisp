@@ -121,7 +121,7 @@
       (print-no-change2 "There are no hypotheses to drop!"))))
 
 (define-pc-meta lisp (form)
-  (cond ((not (f-get-global 'in-verify-flg state))
+  (cond ((not (in-verify state))
          (er soft 'acl2-pc::lisp
              "You may only invoke the proof-builder LISP command when ~
               you are inside the interactive loop."))
@@ -217,7 +217,7 @@
 ; We allow (exit .. nil ..) to indicate that information is to be picked up
 ; from the initial pc-state.
 
-  (if (not (f-get-global 'in-verify-flg state))
+  (if (not (in-verify state))
       (er soft 'acl2-pc::exit
           "You may not invoke the EXIT command unless inside the ~
            interactive loop.")
@@ -944,7 +944,7 @@
                                        (splitter-output)
                                        hints))
                    (clauses (list (list term))))
-               (if (f-get-global 'in-verify-flg state) ;interactive
+               (if (in-verify state) ;interactive
                    (state-global-let*
                     ((saved-output-p t)
                      (saved-output-token-lst :all))
@@ -953,7 +953,7 @@
                                                      state)
                             (prove-loop clauses pspv hints ens wrld ctx
                                         state)))
-                   (prove-loop clauses pspv hints ens wrld ctx state)))))
+                 (prove-loop clauses pspv hints ens wrld ctx state)))))
     (er-progn
      (chk-assumption-free-ttree ttree ctx state)
      (value ttree))))
@@ -3997,8 +3997,10 @@
     (cond
      ((f-get-global 'in-verify-flg state)
       (er soft 'retrieve
-          "You are apparently already inside the VERIFY interactive loop.  It is ~
-           illegal to enter such a loop recursively."))
+          "You are apparently already ~#0~[inside the VERIFY interactive ~
+           loop~/inside the proof-builder~].  It is illegal to enter the ~
+           proof-builder recursively."
+          (if (in-verify state) 0 1)))
      ((null ss-alist)
       (pprogn (io? proof-builder nil state
                    nil
@@ -4898,8 +4900,8 @@
                      (cond (outputp
                             (io? prove nil state
                                  (new-pc-depth)
-                                 (fms0 "~|~%[[~x0> Executing ~
-                                            proof-builder instructions]]~%~%"
+                                 (fms0 "~|~%[[~x0> Executing proof-builder ~
+                                        instructions]]~%~%"
                                        (list (cons #\0 new-pc-depth)))))
                            (t state))
                      (pc-assign next-pc-enabled-array-suffix
@@ -4937,21 +4939,33 @@
                                   (io? error nil state
                                        (name)
                                        (fms0 "~%Saving proof-builder error ~
-                                            state; see :DOC instructions.  To ~
-                                            retrieve:~|~x0"
+                                              state; see :DOC instructions.  ~
+                                              To retrieve:~|~x0"
                                              (list (cons #\0 `(retrieve ,name)))))
                                   (save-fn name (ss-alist) state)
                                   (er soft ctx
                                       "The above :INSTRUCTIONS hint failed.  ~
-                                     For a discussion of ``failed'', follow ~
-                                     the link to the SEQUENCE command under ~
-                                     :DOC proof-builder-commands."))))
+                                       For a discussion of ``failed'', follow ~
+                                       the link to the SEQUENCE command under ~
+                                       :DOC proof-builder-commands."))))
                               (t (value (proof-builder-clause-list
                                          state)))))))
              (cond (erp (silent-error state))
                    (t (value (cons clause-list (state-stack)))))))))))))
 
 (defun proof-builder-cl-proc (cl instr-list state)
+
+; This function leads to a call of pc-main, which calls
+; install-initial-state-stack.  Should we be concerned that a surrounding
+; proof-builder state is thus lost?  The answer is no, and here's why.
+
+; We expect this function to be called as a (trusted) clause-processor, by
+; apply-top-hints-clause, which calls eval-clause-processor.  Consider the case
+; where the proof builder issues a PROVE command with :HINTS that invoke the
+; proof-builder via an :INSTRUCTIONS hint.  The existing proof-builder state
+; (state-stack, etc.) is saved and restored by the use of
+; protect-system-state-global in eval-clause-processor.
+
   (mv-let (erp clause-list/state-stack state)
     (proof-builder-cl-proc-1 cl instr-list state)
     (cond (erp (mv erp clause-list/state-stack state nil))

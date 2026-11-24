@@ -488,27 +488,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-scalar-array ((type typep))
-  :guard (type-atom-kindp type)
-  :returns (array-type typep)
-  :short "Lift an atom type to a scalar (i.e. zero-ranked) @(':array') type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This builds an @(':array') type with the empty shape,
-     not a @(':scalar') type (see @(tsee type)).
-     We may eventually eliminate this function,
-     using the constructor @(tsee type-scalar) instead."))
-  (make-type-array :elem type :ispace (ispace-shape (shape-dims nil)))
-
-  ///
-
-  (defret type-array-kindp-of-type-scalar-array
-    (type-array-kindp array-type)
-    :hints (("Goal" :in-theory (enable type-array-kindp-alt-def)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define type-ensure-array ((type typep))
   :returns (type1 typep)
   :short "Ensure that a type is an array type,

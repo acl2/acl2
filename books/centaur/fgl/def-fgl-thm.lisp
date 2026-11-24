@@ -129,14 +129,9 @@ follows:</p>
  })
 
 <p>The main keyword arguments supported include the fields of the @(see
-fgl-config) object, and a few others listed below.  Each field of the
-@('fgl-config') object is assigned as follows:</p>
-<ul>
-<li>The explicit value given in the @('def-fgl-thm') form, if there is one</li>
-<li>Else if the table @('fgl::fgl-config-table') has an entry for the keyword field name, the value to which it is bound</li>
-<li>Else if the keyword field name is bound as a state global, its global value</li>
-<li>Else the default value defined by @(see make-fgl-config).</li>
-</ul>
+fgl-config) object, and a few others listed below. See @(see fgl-config) for
+the precedence of explicit arguments, @(':fgl-*') state globals, table
+settings, and defaults.</p>
 
 <p>The non-@('fgl-config') keywords recognized are:</p>
 <ul>
@@ -149,8 +144,7 @@ arguments.  If any of these are provided, a @('defsection') containing the
 theorem is created, rather than just the theorem.</li>
 </ul>
 
-<p>For now, other keyword arguments are accepted and ignored without complaint.
-This probably will someday need to change.</p>
+<p>Unrecognized keyword arguments cause an error.</p>
 ")
 
 

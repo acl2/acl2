@@ -13,7 +13,6 @@
 
 (include-book "projects/x86isa/machine/segmentation" :dir :system)
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
-(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 ;(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "state")
 (include-book "memory32")
@@ -2892,7 +2891,8 @@
                            (RB-1 2
                                   (+ EFF-ADDR (xr :seg-hidden-base seg-reg X86))
                                   R-X X86))
-           :in-theory (e/d (x86isa::rme16
+           :in-theory (e/d (ea-to-la
+                            x86isa::rme16
                             x86isa::rml16
 ;read-byte
                             read-byte-from-segment
@@ -2986,6 +2986,15 @@
                                                     nil ;gross keyword param
                                                     ))))
   :hints (("Goal" :in-theory (enable x86isa::rime-size$inline
+                                     x86isa::riml-size
+                                     x86isa::riml08
+                                     x86isa::riml16
+                                     x86isa::riml32
+                                     x86isa::riml64
+                                     x86isa::rml08
+                                     x86isa::rml16
+                                     x86isa::rml32
+                                     x86isa::rml64
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
@@ -3006,6 +3015,11 @@
                                                       ))
                   x86))
   :hints (("Goal" :in-theory (e/d (x86isa::rime-size$inline
+                                   x86isa::riml-size
+                                   x86isa::riml08
+                                   x86isa::riml16
+                                   x86isa::riml32
+                                   x86isa::riml64
                                    rb)
                                   (x86isa::segment-base-and-bounds)))))
 
@@ -3054,6 +3068,7 @@
                 (x86p x86))
            (not (mv-nth 0 (x86isa::rme16 *compatibility-mode* eff-addr seg-reg r-x nil x86))))
   :hints (("Goal" :in-theory (enable x86isa::rme16$inline
+                                     x86isa::rml16
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32 rb (:e expt)
@@ -3090,6 +3105,9 @@
            :do-not-induct t
 ;           :induct (read-from-segment n eff-addr seg-reg x86)
            :in-theory (e/d (x86isa::rime-size$inline
+                            x86isa::riml-size
+                            x86isa::riml08
+                            x86isa::rml08
                             read-byte-from-segment
                             ;bvplus
                             acl2::bvchop-of-sum-cases
@@ -3151,6 +3169,9 @@
 ;           :induct (read-from-segment n eff-addr seg-reg x86)
            :in-theory (e/d (acl2::equal-of-logext
                             x86isa::rime-size$inline
+                            x86isa::riml-size
+                            x86isa::riml16
+                            x86isa::rml16
                             read-byte-from-segment
                             bvplus
                             acl2::bvchop-of-sum-cases
@@ -3207,6 +3228,9 @@
 ;           :induct (READ-FROM-SEGMENT N EFF-ADDR SEG-REG X86)
            :in-theory (e/d (acl2::equal-of-logext
                             x86isa::rime-size$inline
+                            x86isa::riml-size
+                            x86isa::riml32
+                            x86isa::rml32
                             READ-BYTE-FROM-SEGMENT
                             bvplus
                             acl2::bvchop-of-sum-cases
@@ -3261,6 +3285,9 @@
 ;           :induct (READ-FROM-SEGMENT N EFF-ADDR SEG-REG X86)
            :in-theory (e/d (acl2::equal-of-logext
                             x86isa::rime-size$inline
+                            x86isa::riml-size
+                            x86isa::riml64
+                            x86isa::rml64
                             READ-BYTE-FROM-SEGMENT
                             bvplus
                             acl2::bvchop-of-sum-cases
@@ -3314,6 +3341,11 @@
                                      segment-base-and-bounds
                                      segment-min-eff-addr32
                                      segment-max-eff-addr32
+                                     wml-size
+                                     x86isa::wml08
+                                     x86isa::wml16
+                                     x86isa::wml32
+                                     x86isa::wml64
                                      x86isa::wml48
                                      x86isa::wml80
                                      x86isa::wml128
@@ -3338,7 +3370,7 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml08 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 1 x86)) val x86))
                   (write-to-segment 1 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (enable x86isa::wml16
+  :hints (("Goal" :in-theory (enable x86isa::wml08
                                      write-to-segment-base
                                      write-to-segment-unroll
                                      wb
@@ -3669,12 +3701,13 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml-size nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (disable x86isa::wml08
-                                      x86isa::wml16
-                                      x86isa::wml32
-                                      x86isa::wml48
-                                      x86isa::wml64
-                                      ea-to-la))))
+  :hints (("Goal" :in-theory (e/d (wml-size)
+                                  (x86isa::wml08
+                                   x86isa::wml16
+                                   x86isa::wml32
+                                   x86isa::wml48
+                                   x86isa::wml64
+                                   ea-to-la)))))
 
 (defthm mv-nth-1-of-wme-size
   (implies (and (segment-is-32-bitsp seg-reg x86)

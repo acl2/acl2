@@ -68,7 +68,7 @@
      ;; Interesting case
      :ident (b* ((lookup (omap::assoc expr.ident subst)))
               (expr-fix (if (and lookup
-                                 (not (treeset::in expr.ident bound-vars)))
+                                 (not (tset::in expr.ident bound-vars)))
                             (cdr lookup)
                           expr)))
      :const (expr-fix expr)
@@ -233,6 +233,18 @@
                         subst bound-vars)
        (tyname-subst-free (c$::expr-va-arg->type expr)
                           subst bound-vars))
+     :convertvector
+     (c$::expr-convertvector
+      (expr-subst-free (c$::expr-convertvector->vec expr)
+                       subst bound-vars)
+      (tyname-subst-free (c$::expr-convertvector->type expr)
+                         subst bound-vars))
+     :bit-cast
+     (c$::expr-bit-cast
+       (tyname-subst-free (c$::expr-bit-cast->type expr)
+                          subst bound-vars)
+       (expr-subst-free (c$::expr-bit-cast->arg expr)
+                        subst bound-vars))
      :extension
      (expr-extension
        (expr-subst-free (c$::expr-extension->expr expr)
@@ -387,6 +399,7 @@
      :float64x (type-spec-fix type-spec)
      :float128 (type-spec-fix type-spec)
      :float128x (type-spec-fix type-spec)
+     :bf16 (type-spec-fix type-spec)
      :builtin-va-list (type-spec-fix type-spec)
      :struct-empty (type-spec-fix type-spec)
      :typeof-expr (c$::type-spec-typeof-expr
@@ -675,7 +688,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (mv (dirdeclor-fix dirdeclor)
-                (treeset::insert dirdeclor.ident (ident-set-fix bound-vars))
+                (tset::insert dirdeclor.ident (ident-set-fix bound-vars))
                 nil)
      :paren
      (b* (((mv inner bound-vars -)
@@ -1505,7 +1518,7 @@
        (specs (decl-spec-list-subst-free fundef.specs subst bound-vars))
        ((mv declor bound-vars param-bound-vars)
         (declor-subst-free fundef.declor subst bound-vars))
-       (body-bound-vars (treeset::union bound-vars param-bound-vars))
+       (body-bound-vars (tset::union bound-vars param-bound-vars))
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv declons body-bound-vars)
         (declon-list-subst-free fundef.declons subst body-bound-vars))

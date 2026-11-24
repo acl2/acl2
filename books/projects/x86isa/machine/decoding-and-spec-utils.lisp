@@ -1694,7 +1694,7 @@ reference made from privilege level 3.</blockquote>"
                  (#.*ymm-access* (member operand-size '(4 8 16 32)))
                  (#.*mmx-access* (equal operand-size 8))
                  (t t))
-             (member operand-size '(member 1 2 4 6 8 10 16 32)))
+             (member operand-size '(1 2 4 6 8 10 16 32)))
 
     ;; [Shilpi] enabled segment-base-and-bounds for rme-size-opt.
     :guard-hints (("Goal" :in-theory (e/d* (segment-base-and-bounds)
@@ -1900,8 +1900,8 @@ reference made from privilege level 3.</blockquote>"
 
     :guard (and (unsigned-byte-p (ash operand-size 3) operand)
                 (if (equal mod #b11)
-                    (member operand-size '(member 1 2 4 8))
-                  (member operand-size '(member 1 2 4 6 8 10 16))))
+                    (member operand-size '(1 2 4 8))
+                  (member operand-size '(1 2 4 6 8 10 16))))
 
     (b* (((when (equal mod #b11))
           (let* ((x86 (!rgfi-size operand-size (reg-index r/m rex-byte #.*b*)

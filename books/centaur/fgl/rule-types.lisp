@@ -31,6 +31,7 @@
 (in-package "FGL")
 
 (include-book "centaur/meta/parse-rewrite" :dir :system)
+(include-book "std/util/defenum" :dir :system)
 (local (std::add-default-post-define-hook :fix))
 
 (local (in-theory (disable pseudo-termp
@@ -39,39 +40,91 @@
 
 
 
-(fty::deftagsum fgl-rune
-  (:rewrite (name))
-  (:definition (name))
-  (:formula ((name pseudo-fnsym-p)))
-  (:primitive ((name pseudo-fnsym-p)))
-  (:meta    ((name pseudo-fnsym-p)))
-  :layout :list)
+(std::defenum fgl-rule-arg-mode-p (:bound :either :unbound))
 
-(fty::defprod fgl-rune-prio
+(fty::deflist fgl-rule-arg-mode-list :elt-type fgl-rule-arg-mode-p
+  :true-listp t)
+
+(fty::defflexsum fgl-rune
+  :short "A rule identifier, including an optional ACL2 rune index."
+  :long "<p>Rewrite and definition runes use ACL2's representation
+@('(:rewrite name . index)') or @('(:definition name . index)'), where the
+index is NIL or a positive integer. Other kinds have the form @('(kind name)').</p>"
+  (:rewrite
+   :cond (and (consp x) (eq (car x) :rewrite))
+   :shape (and (consp x) (consp (cdr x)))
+   :fields ((name :acc-body (cadr x))
+            (index :type acl2::maybe-posp :acc-body (cddr x)))
+   :ctor-body (list* :rewrite name index))
+  (:definition
+   :cond (and (consp x) (eq (car x) :definition))
+   :shape (and (consp x) (consp (cdr x)))
+   :fields ((name :acc-body (cadr x))
+            (index :type acl2::maybe-posp :acc-body (cddr x)))
+   :ctor-body (list* :definition name index))
+  (:formula
+   :cond (and (consp x) (eq (car x) :formula))
+   :shape (and (consp x) (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :formula name))
+  (:primitive
+   :cond (and (consp x) (eq (car x) :primitive))
+   :shape (and (consp x) (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :primitive name))
+  (:meta
+   :shape (and (consp x) (eq (car x) :meta)
+               (consp (cdr x)) (not (cddr x)))
+   :fields ((name :type pseudo-fnsym-p :acc-body (cadr x)))
+   :ctor-body (list :meta name)))
+
+(fty::defprod fgl-ruledata
   ((rune fgl-rune-p)
-   (prio integerp))
+   (prio integerp :default 0)
+   (arg-modes fgl-rule-arg-mode-list-p)
+   (enabledp booleanp :default t))
   :layout :list)
 
-(fty::deflist fgl-rune-priolist :elt-type fgl-rune-prio :true-listp t)
+(fty::deflist fgl-ruledata-list :elt-type fgl-ruledata :true-listp t)
 
-
+;; Registration metadata is separate from the rune, which identifies a rule.
+;; Copy modes and enabled status into executable rules when reading a database.
 (fty::deftagsum fgl-rule
   (:rewrite ((rune fgl-rune-p)
-             (rule cmr::rewrite-p))
+             (rule cmr::rewrite-p)
+             (arg-modes fgl-rule-arg-mode-list-p)
+             (enabledp booleanp :default t))
    :extra-binder-names (hyps lhs rhs equiv)
    :layout :fulltree)
-  (:primitive ((name pseudo-fnsym-p)) :layout :list)
-  (:meta      ((name pseudo-fnsym-p)) :layout :list))
+  (:primitive ((name pseudo-fnsym-p)
+               (arg-modes fgl-rule-arg-mode-list-p)
+               (enabledp booleanp :default t)) :layout :list)
+  (:meta ((name pseudo-fnsym-p)
+          (arg-modes fgl-rule-arg-mode-list-p)
+          (enabledp booleanp :default t)) :layout :list))
 
 (fty::deflist fgl-rulelist :elt-type fgl-rule :true-listp t)
 
 (define fgl-rule->rune ((x fgl-rule-p))
-  :returns (rune fgl-rune-p
-                 :hints((and stable-under-simplificationp
-                             '(:in-theory (enable fgl-rule-fix fgl-rune-p)))))
+  :returns (rune fgl-rune-p)
   (fgl-rule-case x
     :rewrite x.rune
-    :otherwise (fgl-rule-fix x)))
+    :primitive (fgl-rune-primitive x.name)
+    :meta (fgl-rune-meta x.name)))
+
+(define fgl-rule->arg-modes ((x fgl-rule-p))
+  :returns (modes fgl-rule-arg-mode-list-p)
+  (fgl-rule-case x
+    :rewrite x.arg-modes
+    :primitive x.arg-modes
+    :meta x.arg-modes))
+
+(define fgl-rule->enabledp ((x fgl-rule-p))
+  :returns (enabledp booleanp)
+  (fgl-rule-case x
+    :rewrite x.enabledp
+    :primitive x.enabledp
+    :meta x.enabledp))
 
 (define fgl-rule-rewrite->hyps ((x fgl-rule-p))
   :guard (fgl-rule-case x :rewrite)
@@ -96,90 +149,6 @@
 
 
 
-(fty::deftagsum fgl-binder-rune
-  (:brewrite (name))
-  (:bformula ((name pseudo-fnsym-p)))
-  (:bmeta ((name pseudo-fnsym-p)))
-  :layout :list)
-
-(fty::defprod fgl-binder-rune-prio
-  ((rune fgl-binder-rune)
-   (prio integerp))
-  :layout :list)
-
-(fty::deflist fgl-binder-rune-priolist :elt-type fgl-binder-rune-prio :true-listp t)
-
-(fty::deftagsum fgl-binder-rule
-  (:brewrite ((rune fgl-binder-rune-p)
-              (lhs-fn pseudo-fnsym-p)
-              (lhs-args pseudo-term-listp)
-              (hyps pseudo-term-listp)
-              (rhs pseudo-termp)
-              (equiv pseudo-fnsym-p)
-              (r-equiv pseudo-fnsym-p))
-   :layout :fulltree)
-  (:bmeta      ((name pseudo-fnsym-p)) :layout :list))
-
-(fty::deflist fgl-binder-rulelist :elt-type fgl-binder-rule :true-listp t)
-
-(define fgl-binder-rule->rune ((x fgl-binder-rule-p))
-  :returns (rune fgl-binder-rune-p
-                 :hints((and stable-under-simplificationp
-                             '(:in-theory (enable fgl-binder-rule-fix fgl-binder-rune-p)))))
-  (fgl-binder-rule-case x
-    :brewrite x.rune
-    :bmeta (fgl-binder-rule-fix x)))
-
-(fty::deftranssum fgl-generic-rune
-  (fgl-binder-rune
-   fgl-rune))
-
-(fty::deftranssum fgl-generic-rule
-  (fgl-binder-rule
-   fgl-rule))
-
-(defthmd tag-when-fgl-generic-rule-p
-  (implies (fgl-generic-rule-p x)
-           (and (implies (member (tag x) '(:brewrite :bmeta))
-                         (equal (fgl-binder-rule-kind x) (tag x)))
-                (implies (not (member (tag x) '(:brewrite :bmeta)))
-                         (equal (fgl-rule-kind x) (tag x)))))
-  :hints(("Goal" :in-theory (enable fgl-binder-rule-kind
-                                    fgl-rule-kind
-                                    fgl-generic-rule-p
-                                    fgl-rule-p
-                                    fgl-binder-rule-p
-                                    tag))))
-
-(defthmd fgl-generic-rune-p-when-fgl-generic-rule-p
-  (implies (and (fgl-generic-rule-p x)
-                (not (member (tag x) '(:brewrite :rewrite))))
-           (fgl-generic-rune-p x))
-  :hints(("Goal" :in-theory (enable fgl-generic-rule-p
-                                    fgl-generic-rune-p
-                                    fgl-rule-p
-                                    fgl-rune-p
-                                    fgl-binder-rule-p
-                                    fgl-binder-rune-p
-                                    tag))))
-
-(define fgl-generic-rule->rune ((x fgl-generic-rule-p))
-  :returns (rune fgl-generic-rune-p)
-  :prepwork ((local (in-theory (enable tag-when-fgl-generic-rule-p
-                                       fgl-generic-rune-p-when-fgl-generic-rule-p))))
-  ;; :guard-hints (("goal" :in-theory (enable fgl-generic-rule-fix fgl-generic-rule-p)))
-  (b* ((x (fgl-generic-rule-fix x)))
-    (case (tag x)
-      (:rewrite (fgl-rule-rewrite->rune x))
-      (:brewrite (fgl-binder-rule-brewrite->rune x))
-      (otherwise x))))
-
-(define fgl-binder-rune->name ((rune fgl-binder-rune-p))
-  (fgl-binder-rune-case rune
-    :brewrite rune.name
-    :bformula rune.name
-    :bmeta rune.name))
-
 (define fgl-rune->name ((rune fgl-rune-p))
   (fgl-rune-case rune
     :rewrite rune.name
@@ -187,10 +156,3 @@
     :formula rune.name
     :primitive rune.name
     :meta rune.name))
-
-(define fgl-generic-rune->name ((rune fgl-generic-rune-p))
-  (b* ((rune (fgl-generic-rune-fix rune)))
-    (case (tag rune)
-      ((:brewrite :bformula :bmeta)
-       (fgl-binder-rune->name rune))
-      (t (fgl-rune->name rune)))))
