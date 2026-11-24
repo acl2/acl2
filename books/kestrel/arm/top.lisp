@@ -12,6 +12,7 @@
 
 (include-book "portcullis")
 ;; (include-book "decoder-tests")
+(include-book "encoding-tools")
 (include-book "encodings")
 (include-book "decoder")
 (include-book "memory32")
