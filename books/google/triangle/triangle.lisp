@@ -2,9 +2,19 @@
 ;; Use of this source code is governed by a BSD-style license that can be
 ;; found in the LICENSE file.
 
-(in-package "ACL2")
+;; Acknowledgement: This code was partially written with the assistance of
+;; Gemini.
+;;
+;; I came up with the idea about a year ago for the core idea (representing angles
+;; as nonzero complex numbers and showing that applying rotations around the interior
+;; of a triangle work out to -1 as a complex number), but I hit a wall on the turn
+;; number stuff. I could not have done this without AI assistance, probably.
+(in-package "TRIANGLE")
 
 ;; Prove that the sum of the interior angles of a triangle is 180 degrees.
+;;
+;; Note that this package does not use radians or degrees directly. It instead uses
+;; nonzero complex numbers thenselves to represent angles.
 ;;
 ;; An angle is represented in two ways: 1) as a nonzero complex number
 ;;                                      2) as a turn number and a nonzero complex number
@@ -17,27 +27,33 @@
 ;; the sum of the angles really is 180 degrees, and not just congruent to 180 degrees
 ;; modulo 360.
 
+;; Is X a nonzero complex number?
 (defun nonzero-complexp (z)
   (and (acl2-numberp z)
        (not (equal z 0))))
 
+;; unit tests
 (thm (nonzero-complexp 1))
 (thm (not (nonzero-complexp 0)))
 (thm (not (nonzero-complexp "a")))
 
+;; hand-rolled fix function.
 (defun nonzero-complex-fix (z)
   (if (nonzero-complexp z)
       z
       1))
 
+;; Two numbers are equivalent iff their ratio is a positive real.
 (defun angle-equiv-up-to-180 (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
     (real/rationalp (/ z w))))
 
+;; unit tests
 (thm (angle-equiv-up-to-180 1 -1))
 (thm (not (angle-equiv-up-to-180 1 #C(0 1))))
 
+;; are two angles equivalent.
 (defun angle-equiv (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
@@ -58,7 +74,7 @@
                   (implies (real/rationalp (* x (/ y)))
                            (real/rationalp (* (/ x) y)))
                 :hints (("Goal" :use quotient-symm-ident
-                                :in-theory (disable |(/ (* x y))|)))))
+                                :in-theory (disable acl2::|(/ (* x y))|)))))
 
              (local
               (defthm positive-quotient-symm
@@ -66,7 +82,7 @@
                                 (< 0 (* x (/ y))))
                            (< 0 (* (/ x) y)))
                 :hints (("Goal" :use quotient-symm-ident
-                                :in-theory (disable |(/ (* x y))|)))))
+                                :in-theory (disable acl2::|(/ (* x y))|)))))
 
              (local
               (defthm quotient-trans-ident
@@ -84,7 +100,7 @@
                                 (real/rationalp (* y (/ z))))
                            (real/rationalp (* x (/ z))))
                 :hints (("Goal" :use quotient-trans-ident
-                                :in-theory (disable |(* (* x y) z)| |(* y (* x z))|)))))
+                                :in-theory (disable acl2::|(* (* x y) z)| acl2::|(* y (* x z))|)))))
 
              (local
               (defthm positive-quotient-trans
@@ -96,15 +112,19 @@
                                 (< 0 (* y (/ z))))
                            (< 0 (* x (/ z))))
                 :hints (("Goal" :use quotient-trans-ident
-                                :in-theory (disable |(* (* x y) z)| |(* y (* x z))|)))))
+                                :in-theory (disable acl2::|(* (* x y) z)| acl2::|(* y (* x z))|)))))
 
+	     ;; angle-equivalence up to 180 degrees
              (defequiv angle-equiv-up-to-180)
              (defequiv angle-equiv)
              (defrefinement angle-equiv angle-equiv-up-to-180))
 
+;; represent the angle ABC as a complex number. A, B, and C are coordinates, we need to do some
+;; recentering and rotations to turn this into an angle.
 (defun angle (a b c)
   (/ (- c b) (- a b)))
 
+;; the product of the angles represents the angles mod 360 degrees (we make zero attempt to count "overflow". that comes later)
 (defun triangle-angles-product (a b c)
   (* (angle a b c)
      (angle b c a)
@@ -142,16 +162,21 @@
                                    (z (- c a)))
                    :in-theory (e/d (angle-as-negated-ratio)
                                    (angle distributivity
-                                          distributivity-of-minus-over-+
+                                          acl2::distributivity-of-minus-over-+
                                           commutativity-of-*
                                           associativity-of-*))))
    :rule-classes nil))
 
+;; triangle angles product is always real (no collinearity guards needed).
 (defthm triangle-angles-product-equiv-up-to-180
     (angle-equiv-up-to-180 (triangle-angles-product a b c) 1)
   :hints (("Goal" :use triangle-angles-product-is-0-or--1
                   :in-theory (disable triangle-angles-product))))
 
+;; this is a representation of angles where the turn count plays the role of the
+;; integer part and the nonzero complex number at the end plays the role of the fractional part.
+;; For example, 450 degrees is 360 degrees + 90 degrees, which is
+;; (1 #C(0 1))
 (defun turn-count-and-angle-p (x)
   (and (consp x)
        (consp (cdr x))
@@ -159,11 +184,15 @@
        (integerp (car x))
        (nonzero-complexp (cadr x))))
 
+;; hand-rolled fixer
 (defun turn-count-and-angle-fix (x)
   (if (turn-count-and-angle-p x)
       x
       '(0 1)))
 
+;; detects whether two ordinary angles z and w have a product that is strictly in the upper half plane.
+;; we will use this later to detect overflow.
+;; We also insist that both z and w themselves be strictly in the upper half plane.
 (defun detect-inbounds-angle*-strict-upper-half-plane (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
@@ -171,6 +200,8 @@
          (< 0 (imagpart w))
          (< 0 (imagpart (* z w))))))
 
+;; detects whether z and w have a product in the upper half plane.
+;; we insist that z is strictly in the upper half plane but w can be whatever.
 (defun detect-inbounds-angle*-strict-upper-half-plane-and-arbitrary (z w)
   (let ((z (nonzero-complex-fix z))
         (w (nonzero-complex-fix w)))
@@ -180,12 +211,14 @@
              (angle-equiv w -1)
              (< 0 (imagpart (- (* z w))))))))
 
+;; detect whether an angle product overflowed. Note that underflow is impossible.
 (defun detect-inbounds-angle* (z w)
   (or (angle-equiv z 1)
       (angle-equiv w 1)
       (detect-inbounds-angle*-strict-upper-half-plane-and-arbitrary z w)
       (detect-inbounds-angle*-strict-upper-half-plane-and-arbitrary w z)))
 
+;; angle-* for the turncount and angle representation.
 (defun angle-* (x y)
   (let* ((x (turn-count-and-angle-fix x))
          (y (turn-count-and-angle-fix y))
@@ -210,12 +243,15 @@
                                       detect-inbounds-angle*))))
 
 
+;; upper-half-plane-p is a little weird.
+;; this is the upper half plane EXCEPT for 0 and the negative reals.
 (defun upper-half-plane-p (z)
   (let ((z (nonzero-complex-fix z)))
     (or (< 0 (imagpart z))
         (and (equal (imagpart z) 0)
              (< 0 (realpart z))))))
 
+;; fix the upper half plane.
 (defun uhp-fix (z)
   (let ((z (nonzero-complex-fix z)))
     (if (upper-half-plane-p z)
@@ -227,19 +263,19 @@
               (local (set-override-hints nil))
               (local (include-book "arithmetic-5/top" :dir :system))
               (local (set-default-hints
-                      '((nonlinearp-default-hint++ id stable-under-simplificationp hist nil))))
+                      '((acl2::nonlinearp-default-hint++ id stable-under-simplificationp hist nil))))
 
               (defthm realpart-of-uminus
                   (equal (realpart (- x))
                          (- (realpart x)))
-                :hints (("Goal" :use (:instance realpart-+ (x x) (y (- x)))
-                                :in-theory (disable realpart-+))))
+                :hints (("Goal" :use (:instance acl2::realpart-+ (x x) (y (- x)))
+                                :in-theory (disable acl2::realpart-+))))
 
               (defthm imagpart-of-uminus
                   (equal (imagpart (- y))
                          (- (imagpart y)))
-                :hints (("Goal" :use (:instance imagpart-+ (x y) (y (- y)))
-                                :in-theory (disable imagpart-+))))
+                :hints (("Goal" :use (:instance acl2::imagpart-+ (x y) (y (- y)))
+                                :in-theory (disable acl2::imagpart-+))))
 
               (local
                (defthm mult-def-complex
@@ -548,6 +584,7 @@
                                       detect-inbounds-angle*-carry-associative
                                       commutativity-of-angle-*))))
 
+;; If *any* of the angles are equivalent to 180 degrees mod 360 degrees, we have collinearity.
 (defun collinear-p (a b c)
   (angle-equiv-up-to-180 (angle a b c) 1))
 
@@ -555,7 +592,7 @@
  (encapsulate ()
               (local (set-override-hints nil))
               (local (include-book "arithmetic-5/top" :dir :system))
-              (local (set-default-hints '((nonlinearp-default-hint++ id stable-under-simplificationp
+              (local (set-default-hints '((acl2::nonlinearp-default-hint++ id stable-under-simplificationp
                                            hist nil))))
 
               (local
@@ -648,9 +685,9 @@
                                       (:instance imagpart-of-self-quotient
                                                  (x (- a b))))
                                 :in-theory (disable imagpart-*
-                                                    imagpart-+
-                                                    |(* x (+ y z))|
-                                                    |(* a (/ a))|))))
+                                                    acl2::imagpart-+
+                                                    acl2::|(* x (+ y z))|
+                                                    acl2::|(* a (/ a))|))))
 
               (defthm angle-equiv-up-to-180-1-rewrite
                   (implies (acl2-numberp z)
@@ -759,6 +796,9 @@
                   (implies (< (imagpart z) 0)
                            (not (upper-half-plane-p z))))))
 
+;; A triangle ABC has two orientations, one of which has all angles less than
+;; 180, the other has all angles greater than 180 (which is going around the
+;; triangle "the wrong way")
 (defthm one-angle-less-than-180-implies-all-angles-less-than-180
     (implies (< 0 (imagpart (angle a b c)))
              (and (< 0 (imagpart (angle b c a)))
@@ -766,6 +806,7 @@
   :hints (("Goal" :in-theory (disable angle angle-as-negated-ratio)
                   :use positive-imagpart-chain-for-triangle-angles)))
 
+;; This is the headline result. (0 -1) is 180 degrees in the positive orientation.
 (defthm triangle-angles-angle-*-positive-orientation
     (implies (< 0 (imagpart (angle a b c)))
              (equal (angle-* (list 0 (angle a b c))
@@ -785,6 +826,7 @@
                         positive-imagpart-chain-for-triangle-angles
                         triangle-angles-product-when-nondegen))))
 
+;; Same result, negative orientation.
 (defthm triangle-angles-angle-*-negative-orientation
     (implies (< (imagpart (angle a b c)) 0)
              (equal (angle-* (list 0 (angle a b c))
@@ -804,6 +846,7 @@
                         negative-imagpart-chain-for-triangle-angles
                         triangle-angles-product-when-nondegen))))
 
+;; Just checking that cyclic order doesn't affect the result and one orientation is positive and the other negative.
 (defthm triangle-angles-angle-*-non-collinear
     (implies (not (collinear-p a b c))
              (or (and (equal (angle-* (list 0 (angle a b c))
