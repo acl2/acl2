@@ -1040,7 +1040,7 @@ multi-line */")))
      Lexing does not depend on the edition,
      so the condition is not a conjunct of @(tsee lexing-okp):
      the tokenizer, which takes the edition, checks it
-     (see @(tsee tokenize-lexeme-csts))."))
+     (see @(tsee lexeme-csts-to-lexemes))."))
   (b* ((rest-input (nat-list-fix rest-input)))
     (implies (pound-lexeme-cst-p tree)
              (and (not (prefixp (list #x23) rest-input)) ; #
