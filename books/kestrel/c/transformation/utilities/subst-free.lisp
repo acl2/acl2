@@ -389,7 +389,6 @@
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
-     :locase-float80 (type-spec-fix type-spec)
      :locase-float128 (type-spec-fix type-spec)
      :float16 (type-spec-fix type-spec)
      :float16x (type-spec-fix type-spec)
@@ -400,7 +399,6 @@
      :float128 (type-spec-fix type-spec)
      :float128x (type-spec-fix type-spec)
      :bf16 (type-spec-fix type-spec)
-     :builtin-va-list (type-spec-fix type-spec)
      :struct-empty (type-spec-fix type-spec)
      :typeof-expr (c$::type-spec-typeof-expr
                     (expr-subst-free

@@ -96,7 +96,6 @@
 
 ; As GCC extensions, we include the type specifiers
 ; '__int128',
-; '__float80',
 ; '__float128',
 ; '_Float16',
 ; '_Float16x',
@@ -106,10 +105,11 @@
 ; '_Float64x',
 ; '_Float128',
 ; '_Float128x',
-; '__bf16',
-; and '__builtin_va_list'.
+; and '__bf16'.
 ; See https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html
 ; for the '__float...' and '_Float...' types.
+; '__float128' and '__bf16' are keywords only in Clang;
+; in GCC they are typedef names, covered by 'typedef-name'.
 ; We could not find explicit documentation for `__bf16',
 ; but GCC accepts it.
 
@@ -194,7 +194,6 @@ type-specifier = %s"void"
                / typedef-name
                ; GCC extensions:
                / %s"__int128"
-               / %s"__float80"
                / %s"__float128"
                / %s"_Float16"
                / %s"_Float16x"
@@ -205,7 +204,6 @@ type-specifier = %s"void"
                / %s"_Float128"
                / %s"_Float128x"
                / %s"__bf16"
-               / %s"__builtin_va_list"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"
                / %s"__auto_type"

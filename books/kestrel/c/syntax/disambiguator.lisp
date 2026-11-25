@@ -438,14 +438,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-idents-objfun ((idents ident-listp) (dstate dstatep))
+(define dimb-add-idents ((idents ident-listp)
+                         (kind dimb-kindp)
+                         (dstate dstatep))
   :returns (new-dstate dstatep)
   :short "Add all the identifiers in a list to the disambiguation table,
-          with object or function kind."
+          with the provided kind."
   (cond ((endp idents) (dstate-fix dstate))
-        (t (dimb-add-idents-objfun (cdr idents)
-                                   (dimb-add-ident-objfun (car idents)
-                                                          dstate)))))
+        (t (dimb-add-idents (cdr idents)
+                            kind
+                            (dimb-add-ident (car idents) kind dstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -509,9 +511,16 @@
                             :goto-reclass (tset::empty)
                             :macros macros
                             :file file
-                            :ienv ienv)))
-    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
-                            dstate)))
+                            :ienv ienv))
+       (dstate (dimb-add-idents
+                (ident-list-of (built-in-fun/var-names-for dialect))
+                (dimb-kind-objfun)
+                dstate)))
+    (dimb-add-idents
+     (ident-list-of (built-in-typedef-list->name
+                     (built-in-typedefs-for dialect)))
+     (dimb-kind-typedef)
+     dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1917,10 +1926,7 @@
                                         an enumeration constant ~
                                         but it is used as a typedef name."
                                        (ident->unwrap tyspec.name))))
-       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
-                      (dstate-fix dstate))
-       :locase-float80 (retok (type-spec-locase-float80)
-                              (dstate-fix dstate))
+       :int128 (retok (type-spec-int128) (dstate-fix dstate))
        :locase-float128 (retok (type-spec-locase-float128)
                                (dstate-fix dstate))
        :float16 (retok (type-spec-float16) (dstate-fix dstate))
@@ -1932,8 +1938,6 @@
        :float128 (retok (type-spec-float128) (dstate-fix dstate))
        :float128x (retok (type-spec-float128x) (dstate-fix dstate))
        :bf16 (retok (type-spec-bf16) (dstate-fix dstate))
-       :builtin-va-list (retok (type-spec-builtin-va-list)
-                               (dstate-fix dstate))
        :struct-empty (retok (type-spec-fix tyspec)
                             (dstate-fix dstate))
        :typeof-expr
@@ -3950,9 +3954,10 @@
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
        (dstate (if (c::dialect-gcc/clangp (ienv->dialect (dstate->ienv dstate)))
-                   (dimb-add-idents-objfun
+                   (dimb-add-idents
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
+                    (dimb-kind-objfun)
                     dstate)
                  dstate))
        ((erp new-body dstate) (dimb-comp-stmt fundef.body t dstate))
