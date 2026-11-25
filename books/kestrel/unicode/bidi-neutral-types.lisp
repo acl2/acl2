@@ -262,6 +262,29 @@
       (bracket-pairs-sort pairs)))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define bidi-bracket-pairs-overflow-p ((classes bidi-class-listp)
+                                       (roles bidi-bracket-role-listp))
+  :returns (yes/no booleanp)
+  :short "Check if the search for the bracket pairs
+          of an isolating run sequence gives up."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are those of @(tsee bidi-bracket-pairs).
+     The search gives up when it meets an opening bracket
+     while 63 opening brackets are already waiting
+     for their closing brackets [UAX #9, BD16];
+     then @(tsee bidi-bracket-pairs) finds no pair,
+     and rule N0 does nothing in the sequence."))
+  (b* (((mv overflow &)
+        (bidi-bracket-pairs-from (bidi-current-bracket-roles classes roles)
+                                 0
+                                 nil)))
+    overflow)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bidi-n0-strong-inside-p ((classes bidi-class-listp)

@@ -67,13 +67,21 @@
      and under which a text is confined:
      see @(see bidi-guarded-segments).
      That they are enough is a theorem:
-     see @(see bidi-guarded-segments-theorem)."))
+     see @(see bidi-guarded-segments-theorem).")
+   (xdoc::p
+    "In a confined text the characters of a segment are displayed together,
+     but not always in the order in which the segment is displayed alone.
+     With two more conditions on the bracket pairs of the text they are,
+     and that is a theorem too:
+     see @(see bidi-self-contained-segments)."))
   :order-subtopics (bidi-clean-cut-p
                     bidi-clean-cut-theorem
+                    bidi-clean-cut-display
                     bidi-clean-cuts-p
                     bidi-confined-p
                     bidi-confined-theorem
-                    bidi-guarded-segments)
+                    bidi-guarded-segments
+                    bidi-self-contained-segments)
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -804,6 +812,7 @@
              (take n (bidi-arrange-paragraph cps direction ver)))
             (take n (code-point-list-fix cps))))
   :enable (bidi-arrange-paragraph
+           bidi-arrange-with-levels
            bidi-paragraph-embedding-level
            perm-of-take-of-arranged-when-clean))
 
@@ -858,6 +867,755 @@
              nfix)
     :cases ((equal n 0)
             (equal n (len cps)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The two parts of a paragraph joined at a clean cut
+; are each put in the order of display as they would be alone.
+;
+; By what is above, rule L2 reorders the items of each part separately,
+; but from the highest level of the whole paragraph
+; down to its lowest odd level.
+; It remains to see that the items of a part are reordered the same way
+; from their own highest level down to their own lowest odd level.
+; Above their highest level, no run is reversed.
+; Below their lowest odd level, the levels go two by two,
+; an even level and then the odd level under it, which no item has:
+; the runs for the two levels are the same, and are reversed twice.
+
+(defrulel fix-when-acl2-numberp
+  (implies (acl2-numberp x)
+           (equal (fix x)
+                  x))
+  :enable fix)
+
+; Every item has a level under a bound.
+
+(local
+ (define items-below-level ((items bidi-display-item-listp) (level natp))
+   :returns (yes/no booleanp)
+   (or (endp items)
+       (and (< (bidi-display-item->level (car items)) (lnfix level))
+            (items-below-level (cdr items) level)))
+   :hooks nil))
+
+(defrulel bidi-reverse-runs-when-items-below-level
+  (implies (items-below-level items level)
+           (equal (bidi-reverse-runs items level run)
+                  (append (bidi-display-item-list-fix run)
+                          (bidi-display-item-list-fix items))))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs
+           items-below-level
+           bidi-display-item-list-fix))
+
+(defrulel items-below-level-when-above-highest
+  (implies (and (natp level)
+                (< (bidi-highest-level items) level))
+           (items-below-level items level))
+  :induct (len items)
+  :enable (items-below-level bidi-highest-level len max nfix))
+
+(defrulel bidi-highest-level-of-bidi-display-item-list-fix
+  (equal (bidi-highest-level (bidi-display-item-list-fix items))
+         (bidi-highest-level items)))
+
+(defruledl bidi-reorder-items-of-level-above
+  (implies (and (natp level)
+                (< (bidi-highest-level items) level))
+           (equal (bidi-reorder-items items level lowest)
+                  (bidi-reorder-items items (- level 1) lowest)))
+  :expand ((bidi-reorder-items items level lowest)
+           (bidi-reorder-items items (+ -1 level) lowest))
+  :enable (nfix natp))
+
+(local
+ (defun count-down-induction (n)
+   (if (zp n)
+       nil
+     (count-down-induction (- n 1)))))
+
+(defruledl bidi-reorder-items-of-levels-above
+  (implies (and (natp level)
+                (natp more)
+                (<= (bidi-highest-level items) level))
+           (equal (bidi-reorder-items items (+ level more) lowest)
+                  (bidi-reorder-items items level lowest)))
+  :induct (count-down-induction more)
+  :enable (count-down-induction
+           bidi-reorder-items-of-level-above
+           natp
+           fix))
+
+(defruledl bidi-reorder-items-from-above
+  (implies (and (natp level)
+                (<= (bidi-highest-level items) level))
+           (equal (bidi-reorder-items items level lowest)
+                  (bidi-reorder-items items
+                                      (bidi-highest-level items)
+                                      lowest)))
+  :use (:instance bidi-reorder-items-of-levels-above
+                  (level (bidi-highest-level items))
+                  (more (- level (bidi-highest-level items))))
+  :enable natp)
+
+; No item has a given level.
+
+(local
+ (define items-miss-level ((items bidi-display-item-listp) (level natp))
+   :returns (yes/no booleanp)
+   (or (endp items)
+       (and (not (equal (bidi-display-item->level (car items))
+                        (lnfix level)))
+            (items-miss-level (cdr items) level)))
+   :hooks nil))
+
+(defrulel items-miss-level-of-append
+  (equal (items-miss-level (append x y) level)
+         (and (items-miss-level x level)
+              (items-miss-level y level)))
+  :induct (len x)
+  :enable (items-miss-level append len))
+
+(defrulel items-miss-level-of-bidi-display-item-list-fix
+  (equal (items-miss-level (bidi-display-item-list-fix items) level)
+         (items-miss-level items level))
+  :induct (len items)
+  :enable (items-miss-level bidi-display-item-list-fix len))
+
+(defrulel items-miss-level-of-cons
+  (equal (items-miss-level (cons item items) level)
+         (and (not (equal (bidi-display-item->level item) (nfix level)))
+              (items-miss-level items level)))
+  :enable items-miss-level)
+
+(defrulel items-miss-level-of-nil
+  (items-miss-level nil level)
+  :enable items-miss-level)
+
+(defrulel items-miss-level-of-bidi-reverse-runs
+  (equal (items-miss-level (bidi-reverse-runs items level run) other)
+         (and (items-miss-level items other)
+              (items-miss-level run other)))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs items-miss-level))
+
+; If no item has the level under a level,
+; the runs for the two levels are the same.
+
+(defrulel bidi-reverse-runs-of-level-under-when-items-miss-level
+  (implies (and (posp level)
+                (items-miss-level items (- level 1)))
+           (equal (bidi-reverse-runs items (- level 1) run)
+                  (bidi-reverse-runs items level run)))
+  :induct (bidi-reverse-runs items level run)
+  :expand ((bidi-reverse-runs items level run)
+           (bidi-reverse-runs items (+ -1 level) run))
+  :enable ((:induction bidi-reverse-runs)
+           items-miss-level posp nfix natp))
+
+; Reversing the runs twice gives the list back.
+
+(local
+ (define items-at-least ((items bidi-display-item-listp) (level natp))
+   :returns (yes/no booleanp)
+   (or (endp items)
+       (and (>= (bidi-display-item->level (car items)) (lnfix level))
+            (items-at-least (cdr items) level)))
+   :hooks nil))
+
+(defrulel items-at-least-of-bidi-display-item-list-fix
+  (equal (items-at-least (bidi-display-item-list-fix items) level)
+         (items-at-least items level))
+  :induct (len items)
+  :enable (items-at-least bidi-display-item-list-fix len))
+
+(defrulel bidi-reverse-runs-of-append-of-run-and-low
+  (implies (and (items-at-least a level)
+                (< (bidi-display-item->level x) (nfix level)))
+           (equal (bidi-reverse-runs (append a (cons x y)) level run)
+                  (append (rev (bidi-display-item-list-fix a))
+                          (bidi-display-item-list-fix run)
+                          (cons (bidi-display-item-fix x)
+                                (bidi-reverse-runs y level nil)))))
+  :induct (bidi-reverse-runs a level run)
+  :expand ((:free (b) (bidi-reverse-runs (cons x y) level b)))
+  :enable (bidi-reverse-runs
+           items-at-least
+           bidi-display-item-list-fix
+           append
+           rev))
+
+(defrulel bidi-reverse-runs-when-items-at-least
+  (implies (items-at-least a level)
+           (equal (bidi-reverse-runs a level run)
+                  (append (rev (bidi-display-item-list-fix a))
+                          (bidi-display-item-list-fix run))))
+  :induct (bidi-reverse-runs a level run)
+  :enable (bidi-reverse-runs
+           items-at-least
+           bidi-display-item-list-fix
+           rev))
+
+(defrulel bidi-reverse-runs-of-bidi-reverse-runs
+  (implies (items-at-least run level)
+           (equal (bidi-reverse-runs (bidi-reverse-runs items level run)
+                                     level
+                                     nil)
+                  (append (rev (bidi-display-item-list-fix run))
+                          (bidi-display-item-list-fix items))))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs
+           items-at-least
+           bidi-display-item-list-fix
+           rev))
+
+(defrulel bidi-reverse-runs-twice-at-two-levels
+  (implies (and (posp level)
+                (items-miss-level items (- level 1)))
+           (equal (bidi-reverse-runs (bidi-reverse-runs items level nil)
+                                     (- level 1)
+                                     nil)
+                  (bidi-display-item-list-fix items)))
+  :enable items-at-least)
+
+; No item has an odd level under a bound.
+
+(local
+ (define items-miss-odd-below ((items bidi-display-item-listp) (bound natp))
+   :returns (yes/no booleanp)
+   (or (endp items)
+       (and (not (and (oddp (bidi-display-item->level (car items)))
+                      (< (bidi-display-item->level (car items))
+                         (lnfix bound))))
+            (items-miss-odd-below (cdr items) bound)))
+   :hooks nil))
+
+(defrulel items-miss-level-when-items-miss-odd-below
+  (implies (and (items-miss-odd-below items bound)
+                (natp level)
+                (oddp level)
+                (< level (nfix bound)))
+           (items-miss-level items level))
+  :induct (len items)
+  :enable (items-miss-odd-below items-miss-level len nfix))
+
+(defrulel items-miss-odd-below-when-lower
+  (implies (and (items-miss-odd-below items bound)
+                (<= (nfix lower) (nfix bound)))
+           (items-miss-odd-below items lower))
+  :induct (len items)
+  :enable (items-miss-odd-below len nfix))
+
+(defrulel items-miss-odd-below-of-append
+  (equal (items-miss-odd-below (append x y) bound)
+         (and (items-miss-odd-below x bound)
+              (items-miss-odd-below y bound)))
+  :induct (len x)
+  :enable (items-miss-odd-below append len))
+
+(defrulel items-miss-odd-below-of-bidi-display-item-list-fix
+  (equal (items-miss-odd-below (bidi-display-item-list-fix items) bound)
+         (items-miss-odd-below items bound))
+  :induct (len items)
+  :enable (items-miss-odd-below bidi-display-item-list-fix len))
+
+(defrulel items-miss-odd-below-of-bidi-reverse-runs
+  (equal (items-miss-odd-below (bidi-reverse-runs items level run) bound)
+         (and (items-miss-odd-below items bound)
+              (items-miss-odd-below run bound)))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs items-miss-odd-below))
+
+; From an even level down, two levels at a time.
+
+(local
+ (defun two-levels-induction (items level)
+   (declare (xargs :measure (nfix level)
+                   :hints (("Goal"
+                            :in-theory (enable nfix fix natp o-p o-finp o<)))))
+   (if (or (zp level)
+           (zp (- level 1)))
+       items
+     (two-levels-induction items (- level 2)))))
+
+(local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
+
+(defrulel items-miss-odd-below-of-nil
+  (items-miss-odd-below nil bound)
+  :enable items-miss-odd-below)
+
+(defrulel bidi-reorder-items-when-level-below-lowest
+  (implies (< (nfix level) (nfix lowest))
+           (equal (bidi-reorder-items items level lowest)
+                  (bidi-display-item-list-fix items)))
+  :expand (bidi-reorder-items items level lowest))
+
+(defrulel bidi-reorder-items-of-level-0
+  (equal (bidi-reorder-items items 0 lowest)
+         (bidi-display-item-list-fix items))
+  :expand (bidi-reorder-items items 0 lowest))
+
+(defruledl bidi-reorder-items-when-no-odd-level-below
+  (implies (and (natp level)
+                (evenp level)
+                (posp lowest)
+                (oddp lowest)
+                (items-miss-odd-below items (+ 1 level)))
+           (equal (bidi-reorder-items items level lowest)
+                  (bidi-display-item-list-fix items)))
+  :induct (two-levels-induction items level)
+  :expand ((bidi-reorder-items items level lowest)
+           (bidi-reorder-items (bidi-reverse-runs items level nil)
+                               (+ -1 level)
+                               lowest))
+  :enable (oddp nfix natp posp))
+
+; From the lowest odd level of the items down to a lower odd level.
+
+(defruledl bidi-reorder-items-to-lower-odd-level
+  (implies (and (natp level)
+                (posp lower)
+                (oddp lower)
+                (posp lowest)
+                (oddp lowest)
+                (<= lower lowest)
+                (<= lowest level)
+                (items-miss-odd-below items lowest))
+           (equal (bidi-reorder-items items level lower)
+                  (bidi-reorder-items items level lowest)))
+  :induct (bidi-reorder-items items level lowest)
+  :expand ((:free (lowest) (bidi-reorder-items items level lowest)))
+  :enable ((:induction bidi-reorder-items)
+           bidi-reorder-items-when-no-odd-level-below
+           oddp nfix natp posp))
+
+; The lowest odd level of the items.
+
+(defrulel oddp-of-bidi-lowest-odd-level
+  (implies (bidi-lowest-odd-level items)
+           (oddp (bidi-lowest-odd-level items)))
+  :induct (len items)
+  :enable (bidi-lowest-odd-level len min oddp))
+
+(defrulel items-miss-odd-below-of-bidi-lowest-odd-level
+  (implies (or (not (bidi-lowest-odd-level items))
+               (<= (nfix bound) (bidi-lowest-odd-level items)))
+           (items-miss-odd-below items bound))
+  :induct (len items)
+  :enable (bidi-lowest-odd-level items-miss-odd-below len min oddp nfix))
+
+(defrulel bidi-lowest-odd-level-upper-bound
+  (implies (bidi-lowest-odd-level items)
+           (<= (bidi-lowest-odd-level items)
+               (bidi-highest-level items)))
+  :rule-classes :linear
+  :induct (len items)
+  :enable (bidi-lowest-odd-level bidi-highest-level len min max))
+
+(defrulel evenp-of-bidi-highest-level-when-no-odd-level
+  (implies (not (bidi-lowest-odd-level items))
+           (evenp (bidi-highest-level items)))
+  :induct (len items)
+  :enable (bidi-lowest-odd-level bidi-highest-level len min max))
+
+; The items of a part are reordered with the levels of the whole
+; as they are with their own.
+
+(defruledl arranged-items-with-other-levels
+  (implies (and (natp level)
+                (<= (bidi-highest-level items) level)
+                (or (not lowest?)
+                    (and (posp lowest?)
+                         (oddp lowest?)))
+                (or lowest?
+                    (not (bidi-lowest-odd-level items)))
+                (or (not lowest?)
+                    (not (bidi-lowest-odd-level items))
+                    (<= lowest? (bidi-lowest-odd-level items))))
+           (equal (arranged-items items level lowest?)
+                  (arranged-items items
+                                  (bidi-highest-level items)
+                                  (bidi-lowest-odd-level items))))
+  :enable (arranged-items nfix)
+  :use ((:instance bidi-reorder-items-from-above
+                   (lowest lowest?))
+        (:instance bidi-reorder-items-to-lower-odd-level
+                   (level (bidi-highest-level items))
+                   (lower lowest?)
+                   (lowest (bidi-lowest-odd-level items)))
+        (:instance bidi-reorder-items-when-no-odd-level-below
+                   (level (bidi-highest-level items))
+                   (lowest lowest?))))
+
+(defrulel bidi-highest-level-of-append
+  (equal (bidi-highest-level (append x y))
+         (max (bidi-highest-level x)
+              (bidi-highest-level y)))
+  :induct (len x)
+  :enable (bidi-highest-level append len max))
+
+(defrulel bidi-lowest-odd-level-is-positive-or-nil
+  (or (not (bidi-lowest-odd-level items))
+      (and (integerp (bidi-lowest-odd-level items))
+           (< 0 (bidi-lowest-odd-level items))))
+  :rule-classes :type-prescription
+  :use posp-of-bidi-lowest-odd-level
+  :disable posp-of-bidi-lowest-odd-level
+  :enable posp)
+
+(defrulel bidi-lowest-odd-level-of-append
+  (equal (bidi-lowest-odd-level (append x y))
+         (cond ((not (bidi-lowest-odd-level x)) (bidi-lowest-odd-level y))
+               ((not (bidi-lowest-odd-level y)) (bidi-lowest-odd-level x))
+               (t (min (bidi-lowest-odd-level x)
+                       (bidi-lowest-odd-level y)))))
+  :induct (len x)
+  :enable (bidi-lowest-odd-level append len min))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The items of the second part have positions
+; that start at the length of the first part.
+
+(local
+ (define shift-items ((items bidi-display-item-listp) (offset natp))
+   :returns (new-items bidi-display-item-listp)
+   (if (endp items)
+       nil
+     (cons (make-bidi-display-item
+            :position (+ (bidi-display-item->position (car items))
+                         (lnfix offset))
+            :level (bidi-display-item->level (car items)))
+           (shift-items (cdr items) offset)))
+   :hooks nil))
+
+(defrulel shift-items-of-append
+  (equal (shift-items (append x y) offset)
+         (append (shift-items x offset)
+                 (shift-items y offset)))
+  :induct (len x)
+  :enable (shift-items append len))
+
+(defrulel shift-items-of-bidi-display-item-list-fix
+  (equal (shift-items (bidi-display-item-list-fix items) offset)
+         (shift-items items offset))
+  :induct (len items)
+  :enable (shift-items bidi-display-item-list-fix len))
+
+(defruledl bidi-display-items-of-+
+  (implies (and (natp position)
+                (natp offset))
+           (equal (bidi-display-items levels (+ position offset))
+                  (shift-items (bidi-display-items levels position) offset)))
+  :induct (bidi-display-items levels position)
+  :enable (bidi-display-items shift-items natp nfix))
+
+(defruledl bidi-display-items-in-terms-of-shift-items
+  (implies (natp offset)
+           (equal (bidi-display-items levels offset)
+                  (shift-items (bidi-display-items levels 0) offset)))
+  :use (:instance bidi-display-items-of-+ (position 0)))
+
+(defrulel bidi-reverse-runs-of-shift-items
+  (equal (bidi-reverse-runs (shift-items items offset)
+                            level
+                            (shift-items run offset))
+         (shift-items (bidi-reverse-runs items level run) offset))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs shift-items nfix))
+
+(defrulel bidi-reverse-runs-of-shift-items-and-nil
+  (equal (bidi-reverse-runs (shift-items items offset) level nil)
+         (shift-items (bidi-reverse-runs items level nil) offset))
+  :use (:instance bidi-reverse-runs-of-shift-items (run nil))
+  :disable bidi-reverse-runs-of-shift-items
+  :enable shift-items)
+
+(defrulel bidi-reorder-items-of-shift-items
+  (equal (bidi-reorder-items (shift-items items offset) level lowest)
+         (shift-items (bidi-reorder-items items level lowest) offset))
+  :induct (bidi-reorder-items items level lowest)
+  :enable bidi-reorder-items)
+
+(defrulel arranged-items-of-shift-items
+  (equal (arranged-items (shift-items items offset) level lowest?)
+         (shift-items (arranged-items items level lowest?) offset))
+  :enable arranged-items)
+
+(defrulel bidi-display-item-list-positions-of-shift-items
+  (equal (bidi-display-item-list-positions (shift-items items offset))
+         (nat-list-add (bidi-display-item-list-positions items) offset))
+  :induct (len items)
+  :enable (shift-items
+           bidi-display-item-list-positions
+           nat-list-add
+           len
+           nfix))
+
+(defrulel bidi-highest-level-of-shift-items
+  (equal (bidi-highest-level (shift-items items offset))
+         (bidi-highest-level items))
+  :induct (len items)
+  :enable (shift-items bidi-highest-level len nfix))
+
+(defrulel bidi-lowest-odd-level-of-shift-items
+  (equal (bidi-lowest-odd-level (shift-items items offset))
+         (bidi-lowest-odd-level items))
+  :induct (len items)
+  :enable (shift-items bidi-lowest-odd-level len nfix))
+
+; The characters with their levels, for the two parts.
+
+(local
+ (defun two-lists-induction (x y)
+   (if (or (atom x)
+           (atom y))
+       nil
+     (two-lists-induction (cdr x) (cdr y)))))
+
+(defrulel bidi-shown-chars-of-append
+  (implies (equal (len cps1) (len levels1))
+           (equal (bidi-shown-chars (append cps1 cps2)
+                                    (append levels1 levels2))
+                  (append (bidi-shown-chars cps1 levels1)
+                          (bidi-shown-chars cps2 levels2))))
+  :induct (two-lists-induction cps1 levels1)
+  :enable (bidi-shown-chars append len))
+
+(defrulel nfix-of-len
+  (equal (nfix (len x))
+         (len x))
+  :enable nfix)
+
+(defrulel bidi-shown-char-at-of-+-of-len-of-append
+  (equal (bidi-shown-char-at (+ (len pre) (nfix position))
+                             (append pre shown))
+         (bidi-shown-char-at position shown))
+  :induct (len pre)
+  :enable (bidi-shown-char-at append len nfix natp fix))
+
+(defrulel bidi-shown-chars-at-of-nat-list-add-of-append
+  (implies (equal (len pre) offset)
+           (equal (bidi-shown-chars-at (nat-list-add positions offset)
+                                       (append pre shown))
+                  (bidi-shown-chars-at positions shown)))
+  :induct (len positions)
+  :enable (bidi-shown-chars-at nat-list-add len))
+
+; The positions of the items of the first part
+; are under the length of that part.
+
+(local
+ (define items-positions-below ((items bidi-display-item-listp)
+                                (bound natp))
+   :returns (yes/no booleanp)
+   (or (endp items)
+       (and (< (bidi-display-item->position (car items)) (lnfix bound))
+            (items-positions-below (cdr items) bound)))
+   :hooks nil))
+
+(defrulel items-positions-below-of-append
+  (equal (items-positions-below (append x y) bound)
+         (and (items-positions-below x bound)
+              (items-positions-below y bound)))
+  :induct (len x)
+  :enable (items-positions-below append len))
+
+(defrulel items-positions-below-of-bidi-display-item-list-fix
+  (equal (items-positions-below (bidi-display-item-list-fix items) bound)
+         (items-positions-below items bound))
+  :induct (len items)
+  :enable (items-positions-below bidi-display-item-list-fix len))
+
+(defrulel items-positions-below-of-nil
+  (items-positions-below nil bound)
+  :enable items-positions-below)
+
+(defrulel items-positions-below-of-bidi-reverse-runs
+  (equal (items-positions-below (bidi-reverse-runs items level run) bound)
+         (and (items-positions-below items bound)
+              (items-positions-below run bound)))
+  :induct (bidi-reverse-runs items level run)
+  :enable (bidi-reverse-runs items-positions-below))
+
+(defrulel items-positions-below-of-bidi-reorder-items
+  (equal (items-positions-below (bidi-reorder-items items level lowest)
+                                bound)
+         (items-positions-below items bound))
+  :induct (bidi-reorder-items items level lowest)
+  :enable bidi-reorder-items)
+
+(defrulel items-positions-below-of-arranged-items
+  (equal (items-positions-below (arranged-items items level lowest?) bound)
+         (items-positions-below items bound))
+  :enable arranged-items)
+
+(defrulel items-positions-below-of-bidi-display-items
+  (implies (and (natp position)
+                (<= (+ position (len levels)) (nfix bound)))
+           (items-positions-below (bidi-display-items levels position)
+                                  bound))
+  :induct (bidi-display-items levels position)
+  :enable (bidi-display-items items-positions-below len nfix natp))
+
+(defrulel bidi-shown-char-at-of-append-when-below
+  (implies (and (natp position)
+                (< position (len shown)))
+           (equal (bidi-shown-char-at position (append shown post))
+                  (bidi-shown-char-at position shown)))
+  :induct (bidi-shown-char-at position shown)
+  :enable (bidi-shown-char-at append len nfix))
+
+(defrulel bidi-shown-chars-at-of-positions-of-append-when-below
+  (implies (items-positions-below items (len shown))
+           (equal (bidi-shown-chars-at
+                   (bidi-display-item-list-positions items)
+                   (append shown post))
+                  (bidi-shown-chars-at
+                   (bidi-display-item-list-positions items)
+                   shown)))
+  :induct (len items)
+  :enable (bidi-shown-chars-at
+           bidi-display-item-list-positions
+           items-positions-below
+           len))
+
+; The two parts.
+
+(defruledl bidi-order-of-levels-in-terms-of-arranged-items
+  (equal (bidi-order-of-levels levels)
+         (b* ((items (bidi-display-items levels 0)))
+           (bidi-display-item-list-positions
+            (arranged-items items
+                            (bidi-highest-level items)
+                            (bidi-lowest-odd-level items)))))
+  :enable (bidi-order-of-levels arranged-items))
+
+(defruledl arranged-shown-of-first-part
+  (implies (and (nat-listp l1)
+                (nat-listp l2)
+                (equal (len c1) (len l1)))
+           (equal (arranged-shown (bidi-display-items l1 0)
+                                  (append l1 l2)
+                                  (append c1 c2))
+                  (bidi-shown-chars-at (bidi-order-of-levels l1)
+                                       (bidi-shown-chars c1 l1))))
+  :enable (arranged-shown
+           bidi-order-of-levels-in-terms-of-arranged-items
+           min
+           max)
+  :use (:instance arranged-items-with-other-levels
+                  (items (bidi-display-items l1 0))
+                  (level (bidi-highest-level
+                          (bidi-display-items (append l1 l2) 0)))
+                  (lowest? (bidi-lowest-odd-level
+                            (bidi-display-items (append l1 l2) 0)))))
+
+(defruledl arranged-shown-of-second-part
+  (implies (and (nat-listp l1)
+                (nat-listp l2)
+                (equal (len c1) (len l1))
+                (equal offset (len l1)))
+           (equal (arranged-shown (bidi-display-items l2 offset)
+                                  (append l1 l2)
+                                  (append c1 c2))
+                  (bidi-shown-chars-at (bidi-order-of-levels l2)
+                                       (bidi-shown-chars c2 l2))))
+  :enable (arranged-shown
+           bidi-order-of-levels-in-terms-of-arranged-items
+           min
+           max)
+  :use ((:instance bidi-display-items-in-terms-of-shift-items
+                   (levels l2)
+                   (offset (len l1)))
+        (:instance arranged-items-with-other-levels
+                   (items (bidi-display-items l2 0))
+                   (level (bidi-highest-level
+                           (bidi-display-items (append l1 l2) 0)))
+                   (lowest? (bidi-lowest-odd-level
+                             (bidi-display-items (append l1 l2) 0))))))
+
+(defrulel bidi-shown-chars-at-of-nil
+  (equal (bidi-shown-chars-at nil shown)
+         nil)
+  :enable bidi-shown-chars-at)
+
+(defrulel bidi-move-marks-of-nil-and-nil
+  (equal (bidi-move-marks nil nil ver)
+         nil)
+  :enable bidi-move-marks)
+
+(defrulel bidi-shown-chars-of-append-when-not-consp
+  (implies (not (consp cps2))
+           (equal (bidi-shown-chars (append cps1 cps2) levels)
+                  (bidi-shown-chars cps1 levels)))
+  :induct (two-lists-induction cps1 levels)
+  :enable (bidi-shown-chars append))
+
+(defruledl nth-of-len-minus-1-in-terms-of-nat-list-last
+  (implies (and (nat-listp l1)
+                (consp l1))
+           (equal (nth (+ -1 (len l1)) l1)
+                  (nat-list-last l1)))
+  :induct (len l1)
+  :enable (nat-list-last nth len nat-listp nfix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection bidi-clean-cut-display
+  :short "The two parts of a paragraph joined at a clean cut
+          are each displayed as they would be with their own levels."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The paragraph is given by the code points and the levels
+     of its two parts (see @(tsee bidi-arrange-with-levels)),
+     and the cut between the two parts is clean
+     (see @(tsee bidi-clean-cut-p)).
+     Then the characters of the paragraph in the order of display
+     are those of the first part in the order of display,
+     followed by those of the second part in the order of display:
+     rules L2 and L3 [UAX #9] move no character across the cut,
+     and they do in each part what they would do
+     if the part were a paragraph with the same levels.")
+   (xdoc::p
+    "The theorem of @(see bidi-clean-cut-theorem)
+     says that the characters stay on their side of the cut;
+     this one also says in which order they are.
+     For rule L2 it has this to see:
+     in the paragraph, the rule reverses runs of characters
+     from the highest level of the paragraph down to its lowest odd level,
+     which may be more levels than a part has.
+     Above the highest level of a part, there is no run in the part.
+     Under its lowest odd level, the levels go two by two,
+     an even level and then the odd level under it,
+     which no character of the part has:
+     the same runs are reversed for the two levels,
+     and so they are back as they were."))
+
+  (defrule bidi-arrange-with-levels-of-append-when-bidi-clean-cut-p
+    (implies (and (nat-listp levels1)
+                  (nat-listp levels2)
+                  (equal (len cps1) (len levels1))
+                  (equal (len cps2) (len levels2))
+                  (bidi-clean-cut-p (len levels1)
+                                    (append levels1 levels2)))
+             (equal (bidi-arrange-with-levels (append cps1 cps2)
+                                              (append levels1 levels2)
+                                              ver)
+                    (append (bidi-arrange-with-levels cps1 levels1 ver)
+                            (bidi-arrange-with-levels cps2 levels2 ver))))
+    :cases ((not (consp levels1))
+            (not (consp levels2)))
+    :enable (bidi-arrange-with-levels
+             bidi-clean-cut-p
+             bidi-move-marks-of-arranged-when-clean
+             arranged-shown-of-first-part
+             arranged-shown-of-second-part
+             nth-of-len-minus-1-in-terms-of-nat-list-last
+             nfix)
+    :disable bidi-shown-chars-of-append))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1015,7 +1773,9 @@
      the Unicode Bidirectional Algorithm gives it in this text.
      It can differ from the order that the segment would have alone,
      because a bracket inside the segment
-     can be paired with a bracket outside it.")
+     can be paired with a bracket outside it.
+     See @(see bidi-self-contained-segments)
+     for conditions under which the two orders are the same.")
    (xdoc::p
     "The second theorem says that for a text
      with no paragraph separator before its last character,
@@ -1106,8 +1866,9 @@
      that a plain text can have, and two kinds of paired brackets.")
    (xdoc::p
     "The conditions do not make each segment be displayed
-     as it would be alone;
-     see @(see bidi-confined-theorem)."))
+     as it would be alone.
+     Two more conditions on the bracket pairs of the text do:
+     see @(see bidi-self-contained-segments)."))
   :order-subtopics t
   :default-parent t)
 

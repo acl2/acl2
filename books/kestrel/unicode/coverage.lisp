@@ -133,7 +133,11 @@
       and on the bracket pairs of the text
       are proved to make the cuts between the segments such places:
       see @(see bidi-guarded-segments)
-      and @(see bidi-guarded-segments-theorem)."))
+      and @(see bidi-guarded-segments-theorem).
+      With two more conditions on the bracket pairs,
+      each segment is proved to be displayed as it is alone:
+      see @(see bidi-self-contained-segments)
+      and @(see bidi-self-contained-segments-theorem)."))
    (xdoc::p
     "From [UAX #31], Unicode Identifiers and Syntax:")
    (xdoc::ul

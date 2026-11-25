@@ -13,6 +13,7 @@
 (include-book "bidi-left-to-right")
 (include-book "bidi-confinement")
 (include-book "bidi-guarded-theorem")
+(include-book "bidi-self-contained")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,7 +166,18 @@
       so they can be checked without running the algorithm;
       the proof goes through the rules one by one
       (see @(see bidi-guarded-segments)
-      and @(see bidi-guarded-segments-theorem)).")))
+      and @(see bidi-guarded-segments-theorem)).")
+    (xdoc::li
+     "With two more conditions on the bracket pairs of a plain text,
+      which can also be checked without running the algorithm,
+      each segment is displayed as it is alone:
+      in a paragraph from left to right,
+      each character has the level
+      that it has when its segment is a paragraph of its own,
+      and the display of the text is the display of the first segment,
+      followed by the display of the second segment, and so on
+      (see @(see bidi-self-contained-segments)
+      and @(see bidi-self-contained-segments-theorem)).")))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
