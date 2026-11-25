@@ -908,9 +908,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "GCC and Clang declare these names at file scope
+    "Clang declares these names at file scope
      before the translation unit begins,
-     as if by @('typedef') declarations.")
+     as if by @('typedef') declarations.
+     GCC also lets a @('typedef') or enumeration constant at file scope
+     redeclare them with any type.
+     We declare them at file scope,
+     so a redefinition must be compatible with the type we give them.")
    (xdoc::p
     "@('__builtin_va_list') is described in "
     (xdoc::ahref
@@ -922,7 +926,7 @@
    (xdoc::p
     "The compilers declare @('__int128_t') and @('__uint128_t')
      only on targets with 128-bit integers,
-     and @('__builtin_ms_va_list') only on x86-64.
+     and @('__builtin_ms_va_list') only on some targets, such as x86-64.
      We do not model the target, so we always include them.")
    (xdoc::p
     "The types of @('__int128_t') and @('__uint128_t')

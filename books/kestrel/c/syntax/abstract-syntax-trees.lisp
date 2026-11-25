@@ -1980,7 +1980,6 @@
       ".")
      (xdoc::p
       "We also include the GCC extensions
-       @('__float128'),
        @('_Float16'),
        @('_Float16x'),
        @('_Float32'),
@@ -1995,8 +1994,11 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       ".")
      (xdoc::p
-      "We also include the GCC extension @('__bf16'),
-       which is a floating type.")
+      "We also include @('__float128') and @('__bf16'),
+       which are floating types.
+       These are keywords in Clang.
+       In GCC they are built-in @('typedef') names (see @(see built-ins)),
+       which fall under the @(':typedef') case.")
      (xdoc::p
       "As a GCC extension, we allow a structure type specifier with no members,
        and with an optional name; see the ABNF grammar.")
