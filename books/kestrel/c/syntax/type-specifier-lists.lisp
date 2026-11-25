@@ -711,3 +711,38 @@
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
                                   (type-spec-int128)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-intcap-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form @('__intcap')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-intcap))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-unsigned-intcap-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('unsigned __intcap') or @('__intcap unsigned')."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-unsigned)
+                              (type-spec-intcap))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-spec-list-signed-intcap-p ((tyspecs type-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of type specifiers has the form
+          @('signed __intcap') or @('__intcap signed'),
+          including the GCC underscore variations of @('signed')."
+  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-none))
+                                  (type-spec-intcap)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-start))
+                                  (type-spec-intcap)))
+      (type-spec-list-permp (type-spec-list-fix tyspecs)
+                            (list (type-spec-signed (keyword-uscores-both))
+                                  (type-spec-intcap)))))

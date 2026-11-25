@@ -1961,7 +1961,8 @@
           :tyname (retok (make-type-spec-typeof-type :type expr/tyname.tyname
                                                      :uscores tyspec.uscores)
                          dstate)))
-       :auto-type (retok (type-spec-auto-type) (dstate-fix dstate))))
+       :auto-type (retok (type-spec-auto-type) (dstate-fix dstate))
+       :intcap (retok (type-spec-intcap) (dstate-fix dstate))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

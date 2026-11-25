@@ -2554,7 +2554,8 @@
           (pstate (print-astring ")" pstate)))
        pstate)
      :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
-     :auto-type (print-astring "__auto_type" pstate))
+     :auto-type (print-astring "__auto_type" pstate)
+     :intcap (print-astring "__intcap" pstate))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

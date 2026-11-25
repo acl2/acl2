@@ -127,6 +127,8 @@
 ; (see the end of https://gcc.gnu.org/onlinedocs/gcc/Typeof.html),
 ; which is a type specifier.
 
+; As a CHERI extension, we include the type specifier '__intcap'.
+
 ; As a GCC extension, we allow structures with no members:
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
 
@@ -214,6 +216,8 @@ type-specifier = %s"void"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"
                / %s"__auto_type"
+               ; CHERI extension:
+               / %s"__intcap"
 
 struct-or-union-specifier = struct-or-union
                             *attribute-specifier ; GCC extension

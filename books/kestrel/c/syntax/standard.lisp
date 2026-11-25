@@ -190,6 +190,7 @@
    (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                    (type-spec-fix type-spec)))
    (type-spec :auto-type nil)
+   (type-spec :intcap nil)
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (decl-spec :attrib nil)

@@ -462,6 +462,9 @@
      for instance, @('__float128') and @('__bf16') are keywords in Clang,
      but identifiers (built-in @('typedef') names) in GCC.")
    (xdoc::p
+    "We similarly include the CHERI extension type @('__intcap'),
+     which is a keyword only if CHERI extensions are supported.")
+   (xdoc::p
     "Note that @('bool') is a keyword only in C23:
      @(tsee lex-identifier/keyword) checks the dialect of the parser state.
      So the comparison here with that keyword
@@ -495,7 +498,8 @@
       (token-keywordp token? "_Float128")
       (token-keywordp token? "_Float128x")
       (token-keywordp token? "__bf16")
-      (token-keywordp token? "__auto_type"))
+      (token-keywordp token? "__auto_type")
+      (token-keywordp token? "__intcap"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -544,6 +548,7 @@
         ((token-keywordp token "_Float128x") (type-spec-float128x))
         ((token-keywordp token "__bf16") (type-spec-bf16))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))
+        ((token-keywordp token "__intcap") (type-spec-intcap))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 

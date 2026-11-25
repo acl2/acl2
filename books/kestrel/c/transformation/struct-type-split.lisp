@@ -2374,6 +2374,8 @@
                  st))
         :int128
         (retok (type-spec-fix type-spec) nil nil st)
+        :intcap
+        (retok (type-spec-fix type-spec) nil nil st)
         :locase-float128
         (retok (type-spec-fix type-spec) nil nil st)
         :float16

@@ -199,6 +199,7 @@
                 (tset::empty)
               (tset::insert type-spec.name (tset::empty)))
      :int128 (tset::empty)
+     :intcap (tset::empty)
      :locase-float128 (tset::empty)
      :float16 (tset::empty)
      :float16x (tset::empty)

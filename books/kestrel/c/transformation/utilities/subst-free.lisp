@@ -389,6 +389,7 @@
                             subst bound-vars))
      :typedef (type-spec-fix type-spec)
      :int128 (type-spec-fix type-spec)
+     :intcap (type-spec-fix type-spec)
      :locase-float128 (type-spec-fix type-spec)
      :float16 (type-spec-fix type-spec)
      :float16x (type-spec-fix type-spec)

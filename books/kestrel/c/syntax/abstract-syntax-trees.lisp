@@ -2015,7 +2015,11 @@
        and therefore we also need to include the ambiguous possibility.")
      (xdoc::p
       "As a GCC extension, we include @('__auto_type');
-       see the ABNF grammar."))
+       see the ABNF grammar.")
+     (xdoc::p
+      "We also include the CHERI extension @('__intcap'),
+       which is a (non-standard) integer type.
+       See the ABNF grammar."))
     (:void ())
     (:char ())
     (:short ())
@@ -2057,6 +2061,8 @@
     (:typeof-ambig ((expr/type amb-expr/tyname)
                     (uscores keyword-uscores-p)))
     (:auto-type ())
+    ;; CHERI extensions:
+    (:intcap ())
     :pred type-specp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))

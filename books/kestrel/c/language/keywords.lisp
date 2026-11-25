@@ -290,7 +290,8 @@
    (xdoc::p
     "This list is disjoint from the C17 and C23 standard keywords,
      and from the GCC and Clang additional keywords."))
-  '("__capability")
+  '("__capability"
+    "__intcap")
   ///
   (assert-event (string-listp *keywords-cheri*))
   (assert-event (no-duplicatesp-equal *keywords-cheri*))

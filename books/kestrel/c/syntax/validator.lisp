@@ -2559,7 +2559,11 @@
      in practical code,
      which seems indeed consistent with other types like @('signed int');
      so we accept all three variants.
-     But for now we map all of them to the unknown arithmetic type."))
+     But for now we map all of them to the unknown arithmetic type.")
+   (xdoc::p
+    "Similarly, we accept the CHERI type @('__intcap')
+     alone or accompanied by @('signed') or @('unsigned'),
+     and we map all of them to the unknown arithmetic type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -2653,6 +2657,11 @@
           (type-spec-list-signed-int128-p tyspecs))
       (retok (type-unknown-arithmetic)))
      ((type-spec-list-unsigned-int128-p tyspecs)
+      (retok (type-unknown-arithmetic)))
+     ((or (type-spec-list-intcap-p tyspecs)
+          (type-spec-list-signed-intcap-p tyspecs))
+      (retok (type-unknown-arithmetic)))
+     ((type-spec-list-unsigned-intcap-p tyspecs)
       (retok (type-unknown-arithmetic)))
      (t (retmsg$ "The type specifier sequence ~x0 is invalid."
                  (type-spec-list-fix tyspecs))))))
@@ -3938,7 +3947,11 @@
        that it can also be preceded by @('signed') and its underscore variants;
        so @('__int128') alone does not determine a type,
        and we use @(tsee valid-type-spec-list-residual)
-       to determine the type, if any, as done in other cases."))
+       to determine the type, if any, as done in other cases.")
+     (xdoc::p
+      "The CHERI type @('__intcap') may be preceded by
+       @('signed') or @('unsigned'),
+       so we handle it like @('__int128')."))
     (b* (((reterr) (irr-type-spec) nil nil nil (irr-vstate))
          ((when type?)
           (retmsg$ "Since the type ~x0 has been determined, ~
@@ -4336,6 +4349,7 @@
                              nil
                              same-vstate)
                     (reterr msg-bad-preceding))
+       :intcap (retok (type-spec-intcap) nil ext-tyspecs nil same-vstate)
        :otherwise (prog2$ (impossible) (retmsg$ ""))))
     :measure (acl2::two-nats-measure (type-spec-count tyspec) 0)
 

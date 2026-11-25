@@ -3165,3 +3165,24 @@ __capability char *q;
 void f(void) { p = q; }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; The __intcap type, which the built-in typedef names
+;; __intcap_t and __uintcap_t denote.
+(test-valid
+ "__intcap a;
+signed __intcap b;
+unsigned __intcap c;
+typedef __intcap __intcap_t;
+typedef unsigned __intcap __uintcap_t;
+__intcap_t d;
+__uintcap_t e;
+int *p;
+void f(void) { a = (__intcap) p; p = (int *) e; c = a & 0xf; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; Without CHERI extensions, __intcap is an undeclared identifier.
+(test-valid-fail
+ "__intcap a;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))

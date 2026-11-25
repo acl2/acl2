@@ -1123,6 +1123,11 @@
 
 (test-parse
  parse-declaration
+ "unsigned __intcap x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+(test-parse
+ parse-declaration
  "_Alignas(16) int x;"
  :cond (and (declon-case ast :declon)
             (b* ((declspec (car (declon-declon->specs ast))))
