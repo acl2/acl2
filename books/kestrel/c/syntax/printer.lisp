@@ -1717,7 +1717,8 @@
    :nonnull (print-astring "_Nonnull" pstate)
    :null-unspecified (print-astring "_Null_unspecified" pstate)
    :nullable (print-astring "_Nullable" pstate)
-   :nullable-result (print-astring "_Nullable_result" pstate))
+   :nullable-result (print-astring "_Nullable_result" pstate)
+   :capability (print-astring "__capability" pstate))
   :hooks (:fix)
 
   ///
@@ -2553,7 +2554,8 @@
           (pstate (print-astring ")" pstate)))
        pstate)
      :typeof-ambig (prog2$ (impossible) (pristate-fix pstate))
-     :auto-type (print-astring "__auto_type" pstate))
+     :auto-type (print-astring "__auto_type" pstate)
+     :intcap (print-astring "__intcap" pstate))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3449,6 +3451,12 @@
       "We ensure that the enumeration specifier is not empty,
        i.e. that there is a name or a non-empty list of enumerators."))
     (b* (((enum-spec enumspec) enumspec)
+         (pstate (if (consp enumspec.attribs)
+                     (b* ((pstate (print-attrib-spec-list enumspec.attribs
+                                                          pstate))
+                          (pstate (print-astring " " pstate)))
+                       pstate)
+                   pstate))
          ((unless (or (ident-option-case enumspec.name? :some)
                       enumspec.enumers))
           (raise "Misusage error: empty enumeration specifiers.")

@@ -731,6 +731,7 @@
                    (gout-no-thm gin)))
        :typedef (mv (type-spec-fix tyspec) gout0)
        :int128 (mv (type-spec-fix tyspec) gout0)
+       :intcap (mv (type-spec-fix tyspec) gout0)
        :locase-float128 (mv (type-spec-fix tyspec) gout0)
        :float16 (mv (type-spec-fix tyspec) gout0)
        :float16x (mv (type-spec-fix tyspec) gout0)
@@ -1594,7 +1595,8 @@
          ((mv new-enumers (gout gout-list))
           (simpadd0-enumer-list enumspec.enumers gin))
          (gin (gin-update gin gout-list)))
-      (mv (make-enum-spec :name? enumspec.name?
+      (mv (make-enum-spec :attribs enumspec.attribs
+                          :name? enumspec.name?
                           :enumers new-enumers
                           :final-comma enumspec.final-comma)
           (gout-no-thm gin)))

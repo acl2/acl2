@@ -60,6 +60,10 @@
 ; the type-qualifier-and-attribute-specifier-list in a pointer after the '*',
 ; but we enforce this outside the grammar.
 
+; As a CHERI extension,
+; we include the '__capability' type qualifier,
+; which makes a pointer a capability.
+
 ; As a GCC extension, we allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
@@ -123,6 +127,11 @@
 ; (see the end of https://gcc.gnu.org/onlinedocs/gcc/Typeof.html),
 ; which is a type specifier.
 
+; As a CHERI extension, we include the type specifier '__intcap'.
+; This is a keyword in CHERI Clang; it does not appear in [CHERI],
+; whose '__intcap_t' and '__uintcap_t' are typedef names
+; for '__intcap' and 'unsigned __intcap'.
+
 ; As a GCC extension, we allow structures with no members:
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
 
@@ -135,6 +144,9 @@
 ; nonetheless, we encountered it in practical code.
 ; Presumably, it may make it easier to write certain macros.
 ; Semantically, it amounts to nothing, i.e. it is ignored.
+
+; As a GCC extension, we allow attributes just after 'enum'
+; in an enumeration specifier.
 
 ; As a GCC extension, we allow range designators
 ; (see https://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
@@ -207,6 +219,8 @@ type-specifier = %s"void"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"
                / %s"__auto_type"
+               ; CHERI extension:
+               / %s"__intcap"
 
 struct-or-union-specifier = struct-or-union
                             *attribute-specifier ; GCC extension
@@ -245,9 +259,17 @@ struct-declarator-list = struct-declarator
 struct-declarator = declarator
                   / [ declarator ] ":" constant-expression
 
-enum-specifier = %s"enum" [ identifier ] "{" enumerator-list "}"
-               / %s"enum" [ identifier ] "{" enumerator-list "," "}"
-               / %s"enum" identifier
+enum-specifier = %s"enum"
+                 *attribute-specifier ; GCC extension
+                 [ identifier ]
+                 "{" enumerator-list "}"
+               / %s"enum"
+                 *attribute-specifier ; GCC extension
+                 [ identifier ]
+                 "{" enumerator-list "," "}"
+               / %s"enum"
+                 *attribute-specifier ; GCC extension
+                 identifier
 
 enumerator-list = enumerator
                 / enumerator-list "," enumerator
@@ -264,6 +286,7 @@ type-qualifier = %s"const"
                / %s"__seg_fs" ; GCC extension
                / %s"__seg_gs" ; GCC extension
                / nullability-qualifier ; Clang extension
+               / %s"__capability" ; CHERI extension
 
 nullability-qualifier = %s"_Nonnull"
                       / %s"_Null_unspecified"

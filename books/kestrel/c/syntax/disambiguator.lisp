@@ -1961,7 +1961,8 @@
           :tyname (retok (make-type-spec-typeof-type :type expr/tyname.tyname
                                                      :uscores tyspec.uscores)
                          dstate)))
-       :auto-type (retok (type-spec-auto-type) (dstate-fix dstate))))
+       :auto-type (retok (type-spec-auto-type) (dstate-fix dstate))
+       :intcap (retok (type-spec-intcap) (dstate-fix dstate))))
     :measure (type-spec-count tyspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2952,7 +2953,8 @@
     (b* (((reterr) (irr-enum-spec) (irr-dstate))
          ((enum-spec enumspec) enumspec)
          ((erp new-enumers dstate) (dimb-enumer-list enumspec.enumers dstate)))
-      (retok (make-enum-spec :name? enumspec.name?
+      (retok (make-enum-spec :attribs enumspec.attribs
+                             :name? enumspec.name?
                              :enumers new-enumers
                              :final-comma enumspec.final-comma)
              dstate))

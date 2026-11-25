@@ -2374,6 +2374,8 @@
                  st))
         :int128
         (retok (type-spec-fix type-spec) nil nil st)
+        :intcap
+        (retok (type-spec-fix type-spec) nil nil st)
         :locase-float128
         (retok (type-spec-fix type-spec) nil nil st)
         :float16
@@ -4214,9 +4216,14 @@
     (b* ((st (sts-split-state-fix st))
          ((reterr) (enum-spec-fix enum-spec) st)
          ((enum-spec enum-spec) enum-spec)
+         ((erp attribs st)
+          (attrib-spec-list-sts-split enum-spec.attribs st))
          ((erp enumers st)
           (enumer-list-sts-split enum-spec.enumers st)))
-      (retok (c$::change-enum-spec enum-spec :enumers enumers) st))
+      (retok (c$::change-enum-spec enum-spec
+                                   :attribs attribs
+                                   :enumers enumers)
+             st))
     :measure (enum-spec-count enum-spec))
 
   (define enumer-sts-split

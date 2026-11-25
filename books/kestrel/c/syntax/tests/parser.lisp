@@ -1108,6 +1108,26 @@
 
 (test-parse
  parse-declaration
+ "char * __capability p;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+(test-parse
+ parse-declaration
+ "__capability char *p;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+(test-parse-fail
+ parse-declaration
+ "char * __capability p;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t)) ; no CHERI extensions
+
+(test-parse
+ parse-declaration
+ "unsigned __intcap x;"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+(test-parse
+ parse-declaration
  "_Alignas(16) int x;"
  :cond (and (declon-case ast :declon)
             (b* ((declspec (car (declon-declon->specs ast))))
@@ -1892,6 +1912,12 @@ error (int __status, int __errnum, const char *__format, ...)
   } secret_data;
   char secret_bot_str[20];
 };
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-parse
+ parse-*-translation-item
+ "enum __attribute__((packed)) color { RED, GREEN, BLUE };
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 

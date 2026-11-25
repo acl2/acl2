@@ -664,7 +664,8 @@
          t
        :unknown)
      :enum
-     (if (endp (enum-spec->enumers typespec.spec))
+     (if (and (endp (enum-spec->attribs typespec.spec))
+              (endp (enum-spec->enumers typespec.spec)))
          t
        :unknown)
      :struct-empty :unknown

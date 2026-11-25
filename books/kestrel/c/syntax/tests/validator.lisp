@@ -1607,6 +1607,23 @@ void bar() {
 } my_union_t;
 ")
 
+(test-valid
+ "typedef enum __attribute__((flag_enum, enum_extensibility(open))) {
+  PERM_LOAD = 1,
+  PERM_STORE = 2
+} perms_t;
+
+perms_t p = PERM_LOAD;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+ "typedef enum __attribute__((flag_enum, enum_extensibility(open))) {
+  PERM_LOAD = 1,
+  PERM_STORE = 2
+} perms_t;
+")
+
 ;; Example taken from [GCCM:6.11.6.1]
 ;; https://gcc.gnu.org/onlinedocs/gcc/Global-Register-Variables.html
 (test-valid-fail
@@ -3136,3 +3153,40 @@ int f(void) { return (*p)[2][0]; }
  "int f(void *q) { return (*(int *__attribute__((vector_size(16))))q)[0]; }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; CHERI extensions.
+
+;; The __capability qualifier, after the * and before the type.
+(test-valid
+ "char * __capability p;
+__capability char *q;
+void f(void) { p = q; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; The __intcap type, alone or with signed or unsigned,
+;; used together with the built-in typedef names.
+(test-valid
+ "__intcap a;
+signed __intcap b;
+unsigned __intcap c;
+__intcap_t d;
+__uintcap_t e;
+int *p;
+void f(void) { a = (__intcap) p; p = (int *) e; c = a & 0xf; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; __intcap combines only with signed and unsigned.
+(test-valid-fail
+ "long __intcap a;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; Without CHERI extensions, __intcap is an undeclared identifier.
+(test-valid-fail
+ "__intcap a;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))

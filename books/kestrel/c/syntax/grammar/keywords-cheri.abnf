@@ -20,3 +20,4 @@
 ; but the list may be incomplete, and it will be extended as needed.
 
 keyword-cheri = %s"__capability"
+              / %s"__intcap"

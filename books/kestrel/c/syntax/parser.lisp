@@ -462,6 +462,9 @@
      for instance, @('__float128') and @('__bf16') are keywords in Clang,
      but identifiers (built-in @('typedef') names) in GCC.")
    (xdoc::p
+    "We similarly include the CHERI extension type @('__intcap'),
+     which is a keyword only if CHERI extensions are supported.")
+   (xdoc::p
     "Note that @('bool') is a keyword only in C23:
      @(tsee lex-identifier/keyword) checks the dialect of the parser state.
      So the comparison here with that keyword
@@ -495,7 +498,8 @@
       (token-keywordp token? "_Float128")
       (token-keywordp token? "_Float128x")
       (token-keywordp token? "__bf16")
-      (token-keywordp token? "__auto_type"))
+      (token-keywordp token? "__auto_type")
+      (token-keywordp token? "__intcap"))
   ///
 
   (defrule non-nil-when-token-type-specifier-keyword-p
@@ -544,6 +548,7 @@
         ((token-keywordp token "_Float128x") (type-spec-float128x))
         ((token-keywordp token "__bf16") (type-spec-bf16))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))
+        ((token-keywordp token "__intcap") (type-spec-intcap))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))
 
@@ -557,8 +562,9 @@
    (xdoc::p
     "All type qualifiers consist of single keywords.")
    (xdoc::p
-    "We also compare the token against the GCC and Clang keywords.
-     Note that these are keywords only if GCC/Clang extensions are supported:
+    "We also compare the token against the GCC, Clang, and CHERI keywords.
+     Note that these are keywords only if
+     the corresponding extensions are supported:
      @(tsee lex-identifier/keyword) checks grammatical identifiers
      against keywords depending on the C dialect."))
   (or (token-keywordp token? "const")
@@ -574,7 +580,8 @@
       (token-keywordp token? "_Nonnull")
       (token-keywordp token? "_Null_unspecified")
       (token-keywordp token? "_Nullable")
-      (token-keywordp token? "_Nullable_result"))
+      (token-keywordp token? "_Nullable_result")
+      (token-keywordp token? "__capability"))
   ///
 
   (defrule non-nil-when-token-type-qualifier-p
@@ -609,6 +616,7 @@
         ((token-keywordp token "_Null_unspecified") (type-qual-null-unspecified))
         ((token-keywordp token "_Nullable") (type-qual-nullable))
         ((token-keywordp token "_Nullable_result") (type-qual-nullable-result))
+        ((token-keywordp token "__capability") (type-qual-capability))
         (t (prog2$ (impossible) (irr-type-qual))))
   :prepwork ((local (in-theory (enable token-type-qualifier-p)))))
 
@@ -5864,6 +5872,14 @@
      (xdoc::p
       "The span of the @('enum') keyword is passed as input here."))
     (b* (((reterr) (irr-enum-spec) (irr-span) parstate)
+         ;; We read zero or more attribute specifiers.
+         ;; These are recognized as such
+         ;; only if GCC/Clang extensions are enabled.
+         (psize (parsize parstate))
+         ((erp attrspecs & parstate) ; [attrs]
+          (parse-*-attribute-specifier parstate))
+         ((unless (mbt (<= (parsize parstate) psize)))
+          (reterr :impossible))
          ;; There must be at least one token (identifier of open curly brace),
          ;; so we read one.
          ((erp token span parstate) (read-token parstate)))
@@ -5871,29 +5887,31 @@
        ;; If token is an identifier,
        ;; it may be the whole specifier, or there may be more,
        ;; so we read another token.
-       ((and token (token-case token :ident)) ; ident
+       ((and token (token-case token :ident)) ; [attrs] ident
         (b* ((ident (token-ident->ident token))
              ((erp token2 & parstate) (read-token parstate)))
           (cond
            ;; If token2 is an open curly brace,
            ;; there must be a list of enumerators, which we parse.
            ;; Then we read the closed curly brace.
-           ((token-punctuatorp token2 "{") ; ident {
+           ((token-punctuatorp token2 "{") ; [attrs] ident {
             (b* (((erp enumers final-comma & parstate)
-                  (parse-enumerator-list parstate)) ; ident { enumers [,]
-                 ((erp last-span parstate) ; ident { enumers [,] }
+                  (parse-enumerator-list parstate)) ; ... { enumers [,]
+                 ((erp last-span parstate) ; ... { enumers [,] }
                   (read-punctuator "}" parstate)))
-              (retok (make-enum-spec :name? ident
+              (retok (make-enum-spec :attribs attrspecs
+                                     :name? ident
                                      :enumers enumers
                                      :final-comma final-comma)
                      (span-join first-span last-span)
                      parstate)))
            ;; If token2 is not an open curly brace,
            ;; the identifier must be the whole enumeration specifier.
-           (t ; ident other
+           (t ; [attrs] ident other
             (b* ((parstate
-                  (if token2 (unread-token parstate) parstate))) ; ident
-              (retok (make-enum-spec :name? ident
+                  (if token2 (unread-token parstate) parstate))) ; [attrs] ident
+              (retok (make-enum-spec :attribs attrspecs
+                                     :name? ident
                                      :enumers nil
                                      :final-comma nil)
                      (span-join first-span span)
@@ -5901,25 +5919,27 @@
        ;; If token is an open curly brace,
        ;; we must have an enumeration specifier without identifier.
        ;; We parse the list of enumerators, and the closed curly brace.
-       ((token-punctuatorp token "{") ; {
+       ((token-punctuatorp token "{") ; [attrs] {
         (b* (((erp enumers final-comma & parstate)
-              (parse-enumerator-list parstate)) ; { enumers [,]
-             ((erp last-span parstate) ; { enumers [,] }
+              (parse-enumerator-list parstate)) ; [attrs] { enumers [,]
+             ((erp last-span parstate) ; [attrs] { enumers [,] }
               (read-punctuator "}" parstate)))
-          (retok (make-enum-spec :name? nil
+          (retok (make-enum-spec :attribs attrspecs
+                                 :name? nil
                                  :enumers enumers
                                  :final-comma final-comma)
                  (span-join first-span last-span)
                  parstate)))
        ;; If token is neither an identifier nor an open curly brace,
-       ;; it is an error, because the 'enum' keyword must be alwways followed by
+       ;; it is an error, because the 'enum' keyword
+       ;; and any attribute specifiers must be followed by
        ;; an identifier or an open curly brace.
        (t
         (reterr-msg :where (span->start span)
                     :expected "an identifier ~
                                or a closed curly brace"
                     :found (token-to-msg token)))))
-    :measure (two-nats-measure (parsize parstate) 0))
+    :measure (two-nats-measure (parsize parstate) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

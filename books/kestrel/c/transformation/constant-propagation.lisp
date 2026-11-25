@@ -1004,6 +1004,7 @@
                 (mv (type-spec-enum spec) env))
         :typedef (mv (type-spec-fix tyspec) env)
         :int128 (mv (type-spec-fix tyspec) env)
+        :intcap (mv (type-spec-fix tyspec) env)
         :locase-float128 (mv (type-spec-fix tyspec) env)
         :float16 (mv (type-spec-fix tyspec) env)
         :float16x (mv (type-spec-fix tyspec) env)
@@ -1622,7 +1623,8 @@
          ((enum-spec enumspec) enumspec)
          ((mv enumers env)
           (const-prop-enumer-list enumspec.enumers env)))
-      (mv (make-enum-spec :name? enumspec.name?
+      (mv (make-enum-spec :attribs enumspec.attribs
+                          :name? enumspec.name?
                           :enumers enumers
                           :final-comma enumspec.final-comma)
           env))

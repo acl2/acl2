@@ -272,7 +272,8 @@
                                          :members nil)
                  :info nil))
    :enum (list (type-spec-enum
-                (make-enum-spec :name? (ildm-ident tyspecs.tag)
+                (make-enum-spec :attribs nil
+                                :name? (ildm-ident tyspecs.tag)
                                 :enumers nil
                                 :final-comma nil)))
    :typedef (list (make-type-spec-typedef :name (ildm-ident tyspecs.name)
@@ -713,6 +714,7 @@
                   (make-type-spec-union :spec strunispec
                                         :info nil))
          :enum (b* ((enumspec (make-enum-spec
+                               :attribs nil
                                :name? (ildm-ident declon.tag)
                                :enumers (ildm-enumer-list declon.enumerators)
                                :final-comma nil)))

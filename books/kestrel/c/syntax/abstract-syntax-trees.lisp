@@ -1254,10 +1254,13 @@
      These are captured by adding underscore information
      to the @(':volatile') case.")
    (xdoc::p
-    "we also include the GCC extensions for x86 named address spaces.
+    "We also include the GCC extensions for x86 named address spaces.
      See the ABNF grammar.")
    (xdoc::p
     "We also include the Clang extensions for nullability qualifiers.
+     See the ABNF grammar.")
+   (xdoc::p
+    "We also include the CHERI extension @('__capability').
      See the ABNF grammar."))
   (:const ())
   (:restrict ((uscores keyword-uscores)))
@@ -1269,6 +1272,7 @@
   (:null-unspecified ())
   (:nullable ())
   (:nullable-result ())
+  (:capability ())
   :pred type-qualp
   :layout :fulltree)
 
@@ -2011,7 +2015,11 @@
        and therefore we also need to include the ambiguous possibility.")
      (xdoc::p
       "As a GCC extension, we include @('__auto_type');
-       see the ABNF grammar."))
+       see the ABNF grammar.")
+     (xdoc::p
+      "We also include the CHERI extension @('__intcap'),
+       which is a (non-standard) integer type.
+       See the ABNF grammar."))
     (:void ())
     (:char ())
     (:short ())
@@ -2053,6 +2061,8 @@
     (:typeof-ambig ((expr/type amb-expr/tyname)
                     (uscores keyword-uscores-p)))
     (:auto-type ())
+    ;; CHERI extensions:
+    (:intcap ())
     :pred type-specp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2716,8 +2726,13 @@
      (xdoc::p
       "To make this definition simpler,
        we allow an absent name and no enumerators,
-       even though this is disallowed in the concrete syntax."))
-    ((name? ident-option)
+       even though this is disallowed in the concrete syntax.")
+     (xdoc::p
+      "As a GCC extension, we allow zero or more attribute specifiers.
+       In the concrete syntax, these come just after @('enum');
+       see the ABNF grammar."))
+    ((attribs attrib-spec-list) ; GCC extension
+     (name? ident-option)
      (enumers enumer-list)
      (final-comma bool))
     :pred enum-specp

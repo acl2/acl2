@@ -1120,6 +1120,10 @@
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
         (b* (((enum-spec enumspec) (type-spec-enum->spec tyspec))
+             ((unless (endp enumspec.attribs))
+              (reterr
+               (msg "Unsupported attributes in enumeration specifier ~x0."
+                    enumspec)))
              ((unless enumspec.name?)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))

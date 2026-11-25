@@ -133,6 +133,7 @@
    (type-qual :null-unspecified nil)
    (type-qual :nullable nil)
    (type-qual :nullable-result nil)
+   (type-qual :capability nil)
    (fun-spec :inline (keyword-uscores-case
                       (fun-spec-inline->uscores fun-spec) :none))
    (expr :unary (and (expr-standardp (expr-unary->arg expr))
@@ -189,6 +190,7 @@
    (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
                                    (type-spec-fix type-spec)))
    (type-spec :auto-type nil)
+   (type-spec :intcap nil)
    (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
                                      (align-spec-fix align-spec)))
    (decl-spec :attrib nil)
@@ -214,6 +216,8 @@
                         (struct-declon-member->declors struct-declon))
                        (endp (struct-declon-member->attribs struct-declon))))
    (struct-declon :empty nil)
+   (enum-spec (and (endp (enum-spec->attribs enum-spec))
+                   (enumer-list-standardp (enum-spec->enumers enum-spec))))
    (attrib nil)
    (attrib-spec nil)
    (init-declor (and (declor-standardp (init-declor->declor init-declor))
