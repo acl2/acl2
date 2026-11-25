@@ -3991,9 +3991,13 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::brr-data-mirror))
 
 ; The next form was written by AI (including comments), for use in to-df.
+; Although AI restricted to CCL, we have applied the fix to GCL as well after
+; books/system/tests/to-df-overflow-infinity-ccl-only.lisp failed to certify.
+; It is fine to add other Lisps as needed.
+
 ; <<Start AI fix 6>>
 
-#+(and ccl (not acl2-loop-only))
+#+(and (or ccl gcl) (not acl2-loop-only))
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
 (declaim (inline ccl-to-df-check))
@@ -4072,20 +4076,20 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; adding the #+ccl code below; see also ccl-to-df-check.
 
   (cond ((rationalp x) ; compute suitable constant at compile time
-         #-ccl (float x 0.0D0)
-         #+ccl (ccl-to-df-check (float x 0.0D0) x))
+         #-(or ccl gcl) (float x 0.0D0)
+         #+(or ccl gcl) (ccl-to-df-check (float x 0.0D0) x))
         ((and (consp x)
               (eq (car x) 'quote)
               (consp (cdr x))
               (rationalp (cadr x))
               (null (cddr x)))
-         #-ccl (float (cadr x) 0.0D0)
-         #+ccl (ccl-to-df-check (float (cadr x) 0.0D0) (cadr x)))
+         #-(or ccl gcl) (float (cadr x) 0.0D0)
+         #+(or ccl gcl) (ccl-to-df-check (float (cadr x) 0.0D0) (cadr x)))
         (t
-         #-ccl `(float ,x 0.0D0)
-         #+ccl (let ((var (gensym "TO-DF-ARG")))
-                 `(let ((,var ,x))
-                    (ccl-to-df-check (float ,var 0.0D0) ,var))))))
+         #-(or ccl gcl) `(float ,x 0.0D0)
+         #+(or ccl gcl) (let ((var (gensym "TO-DF-ARG")))
+                          `(let ((,var ,x))
+                             (ccl-to-df-check (float ,var 0.0D0) ,var))))))
 
 (defun boolean-listp (lst)
   (declare (xargs :guard t))

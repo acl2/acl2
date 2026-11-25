@@ -967,8 +967,8 @@
   (defthm alist-keys-subsetp-when-sub-alistp
     (implies (acl2::sub-alistp x y)
 	     (subsetp-equal (alist-keys x) (alist-keys y)))
-    ::hints(("Goal" :in-theory (e/d (acl2::subsetp-witness-rw
-				     acl2::alist-keys-member-hons-assoc-equal))))))
+    :hints(("Goal" :in-theory (e/d (acl2::subsetp-witness-rw
+                                    acl2::alist-keys-member-hons-assoc-equal))))))
 
 (defsection fgl-interp-set-proof-support
 

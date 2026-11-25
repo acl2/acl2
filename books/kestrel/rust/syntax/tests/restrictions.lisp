@@ -307,6 +307,8 @@ b\"")
                   (not (reserrp tree)))
            (identifier-start-codes-agree (1- n))))))
 
+(comp t) ; added by Matt K. to prevent stack overflow in GCL
+
 (assert-event (identifier-start-codes-agree #x3000))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
