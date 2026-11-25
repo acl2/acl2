@@ -11,6 +11,7 @@
 (in-package "ARM")
 
 (include-book "encoding-tools")
+(include-book "kestrel/alists-light/lookup-equal-def" :dir :system)
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 
  ; for speed:
@@ -84,6 +85,8 @@
 
      (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
      (local (include-book "kestrel/alists-light/alistp" :dir :system))
+     (local (include-book "kestrel/alists-light/lookup-eq" :dir :system))
+     (local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
      (local (include-book "kestrel/bv/slice" :dir :system))
 
      ;; for speed:

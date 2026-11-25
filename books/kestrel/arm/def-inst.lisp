@@ -12,6 +12,7 @@
 
 (include-book "encodings")
 (include-book "std/util/bstar" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 
 ;; This wrapper for lookup-eq has a guard requiring the key to be bound in the alist
 ;; TODO: better name?
