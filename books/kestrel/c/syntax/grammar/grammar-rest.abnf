@@ -128,6 +128,9 @@
 ; which is a type specifier.
 
 ; As a CHERI extension, we include the type specifier '__intcap'.
+; This is a keyword in CHERI Clang; it does not appear in [CHERI],
+; whose '__intcap_t' and '__uintcap_t' are typedef names
+; for '__intcap' and 'unsigned __intcap'.
 
 ; As a GCC extension, we allow structures with no members:
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.

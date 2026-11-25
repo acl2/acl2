@@ -3166,18 +3166,22 @@ void f(void) { p = q; }
 "
  :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
 
-;; The __intcap type, which the built-in typedef names
-;; __intcap_t and __uintcap_t denote.
+;; The __intcap type, alone or with signed or unsigned,
+;; used together with the built-in typedef names.
 (test-valid
  "__intcap a;
 signed __intcap b;
 unsigned __intcap c;
-typedef __intcap __intcap_t;
-typedef unsigned __intcap __uintcap_t;
 __intcap_t d;
 __uintcap_t e;
 int *p;
 void f(void) { a = (__intcap) p; p = (int *) e; c = a & 0xf; }
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+;; __intcap combines only with signed and unsigned.
+(test-valid-fail
+ "long __intcap a;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
 

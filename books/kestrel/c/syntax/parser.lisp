@@ -5931,7 +5931,8 @@
                  (span-join first-span last-span)
                  parstate)))
        ;; If token is neither an identifier nor an open curly brace,
-       ;; it is an error, because the 'enum' keyword must be alwways followed by
+       ;; it is an error, because the 'enum' keyword
+       ;; and any attribute specifiers must be followed by
        ;; an identifier or an open curly brace.
        (t
         (reterr-msg :where (span->start span)
