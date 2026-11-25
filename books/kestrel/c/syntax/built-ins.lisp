@@ -26,13 +26,13 @@
 
 (defxdoc+ built-ins
   :parents (disambiguation validation)
-  :short "Built-in functions and objects in C dialects."
+  :short "Built-in functions, objects, and @('typedef') names in C dialects."
   :long
   (xdoc::topstring
    (xdoc::p
      "Compilers implementing an extended dialect of C often provide
-      a variety of ``built-in'' functions and objects.
-      Such functions and objects may be used despite never being declared.
+      a variety of ``built-in'' functions, objects, and @('typedef') names.
+      These may be used despite never being declared.
       Therefore, some information about built-ins must be hard-coded
       in order to "
      (xdoc::seetopic "disambiguation" "disambiguate")
@@ -103,6 +103,36 @@
   :returns (names string-listp)
   :short "Lift @(tsee built-in-var->name) to lists."
   (built-in-var->name x))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod built-in-typedef
+  :short "Fixtype of information about a built-in @('typedef') name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This consists of
+     the name (an ACL2 string)
+     and the type that the name denotes."))
+  ((name string)
+   (type type))
+  :pred built-in-typedefp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist built-in-typedef-list
+  :short "Fixtype of lists of information about built-in @('typedef') names."
+  :elt-type built-in-typedef
+  :true-listp t
+  :elementp-of-nil nil
+  :pred built-in-typedef-listp)
+
+;;;;;;;;;;
+
+(std::defprojection built-in-typedef-list->name ((x built-in-typedef-listp))
+  :returns (names string-listp)
+  :short "Lift @(tsee built-in-typedef->name) to lists."
+  (built-in-typedef->name x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -871,6 +901,114 @@
   (assert-event (string-listp *cheri-built-in-fun/var-names*))
   (assert-event (no-duplicatesp-equal *cheri-built-in-fun/var-names*)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *gcc/clang-built-in-typedefs*
+  :short "A partial list of @('typedef') names built-in to both GCC and Clang."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Clang declares these names at file scope
+     before the translation unit begins,
+     as if by @('typedef') declarations.
+     GCC also lets a @('typedef') or enumeration constant at file scope
+     redeclare them with any type.
+     We declare them at file scope,
+     so a redefinition must be compatible with the type we give them.")
+   (xdoc::p
+    "@('__builtin_va_list') is described in "
+    (xdoc::ahref
+     "https://clang.llvm.org/docs/LanguageExtensions.html#variadic-function-builtins"
+     "[CLE#variadic-function-builtins]")
+    " as a predefined @('typedef') for the target-specific @('va_list') type.
+     The other names do not appear to be documented,
+     but are observed to behave like @('typedef')s in practice.")
+   (xdoc::p
+    "The compilers declare @('__int128_t') and @('__uint128_t')
+     only on targets with 128-bit integers,
+     and @('__builtin_ms_va_list') only on some targets, such as x86-64.
+     We do not model the target, so we always include them.")
+   (xdoc::p
+    "The types of @('__int128_t') and @('__uint128_t')
+     are @('__int128') and @('unsigned __int128'),
+     which we approximate as the unknown arithmetic type.
+     The @('va_list') types depend on the target,
+     so we approximate them as the unknown built-in type."))
+  (list (built-in-typedef "__int128_t" (type-unknown-arithmetic))
+        (built-in-typedef "__uint128_t" (type-unknown-arithmetic))
+        (built-in-typedef "__builtin_va_list" (type-unknown-builtin))
+        (built-in-typedef "__builtin_ms_va_list" (type-unknown-builtin)))
+  ///
+  (assert-event (built-in-typedef-listp *gcc/clang-built-in-typedefs*))
+  (assert-event (no-duplicatesp-equal
+                 (built-in-typedef-list->name *gcc/clang-built-in-typedefs*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *gcc-built-in-typedefs*
+  :short "A partial list of @('typedef') names
+          built-in to GCC but not to Clang."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are declared like
+     the ones in @(tsee *gcc/clang-built-in-typedefs*).
+     GCC declares @('__builtin_sysv_va_list') on x86-64.
+     The x86 back end declares @('__float80'), @('__float128'), and @('__bf16').
+     Some other back ends declare some of these names in the same way.")
+   (xdoc::p
+    "We approximate the types of
+     @('__float80'), @('__float128'), and @('__bf16')
+     as the unknown arithmetic type."))
+  (list (built-in-typedef "__builtin_sysv_va_list" (type-unknown-builtin))
+        (built-in-typedef "__float80" (type-unknown-arithmetic))
+        (built-in-typedef "__float128" (type-unknown-arithmetic))
+        (built-in-typedef "__bf16" (type-unknown-arithmetic)))
+  ///
+  (assert-event (built-in-typedef-listp *gcc-built-in-typedefs*))
+  (assert-event (no-duplicatesp-equal
+                 (built-in-typedef-list->name *gcc-built-in-typedefs*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *clang-built-in-typedefs*
+  :short "A partial list of @('typedef') names
+          built-in to Clang but not to GCC."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Clang declares @('__NSConstantString') like
+     the names in @(tsee *gcc/clang-built-in-typedefs*).
+     It denotes a structure type used for constant string literals
+     of Objective-C and of Apple's CoreFoundation library.
+     The structure type is defined by the compiler,
+     and is distinct from any structure type declared in the program,
+     even one with the same tag @('__NSConstantString_tag'),
+     so we approximate it as the unknown built-in type."))
+  (list (built-in-typedef "__NSConstantString" (type-unknown-builtin)))
+  ///
+  (assert-event (built-in-typedef-listp *clang-built-in-typedefs*))
+  (assert-event (no-duplicatesp-equal
+                 (built-in-typedef-list->name *clang-built-in-typedefs*))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defval *cheri-built-in-typedefs*
+  :short "A partial list of @('typedef') names built-in to CHERI."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "CHERI Clang declares @('__intcap_t') and @('__uintcap_t') like
+     the names in @(tsee *gcc/clang-built-in-typedefs*).
+     They denote the types @('__intcap') and @('unsigned __intcap'),
+     which we approximate as the unknown arithmetic type."))
+  (list (built-in-typedef "__intcap_t" (type-unknown-arithmetic))
+        (built-in-typedef "__uintcap_t" (type-unknown-arithmetic)))
+  ///
+  (assert-event (built-in-typedef-listp *cheri-built-in-typedefs*))
+  (assert-event (no-duplicatesp-equal
+                 (built-in-typedef-list->name *cheri-built-in-typedefs*))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define built-in-functions-for ((dialect c::dialectp))
@@ -908,6 +1046,28 @@
 
   (defret no-duplicatesp-equal-of-names-of-built-in-vars-for
     (no-duplicatesp-equal (built-in-var-list->name built-ins))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define built-in-typedefs-for ((dialect c::dialectp))
+  :returns (built-ins built-in-typedef-listp)
+  :short "List of built-in @('typedef') names according to the C dialect."
+  (b* (((c::dialect dialect) dialect))
+    (cond (dialect.gcc (append *gcc/clang-built-in-typedefs*
+                               *gcc-built-in-typedefs*))
+          (dialect.clang (append *gcc/clang-built-in-typedefs*
+                                 *clang-built-in-typedefs*
+                                 (and dialect.cheri
+                                      *cheri-built-in-typedefs*)))
+          (t nil)))
+
+  ///
+
+  (more-returns
+   (built-ins true-listp :rule-classes :type-prescription))
+
+  (defret no-duplicatesp-equal-of-names-of-built-in-typedefs-for
+    (no-duplicatesp-equal (built-in-typedef-list->name built-ins))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
