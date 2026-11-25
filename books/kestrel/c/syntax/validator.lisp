@@ -8856,7 +8856,7 @@
                      ident info.type prev.type)
           (valid-merge-externals-loop
            (tmap::next cursor)
-           (change-valid-merge-state mstate :compatible-pairs compatible-pairs)
+           (valid-merge-state-fix mstate)
            ienv
            strict-merge)))
        ((mv type completions composites composite-inputs next-uid-num)
