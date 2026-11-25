@@ -275,6 +275,24 @@
       and @('Extended_Pictographic'):
       see @(see emoji)."))
    (xdoc::p
+    "From [UTS #46], Unicode IDNA Compatibility Processing,
+     and from [RFC 5893], to which it refers:")
+   (xdoc::ul
+    (xdoc::li
+     "The Bidi Rule for a label of a domain name
+      [RFC 5893, Section 2],
+      and the check of it for a domain name
+      that goes with the option @('CheckBidi')
+      [UTS #46, Section 4.1]:
+      see @(see bidi-rule).
+      That topic also has two rules that are of this library,
+      a strict one and a wide one,
+      for which a search finds no two labels that are displayed alike,
+      and the examples that show that the Bidi Rule alone
+      does not prevent that.
+      The two rules are not in a specification,
+      and that they do what the search suggests is not proved yet."))
+   (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")
    (xdoc::p
@@ -407,8 +425,12 @@
      "From [UTS #51]: the emoji sequences,
       and the choice between text and emoji presentation.")
     (xdoc::li
-     "UTS #10, collation; UTS #18, regular expressions;
-      UTS #46, compatibility processing of domain names."))
+     "From [UTS #46]: the mapping of the characters of a domain name,
+      the other validity criteria,
+      and the conversions to and from the ASCII form of a label.
+      Only its check of the Bidi Rule is modeled.")
+    (xdoc::li
+     "UTS #10, collation; UTS #18, regular expressions."))
 
    (xdoc::h3 "Programming languages")
    (xdoc::p

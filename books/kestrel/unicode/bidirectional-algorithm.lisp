@@ -14,6 +14,7 @@
 (include-book "bidi-confinement")
 (include-book "bidi-guarded-theorem")
 (include-book "bidi-self-contained")
+(include-book "bidi-rule")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,7 +178,17 @@
       and the display of the text is the display of the first segment,
       followed by the display of the second segment, and so on
       (see @(see bidi-self-contained-segments)
-      and @(see bidi-self-contained-segments-theorem)).")))
+      and @(see bidi-self-contained-segments-theorem))."))
+   (xdoc::p
+    "The library also has the Bidi Rule,
+     the condition that Internationalized Domain Names put
+     on a label with right-to-left characters,
+     and two rules derived from it
+     for which a search finds no two labels that are displayed alike
+     (see @(see bidi-rule)).
+     Those predicates look only at the classes of the characters.
+     That the two derived rules keep any two different labels
+     from being displayed alike is not proved yet."))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
@@ -188,4 +199,5 @@
                     bidi-rearrangement
                     right-to-left-free
                     bidi-left-to-right
-                    bidi-confinement))
+                    bidi-confinement
+                    bidi-rule))
