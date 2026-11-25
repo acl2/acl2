@@ -126,6 +126,7 @@ validated.
 | `bidi-guarded-theorem` | The proof that those conditions are enough: a plain text whose segments are guarded is confined (`bidi-confined-p-when-bidi-guarded-segments-p`). |
 | `bidi-self-contained` | Two more conditions, on the bracket pairs of the text, under which each segment of a plain text is displayed as it is alone (`bidi-self-contained-segments-p`), and the proof: in a paragraph from left to right, the levels are those of each segment alone, and the display is the display of each segment, one after the other. |
 | `bidi-guarded-plain`, `bidi-guarded-weak`, `bidi-guarded-brackets`, `bidi-guarded-neutral` | The steps of those two proofs, which `bidi-guarded-theorem` and `bidi-self-contained` include locally: a plain text is one isolating run sequence, and what rule L1 does in it; the invariant of the first proof and rules W1 to W7; facts about the bracket pairs; rules N0 to N2, I1 and I2; and, for the second proof, that each rule does in a stretch of a text what it does to the stretch alone.  Their definitions are for the proofs only; they have comments and no documentation topics, and `top` does not load them. |
+| `bidi-rule` | The Bidi Rule for a label of a domain name (RFC 5893, Section 2, which UTS #46 applies with its option `CheckBidi`), as it is written: `bidi-rule-p` for a label and `bidi-rule-domain-name-p` for a domain name.  And two rules derived from it, which are of this library and not of a specification: a strict one (`bidi-rule-strict-p`), and a wide one for names that may begin or end with punctuation (`bidi-rule-wide-p`).  The predicates look only at `Bidi_Class` and `Bidi_Paired_Bracket_Type`, and the book does not load the algorithm.  With the proofs that the two ways in which the RFC says what a right-to-left label is agree under the rule, that a left-to-right label or name has no right-to-left character, and that the wide rule extends the strict one.  That the two derived rules keep two labels from being displayed alike is searched, not proved (see "Tests"). |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
@@ -671,6 +672,31 @@ theorems are about what the algorithm does:
   bracket has the class `ON`, as `BidiBrackets.txt` says the stability
   policy guarantees; checked on every code point, for each version.
 
+About the Bidi Rule (RFC 5893, Section 2) and the two rules derived from
+it:
+
+- `bidi-right-to-left-label-p-when-bidi-rule-p`: the RFC says in two ways
+  which labels are right-to-left labels, by the first character (in the
+  first condition of the rule) and by the characters of the whole label
+  (in its terminology).  For a label that satisfies the rule the two
+  agree: the label has a character of class `R`, `AL` or `AN` exactly
+  when its first character is not of class `L`.
+- `right-to-left-free-p-when-bidi-rule-p`,
+  `right-to-left-free-p-when-bidi-rule-wide-p`: a left-to-right label
+  that satisfies the Bidi Rule, and a left-to-right name that satisfies
+  the wide rule, satisfy `right-to-left-free-p`.  So, by
+  `bidi-display-when-right-to-left-free-p`, they are displayed as they
+  are stored when the paragraph is not set from right to left.
+- `bidi-rule-wide-p-when-bidi-rule-strict-p`: a label that satisfies the
+  strict rule satisfies the wide rule.
+- Not proved: that two different labels that satisfy the strict rule are
+  never displayed alike, in a paragraph of either direction; and the same
+  for the wide rule in a paragraph from left to right.  What is known is
+  the search described under "Tests".  The Bidi Rule as it is written
+  does not have the property: the tests have two labels with a character
+  of class `ET`, and two with a character of class `BN`, that satisfy it
+  and are displayed alike.
+
 About the bidirectional skeleton:
 
 - `bidi-skeleton-when-right-to-left-free-p`,
@@ -729,6 +755,7 @@ supported version, and nothing else of this library.
 | `internal-skeleton`, `skeleton`, `confusable-p` | `skeleton` | `confusables`, `normalization`, `default-ignorable`, `right-to-left-free`, and the books that those load | the tables of those books |
 | `bidi-skeleton`, `bidi-confusable-p` | `bidi-skeleton` | `skeleton`, `bidi-left-to-right`, and the books that those load | the tables of those books |
 | `right-to-left-free-p`, `right-to-left-code-point-p` | `right-to-left-free` | `bidi-class`, and the books that it loads | `derived-bidi-class` |
+| `bidi-rule-p`, `bidi-rule-domain-name-p`, `bidi-right-to-left-label-p`, `bidi-domain-name-p`, `bidi-rule-strict-p`, `bidi-rule-wide-p` | `bidi-rule` | `bidi-class`, `bidi-brackets`, `right-to-left-free`, and the books that those load | `derived-bidi-class`, `bidi-brackets` |
 | `single-script-confusable-p`, `mixed-script-confusable-p`, `whole-script-confusable-p` | `confusable-kinds` | `skeleton`, `mixed-scripts`, and the books that those load | the tables of those books |
 | `code-point-augmented-script-set`, `resolved-script-set`, `single-script-p`, `mixed-script-p`; the types `writing-system` and `script-set` | `mixed-scripts` | `scripts`, and the books that it loads | `scripts`, `script-extensions` |
 | `decimal-digit-zeros`, `mixed-number-systems-p` | `mixed-numbers` | `decimal-digits`, and the books that it loads | `unicode-data` |
@@ -1147,12 +1174,41 @@ there is no formal specification to prove that against.  The evidence is:
   check at length five, 12,521,266 cases with self-contained segments and
   none that differs, was run once, on 2026-11-24, outside the certified
   books.
+- `bidi-rule`: examples of the Bidi Rule (labels that satisfy it, labels
+  that fail each of its six conditions, domain names); the two pairs of
+  labels that satisfy the rule and are displayed alike, one with a
+  character of class `ET` and one with a character of class `BN`;
+  examples of the wide rule, and for each of its conditions two names
+  that are displayed alike and that the condition keeps apart.  Then the
+  search.  It takes every list of up to five characters from a small set,
+  keeps the lists that are right-to-left labels satisfying a rule,
+  displays each one and compares the displays.  For the strict rule the
+  set has thirteen characters (two letters of class `R` and one of class
+  `AL`, two digits of class `EN` and two of class `AN`, the hyphen, the
+  comma, the asterisk, the two parentheses and a Hebrew point): 36,543
+  labels of five characters and 3,474 shorter ones, none displayed like
+  another, in a paragraph of either direction.  For the wide rule it has
+  sixteen (those, the percent sign, `<` and `>`): 297,633 names of five
+  characters and 20,742 shorter ones, none displayed like another in a
+  paragraph from left to right.  For the Bidi Rule as it is written, with
+  the percent sign added to the thirteen characters, 16 labels of five
+  characters are displayed like another; with U+200C added, 36 labels of
+  four characters are.  Two more searches have letters of class `L` in
+  the set and compare the left-to-right labels and the right-to-left
+  ones together: 10,728 labels of five characters for the strict rule,
+  in each direction, and 90,351 names for the wide rule, none displayed
+  like another.  The searches at six characters were run once, on
+  2026-11-24, outside the certified books: 416,724 labels for the strict
+  rule in each direction and 4,437,669 names for the wide rule, and with
+  the letters of class `L` 85,486 labels and 816,451 names; none
+  displayed like another.
 
 The conformance test of normalization takes about ten seconds per
 version, and the quick-check test about twenty.  The two conformance
 tests of the bidirectional algorithm take about two seconds and about
-ten seconds, the confinement test about ten seconds and the test of
-self-contained segments about fifteen.
+ten seconds, the confinement test about ten seconds, the test of
+self-contained segments about fifteen and the test of the Bidi Rule about
+forty.
 
 The two conformance files of the bidirectional algorithm have the same
 test cases in Unicode 16.0.0, 17.0.0 and 18.0.0; only their comments
@@ -1448,6 +1504,31 @@ and then, in ACL2, for each version:
 (compare-display (version-v16.0.0) "/tmp/icu-all.lsp" state)
 ```
 
+The two labels of the tests that satisfy the Bidi Rule and are displayed
+alike, U+05D0, `1`, `-`, `%`, `1` and U+05D0, `%`, `1`, `-`, `1`, were
+given to other implementations once, on 2026-11-24, also with `$`, `#`,
+U+00B0, U+20AC and U+066A, which are of class `ET` too, in place of the
+percent sign.  The scripts are not in the library.
+
+- The two checks of the Bidi Rule alone that were tried accept both
+  labels with each of the six characters: `check_bidi` of the Python
+  package `idna` 3.20, and the Go package
+  `golang.org/x/text/secure/bidirule` (v0.31.0).
+- Strict IDNA2008 rejects both: `encode` of the Python package `idna`
+  says that the character is not allowed.  Of the 77 code points of class
+  `ET` in its tables (Unicode 15.1.0), none is permitted in a label.
+- Five implementations of UTS #46 accept both labels, as two different
+  names, when the character is U+00B0, U+20AC or U+066A: the URL parser
+  of Node 22.23.4, the npm package `tr46` 7.0.0, the Go package
+  `golang.org/x/net/idna` (v0.47.0, its three profiles), the Rust crates
+  `idna` 1.1.0 and `url` 2.5.9, and ICU 74.2 through `idn_to_ascii` of
+  PHP with the check of the Bidi Rule on.  With U+20AC the two names
+  become `xn--1-1-ppe6945a` and `xn--1-1-ppe4945a`.
+- Four implementations of the algorithm display the two labels alike, in
+  a paragraph of either direction, and as `bidi-display` does: the Python
+  package `python-bidi` 0.6.12, the Rust crate `unicode-bidi` 0.3.18, the
+  npm package `bidi-js` 1.1.0, and the class `java.text.Bidi` of JDK 21.
+
 Not compared with another implementation: the bidirectional skeleton as
 a whole (its two parts are, above: the displayed text and the internal
 skeleton; and the tests have the worked example of UTS #39); the
@@ -1514,10 +1595,10 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,190 topics.  The books of the
+With this, the library has about 1,220 topics.  The books of the
 bidirectional algorithm have some 385 of them: their functions, and
 twenty-seven small types whose generated topics, about fifteen at most for
-one type, are under the line.
+one type, are under the line.  The book of the Bidi Rule has 28.
 
 ## Performance
 
@@ -1545,7 +1626,7 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 148 books from scratch, the tests and the generated
+Certifying all the 150 books from scratch, the tests and the generated
 tables included, took about six minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged

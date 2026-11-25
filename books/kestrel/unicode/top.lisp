@@ -211,6 +211,11 @@
       when the text is cut where the levels allow it:
       see @(see bidirectional-algorithm).")
     (xdoc::li
+     "The Bidi Rule of Internationalized Domain Names,
+      a condition on a name with right-to-left characters,
+      and two rules derived from it:
+      see @(see bidi-rule).")
+    (xdoc::li
      "The emoji properties and the regional indicators:
       see @(see emoji).")
     (xdoc::li
@@ -370,7 +375,12 @@
       see @(see bidirectional-algorithm).
       @('kestrel/unicode/right-to-left-free')
       for @(tsee right-to-left-free-p),
-      which loads only @('bidi-class').")
+      which loads only @('bidi-class').
+      @('kestrel/unicode/bidi-rule')
+      for @(tsee bidi-rule-p), @(tsee bidi-rule-strict-p)
+      and @(tsee bidi-rule-wide-p),
+      which loads @('bidi-class'), @('bidi-brackets')
+      and @('right-to-left-free'), and not the algorithm.")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc),
@@ -508,8 +518,15 @@
      and [UAX #44] is the Unicode Character Database.
      [UTS #n] refers to the Unicode Technical Standard with that number:
      [UTS #39] is Unicode Security Mechanisms,
+     [UTS #46] is Unicode IDNA Compatibility Processing,
      [UTS #51] is Unicode Emoji
      and [UTS #55] is Unicode Source Code Handling.
+     [RFC n] refers to the Request for Comments with that number,
+     of the Internet Engineering Task Force:
+     [RFC 5892] is The Unicode Code Points
+     and Internationalized Domain Names for Applications (IDNA),
+     and [RFC 5893] is Right-to-Left Scripts
+     for Internationalized Domain Names for Applications (IDNA).
      [Stability] refers to the "
     (xdoc::ahref "https://unicode.org/policies/stability_policy.html"
                  "Unicode Character Encoding Stability Policies")
