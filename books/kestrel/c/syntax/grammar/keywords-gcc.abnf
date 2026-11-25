@@ -19,8 +19,7 @@
 ; The list is inferred from the documentation,
 ; but the list may be incomplete, and it will be extended as needed.
 
-keyword-gcc = %s"__float80"
-            / %s"_Float32"
+keyword-gcc = %s"_Float32"
             / %s"_Float32x"
             / %s"_Float64"
             / %s"_Float64x"

@@ -2374,8 +2374,6 @@
                  st))
         :int128
         (retok (type-spec-fix type-spec) nil nil st)
-        :locase-float80
-        (retok (type-spec-fix type-spec) nil nil st)
         :locase-float128
         (retok (type-spec-fix type-spec) nil nil st)
         :float16
@@ -2395,8 +2393,6 @@
         :float128x
         (retok (type-spec-fix type-spec) nil nil st)
         :bf16
-        (retok (type-spec-fix type-spec) nil nil st)
-        :builtin-va-list
         (retok (type-spec-fix type-spec) nil nil st)
         :struct-empty
         (b* (((c$::type-spec-struct-vinfo info) type-spec.info)

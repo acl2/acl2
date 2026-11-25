@@ -1977,13 +1977,9 @@
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
-      ". We also support the @('__int128_t') variant syntax.
-       This form does not appear to be documented,
-       but has been observed in real code and is accepted by GCC.")
+      ".")
      (xdoc::p
       "We also include the GCC extensions
-       @('__float80'),
-       @('__float128'),
        @('_Float16'),
        @('_Float16x'),
        @('_Float32'),
@@ -1998,15 +1994,11 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
       ".")
      (xdoc::p
-      "We also include the GCC extension @('__bf16'),
-       which is a floating type.")
-     (xdoc::p
-      "We also include the GCC extension @('__builtin_va_list'),
-       whch is a type.
-       Although we did not see it in the GCC documentation,
-       we encountered it in practical code,
-       and we indeed verified that it is accepted as a type
-       in at least an implementation of GCC in macOS.")
+      "We also include @('__float128') and @('__bf16'),
+       which are floating types.
+       These are keywords in Clang.
+       In GCC they are built-in @('typedef') names (see @(see built-ins)),
+       which fall under the @(':typedef') case.")
      (xdoc::p
       "As a GCC extension, we allow a structure type specifier with no members,
        and with an optional name; see the ABNF grammar.")
@@ -2040,8 +2032,7 @@
     (:typedef ((name ident)
                (info any)))
     ;; GCC extensions:
-    (:int128 ((uscoret bool)))
-    (:locase-float80 ())
+    (:int128 ())
     (:locase-float128 ())
     (:float16 ())
     (:float16x ())
@@ -2052,7 +2043,6 @@
     (:float128 ())
     (:float128x ())
     (:bf16 ())
-    (:builtin-va-list ())
     (:struct-empty ((attribs attrib-spec-list)
                     (name? ident-option)
                     (info any)))

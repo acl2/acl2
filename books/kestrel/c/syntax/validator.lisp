@@ -530,6 +530,29 @@
     (vstate-add-built-in-vars (cdr vars) vstate))
   :measure (acl2-count (built-in-var-list-fix vars)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-built-in-typedefs ((typedefs built-in-typedef-listp)
+                                      (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add ordinary identifiers, that refer to the built-in @('typedef')s,
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are added to the file scope.")
+   (xdoc::p
+    "Like other @('typedef') names, they have no linkage."))
+  (b* ((typedefs (built-in-typedef-list-fix typedefs))
+       ((when (endp typedefs)) (vstate-fix vstate))
+       ((built-in-typedef typedef) (car typedefs))
+       (ident (ident typedef.name))
+       ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
+       (info (make-valid-ord-info-typedef :def typedef.type :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-typedefs (cdr typedefs) vstate))
+  :measure (acl2-count (built-in-typedef-list-fix typedefs)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define vstate-make-type-composite ((x typep)
@@ -2588,11 +2611,7 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
-     ((type-spec-list-locase-float80-p tyspecs)
-      (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-p tyspecs)
-      (retok (type-unknown-arithmetic)))
-     ((type-spec-list-locase-float80-complex-p tyspecs)
       (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-complex-p tyspecs)
       (retok (type-unknown-arithmetic)))
@@ -4214,13 +4233,7 @@
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
                                         represent a typedef."
                                        (ident->unwrap tyspec.name))))
-       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
-                      nil
-                      ext-tyspecs
-                      nil
-                      same-vstate)
-       :locase-float80 (retok (type-spec-locase-float80)
-                              nil ext-tyspecs nil same-vstate)
+       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-vstate)
        :locase-float128 (retok (type-spec-locase-float128)
                                nil ext-tyspecs nil same-vstate)
        :float16 (retok (type-spec-float16) nil ext-tyspecs nil same-vstate)
@@ -4232,13 +4245,6 @@
        :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-vstate)
        :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-vstate)
        :bf16 (retok (type-spec-bf16) nil ext-tyspecs nil same-vstate)
-       :builtin-va-list (if (endp tyspecs)
-                            (retok (type-spec-builtin-va-list)
-                                   (type-unknown-builtin)
-                                   nil
-                                   nil
-                                   same-vstate)
-                          (reterr msg-bad-preceding))
        :struct-empty (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                           ((mv current-uid? current-kind? current+completep)
                            (b* (((unless tyspec.name?)
@@ -8755,6 +8761,8 @@
        (vstate (init-vstate ienv filepath))
        (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
        (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
+       (vstate (vstate-add-built-in-typedefs (built-in-typedefs-for dialect)
+                                             vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
        ((valid-table table) (vstate->table vstate))
