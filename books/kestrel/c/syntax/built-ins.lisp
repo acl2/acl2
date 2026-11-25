@@ -904,7 +904,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *gcc/clang-built-in-typedefs*
-  :short "The @('typedef') names built-in to both GCC and Clang."
+  :short "A partial list of @('typedef') names built-in to both GCC and Clang."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -946,7 +946,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *gcc-built-in-typedefs*
-  :short "The @('typedef') names built-in to GCC but not to Clang."
+  :short "A partial list of @('typedef') names
+          built-in to GCC but not to Clang."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -971,7 +972,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *clang-built-in-typedefs*
-  :short "The @('typedef') names built-in to Clang but not to GCC."
+  :short "A partial list of @('typedef') names
+          built-in to Clang but not to GCC."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -992,7 +994,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defval *cheri-built-in-typedefs*
-  :short "The @('typedef') names built-in to CHERI."
+  :short "A partial list of @('typedef') names built-in to CHERI."
   :long
   (xdoc::topstring
    (xdoc::p

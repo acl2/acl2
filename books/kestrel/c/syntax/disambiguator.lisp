@@ -430,14 +430,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-add-ident-objfun ((ident identp) (dstate dstatep))
-  :returns (new-dstate dstatep)
-  :short "Add an identifier to the disambiguation table,
-          with object or function kind."
-  (dimb-add-ident ident (dimb-kind-objfun) dstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define dimb-add-idents ((idents ident-listp)
                          (kind dimb-kindp)
                          (dstate dstatep))
@@ -448,6 +440,14 @@
         (t (dimb-add-idents (cdr idents)
                             kind
                             (dimb-add-ident (car idents) kind dstate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-ident-objfun ((ident identp) (dstate dstatep))
+  :returns (new-dstate dstatep)
+  :short "Add an identifier to the disambiguation table,
+          with object or function kind."
+  (dimb-add-ident ident (dimb-kind-objfun) dstate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
