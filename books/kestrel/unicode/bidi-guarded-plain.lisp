@@ -19,10 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This book is a step of the proof of the theorem of the book
-; bidi-guarded-theorem.lisp.  That book includes this one locally,
+; This book is a step of the proofs of the theorems of the books
+; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
+; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See the book bidi-guarded-theorem.lisp for the plan of the proof.
+; See each of the two books for the plan of its proof.
 ;
 ; A class is plain if it is not B (Paragraph Separator),
 ; not one of the classes that rule X9 of the Unicode Bidirectional Algorithm
@@ -37,17 +38,25 @@
 ; of one call of BIDI-RESOLVE-SEQUENCE.
 ; Rule L1 only changes some levels to 0.
 ;
-; This book proves the consequence that the rest of the proof needs
-; (the last theorem of this book):
+; This book proves the consequence that the first proof needs:
 ; if some positions have level 0 in the result of that one call,
 ; they have level 0 in the result of BIDI-PARAGRAPH-ALL-LEVELS.
 ; The positions are given by a list of booleans, called OUTSIDE,
 ; that goes along the list of the levels:
 ; see the book bidi-guarded-theorem.lisp for the reason for the name.
+;
+; The second proof needs to know what rule L1 does exactly.
+; This book defines BIDI-RESET-PLAIN, which is the rule
+; for plain classes at the paragraph embedding level 0, and proves that
+; the levels of the paragraph are its result on the levels
+; that the one call gives.  It also proves that the function
+; does to the part of a list from a position on,
+; and under a condition to the part of a list up to a position,
+; what it does to that part alone.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The definitions that the other books of the proof use.
+; The definitions that the other books of the proofs use.
 
 (define bidi-plain-class-p ((class bidi-class-p))
   :returns (yes/no booleanp)
@@ -69,6 +78,46 @@
                (equal (lnfix (car levels)) 0))
            (bidi-outside-zero-p (cdr outside) (cdr levels))))
   :measure (acl2-count levels)
+  :hooks nil)
+
+; Rule L1 for plain classes at the paragraph embedding level 0,
+; as a function of the classes and the levels.
+; The second result says whether the list is white space
+; up to a segment separator or up to its end.
+
+(define bidi-reset-plain ((classes bidi-class-listp) (levels nat-listp))
+  :returns (mv (new-levels nat-listp)
+               (trailing booleanp))
+  (b* (((when (or (endp classes)
+                  (endp levels)))
+        (mv nil t))
+       ((mv rest trailing) (bidi-reset-plain (cdr classes) (cdr levels)))
+       (kind (bidi-class-kind (car classes)))
+       (level (lnfix (car levels))))
+    (cond ((eq kind :segment-separator) (mv (cons 0 rest) t))
+          ((eq kind :white-space) (mv (cons (if trailing 0 level) rest)
+                                      trailing))
+          (t (mv (cons level rest) nil))))
+  :hooks nil)
+
+; Every class of the list is WS.
+
+(define bidi-all-white-p ((classes bidi-class-listp))
+  :returns (yes/no booleanp)
+  (or (endp classes)
+      (and (equal (bidi-class-kind (car classes)) :white-space)
+           (bidi-all-white-p (cdr classes))))
+  :hooks nil)
+
+; The white space at the end of the list has the level 0.
+
+(define bidi-trailing-zero-p ((classes bidi-class-listp) (levels nat-listp))
+  :returns (yes/no booleanp)
+  (or (endp classes)
+      (and (or (not (bidi-all-white-p classes))
+               (equal (nfix (car levels)) 0))
+           (bidi-trailing-zero-p (cdr classes) (cdr levels))))
+  :verify-guards nil
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -489,17 +538,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Rule L1 and the levels of all the characters:
-; a level stays, or becomes the paragraph embedding level, which is 0.
-
-(defrulel bidi-outside-zero-p-of-bidi-reset-levels
-  (implies (bidi-outside-zero-p outside levels)
-           (bidi-outside-zero-p outside
-                                (mv-nth 0 (bidi-reset-levels lchars levels 0))))
-  :induct (three-lists-induction outside levels lchars)
-  :enable (three-lists-induction
-           bidi-outside-zero-p
-           bidi-reset-levels))
+; Rule L1 keeps the length of the list of the levels.
+; With plain classes rule X9 removes no character,
+; so giving the removed characters a level changes nothing.
 
 (defrulel len-of-bidi-reset-levels
   (implies (equal (len levels) (len lchars))
@@ -536,19 +577,156 @@
            acl2::maybe-natp-fix
            nfix))
 
-(defrulel bidi-outside-zero-p-of-bidi-reset-all-levels
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Rule L1 exactly, and on a part of the paragraph.
+;
+; For plain classes at the paragraph embedding level 0,
+; rule L1, and the rule for all the characters, are BIDI-RESET-PLAIN;
+; applied twice it does what it does once.
+; So the levels of the paragraph are the result of BIDI-RESET-PLAIN
+; on the levels that the one call of BIDI-RESOLVE-SEQUENCE gives.
+;
+; The rule goes from the end of the list to its start.
+; So on the part of the list from a position on
+; it does what it does to that part alone.
+; On the part of the list up to a position it does the same too,
+; if the white space at the end of that part has the level 0 already:
+; the rule gives that white space the level 0 when the part is alone.
+
+(defrulel bidi-reset-levels-of-flat-lchars
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-reset-levels (flat-lchars chars) levels 0)
+                  (bidi-reset-plain (bidi-char-list-classes chars) levels)))
+  :induct (two-lists-induction chars levels)
+  :expand ((flat-lchars chars)
+           (bidi-char-list-classes chars)
+           (:free (a b) (bidi-reset-levels (cons a b) levels 0))
+           (:free (a b) (bidi-reset-plain (cons a b) levels))
+           (bidi-reset-levels nil levels 0)
+           (bidi-reset-plain nil levels)
+           (:free (a b) (bidi-reset-levels (cons a b) nil 0)))
+  :enable (two-lists-induction
+           bidi-plain-class-p
+           bidi-class-removed-p
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p))
+
+(defrulel bidi-reset-all-levels-when-plain
+  (implies (bidi-plain-class-listp classes)
+           (equal (bidi-reset-all-levels classes levels 0)
+                  (bidi-reset-plain classes levels)))
+  :induct (two-lists-induction classes levels)
+  :expand ((bidi-reset-all-levels classes levels 0)
+           (bidi-reset-plain classes levels))
+  :enable (two-lists-induction
+           bidi-plain-class-p
+           bidi-class-removed-p
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p))
+
+(defrulel bidi-reset-plain-when-not-consp
+  (implies (or (not (consp classes))
+               (not (consp levels)))
+           (equal (bidi-reset-plain classes levels)
+                  (mv nil t)))
+  :expand (bidi-reset-plain classes levels))
+
+(defrulel len-of-bidi-reset-plain
+  (implies (equal (len levels) (len classes))
+           (equal (len (mv-nth 0 (bidi-reset-plain classes levels)))
+                  (len classes)))
+  :induct (two-lists-induction classes levels)
+  :expand (bidi-reset-plain classes levels)
+  :enable (two-lists-induction len))
+
+(defrulel bidi-outside-zero-p-of-bidi-reset-plain
   (implies (bidi-outside-zero-p outside levels)
-           (bidi-outside-zero-p
-            outside
-            (mv-nth 0 (bidi-reset-all-levels classes levels 0))))
+           (bidi-outside-zero-p outside
+                                (mv-nth 0 (bidi-reset-plain classes levels))))
   :induct (three-lists-induction outside levels classes)
+  :expand ((bidi-reset-plain classes levels)
+           (:free (a b) (bidi-outside-zero-p outside (cons a b))))
   :enable (three-lists-induction
-           bidi-outside-zero-p
-           bidi-reset-all-levels))
+           bidi-outside-zero-p))
+
+; The second result depends on the classes only.
+
+(local
+ (define trailing-white-p ((classes bidi-class-listp))
+   :returns (yes/no booleanp)
+   (b* (((when (endp classes)) t)
+        (kind (bidi-class-kind (car classes))))
+     (cond ((eq kind :segment-separator) t)
+           ((eq kind :white-space) (trailing-white-p (cdr classes)))
+           (t nil)))
+   :hooks nil))
+
+(defrulel trailing-of-bidi-reset-plain
+  (implies (equal (len levels) (len classes))
+           (equal (mv-nth 1 (bidi-reset-plain classes levels))
+                  (trailing-white-p classes)))
+  :induct (two-lists-induction classes levels)
+  :expand ((bidi-reset-plain classes levels)
+           (trailing-white-p classes))
+  :enable (two-lists-induction len))
+
+(defrulel bidi-reset-plain-of-bidi-reset-plain
+  (implies (equal (len levels) (len classes))
+           (equal (mv-nth 0 (bidi-reset-plain
+                             classes
+                             (mv-nth 0 (bidi-reset-plain classes levels))))
+                  (mv-nth 0 (bidi-reset-plain classes levels))))
+  :induct (two-lists-induction classes levels)
+  :expand ((bidi-reset-plain classes levels)
+           (:free (a b) (bidi-reset-plain classes (cons a b))))
+  :enable (two-lists-induction len))
+
+; The part of the list from a position on.
+
+(local
+ (define nthcdr-two-induction ((k natp) x y)
+   (if (or (zp k)
+           (atom x)
+           (atom y))
+       nil
+     (nthcdr-two-induction (- k 1) (cdr x) (cdr y)))
+   :verify-guards nil
+   :hooks nil))
+
+; The part of the list up to a position.
+
+(defrulel trailing-white-p-when-bidi-all-white-p
+  (implies (bidi-all-white-p classes)
+           (trailing-white-p classes))
+  :induct (list-induction classes)
+  :enable (list-induction bidi-all-white-p trailing-white-p))
+
+(defrulel trailing-white-p-of-take
+  (implies (and (trailing-white-p classes)
+                (<= (nfix m) (len classes)))
+           (trailing-white-p (take m classes)))
+  :induct (nthcdr-two-induction m classes classes)
+  :expand ((trailing-white-p classes)
+           (:free (a b) (trailing-white-p (cons a b)))
+           (trailing-white-p nil))
+  :enable (nthcdr-two-induction take len nfix))
+
+(defrulel bidi-all-white-p-of-take-when-trailing-white-p
+  (implies (and (trailing-white-p (take m classes))
+                (not (trailing-white-p classes))
+                (<= (nfix m) (len classes)))
+           (bidi-all-white-p (take m classes)))
+  :induct (nthcdr-two-induction m classes classes)
+  :expand ((trailing-white-p classes)
+           (:free (a b) (trailing-white-p (cons a b)))
+           (:free (a b) (bidi-all-white-p (cons a b)))
+           (bidi-all-white-p nil))
+  :enable (nthcdr-two-induction take len nfix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The theorem of this book.
+; The theorems of this book.
 
 (defrulel bidi-outside-zero-p-of-no-levels
   (bidi-outside-zero-p outside nil)
@@ -583,3 +761,43 @@
   :enable (bidi-paragraph-all-levels
            bidi-paragraph-levels
            bidi-explicit-levels))
+
+; The levels of a plain paragraph, at the paragraph embedding level 0.
+
+(defruled bidi-paragraph-all-levels-when-plain
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-paragraph-all-levels chars 0)
+                  (mv-nth 0 (bidi-reset-plain
+                             (bidi-char-list-classes chars)
+                             (bidi-resolve-sequence
+                              (bidi-char-list-classes chars)
+                              (bidi-char-list-brackets chars)
+                              (bidi-class-left-to-right)
+                              (bidi-class-left-to-right)
+                              0)))))
+  :enable (bidi-paragraph-all-levels
+           bidi-paragraph-levels
+           bidi-explicit-levels))
+
+; Rule L1 on a part of the paragraph.
+
+(defruled nthcdr-of-bidi-reset-plain
+  (equal (nthcdr k (mv-nth 0 (bidi-reset-plain classes levels)))
+         (mv-nth 0 (bidi-reset-plain (nthcdr k classes) (nthcdr k levels))))
+  :induct (nthcdr-two-induction k classes levels)
+  :expand (bidi-reset-plain classes levels)
+  :enable (nthcdr-two-induction nthcdr))
+
+(defruled take-of-bidi-reset-plain
+  (implies (and (equal (len levels) (len classes))
+                (<= (nfix m) (len classes))
+                (bidi-trailing-zero-p (take m classes) (take m levels)))
+           (equal (take m (mv-nth 0 (bidi-reset-plain classes levels)))
+                  (mv-nth 0 (bidi-reset-plain (take m classes)
+                                              (take m levels)))))
+  :induct (nthcdr-two-induction m classes levels)
+  :expand ((bidi-reset-plain classes levels)
+           (:free (a b c d) (bidi-reset-plain (cons a b) (cons c d)))
+           (:free (a b c) (bidi-trailing-zero-p (cons a b) c))
+           (:free (a b) (bidi-all-white-p (cons a b))))
+  :enable (nthcdr-two-induction take len nfix))

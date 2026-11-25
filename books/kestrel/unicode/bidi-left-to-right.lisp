@@ -931,6 +931,7 @@
                    ver)
                   (code-point-list-fix cps)))
   :enable (bidi-arrange-paragraph
+           bidi-arrange-with-levels
            bidi-shown-chars-at-of-bidi-positions-with-level))
 
 (defrulel bidi-mirror-chars-of-append

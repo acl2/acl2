@@ -437,6 +437,35 @@
   :induct t
   :enable (bidi-level-option-listp nat-listp acl2::maybe-natp))
 
+(define bidi-arrange-with-levels ((cps code-point-listp)
+                                  (levels nat-listp)
+                                  (ver versionp))
+  :returns (shown bidi-shown-char-listp)
+  :short "The characters of one paragraph in the order of display,
+          each with its level, when the levels are given."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The arguments are the code points of the paragraph
+     and their levels, in the same order.
+     Rule L2 puts the code points in the order of display
+     (see @(tsee bidi-order-of-levels)),
+     and rule L3 moves the combining marks
+     (see @(tsee bidi-move-marks)).")
+   (xdoc::p
+    "These two rules look only at the levels.
+     So this function says what the display of a paragraph is
+     once its levels are known,
+     and theorems about the levels become theorems about the display:
+     see @(see bidi-clean-cut-display)."))
+  (b* ((levels (nat-list-fix levels))
+       (order (bidi-order-of-levels levels))
+       (shown (bidi-shown-chars-at order (bidi-shown-chars cps levels))))
+    (bidi-move-marks shown nil ver))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (define bidi-arrange-paragraph ((cps code-point-listp)
                                 (direction paragraph-direction-p)
                                 (ver versionp))
@@ -448,16 +477,12 @@
    (xdoc::p
     "The code points of the paragraph get their levels
      (see @(tsee bidi-paragraph-all-levels)),
-     rule L2 puts them in the order of display
-     (see @(tsee bidi-order-of-levels)),
-     and rule L3 moves the combining marks
-     (see @(tsee bidi-move-marks))."))
+     and rules L2 and L3 put them in the order of display
+     (see @(tsee bidi-arrange-with-levels))."))
   (b* ((chars (code-points-to-bidi-chars cps ver))
        (paragraph-level (bidi-paragraph-embedding-level chars direction))
-       (levels (bidi-paragraph-all-levels chars paragraph-level))
-       (order (bidi-order-of-levels levels))
-       (shown (bidi-shown-chars-at order (bidi-shown-chars cps levels))))
-    (bidi-move-marks shown nil ver))
+       (levels (bidi-paragraph-all-levels chars paragraph-level)))
+    (bidi-arrange-with-levels cps levels ver))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -675,7 +700,9 @@
   (defrule len-of-bidi-arrange-paragraph
     (equal (len (bidi-arrange-paragraph cps direction ver))
            (len cps))
-    :enable (bidi-arrange-paragraph fix))
+    :enable (bidi-arrange-paragraph
+             bidi-arrange-with-levels
+             fix))
 
   (defrule len-of-bidi-arrange
     (equal (len (bidi-arrange cps direction ver))
@@ -768,6 +795,7 @@
                  (bidi-arrange-paragraph cps direction ver))
                 (code-point-list-fix cps))
     :enable (bidi-arrange-paragraph
+             bidi-arrange-with-levels
              bidi-shown-chars-at-of-bidi-positions-with-level))
 
   (defrule perm-of-bidi-arrange

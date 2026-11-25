@@ -365,7 +365,8 @@
       from @('bidi-characters') to @('bidi-display'),
       and the theorems about them
       in @('bidi-rearrangement'), @('bidi-left-to-right'),
-      @('bidi-confinement') and @('bidi-guarded-theorem'):
+      @('bidi-confinement'), @('bidi-guarded-theorem')
+      and @('bidi-self-contained'):
       see @(see bidirectional-algorithm).
       @('kestrel/unicode/right-to-left-free')
       for @(tsee right-to-left-free-p),

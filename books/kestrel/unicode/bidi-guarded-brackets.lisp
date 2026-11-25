@@ -20,10 +20,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This book is a step of the proof of the theorem of the book
-; bidi-guarded-theorem.lisp.  That book includes this one locally,
+; This book is a step of the proofs of the theorems of the books
+; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
+; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See the book bidi-guarded-theorem.lisp for the plan of the proof.
+; See each of the two books for the plan of its proof.
 ;
 ; This book proves facts about the bracket pairs
 ; that BIDI-BRACKET-PAIRS finds [UAX #9, BD16]:
@@ -35,13 +36,20 @@
 ;   the pairs found after rules W1 to W7 are those found before,
 ;   if every position that has a bracket role has the class ON.
 ;
-; The definitions of this book are for the proof only.
+; For the second proof, it also proves a fact about a part of a sequence:
+; if the search for the pairs does not give up,
+; and no pair closes in the part after opening before it,
+; the pairs that close in the part are the pairs of the part alone,
+; moved to the position of the part
+; (see the section "The pairs of a part of a sequence" below).
+;
+; The definitions of this book are for the proofs only.
 ; The guards of those that look into a list at a position
 ; that may be beyond its end are not verified.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The definitions that the other books of the proof use.
+; The definitions that the other books of the proofs use.
 
 ; The positions of the opening brackets of the pairs.
 
@@ -78,6 +86,59 @@
       (and (bidi-pair-sound-p (car pairs) classes roles)
            (bidi-pairs-sound-p (cdr pairs) classes roles)))
   :verify-guards nil
+  :hooks nil)
+
+; A pair, and a list of pairs, moved by a number of positions.
+
+(define bidi-pair-shift ((pair bracket-pair-p) (offset natp))
+  :returns (new-pair bracket-pair-p)
+  (make-bracket-pair :open (+ (bracket-pair->open pair) (lnfix offset))
+                     :close (+ (bracket-pair->close pair) (lnfix offset)))
+  :hooks nil
+  ///
+  (defret bracket-pair->open-of-bidi-pair-shift
+    (equal (bracket-pair->open new-pair)
+           (+ (bracket-pair->open pair) (nfix offset)))
+    :hints (("Goal" :in-theory (enable nfix))))
+  (defret bracket-pair->close-of-bidi-pair-shift
+    (equal (bracket-pair->close new-pair)
+           (+ (bracket-pair->close pair) (nfix offset)))
+    :hints (("Goal" :in-theory (enable nfix)))))
+
+(define bidi-pairs-shift ((pairs bracket-pair-listp) (offset natp))
+  :returns (new-pairs bracket-pair-listp)
+  (if (endp pairs)
+      nil
+    (cons (bidi-pair-shift (car pairs) offset)
+          (bidi-pairs-shift (cdr pairs) offset)))
+  :hooks nil)
+
+; The pairs whose closing bracket is at a position from START to END-1.
+
+(define bidi-pairs-closing-in ((pairs bracket-pair-listp)
+                               (start natp)
+                               (end natp))
+  :returns (some-pairs bracket-pair-listp)
+  (cond ((endp pairs) nil)
+        ((and (<= (lnfix start) (bracket-pair->close (car pairs)))
+              (< (bracket-pair->close (car pairs)) (lnfix end)))
+         (cons (bracket-pair-fix (car pairs))
+               (bidi-pairs-closing-in (cdr pairs) start end)))
+        (t (bidi-pairs-closing-in (cdr pairs) start end)))
+  :hooks nil)
+
+; No pair has its closing bracket at a position from START to END-1
+; and its opening bracket before START.
+
+(define bidi-pairs-none-entering-p ((pairs bracket-pair-listp)
+                                    (start natp)
+                                    (end natp))
+  :returns (yes/no booleanp)
+  (or (endp pairs)
+      (and (or (<= (lnfix start) (bracket-pair->open (car pairs)))
+               (< (bracket-pair->close (car pairs)) (lnfix start))
+               (<= (lnfix end) (bracket-pair->close (car pairs))))
+           (bidi-pairs-none-entering-p (cdr pairs) start end)))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,6 +586,478 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The pairs of a part of a sequence.
+;
+; The rest of this book proves the last theorem of the book:
+; in a sequence made of three parts, if the pairing does not give up
+; and no pair has its closing bracket in the second part
+; and its opening bracket in the first part,
+; then the pairs that close in the second part
+; are the pairs of the second part alone, moved to its position.
+;
+; The pairing goes along the roles with a stack.
+; The pairs found in the first part do not depend on the rest;
+; the second part is then read with the stack that the first part leaves.
+; A closing bracket of the second part that finds its opening bracket
+; in the stack finds it among the brackets of the second part,
+; because otherwise there would be a pair of the kind that is excluded;
+; so the stack of the first part plays no part,
+; and the pairs are those that the second part gives with an empty stack.
+; The pairs are then sorted by their opening brackets,
+; and taking the pairs that close in a range of positions
+; can be done before or after the sorting.
+
+(defrulel nfix-of-len
+  (equal (nfix (len x))
+         (len x))
+  :enable nfix)
+
+(defrulel fix-when-acl2-numberp
+  (implies (acl2-numberp x)
+           (equal (fix x)
+                  x))
+  :enable fix)
+
+(defrulel bidi-pairs-closing-in-when-not-consp
+  (implies (not (consp pairs))
+           (equal (bidi-pairs-closing-in pairs lo hi)
+                  nil))
+  :expand (bidi-pairs-closing-in pairs lo hi))
+
+(defrulel bidi-pairs-shift-when-not-consp
+  (implies (not (consp pairs))
+           (equal (bidi-pairs-shift pairs offset)
+                  nil))
+  :expand (bidi-pairs-shift pairs offset))
+
+; The stack after a list of roles, if the pairing does not give up.
+
+(local
+ (define stack-after ((roles bidi-bracket-role-listp)
+                      (position natp)
+                      (stack open-bracket-listp))
+   :returns (new-stack open-bracket-listp)
+   (b* (((when (endp roles)) (open-bracket-list-fix stack))
+        (position (lnfix position))
+        (role (bidi-bracket-role-fix (car roles))))
+     (bidi-bracket-role-case
+      role
+      :none (stack-after (cdr roles) (+ 1 position) stack)
+      :open (stack-after (cdr roles)
+                         (+ 1 position)
+                         (cons (make-open-bracket :id role.id
+                                                  :position position)
+                               (open-bracket-list-fix stack)))
+      :close (b* (((mv found & rest)
+                   (open-bracket-stack-find stack role.id)))
+               (stack-after (cdr roles)
+                            (+ 1 position)
+                            (if found
+                                rest
+                              stack)))))
+   :hooks nil))
+
+(defrulel overflow-of-bidi-bracket-pairs-from-of-append
+  (implies (natp position)
+           (equal (mv-nth 0 (bidi-bracket-pairs-from (append x y)
+                                                     position
+                                                     stack))
+                  (or (mv-nth 0 (bidi-bracket-pairs-from x position stack))
+                      (mv-nth 0 (bidi-bracket-pairs-from
+                                 y
+                                 (+ position (len x))
+                                 (stack-after x position stack))))))
+  :induct (stack-after x position stack)
+  :expand ((bidi-bracket-pairs-from x position stack)
+           (:free (a b) (bidi-bracket-pairs-from (cons a b) position stack))
+           (append x y))
+  :enable (stack-after len nfix))
+
+(defrulel pairs-of-bidi-bracket-pairs-from-of-append
+  (implies (and (natp position)
+                (not (mv-nth 0 (bidi-bracket-pairs-from x position stack))))
+           (equal (mv-nth 1 (bidi-bracket-pairs-from (append x y)
+                                                     position
+                                                     stack))
+                  (append (mv-nth 1 (bidi-bracket-pairs-from x position stack))
+                          (mv-nth 1 (bidi-bracket-pairs-from
+                                     y
+                                     (+ position (len x))
+                                     (stack-after x position stack))))))
+  :induct (stack-after x position stack)
+  :expand ((bidi-bracket-pairs-from x position stack)
+           (:free (a b) (bidi-bracket-pairs-from (cons a b) position stack))
+           (append x y))
+  :enable (stack-after len nfix))
+
+(defrulel stack-below-of-stack-after
+  (implies (and (stack-below stack position)
+                (natp position)
+                (natp bound)
+                (<= (+ position (len roles)) bound))
+           (stack-below (stack-after roles position stack) bound))
+  :induct (stack-after roles position stack)
+  :enable (stack-after stack-below len nfix))
+
+; The pairs found in a list of roles have their closing brackets
+; at the positions of the list.
+
+(defrulel bidi-pairs-closing-in-of-bidi-bracket-pairs-from-when-apart
+  (implies (and (natp position)
+                (natp lo)
+                (natp hi)
+                (or (<= (+ position (len roles)) lo)
+                    (<= hi position)))
+           (equal (bidi-pairs-closing-in
+                   (mv-nth 1 (bidi-bracket-pairs-from roles position stack))
+                   lo
+                   hi)
+                  nil))
+  :induct (bidi-bracket-pairs-from roles position stack)
+  :enable (bidi-bracket-pairs-from
+           bidi-pairs-closing-in
+           len
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The pairing of a list of roles with a deeper stack.
+
+(local
+ (define stack-shift ((stack open-bracket-listp) (offset natp))
+   :returns (new-stack open-bracket-listp)
+   (if (endp stack)
+       nil
+     (cons (make-open-bracket
+            :id (open-bracket->id (car stack))
+            :position (+ (open-bracket->position (car stack))
+                         (lnfix offset)))
+           (stack-shift (cdr stack) offset)))
+   :hooks nil
+   ///
+   (defret len-of-stack-shift
+     (equal (len new-stack)
+            (len stack))
+     :hints (("Goal" :induct t :in-theory (enable len))))))
+
+(defrulel stack-shift-of-open-bracket-list-fix
+  (equal (stack-shift (open-bracket-list-fix stack) offset)
+         (stack-shift stack offset))
+  :induct (list-induction stack)
+  :enable (list-induction
+           stack-shift
+           open-bracket-list-fix))
+
+(defrulel open-bracket-stack-find-when-not-consp
+  (implies (not (consp stack))
+           (equal (open-bracket-stack-find stack id)
+                  (list nil 0 nil)))
+  :expand (open-bracket-stack-find stack id))
+
+(defrulel open-bracket-stack-find-of-append
+  (equal (open-bracket-stack-find (append stack1 stack2) id)
+         (if (mv-nth 0 (open-bracket-stack-find stack1 id))
+             (list t
+                   (mv-nth 1 (open-bracket-stack-find stack1 id))
+                   (append (mv-nth 2 (open-bracket-stack-find stack1 id))
+                           (open-bracket-list-fix stack2)))
+           (open-bracket-stack-find stack2 id)))
+  :induct (list-induction stack1)
+  :expand ((open-bracket-stack-find stack1 id)
+           (:free (a b) (open-bracket-stack-find (cons a b) id))
+           (append stack1 stack2))
+  :enable (list-induction
+           open-bracket-list-fix))
+
+(defrulel open-bracket-stack-find-of-stack-shift
+  (equal (open-bracket-stack-find (stack-shift stack offset) id)
+         (list (mv-nth 0 (open-bracket-stack-find stack id))
+               (if (mv-nth 0 (open-bracket-stack-find stack id))
+                   (+ (mv-nth 1 (open-bracket-stack-find stack id))
+                      (nfix offset))
+                 0)
+               (stack-shift (mv-nth 2 (open-bracket-stack-find stack id))
+                            offset)))
+  :induct (list-induction stack)
+  :expand ((open-bracket-stack-find stack id)
+           (:free (a b) (open-bracket-stack-find (cons a b) id)))
+  :enable (list-induction
+           stack-shift
+           nfix))
+
+(defrulel bidi-bracket-pairs-from-with-deeper-stack
+  (b* (((mv overflow1 pairs1)
+        (bidi-bracket-pairs-from roles
+                                 (+ position offset)
+                                 (append (stack-shift stack1 offset) stack)))
+       ((mv overflow2 pairs2)
+        (bidi-bracket-pairs-from roles position stack1)))
+    (implies (and (natp position)
+                  (natp offset)
+                  (natp end)
+                  (<= (+ position offset (len roles)) end)
+                  (not overflow1)
+                  (stack-below stack offset)
+                  (bidi-pairs-none-entering-p pairs1 offset end))
+             (and (not overflow2)
+                  (equal pairs1
+                         (bidi-pairs-shift pairs2 offset)))))
+  :rule-classes nil
+  :induct (stack-after roles position stack1)
+  :expand ((:free (position stack)
+                  (bidi-bracket-pairs-from roles position stack))
+           (:free (a b) (bidi-pairs-none-entering-p (cons a b) offset end))
+           (:free (a b) (bidi-pairs-shift (cons a b) offset)))
+  :enable (stack-after
+           stack-shift
+           bidi-pairs-shift
+           bidi-pair-shift
+           len
+           nfix))
+
+(defrulel bidi-bracket-pairs-from-with-stack
+  (b* (((mv overflow1 pairs1)
+        (bidi-bracket-pairs-from roles offset stack))
+       ((mv overflow2 pairs2)
+        (bidi-bracket-pairs-from roles 0 nil)))
+    (implies (and (natp offset)
+                  (natp end)
+                  (<= (+ offset (len roles)) end)
+                  (not overflow1)
+                  (stack-below stack offset)
+                  (bidi-pairs-none-entering-p pairs1 offset end))
+             (and (not overflow2)
+                  (equal pairs1
+                         (bidi-pairs-shift pairs2 offset)))))
+  :rule-classes nil
+  :use (:instance bidi-bracket-pairs-from-with-deeper-stack
+                  (position 0)
+                  (stack1 nil))
+  :enable stack-shift)
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The pairs that close in a range, the pairs moved,
+; and the pairs that do not enter a range, with the sorting.
+
+(defrulel bidi-pairs-closing-in-of-append
+  (equal (bidi-pairs-closing-in (append x y) lo hi)
+         (append (bidi-pairs-closing-in x lo hi)
+                 (bidi-pairs-closing-in y lo hi)))
+  :induct (list-induction x)
+  :enable (list-induction bidi-pairs-closing-in))
+
+(defrulel bidi-pairs-closing-in-of-bidi-pairs-shift
+  (implies (and (natp offset)
+                (natp lo)
+                (natp hi)
+                (<= offset lo)
+                (<= offset hi))
+           (equal (bidi-pairs-closing-in (bidi-pairs-shift pairs offset) lo hi)
+                  (bidi-pairs-shift (bidi-pairs-closing-in pairs
+                                                           (- lo offset)
+                                                           (- hi offset))
+                                    offset)))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bidi-pairs-closing-in
+           bidi-pairs-shift
+           bidi-pair-shift
+           nfix))
+
+(defrulel bidi-pairs-none-entering-p-of-append
+  (equal (bidi-pairs-none-entering-p (append x y) start end)
+         (and (bidi-pairs-none-entering-p x start end)
+              (bidi-pairs-none-entering-p y start end)))
+  :induct (list-induction x)
+  :enable (list-induction bidi-pairs-none-entering-p))
+
+(defrulel bidi-pairs-none-entering-p-of-bracket-pair-list-fix
+  (equal (bidi-pairs-none-entering-p (bracket-pair-list-fix pairs) start end)
+         (bidi-pairs-none-entering-p pairs start end))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bidi-pairs-none-entering-p
+           bracket-pair-list-fix))
+
+(defrulel bidi-pairs-closing-in-of-bracket-pair-list-fix
+  (equal (bidi-pairs-closing-in (bracket-pair-list-fix pairs) lo hi)
+         (bidi-pairs-closing-in pairs lo hi))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bidi-pairs-closing-in
+           bracket-pair-list-fix))
+
+(defrulel bidi-pairs-none-entering-p-of-bracket-pair-insert
+  (equal (bidi-pairs-none-entering-p (bracket-pair-insert pair pairs)
+                                     start
+                                     end)
+         (and (bidi-pairs-none-entering-p (list pair) start end)
+              (bidi-pairs-none-entering-p pairs start end)))
+  :induct (bracket-pair-insert pair pairs)
+  :enable (bracket-pair-insert bidi-pairs-none-entering-p))
+
+(defrulel bidi-pairs-none-entering-p-of-bracket-pairs-sort
+  (equal (bidi-pairs-none-entering-p (bracket-pairs-sort pairs) start end)
+         (bidi-pairs-none-entering-p pairs start end))
+  :induct (bracket-pairs-sort pairs)
+  :enable (bracket-pairs-sort bidi-pairs-none-entering-p))
+
+(defrulel bidi-pair-shift-of-bracket-pair-fix
+  (equal (bidi-pair-shift (bracket-pair-fix pair) offset)
+         (bidi-pair-shift pair offset))
+  :enable bidi-pair-shift)
+
+(defrulel bidi-pairs-shift-of-bracket-pair-list-fix
+  (equal (bidi-pairs-shift (bracket-pair-list-fix pairs) offset)
+         (bidi-pairs-shift pairs offset))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bidi-pairs-shift
+           bidi-pair-shift
+           bracket-pair-list-fix))
+
+(defrulel bracket-pair-insert-of-bidi-pair-shift
+  (equal (bracket-pair-insert (bidi-pair-shift pair offset)
+                              (bidi-pairs-shift pairs offset))
+         (bidi-pairs-shift (bracket-pair-insert pair pairs) offset))
+  :induct (bracket-pair-insert pair pairs)
+  :expand ((bidi-pairs-shift pairs offset)
+           (bidi-pairs-shift nil offset)
+           (:free (pair a b) (bracket-pair-insert pair (cons a b)))
+           (:free (a b) (bidi-pairs-shift (cons a b) offset)))
+  :enable (bracket-pair-insert
+           nfix))
+
+(defrulel bracket-pairs-sort-of-bidi-pairs-shift
+  (equal (bracket-pairs-sort (bidi-pairs-shift pairs offset))
+         (bidi-pairs-shift (bracket-pairs-sort pairs) offset))
+  :induct (bracket-pairs-sort pairs)
+  :enable (bracket-pairs-sort bidi-pairs-shift))
+
+; Sorted pairs, and pairs whose opening brackets are from a position on.
+
+(local
+ (define pairs-open-from-p ((pairs bracket-pair-listp) (bound natp))
+   :returns (yes/no booleanp)
+   (or (endp pairs)
+       (and (<= (lnfix bound) (bracket-pair->open (car pairs)))
+            (pairs-open-from-p (cdr pairs) bound)))
+   :hooks nil))
+
+(local
+ (define pairs-sorted-p ((pairs bracket-pair-listp))
+   :returns (yes/no booleanp)
+   (or (endp pairs)
+       (and (pairs-open-from-p (cdr pairs) (bracket-pair->open (car pairs)))
+            (pairs-sorted-p (cdr pairs))))
+   :hooks nil))
+
+(defrulel pairs-open-from-p-when-open-from-more
+  (implies (and (pairs-open-from-p pairs bound)
+                (<= (nfix bound2) (nfix bound)))
+           (pairs-open-from-p pairs bound2))
+  :induct (list-induction pairs)
+  :enable (list-induction pairs-open-from-p nfix))
+
+(defrulel pairs-open-from-p-of-bracket-pair-list-fix
+  (equal (pairs-open-from-p (bracket-pair-list-fix pairs) bound)
+         (pairs-open-from-p pairs bound))
+  :induct (list-induction pairs)
+  :enable (list-induction pairs-open-from-p bracket-pair-list-fix))
+
+(defrulel pairs-sorted-p-of-bracket-pair-list-fix
+  (equal (pairs-sorted-p (bracket-pair-list-fix pairs))
+         (pairs-sorted-p pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction pairs-sorted-p bracket-pair-list-fix))
+
+(defrulel pairs-open-from-p-of-bracket-pair-insert
+  (equal (pairs-open-from-p (bracket-pair-insert pair pairs) bound)
+         (and (<= (nfix bound) (bracket-pair->open pair))
+              (pairs-open-from-p pairs bound)))
+  :induct (bracket-pair-insert pair pairs)
+  :enable (bracket-pair-insert pairs-open-from-p))
+
+(defrulel pairs-sorted-p-of-bracket-pair-insert
+  (implies (pairs-sorted-p pairs)
+           (pairs-sorted-p (bracket-pair-insert pair pairs)))
+  :induct (bracket-pair-insert pair pairs)
+  :enable (bracket-pair-insert pairs-sorted-p pairs-open-from-p nfix))
+
+(defrulel pairs-sorted-p-of-bracket-pairs-sort
+  (pairs-sorted-p (bracket-pairs-sort pairs))
+  :induct (bracket-pairs-sort pairs)
+  :enable (bracket-pairs-sort pairs-sorted-p))
+
+(defrulel pairs-open-from-p-of-bidi-pairs-closing-in
+  (implies (pairs-open-from-p pairs bound)
+           (pairs-open-from-p (bidi-pairs-closing-in pairs lo hi) bound))
+  :induct (list-induction pairs)
+  :enable (list-induction pairs-open-from-p bidi-pairs-closing-in))
+
+(defrulel bracket-pair-insert-when-pairs-open-from-p
+  (implies (and (pairs-open-from-p pairs (bracket-pair->open pair))
+                (bracket-pair-listp pairs))
+           (equal (bracket-pair-insert pair pairs)
+                  (cons (bracket-pair-fix pair) pairs)))
+  :expand ((bracket-pair-insert pair pairs)
+           (bracket-pair-insert pair nil)
+           (pairs-open-from-p pairs (bracket-pair->open pair)))
+  :enable nfix)
+
+(defrulel bidi-pairs-closing-in-of-bracket-pair-insert
+  (implies (pairs-sorted-p pairs)
+           (equal (bidi-pairs-closing-in (bracket-pair-insert pair pairs)
+                                         lo
+                                         hi)
+                  (if (and (<= (nfix lo) (bracket-pair->close pair))
+                           (< (bracket-pair->close pair) (nfix hi)))
+                      (bracket-pair-insert pair
+                                           (bidi-pairs-closing-in pairs lo hi))
+                    (bidi-pairs-closing-in pairs lo hi))))
+  :induct (bracket-pair-insert pair pairs)
+  :expand ((:free (a b) (bidi-pairs-closing-in (cons a b) lo hi))
+           (bidi-pairs-closing-in pairs lo hi)
+           (pairs-sorted-p pairs)
+           (:free (a b) (bracket-pair-insert pair (cons a b))))
+  :enable (bracket-pair-insert nfix))
+
+(defrulel bidi-pairs-closing-in-of-bracket-pairs-sort
+  (equal (bidi-pairs-closing-in (bracket-pairs-sort pairs) lo hi)
+         (bracket-pairs-sort (bidi-pairs-closing-in pairs lo hi)))
+  :induct (bracket-pairs-sort pairs)
+  :expand ((bidi-pairs-closing-in pairs lo hi)
+           (:free (a b) (bracket-pairs-sort (cons a b))))
+  :enable (bracket-pairs-sort nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The roles that count for the pairing, for a sequence in two parts.
+
+(defrulel bidi-current-bracket-roles-of-append
+  (implies (equal (len roles1) (len classes1))
+           (equal (bidi-current-bracket-roles (append classes1 classes2)
+                                              (append roles1 roles2))
+                  (append (bidi-current-bracket-roles classes1 roles1)
+                          (bidi-current-bracket-roles classes2 roles2))))
+  :induct (two-lists-induction classes1 roles1)
+  :expand ((bidi-current-bracket-roles classes1 roles1)
+           (:free (a b c d) (bidi-current-bracket-roles (cons a b) (cons c d)))
+           (append classes1 classes2)
+           (append roles1 roles2))
+  :enable (two-lists-induction len))
+
+(defrulel len-of-bidi-current-bracket-roles
+  (implies (equal (len roles) (len classes))
+           (equal (len (bidi-current-bracket-roles classes roles))
+                  (len classes)))
+  :induct (two-lists-induction classes roles)
+  :expand (bidi-current-bracket-roles classes roles)
+  :enable (two-lists-induction len))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The theorems of this book.
 
 (defrule bidi-pairs-sound-p-of-bidi-bracket-pairs
@@ -548,3 +1081,46 @@
                   (bidi-bracket-pairs classes roles)))
   :enable (bidi-bracket-pairs
            bidi-current-bracket-roles-when-bidi-roles-neutral-p))
+
+; The pairs that close in the second of three parts of a sequence
+; are the pairs of that part alone, moved to its position.
+
+(defruled bidi-pairs-closing-in-of-bidi-bracket-pairs-of-append
+  (b* ((classes (append classes1 classes2 classes3))
+       (roles (append roles1 roles2 roles3))
+       (start (len classes1))
+       (end (+ (len classes1) (len classes2))))
+    (implies (and (equal (len roles1) (len classes1))
+                  (equal (len roles2) (len classes2))
+                  (not (bidi-bracket-pairs-overflow-p classes roles))
+                  (bidi-pairs-none-entering-p
+                   (bidi-bracket-pairs classes roles)
+                   start
+                   end)
+                  (natp lo)
+                  (natp hi)
+                  (<= start lo)
+                  (<= lo hi)
+                  (<= hi end))
+             (and (not (bidi-bracket-pairs-overflow-p classes2 roles2))
+                  (equal (bidi-pairs-closing-in
+                          (bidi-bracket-pairs classes roles)
+                          lo
+                          hi)
+                         (bidi-pairs-shift
+                          (bidi-pairs-closing-in
+                           (bidi-bracket-pairs classes2 roles2)
+                           (- lo start)
+                           (- hi start))
+                          start)))))
+  :enable (bidi-bracket-pairs
+           bidi-bracket-pairs-overflow-p
+           stack-below)
+  :use (:instance bidi-bracket-pairs-from-with-stack
+                  (roles (bidi-current-bracket-roles classes2 roles2))
+                  (offset (len classes1))
+                  (end (+ (len classes1) (len classes2)))
+                  (stack (stack-after
+                          (bidi-current-bracket-roles classes1 roles1)
+                          0
+                          nil))))

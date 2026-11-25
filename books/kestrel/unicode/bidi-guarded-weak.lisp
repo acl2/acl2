@@ -19,10 +19,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This book is a step of the proof of the theorem of the book
-; bidi-guarded-theorem.lisp.  That book includes this one locally,
+; This book is a step of the proofs of the theorems of the books
+; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
+; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See the book bidi-guarded-theorem.lisp for the plan of the proof.
+; See each of the two books for the plan of its proof.
 ;
 ; This book defines the scan, which is the invariant of the proof,
 ; and proves that rules W1 to W7 of the Unicode Bidirectional Algorithm
@@ -61,6 +62,12 @@
 ;   1   rule W1 (and then also rules W2 to W5): no NSM is left;
 ;   2   rule W6: no ES, ET or CS is left;
 ;   3   rule W7 (and then also rule N0): no EN is left.
+;
+; For the second proof, this book also proves that rules W1 to W7
+; do in a window what they do to the window alone.
+; A window is a run of positions inside that starts
+; with the class R, AL or AN and has positions outside,
+; or nothing, on its two sides: see the section "Windows" below.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -169,6 +176,74 @@
                (equal (bidi-class-kind (car classes)) :other-neutral))
            (bidi-roles-neutral-p (cdr roles) (cdr classes))))
   :hooks nil)
+
+; The part of a list at the positions N to N+M-1, called a window.
+; The argument OUTSIDE is not used.  It is there for the rewrite rules
+; about windows: their hypotheses are about the marks,
+; and a rule finds the marks in this argument.
+
+(define bidi-window ((n natp) (m natp) outside (list true-listp))
+  :returns (part true-listp)
+  (take m (nthcdr n list))
+  :ignore-ok t
+  :irrelevant-formals-ok t
+  :hooks nil)
+
+; The kinds of the classes of the characters that start a part inside:
+; R, AL and AN.  The first position of a window has such a class.
+
+(define bidi-window-start-kind-p (kind)
+  :returns (yes/no booleanp)
+  (or (eq kind :right-to-left)
+      (eq kind :arabic-letter)
+      (eq kind :arabic-number))
+  :hooks nil)
+
+; The marks at the two ends of a window, in a list of a given length:
+; the first and the last position of the window are inside,
+; and the position before the window and the position after it
+; are outside, if they are in the list.
+
+(define bidi-window-marks-p ((n natp) (m natp) outside (length natp))
+  :returns (yes/no booleanp)
+  (and (natp n)
+       (posp m)
+       (natp length)
+       (<= (+ n m) length)
+       (not (nth n outside))
+       (or (equal n 0)
+           (nth (- n 1) outside))
+       (not (nth (+ -1 n m) outside))
+       (or (equal (+ n m) length)
+           (nth (+ n m) outside))
+       t)
+  :verify-guards nil
+  :hooks nil)
+
+(defrule len-of-bidi-window
+  (equal (len (bidi-window n m outside list))
+         (nfix m))
+  :enable bidi-window)
+
+(defrule bidi-class-listp-of-bidi-window
+  (implies (and (bidi-class-listp list)
+                (natp n)
+                (natp m)
+                (<= (+ n m) (len list)))
+           (bidi-class-listp (bidi-window n m outside list)))
+  :enable (bidi-window nfix))
+
+(defrule car-of-bidi-window
+  (implies (posp m)
+           (equal (car (bidi-window n m outside list))
+                  (nth n list)))
+  :expand (take m (nthcdr n list))
+  :enable (bidi-window posp))
+
+(defrule consp-of-bidi-window
+  (equal (consp (bidi-window n m outside list))
+         (posp m))
+  :enable (bidi-window posp zp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -666,6 +741,776 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Windows.
+;
+; A window is a run of positions that starts with a position inside
+; whose class is R, AL or AN, that comes at the start of the sequence
+; or after a position outside, and whose last position is inside
+; and comes at the end of the sequence or before a position outside.
+; The rest of this book proves that, on a sequence with sos = L
+; on which the scan succeeds, rules W1 to W7 do in a window
+; what they do to the window alone:
+; taking the window and applying a rule can be done in either order.
+;
+; A rule that goes along the list with a state of its own
+; reaches the window in some state.  For each such rule,
+; a function gives the state after N positions (W1-STATE, ...),
+; the rest of the result from a position is the result
+; on the rest of the list from that state (NTHCDR-OF-...),
+; and that state does the same to the window as the state at the start:
+; because of the first class of the window (rules W1, W4 and W5),
+; or because the scan is in the state :FREE there (rules W2 and W7).
+; A rule that looks at the class after (rules W4 and W5)
+; finds after the window a class that is not that of a number,
+; and so does there what it does at the end of a list.
+
+; The state of the scan after N positions.
+
+(local
+ (define scan-at ((n natp) classes outside st (phase natp))
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         st)
+        (next (bidi-scan-step st (car outside) (car classes) phase)))
+     (and next
+          (scan-at (- n 1) (cdr classes) (cdr outside) next phase)))
+   :verify-guards nil
+   :hooks nil))
+
+; One step of the scan, at a position inside and at a position outside.
+; With these three rules the lemmas about the scan up to a position
+; are proved without the cases of the definition of the step.
+; They are not local: the book bidi-guarded-neutral.lisp uses them too.
+
+(defruled bidi-scan-step-when-inside-position
+  (implies (not out)
+           (equal (bidi-scan-step st out class phase)
+                  (if (or (eq st :free)
+                          (eq st :inside))
+                      :inside
+                    nil))))
+
+(defruled bidi-scan-step-when-outside-position
+  (implies out
+           (not (equal (bidi-scan-step st out class phase)
+                       :inside))))
+
+(defruled bidi-class-kind-when-bidi-scan-step-after-inside
+  (implies (and (bidi-scan-step :inside out class phase)
+                out)
+           (and (not (equal (bidi-class-kind class) :european-number))
+                (not (equal (bidi-class-kind class) :arabic-number))
+                (not (equal (bidi-class-kind class) :european-terminator))
+                (not (equal (bidi-class-kind class) :nonspacing-mark)))))
+
+; At the first position of a window the scan is in the state :FREE.
+
+(defrulel scan-at-of-start-of-window
+  (implies (and (bidi-scan-ok classes outside st phase)
+                (natp n)
+                (< n (len classes))
+                (not (nth n outside))
+                (if (equal n 0)
+                    (eq st :free)
+                  (nth (- n 1) outside)))
+           (equal (scan-at n classes outside st phase)
+                  :free))
+  :induct (scan-at n classes outside st phase)
+  :expand ((:free (st) (bidi-scan-ok classes outside st phase))
+           (:free (st) (bidi-scan-ok (cdr classes) (cdr outside) st phase)))
+  :enable (scan-at
+           nth
+           len
+           bidi-scan-step-when-inside-position
+           bidi-scan-step-when-outside-position)
+  :disable bidi-scan-step)
+
+; The position after a window does not have the class of a number,
+; and does not have the class ET or NSM.
+; This rule is not local either.
+
+(defruled bidi-class-kind-of-nth-after-window
+  (implies (and (bidi-scan-ok classes outside st phase)
+                (posp j)
+                (< j (len classes))
+                (not (nth (- j 1) outside))
+                (nth j outside))
+           (and (not (equal (bidi-class-kind (nth j classes))
+                            :european-number))
+                (not (equal (bidi-class-kind (nth j classes))
+                            :arabic-number))
+                (not (equal (bidi-class-kind (nth j classes))
+                            :european-terminator))
+                (not (equal (bidi-class-kind (nth j classes))
+                            :nonspacing-mark))))
+  :induct (scan-at j classes outside st phase)
+  :expand ((:free (st) (bidi-scan-ok classes outside st phase))
+           (:free (st) (bidi-scan-ok (cdr classes) (cdr outside) st phase)))
+  :enable (scan-at
+           nth
+           len
+           bidi-scan-step-when-inside-position
+           bidi-class-kind-when-bidi-scan-step-after-inside)
+  :disable bidi-scan-step)
+
+(local (in-theory (enable bidi-class-kind-of-nth-after-window)))
+
+(defrulel fix-when-acl2-numberp
+  (implies (acl2-numberp x)
+           (equal (fix x)
+                  x))
+  :enable fix)
+
+; The rules on the empty list.
+
+(defrulel bidi-w1-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w1 classes previous)
+                  nil))
+  :expand (bidi-w1 classes previous))
+
+(defrulel bidi-w2-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w2 classes strong)
+                  nil))
+  :expand (bidi-w2 classes strong))
+
+(defrulel bidi-w3-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w3 classes)
+                  nil))
+  :expand (bidi-w3 classes))
+
+(defrulel bidi-w4-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w4 classes previous)
+                  nil))
+  :expand (bidi-w4 classes previous))
+
+(defrulel bidi-w5-forward-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w5-forward classes after-number)
+                  nil))
+  :expand (bidi-w5-forward classes after-number))
+
+(defrulel w5-backward-when-not-consp
+  (implies (not (consp classes))
+           (equal (w5-backward classes)
+                  nil))
+  :expand (w5-backward classes))
+
+(defrulel len-of-w5-backward
+  (equal (len (w5-backward classes))
+         (len classes))
+  :induct (len classes)
+  :expand (w5-backward classes)
+  :enable len)
+
+(defrulel bidi-w6-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w6 classes)
+                  nil))
+  :expand (bidi-w6 classes))
+
+(defrulel bidi-w7-when-not-consp
+  (implies (not (consp classes))
+           (equal (bidi-w7 classes strong)
+                  nil))
+  :expand (bidi-w7 classes strong))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W1 in a window.  The first class of a window is not NSM.
+
+(local
+ (define w1-state ((n natp) classes previous)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         previous)
+        (class (bidi-class-fix (car classes)))
+        (new-class
+         (cond ((not (equal (bidi-class-kind class) :nonspacing-mark))
+                class)
+               ((bidi-class-isolate-formatting-p previous)
+                (bidi-class-other-neutral))
+               (t (bidi-class-fix previous)))))
+     (w1-state (- n 1) (cdr classes) new-class))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel w1-state-when-zp
+  (implies (zp n)
+           (equal (w1-state n classes previous)
+                  previous))
+  :expand (w1-state n classes previous))
+
+(defrulel nthcdr-of-bidi-w1
+  (equal (nthcdr n (bidi-w1 classes previous))
+         (bidi-w1 (nthcdr n classes)
+                  (w1-state n classes previous)))
+  :induct (w1-state n classes previous)
+  :expand (bidi-w1 classes previous)
+  :enable (w1-state nthcdr))
+
+(defrulel take-of-bidi-w1
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w1 classes previous))
+                  (bidi-w1 (take m classes) previous)))
+  :induct (w1-state m classes previous)
+  :expand ((bidi-w1 classes previous)
+           (:free (a b) (bidi-w1 (cons a b) previous)))
+  :enable (w1-state take len nfix))
+
+(defrulel bidi-w1-of-w1-state
+  (implies (and (consp classes)
+                (not (equal (bidi-class-kind (car classes))
+                            :nonspacing-mark)))
+           (equal (bidi-w1 classes (w1-state n other previous))
+                  (bidi-w1 classes previous)))
+  :expand ((bidi-w1 classes (w1-state n other previous))
+           (bidi-w1 classes previous)))
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w1
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (bidi-w1 classes previous)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (w1-state n classes previous)
+  :expand (bidi-w1 classes previous)
+  :enable (w1-state nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w1
+  (implies (and (bidi-window-marks-p n m outside (len classes))
+                (bidi-window-start-kind-p (bidi-class-kind (nth n classes))))
+           (equal (bidi-window n m outside (bidi-w1 classes previous))
+                  (bidi-w1 (bidi-window n m outside classes) previous)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           bidi-window-start-kind-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W2 in a window.  The rule depends on the last strong class
+; only through whether it is AL; in the state :FREE it is L.
+
+(local
+ (define w2-state ((n natp) classes strong)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         strong)
+        (class (bidi-class-fix (car classes)))
+        (strong (if (bidi-class-strong-p class)
+                    class
+                  (bidi-class-fix strong))))
+     (w2-state (- n 1) (cdr classes) strong))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel w2-state-when-zp
+  (implies (zp n)
+           (equal (w2-state n classes strong)
+                  strong))
+  :expand (w2-state n classes strong))
+
+(defrulel nthcdr-of-bidi-w2
+  (equal (nthcdr n (bidi-w2 classes strong))
+         (bidi-w2 (nthcdr n classes)
+                  (w2-state n classes strong)))
+  :induct (w2-state n classes strong)
+  :expand (bidi-w2 classes strong)
+  :enable (w2-state nthcdr))
+
+(defrulel take-of-bidi-w2
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w2 classes strong))
+                  (bidi-w2 (take m classes) strong)))
+  :induct (w2-state m classes strong)
+  :expand ((bidi-w2 classes strong)
+           (:free (a b) (bidi-w2 (cons a b) strong)))
+  :enable (w2-state take len nfix))
+
+(local
+ (define w2-two-induction (classes strong1 strong2)
+   (b* (((when (endp classes)) (list strong1 strong2))
+        (class (bidi-class-fix (car classes))))
+     (w2-two-induction (cdr classes)
+                       (if (bidi-class-strong-p class)
+                           class
+                         (bidi-class-fix strong1))
+                       (if (bidi-class-strong-p class)
+                           class
+                         (bidi-class-fix strong2))))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel bidi-w2-when-not-after-arabic-letter
+  (implies (and (not (equal (bidi-class-kind strong1) :arabic-letter))
+                (not (equal (bidi-class-kind strong2) :arabic-letter)))
+           (equal (equal (bidi-w2 classes strong1)
+                         (bidi-w2 classes strong2))
+                  t))
+  :induct (w2-two-induction classes strong1 strong2)
+  :expand ((bidi-w2 classes strong1)
+           (bidi-w2 classes strong2))
+  :enable (w2-two-induction bidi-class-strong-p))
+
+(local
+ (define w2-at-induction ((n natp) classes outside st strong)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         (list outside st strong))
+        (class (bidi-class-fix (car classes)))
+        (strong (if (bidi-class-strong-p class)
+                    class
+                  (bidi-class-fix strong))))
+     (w2-at-induction (- n 1)
+                      (cdr classes)
+                      (cdr outside)
+                      (bidi-scan-step st (car outside) (car classes) 1)
+                      strong))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel bidi-class-kind-of-w2-state-when-free
+  (implies (and (bidi-scan-ok classes outside st 1)
+                (strong-relation st strong)
+                (equal (scan-at n classes outside st 1) :free))
+           (equal (bidi-class-kind (w2-state n classes strong))
+                  :left-to-right))
+  :induct (w2-at-induction n classes outside st strong)
+  :expand ((:free (st) (bidi-scan-ok classes outside st 1))
+           (:free (st) (scan-at n classes outside st 1))
+           (w2-state n classes strong))
+  :enable (w2-at-induction
+           strong-relation
+           bidi-class-strong-p))
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w2
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (bidi-w2 classes strong)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (w2-state n classes strong)
+  :expand (bidi-w2 classes strong)
+  :enable (w2-state nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w2
+  (implies (and (bidi-scan-ok classes outside :free 1)
+                (bidi-window-marks-p n m outside (len classes))
+                (equal (bidi-class-kind strong) :left-to-right))
+           (equal (bidi-window n m outside (bidi-w2 classes strong))
+                  (bidi-w2 (bidi-window n m outside classes) strong)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           strong-relation
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W3 in a window.
+
+(defrulel nthcdr-of-bidi-w3
+  (equal (nthcdr n (bidi-w3 classes))
+         (bidi-w3 (nthcdr n classes)))
+  :induct (nthcdr n classes)
+  :expand (bidi-w3 classes)
+  :enable nthcdr)
+
+(defrulel take-of-bidi-w3
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w3 classes))
+                  (bidi-w3 (take m classes))))
+  :induct (take m classes)
+  :expand ((bidi-w3 classes)
+           (:free (a b) (bidi-w3 (cons a b))))
+  :enable (take len nfix))
+
+; The kind of a class after the rule.  The rule about the first class
+; of a window is stated with this function, and not with an IF,
+; so that the rewriter can use it under the other rules.
+
+(local
+ (define w3-kind (kind)
+   (if (eq kind :arabic-letter)
+       :right-to-left
+     kind)
+   :hooks nil))
+
+(defrulel bidi-window-start-kind-p-of-w3-kind
+  (equal (bidi-window-start-kind-p (w3-kind kind))
+         (bidi-window-start-kind-p kind))
+  :enable (w3-kind bidi-window-start-kind-p))
+
+(defrulel w3-kind-is-not-arabic-letter
+  (not (equal (w3-kind kind) :arabic-letter))
+  :enable w3-kind)
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w3
+  (equal (bidi-class-kind (nth n (bidi-w3 classes)))
+         (w3-kind (bidi-class-kind (nth n classes))))
+  :induct (nth n classes)
+  :expand (bidi-w3 classes)
+  :enable (nth w3-kind acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w3
+  (implies (bidi-window-marks-p n m outside (len classes))
+           (equal (bidi-window n m outside (bidi-w3 classes))
+                  (bidi-w3 (bidi-window n m outside classes))))
+  :enable (bidi-window
+           bidi-window-marks-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W4 in a window.  The first class of a window is not ES or CS,
+; and the class after a window is not EN or AN.
+
+(local
+ (define w4-state ((n natp) classes previous)
+   (if (or (zp n)
+           (endp classes))
+       previous
+     (w4-state (- n 1) (cdr classes) (bidi-class-fix (car classes))))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel w4-state-when-zp
+  (implies (zp n)
+           (equal (w4-state n classes previous)
+                  previous))
+  :expand (w4-state n classes previous))
+
+(defrulel nthcdr-of-bidi-w4
+  (equal (nthcdr n (bidi-w4 classes previous))
+         (bidi-w4 (nthcdr n classes)
+                  (w4-state n classes previous)))
+  :induct (w4-state n classes previous)
+  :expand (bidi-w4 classes previous)
+  :enable (w4-state nthcdr))
+
+(defrulel take-of-bidi-w4
+  (implies (and (<= (nfix m) (len classes))
+                (or (equal (nfix m) (len classes))
+                    (and (not (equal (bidi-class-kind (nth m classes))
+                                     :european-number))
+                         (not (equal (bidi-class-kind (nth m classes))
+                                     :arabic-number)))))
+           (equal (take m (bidi-w4 classes previous))
+                  (bidi-w4 (take m classes) previous)))
+  :induct (w4-state m classes previous)
+  :expand ((bidi-w4 classes previous)
+           (:free (a b) (bidi-w4 (cons a b) previous)))
+  :enable (w4-state take len nth nfix))
+
+(defrulel bidi-w4-of-w4-state
+  (implies (and (consp classes)
+                (not (equal (bidi-class-kind (car classes))
+                            :european-separator))
+                (not (equal (bidi-class-kind (car classes))
+                            :common-separator)))
+           (equal (bidi-w4 classes (w4-state n other previous))
+                  (bidi-w4 classes previous)))
+  :expand ((bidi-w4 classes (w4-state n other previous))
+           (bidi-w4 classes previous)))
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w4
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (bidi-w4 classes previous)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (w4-state n classes previous)
+  :expand (bidi-w4 classes previous)
+  :enable (w4-state nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w4
+  (implies (and (bidi-scan-ok classes outside :free 1)
+                (bidi-window-marks-p n m outside (len classes))
+                (bidi-window-start-kind-p (bidi-class-kind (nth n classes))))
+           (equal (bidi-window n m outside (bidi-w4 classes previous))
+                  (bidi-w4 (bidi-window n m outside classes) previous)))
+  :cases ((equal (+ n m) (len classes)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           bidi-window-start-kind-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W5 in a window, forward.  The first class of a window is not ET.
+
+(local
+ (define w5f-state ((n natp) classes after-number)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         after-number)
+        (class (bidi-class-fix (car classes)))
+        (new-class
+         (if (and after-number
+                  (equal (bidi-class-kind class) :european-terminator))
+             (bidi-class-european-number)
+           class)))
+     (w5f-state (- n 1)
+                (cdr classes)
+                (equal (bidi-class-kind new-class) :european-number)))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel w5f-state-when-zp
+  (implies (zp n)
+           (equal (w5f-state n classes after-number)
+                  after-number))
+  :expand (w5f-state n classes after-number))
+
+(defrulel nthcdr-of-bidi-w5-forward
+  (equal (nthcdr n (bidi-w5-forward classes after-number))
+         (bidi-w5-forward (nthcdr n classes)
+                          (w5f-state n classes after-number)))
+  :induct (w5f-state n classes after-number)
+  :expand ((:free (after-number) (bidi-w5-forward classes after-number)))
+  :enable (w5f-state nthcdr))
+
+(defrulel take-of-bidi-w5-forward
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w5-forward classes after-number))
+                  (bidi-w5-forward (take m classes) after-number)))
+  :induct (w5f-state m classes after-number)
+  :expand ((:free (after-number) (bidi-w5-forward classes after-number))
+           (:free (a b after-number)
+                  (bidi-w5-forward (cons a b) after-number)))
+  :enable (w5f-state take len nfix))
+
+(defrulel bidi-w5-forward-of-w5f-state
+  (implies (and (consp classes)
+                (not (equal (bidi-class-kind (car classes))
+                            :european-terminator)))
+           (equal (bidi-w5-forward classes (w5f-state n other after-number))
+                  (bidi-w5-forward classes after-number)))
+  :expand ((bidi-w5-forward classes (w5f-state n other after-number))
+           (bidi-w5-forward classes after-number))
+  :disable bidi-w5-forward-when-flag-not-nil)
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w5-forward
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind
+                   (nth n (bidi-w5-forward classes after-number)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (w5f-state n classes after-number)
+  :expand ((:free (after-number) (bidi-w5-forward classes after-number)))
+  :enable (w5f-state nth bidi-window-start-kind-p acl2::default-car)
+  :disable bidi-w5-forward-when-flag-not-nil)
+
+(defrulel bidi-window-of-bidi-w5-forward
+  (implies (and (bidi-window-marks-p n m outside (len classes))
+                (bidi-window-start-kind-p (bidi-class-kind (nth n classes))))
+           (equal (bidi-window n m outside
+                               (bidi-w5-forward classes after-number))
+                  (bidi-w5-forward (bidi-window n m outside classes)
+                                   after-number)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           bidi-window-start-kind-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W5 in a window, backward.
+; The class after a window is not EN or ET.
+
+(defrulel nthcdr-of-w5-backward
+  (equal (nthcdr n (w5-backward classes))
+         (w5-backward (nthcdr n classes)))
+  :induct (nthcdr n classes)
+  :expand (w5-backward classes)
+  :enable nthcdr)
+
+(defrulel take-of-w5-backward
+  (implies (and (<= (nfix m) (len classes))
+                (or (equal (nfix m) (len classes))
+                    (and (not (equal (bidi-class-kind (nth m classes))
+                                     :european-number))
+                         (not (equal (bidi-class-kind (nth m classes))
+                                     :european-terminator)))))
+           (equal (take m (w5-backward classes))
+                  (w5-backward (take m classes))))
+  :induct (take m classes)
+  :expand ((w5-backward classes)
+           (w5-backward (cdr classes))
+           (:free (a b) (w5-backward (cons a b))))
+  :enable (take len nth nfix))
+
+(defrulel bidi-class-kind-of-nth-of-w5-backward
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (w5-backward classes)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (nth n classes)
+  :expand (w5-backward classes)
+  :enable (nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-w5-backward
+  (implies (and (bidi-scan-ok classes outside :free 1)
+                (bidi-window-marks-p n m outside (len classes)))
+           (equal (bidi-window n m outside (w5-backward classes))
+                  (w5-backward (bidi-window n m outside classes))))
+  :cases ((equal (+ n m) (len classes)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W6 in a window.
+
+(defrulel nthcdr-of-bidi-w6
+  (equal (nthcdr n (bidi-w6 classes))
+         (bidi-w6 (nthcdr n classes)))
+  :induct (nthcdr n classes)
+  :expand (bidi-w6 classes)
+  :enable nthcdr)
+
+(defrulel take-of-bidi-w6
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w6 classes))
+                  (bidi-w6 (take m classes))))
+  :induct (take m classes)
+  :expand ((bidi-w6 classes)
+           (:free (a b) (bidi-w6 (cons a b))))
+  :enable (take len nfix))
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w6
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (bidi-w6 classes)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (nth n classes)
+  :expand (bidi-w6 classes)
+  :enable (nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w6
+  (implies (bidi-window-marks-p n m outside (len classes))
+           (equal (bidi-window n m outside (bidi-w6 classes))
+                  (bidi-w6 (bidi-window n m outside classes))))
+  :enable (bidi-window
+           bidi-window-marks-p
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; Rule W7 in a window.  The rule depends on the last strong class
+; only through whether it is L; in the state :FREE it is L.
+
+(local
+ (define w7-state ((n natp) classes strong)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         strong)
+        (class (bidi-class-fix (car classes)))
+        (strong (bidi-class-case class
+                                 :left-to-right class
+                                 :right-to-left class
+                                 :otherwise (bidi-class-fix strong))))
+     (w7-state (- n 1) (cdr classes) strong))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel w7-state-when-zp
+  (implies (zp n)
+           (equal (w7-state n classes strong)
+                  strong))
+  :expand (w7-state n classes strong))
+
+(defrulel nthcdr-of-bidi-w7
+  (equal (nthcdr n (bidi-w7 classes strong))
+         (bidi-w7 (nthcdr n classes)
+                  (w7-state n classes strong)))
+  :induct (w7-state n classes strong)
+  :expand (bidi-w7 classes strong)
+  :enable (w7-state nthcdr))
+
+(defrulel take-of-bidi-w7
+  (implies (<= (nfix m) (len classes))
+           (equal (take m (bidi-w7 classes strong))
+                  (bidi-w7 (take m classes) strong)))
+  :induct (w7-state m classes strong)
+  :expand ((bidi-w7 classes strong)
+           (:free (a b) (bidi-w7 (cons a b) strong)))
+  :enable (w7-state take len nfix))
+
+(local
+ (define w7-two-induction (classes strong1 strong2)
+   (b* (((when (endp classes)) (list strong1 strong2))
+        (class (bidi-class-fix (car classes))))
+     (w7-two-induction (cdr classes)
+                       (bidi-class-case class
+                                        :left-to-right class
+                                        :right-to-left class
+                                        :otherwise (bidi-class-fix strong1))
+                       (bidi-class-case class
+                                        :left-to-right class
+                                        :right-to-left class
+                                        :otherwise (bidi-class-fix strong2))))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel bidi-w7-when-after-left-to-right
+  (implies (and (equal (bidi-class-kind strong1) :left-to-right)
+                (equal (bidi-class-kind strong2) :left-to-right))
+           (equal (equal (bidi-w7 classes strong1)
+                         (bidi-w7 classes strong2))
+                  t))
+  :induct (w7-two-induction classes strong1 strong2)
+  :expand ((bidi-w7 classes strong1)
+           (bidi-w7 classes strong2))
+  :enable w7-two-induction)
+
+(local
+ (define w7-at-induction ((n natp) classes outside st strong)
+   (b* (((when (or (zp n)
+                   (endp classes)))
+         (list outside st strong))
+        (class (bidi-class-fix (car classes)))
+        (strong (bidi-class-case class
+                                 :left-to-right class
+                                 :right-to-left class
+                                 :otherwise (bidi-class-fix strong))))
+     (w7-at-induction (- n 1)
+                      (cdr classes)
+                      (cdr outside)
+                      (bidi-scan-step st (car outside) (car classes) 2)
+                      strong))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel bidi-class-kind-of-w7-state-when-free
+  (implies (and (bidi-scan-ok classes outside st 2)
+                (strong-relation st strong)
+                (equal (scan-at n classes outside st 2) :free))
+           (equal (bidi-class-kind (w7-state n classes strong))
+                  :left-to-right))
+  :induct (w7-at-induction n classes outside st strong)
+  :expand ((:free (st) (bidi-scan-ok classes outside st 2))
+           (:free (st) (scan-at n classes outside st 2))
+           (w7-state n classes strong))
+  :enable (w7-at-induction
+           strong-relation))
+
+(defrulel bidi-class-kind-of-nth-of-bidi-w7
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (equal (bidi-class-kind (nth n (bidi-w7 classes strong)))
+                  (bidi-class-kind (nth n classes))))
+  :induct (w7-state n classes strong)
+  :expand (bidi-w7 classes strong)
+  :enable (w7-state nth bidi-window-start-kind-p acl2::default-car))
+
+(defrulel bidi-window-of-bidi-w7
+  (implies (and (bidi-scan-ok classes outside :free 2)
+                (bidi-window-marks-p n m outside (len classes))
+                (equal (bidi-class-kind strong) :left-to-right))
+           (equal (bidi-window n m outside (bidi-w7 classes strong))
+                  (bidi-w7 (bidi-window n m outside classes) strong)))
+  :enable (bidi-window
+           bidi-window-marks-p
+           strong-relation
+           nfix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The theorems of this book.
 
 ; This theorem does not name the class L in its conclusion:
@@ -688,4 +1533,33 @@
 (defrule bidi-roles-neutral-p-of-bidi-resolve-weak-types
   (implies (bidi-roles-neutral-p roles classes)
            (bidi-roles-neutral-p roles (bidi-resolve-weak-types classes sos)))
+  :enable bidi-resolve-weak-types)
+
+; Rules W1 to W7 do in a window what they do to the window alone.
+
+(defruled bidi-window-of-bidi-resolve-weak-types
+  (implies (and (bidi-scan-ok classes outside :free 0)
+                (bidi-window-marks-p n m outside (len classes))
+                (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+                (equal sos (bidi-class-left-to-right)))
+           (equal (bidi-window n m outside
+                               (bidi-resolve-weak-types classes sos))
+                  (bidi-resolve-weak-types (bidi-window n m outside classes)
+                                           sos)))
+  :enable (bidi-resolve-weak-types
+           w1-relation
+           strong-relation
+           w4-relation
+           w5-relation))
+
+; The first class of a window stays one of R, AL and AN, and is not AL.
+
+(defruled bidi-window-start-kind-p-of-nth-of-bidi-resolve-weak-types
+  (implies (bidi-window-start-kind-p (bidi-class-kind (nth n classes)))
+           (and (bidi-window-start-kind-p
+                 (bidi-class-kind
+                  (nth n (bidi-resolve-weak-types classes sos))))
+                (not (equal (bidi-class-kind
+                             (nth n (bidi-resolve-weak-types classes sos)))
+                            :arabic-letter))))
   :enable bidi-resolve-weak-types)
