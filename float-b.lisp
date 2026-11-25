@@ -400,7 +400,44 @@
   #+acl2-loop-only
   (constrained-df-rationalize (from-df x))
   #-acl2-loop-only
-  (the rational (rationalize x)))
+
+; Here, we originally returned (the rational (rationalize x)).  But a CCL bug
+; led to unsoundness because of a violation of the identity "(float
+; (rationalize x) x) == x" specified in the CL HyperSpec
+; (http://www.lispworks.com/documentation/HyperSpec/Body/f_ration.htm).
+; Immediately below is a fix (including comments) from AI -- except that AI
+; omitted the wrapper (the rational ...) but we include it here, in case that
+; is useful for any type inference that might be done by ACL2.  This seems like
+; a reasonably inexpensive check to make on rationalize, so we do not restrict
+; it to CCL, in case other Lisps have such a problem.  Because we have vetted
+; this fix, we do not use our usual "<<Start AI fix" marker.
+
+  (the rational
+
+; The axiom to-df-of-df-rationalize, below, requires (to-df (df-rationalize
+; x)) = x, where the raw to-df is (float _ 0.0D0).  The HyperSpec promises
+; that (float (rationalize x) x) = x, but some host Lisps do not convert
+; ratios to the nearest double-float, which can break that identity.  For
+; example, in CCL 1.14 (and see Clozure/ccl issues #390 and #747):
+
+;   (let ((d 1.2114210745802487D-17)) (= (float (rationalize d) d) d)) ; NIL
+
+; and thus nil was provable using to-dfp-of-rize:
+
+;   (defconst *x* 1965643074970597/162259276829213363391578010288128)
+;   (thm nil :hints (("Goal" :use (:instance to-dfp-of-rize (x *x*)))))
+
+; So we check the identity and, when it fails, return the exact rational value
+; of x instead.  That value is m/2^k with |m| < 2^53, so its conversion back to
+; a double-float involves no rounding; in CCL 1.14, (float (rational x) 0.0D0)
+; = x held for all 306,295 doubles tested, including subnormals and the
+; neighbors of every power of 2.
+
+       (let ((r (rationalize x)))
+         (declare (type rational r))
+         (if (= (float r 0.0D0) x)
+             r
+           (rational x)))))
 
 (defthm rationalp-df-rationalize
    (rationalp (df-rationalize x))

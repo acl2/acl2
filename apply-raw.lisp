@@ -1218,15 +1218,14 @@
       (setf (cdr last) new-alist))
     line))
 
-(defun invalidate-some-cl-cache-lines (flg wrld)
+(defun invalidate-some-cl-cache-lines (flg)
 
-; Flg is either EXTENSION or RETRACTION.  Wrld is the about-to-be-installed
-; world. We scan down the lines in the *cl-cache* and destructively modify the
-; :status fields of certain lines.  In particular, when flg is EXTENSION, we
-; visit every :BAD line and set it to :UNKNOWN.  When flg is RETRACTION, we
-; visit every :GOOD line and set it to :UNKNOWN unless the line's
-; :absolute-event-number is less than or equal to the greatest
-; absolute-event-number in the new current world.  We return nil.
+; Flg is either EXTENSION or RETRACTION.  We scan down the lines in the
+; *cl-cache* and destructively modify the :status fields of certain lines.  In
+; particular, when flg is EXTENSION, we visit every :BAD line and set it to
+; :UNKNOWN.  When flg is RETRACTION, we visit every :GOOD line and set it to
+; :UNKNOWN unless the line's :absolute-event-number is less than or equal to
+; the greatest absolute-event-number in the new current world.  We return nil.
 
 ; An earlier version of this function failed to correctly handle a full cache.
 ; Generally, the ``alist'' component of the cache is a circular list of the
@@ -1263,9 +1262,6 @@
   (and (consp *cl-cache*)
        (let ((cl-cache *cl-cache*)
              (lines (access cl-cache *cl-cache* :alist))
-             (evno (if (eq flg 'RETRACTION)
-                       (max-absolute-event-number wrld)
-                       nil))
              (size (access cl-cache *cl-cache* :size)))
 
 ; We temporarily clear the cache in case we're interrupted.

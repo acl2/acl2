@@ -21675,6 +21675,15 @@
                      (remove1-eq var known-dfs))
                     (t known-dfs)))))))
 
+(defun vars-of-type-double-float-in-var-tuples (twvts)
+  (cond ((endp twvts) nil)
+        (t (let ((tuple (car twvts)))
+             (cond
+              ((eq (cadr tuple) 'double-float)
+               (cons (car tuple)
+                     (vars-of-type-double-float-in-var-tuples (cdr twvts))))
+              (t (vars-of-type-double-float-in-var-tuples (cdr twvts))))))))
+
 (defun bad-dfs-in-out (arg2 arg3 wrld)
 
 ; This function supports translation of a form (return-last 'ec-call1-raw arg2
@@ -24573,7 +24582,7 @@
 ; In this case, parse is the error msg.
           (trans-er+? cform x ctx "~@0" parse))
          ((eq (car parse) 'FOR)
-          (mv-let (vsts untilc whenc op lobodyc)
+          (mv-let (vsts untilc whenc op lobodyc saved-known-dfs)
 
 ; vsts = a list of 1 or more vst tuples, each of the form (var spec target).
 ;        where var is a ``variable'', spec is the ``type spec'' or T, and
@@ -24593,6 +24602,7 @@
                 (nth 3 parse) ; whenc
                 (nth 4 parse) ; op
                 (nth 5 parse) ; bodyc
+                known-dfs
                 )
             (cond
              ((and whenc (or (eq op 'ALWAYS) (eq op 'THEREIS)))
@@ -24614,6 +24624,16 @@
 ; type-guard-wrt-LOOP$-IVARS target-thing), and go read the comment in
 ; translate-vsts for a precise description!
 
+                (df-vars ; ignored -- only error-checking here
+                 (let ((vars (vars-of-type-double-float-in-var-tuples tvsts)))
+                   (if vars
+                       (trans-er+? cform x ctx
+                                   "It is illegal to specify OF-TYPE ~
+                                    DOUBLE-FLOAT for an iteration variable of ~
+                                    a FOR loop$ expression, as was done for ~
+                                    ~&0."
+                                   vars)
+                     (trans-value nil))))
                 (known-dfs
                  (trans-value
                   (adjust-known-dfs-for-var-tuples tvsts known-dfs)))
@@ -24809,7 +24829,7 @@
                       lobodyc lobody-free-vars))))
                   nil
                   stobjs-out-simple ; only DO returns stobj or multiple values
-                  bindings known-stobjs known-dfs flet-alist
+                  bindings known-stobjs saved-known-dfs flet-alist
                   cform ctx wrld state-vars)))))))
          (t ; (eq (car parse) 'DO)
           (mv-let (wvts mform values do-bodyc fin-bodyc finp)

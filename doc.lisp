@@ -107790,12 +107790,6 @@ Bug Fixes From AI via Eric Smith
   behaviors.  See [community-books] directory
   [30m[47msystem/tests/untouchables/[0m[0m.
 
-  (CCL only) Added a workaround from AI for unsoundnesss involving
-  [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |
-  https://github.com/Clozure/ccl/issues/733}, as described in a
-  comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
-  [30m[47macl2.lisp[0m[0m.
-
   Fixed a bug in the maintenance of the compiled lambda cache related
   to undoing.  By using a quoted lambda containing an undefined
   function it was possible to produce a cache line with [30m[47m:status
@@ -107824,6 +107818,54 @@ Bug Fixes From AI via Eric Smith
   note invariant-risk for [30m[47mf[0m[0m, because existing [program]-mode callers
   of [30m[47mf[0m[0m will already have *1* functions (see [evaluation]) that fail
   to account for invariant-risk.
+
+  Prohibit [for-loop$] iteration variables from being declared [30m[47mOF-TYPE[0m[0m
+  [30m[47m[double-float][0m[0m, as in [30m[47m(loop$ for y of-type double-float in x ...)[0m[0m.
+  This prohibition fixes a soundness bug, and it is reasonable since
+  you can't use recursion to iterate that way, since [df]s are not
+  allowed in lists.  See [community-book]
+  [30m[47msystem/tests/for-loop-df-variables.lisp[0m[0m.
+
+  (CCL only) Added a workaround from AI for unsoundnesss involving
+  [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |
+  https://github.com/Clozure/ccl/issues/733}, as described in a
+  comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
+  [30m[47macl2.lisp[0m[0m.
+
+  (CCL only) Worked around the following CCL bugs using suggestions
+  from AI that were passed along by Stephen Westfold, who created
+  these CCL Issues.  These bugs all led to unsoundness of ACL2.
+
+    * CCL Issue #747 (fixed in November 2026): ``(float (rationalize x) x)
+      is not x: ratio-to-float conversion is not correctly rounded'';
+      see discussion in ACL2 source function [30m[47mdf-rationalize[0m[0m
+
+    * CCL Issue #748: ``float of an integer just below 2^1024 returns
+      infinity instead of signalling floating-point-overflow''; see
+      ``AI fix 6'' in ACL2 source file [30m[47maxioms.lisp[0m[0m and
+      [community-book]
+      [30m[47msystem/tests/to-df-overflow-infinity-ccl-only.lisp[0m[0m
+
+    * CCL Issue #749: ``(member #c(1 2)) and (eql #c(1 2)) types contain
+      other complex numbers, such as #c(1 1)''; see ``AI fix 2'' in
+      ACL2 source file [30m[47macl2.lisp[0m[0m and see [community-book]
+      [30m[47msystem/tests/ccl-member-complex-type-ccl-only.lisp[0m[0m
+
+    * CCL Issue #750: ``A local function declared INLINE is replaced by a
+      global inline function of the same name''; see ``AI fix 3'' in
+      ACL2 source file [30m[47macl2.lisp[0m[0m and see [community-book]
+      [30m[47msystem/tests/ccl-flet-inline-global-body-ccl-only.lisp[0m[0m
+
+    * CCL Issue #751: ``With *print-escape* nil, *print-case* :downcase or
+      :capitalize doubles backslashes in symbol names''; see ``AI fix
+      4'' in ACL2 source file [30m[47macl2.lisp[0m[0m and [community-books]
+      [30m[47msystem/tests/ccl-prin1-print-escape-nil-backslash.lisp[0m[0m and
+      [30m[47msystem/tests/princ-downcase-backslash-ccl-only.lisp[0m[0m
+
+    * CCL Issue #754: ``After a SATISFIES predicate is redefined, TYPEP
+      still uses the old definition''; see ``AI fix 5'' in ACL2
+      source file [30m[47macl2.lisp[0m[0m and [community-book]
+      [30m[47msystem/tests/ccl-satisfies-type-cache-bug.lisp[0m[0m
 
 
 Other Bug Fixes
@@ -107937,6 +107979,23 @@ Other Bug Fixes
   Fixed a soundness bug caused by permitting [30m[47m[ec-call][0m[0m to be used with
   a function that is locally bound by [30m[47m[flet][0m[0m.  This now causes an
   error.  See [community-book] [30m[47msystem/tests/ec-call-under-flet.lisp[0m[0m.
+
+  Fixed a scoping bug involving [for-loop$] expressions and [df]s.  In
+  general, the iteration variable is not a [df].  However, if an
+  iteration variable shadows a variable that is a df outside the
+  [for-loop$] expression, then that variable should remain a df in
+  the target of that expression.  Here is an example.
+
+    (include-book \"projects/apply/top\" :dir :system)
+
+    (defun list-a-df (x)
+      (declare (xargs :dfs (x)))
+      (list (from-df x)))
+
+    ; The following is legal, but it failed in ACL2  8.7 because v was removed as
+    ; a df before (list-a-df v) was translated:
+    (let ((v (to-df 3))) ; hence v is a df
+      (loop$ for v in (list-a-df v) collect v))
 
 
 Changes at the System Level

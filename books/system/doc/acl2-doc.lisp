@@ -110907,12 +110907,6 @@ it."
  This fixes several unsound behaviors.  See @(see community-books) directory
  @('system/tests/untouchables/').</p>
 
- <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
- truncate) and related functions, due to a <a
- href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
- described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
- ACL2 source file @('acl2.lisp').</p>
-
  <p>Fixed a bug in the maintenance of the compiled lambda cache related to
  undoing.  By using a quoted lambda containing an undefined function it was
  possible to produce a cache line with @(':status :GOOD) even if the lambda
@@ -110939,6 +110933,57 @@ it."
  @('f'), because existing @(see program)-mode callers of @('f') will already
  have *1* functions (see @(see evaluation)) that fail to account for
  invariant-risk.</p>
+
+ <p>Prohibit @(see for-loop$) iteration variables from being declared
+ @('OF-TYPE') @(tsee DOUBLE-FLOAT), as in @('(loop$ for y of-type double-float
+ in x ...)').  This prohibition fixes a soundness bug, and it is reasonable
+ since you can't use recursion to iterate that way, since @(see df)s are not
+ allowed in lists.  See @(see community-book)
+ @('system/tests/for-loop-df-variables.lisp').</p>
+
+ <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
+ truncate) and related functions, due to a <a
+ href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
+ described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
+ ACL2 source file @('acl2.lisp').</p>
+
+ <p>(CCL only) Worked around the following CCL bugs using suggestions from AI
+ that were passed along by Stephen Westfold, who created these CCL Issues.
+ These bugs all led to unsoundness of ACL2.</p>
+
+ <ul>
+
+ <li>CCL Issue #747 (fixed in November 2026): &ldquo;(float (rationalize x) x)
+ is not x: ratio-to-float conversion is not correctly rounded&rdquo;; see
+ discussion in ACL2 source function @('df-rationalize')</li>
+
+ <li>CCL Issue #748: &ldquo;float of an integer just below 2^1024 returns
+ infinity instead of signalling floating-point-overflow&rdquo;; see &ldquo;AI
+ fix 6&rdquo; in ACL2 source file @('axioms.lisp') and @(see community-book)
+ @('system/tests/to-df-overflow-infinity-ccl-only.lisp')</li>
+
+ <li>CCL Issue #749: &ldquo;(member #c(1 2)) and (eql #c(1 2)) types contain
+ other complex numbers, such as #c(1 1)&rdquo;; see &ldquo;AI
+ fix 2&rdquo; in ACL2 source file @('acl2.lisp') and see @(see
+ community-book) @('system/tests/ccl-member-complex-type-ccl-only.lisp')</li>
+
+ <li>CCL Issue #750: &ldquo;A local function declared INLINE is replaced by a
+ global inline function of the same name&rdquo;; see &ldquo;AI fix 3&rdquo; in
+ ACL2 source file @('acl2.lisp') and see @(see community-book)
+ @('system/tests/ccl-flet-inline-global-body-ccl-only.lisp')</li>
+
+ <li>CCL Issue #751: &ldquo;With *print-escape* nil, *print-case* :downcase or
+ :capitalize doubles backslashes in symbol names&rdquo;; see &ldquo;AI fix
+ 4&rdquo; in ACL2 source file @('acl2.lisp') and @(see community-books)
+ @('system/tests/ccl-prin1-print-escape-nil-backslash.lisp') and
+ @('system/tests/princ-downcase-backslash-ccl-only.lisp')</li>
+
+ <li>CCL Issue #754: &ldquo;After a SATISFIES predicate is redefined, TYPEP
+ still uses the old definition&rdquo;; see &ldquo;AI fix
+ 5&rdquo; in ACL2 source file @('acl2.lisp') and @(see community-book)
+ @('system/tests/ccl-satisfies-type-cache-bug.lisp')</li>
+
+ </ul>
 
  <h3>Other Bug Fixes</h3>
 
@@ -111052,6 +111097,25 @@ it."
  <p>Fixed a soundness bug caused by permitting @(tsee ec-call) to be used with
  a function that is locally bound by @(tsee flet).  This now causes an error.
  See @(see community-book) @('system/tests/ec-call-under-flet.lisp').</p>
+
+ <p>Fixed a scoping bug involving @(see for-loop$) expressions and @(see df)s.
+ In general, the iteration variable is not a @(see df).  However, if an
+ iteration variable shadows a variable that is a df outside the @(see
+ for-loop$) expression, then that variable should remain a df in the target of
+ that expression.  Here is an example.</p>
+
+ @({
+ (include-book \"projects/apply/top\" :dir :system)
+
+ (defun list-a-df (x)
+   (declare (xargs :dfs (x)))
+   (list (from-df x)))
+
+ ; The following is legal, but it failed in ACL2  8.7 because v was removed as
+ ; a df before (list-a-df v) was translated:
+ (let ((v (to-df 3))) ; hence v is a df
+   (loop$ for v in (list-a-df v) collect v))
+ })
 
  <h3>Changes at the System Level</h3>
 

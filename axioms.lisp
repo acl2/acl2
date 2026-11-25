@@ -3990,6 +3990,39 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::member-equal
         acl2_*1*_acl2::brr-data-mirror))
 
+; The next form was written by AI (including comments), for use in to-df.
+; <<Start AI fix 6>>
+
+#+(and ccl (not acl2-loop-only))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+
+(declaim (inline ccl-to-df-check))
+(defun ccl-to-df-check (f x)
+
+; CCL (at least through Version 1.14) can return an infinity, instead of
+; signaling floating-point-overflow, when converting a rational just below
+; 2^1024 in magnitude to a double-float; see
+; https://github.com/Clozure/ccl/issues/748.  For example:
+
+;   ? (float (1- (expt 2 1024)) 0d0)
+;   1D++0
+
+; Since (rational +infinity) is 2^1024 in CCL, such a result let us prove nil,
+; e.g., by evaluating (df/ 1 (to-df r)) to 0.  So we signal the overflow that
+; the conversion should have signaled, as SBCL does and as CCL itself does for
+; 2^1024 and beyond.  Here f is the result of (float x 0.0D0).
+
+  (declare (type double-float f))
+  (if (and (<= f most-positive-double-float)
+           (>= f most-negative-double-float))
+      f
+    (error 'floating-point-overflow
+           :operation 'float
+           :operands (list x 0.0D0))))
+)
+
+; <<End AI fix 6>>
+
 #-acl2-loop-only
 (defmacro to-df (x)
 
@@ -4034,16 +4067,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Fortunately, even though that's unfortunate, it doesn't seem to be important
 ; for our purposes.
 
+; AI discovered that CCL can return an infinite value; see
+; books/system/tests/ratio-overflow-infinity-ccl-only.lisp.  So it suggested
+; adding the #+ccl code below; see also ccl-to-df-check.
+
   (cond ((rationalp x) ; compute suitable constant at compile time
-         (float x 0.0D0))
+         #-ccl (float x 0.0D0)
+         #+ccl (ccl-to-df-check (float x 0.0D0) x))
         ((and (consp x)
               (eq (car x) 'quote)
               (consp (cdr x))
               (rationalp (cadr x))
               (null (cddr x)))
-         (float (cadr x) 0.0D0))
+         #-ccl (float (cadr x) 0.0D0)
+         #+ccl (ccl-to-df-check (float (cadr x) 0.0D0) (cadr x)))
         (t
-         `(float ,x 0.0D0))))
+         #-ccl `(float ,x 0.0D0)
+         #+ccl (let ((var (gensym "TO-DF-ARG")))
+                 `(let ((,var ,x))
+                    (ccl-to-df-check (float ,var 0.0D0) ,var))))))
 
 (defun boolean-listp (lst)
   (declare (xargs :guard t))
