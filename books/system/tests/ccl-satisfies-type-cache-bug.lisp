@@ -3,6 +3,11 @@
 ; before ACL2 Version 8.8.  See CCL Issue 754
 ; (https://github.com/Clozure/ccl/issues/754).
 
+; Matt K. mod: The defstobj below is not accepted by ACL2(r).  (Technical
+; explanation: source function add-literal gives special treatment to rationalp
+; that it does not give to realp.  That may change.)
+; cert_param: (non-acl2r)
+
 (in-package "ACL2")
 
 (encapsulate ()
