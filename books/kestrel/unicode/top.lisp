@@ -380,7 +380,11 @@
       for @(tsee bidi-rule-p), @(tsee bidi-rule-strict-p)
       and @(tsee bidi-rule-wide-p),
       which loads @('bidi-class'), @('bidi-brackets')
-      and @('right-to-left-free'), and not the algorithm.")
+      and @('right-to-left-free'), and not the algorithm.
+      @('kestrel/unicode/bidi-rule-display')
+      for @(tsee bidi-name-display) and @(tsee bidi-name-read),
+      which loads the rules of the algorithm up to the bracket pairs
+      (@('bidi-neutral-types')) and not the rest.")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc),

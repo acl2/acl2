@@ -15,6 +15,7 @@
 (include-book "bidi-guarded-theorem")
 (include-book "bidi-self-contained")
 (include-book "bidi-rule")
+(include-book "bidi-rule-display")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +189,11 @@
      (see @(see bidi-rule)).
      Those predicates look only at the classes of the characters.
      That the two derived rules keep any two different labels
-     from being displayed alike is not proved yet."))
+     from being displayed alike is not proved yet.
+     For the wider of the two, a part of the proof is done:
+     the display of a name is said directly,
+     and that display is proved to be different for different names
+     (see @(see bidi-rule-display))."))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
