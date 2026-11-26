@@ -291,7 +291,13 @@
       and the examples that show that the Bidi Rule alone
       does not prevent that.
       The two rules are not in a specification,
-      and that they do what the search suggests is not proved yet."))
+      and that they do what the search suggests is not proved yet.
+      For the wide one, how a name is displayed
+      in a paragraph from left to right is also said directly,
+      with the proof that this display is different
+      for different names and the tests that it is
+      the display of the algorithm:
+      see @(see bidi-rule-display)."))
    (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")
