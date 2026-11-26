@@ -173,7 +173,6 @@
    (type-spec :signed (keyword-uscores-case
                        (type-spec-signed->uscores type-spec) :none))
    (type-spec :int128 nil)
-   (type-spec :locase-float80 nil)
    (type-spec :locase-float128 nil)
    (type-spec :float16 nil)
    (type-spec :float16x nil)
@@ -184,7 +183,6 @@
    (type-spec :float128 nil)
    (type-spec :float128x nil)
    (type-spec :bf16 nil)
-   (type-spec :builtin-va-list nil)
    (type-spec :struct-empty nil)
    (type-spec :typeof-expr nil)
    (type-spec :typeof-type nil)

@@ -392,14 +392,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-spec-list-locase-float80-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('__float80')."
-  (equal (type-spec-list-fix tyspecs)
-         (list (type-spec-locase-float80))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define type-spec-list-locase-float128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form @('__float128')."
@@ -530,23 +522,6 @@
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-long)
                                   (type-spec-double)
-                                  (type-spec-complex (keyword-uscores-both))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-locase-float80-complex-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('__float80 _Complex') or any permutation of it,
-          including the (double) underscore variations of @('_Complex')."
-  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-locase-float80)
-                                  (type-spec-complex (keyword-uscores-none))))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-locase-float80)
-                                  (type-spec-complex (keyword-uscores-start))))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-locase-float80)
                                   (type-spec-complex (keyword-uscores-both))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -706,26 +681,19 @@
 
 (define type-spec-list-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('__int128') or
-          @('__int128_t')."
-  (or (equal (type-spec-list-fix tyspecs)
-             (list (type-spec-int128 nil)))
-      (equal (type-spec-list-fix tyspecs)
-             (list (type-spec-int128 t)))))
+  :short "Check if a list of type specifiers has the form @('__int128')."
+  (equal (type-spec-list-fix tyspecs)
+         (list (type-spec-int128))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-spec-list-unsigned-int128-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
-          @('unsigned __int128') or @('__int128 unsigned'),
-          including the @('__int128_t') variant of @('__int128')."
-  (or (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-unsigned)
-                                  (type-spec-int128 nil)))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-unsigned)
-                                  (type-spec-int128 t)))))
+          @('unsigned __int128') or @('__int128 unsigned')."
+  (type-spec-list-permp (type-spec-list-fix tyspecs)
+                        (list (type-spec-unsigned)
+                              (type-spec-int128))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -733,23 +701,13 @@
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('signed __int128') or @('__int128 signed'),
-          including the GCC underscore variations of @('signed')
-          the @('__int128_t') variant of @('__int128')."
+          including the GCC underscore variations of @('signed')."
   (or (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-none))
-                                  (type-spec-int128 nil)))
+                                  (type-spec-int128)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-start))
-                                  (type-spec-int128 nil)))
+                                  (type-spec-int128)))
       (type-spec-list-permp (type-spec-list-fix tyspecs)
                             (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int128 nil)))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-signed (keyword-uscores-none))
-                                  (type-spec-int128 t)))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-signed (keyword-uscores-start))
-                                  (type-spec-int128 t)))
-      (type-spec-list-permp (type-spec-list-fix tyspecs)
-                            (list (type-spec-signed (keyword-uscores-both))
-                                  (type-spec-int128 t)))))
+                                  (type-spec-int128)))))
