@@ -16,6 +16,7 @@
 (include-book "bidi-self-contained")
 (include-book "bidi-rule")
 (include-book "bidi-rule-display")
+(include-book "bidi-rule-display-theorem")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,12 +189,16 @@
      for which a search finds no two labels that are displayed alike
      (see @(see bidi-rule)).
      Those predicates look only at the classes of the characters.
-     That the two derived rules keep any two different labels
-     from being displayed alike is not proved yet.
-     For the wider of the two, a part of the proof is done:
-     the display of a name is said directly,
-     and that display is proved to be different for different names
-     (see @(see bidi-rule-display))."))
+     For the wider of the two, in a paragraph from left to right,
+     it is proved that no two different names are displayed alike:
+     the display of a name is computed without the rules
+     of the algorithm,
+     that display is proved to be different for different names
+     (see @(see bidi-rule-display)),
+     and the algorithm is proved to give it
+     (see @(see bidi-rule-display-theorem)).
+     For the stricter one in a paragraph from right to left,
+     that is not proved yet."))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types

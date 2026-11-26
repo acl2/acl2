@@ -8,15 +8,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Tests of the display of a name said directly
-; and of the way back (book bidi-rule-display.lisp).
+; Tests of the display of a name computed without the rules
+; of the algorithm, and of the way back (book bidi-rule-display.lisp).
 ;
 ; The first part has examples.
 ;
-; The second part compares the display said directly
+; The second part compares that display
 ; with the display of the Unicode Bidirectional Algorithm.
 ; That the two are the same for every name that satisfies the wide rule,
-; in a paragraph from left to right, is not proved: what is known is here.
+; in a paragraph from left to right, is a theorem
+; (book bidi-rule-display-theorem.lisp); the search was written
+; before the proof, and is kept as a test of the functions.
 ; A search goes through every list, up to a length,
 ; of the characters of a small set; for each list that satisfies the rule
 ; it checks that the two displays are the same
@@ -59,7 +61,8 @@
 ;   sheva (a Hebrew point)  U+05B0                    NSM
 ;
 ; In each example of the first group the name satisfies the wide rule,
-; the display said directly is the display of the algorithm
+; the display that BIDI-NAME-DISPLAY computes
+; is the display of the algorithm
 ; in a paragraph from left to right, and the way back gives the name.
 
 (defmacro bidi-rule-display-example (name display)
@@ -126,8 +129,82 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+; The levels and the classes after the weak rules,
+; computed without the rules of the algorithm
+; (BIDI-NAME-LEVELS, and BIDI-CLUSTERS-WEAK-CLASSES
+; of the book bidi-rule-display-weak.lisp, which the algorithm loads).
+; In each example the name satisfies the wide rule,
+; and the levels and the classes are those of the algorithm
+; in a paragraph from left to right.
+
+(defmacro bidi-rule-levels-example (name levels kinds)
+  `(assert-event
+    (b* ((name ,name)
+         (chars (code-points-to-bidi-chars name *v17*))
+         (classes (bidi-clusters-weak-classes (bidi-clusters name *v17*)
+                                              nil
+                                              nil
+                                              *v17*)))
+      (and (bidi-rule-wide-p name *v17*)
+           (equal (bidi-name-levels name *v17*) ,levels)
+           (equal (bidi-paragraph-all-levels chars 0) ,levels)
+           (equal (bidi-class-list-kinds classes) ,kinds)
+           (equal (bidi-resolve-weak-types (bidi-char-list-classes chars)
+                                           (bidi-class-left-to-right))
+                  classes)))))
+
+(define bidi-class-list-kinds ((classes bidi-class-listp))
+  :returns (kinds symbol-listp)
+  (if (endp classes)
+      nil
+    (cons (bidi-class-kind (car classes))
+          (bidi-class-list-kinds (cdr classes))))
+  :hooks nil)
+
+; The example of the documentation.  The sheva is a mark of the cluster
+; of the asterisk; the comma joins the two digits, the hyphens do not.
+
+(bidi-rule-levels-example
+ '(#x2A #x5B0 #x5D0 #x31 #x2C #x32 #x2D #x5D1 #x2D #x25)
+ '(0 0 1 2 2 2 1 1 0 0)
+ '(:other-neutral :other-neutral :right-to-left
+   :european-number :european-number :european-number
+   :other-neutral :right-to-left :other-neutral :other-neutral))
+
+; After an Arabic letter the European digits count as Arabic digits,
+; and the hyphen does not join them.
+
+(bidi-rule-levels-example '(#x627 #x31 #x2D #x32)
+                          '(1 2 1 2)
+                          '(:right-to-left :arabic-number
+                            :other-neutral :arabic-number))
+
+; A sheva at the start of the name gets the class L.
+; A bracket pair with a digit inside is in the middle part;
+; one with nothing but an asterisk inside is after it.
+
+(bidi-rule-levels-example '(#x5B0 #x5D0 #x28 #x31 #x29 #x2A)
+                          '(0 1 1 2 1 0)
+                          '(:left-to-right :right-to-left :other-neutral
+                            :european-number :other-neutral :other-neutral))
+
+(bidi-rule-levels-example '(#x5D0 #x28 #x2A #x29)
+                          '(1 0 0 0)
+                          '(:right-to-left :other-neutral
+                            :other-neutral :other-neutral))
+
+; A comma with a mark is not alone in its cluster and joins nothing.
+
+(bidi-rule-levels-example '(#x5D0 #x31 #x2C #x5B0 #x32)
+                          '(1 2 1 1 2)
+                          '(:right-to-left :european-number :other-neutral
+                            :other-neutral :european-number))
+
+;;;;;;;;;;;;;;;;;;;;
+
 ; Names that do not satisfy the wide rule,
-; for which the display said directly is not the display of the algorithm.
+; for which the display that BIDI-NAME-DISPLAY computes
+; is not the display of the algorithm.
 
 ; A terminator next to a European digit: the algorithm makes it
 ; a part of the number [UAX #9, rule W5].
@@ -158,7 +235,7 @@
 
 ; Two names with both European and Arabic digits,
 ; which satisfy the other conditions of the wide rule.
-; They are displayed alike, by the algorithm and said directly,
+; They are displayed alike, by the algorithm and by BIDI-NAME-DISPLAY,
 ; so the way back cannot give both: it gives the second.
 
 (assert-event
@@ -180,7 +257,7 @@
 ; Go through the lists of a length, from an index on.
 ; Count the names (the lists that the keyword selects:
 ; see BIDI-RULE-TEST-LABEL-P in the tests of the Bidi Rule),
-; and those among them for which the display said directly
+; and those among them for which the display of BIDI-NAME-DISPLAY
 ; is not the display of the algorithm in a paragraph from left to right,
 ; or for which the way back does not give the name.
 

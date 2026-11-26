@@ -14,9 +14,11 @@
 ; The first part has examples of labels and of domain names.
 ;
 ; The second part is about labels that are displayed alike.
-; That the strict rule and the wide rule keep
-; two different labels from being displayed alike is not proved:
-; what is known is here.  For the Bidi Rule as it is written,
+; That the wide rule keeps two different names from being displayed alike
+; in a paragraph from left to right is proved
+; (book bidi-rule-display-theorem.lisp); for the strict rule
+; in a paragraph from right to left it is not, and what is known
+; is here.  For the Bidi Rule as it is written,
 ; and for the wide rule with each of its conditions dropped in turn,
 ; there are two labels that are displayed alike.
 ; For the strict rule and for the wide rule, a search finds none:

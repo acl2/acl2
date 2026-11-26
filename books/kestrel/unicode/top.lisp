@@ -384,7 +384,12 @@
       @('kestrel/unicode/bidi-rule-display')
       for @(tsee bidi-name-display) and @(tsee bidi-name-read),
       which loads the rules of the algorithm up to the bracket pairs
-      (@('bidi-neutral-types')) and not the rest.")
+      (@('bidi-neutral-types')) and not the rest.
+      @('kestrel/unicode/bidi-rule-display-theorem')
+      for the theorems that the algorithm displays a name
+      that satisfies @(tsee bidi-rule-wide-p)
+      as @(tsee bidi-name-display) says,
+      which loads the whole algorithm.")
     (xdoc::li
      "@('kestrel/unicode/normalization') for @(tsee nfd), @(tsee nfc),
       @(tsee nfkd) and @(tsee nfkc),

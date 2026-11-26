@@ -98,7 +98,9 @@
       and are displayed alike,
       in a paragraph of either direction:
       see below.
-      That there are none is not proved yet.")
+      That there are none is proved for a paragraph from left to right,
+      as a case of the theorem about the next predicate;
+      for a paragraph from right to left it is not proved yet.")
     (xdoc::li
      "@(tsee bidi-rule-wide-p) is a rule of this library,
       not of a specification.
@@ -110,25 +112,26 @@
       and it lets a terminator stand anywhere
       but next to a European digit.
       It is for a paragraph from left to right only.
-      A search finds no two names that satisfy this predicate
-      and are displayed alike in such a paragraph.
-      That there are none is not proved yet either,
-      but a part of the proof is done:
-      how such a name is displayed is said by a function
-      that does not go through the rules of the algorithm,
-      and that function is proved to give different displays
-      to different names (see @(see bidi-rule-display)).
-      That the algorithm displays the name so is tested, not proved."))
+      No two names that satisfy this predicate
+      are displayed alike in such a paragraph.
+      That is proved:
+      a function that does not go through the rules of the algorithm
+      gives the display of such a name;
+      it is proved to give different displays
+      to different names (see @(see bidi-rule-display)),
+      and the algorithm is proved to display the name
+      as the function says (see @(see bidi-rule-display-theorem))."))
    (xdoc::p
     "A label that satisfies @(tsee bidi-rule-strict-p)
      satisfies @(tsee bidi-rule-wide-p):
      see @(see bidi-rule-theorems).
      So the wide rule extends the strict one,
-     and a proof for the wide rule, in a paragraph from left to right,
-     will be a proof for both.")
+     and the theorem for the wide rule,
+     in a paragraph from left to right, is a theorem for both.")
    (xdoc::p
-    "For how the statement that is not proved could be written
-     as a theorem, and for what a proof would probably take,
+    "For how the proof goes,
+     and for the statement that is not proved yet,
+     about the strict rule in a paragraph from right to left,
      see @(see bidi-rule-proof-plan).")
    (xdoc::p
     "The searches are tests of this library,
@@ -651,7 +654,11 @@
      none displayed like another in either direction.")
    (xdoc::p
     "That no two labels of any length that satisfy this predicate
-     are displayed alike is not proved yet."))
+     are displayed alike is proved for a paragraph from left to right
+     (a label that satisfies this predicate satisfies
+     @(tsee bidi-rule-wide-p);
+     see @(see bidi-rule-display-theorem)).
+     For a paragraph from right to left it is not proved yet."))
   (and (bidi-rule-p label ver)
        (not (bidi-class-kind-present-p :european-terminator label ver))
        (not (bidi-class-kind-present-p :boundary-neutral label ver)))
@@ -911,7 +918,7 @@
    (xdoc::p
     "That no two names of any length that satisfy this rule
      are displayed alike, in a paragraph from left to right,
-     is not proved yet."))
+     is proved: see @(see bidi-rule-display-theorem)."))
   (and (bidi-rule-wide-code-points-p name ver)
        (or (not (bidi-right-to-left-label-p name ver))
            (and (not (bidi-class-kind-present-p :left-to-right name ver))
@@ -1081,24 +1088,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc bidi-rule-proof-plan
-  :short "A plan for the theorem that no two labels are displayed alike,
-          which is not proved."
+  :short "How it is proved that no two names that satisfy the wide rule
+          are displayed alike in a paragraph from left to right,
+          and a plan for the direction that is left."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This topic has no result.
-     It says how the statement
-     about @(tsee bidi-rule-strict-p) and @(tsee bidi-rule-wide-p)
-     that the searches support could be written as a theorem,
-     and what a proof of it would probably take.
-     The third of the four steps of the plan is done
-     (see @(see bidi-rule-display)); the other three are not.
-     The facts that the topic gives about the levels
-     were compared with the algorithm
-     on the names of the searches of up to five characters
+    "The first three of the four steps below are proved;
+     they are for @(tsee bidi-rule-wide-p)
+     in a paragraph from left to right.
+     The fourth, for @(tsee bidi-rule-strict-p)
+     in a paragraph from right to left, is not.
+     What this topic says about the fourth step
+     was compared with the algorithm
+     on the labels of the searches of up to five characters
      (see @(see bidi-rule)),
-     once, on 2026-11-25, outside the certified books.
-     None of them is proved.")
+     once, on 2026-11-25, outside the certified books.")
    (xdoc::h3 "The statements")
    (xdoc::p
     "For the wide rule, in a paragraph from left to right:")
@@ -1112,12 +1117,16 @@
     "         (equal (code-point-list-fix x)"
     "                (code-point-list-fix y)))")
    (xdoc::p
-    "Since a label that satisfies the strict rule satisfies the wide rule
+    "This is the theorem
+     @('bidi-display-is-one-to-one-when-bidi-rule-wide-p')
+     (see @(see bidi-rule-display-theorem)).
+     Since a label that satisfies the strict rule satisfies the wide rule
      (see @(see bidi-rule-theorems)),
-     this is also the statement for the strict rule in such a paragraph.
+     it is also a theorem about the strict rule in such a paragraph.
      For the strict rule in a paragraph from right to left,
      the statement is the same
-     with @(tsee bidi-rule-strict-p) and @(':right-to-left').
+     with @(tsee bidi-rule-strict-p) and @(':right-to-left');
+     that one is not proved.
      The third way of giving the direction of a paragraph,
      @(':first-strong'), is left out:
      the direction is then taken from the label itself,
@@ -1125,21 +1134,22 @@
      in paragraphs of different directions.")
    (xdoc::p
     "Here @(tsee bidi-display) is the text as it is displayed,
-     with every character kept and the mirrored ones replaced.
-     The theorems would be in a new book that loads the algorithm;
+     with every character kept and the mirrored ones replaced,
+     and the name is a paragraph by itself.
+     The theorems are in books that load the algorithm;
      the book of the rules does not.")
-   (xdoc::h3 "The plan: read the name back from its display")
+   (xdoc::h3 "The proof: read the name back from its display")
    (xdoc::p
     "A proof by cases on two names at once does not look practical.
-     The plan is to define a function from a display to a name,
-     and to prove that it gives back every name that satisfies the rule
+     The proof has a function from a display to a name,
+     and shows that it gives back every name that satisfies the rule
      from the display of that name.
      Two names with the same display are then the same name.
-     A left-to-right name is displayed as it is stored,
-     which is proved (see @(see bidi-rule-theorems)),
+     A left-to-right name is displayed as it is stored
+     (see @(see bidi-rule-theorems)),
      so the work is for the right-to-left names.
-     It has three steps for the wide rule
-     and a fourth for the other direction.")
+     It has three steps for the wide rule;
+     a fourth is for the other direction.")
    (xdoc::p
     "An example:
      the name is @('*'), a Hebrew point, alef, @('1'), @(','), @('2'),
@@ -1154,15 +1164,17 @@
      except that the number @('1,2') keeps its own order.")
    (xdoc::ol
     (xdoc::li
-     "<b>The levels, said directly.</b>
-      Define by a recursion on the classes of the characters
-      the level that each character of a right-to-left name gets
-      in a paragraph from left to right.
-      First each mark is given the class of the character before it
+     "<b>The levels, computed without the rules of the algorithm.</b>
+      The function @(tsee bidi-name-levels) gives the level
+      that each character of a right-to-left name gets
+      in a paragraph from left to right,
+      by a recursion on the classes of the characters.
+      Each mark goes with the character before it
       [UAX #9, rule W1].
-      A number is then a run of digits,
+      A number is a run of digits,
       and of single separators between two digits that rule W4 joins:
-      a separator of class @('ES') or @('CS')
+      a separator of class @('ES') (@('European_Separator'))
+      or @('CS') (@('Common_Separator'))
       between two European digits,
       and one of class @('CS') between two Arabic digits,
       where a European digit that follows an Arabic letter
@@ -1172,57 +1184,56 @@
       before the first right-to-left letter;
       level 1 from that letter to the last character that is a letter,
       a character of a number,
-      a bracket of a pair with a letter or a number inside,
+      a bracket of a pair with a letter or a digit inside,
       or a mark after such a bracket;
       and level 0 after that character.
-      This description gives the levels of the algorithm
-      for each of the 318,375 right-to-left names
-      of up to five characters of the search for the wide rule.
-      Then prove that the algorithm gives those levels,
-      rule by rule: W1 to W7, N0 to N2, I1, I2 and L1.
-      The books of the theorem about guarded segments
-      (see @(see bidi-guarded-segments-theorem))
-      go through the same rules for a plain text,
-      and have the frame of such a proof:
-      one isolating run sequence, a scan with a state,
-      the bracket pairs.
-      But they prove where the levels are 0,
-      and that a stretch of text gets the levels that it gets alone;
-      they do not say what the levels are.
-      This is the largest step.
-      The delicate rule is W2:
+      That the algorithm gives those levels is the theorem
+      @('bidi-paragraph-all-levels-when-bidi-rule-wide-p')
+      (see @(see bidi-rule-display-levels)).
+      Its proof follows the algorithm rule by rule.
+      The classes after the rules W1 to W7 are computed
+      and proved first (see @(see bidi-rule-display-weak)).
+      The delicate rule among those is W2:
       a European digit after an Arabic letter becomes an Arabic digit,
       and that changes which separators join two numbers,
       so alef, @('1'), @('-'), @('2') has one number
-      and the same with an Arabic letter in place of alef has two.")
+      and the same with an Arabic letter in place of alef has two.
+      The delicate rule after them is N0, on the bracket pairs:
+      it looks at what is inside a pair
+      after it has changed the brackets of the pairs before it.
+      The proof needed a fact about the pairs themselves,
+      that no two of them cross,
+      which is now the theorem
+      @('bidi-pairs-nested-p-of-bidi-bracket-pairs').
+      This is the largest step.")
     (xdoc::li
-     "<b>The display, said directly.</b>
+     "<b>The display, from those levels.</b>
       When the levels are only 0, 1 and 2,
       rule L2 puts a stretch of levels 1 and 2 in the opposite order
       and then puts each number back in its own order;
       rule L3 puts each mark after the character that it follows
       in the name;
       rule L4 replaces the mirrored characters of level 1.
-      The function @(tsee bidi-name-display) says that
-      (see @(see bidi-rule-display)).
-      What is left is to prove that, with the levels of the first step,
+      The function @(tsee bidi-name-display) computes that
+      (see @(see bidi-rule-display)),
+      and the theorem of @(see bidi-rule-display-order) says that,
+      with the levels of the first step,
       @(tsee bidi-arrange-with-levels) and rule L4
       give what that function gives.
       The theorem about a clean cut
       (see @(see bidi-clean-cut-display))
-      already separates the parts of level 0 at the two ends.
+      separates the parts of level 0 at the two ends.
       Rule L3 goes by the general category of a character,
       and the function by its class.
       The two agree on the characters
       that the wide rule allows in a right-to-left name:
       in the three versions, the characters of class @('NSM')
-      are combining marks, and the other combining marks
-      are of class @('L').
-      That was checked on the data files outside the certified books,
-      and has to become a theorem.")
+      (@('Nonspacing_Mark')) are combining marks,
+      and the other combining marks
+      are of class @('L') (@('Left_To_Right')).
+      That is the theorem of @(see bidi-combining-mark-class).")
     (xdoc::li
      "<b>The way back.</b>
-      This step is done.
       The function @(tsee bidi-name-read) reads a name back
       from a display,
       and it is proved to give back every name
@@ -1245,7 +1256,7 @@
       for those the function cannot tell which name it was.
       The other conditions are for the first two steps."))
    (xdoc::p
-    "The fourth step is the strict rule
+    "The fourth step, which is not done, is the strict rule
      in a paragraph from right to left.
      A right-to-left label that satisfies the strict rule
      begins with a letter and ends with a letter or a digit,
@@ -1264,30 +1275,20 @@
      That too is so for the 5,354 left-to-right labels
      of up to five characters of the second search for the strict rule,
      the one with letters of class @('L').")
-   (xdoc::h3 "Size and risks")
+   (xdoc::h3 "Size, and what the theorems do not cover")
    (xdoc::p
-    "The first two steps are of the kind of the proof
-     about guarded segments,
-     which has five books and some 6,000 lines,
-     and would probably be as large.
-     The third step, which is done,
-     is reasoning about lists, without the algorithm;
-     its book has some 2,400 lines.
-     The fourth is small beside them.")
+    "The first two steps have five books and some 6,300 lines.
+     The third is reasoning about lists, without the algorithm;
+     its book has some 2,500 lines.
+     The fourth would be small beside them.")
    (xdoc::p
-    "The third step holds for names of any length,
-     so no condition is missing for the way back.
-     The risk that is left is that the algorithm
-     does not display some longer name
-     as @(tsee bidi-name-display) says.
-     The tests compare the two on every name of up to five characters
-     over three sets of characters,
-     one of them with two kinds of brackets and a mark;
-     the same was done once for six characters,
-     outside the certified books.
-     A name on which the two differ would appear
-     in the first or the second step as a case that cannot be proved,
-     and the function or the rule would need to change.
-     Brackets inside brackets, deeper than six characters allow,
-     are where that is most likely."))
+    "The theorems hold for names of any length,
+     in each of the three versions of Unicode that the library has.
+     They are for a name that is a paragraph by itself,
+     in a paragraph from left to right.
+     They say nothing about a name inside a longer text
+     (for that, see @(see bidi-self-contained-segments)),
+     about a paragraph from right to left,
+     or about a paragraph that takes its direction
+     from its first strong character."))
   :parents (bidi-rule))
