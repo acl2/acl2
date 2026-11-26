@@ -21,7 +21,8 @@ import os, re, sys
 SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "unassisted")
 BOOKS = ["bitvec", "outer", "mmt", "scheme", "span", "add-dup",
          "add-arbitrary", "zero-subset", "connectivity"]
-DEFINERS = {"defun", "defund", "defthm", "defthmd", "defconst", "defmacro",
+DEFINERS = {"defun", "defund", "defthm", "defthmd", "defthm-prune", "defthmd-prune",
+            "defconst", "defmacro",
             "define", "defun-nx", "deflabel", "deftheory", "defun-sk",
             "defchoose", "defequiv"}
 DELIMS = set(" \t\n\r()'`,\";")
