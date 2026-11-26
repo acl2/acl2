@@ -125,7 +125,13 @@
      @('crate'), @('self'), @('super'), or @('Self').
      And it enforces [SC15], which depends on the edition too:
      in edition 2024, a @('#') immediately followed by
-     another @('#') or by a string literal is rejected.")
+     another @('#') or by a string literal is rejected.
+     These are the two side conditions that the lexer does not check:
+     the lexer accepts an input that violates them,
+     and tokenization rejects it.
+     Their declarative form is @(tsee tokenization-conditions-okp),
+     which @(tsee lexing-in-edition-okp) conjoins with
+     the specification of the lexer, @(tsee lexing-okp).")
    (xdoc::p
     "Since Rust source is Unicode,
      the text stored in lexeme and token fixtype values
@@ -314,7 +320,11 @@
      and the token is marked as raw.
      The side condition [SC5] is enforced here:
      a raw identifier must not be
-     @('crate'), @('self'), @('super'), or @('Self').
+     @('crate'), @('self'), @('super'), or @('Self')
+     (see @(tsee lexeme-cst-raw-name-okp)
+     for the declarative form of this condition).
+     The lexer accepts such a raw identifier;
+     it is rejected here, in every edition.
      (Note that @('r#_') is already excluded by the grammar:
      a lone underscore is not an @('identifier-or-keyword').)
      Raw keywords like @('r#fn') are identifiers, never keywords,
@@ -343,7 +353,10 @@
      The placeholder lifetime @(''_') has name @('\"_\"').
      The side condition [SC5] is enforced here for raw lifetimes:
      the name must not be
-     @('crate'), @('self'), @('super'), or @('Self')."))
+     @('crate'), @('self'), @('super'), or @('Self')
+     (see @(tsee lexeme-cst-raw-name-okp)).
+     The lexer accepts such a raw lifetime;
+     it is rejected here, in every edition."))
   (b* (((fty::okf &) (abnf::check-tree-nonleaf tree "lifetime-token"))
        (nats (abs-symbols-to-nats (abnf::tree->string tree)))
        (raw (prefixp (list #x27 #x72 #x23) nats)) ; 'r#
@@ -400,7 +413,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The CST is the tree for @('[ suffix-no-e ]'):
+    "The CST is the tree for @('[ suffix-no-e ]')
+     or for @('[ suffix-no-hex-digit ]'),
+     according to the alternative of the @('integer-literal') rule:
      a nonleaf tree without rule name,
      whose branches are empty if the suffix is absent.
      An absent suffix abstracts to the empty string."))
@@ -408,8 +423,12 @@
        ((when (endp branches)) "")
        ((fty::okf trees) (abnf::check-tree-list-list-1 branches))
        ((fty::okf sub) (abnf::check-tree-list-1 trees))
-       ((fty::okf &) (abnf::check-tree-nonleaf sub "suffix-no-e")))
-    (code-points-to-utf-8-string (abs-symbols-to-nats (abnf::tree->string sub)))))
+       ((fty::okf rulename?) (abnf::check-tree-nonleaf? sub))
+       ((unless (member-equal rulename?
+                              '("suffix-no-e" "suffix-no-hex-digit")))
+        (reserrf (list :unexpected-suffix-kind rulename?))))
+    (code-points-to-utf-8-string
+     (abs-symbols-to-nats (abnf::tree->string sub)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -420,14 +439,20 @@
   (xdoc::topstring
    (xdoc::p
     "The CST has two branches:
-     a group holding one of the four radix-specific literals,
-     and the optional suffix.
+     the literal in its radix, and the optional suffix.
+     According to the alternative of the rule,
+     the first branch holds a hexadecimal literal,
+     or a group that holds a literal in one of the other three radixes.
      Digits and suffix are stored as written;
      see @(see tokens)."))
   (b* (((fty::okf sub) (abnf::check-tree-nonleaf-2 tree "integer-literal"))
-       ((fty::okf group-tree)
+       ((fty::okf first-tree)
         (abnf::check-tree-list-1 (abnf::tree-list-tuple2->1st sub)))
-       ((fty::okf lit-tree) (abnf::check-tree-nonleaf-1-1 group-tree nil))
+       ((fty::okf rulename?) (abnf::check-tree-nonleaf? first-tree))
+       ((fty::okf lit-tree)
+        (if (equal rulename? "hex-literal")
+            first-tree
+          (abnf::check-tree-nonleaf-1-1 first-tree nil)))
        ((mv radix digits-nats) (abs-integer-literal-radix+digits lit-tree))
        ((when (reserrp digits-nats)) (reserrf-push digits-nats))
        ((fty::okf digits) (code-points-to-utf-8-string digits-nats))
@@ -894,7 +919,17 @@
     "The spans of the tokens are offsets into the input.
      See @(see source-units) for the lexing and tokenization
      of the text of a source file,
-     which also keeps the whitespace and the comments."))
+     which also keeps the whitespace and the comments.")
+   (xdoc::p
+    "This fails if the input does not lex.
+     It also fails on two kinds of input that lex:
+     one with a raw identifier or a raw lifetime
+     named @('crate'), @('self'), @('super'), or @('Self') [SC5],
+     in both supported editions, 2021 and 2024;
+     and one with a @('#') immediately followed by
+     another @('#') or by a double quote [SC15],
+     in edition 2024 only
+     (see @(tsee tokenization-conditions-okp))."))
   (b* ((trees (lexemize-rust input))
        ((when (reserrp trees)) (reserrf-push trees))
        ((fty::okf lexemes) (lexeme-csts-to-lexemes trees 0 edition)))

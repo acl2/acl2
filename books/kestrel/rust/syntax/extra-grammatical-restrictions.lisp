@@ -11,6 +11,8 @@
 (in-package "RUST$")
 
 (include-book "grammar")
+(include-book "keywords")
+(include-book "unicode-characters")
 
 (include-book "projects/abnf/tree-operations/tree-utilities" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
@@ -29,6 +31,7 @@
 ; "not an error" to the value type, as in lexer.lisp.
 (local (in-theory (enable abnf::treep-when-result-not-error
                           abnf::tree-list-tuple2p-when-result-not-error
+                          abnf::tree-list-tuple3p-when-result-not-error
                           abnf::tree-list-tuple4p-when-result-not-error
                           abnf::tree-list-tuple5p-when-result-not-error)))
 
@@ -78,12 +81,20 @@
     (xdoc::li
      "[SC5] Raw identifier and raw lifetime exclusions
       (@('crate'), @('self'), @('super'), @('Self')):
-      not yet formalized
-      (the tokenizer rejects them).")
+      formalized here,
+      as @(tsee lexeme-cst-raw-name-okp).
+      The lexer accepts these lexemes and the tokenizer rejects them,
+      so the condition is not part of @(tsee lexing-okp);
+      it is incorporated into @(tsee lexing-in-edition-okp).")
     (xdoc::li
      "[SC6] Edition-dependent keyword classification:
-      the tables and classification functions are in @(see keywords);
-      the connection to lexing results is not yet formalized.")
+      formalized here,
+      as @(tsee keyword-lexeme-cst-p),
+      which says which lexemes are keywords in each edition,
+      from the tables in @(see keywords).
+      It depends on the edition,
+      so it is not part of @(tsee lexing-okp);
+      the tokenizer classifies the lexemes.")
     (xdoc::li
      "[SC7] Reserved numeric forms
       (text with a radix prefix that is not a literal in that radix;
@@ -102,17 +113,18 @@
       as @(tsee lexeme-cst-reserved-prefix-okp),
       incorporated into @(tsee lexing-okp).")
     (xdoc::li
-     "[SC9] Unicode escape values: not yet formalized
-      (the executable lexer rejects values that are not
-      Unicode scalar values, and zero values in C strings).")
+     "[SC9] Unicode escape values
+      (Unicode scalar values, and nonzero in C strings):
+      formalized here,
+      as @(tsee lexeme-cst-unicode-escapes-okp),
+      incorporated into @(tsee lexing-okp).")
     (xdoc::li
      "[SC10] Raw string termination, and at most 255 @('#')
       before the opening double quote:
-      not yet formalized
-      (the executable lexer ends a raw literal at its first terminator
-      and rejects more than 255 @('#')).
-      Like [SC2], this condition must constrain the valid lexeme trees;
-      see @(tsee lexeme-cst-okp) for what its absence means.")
+      formalized here,
+      as @(tsee raw-content-string-p),
+      incorporated into lexeme validity
+      via @(tsee lexeme-cst-okp).")
     (xdoc::li
      "[SC11] Underscore after a character or string literal:
       formalized here,
@@ -144,8 +156,10 @@
       formalized here,
       as @(tsee lexeme-cst-reserved-guard-okp).
       It depends on the edition,
-      so it is not part of @(tsee lexing-okp);
-      the tokenizer rejects these forms in edition 2024."))
+      so it is not part of @(tsee lexing-okp):
+      the lexer accepts these forms,
+      and the tokenizer rejects them in edition 2024.
+      It is incorporated into @(tsee lexing-in-edition-okp)."))
    (xdoc::p
     "Some of these side conditions are there
      because rustc and the Rust Reference differ,
@@ -171,6 +185,22 @@
      they reject an input
      because of the lexemes that maximal munch chooses for it.")
    (xdoc::p
+    "There are two predicates for a whole lexing.
+     The first, @(tsee lexing-okp), does not take the edition:
+     lexing does not depend on it,
+     and this predicate is the specification of the lexer.
+     It leaves out two of the conditions that reject an input,
+     which the tokenizer checks instead:
+     [SC5], in both supported editions, 2021 and 2024,
+     and [SC15], in edition 2024.
+     So it accepts @('r#crate') and @('##'),
+     which tokenization then rejects,
+     the first in both editions and the second in edition 2024.
+     The second predicate, @(tsee lexing-in-edition-okp),
+     adds those two conditions:
+     it is the specification of
+     the inputs that are lexically valid in an edition.")
+   (xdoc::p
     "Maximal munch is our reading of how the rules combine:
      the Reference at version 1.87.0 does not state it,
      and the descriptions whose alternatives are tried in order
@@ -192,11 +222,13 @@
      The whitespace after a string continuation also reads as
      characters of the string;
      [SC13] excludes that reading.
-     And a hexadecimal literal may also read as
+     And in the Reference a hexadecimal literal also reads as
      a shorter one with a suffix,
      as in @('0x1f') with suffix @('f');
-     no side condition excludes that reading yet,
-     and the lexer, like rustc, takes the digits as far as they go."))
+     our grammar excludes that reading:
+     the suffix of a hexadecimal literal has a rule of its own,
+     @('suffix-no-hex-digit'),
+     which does not start with a hexadecimal digit."))
   :order-subtopics t
   :default-parent t)
 
@@ -385,6 +417,167 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; [SC10] Raw string termination.
+
+(define leading-pound-count ((nats nat-listp))
+  :returns (count natp)
+  :short "Number of @('#') at the start of a character sequence."
+  :measure (len nats)
+  (b* ((nats (nat-list-fix nats)))
+    (if (prefixp (list #x23) nats) ; #
+        (1+ (leading-pound-count (cdr nats)))
+      0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define raw-rest-closes-p ((nats nat-listp) (pounds natp))
+  :returns (yes/no booleanp)
+  :short "Check if a character sequence closes a raw literal
+          with a given number of @('#') exactly at its end."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The sequence is what follows the opening double quote.
+     A raw literal with @('n') @('#') before that double quote
+     ends at the first double quote that is followed by @('n') @('#'):
+     that is its terminator.
+     We scan the sequence left to right for the terminator;
+     where we find it, it must be all that is left of the sequence.
+     This is what makes a valid raw literal end
+     at its first terminator;
+     see @(tsee raw-content-string-p).")
+   (xdoc::p
+    "A double quote is followed by @('n') @('#')
+     when at least @('n') @('#') come right after it."))
+  :measure (len nats)
+  (b* ((nats (nat-list-fix nats))
+       ((when (endp nats)) nil)
+       ((when (and (eql (car nats) #x22) ; double quote
+                   (<= (nfix pounds) (leading-pound-count (cdr nats)))))
+        (equal (len (cdr nats)) (nfix pounds))))
+    (raw-rest-closes-p (cdr nats) pounds)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define raw-content-string-p ((nats nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a character sequence is exactly
+          the content of one raw literal [SC10]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The content of a raw literal is what is between
+     its prefix (@('r'), @('br'), or @('cr')) and its suffix, if any:
+     some number @('n') of @('#'), a double quote, the body,
+     a double quote, and @('n') @('#') again.
+     The sequence must start with at most 255 @('#')
+     and a double quote,
+     and what follows must close the literal exactly at its end
+     (see @(tsee raw-rest-closes-p)).
+     So the body contains no double quote followed by @('n') @('#').")
+   (xdoc::p
+    "Which characters the body may contain
+     depends on the kind of raw literal;
+     the grammar rules say that, and this predicate does not."))
+  (b* ((nats (nat-list-fix nats))
+       (pounds (leading-pound-count nats))
+       (rest (nthcdr pounds nats)))
+    (and (<= pounds 255)
+         (prefixp (list #x22) rest) ; double quote
+         (raw-rest-closes-p (cdr rest) pounds))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(assert-event (raw-content-string-p (string=>nats "\"\"")))
+(assert-event (raw-content-string-p (string=>nats "\"a\"")))
+(assert-event (raw-content-string-p (string=>nats "#\"a\"#")))
+(assert-event (raw-content-string-p (string=>nats "#\"a\"\"#")))
+(assert-event (raw-content-string-p (string=>nats "##\"a\"#b\"##")))
+(assert-event (raw-content-string-p (string=>nats "#\"a
+multi-line\"#")))
+(assert-event (not (raw-content-string-p (string=>nats "\"a\" \"b\""))))
+(assert-event (not (raw-content-string-p (string=>nats "#\"a\"#\"#"))))
+(assert-event (not (raw-content-string-p (string=>nats "#\"a\"##"))))
+(assert-event (not (raw-content-string-p (string=>nats "##\"a\"#"))))
+(assert-event (not (raw-content-string-p (string=>nats "#\"a\""))))
+(assert-event (not (raw-content-string-p (string=>nats "a\"\""))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define raw-content-branch-okp ((trees abnf::tree-listp))
+  :returns (yes/no booleanp)
+  :short "Check that the branch of a raw literal CST that holds its content
+          has text that is exactly the content of one raw literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The branch consists of one tree,
+     for @('raw-string-content'), @('raw-byte-string-content'),
+     or @('raw-c-string-content');
+     see @(tsee raw-content-string-p) for the condition on its text."))
+  (b* (((unless (abnf::tree-list-terminatedp trees)) t)) ; never
+    ;; (a lexeme CST is terminated, and so are its subtrees)
+    (raw-content-string-p (abnf::tree-list->string trees))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-raw-termination-okp ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST holding a raw literal
+          ends the literal at its first terminator,
+          and has at most 255 @('#')
+          before the opening double quote [SC10]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is about CSTs of the form @('lexeme -> token -> R')
+     where @('R') is one of the rules for
+     raw string, raw byte string, and raw C string literals.
+     Each has three branches:
+     the prefix, the content, and the optional suffix.
+     The content must satisfy @(tsee raw-content-branch-okp).
+     Every other lexeme CST satisfies this condition.")
+   (xdoc::p
+    "The rules for the content put the same number @('n') of @('#')
+     before the opening double quote and after the closing one,
+     but they let the body be any characters.
+     So for the input @('r\"a\" \"b\"'),
+     not only @('r\"a\"') but also the whole input
+     matches the rule for raw string literals,
+     with the body @('a\" \"b').
+     A raw literal ends at the first double quote
+     that is followed by @('n') @('#'),
+     as a block comment ends at its first balanced @('*/').
+     So, like [SC2], this condition restricts
+     the candidates of maximal munch [SC1]:
+     without it, maximal munch would take the longer text.")
+   (xdoc::p
+    "A raw literal with more than 255 @('#')
+     before its opening double quote is not valid either.
+     rustc rejects an input with one.
+     So does this specification,
+     although here the text is just not a lexeme:
+     the longest lexeme at its start is then
+     the identifier @('r'), @('br'), or @('cr'),
+     which is followed by @('#'),
+     and that is a reserved prefix [SC8]."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) t)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) t)
+       (branches (abnf::check-tree-nonleaf-3 sub2 "raw-string-literal"))
+       ((when (not (reserrp branches)))
+        (raw-content-branch-okp (abnf::tree-list-tuple3->2nd branches)))
+       (branches (abnf::check-tree-nonleaf-3 sub2 "raw-byte-string-literal"))
+       ((when (not (reserrp branches)))
+        (raw-content-branch-okp (abnf::tree-list-tuple3->2nd branches)))
+       (branches (abnf::check-tree-nonleaf-3 sub2 "raw-c-string-literal"))
+       ((when (not (reserrp branches)))
+        (raw-content-branch-okp (abnf::tree-list-tuple3->2nd branches))))
+    t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define lexeme-cst-okp ((tree abnf::treep))
   :returns (yes/no booleanp)
   :short "Check if a tree is a valid lexeme CST:
@@ -392,37 +585,31 @@ multi-line */")))
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently this conjoins the grammar match
-     with [SC2] (block comment closing)
+    "This conjoins the grammar match
+     with [SC2] (block comment closing),
+     [SC10] (raw string termination),
      and [SC13] (string continuations).
      For [SC2], if the lexeme's string starts with @('/*'),
      the lexeme can only be a block comment, doc comment or not
      (no other lexeme's string starts that way),
      and its string must be exactly one complete block comment.
+     For [SC10], see @(tsee lexeme-cst-raw-termination-okp).
      For [SC13], see @(tsee lexeme-cst-string-continues-okp).
-     Further side conditions will be added as conjuncts
-     as they are formalized.
      The side condition [SC14] also restricts the valid lexemes,
      but according to the input that follows them,
      so it is a separate predicate,
      @(tsee lexeme-cst-float-period-okp).")
    (xdoc::p
-    "One of them is needed for this predicate to be right:
-     [SC10], raw string termination.
-     The raw string rules of the grammar, like the block comment rule,
-     overapproximate:
-     for the input @('r\"a\" \"b\"'),
-     not only @('r\"a\"') but also the whole input
-     matches the rule for raw string literals.
-     So until [SC10] is a conjunct here,
-     the lexeme @('r\"a\"') of that input does not satisfy
-     @(tsee lexeme-cst-maximal-p),
-     and the correct lexing of such an input
-     does not satisfy @(tsee lexing-okp)."))
+    "These are the side conditions that say which trees are lexemes,
+     for maximal munch [SC1] to choose among.
+     The side conditions that reject an input
+     because of the lexemes chosen for it
+     are conjuncts of @(tsee lexing-okp) instead."))
   (and (lexeme-cst-p tree)
        (b* ((string (abnf::tree->string tree)))
          (implies (prefixp (list #x2F #x2A) string) ; starts with /*
                   (block-comment-string-p string)))
+       (lexeme-cst-raw-termination-okp tree)
        (lexeme-cst-string-continues-okp tree)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,6 +670,161 @@ multi-line */")))
      as a doc comment, whitespace, and an identifier."))
   (implies (doc-comment-lexeme-cst-p tree)
            (not (member-equal #xd (abnf::tree->string tree)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC9] Unicode escape values.
+
+(define hex-digit-code-value ((code natp))
+  :returns (value? acl2::maybe-natp
+                   :rule-classes :type-prescription
+                   :hints (("Goal" :in-theory (enable acl2::maybe-natp
+                                                      natp))))
+  :short "Value of a character as a hexadecimal digit, if it is one."
+  (b* ((code (nfix code)))
+    (cond ((and (<= #x30 code) (<= code #x39)) (- code #x30)) ; 0-9
+          ((and (<= #x41 code) (<= code #x46)) (- code #x37)) ; A-F
+          ((and (<= #x61 code) (<= code #x66)) (- code #x57)) ; a-f
+          (t nil))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define hex-digits/underscores-value ((nats nat-listp) (value natp))
+  :returns (new-value natp)
+  :short "Value of a sequence of hexadecimal digits and underscores,
+          read as a hexadecimal number after the digits already read."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The second argument is the value of the digits already read:
+     it is 0 for a whole number.
+     Each digit multiplies the value so far by 16 and adds its own.
+     The underscores are ignored,
+     and so is any other character that is not a hexadecimal digit."))
+  :measure (len nats)
+  (b* ((nats (nat-list-fix nats))
+       (value (nfix value))
+       ((when (endp nats)) value)
+       (digit? (hex-digit-code-value (car nats))))
+    (hex-digits/underscores-value (cdr nats)
+                                  (if digit?
+                                      (+ (* 16 value) digit?)
+                                    value))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(assert-event
+ (equal (hex-digits/underscores-value (string=>nats "0") 0) 0))
+(assert-event
+ (equal (hex-digits/underscores-value (string=>nats "7f") 0) #x7f))
+(assert-event
+ (equal (hex-digits/underscores-value (string=>nats "1_F6_00") 0) #x1f600))
+(assert-event
+ (equal (hex-digits/underscores-value (string=>nats "10FFFF") 0) #x10ffff))
+(assert-event
+ (equal (hex-digits/underscores-value (string=>nats "0_0_d_8_0_0_") 0) #xd800))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unicode-escape-item-value ((tree abnf::treep))
+  :returns (value? acl2::maybe-natp)
+  :short "Value of the unicode escape
+          that an item of the body of a literal holds, if it holds one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each item of the body of a string or C string literal
+     is a CST without a rule name that has a single subtree
+     (see @(tsee string-continue-item-cst-p));
+     so is what a character literal has between its quotes.
+     Here that subtree is a @('unicode-escape'),
+     which has three branches:
+     the characters @('\\u{'),
+     the hexadecimal digits, each with the underscores after it,
+     and the closing brace.
+     The value is that of the digits,
+     read as a hexadecimal number
+     (see @(tsee hex-digits/underscores-value))."))
+  (b* ((sub (abnf::check-tree-nonleaf-1-1 tree nil))
+       ((when (reserrp sub)) nil)
+       (branches (abnf::check-tree-nonleaf-3 sub "unicode-escape"))
+       ((when (reserrp branches)) nil)
+       (digits (abnf::tree-list-tuple3->2nd branches))
+       ((unless (abnf::tree-list-terminatedp digits)) nil)) ; never
+    (hex-digits/underscores-value (abnf::tree-list->string digits) 0)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define unicode-escape-items-okp ((items abnf::tree-listp)
+                                  (nonzerop booleanp))
+  :returns (yes/no booleanp)
+  :short "Check that the unicode escapes
+          among the items of the body of a literal
+          have valid values."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The value of each unicode escape
+     (see @(tsee unicode-escape-item-value))
+     must be a Unicode scalar value:
+     at most @('10FFFF'), and not a surrogate
+     (see @(tsee uni-scalar-value-p)).
+     If the flag is set, it must also be nonzero."))
+  :measure (len items)
+  (b* ((items (abnf::tree-list-fix items))
+       ((when (endp items)) t)
+       (value? (unicode-escape-item-value (car items))))
+    (and (or (not value?)
+             (and (uni-scalar-value-p value?)
+                  (not (and nonzerop
+                            (eql value? 0)))))
+         (unicode-escape-items-okp (cdr items) nonzerop))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-unicode-escapes-okp ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check that the unicode escapes in a lexeme CST
+          have valid values [SC9]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is about CSTs of the form @('lexeme -> token -> R')
+     where @('R') is one of the rules for
+     character, string, and C string literals,
+     which are the rules that have unicode escapes.
+     The rule for unicode escapes
+     allows any number of up to six hexadecimal digits.
+     The value of each unicode escape must be a Unicode scalar value;
+     in a C string literal, which cannot contain a zero,
+     it must also be nonzero
+     (see @(tsee unicode-escape-items-okp)).
+     Every other lexeme CST satisfies this condition.")
+   (xdoc::p
+    "Like [SC8], this condition rejects the whole lexing,
+     so it is a conjunct of @(tsee lexing-okp)
+     rather than part of the candidate set @(tsee lexeme-cst-okp).
+     In rustc, whether an escape is valid
+     never affects where a literal ends:
+     the text @('\"\\u{110000}\"') is one string literal,
+     and an error."))
+  (b* ((sub1 (abnf::check-tree-nonleaf-1-1 tree "lexeme"))
+       ((when (reserrp sub1)) t)
+       (sub2 (abnf::check-tree-nonleaf-1-1 sub1 "token"))
+       ((when (reserrp sub2)) t)
+       (branches (abnf::check-tree-nonleaf-4 sub2 "char-literal"))
+       ((when (not (reserrp branches)))
+        (unicode-escape-items-okp (abnf::tree-list-tuple4->2nd branches)
+                                  nil))
+       (branches (abnf::check-tree-nonleaf-4 sub2 "string-literal"))
+       ((when (not (reserrp branches)))
+        (unicode-escape-items-okp (abnf::tree-list-tuple4->2nd branches)
+                                  nil))
+       (branches (abnf::check-tree-nonleaf-5 sub2 "c-string-literal"))
+       ((when (not (reserrp branches)))
+        (unicode-escape-items-okp (abnf::tree-list-tuple5->3rd branches)
+                                  t)))
+    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -594,6 +936,43 @@ multi-line */")))
                        (not (prefixp (list #x22) rest-input)))) ; "
          (implies (non-raw-lifetime-lexeme-cst-p tree)
                   (not (prefixp (list #x23) rest-input)))))) ; #
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC6] Keyword classification.
+
+(define keyword-lexeme-cst-p ((tree abnf::treep) (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :short "Check if a tree is a lexeme CST holding
+          a keyword of a given edition [SC6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A keyword is an identifier-or-keyword lexeme
+     (see @(tsee identifier-or-keyword-lexeme-cst-p))
+     whose text is a strict or reserved keyword of the edition
+     (see @(tsee keyword-p)).
+     The token of such a lexeme is a keyword token;
+     the token of every other identifier-or-keyword lexeme
+     is an identifier token, weak keywords included.
+     A raw identifier is never a keyword:
+     @('r#fn') is an identifier.")
+   (xdoc::p
+    "This condition classifies lexemes; it rejects none.
+     It depends on the edition:
+     @('gen') is a keyword in edition 2024
+     and an identifier in edition 2021.
+     Lexing does not depend on the edition,
+     so this condition has no part in @(tsee lexing-okp):
+     the tokenizer, which takes the edition, classifies the lexemes
+     (see @(tsee abs-identifier-or-keyword)).")
+   (xdoc::p
+    "Every keyword consists of ASCII characters,
+     so text with any other character is not a keyword."))
+  (b* (((unless (identifier-or-keyword-lexeme-cst-p tree)) nil)
+       (string (abnf::tree->string tree))
+       ((unless (acl2::unsigned-byte-listp 8 string)) nil))
+    (keyword-p (nats=>string string) edition)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -906,14 +1285,10 @@ multi-line */")))
    (xdoc::p
     "After @('0b') and @('0o') the digits are the decimal digits,
      and after @('0x') the hexadecimal digits.
-     An integer literal lexeme with such text
-     has a radix prefix and no suffix, as rustc reads it:
-     the digits of a literal extend as far as they can,
-     and a suffix starts at the first character after them.
-     We state this on the text rather than on the CST
-     because the grammar alone also reads
-     the last letters of a text like @('0x1f') as a suffix,
-     as it does in the Reference."))
+     A lexeme that holds a literal with a radix prefix
+     has such text exactly when the literal has no suffix:
+     a suffix starts with a letter,
+     which after a hexadecimal literal is not a hexadecimal digit."))
   (b* ((nats (nat-list-fix nats)))
     (cond ((or (prefixp (list #x30 #x62) nats) ; 0b
                (prefixp (list #x30 #x6f) nats)) ; 0o
@@ -999,6 +1374,50 @@ multi-line */")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; [SC5] Raw identifier and raw lifetime exclusions.
+
+(define lexeme-cst-raw-name-okp ((tree abnf::treep))
+  :returns (yes/no booleanp)
+  :short "Check that a lexeme CST does not hold
+          a raw identifier or a raw lifetime
+          with an excluded name [SC5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The names @('crate'), @('self'), @('super'), and @('Self')
+     cannot be the name of a raw identifier or of a raw lifetime.
+     So the text of a lexeme must not be
+     @('r#') or @(''r#') followed by one of those names.
+     No other lexeme has such text,
+     so it suffices to check the string of the tree.")
+   (xdoc::p
+    "Like [SC8], this condition rejects the whole lexing:
+     @('r#crate') is an error, in both supported editions, 2021 and 2024;
+     it is not @('r'), @('#'), and @('crate').")
+   (xdoc::p
+    "Unlike [SC8], this condition is not a conjunct of @(tsee lexing-okp),
+     although it does not depend on the edition.
+     The lexer accepts these lexemes,
+     and the tokenizer, which is where the name of an identifier
+     is looked at, rejects them
+     (see @(tsee abs-raw-identifier) and @(tsee abs-lifetime-token)).
+     rustc is organized the same way:
+     its low-level lexer returns a raw identifier for @('r#crate'),
+     and the next layer, which makes the tokens, reports the error.
+     The condition is part of @(tsee tokenization-conditions-okp),
+     and so of @(tsee lexing-in-edition-okp)."))
+  (b* ((string (abnf::tree->string tree))
+       (names (list (string=>nats "crate")
+                    (string=>nats "self")
+                    (string=>nats "super")
+                    (string=>nats "Self"))))
+    (not (or (and (prefixp (list #x72 #x23) string) ; r#
+                  (member-equal (nthcdr 2 string) names))
+             (and (prefixp (list #x27 #x72 #x23) string) ; 'r#
+                  (member-equal (nthcdr 3 string) names))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; [SC15] Reserved guards of edition 2024.
 
 (define pound-lexeme-cst-p ((tree abnf::treep))
@@ -1039,8 +1458,12 @@ multi-line */")))
     "This condition holds in edition 2024 only.
      Lexing does not depend on the edition,
      so the condition is not a conjunct of @(tsee lexing-okp):
-     the tokenizer, which takes the edition, checks it
-     (see @(tsee lexeme-csts-to-lexemes))."))
+     the lexer accepts these forms,
+     and the tokenizer, which takes the edition,
+     rejects them in edition 2024
+     (see @(tsee lexeme-csts-to-lexemes)).
+     The condition is part of @(tsee tokenization-conditions-okp),
+     and so of @(tsee lexing-in-edition-okp)."))
   (b* ((rest-input (nat-list-fix rest-input)))
     (implies (pound-lexeme-cst-p tree)
              (and (not (prefixp (list #x23) rest-input)) ; #
@@ -1099,6 +1522,8 @@ multi-line */")))
      (see @(tsee lexeme-cst-maximal-p));
      no doc comment lexeme contains a carriage return
      (see @(tsee lexeme-cst-doc-comment-cr-okp));
+     every unicode escape in a lexeme has a valid value
+     (see @(tsee lexeme-cst-unicode-escapes-okp));
      no float literal lexeme that ends with its period
      is followed by input that takes the period from it
      (see @(tsee lexeme-cst-float-period-okp));
@@ -1113,11 +1538,38 @@ multi-line */")))
      (see @(tsee lexeme-cst-lifetime-quote-okp));
      and together they cover the input exactly.")
    (xdoc::p
-    "This specification is not final:
-     side conditions that are not yet formalized are missing from it,
-     which makes it too weak for the inputs that they reject,
-     and, in the case of [SC10], too strong for some inputs
-     with raw string literals (see @(tsee lexeme-cst-okp)).")
+    "This predicate does not take the edition,
+     since lexing does not depend on it.
+     It is the specification of the lexer.
+     It is not, by itself, the specification of
+     the inputs that are lexically valid:
+     it accepts two kinds of lexings that tokenization then rejects.")
+   (xdoc::ul
+    (xdoc::li
+     "A lexing with a raw identifier or a raw lifetime
+      whose name is @('crate'), @('self'), @('super'), or @('Self'),
+      as in @('r#crate') and @(''r#self') [SC5].
+      Tokenization rejects it
+      in both supported editions, 2021 and 2024.")
+    (xdoc::li
+     "A lexing with a @('#') immediately followed by
+      another @('#') or by a double quote,
+      as in @('##') and @('#\"a\"') [SC15].
+      Tokenization rejects it in edition 2024;
+      in edition 2021 it is valid."))
+   (xdoc::p
+    "The predicate @(tsee lexing-in-edition-okp)
+     adds these two conditions
+     (see @(tsee tokenization-conditions-okp)):
+     it is the specification of
+     the inputs that are lexically valid in an edition.
+     No other side condition is left to tokenization as a rejection:
+     [SC6], which also depends on the edition,
+     classifies lexemes and rejects none
+     (see @(tsee keyword-lexeme-cst-p)).")
+   (xdoc::p
+    "Identifiers are ASCII-only here, as in the grammar,
+     whose identifier rules stand for the Unicode ones for now [SC4].")
    (xdoc::p
     "The lexer book defines the executable lexer;
      proving that it satisfies this specification
@@ -1133,6 +1585,7 @@ multi-line */")))
          (prefixp string input)
          (lexeme-cst-maximal-p tree (nthcdr (len string) input))
          (lexeme-cst-doc-comment-cr-okp tree)
+         (lexeme-cst-unicode-escapes-okp tree)
          (lexeme-cst-float-period-okp tree (nthcdr (len string) input))
          (lexeme-cst-reserved-number-okp tree (nthcdr (len string) input))
          (lexeme-cst-reserved-prefix-okp tree (nthcdr (len string) input))
@@ -1144,3 +1597,123 @@ multi-line */")))
   ///
 
   (assert-event (lexing-okp nil nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Lexing in an edition: the conditions that tokenization checks.
+
+(define lexeme-cst-list-raw-names-okp ((trees abnf::tree-listp))
+  :returns (yes/no booleanp)
+  :short "Check that no lexeme of a lexing is
+          a raw identifier or a raw lifetime
+          with an excluded name [SC5]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "See @(tsee lexeme-cst-raw-name-okp) for the condition on a lexeme."))
+  :measure (len trees)
+  (b* ((trees (abnf::tree-list-fix trees))
+       ((when (endp trees)) t))
+    (and (lexeme-cst-raw-name-okp (car trees))
+         (lexeme-cst-list-raw-names-okp (cdr trees)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexeme-cst-list-reserved-guards-okp ((trees abnf::tree-listp)
+                                             (input nat-listp))
+  :returns (yes/no booleanp)
+  :short "Check that no lexeme of a lexing
+          forms a reserved guard with what follows it [SC15]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The trees are the lexemes of the input, in order,
+     so that the input after a lexeme is
+     what is left of the input after the lexemes up to that one.
+     See @(tsee lexeme-cst-reserved-guard-okp)
+     for the condition on a lexeme and the input that follows it."))
+  :measure (len trees)
+  (b* ((trees (abnf::tree-list-fix trees))
+       (input (nat-list-fix input))
+       ((when (endp trees)) t)
+       (tree (car trees))
+       (rest-input (nthcdr (len (abnf::tree->string tree)) input)))
+    (and (lexeme-cst-reserved-guard-okp tree rest-input)
+         (lexeme-cst-list-reserved-guards-okp (cdr trees) rest-input))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define tokenization-conditions-okp ((trees abnf::tree-listp)
+                                     (input nat-listp)
+                                     (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :short "Check the conditions on a lexing that tokenization checks,
+          in a given edition [SC5] [SC15]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the two side conditions that reject an input
+     and that the lexer does not check:")
+   (xdoc::ul
+    (xdoc::li
+     "[SC5], in both supported editions, 2021 and 2024:
+      no lexeme is a raw identifier or a raw lifetime
+      with an excluded name
+      (see @(tsee lexeme-cst-list-raw-names-okp)).")
+    (xdoc::li
+     "[SC15], in edition 2024 only:
+      no @('#') lexeme forms a reserved guard with what follows it
+      (see @(tsee lexeme-cst-list-reserved-guards-okp))."))
+   (xdoc::p
+    "The trees are the lexemes of the input, in order.")
+   (xdoc::p
+    "On the lexer's output,
+     the tokenizer is tested to fail
+     exactly when these conditions do not hold
+     (see @(see differential-testing));
+     proving that is future work."))
+  (and (lexeme-cst-list-raw-names-okp trees)
+       (rust::edition-case
+        edition
+        :2021 t
+        :2024 (lexeme-cst-list-reserved-guards-okp trees input))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define lexing-in-edition-okp ((trees abnf::tree-listp)
+                               (input nat-listp)
+                               (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :short "Declarative specification of correct lexing in a given edition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The trees are a correct lexing of the input in the edition
+     if they are a correct lexing of it
+     (see @(tsee lexing-okp)), which does not depend on the edition,
+     and they satisfy the conditions that tokenization checks
+     (see @(tsee tokenization-conditions-okp)).
+     An input is lexically valid in an edition
+     when it has such a lexing.")
+   (xdoc::p
+    "So the lexings that @(tsee lexing-okp) accepts
+     and this predicate rejects
+     are those that the lexer produces and the tokenizer then rejects:
+     in both supported editions, 2021 and 2024,
+     those with a raw identifier or a raw lifetime
+     named @('crate'), @('self'), @('super'), or @('Self') [SC5];
+     and in edition 2024,
+     those with a @('#') immediately followed by
+     another @('#') or by a double quote [SC15].")
+   (xdoc::p
+    "The edition has one more effect on tokenization,
+     which rejects nothing:
+     it decides which identifier-or-keyword lexemes are keywords [SC6]
+     (see @(tsee keyword-lexeme-cst-p))."))
+  (and (lexing-okp trees input)
+       (tokenization-conditions-okp trees input edition))
+
+  ///
+
+  (assert-event (lexing-in-edition-okp nil nil (rust::edition-2021)))
+  (assert-event (lexing-in-edition-okp nil nil (rust::edition-2024))))

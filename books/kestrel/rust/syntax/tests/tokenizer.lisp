@@ -169,6 +169,22 @@
 (test-tokens "0xF_Fu32" (list (int-tok (radix-hex) "F_F" "u32")))
 (test-tokens "0usize" (list (int-tok (radix-dec) "0" "usize")))
 
+; The digits of a hexadecimal literal extend over the letters
+; that are hexadecimal digits; its suffix starts at another letter.
+; After the digits of the other radixes, those letters start a suffix.
+
+(test-tokens "0x1f" (list (int-tok (radix-hex) "1f" "")))
+(test-tokens "0x1F" (list (int-tok (radix-hex) "1F" "")))
+(test-tokens "0xabcdef" (list (int-tok (radix-hex) "abcdef" "")))
+(test-tokens "0x1e3" (list (int-tok (radix-hex) "1e3" "")))
+(test-tokens "0x1_f_" (list (int-tok (radix-hex) "1_f_" "")))
+(test-tokens "0x1fu8" (list (int-tok (radix-hex) "1f" "u8")))
+(test-tokens "0x1g" (list (int-tok (radix-hex) "1" "g")))
+(test-tokens "0x1Gf" (list (int-tok (radix-hex) "1" "Gf")))
+(test-tokens "1f" (list (int-tok (radix-dec) "1" "f")))
+(test-tokens "0b1a" (list (int-tok (radix-bin) "1" "a")))
+(test-tokens "0o7F" (list (int-tok (radix-oct) "7" "F")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Float literals: the text of the number as written, and the suffix.

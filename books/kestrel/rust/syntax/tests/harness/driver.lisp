@@ -276,6 +276,7 @@
            (rest (nthcdr (len (abnf::tree->string tree)) input)))
         (and (lexeme-cst-okp tree)
              (lexeme-cst-doc-comment-cr-okp tree)
+             (lexeme-cst-unicode-escapes-okp tree)
              (lexeme-cst-float-period-okp tree rest)
              (lexeme-cst-reserved-number-okp tree rest)
              (lexeme-cst-reserved-prefix-okp tree rest)
@@ -302,6 +303,68 @@
   (b* (((mv tests state) (rv-read-tests in state))
        ((mv n bad) (rv-spec tests 0 nil)))
     (mv (list n bad) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The tokenizer against its specification:
+; (rv-go-tokenization in edition state) returns a list of
+; the number of inputs that lex, the number of those that tokenize,
+; and the ids of the inputs that lex
+; on which the tokenizer and the specification differ.
+; The tokenizer, applied to the lexer's CSTs, should fail
+; exactly when tokenization-conditions-okp does not hold of them:
+; a raw identifier or a raw lifetime with an excluded name [SC5],
+; or, in edition 2024, a reserved guard [SC15].
+; And the token that it makes of a lexeme should be a keyword token
+; exactly when keyword-lexeme-cst-p holds of the lexeme [SC6].
+; There should be no such ids.
+
+(define rv-keywords-okp ((trees abnf::tree-listp) (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :parents nil
+  (or (endp trees)
+      (b* ((tree (car trees))
+           (lexeme (abs-lexeme tree edition)))
+        (and (or (reserrp lexeme)
+                 (iff (and (lexeme-case lexeme :token)
+                           (token-case (lexeme-token->token lexeme)
+                                       :keyword))
+                      (keyword-lexeme-cst-p tree edition)))
+             (rv-keywords-okp (cdr trees) edition)))))
+
+(define rv-tokenization ((tests rv-test-listp)
+                         (edition rust::editionp)
+                         (n-lexed natp)
+                         (n-tokenized natp)
+                         (bad true-listp))
+  :returns (mv (n-lexed natp :hyp (natp n-lexed))
+               (n-tokenized natp :hyp (natp n-tokenized))
+               (bad-ids true-listp :hyp (true-listp bad)))
+  :parents nil
+  (if (endp tests)
+      (mv n-lexed n-tokenized (revappend bad nil))
+    (b* ((nats (rv-normalize (cdar tests)))
+         (trees (lexemize-rust nats))
+         ((when (reserrp trees))
+          (rv-tokenization (cdr tests) edition n-lexed n-tokenized bad))
+         (tokenizes (not (reserrp (lexeme-csts-to-lexemes trees 0 edition))))
+         (okp (and (iff tokenizes
+                        (tokenization-conditions-okp trees nats edition))
+                   (rv-keywords-okp trees edition))))
+      (rv-tokenization (cdr tests)
+                       edition
+                       (1+ n-lexed)
+                       (if tokenizes (1+ n-tokenized) n-tokenized)
+                       (if okp bad (cons (caar tests) bad)))))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-tokenization ((in stringp) (edition rust::editionp) state)
+  :returns (mv summary state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       ((mv n-lexed n-tokenized bad)
+        (rv-tokenization tests edition 0 0 nil)))
+    (mv (list n-lexed n-tokenized bad) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

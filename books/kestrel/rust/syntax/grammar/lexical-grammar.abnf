@@ -139,6 +139,12 @@
 ;       such text is separate tokens.  Like [SC6], this condition
 ;       depends on the edition.
 ;
+; Two of these conditions are not checked by the lexer but
+; afterwards, when the tokens are made: [SC5], and [SC15], which
+; depends on the edition.  So text like r#crate, and like ## in
+; edition 2024, lexes, and is then rejected.  ([SC6] is applied
+; when the tokens are made too, but it rejects nothing.)
+;
 ; Where [Reference] and rustc differ, or [Reference] leaves open
 ; what rustc does, this grammar follows rustc; the xdoc topic
 ; reference-vs-rustc (in grammar.lisp) lists the cases.
@@ -284,11 +290,16 @@ raw-lifetime = %s"'r#" identifier-or-keyword ; [SC5]
 ; Integer literals
 ;-------------------------------------------------------------------------------
 
+; An integer literal has its digits, in one of four radixes, and an
+; optional suffix.  The hexadecimal literals are a separate
+; alternative because their suffix has a rule of its own: see
+; suffix-no-e and suffix-no-hex-digit below.
+
 integer-literal = ( dec-literal
                   / bin-literal
-                  / oct-literal
-                  / hex-literal )
+                  / oct-literal )
                   [ suffix-no-e ] ; [SC7]
+                / hex-literal [ suffix-no-hex-digit ] ; [SC7]
 
 dec-literal = dec-digit *( dec-digit / "_" )
 
@@ -300,18 +311,33 @@ hex-literal = %s"0x" *( hex-digit / "_" ) hex-digit *( hex-digit / "_" )
 
 ; A suffix is identifier-shaped text immediately after the digits;
 ; any such suffix lexes [Reference; suffixes], with validity
-; checked in later phases.  On integer literals the suffix must not
-; start with "e" or "E" (which would be a float exponent), hence
-; this rule.  Nor does it start with "_": the digit rules above
-; take every "_" that follows the digits, as rustc's lexer does.
-; ([Reference; suffixes] also lets a suffix start with "_", which
-; leaves open where the digits end, e.g. in 1_u8.)  A suffix may
-; start with a letter that is a hexadecimal digit, as in
-; [Reference], so the rules read 0x1f also as 0x1 with suffix f;
-; rustc's lexer takes the digits as far as they go, and so does
-; ours.
+; checked in later phases.  The digits of a literal extend as far
+; as they can, as in rustc's lexer.  So a suffix does not start
+; with a character that could continue the digits before it, and
+; the two rules below say so for the two kinds of integer literals.
+; ([Reference; suffixes] lets a suffix start with such a character,
+; which leaves open where the digits end.)
+
+; The suffix of a decimal, binary, or octal literal starts with a
+; letter other than "e" and "E", which would start an exponent
+; (see [SC7] for a number followed by one of them).  It does not
+; start with "_": the digit rules above take every "_" that follows
+; the digits, so that 1_u8 is the digits 1_ with the suffix u8.
+; It may start with a letter that is a hexadecimal digit, since
+; that letter is not a digit of these literals: 1f32 is the digit 1
+; with the suffix f32.
 
 suffix-no-e = ascii-letter-no-e *identifier-continue
+
+; The suffix of a hexadecimal literal starts with a letter that is
+; not a hexadecimal digit: the letters "a" to "f" and "A" to "F"
+; after the digits are more digits.  So 0x1f is the digits 1f
+; without a suffix, and not the digit 1 with the suffix f; and
+; 0x1u8 is the digit 1 with the suffix u8.  Since "e" and "E" are
+; hexadecimal digits, this suffix does not start with them either.
+; As above, it does not start with "_".
+
+suffix-no-hex-digit = ascii-letter-no-hex-digit *identifier-continue
 
 ;-------------------------------------------------------------------------------
 ; Float literals
@@ -474,6 +500,8 @@ delimiter = "(" / ")" / "[" / "]" / "{" / "}"
 ascii-letter = %x41-5A / %x61-7A
 
 ascii-letter-no-e = %x41-44 / %x46-5A / %x61-64 / %x66-7A
+
+ascii-letter-no-hex-digit = %x47-5A / %x67-7A
 
 dec-digit = %x30-39
 

@@ -508,3 +508,369 @@ b\"")
 (assert-event (doc-comment-lexeme-cst-p *block-doc-with-cr-cst*))
 (assert-event (not (lexeme-cst-doc-comment-cr-okp *block-doc-with-cr-cst*)))
 (assert-event (reserrp (lexemize-rust *block-doc-with-cr*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC10]: a raw literal ends at its first terminator.
+
+; The lexer's CSTs satisfy the condition,
+; for raw string, raw byte string, and raw C string literals,
+; with and without "#", and with a suffix.
+
+(defmacro test-raw-termination (string yes/no)
+  `(assert-event
+    (equal (lexeme-cst-raw-termination-okp
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-raw-termination "r\"a\"" t)
+(test-raw-termination "r\"\"" t)
+(test-raw-termination "r#\"a\"#" t)
+(test-raw-termination "r#\"a\"b\"#" t) ; a double quote in the body
+(test-raw-termination "r##\"a\"#b\"##" t) ; too few # in the body
+(test-raw-termination "br\"a\"" t)
+(test-raw-termination "br#\"a\"#" t)
+(test-raw-termination "cr\"a\"" t)
+(test-raw-termination "cr#\"a\"#" t)
+(test-raw-termination "r#\"a\"#suffix" t)
+(test-raw-termination "\"a\"" t) ; other lexemes satisfy the condition
+(test-raw-termination "r#a" t)
+(test-raw-termination "foo" t)
+
+(test-lexeme-okp "r\"a\"")
+(test-lexeme-okp "br#\"a\"#")
+(test-lexeme-okp "cr##\"a\"#b\"##")
+
+; A raw literal ends at its first terminator,
+; and the rest of the input is other lexemes.
+
+(assert-event
+ (b* ((trees (lexemize-rust-from-string "r\"a\" \"b\"")))
+   (and (equal (len trees) 3)
+        (equal (abnf::tree->string (car trees))
+               (string=>nats "r\"a\"")))))
+
+(assert-event
+ (b* ((trees (lexemize-rust-from-string "r#\"a\"##")))
+   (and (equal (len trees) 2)
+        (equal (abnf::tree->string (car trees))
+               (string=>nats "r#\"a\"#")))))
+
+; A CST for the eight characters r"a" "b" as one raw string literal,
+; whose body is the five characters a" "b.
+; The lexer does not produce such a CST, so we build it here,
+; with the lexing function for the content of a raw literal,
+; told to end the body at a double quote followed by "#".
+; It matches the grammar, but it violates [SC10],
+; so it is not a valid lexeme CST.
+
+(defun token-lexeme-cst (tree)
+  (abnf::make-tree-nonleaf
+   :rulename? (abnf::rulename "lexeme")
+   :branches (list (list (abnf::make-tree-nonleaf
+                          :rulename? (abnf::rulename "token")
+                          :branches (list (list tree)))))))
+
+(defconst *long-raw-string-cst*
+  (b* (((mv prefix &) (abnf::parse-schars "r" (string=>nats "r")))
+       ((mv content &)
+        (lex-raw-string-content 0 1 (string=>nats "\"a\" \"b\"#")))
+       ((mv no-suffix &) (lex-option-suffix nil)))
+    (token-lexeme-cst
+     (abnf::make-tree-nonleaf
+      :rulename? (abnf::rulename "raw-string-literal")
+      :branches (list (list prefix) (list content) (list no-suffix))))))
+
+(assert-event (equal (abnf::tree->string *long-raw-string-cst*)
+                     (string=>nats "r\"a\" \"b\"")))
+(assert-event (lexeme-cst-p *long-raw-string-cst*))
+(assert-event (not (lexeme-cst-raw-termination-okp *long-raw-string-cst*)))
+(assert-event (not (lexeme-cst-okp *long-raw-string-cst*)))
+
+; At most 255 "#" before the opening double quote.
+
+(defun raw-string-with-pounds (n)
+  (b* ((pounds (make-list n :initial-element #x23)))
+    (append (list #x72) pounds (list #x22 #x61 #x22) pounds))) ; r#..."a"#...
+
+(assert-event
+ (raw-content-string-p (cdr (raw-string-with-pounds 255))))
+(assert-event
+ (not (raw-content-string-p (cdr (raw-string-with-pounds 256)))))
+
+(assert-event
+ (b* ((trees (lexemize-rust (raw-string-with-pounds 255))))
+   (and (equal (len trees) 1)
+        (lexeme-cst-okp (car trees)))))
+(assert-event
+ (reserrp (lexemize-rust (raw-string-with-pounds 256))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC9]: the values of unicode escapes.
+
+; The lexer's CSTs satisfy the condition,
+; for character, string, and C string literals.
+
+(defmacro test-unicode-escapes (string yes/no)
+  `(assert-event
+    (equal (lexeme-cst-unicode-escapes-okp
+            (car (lexemize-rust-from-string ,string)))
+           ,yes/no)))
+
+(test-unicode-escapes "'\\u{0}'" t)
+(test-unicode-escapes "'\\u{D7FF}'" t)
+(test-unicode-escapes "'\\u{E000}'" t)
+(test-unicode-escapes "'\\u{10FFFF}'" t)
+(test-unicode-escapes "'\\u{1_F6_00_}'" t)
+(test-unicode-escapes "\"a\\u{41}b\\u{0}\"" t)
+(test-unicode-escapes "c\"a\\u{41}b\"" t)
+(test-unicode-escapes "'a'" t) ; no unicode escape
+(test-unicode-escapes "\"\\x41\"" t)
+(test-unicode-escapes "foo" t) ; other lexemes satisfy the condition
+
+; The lexer rejects the inputs with other values.
+
+(defmacro test-unicode-escape-rejected (string)
+  `(assert-event (reserrp (lexemize-rust-from-string ,string))))
+
+(test-unicode-escape-rejected "'\\u{110000}'")
+(test-unicode-escape-rejected "'\\u{D800}'")
+(test-unicode-escape-rejected "'\\u{DFFF}'")
+(test-unicode-escape-rejected "\"\\u{FFFFFF}\"")
+(test-unicode-escape-rejected "c\"\\u{D800}\"")
+(test-unicode-escape-rejected "c\"\\u{0}\"")
+(test-unicode-escape-rejected "c\"\\u{0_0}\"")
+
+; The rule for unicode escapes allows those values.
+; The lexer does not produce a CST with one, so we build three here,
+; from the parts of a unicode escape, without the check of its value.
+; Each is a valid lexeme CST, and the condition rejects it,
+; as the lexer rejects the input.
+
+(defun unicode-escape-item (string)
+  (b* ((input (string=>nats string))
+       ((mv tree1 input1) (abnf::parse-schars "\\u{" input))
+       ((mv tree2 input2) (lex-hex-digit-underscores input1))
+       ((mv trees3 input3) (lex-unicode-escape-groups 5 input2))
+       ((mv tree4 &) (abnf::parse-ichars "}" input3)))
+    (body-item (abnf::make-tree-nonleaf
+                :rulename? (abnf::rulename "unicode-escape")
+                :branches (list (list tree1)
+                                (cons tree2 trees3)
+                                (list tree4))))))
+
+(defconst *char-with-large-escape-cst* ; '\u{110000}'
+  (b* (((mv quote &) (abnf::parse-ichars "'" (string=>nats "'")))
+       ((mv no-suffix &) (lex-option-suffix nil)))
+    (token-lexeme-cst
+     (abnf::make-tree-nonleaf
+      :rulename? (abnf::rulename "char-literal")
+      :branches (list (list quote)
+                      (list (unicode-escape-item "\\u{110000}"))
+                      (list quote)
+                      (list no-suffix))))))
+
+(assert-event (equal (abnf::tree->string *char-with-large-escape-cst*)
+                     (string=>nats "'\\u{110000}'")))
+(assert-event (lexeme-cst-okp *char-with-large-escape-cst*))
+(assert-event
+ (not (lexeme-cst-unicode-escapes-okp *char-with-large-escape-cst*)))
+
+(defconst *string-with-surrogate-escape-cst* ; "a\u{D800}"
+  (b* (((mv dquote &) (lex-dquote (list #x22)))
+       ((mv a &) (lex-string-literal-char (list #x61)))
+       ((mv no-suffix &) (lex-option-suffix nil)))
+    (token-lexeme-cst
+     (abnf::make-tree-nonleaf
+      :rulename? (abnf::rulename "string-literal")
+      :branches (list (list dquote)
+                      (list (body-item a)
+                            (unicode-escape-item "\\u{D800}"))
+                      (list dquote)
+                      (list no-suffix))))))
+
+(assert-event (equal (abnf::tree->string *string-with-surrogate-escape-cst*)
+                     (string=>nats "\"a\\u{D800}\"")))
+(assert-event (lexeme-cst-okp *string-with-surrogate-escape-cst*))
+(assert-event
+ (not (lexeme-cst-unicode-escapes-okp *string-with-surrogate-escape-cst*)))
+
+; A unicode escape with the value zero is valid in a string literal,
+; and not in a C string literal.
+
+(defconst *c-string-with-zero-escape-cst* ; c"\u{0}"
+  (b* (((mv prefix &) (abnf::parse-schars "c" (string=>nats "c")))
+       ((mv dquote &) (lex-dquote (list #x22)))
+       ((mv no-suffix &) (lex-option-suffix nil)))
+    (token-lexeme-cst
+     (abnf::make-tree-nonleaf
+      :rulename? (abnf::rulename "c-string-literal")
+      :branches (list (list prefix)
+                      (list dquote)
+                      (list (unicode-escape-item "\\u{0}"))
+                      (list dquote)
+                      (list no-suffix))))))
+
+(assert-event (equal (abnf::tree->string *c-string-with-zero-escape-cst*)
+                     (string=>nats "c\"\\u{0}\"")))
+(assert-event (lexeme-cst-okp *c-string-with-zero-escape-cst*))
+(assert-event
+ (not (lexeme-cst-unicode-escapes-okp *c-string-with-zero-escape-cst*)))
+(test-unicode-escapes "\"\\u{0}\"" t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC6]: which lexemes are keywords, in each edition.
+
+(defmacro test-keyword-lexeme (string edition yes/no)
+  `(assert-event
+    (equal (keyword-lexeme-cst-p
+            (car (lexemize-rust-from-string ,string))
+            ,edition)
+           ,yes/no)))
+
+(test-keyword-lexeme "fn" (rust::edition-2021) t) ; strict
+(test-keyword-lexeme "fn" (rust::edition-2024) t)
+(test-keyword-lexeme "self" (rust::edition-2021) t)
+(test-keyword-lexeme "Self" (rust::edition-2024) t)
+(test-keyword-lexeme "async" (rust::edition-2021) t)
+(test-keyword-lexeme "try" (rust::edition-2021) t) ; reserved
+(test-keyword-lexeme "abstract" (rust::edition-2024) t)
+(test-keyword-lexeme "gen" (rust::edition-2021) nil) ; reserved from 2024
+(test-keyword-lexeme "gen" (rust::edition-2024) t)
+(test-keyword-lexeme "union" (rust::edition-2021) nil) ; weak
+(test-keyword-lexeme "union" (rust::edition-2024) nil)
+(test-keyword-lexeme "safe" (rust::edition-2024) nil)
+(test-keyword-lexeme "foo" (rust::edition-2024) nil)
+(test-keyword-lexeme "fnx" (rust::edition-2024) nil)
+(test-keyword-lexeme "Fn" (rust::edition-2024) nil)
+(test-keyword-lexeme "_" (rust::edition-2024) nil) ; punctuation
+(test-keyword-lexeme "r#fn" (rust::edition-2024) nil) ; raw identifier
+(test-keyword-lexeme "'static" (rust::edition-2024) nil) ; lifetime
+(test-keyword-lexeme "\"fn\"" (rust::edition-2024) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; [SC5]: raw identifiers and raw lifetimes with excluded names.
+; The lexer accepts them: each of these inputs is one lexeme,
+; and a valid one.  The condition rejects them.
+
+(defmacro test-raw-name (string yes/no)
+  `(assert-event
+    (b* ((trees (lexemize-rust-from-string ,string)))
+      (and (equal (len trees) 1)
+           (lexeme-cst-okp (car trees))
+           (equal (lexeme-cst-raw-name-okp (car trees))
+                  ,yes/no)))))
+
+(test-raw-name "r#crate" nil)
+(test-raw-name "r#self" nil)
+(test-raw-name "r#super" nil)
+(test-raw-name "r#Self" nil)
+(test-raw-name "'r#crate" nil)
+(test-raw-name "'r#self" nil)
+(test-raw-name "'r#super" nil)
+(test-raw-name "'r#Self" nil)
+(test-raw-name "r#fn" t) ; other keywords may be raw identifiers
+(test-raw-name "r#crates" t)
+(test-raw-name "r#Crate" t)
+(test-raw-name "r#selfish" t)
+(test-raw-name "'r#fn" t)
+(test-raw-name "'r#selfish" t)
+(test-raw-name "crate" t) ; not raw
+(test-raw-name "'self" t)
+(test-raw-name "r#\"crate\"#" t) ; a raw string
+(test-raw-name "\"r#crate\"" t)
+(test-raw-name "// r#crate" t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The conditions that tokenization checks, on the lexer's output:
+; [SC5] in both editions, and [SC15] in edition 2024.
+; All these inputs lex.
+
+(defmacro test-tokenization-conditions (string edition yes/no)
+  `(assert-event
+    (b* ((input (string=>nats ,string))
+         (trees (lexemize-rust input)))
+      (and (not (reserrp trees))
+           (equal (tokenization-conditions-okp trees input ,edition)
+                  ,yes/no)))))
+
+(test-tokenization-conditions "fn f() {}" (rust::edition-2021) t)
+(test-tokenization-conditions "fn f() {}" (rust::edition-2024) t)
+(test-tokenization-conditions "" (rust::edition-2024) t)
+
+(test-tokenization-conditions "r#crate" (rust::edition-2021) nil) ; [SC5]
+(test-tokenization-conditions "r#crate" (rust::edition-2024) nil)
+(test-tokenization-conditions "a + r#self;" (rust::edition-2021) nil)
+(test-tokenization-conditions "&'r#Self x" (rust::edition-2024) nil)
+(test-tokenization-conditions "r#fn 'r#fn" (rust::edition-2021) t)
+(test-tokenization-conditions "r#fn 'r#fn" (rust::edition-2024) t)
+
+(test-tokenization-conditions "##" (rust::edition-2021) t) ; [SC15]
+(test-tokenization-conditions "##" (rust::edition-2024) nil)
+(test-tokenization-conditions "#\"a\"" (rust::edition-2021) t)
+(test-tokenization-conditions "#\"a\"" (rust::edition-2024) nil)
+(test-tokenization-conditions "a # # b" (rust::edition-2024) t)
+(test-tokenization-conditions "#[a] #!" (rust::edition-2024) t)
+(test-tokenization-conditions "x ##" (rust::edition-2021) t)
+(test-tokenization-conditions "x ##" (rust::edition-2024) nil)
+
+(test-tokenization-conditions "r#crate ##" (rust::edition-2021) nil) ; both
+(test-tokenization-conditions "r#crate ##" (rust::edition-2024) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The suffix of a hexadecimal literal.
+; This is a rule of the grammar, not a side condition:
+; the suffix does not start with a hexadecimal digit.
+; So no CST reads 0x1f as the literal 0x1 with the suffix f.
+; We build the two trees that would, one for each alternative
+; of the rule for integer literals; neither matches the grammar.
+; The lexer's CST for 0x1f has the digits 1f and no suffix.
+
+(defun hex-1-with-suffix-f-cst (groupp)
+  (b* (((mv hex &) (lex-hex-literal (string=>nats "0x1")))
+       ((mv suffix &) (lex-suffix-no-e (string=>nats "f"))))
+    (token-lexeme-cst
+     (abnf::make-tree-nonleaf
+      :rulename? (abnf::rulename "integer-literal")
+      :branches (list (list (if groupp (body-item hex) hex))
+                      (list (body-item suffix)))))))
+
+(assert-event (equal (abnf::tree->string (hex-1-with-suffix-f-cst nil))
+                     (string=>nats "0x1f")))
+(assert-event (equal (abnf::tree->string (hex-1-with-suffix-f-cst t))
+                     (string=>nats "0x1f")))
+(assert-event (not (lexeme-cst-p (hex-1-with-suffix-f-cst nil))))
+(assert-event (not (lexeme-cst-p (hex-1-with-suffix-f-cst t))))
+
+(assert-event
+ (b* ((trees (lexemize-rust-from-string "0x1f")))
+   (and (equal (len trees) 1)
+        (lexeme-cst-okp (car trees)))))
+
+; With a suffix that starts with another letter,
+; the tree for the second alternative is the lexer's.
+
+(assert-event
+ (b* (((mv hex &) (lex-hex-literal (string=>nats "0x1")))
+      ((mv suffix &) (lex-suffix-no-hex-digit (string=>nats "g")))
+      (trees (lexemize-rust-from-string "0x1g")))
+   (and (equal (len trees) 1)
+        (lexeme-cst-okp (car trees))
+        (equal (car trees)
+               (token-lexeme-cst
+                (abnf::make-tree-nonleaf
+                 :rulename? (abnf::rulename "integer-literal")
+                 :branches (list (list hex)
+                                 (list (body-item suffix)))))))))
+
+; After a decimal, binary, or octal literal,
+; a suffix may start with a letter that is a hexadecimal digit.
+
+(test-lexeme-okp "1f32")
+(test-lexeme-okp "0b1a")
+(test-lexeme-okp "0o7F")

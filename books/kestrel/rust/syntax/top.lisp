@@ -60,6 +60,12 @@
      (see @(see differential-testing)),
      and @(see related-lexer-descriptions) relates our grammar
      to other descriptions of Rust's lexical structure.
+     The side conditions of the lexical grammar
+     have declarative specifications
+     (see @(see extra-grammatical-restrictions)),
+     except the one for Unicode identifiers;
+     the lexer and the tokenizer are tested against them,
+     and the proofs that they satisfy them are future work.
      Still to come are
      Unicode identifiers and their normalization.
      The token-tree builder groups the tokens into token trees,

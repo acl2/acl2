@@ -18,7 +18,8 @@
 ; This book only documents the differential tests.
 ; The scripts, and the ACL2 book that runs the front end on
 ; the test inputs, are in tests/harness; its README.md has the commands.
-; The numbers in the section on results are from 2026-11-23:
+; The numbers in the section on results are from 2026-11-23,
+; and those of the tokenizer against its specification from 2026-11-25:
 ; update them, with the versions, when the comparison is run again.
 
 (defxdoc+ differential-testing
@@ -239,7 +240,7 @@
       These are in the certified test books of this library,
       in the directory @('tests'),
       with the result that rustc gives for each."))
-   (xdoc::h3 "The lexer against its specification")
+   (xdoc::h3 "The lexer and the tokenizer against their specifications")
    (xdoc::p
     "The same inputs serve a second purpose,
      which does not involve rustc.
@@ -249,6 +250,20 @@
      every conjunct of the specification that can be executed,
      which is all of them but maximal munch,
      must hold of the CSTs that the lexer returns.")
+   (xdoc::p
+    "The tokenizer is checked in the same way.
+     The lexer accepts two kinds of input that the tokenizer rejects:
+     one with a raw identifier or a raw lifetime
+     that has an excluded name [SC5],
+     and, in edition 2024, one with a reserved guard [SC15].
+     So on each input that lexes,
+     the tokenizer, applied to the CSTs that the lexer returns,
+     must fail exactly when those CSTs do not satisfy
+     @(tsee tokenization-conditions-okp).
+     And the token that it makes of each lexeme
+     must be a keyword token exactly when
+     the lexeme is a keyword of the edition [SC6]
+     (see @(tsee keyword-lexeme-cst-p)).")
    (xdoc::h3 "The lexemes against the text")
    (xdoc::p
     "A third use of the inputs is for the tokenizer,
@@ -294,6 +309,16 @@
     (xdoc::li
      "The CSTs of the 161,919 inputs that lex
       satisfy the executable conjuncts of the specification.")
+    (xdoc::li
+     "Of those inputs, the tokenizer rejects
+      52 in edition 2021 and 1,833 in edition 2024.
+      They are exactly the inputs whose CSTs do not satisfy
+      the conditions that tokenization checks:
+      52 with a raw identifier or a raw lifetime
+      that has an excluded name, in both editions,
+      and 1,781 more with a reserved guard, in edition 2024.
+      The keyword tokens that the tokenizer makes
+      are exactly the lexemes that are keywords of the edition.")
     (xdoc::li
      "The lexemes of the inputs that lex and tokenize,
       161,867 in edition 2021 and 160,086 in edition 2024,
