@@ -1243,6 +1243,47 @@
 
 ; <<End AI fix 6>>
 
+; <<Start AI fix 7>>
+
+#+sbcl
+(labels ((acl2tf-char-code-back-bug-p ()
+
+; Return true if SBCL wrongly concludes, from (eql (char-code x) y) being false
+; where y is only known to be in [10,20], that the code of x is outside
+; [10,20].
+
+           (let ((f (compile nil
+                             '(lambda (x y)
+                                (let ((y (the (integer 10 20) y)))
+                                  (if (eql (char-code x) y)
+                                      nil
+                                    (and (<= 10 (char-code x))
+                                         (<= (char-code x) 20))))))))
+             (not (funcall f (code-char 12) 11)))))
+  (when (acl2tf-char-code-back-bug-p)
+
+; SBCL Version 2.6.10 (and probably earlier versions) has a bug in the
+; CONSTRAINT-PROPAGATE-BACK optimizer for CHAR-CODE (file
+; src/compiler/constraint-back.lisp).  When (eql (char-code x) y) is false and
+; the type of y is a range [low,high], it concludes that the code of x is not
+; in [low,high], which is valid only when low = high.  That made it possible to
+; prove nil: a guard-verified function that tests (eql (char-code x) y) and
+; then (<= 10 (char-code x)) took the wrong branch.  Proclaiming char-code
+; notinline, as done above, does not prevent this optimizer from running.  We
+; therefore remove the optimizer, which only narrows types, so removing it
+; cannot make compiled code wrong.  This bug was fixed in SBCL by commit
+; d325109f91 ("Fix char-code constraint-propagate-back", November 2026), so
+; this workaround is skipped for SBCL versions that include that fix.
+
+    (setf (sb-c::fun-info-constraint-propagate-back
+           (sb-int:info :function :info 'char-code))
+          nil)
+    (when (acl2tf-char-code-back-bug-p)
+      (error "Failed to work around SBCL's char-code constraint ~
+              propagation bug."))))
+
+; <<End AI fix 7>>
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

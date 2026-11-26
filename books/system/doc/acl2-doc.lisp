@@ -110988,6 +110988,11 @@ it."
  see &ldquo;AI fix 6&rdquo; in ACL2 source file @('acl2.lisp') and @(see
  community-book) @('system/tests/sbit-constant-index.lisp')</li>
 
+ <li>SBCL: &ldquo;Fix char-code constraint-propagate-back&rdquo; fixed in SBCL
+ commit d325109f91 11/14/2026; see &ldquo;AI fix 7&rdquo; in ACL2 source file
+ @('acl2.lisp') and @(see community-book)
+ @('system/tests/char-code-bad-optimization.lisp')</li>
+
  </ul>
 
  <h3>Other Bug Fixes</h3>

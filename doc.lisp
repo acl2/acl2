@@ -107872,6 +107872,11 @@ Bug Fixes From AI via Eric Smith
       (safety 0)''; see ``AI fix 6'' in ACL2 source file [30m[47macl2.lisp[0m[0m
       and [community-book] [30m[47msystem/tests/sbit-constant-index.lisp[0m[0m
 
+    * SBCL: ``Fix char-code constraint-propagate-back'' fixed in SBCL
+      commit d325109f91 11/14/2026; see ``AI fix 7'' in ACL2 source
+      file [30m[47macl2.lisp[0m[0m and [community-book]
+      [30m[47msystem/tests/char-code-bad-optimization.lisp[0m[0m
+
 
 Other Bug Fixes
 
