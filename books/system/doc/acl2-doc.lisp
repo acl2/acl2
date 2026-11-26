@@ -110959,7 +110959,7 @@ it."
 
  <li>CCL Issue #748: &ldquo;float of an integer just below 2^1024 returns
  infinity instead of signalling floating-point-overflow&rdquo;; see &ldquo;AI
- fix 6&rdquo; in ACL2 source file @('axioms.lisp') and @(see community-book)
+ fix 0&rdquo; in ACL2 source file @('axioms.lisp') and @(see community-book)
  @('system/tests/to-df-overflow-infinity-ccl-only.lisp')</li>
 
  <li>CCL Issue #749: &ldquo;(member #c(1 2)) and (eql #c(1 2)) types contain
@@ -110982,6 +110982,11 @@ it."
  still uses the old definition&rdquo;; see &ldquo;AI fix
  5&rdquo; in ACL2 source file @('acl2.lisp') and @(see community-book)
  @('system/tests/ccl-satisfies-type-cache-bug.lisp')</li>
+
+ <li>CCL Issue #755: &ldquo;ARM64: SBIT with a constant index above 32792 reads
+ the wrong bit, and SETF of it fails to compile at (speed 3) (safety 0)&rdquo;;
+ see &ldquo;AI fix 6&rdquo; in ACL2 source file @('acl2.lisp') and @(see
+ community-book) @('system/tests/sbit-constant-index.lisp')</li>
 
  </ul>
 

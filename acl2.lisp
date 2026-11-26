@@ -1141,6 +1141,108 @@
 
 ; <<End AI fix 5>>
 
+; <<Start AI fix 6>>
+
+; [Note: At https://github.com/Clozure/ccl/issues/755 on 11/25/2026 we find:
+; "closed this as completed in 0563a2816h".  See also
+; books/system/tests/sbit-constant-index.lisp.]
+
+; CCL Version 1.14 on ARM64 (and probably some earlier versions) miscompiles an
+; access to a bit vector at a constant index greater than
+; arch::target-max-1-bit-constant-index (32792); see
+; https://github.com/Clozure/ccl/issues/755.  For a read, CCL::ARM642-VREF1
+; computes the byte offset of the 32-bit word containing the bit as
+; (+ misc-data-offset (ash k -5)), omitting the factor of 4, so the wrong bit
+; is read.  That made it possible to prove nil: a guard-verified function that
+; reads a stobj bit array at a constant index such as 33000 returned a
+; different bit than the logic says.  For a write compiled with (speed 3)
+; (safety 0), CCL::ARM642-VSET1 uses an index register that was never loaded,
+; and compilation fails with "bad regspec: NIL".
+
+; We work around both without copying CCL's code.  We wrap CCL::ARM642-VREF1
+; so that for such an index K it receives instead the index
+; (+ (* 128 (floor K 32)) (mod K 32)), for which CCL's computation produces
+; the correct word offset and bit number; that index also exceeds the limit,
+; so the same code path is taken.  And we wrap CCL::ARM642-VSET so that such a
+; write is compiled as a safe write, which loads the index into a register
+; (and adds a bounds check), for which CCL's code is correct.  Each wrapper is
+; installed only if its bug is detected, and the build stops with an error if
+; the bug is still present afterwards.
+
+#+ccl
+(labels ((ccl-sbit-index-limit ()
+           (arch::target-max-1-bit-constant-index
+            (ccl::backend-target-arch ccl::*target-backend*)))
+         (ccl-sbit-constant-index-read-bug-p ()
+
+; Return true if a compiled read of a bit vector at a constant index just
+; above the limit returns the wrong bit.
+
+           (let* ((k (1+ (ccl-sbit-index-limit)))
+                  (v (make-array (1+ k) :element-type 'bit :initial-element 0))
+                  (f (compile nil `(lambda (v)
+                                     (declare (type simple-bit-vector v))
+                                     (sbit v ,k)))))
+             (setf (sbit v (car (list k))) 1) ; non-constant index
+             (not (eql (funcall f v) 1))))
+         (ccl-sbit-constant-index-write-bug-p ()
+
+; Return true if an unsafe compiled write to a bit vector at a constant index
+; just above the limit fails to compile.
+
+           (null (ignore-errors
+                   (compile nil `(lambda (v b)
+                                   (declare (type simple-bit-vector v)
+                                            (type bit b)
+                                            (optimize (speed 3) (safety 0)))
+                                   (setf (sbit v ,(1+ (ccl-sbit-index-limit)))
+                                         b)))))))
+  (when (and (fboundp 'ccl::arm642-vref1)
+             (ccl-sbit-constant-index-read-bug-p))
+    (let ((ccl:*warn-if-redefine-kernel* nil)
+          (old-vref1 (symbol-function 'ccl::arm642-vref1)))
+      (setf (symbol-function 'ccl::arm642-vref1)
+            (lambda (seg vreg xfer type-keyword src unscaled-idx
+                         index-known-fixnum)
+              (let ((arch (ccl::backend-target-arch ccl::*target-backend*)))
+                (funcall old-vref1 seg vreg xfer type-keyword src unscaled-idx
+                         (if (and index-known-fixnum
+                                  (member type-keyword
+                                          (arch::target-1-bit-ivector-types
+                                           arch))
+                                  (> index-known-fixnum
+                                     (arch::target-max-1-bit-constant-index
+                                      arch)))
+                             (logior (ash (ash index-known-fixnum -5) 7)
+                                     (logand index-known-fixnum #x1f))
+                           index-known-fixnum))))))
+    (when (ccl-sbit-constant-index-read-bug-p)
+      (error "Failed to work around CCL issue 755 (reading a bit vector at a ~
+              large constant index).")))
+  (when (and (fboundp 'ccl::arm642-vset)
+             (ccl-sbit-constant-index-write-bug-p))
+    (let ((ccl:*warn-if-redefine-kernel* nil)
+          (old-vset (symbol-function 'ccl::arm642-vset)))
+      (setf (symbol-function 'ccl::arm642-vset)
+            (lambda (seg vreg xfer type-keyword vector index value safe)
+              (funcall old-vset seg vreg xfer type-keyword vector index value
+                       (or safe
+                           (let ((k (ccl::acode-fixnum-form-p index))
+                                 (arch (ccl::backend-target-arch
+                                        ccl::*target-backend*)))
+                             (and k
+                                  (member type-keyword
+                                          (arch::target-1-bit-ivector-types
+                                           arch))
+                                  (> k (arch::target-max-1-bit-constant-index
+                                        arch))
+                                  t)))))))
+    (when (ccl-sbit-constant-index-write-bug-p)
+      (error "Failed to work around CCL issue 755 (writing a bit vector at a ~
+              large constant index)."))))
+
+; <<End AI fix 6>>
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

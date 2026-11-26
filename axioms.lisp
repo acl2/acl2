@@ -3995,7 +3995,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; books/system/tests/to-df-overflow-infinity-ccl-only.lisp failed to certify.
 ; It is fine to add other Lisps as needed.
 
-; <<Start AI fix 6>>
+; <<Start AI fix 0>>
 
 #+(and (or ccl gcl) (not acl2-loop-only))
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -4025,7 +4025,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
            :operands (list x 0.0D0))))
 )
 
-; <<End AI fix 6>>
+; <<End AI fix 0>>
 
 #-acl2-loop-only
 (defmacro to-df (x)

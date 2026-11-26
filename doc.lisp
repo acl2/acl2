@@ -107842,7 +107842,7 @@ Bug Fixes From AI via Eric Smith
 
     * CCL Issue #748: ``float of an integer just below 2^1024 returns
       infinity instead of signalling floating-point-overflow''; see
-      ``AI fix 6'' in ACL2 source file [30m[47maxioms.lisp[0m[0m and
+      ``AI fix 0'' in ACL2 source file [30m[47maxioms.lisp[0m[0m and
       [community-book]
       [30m[47msystem/tests/to-df-overflow-infinity-ccl-only.lisp[0m[0m
 
@@ -107866,6 +107866,11 @@ Bug Fixes From AI via Eric Smith
       still uses the old definition''; see ``AI fix 5'' in ACL2
       source file [30m[47macl2.lisp[0m[0m and [community-book]
       [30m[47msystem/tests/ccl-satisfies-type-cache-bug.lisp[0m[0m
+
+    * CCL Issue #755: ``ARM64: SBIT with a constant index above 32792 reads
+      the wrong bit, and SETF of it fails to compile at (speed 3)
+      (safety 0)''; see ``AI fix 6'' in ACL2 source file [30m[47macl2.lisp[0m[0m
+      and [community-book] [30m[47msystem/tests/sbit-constant-index.lisp[0m[0m
 
 
 Other Bug Fixes
