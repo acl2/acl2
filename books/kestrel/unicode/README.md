@@ -126,8 +126,13 @@ validated.
 | `bidi-guarded-theorem` | The proof that those conditions are enough: a plain text whose segments are guarded is confined (`bidi-confined-p-when-bidi-guarded-segments-p`). |
 | `bidi-self-contained` | Two more conditions, on the bracket pairs of the text, under which each segment of a plain text is displayed as it is alone (`bidi-self-contained-segments-p`), and the proof: in a paragraph from left to right, the levels are those of each segment alone, and the display is the display of each segment, one after the other. |
 | `bidi-guarded-plain`, `bidi-guarded-weak`, `bidi-guarded-brackets`, `bidi-guarded-neutral` | The steps of those two proofs, which `bidi-guarded-theorem` and `bidi-self-contained` include locally: a plain text is one isolating run sequence, and what rule L1 does in it; the invariant of the first proof and rules W1 to W7; facts about the bracket pairs; rules N0 to N2, I1 and I2; and, for the second proof, that each rule does in a stretch of a text what it does to the stretch alone.  Their definitions are for the proofs only; they have comments and no documentation topics, and `top` does not load them. |
-| `bidi-rule` | The Bidi Rule for a label of a domain name (RFC 5893, Section 2, which UTS #46 applies with its option `CheckBidi`), as it is written: `bidi-rule-p` for a label and `bidi-rule-domain-name-p` for a domain name.  And two rules derived from it, which are of this library and not of a specification: a strict one (`bidi-rule-strict-p`), and a wide one for names that may begin or end with punctuation (`bidi-rule-wide-p`).  The predicates look only at `Bidi_Class` and `Bidi_Paired_Bracket_Type`, and the book does not load the algorithm.  With the proofs that the two ways in which the RFC says what a right-to-left label is agree under the rule, that a left-to-right label or name has no right-to-left character, and that the wide rule extends the strict one.  That the two derived rules keep two labels from being displayed alike is searched, not proved (see "Tests"). |
-| `bidi-rule-display` | How a name that satisfies the wide rule is displayed in a paragraph from left to right, said directly (`bidi-name-display`): the name has three parts, the middle one goes from its first right-to-left letter to its last letter, digit or closing bracket of a pair with a letter or digit inside, and its clusters (a character with the marks after it) are displayed from right to left except that each number keeps its order.  And the way back from a display to the name (`bidi-name-read`), with the proof that it undoes the first function for every name that satisfies the wide rule, so that the display said directly is different for different names.  That the algorithm displays these names so is tested, not proved (see "Tests").  The book loads the rules of the algorithm up to the bracket pairs, not the rest. |
+| `bidi-rule` | The Bidi Rule for a label of a domain name (RFC 5893, Section 2, which UTS #46 applies with its option `CheckBidi`), as it is written: `bidi-rule-p` for a label and `bidi-rule-domain-name-p` for a domain name.  And two rules derived from it, which are of this library and not of a specification: a strict one (`bidi-rule-strict-p`), and a wide one for names that may begin or end with punctuation (`bidi-rule-wide-p`).  The predicates look only at `Bidi_Class` and `Bidi_Paired_Bracket_Type`, and the book does not load the algorithm.  With the proofs that the two ways in which the RFC says what a right-to-left label is agree under the rule, that a left-to-right label or name has no right-to-left character, and that the wide rule extends the strict one.  That the wide rule keeps two names from being displayed alike in a paragraph from left to right is proved in the books of the next rows; for the strict rule in a paragraph from right to left it is searched, not proved (see "Tests"). |
+| `bidi-rule-display` | How a name that satisfies the wide rule is displayed in a paragraph from left to right, computed without the rules of the algorithm (`bidi-name-display`): the name has three parts, the middle one goes from its first right-to-left letter to its last letter, digit or closing bracket of a pair with a letter or digit inside, and its clusters (a character with the marks after it) are displayed from right to left except that each number keeps its order.  And the way back from a display to the name (`bidi-name-read`), with the proof that it undoes the first function for every name that satisfies the wide rule, so that this display is different for different names.  The book also has the levels of such a name, computed in the same way (`bidi-name-levels`).  It loads the rules of the algorithm up to the bracket pairs, not the rest. |
+| `bidi-rule-display-weak` | The classes that rules W1 to W7 give to the characters of a name that satisfies the wide rule and has a right-to-left letter or an Arabic digit, in a paragraph from left to right, computed cluster by cluster without those rules (`bidi-clusters-weak-classes`), and the proof that the rules give them. |
+| `bidi-rule-display-levels` | The proof that the algorithm gives such a name the levels of `bidi-name-levels`: rule N0 on the bracket pairs, rules N1 and N2, the implicit levels and rule L1, after the weak rules of the row above.  It uses a theorem added to `bidi-guarded-brackets`: no two bracket pairs cross. |
+| `bidi-rule-display-order` | The proof that, with those levels, rules L2 to L4 give the display of `bidi-name-display`. |
+| `bidi-mark-class` | A fact about the data for that proof, checked on every code point: a code point whose class is not `L` is a combining mark for rule L3 exactly when its class is `NSM`. |
+| `bidi-rule-display-theorem` | The two theorems that the rows above lead to: in a paragraph from left to right, the algorithm displays a name that satisfies the wide rule as `bidi-name-display` says, and no two such names are displayed alike. |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
@@ -700,6 +705,27 @@ it:
 - `bidi-name-display-is-one-to-one`: so two names that satisfy the wide
   rule and for which `bidi-name-display` gives the same list are the same
   name.
+- `bidi-display-when-bidi-rule-wide-p`: in a paragraph from left to
+  right, the Unicode Bidirectional Algorithm displays a name that
+  satisfies the wide rule as `bidi-name-display` says.  The name is the
+  whole paragraph.  The proof goes through the rules of the algorithm:
+  `bidi-resolve-weak-types-when-bidi-rule-wide-p` for the classes after
+  rules W1 to W7, `bidi-paragraph-all-levels-when-bidi-rule-wide-p` for
+  the levels, and
+  `bidi-mirror-chars-of-bidi-arrange-with-levels-of-bidi-name-levels`
+  for rules L2 to L4 on those levels.
+- `bidi-display-is-one-to-one-when-bidi-rule-wide-p`: so two names that
+  satisfy the wide rule and that the algorithm displays alike, in a
+  paragraph from left to right, are the same name.  This is the statement
+  that the searches for the wide rule only tested before.  The same
+  statement for the strict rule in a paragraph from right to left is not
+  proved.
+- `bidi-pairs-nested-p-of-bidi-bracket-pairs`: no two of the bracket
+  pairs that `bidi-bracket-pairs` finds cross, and the pairs are in the
+  order of their opening brackets.  The proof above needs it for rule N0.
+- `bidi-combining-mark-p-when-not-left-to-right`: a code point whose
+  class is not `L` is a combining mark for rule L3 exactly when its class
+  is `NSM`; checked on every code point, for each version.
 - `code-point-bidi-class-when-code-point-bidi-mirroring-glyph`: a code
   point that has a mirroring glyph has the class `ON`; checked on every
   code point, for each version.  With it, replacing a code point by its
@@ -780,7 +806,9 @@ supported version, and nothing else of this library.
 | `bidi-skeleton`, `bidi-confusable-p` | `bidi-skeleton` | `skeleton`, `bidi-left-to-right`, and the books that those load | the tables of those books |
 | `right-to-left-free-p`, `right-to-left-code-point-p` | `right-to-left-free` | `bidi-class`, and the books that it loads | `derived-bidi-class` |
 | `bidi-rule-p`, `bidi-rule-domain-name-p`, `bidi-right-to-left-label-p`, `bidi-domain-name-p`, `bidi-rule-strict-p`, `bidi-rule-wide-p` | `bidi-rule` | `bidi-class`, `bidi-brackets`, `right-to-left-free`, and the books that those load | `derived-bidi-class`, `bidi-brackets` |
-| `bidi-name-display`, `bidi-name-read`, `bidi-clusters` | `bidi-rule-display` | `bidi-rule`, `bidi-mirroring`, `bidi-neutral-types`, and the books that those load | the tables of those books |
+| `bidi-name-display`, `bidi-name-read`, `bidi-clusters`, `bidi-name-levels` | `bidi-rule-display` | `bidi-rule`, `bidi-mirroring`, `bidi-neutral-types`, and the books that those load | the tables of those books |
+| `bidi-clusters-weak-classes`, `bidi-cluster-weak-class` | `bidi-rule-display-weak` | `bidi-rule-display`, `bidi-weak-types`, and the books that those load | the tables of those books |
+| the theorems `bidi-display-when-bidi-rule-wide-p` and `bidi-display-is-one-to-one-when-bidi-rule-wide-p` | `bidi-rule-display-theorem` | `bidi-rule-display-order`, `bidi-rule-display-levels`, and the books that those load, which are the whole algorithm | the tables of those books |
 | `single-script-confusable-p`, `mixed-script-confusable-p`, `whole-script-confusable-p` | `confusable-kinds` | `skeleton`, `mixed-scripts`, and the books that those load | the tables of those books |
 | `code-point-augmented-script-set`, `resolved-script-set`, `single-script-p`, `mixed-script-p`; the types `writing-system` and `script-set` | `mixed-scripts` | `scripts`, and the books that it loads | `scripts`, `script-extensions` |
 | `decimal-digit-zeros`, `mixed-number-systems-p` | `mixed-numbers` | `decimal-digits`, and the books that it loads | `unicode-data` |
@@ -1227,17 +1255,22 @@ there is no formal specification to prove that against.  The evidence is:
   rule in each direction and 4,437,669 names for the wide rule, and with
   the letters of class `L` 85,486 labels and 816,451 names; none
   displayed like another.
-- `bidi-rule-display`: examples of the display of a name said directly
-  (`bidi-name-display`) and of the way back (`bidi-name-read`): numbers,
+- `bidi-rule-display`: examples of the display of a name computed
+  without the rules of the algorithm (`bidi-name-display`) and of the way
+  back (`bidi-name-read`): numbers,
   separators after a Hebrew and after an Arabic letter, a mirrored
   character, bracket pairs with and without a digit inside, brackets that
   do not match, marks.  Examples of names that do not satisfy the wide
   rule and that the algorithm displays in another way, one for each of
   three conditions; and two names with both kinds of digits that are
   displayed alike.  Then the search: for every name of up to five
-  characters that satisfies the wide rule, the display said directly is
-  the display of the algorithm in a paragraph from left to right, and the
-  way back gives the name.  It goes through the 318,375 right-to-left
+  characters that satisfies the wide rule, the display of
+  `bidi-name-display` is the display of the algorithm in a paragraph from
+  left to right, and the way back gives the name.  That is now a theorem
+  for names of any length; the search was written before the proof.  Five
+  examples of the levels (`bidi-name-levels`) and of the classes after
+  the weak rules (`bidi-clusters-weak-classes`), each compared with the
+  algorithm.  It goes through the 318,375 right-to-left
   names over the sixteen characters of the search for the wide rule,
   through the 101,423 names of both kinds over the twelve characters
   with letters of class `L`, and through 41,262 right-to-left names over
@@ -1637,11 +1670,11 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,250 topics.  The books of the
+With this, the library has about 1,260 topics.  The books of the
 bidirectional algorithm have some 385 of them: their functions, and
 twenty-seven small types whose generated topics, about fifteen at most for
 one type, are under the line.  The book of the Bidi Rule has 29, and
-the book of the display of names 27.
+the books of the display of names 37.
 
 ## Performance
 
@@ -1669,8 +1702,8 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 152 books from scratch, the tests and the generated
-tables included, took about six minutes with two jobs
+Certifying all the 157 books from scratch, the tests and the generated
+tables included, took about eight minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
 seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
 sum with 179 cases) and `normalization-across-versions` (22 seconds).

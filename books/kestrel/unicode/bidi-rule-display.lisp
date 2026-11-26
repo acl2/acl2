@@ -15,6 +15,7 @@
 (include-book "bidi-neutral-types")
 
 (include-book "std/lists/flatten" :dir :system)
+(include-book "std/lists/repeat" :dir :system)
 
 (local (include-book "bidi-guarded-brackets"))
 (local (include-book "std/lists/top" :dir :system))
@@ -27,7 +28,8 @@
 (defxdoc+ bidi-rule-display
   :parents (bidi-rule)
   :short "How a name that satisfies the wide rule is displayed
-          in a paragraph from left to right, said directly,
+          in a paragraph from left to right,
+          computed without the rules of the algorithm,
           and the way back from the display to the name."
   :long
   (xdoc::topstring
@@ -48,9 +50,11 @@
      so that @(tsee bidi-name-display) gives different displays
      to different names
      (see @(see bidi-rule-display-theorems)).
-     It does not prove that the algorithm displays such a name
-     as @(tsee bidi-name-display) says.
-     That is tested, on every name of the searches
+     That the algorithm displays such a name
+     as @(tsee bidi-name-display) says
+     is proved in other books, which load the whole algorithm
+     (see @(see bidi-rule-display-theorem)).
+     It is also tested, on every name of the searches
      for the wide rule of up to five characters;
      the tests are in the file @('tests/bidi-rule-display.lisp').")
    (xdoc::h3 "The words")
@@ -140,9 +144,10 @@
      in another way than @(tsee bidi-name-display) says;
      the tests have an example of each,
      and one of a bracket before the first letter.")
-   (xdoc::h3 "What is left to prove")
+   (xdoc::h3 "The theorem about the algorithm")
    (xdoc::p
-    "The statement that is not proved is this one:")
+    "The Unicode Bidirectional Algorithm displays a name
+     that satisfies the wide rule as this book says:")
    (xdoc::codeblock
     "(implies (and (bidi-rule-wide-p name ver)"
     "              (equal (paragraph-direction-kind direction)"
@@ -150,12 +155,20 @@
     "         (equal (bidi-display name direction ver)"
     "                (bidi-name-display name ver)))")
    (xdoc::p
-    "With it, and with the theorem of this book,
+    "This is the theorem @('bidi-display-when-bidi-rule-wide-p')
+     (see @(see bidi-rule-display-theorem)).
+     With it, and with the theorem of this book,
      two names that satisfy the wide rule
      and are displayed alike in a paragraph from left to right
      are the same name.
-     For how it could be proved,
-     see the first two steps of @(see bidi-rule-proof-plan)."))
+     The proof has three parts, each in a book of its own:
+     the classes that the weak rules give
+     (see @(see bidi-rule-display-weak));
+     the levels, which are those of @(tsee bidi-name-levels)
+     (see @(see bidi-rule-display-levels));
+     and the order of display that follows from those levels
+     (see @(see bidi-rule-display-order)).
+     See also @(see bidi-rule-proof-plan)."))
   :order-subtopics t
   :default-parent t)
 
@@ -725,7 +738,8 @@
   :returns (display code-point-listp
                     :hints (("Goal" :in-theory (enable nfix))))
   :short "The display of a name in a paragraph from left to right,
-          said directly, in a version of Unicode."
+          computed without the rules of the algorithm,
+          in a version of Unicode."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -743,19 +757,99 @@
    (xdoc::p
     "This is the display of the Unicode Bidirectional Algorithm
      (see @(tsee bidi-display))
-     for the names that satisfy @(tsee bidi-rule-wide-p)
-     in the tests of the library; that is not proved.
+     for the names that satisfy @(tsee bidi-rule-wide-p):
+     that is the theorem of @(see bidi-rule-display-theorem).
      For other names the two can differ."))
   (b* ((name (code-point-list-fix name))
        (start (bidi-name-start name ver))
        (end (bidi-name-end name ver))
        ((unless (< start end)) name))
     (append (take start name)
-            (acl2::flatten (bidi-show-clusters
-                      (bidi-clusters (nthcdr start (take end name)) ver)
-                      nil
-                      ver))
+            (acl2::flatten
+             (bidi-show-clusters
+              (bidi-clusters (nthcdr start (take end name)) ver)
+              nil
+              ver))
             (nthcdr end name)))
+  :guard-hints (("Goal" :in-theory (enable nfix)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defrulel nat-listp-of-repeat
+  (implies (natp x)
+           (nat-listp (acl2::repeat n x)))
+  :induct (acl2::repeat n x)
+  :enable acl2::repeat)
+
+(define bidi-middle-levels ((clusters code-point-list-listp)
+                            (arabic booleanp)
+                            (ver versionp))
+  :returns (levels nat-listp)
+  :short "The levels of the code points of the middle part of a name,
+          computed without the rules of the algorithm,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The list is taken from its start,
+     as @(tsee bidi-show-clusters) takes it:
+     the code points of a number (see @(tsee bidi-leading-number))
+     have level 2,
+     and those of a cluster that is not in a number have level 1.
+     These are the levels for which rule L2 of the algorithm
+     reverses the middle part and then puts each number back
+     in its own order.
+     The second argument says that the last letter before the list
+     is of class @('AL') (@('Arabic_Letter'))."))
+  (b* ((number (bidi-leading-number clusters arabic ver))
+       (rest (bidi-after-leading-number clusters arabic ver))
+       (twos (acl2::repeat (len (acl2::flatten number)) 2))
+       ((when (endp rest)) twos)
+       (cluster (code-point-list-fix (car rest))))
+    (append twos
+            (acl2::repeat (len cluster) 1)
+            (bidi-middle-levels
+             (cdr rest)
+             (bidi-arabic-after-cluster-p cluster arabic ver)
+             ver)))
+  :measure (len clusters)
+  :hints (("Goal" :in-theory (enable o-p o-finp o<)))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+(define bidi-name-levels ((name code-point-listp) (ver versionp))
+  :returns (levels nat-listp)
+  :short "The levels of the code points of a name
+          in a paragraph from left to right,
+          computed without the rules of the algorithm,
+          in a version of Unicode."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The code points before the first right-to-left letter
+     (see @(tsee bidi-name-start)) and those after the middle part
+     (see @(tsee bidi-name-end)) have level 0,
+     and those of the middle part have the levels
+     that @(tsee bidi-middle-levels) gives.
+     Every code point of a name with no right-to-left letter
+     has level 0.")
+   (xdoc::p
+    "For a name that satisfies @(tsee bidi-rule-wide-p),
+     these are the levels that the Unicode Bidirectional Algorithm
+     gives in a paragraph from left to right
+     (see @(tsee bidi-paragraph-all-levels)):
+     that is the theorem of @(see bidi-rule-display-levels)."))
+  (b* ((name (code-point-list-fix name))
+       (start (bidi-name-start name ver))
+       (end (bidi-name-end name ver))
+       ((unless (< start end)) (acl2::repeat (len name) 0)))
+    (append (acl2::repeat start 0)
+            (bidi-middle-levels
+             (bidi-clusters (nthcdr start (take end name)) ver)
+             nil
+             ver)
+            (acl2::repeat (- (len name) end) 0)))
   :guard-hints (("Goal" :in-theory (enable nfix)))
   :hooks (:fix))
 
@@ -2363,7 +2457,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bidi-rule-display-theorems
-  :short "The way back undoes the display that is said directly,
+  :short "The way back undoes the display
+          that @(tsee bidi-name-display) computes,
           for a name that satisfies the wide rule;
           so that display is different for different names."
   :long
@@ -2379,7 +2474,8 @@
      are the same name.
      The theorems are about @(tsee bidi-name-display),
      not about the Unicode Bidirectional Algorithm:
-     that the algorithm displays these names so is tested, not proved.")
+     that the algorithm displays these names so
+     is the theorem of @(see bidi-rule-display-theorem).")
    (xdoc::p
     "The proof is in three layers.
      On lists of clusters whose digits are all of one class,

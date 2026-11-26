@@ -290,14 +290,16 @@
       for which a search finds no two labels that are displayed alike,
       and the examples that show that the Bidi Rule alone
       does not prevent that.
-      The two rules are not in a specification,
-      and that they do what the search suggests is not proved yet.
-      For the wide one, how a name is displayed
-      in a paragraph from left to right is also said directly,
-      with the proof that this display is different
-      for different names and the tests that it is
-      the display of the algorithm:
-      see @(see bidi-rule-display)."))
+      The two rules are not in a specification.
+      For the wide one, in a paragraph from left to right,
+      it is proved that no two names are displayed alike:
+      how a name is displayed is computed without the rules
+      of the algorithm, that display is proved to be different
+      for different names, and the algorithm is proved to give it
+      (see @(see bidi-rule-display)
+      and @(see bidi-rule-display-theorem)).
+      For the strict one in a paragraph from right to left,
+      that is not proved yet."))
    (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")

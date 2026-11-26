@@ -33,6 +33,9 @@
 ;   the opening bracket has an opening role and the class ON,
 ;   and the closing bracket has a closing role;
 ;   no two pairs have the same opening bracket;
+;   no two pairs cross, and the pairs are in the order
+;   of their opening brackets (the proof of the book
+;   bidi-rule-display-levels.lisp uses this);
 ;   the pairs found after rules W1 to W7 are those found before,
 ;   if every position that has a bracket role has the class ON.
 ;
@@ -139,6 +142,34 @@
                (< (bracket-pair->close (car pairs)) (lnfix start))
                (<= (lnfix end) (bracket-pair->close (car pairs))))
            (bidi-pairs-none-entering-p (cdr pairs) start end)))
+  :hooks nil)
+
+; A pair X is before a pair Y: X opens before Y,
+; and Y is all after X or all inside X.
+; In a nested list of pairs, each pair is before every later pair,
+; so that no two pairs cross.
+
+(define bidi-pair-before-p ((x bracket-pair-p) (y bracket-pair-p))
+  :returns (yes/no booleanp)
+  (b* (((bracket-pair x))
+       ((bracket-pair y)))
+    (and (< x.open y.open)
+         (or (< x.close y.open)
+             (< y.close x.close))))
+  :hooks nil)
+
+(define bidi-pair-before-all-p ((x bracket-pair-p) (pairs bracket-pair-listp))
+  :returns (yes/no booleanp)
+  (or (endp pairs)
+      (and (bidi-pair-before-p x (car pairs))
+           (bidi-pair-before-all-p x (cdr pairs))))
+  :hooks nil)
+
+(define bidi-pairs-nested-p ((pairs bracket-pair-listp))
+  :returns (yes/no booleanp)
+  (or (endp pairs)
+      (and (bidi-pair-before-all-p (car pairs) (cdr pairs))
+           (bidi-pairs-nested-p (cdr pairs))))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1058,6 +1089,245 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; No two pairs cross.
+; Two pairs are apart if one is all before the other or all inside the other.
+; A pair that closes at a position C, with its opening bracket at O,
+; is apart from every pair found later: such a pair closes after C,
+; and its opening bracket is after C or was in the stack below O.
+
+(local
+ (define pair-apart ((x bracket-pair-p) (y bracket-pair-p))
+   :returns (yes/no booleanp)
+   (b* (((bracket-pair x))
+        ((bracket-pair y)))
+     (or (< x.close y.open)
+         (< y.close x.open)
+         (and (< x.open y.open)
+              (< y.close x.close))
+         (and (< y.open x.open)
+              (< x.close y.close))))
+   :hooks nil))
+
+(local
+ (define pair-apart-all ((x bracket-pair-p) (pairs bracket-pair-listp))
+   :returns (yes/no booleanp)
+   (or (endp pairs)
+       (and (pair-apart x (car pairs))
+            (pair-apart-all x (cdr pairs))))
+   :hooks nil))
+
+(local
+ (define pairs-apart ((pairs bracket-pair-listp))
+   :returns (yes/no booleanp)
+   (or (endp pairs)
+       (and (pair-apart-all (car pairs) (cdr pairs))
+            (pairs-apart (cdr pairs))))
+   :hooks nil))
+
+(local
+ (define stack-outside ((stack open-bracket-listp) (o natp) (c natp))
+   :returns (yes/no booleanp)
+   (or (endp stack)
+       (and (or (< (open-bracket->position (car stack)) (nfix o))
+                (< (nfix c) (open-bracket->position (car stack))))
+            (stack-outside (cdr stack) o c)))
+   :hooks nil))
+
+(local
+ (define pairs-outside ((pairs bracket-pair-listp) (o natp) (c natp))
+   :returns (yes/no booleanp)
+   (or (endp pairs)
+       (and (< (nfix c) (bracket-pair->close (car pairs)))
+            (or (< (bracket-pair->open (car pairs)) (nfix o))
+                (< (nfix c) (bracket-pair->open (car pairs))))
+            (pairs-outside (cdr pairs) o c)))
+   :hooks nil))
+
+(defrulel stack-outside-of-open-bracket-list-fix
+  (equal (stack-outside (open-bracket-list-fix stack) o c)
+         (stack-outside stack o c))
+  :induct (list-induction stack)
+  :enable (list-induction
+           stack-outside
+           open-bracket-list-fix))
+
+(defrulel stack-outside-when-stack-below
+  (implies (and (stack-below stack bound)
+                (<= (nfix bound) (nfix o)))
+           (stack-outside stack o c))
+  :induct (stack-induction stack bound)
+  :enable (stack-induction
+           stack-below
+           stack-outside
+           nfix))
+
+(defrulel open-bracket-stack-find-when-stack-outside
+  (b* (((mv found position rest) (open-bracket-stack-find stack id)))
+    (implies (stack-outside stack o c)
+             (and (implies found
+                           (or (< position (nfix o))
+                               (< (nfix c) position)))
+                  (stack-outside rest o c))))
+  :induct (list-induction stack)
+  :enable (list-induction
+           open-bracket-stack-find
+           stack-outside))
+
+(defrulel pairs-outside-of-bidi-bracket-pairs-from
+  (implies (and (stack-outside stack o c)
+                (natp position)
+                (< (nfix c) position))
+           (pairs-outside
+            (mv-nth 1 (bidi-bracket-pairs-from roles position stack))
+            o
+            c))
+  :induct (bidi-bracket-pairs-from roles position stack)
+  :enable (bidi-bracket-pairs-from
+           pairs-outside
+           stack-outside
+           nfix
+           natp)
+  :disable open-bracket-stack-find-when-stack-outside
+  :hints ('(:use (:instance open-bracket-stack-find-when-stack-outside
+                            (id (bidi-bracket-role-close->id
+                                 (bidi-bracket-role-fix (car roles))))))))
+
+(defrulel pair-apart-all-when-pairs-outside
+  (implies (and (pairs-outside pairs
+                               (bracket-pair->open x)
+                               (bracket-pair->close x))
+                (< (bracket-pair->open x) (bracket-pair->close x)))
+           (pair-apart-all x pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pairs-outside
+           pair-apart-all
+           pair-apart
+           nfix))
+
+(defrulel stack-outside-of-rest-of-open-bracket-stack-find
+  (b* (((mv found position rest) (open-bracket-stack-find stack id)))
+    (implies (and (stack-below stack bound)
+                  found)
+             (stack-outside rest position c)))
+  :use (open-bracket-stack-find-when-stack-below
+        (:instance stack-outside-when-stack-below
+                   (stack (mv-nth 2 (open-bracket-stack-find stack id)))
+                   (bound (mv-nth 1 (open-bracket-stack-find stack id)))
+                   (o (mv-nth 1 (open-bracket-stack-find stack id)))))
+  :disable (open-bracket-stack-find-when-stack-below
+            stack-outside-when-stack-below))
+
+(defrulel pairs-apart-of-bidi-bracket-pairs-from
+  (implies (and (stack-below stack position)
+                (natp position))
+           (pairs-apart
+            (mv-nth 1 (bidi-bracket-pairs-from roles position stack))))
+  :induct (bidi-bracket-pairs-from roles position stack)
+  :enable (bidi-bracket-pairs-from
+           pairs-apart
+           stack-below
+           nfix
+           natp))
+
+; Sorting keeps the pairs apart.
+
+(defrulel pair-apart-all-of-bracket-pair-list-fix
+  (equal (pair-apart-all x (bracket-pair-list-fix pairs))
+         (pair-apart-all x pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pair-apart-all
+           pair-apart
+           bracket-pair-list-fix))
+
+(defrulel pair-apart-all-of-bracket-pair-fix
+  (equal (pair-apart-all (bracket-pair-fix x) pairs)
+         (pair-apart-all x pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pair-apart-all
+           pair-apart))
+
+(defrulel pairs-apart-of-bracket-pair-list-fix
+  (equal (pairs-apart (bracket-pair-list-fix pairs))
+         (pairs-apart pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pairs-apart
+           bracket-pair-list-fix))
+
+(defrulel pair-apart-all-of-bracket-pair-insert
+  (equal (pair-apart-all x (bracket-pair-insert y pairs))
+         (and (pair-apart x y)
+              (pair-apart-all x pairs)))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bracket-pair-insert
+           pair-apart-all
+           pair-apart))
+
+(defrulel pair-apart-all-of-bracket-pairs-sort
+  (equal (pair-apart-all x (bracket-pairs-sort pairs))
+         (pair-apart-all x pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bracket-pairs-sort
+           pair-apart-all))
+
+(defrulel pairs-apart-of-bracket-pair-insert
+  (implies (and (pair-apart-all x pairs)
+                (pairs-apart pairs))
+           (pairs-apart (bracket-pair-insert x pairs)))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bracket-pair-insert
+           pairs-apart
+           pair-apart-all
+           pair-apart))
+
+(defrulel pairs-apart-of-bracket-pairs-sort
+  (implies (pairs-apart pairs)
+           (pairs-apart (bracket-pairs-sort pairs)))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           bracket-pairs-sort
+           pairs-apart))
+
+; Sorted pairs that are apart are nested.
+
+(defrulel bidi-pair-before-all-p-when-apart-and-open-from
+  (implies (and (pair-apart-all x pairs)
+                (pairs-open-from-p pairs (bracket-pair->open x))
+                (pairs-roles-ok pairs all)
+                (< (bracket-pair->open x) (bracket-pair->close x)))
+           (bidi-pair-before-all-p x pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pair-apart-all
+           pair-apart
+           pairs-open-from-p
+           pairs-roles-ok
+           pair-roles-ok
+           bidi-pair-before-all-p
+           bidi-pair-before-p
+           nfix))
+
+(defrulel bidi-pairs-nested-p-when-sorted-and-apart
+  (implies (and (pairs-sorted-p pairs)
+                (pairs-apart pairs)
+                (pairs-roles-ok pairs all))
+           (bidi-pairs-nested-p pairs))
+  :induct (list-induction pairs)
+  :enable (list-induction
+           pairs-sorted-p
+           pairs-apart
+           pairs-roles-ok
+           pair-roles-ok
+           bidi-pairs-nested-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; The theorems of this book.
 
 (defrule bidi-pairs-sound-p-of-bidi-bracket-pairs
@@ -1073,6 +1343,22 @@
   :enable (bidi-bracket-pairs
            stack-below
            bidi-pair-opens))
+
+; No two pairs cross, and the pairs are in the order of their opening brackets.
+
+(defrule bidi-pairs-nested-p-of-bidi-bracket-pairs
+  (bidi-pairs-nested-p (bidi-bracket-pairs classes roles))
+  :enable (bidi-bracket-pairs
+           stack-below
+           stack-opens)
+  :use (:instance bidi-pairs-nested-p-when-sorted-and-apart
+                  (pairs (bracket-pairs-sort
+                          (mv-nth 1 (bidi-bracket-pairs-from
+                                     (bidi-current-bracket-roles classes roles)
+                                     0
+                                     nil))))
+                  (all (bidi-current-bracket-roles classes roles)))
+  :disable bidi-pairs-nested-p-when-sorted-and-apart)
 
 (defrule bidi-bracket-pairs-of-bidi-resolve-weak-types
   (implies (bidi-roles-neutral-p roles classes)
