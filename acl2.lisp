@@ -1169,7 +1169,7 @@
 ; installed only if its bug is detected, and the build stops with an error if
 ; the bug is still present afterwards.
 
-#+ccl
+#+(and ccl arm64)
 (labels ((ccl-sbit-index-limit ()
            (arch::target-max-1-bit-constant-index
             (ccl::backend-target-arch ccl::*target-backend*)))
