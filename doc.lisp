@@ -107310,6 +107310,11 @@ Bug Fixes From AI via Eric Smith
   recompression was required but was not performed.  See
   [community-book] [30m[47msystem/tests/compress1-length-bug.lisp[0m[0m.
 
+  Applied (and checked) AI-suggested fix to eliminate a soundness bug
+  in [30m[47m[maybe-flush-and-compress1][0m[0m, which could return an array updated
+  by [30m[47m[aset1][0m[0m without compressing it.  For an example, see
+  [community-book] [30m[47msystem/tests/maybe-flush-and-compress1-aset1.lisp[0m[0m.
+
   Fixed a soundness bug caused by failing to account for
   [invariant-risk] for function calls inside calls of [30m[47m[loop$][0m[0m.  See
   [community-book] [30m[47msystem/tests/loop-invariant-risk.lisp[0m[0m.
@@ -107850,6 +107855,12 @@ Bug Fixes From AI via Eric Smith
   you can't use recursion to iterate that way, since [df]s are not
   allowed in lists.  See [community-book]
   [30m[47msystem/tests/for-loop-df-variables.lisp[0m[0m.
+
+  Fixed a soundness bug caused by inappropriate management of the
+  [proof-builder] state, specifically: for uses of [30m[47m:instructions[0m[0m in
+  [events] submitted under a [30m[47m:lisp[0m[0m command invoked in an interactive
+  proof-builder session.  See [community-book]
+  [30m[47msystem/tests/proof-builder-session-reuse.lisp[0m[0m for an example.
 
   (CCL only) Added a workaround from AI for unsoundnesss involving
   [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |

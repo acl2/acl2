@@ -110970,6 +110970,12 @@ it."
  allowed in lists.  See @(see community-book)
  @('system/tests/for-loop-df-variables.lisp').</p>
 
+ <p>Fixed a soundness bug caused by inappropriate management of the @(see
+ proof-builder) state, specifically: for uses of @(':instructions') in @(see
+ events) submitted under a @(':lisp') command invoked in an interactive
+ proof-builder session.  See @(see community-book)
+ @('system/tests/proof-builder-session-reuse.lisp') for an example.</p>
+
  <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
  truncate) and related functions, due to a <a
  href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as

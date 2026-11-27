@@ -1522,18 +1522,6 @@
              (list (cons #\0 goals)
                    (cons #\1 (length goals))))))
 
-(defun state-stack-from-instructions
-  (term raw-term event-name rule-classes instructions replay-flg
-        quit-conditions state)
-  (if replay-flg
-      (pprogn (io? proof-builder nil state
-                   nil
-                   (fms0 "~|~%Entering the proof-builder....~%~%"))
-              (er-progn (pc-main term raw-term event-name rule-classes
-                                 instructions quit-conditions t nil state)
-                        (value (state-stack))))
-    (value (state-stack))))
-
 (defun state-from-instructions (raw-term event-name rule-classes instructions
                                          quit-conditions state)
 
@@ -1608,11 +1596,12 @@
       (value nil))
      (t
       (mv-let (erp state-stack state)
-        (state-stack-from-instructions
-         term raw-term event-name rule-classes instructions
-         (not in-verify)
-         '(signal value)
-         state)
+        (pprogn (io? proof-builder nil state
+                     nil
+                     (fms0 "~|~%Entering the proof-builder....~%~%"))
+                (er-progn (pc-main term raw-term event-name rule-classes
+                                   instructions '(signal value) t nil state)
+                          (value (state-stack))))
         (if erp
             (pprogn
              (io? proof-builder nil state
