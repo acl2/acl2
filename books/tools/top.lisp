@@ -28,6 +28,8 @@
 (include-book "define-keyed-function")
 (include-book "defmacfun")
 (include-book "defsum")
+(include-book "defthm-prune-doc")
+(include-book "defthm-prune")
 (include-book "defthmg")
 ;(include-book "defttag-muffled") ; suppresses ttag warnings
 (include-book "deftuple")

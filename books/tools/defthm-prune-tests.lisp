@@ -1,5 +1,6 @@
-; Copyright (C) 2026
-; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+; Copyright 2026 Google LLC
+; Use of this source code is governed by a BSD-style license that can be
+; found in the LICENSE file.
 ;
 ; Tests for books/tools/defthm-prune.lisp
 
