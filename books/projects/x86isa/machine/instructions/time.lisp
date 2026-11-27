@@ -62,7 +62,11 @@
 
 
           ;; Loads the time stamp counter into EDX:EAX
-          (b* ((time-stamp-counter (time-stamp-counter x86))
+          (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+               (time-stamp-counter (time-stamp-counter x86))
                (x86 (wr32 *eax* (loghead 32 time-stamp-counter) x86))
                (x86 (wr32 *edx* (loghead 32 (logtail 32 time-stamp-counter)) x86)))
               (write-*ip proc-mode temp-rip x86)))

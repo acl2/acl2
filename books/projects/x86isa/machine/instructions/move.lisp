@@ -867,7 +867,11 @@
 
   :body
 
-  (b* (;; The r/m field specifies the GPR (destination).
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; The r/m field specifies the GPR (destination).
        ;; MOD field is ignored.
        ;; The reg field specifies the control register (source).
 
@@ -943,7 +947,11 @@
 
   :body
 
-  (b* (;; The r/m field specifies the GPR (source).
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; The r/m field specifies the GPR (source).
        ;; MOD field is ignored.
        ;; The reg field specifies the control register (destination).
 

@@ -82,7 +82,11 @@
 
   :body
 
-  (b* ((ia32-efer (n12 (msri *ia32_efer-idx* x86)))
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (ia32-efer (n12 (msri *ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
@@ -223,7 +227,11 @@
 
   :body
 
-  (b* ((ia32-efer (n12 (msri #.*ia32_efer-idx* x86)))
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (ia32-efer (n12 (msri #.*ia32_efer-idx* x86)))
        ((the (unsigned-byte 1) ia32-efer-sce)
         (ia32_eferBits->sce ia32-efer))
        ((when (mbe :logic (zp ia32-efer-sce)
@@ -414,7 +422,11 @@
 
   :body
 
-  (b* ( ;; We can't *call* SYSRET in any mode other than 64-bit mode
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; We can't *call* SYSRET in any mode other than 64-bit mode
        ;; (including compatibility mode), but when it is called from
        ;; the 64-bit mode *without* REX.W, a mode switch to
        ;; compatibility mode is effected.  From then on, the machine

@@ -85,7 +85,11 @@
 
           :body
 
-          (b* ((requested-info (rr32 *eax* x86))
+          (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+               (requested-info (rr32 *eax* x86))
                ;; Choose between basic and extended data
                (basic-info? (< requested-info #x80000000))
                (relevant-info (if basic-info?

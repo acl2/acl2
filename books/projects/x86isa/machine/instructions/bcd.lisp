@@ -169,8 +169,10 @@
         (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; There is no need to check the instruction length,
-       ;; because it is always 2 bytes.
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; The immediate must not be 0.
        ((when (= imm 0))
@@ -231,8 +233,10 @@
         (add-to-*ip proc-mode temp-rip 1 x86))
        ((when flg) (!!ms-fresh :rip-increment-error flg))
 
-       ;; There is no need to check the instruction length,
-       ;; because it is always 2 bytes.
+       ;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; See pseudocode in Intel manual for AAD.
        ((the (unsigned-byte 16) ax) (rr16 #.*eax* x86))

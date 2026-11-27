@@ -100,7 +100,7 @@
 
           ;; Op/En: M
           ;; 0F AE /0: fxsave
-          ;; REX.W + 00F AE /0: fxsave64
+          ;; REX.W + 0F AE /0: fxsave64
 
           :parents (two-byte-opcodes)
 
@@ -166,6 +166,11 @@
                ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
                 (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
                ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?))
+
                ((unless (signed-byte-p 64 (+ 512 dest-addr))) (!!ms-fresh :fxsave-address-overflow))
 
                ((mv flg x86) (wme16 proc-mode dest-addr seg-reg (fp-ctrl x86) inst-ac? x86))
@@ -290,17 +295,17 @@
        (val (fp-datai start-reg x86))
        ((mv kind & & & &) (fp-decode val 15 64))
        (tag-val (case kind
-                  (zero #x01)
-                  (normal #x00)
-                  (otherwise #x10))))
+                  (zero #b01)
+                  (normal #b00)
+                  (otherwise #b10))))
       (set-fp-tag (logtail 1 ftw) x86 (1+ start-reg)
                   (part-install tag-val fp-tag :low (* 2 start-reg) :width 2))))
 
 (def-inst x86-fxrstor/fxrstor64
 
           ;; Op/En: M
-          ;; 0F AE /0: fxrstor
-          ;; REX.W + 00F AE /0: fxrstor64
+          ;; 0F AE /1: fxrstor
+          ;; REX.W + 0F AE /1: fxrstor64
 
           :parents (two-byte-opcodes)
 
@@ -348,6 +353,11 @@
                ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
                 (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
                ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?))
+
                ((unless (signed-byte-p 64 (+ 512 src-addr -1))) (!!ms-fresh :fxrstor-address-overflow))
 
                ((mv flg fp-ctrl x86) (rme16 proc-mode src-addr seg-reg :r inst-ac? x86))
@@ -375,12 +385,12 @@
                ;; The manual breaks this field up into FCS and FIP when operand
                ;; size is not 64-bit, but all the cases are equivalent to the
                ;; following
-               ((mv flg fp-last-inst x86) (rme32 proc-mode (+ 8 src-addr) seg-reg :r inst-ac? x86))
-               ((when flg) (!!ms-fresh :rme32 proc-mode flg))
+               ((mv flg fp-last-inst x86) (rme48 proc-mode (+ 8 src-addr) seg-reg :r inst-ac? x86))
+               ((when flg) (!!ms-fresh :rme48 proc-mode flg))
                (x86 (!fp-last-inst fp-last-inst x86))
 
-               ((mv flg fp-last-data x86) (rme32 proc-mode (+ 16 src-addr) seg-reg :r inst-ac? x86))
-               ((when flg) (!!ms-fresh :rme32 proc-mode flg))
+               ((mv flg fp-last-data x86) (rme48 proc-mode (+ 16 src-addr) seg-reg :r inst-ac? x86))
+               ((when flg) (!!ms-fresh :rme48 proc-mode flg))
                (x86 (!fp-last-data fp-last-data x86))
 
                ((mv flg mxcsr x86) (rme32 proc-mode (+ 24 src-addr) seg-reg :r inst-ac? x86))

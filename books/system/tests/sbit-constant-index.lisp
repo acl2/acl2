@@ -40,6 +40,9 @@
   (declare (xargs :stobjs st :guard (and (natp i) (< i 40000))))
   (update-ari i 1 st))
 
+; Added by Matt K. to avoid stack overflow in GCL:
+(comp t)
+
 (defun g ()
   (declare (xargs :guard t))
   (with-local-stobj st

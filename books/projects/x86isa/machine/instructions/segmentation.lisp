@@ -671,7 +671,11 @@ a non-canonical form, raise the SS exception.</p>"
 
   ;; Note: opcode is the third byte of the three-byte opcode.
 
-  (b* (((when (app-view x86))
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ((when (app-view x86))
         (!!ms-fresh :swapgs-unimplemented))
 
        ;; If the current privilege level is not 0, the #GP exception is

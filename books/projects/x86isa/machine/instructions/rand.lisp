@@ -80,7 +80,11 @@
 
   :body
 
-  (b* (((the (integer 1 8) operand-size)
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ((the (integer 1 8) operand-size)
         (select-operand-size
          proc-mode nil rex-byte nil prefixes nil nil nil x86))
 
