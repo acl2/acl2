@@ -1571,9 +1571,10 @@ multi-line\"#")))
     "Identifiers are ASCII-only here, as in the grammar,
      whose identifier rules stand for the Unicode ones for now [SC4].")
    (xdoc::p
-    "The lexer book defines the executable lexer;
-     proving that it satisfies this specification
-     is future work."))
+    "The lexer book defines the executable lexer.
+     That it satisfies this specification
+     is proved in @(see lexer-correctness),
+     except for the maximal munch conjunct, which is future work."))
   :measure (len trees)
   (b* ((trees (abnf::tree-list-fix trees))
        (input (nat-list-fix input))

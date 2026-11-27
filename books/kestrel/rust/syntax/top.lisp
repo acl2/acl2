@@ -21,6 +21,7 @@
 (include-book "grammar")
 (include-book "extra-grammatical-restrictions")
 (include-book "lexer")
+(include-book "lexer-correctness")
 (include-book "tokenizer")
 (include-book "token-tree-builder")
 (include-book "input-format")
@@ -64,8 +65,10 @@
      have declarative specifications
      (see @(see extra-grammatical-restrictions)),
      except the one for Unicode identifiers;
-     the lexer and the tokenizer are tested against them,
-     and the proofs that they satisfy them are future work.
+     the lexer and the tokenizer are tested against them.
+     The lexer is proved to satisfy its specification,
+     except for maximal munch (see @(see lexer-correctness));
+     the proofs for maximal munch and for the tokenizer are future work.
      Still to come are
      Unicode identifiers and their normalization.
      The token-tree builder groups the tokens into token trees,
