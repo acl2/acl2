@@ -63,7 +63,11 @@
 
           :body
 
-          (b* ((msr-addr (rr32 *ecx* x86))
+          (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+               (msr-addr (rr32 *ecx* x86))
                ((unless (valid-msr-addr-p msr-addr)) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
                (msr-val (msra msr-addr x86))
                (x86 (wr32 *eax* (loghead 32 msr-val) x86))
@@ -82,7 +86,11 @@
 
           :body
 
-          (b* ((msr-addr (rr32 *ecx* x86))
+          (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+               (msr-addr (rr32 *ecx* x86))
                ((when (not (valid-msr-addr-p msr-addr))) (!!fault-fresh :gp 0 :invalid-msr msr-addr))
                (lower (rr32 *eax* x86))
                (upper (rr32 *edx* x86))
