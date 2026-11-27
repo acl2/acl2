@@ -1062,8 +1062,8 @@
        (long (or (cdr (assoc :long x.kwd-alist)) ""))
        (acc nil)
        (acc (revappend-chars "<p>This is a bitstruct type introduced by @(see fty::defbitstruct)," acc))
-       (acc (revappend-chars " represented as a " acc))
-       (acc (revappend-chars (if x.signedp "signed " "unsigned ") acc))
+       (acc (revappend-chars " represented as " acc))
+       (acc (revappend-chars (if x.signedp "a signed " "an unsigned ") acc))
        (acc (revappend-chars (str::natstr x.width) acc))
        (acc (revappend-chars "-bit integer.</p>" acc))
        (acc (cons #\Newline acc))
@@ -1087,6 +1087,20 @@
        (long `(rchars-to-string ,acc)))
     (mv long state)))
 
+;; Whether a width takes the article "an" instead of "a",
+;; which depends on how the number is read in English.
+;; The leading group of up to three digits is read first,
+;; and its reading starts with a vowel sound exactly when
+;; it is 8, 11, 18, 80-89, or 800-899.
+(define bitstruct-width-an-p (width)
+  (if (<= 1000 width)
+      (bitstruct-width-an-p (floor width 1000))
+    (or (eql width 8)
+        (eql width 11)
+        (eql width 18)
+        (and (<= 80 width) (<= width 89))
+        (and (<= 800 width) (<= width 899)))))
+
 (define bitstruct-events (x state)
   (b* (((bitstruct x))
        ((mv long state) (bitstruct-xdoc-long x state))
@@ -1104,7 +1118,9 @@
                         (xdoc::get-default-parents (w state))
                         '(acl2::undocumented))
           :short ,(or (cdr (assoc :short x.kwd-alist))
-                      (cat "An " (str::natstr x.width) "-bit "
+                      (cat (if (bitstruct-width-an-p x.width) "An " "A ")
+                           (str::natstr x.width)
+                           "-bit "
                            (if x.signedp "signed" "unsigned")
                            " bitstruct type."))
           :long ,long
