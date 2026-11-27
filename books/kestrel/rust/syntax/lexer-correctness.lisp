@@ -50,7 +50,14 @@
      It needs a different kind of argument:
      the theorems here are about the trees that the lexer builds,
      while maximal munch is about all the trees
-     that the grammar and the side conditions allow.")
+     that the grammar and the side conditions allow.
+     The theorems in @(see lexer-tree-completeness)
+     relate the lexing functions to those trees,
+     and @(see lexer-maximal-munch) builds
+     the proof of maximal munch on them.
+     One theorem of that kind is here, with the theorems about [SC2]:
+     @('rest-input-of-lex-lexeme-when-block-comment-string-p') says that
+     the lexer takes exactly a complete block comment that starts the input.")
    (xdoc::p
     "The side conditions [SC5] and [SC15] are not part of @(tsee lexing-okp):
      the tokenizer checks them
@@ -1131,20 +1138,25 @@
 ; These rules state that in terms of prefixp and nthcdr,
 ; so that proofs need not open the matcher character by character,
 ; which splits into many cases for strings of four or five characters.
+; They are not local: the proofs of maximal munch use them too.
 
-(local
- (defun caseless-chars-p (chars)
-   (or (atom chars)
-       (and (equal (str::upcase-char (car chars)) (car chars))
-            (equal (str::downcase-char (car chars)) (car chars))
-            (caseless-chars-p (cdr chars))))))
+(define caseless-chars-p ((chars character-listp))
+  :returns (yes/no booleanp)
+  :short "Check that no character in a list is a letter,
+          i.e. that changing case leaves each of them unchanged."
+  (or (atom chars)
+      (and (equal (str::upcase-char (car chars)) (car chars))
+           (equal (str::downcase-char (car chars)) (car chars))
+           (caseless-chars-p (cdr chars))))
+  :guard-hints (("Goal" :in-theory (enable character-listp)))
+  :hooks nil)
 
-(defruledl not-reserrp-of-cons-when-natp
+(defruled not-reserrp-of-cons-when-natp
   (implies (natp n)
            (not (reserrp (cons n x))))
   :enable fty::reserrp)
 
-(defruledl parse-ichars-aux-when-caseless-chars
+(defruled parse-ichars-aux-when-caseless-chars
   (implies (and (character-listp chars)
                 (caseless-chars-p chars))
            (b* (((mv nats rest-input) (abnf::parse-ichars-aux chars input))
@@ -1168,7 +1180,7 @@
            nfix
            zp))
 
-(defruledl parse-ichars-when-caseless-chars
+(defruled parse-ichars-when-caseless-chars
   (implies (and (syntaxp (quotep chars))
                 (stringp chars)
                 (caseless-chars-p (str::explode chars)))
@@ -1187,12 +1199,12 @@
 ; The text of the tree for a successful match
 ; consists of the codes of the string's characters.
 
-(defruledl not-reserrp-when-nat-listp
+(defruled not-reserrp-when-nat-listp
   (implies (nat-listp x)
            (not (reserrp x)))
   :enable (fty::reserrp nat-listp))
 
-(defruledl tree->string-of-parse-ichars-when-caseless-chars
+(defruled tree->string-of-parse-ichars-when-caseless-chars
   (implies (and (syntaxp (quotep chars))
                 (stringp chars)
                 (caseless-chars-p (str::explode chars))
@@ -1209,7 +1221,7 @@
 ; so that it applies to every string.
 ; The lexer uses it for the radix prefixes and for the exponent letters.
 
-(defruledl parse-schars-aux-is-prefix-match
+(defruled parse-schars-aux-is-prefix-match
   (implies (character-listp chars)
            (b* (((mv nats rest-input) (abnf::parse-schars-aux chars input))
                 (codes (acl2::chars=>nats chars)))
@@ -1231,7 +1243,7 @@
            nfix
            zp))
 
-(defruledl parse-schars-is-prefix-match
+(defruled parse-schars-is-prefix-match
   (implies (and (syntaxp (quotep chars))
                 (stringp chars))
            (b* (((mv tree rest-input) (abnf::parse-schars chars input))
@@ -1632,6 +1644,70 @@
                    (x (list #x2f #x2a)))
         block-comment-string-p-of-lex-lexeme-when-input-starts)
   :disable prefix-splitters)
+
+; Conversely, if the input starts with a complete block comment,
+; the lexer takes exactly that comment, if it does not fail.
+; The scan of a text that satisfies the specification's condition,
+; followed by more input, stops exactly at the end of the text;
+; and the lexer stops where the scan does.
+
+(defruledl bc-scan-of-append-when-bc-rest-closes-p
+  (implies (and (natp depth)
+                (nat-listp text)
+                (bc-rest-closes-p text depth))
+           (equal (bc-scan (append text rest) depth)
+                  rest))
+  :induct (bc-rest-closes-p text depth)
+  :enable (bc-rest-closes-p bc-scan zp nfix)
+  :expand (bc-rest-closes-p (cdr text) depth))
+
+(defruledl bc-scan-of-cddr-of-append-when-block-comment-string-p
+  (implies (and (nat-listp string)
+                (block-comment-string-p string))
+           (equal (bc-scan (cddr (append string rest)) 1)
+                  rest))
+  :enable (block-comment-string-p
+           bc-scan-of-append-when-bc-rest-closes-p))
+
+(local
+ (defmacro def-rest-input-is-bc-scan (fn)
+   `(defruledl ,(acl2::packn-pos (list 'rest-input-of- fn '-is-bc-scan) fn)
+      (b* (((mv tree rest-input) (,fn input)))
+        (implies (not (reserrp tree))
+                 (equal rest-input
+                        (bc-scan (cddr (nat-list-fix input)) 1))))
+      :use ,(acl2::packn-pos (list 'bc-scan-of- fn) fn))))
+
+(local (def-rest-input-is-bc-scan lex-block-comment))
+(local (def-rest-input-is-bc-scan lex-outer-block-doc))
+(local (def-rest-input-is-bc-scan lex-inner-block-doc))
+
+(defruledl rest-input-of-lex-lexeme-is-bc-scan
+  (b* (((mv tree rest-input) (lex-lexeme input)))
+    (implies (and (not (reserrp tree))
+                  (prefixp (list #x2f #x2a) (nat-list-fix input)))
+             (equal rest-input
+                    (bc-scan (cddr (nat-list-fix input)) 1))))
+  :enable (lex-lexeme
+           lex-comment
+           lex-whitespace
+           lex-whitespace-char
+           abnf::parse-next
+           rest-input-of-lex-block-comment-is-bc-scan
+           rest-input-of-lex-outer-block-doc-is-bc-scan
+           rest-input-of-lex-inner-block-doc-is-bc-scan))
+
+(defruled rest-input-of-lex-lexeme-when-block-comment-string-p
+  (implies (and (nat-listp string)
+                (block-comment-string-p string)
+                (not (reserrp (mv-nth 0 (lex-lexeme (append string rest))))))
+           (equal (mv-nth 1 (lex-lexeme (append string rest)))
+                  (nat-list-fix rest)))
+  :use ((:instance rest-input-of-lex-lexeme-is-bc-scan
+                   (input (append string rest)))
+        (:instance bc-scan-of-cddr-of-append-when-block-comment-string-p
+                   (rest (nat-list-fix rest))))
+  :enable block-comment-string-p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
