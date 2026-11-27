@@ -94,13 +94,11 @@
       which this library does not model,
       and that list has few symbols and punctuation marks,
       while [UTS #46] accepts many.
-      A search finds no two labels that satisfy this predicate
-      and are displayed alike,
-      in a paragraph of either direction:
-      see below.
-      That there are none is proved for a paragraph from left to right,
-      as a case of the theorem about the next predicate;
-      for a paragraph from right to left it is not proved yet.")
+      No two labels that satisfy this predicate are displayed alike,
+      whatever the directions of the paragraphs that they are in.
+      That is proved
+      (see @(see bidi-rule-display-strict-theorem));
+      the searches described below found none before the proof.")
     (xdoc::li
      "@(tsee bidi-rule-wide-p) is a rule of this library,
       not of a specification.
@@ -127,12 +125,11 @@
      see @(see bidi-rule-theorems).
      So the wide rule extends the strict one,
      and the theorem for the wide rule,
-     in a paragraph from left to right, is a theorem for both.")
+     in a paragraph from left to right, is a theorem for both.
+     The strict rule has a theorem of its own
+     for the other directions of the paragraph.")
    (xdoc::p
-    "For how the proof goes,
-     and for the statement that is not proved yet,
-     about the strict rule in a paragraph from right to left,
-     see @(see bidi-rule-proof-plan).")
+    "For how the proofs go, see @(see bidi-rule-proof-plan).")
    (xdoc::p
     "The searches are tests of this library,
      in the file @('tests/bidi-rule.lisp').
@@ -627,7 +624,18 @@
       where the second character goes with the letter,
       are both displayed as U+05D0, @('1'), U+200C, U+05D0."))
    (xdoc::p
-    "What is known about this predicate is a search:
+    "No two labels that satisfy this predicate are displayed alike.
+     The paragraph of each label can go from left to right
+     or from right to left,
+     or take its direction from the first strong character of the label,
+     and the two labels need not be in paragraphs of the same direction.
+     That is the theorem
+     @('bidi-display-is-one-to-one-when-bidi-rule-strict-p')
+     (see @(see bidi-rule-display-strict-theorem)).
+     A label that satisfies this predicate
+     is displayed in the same way in all those paragraphs.")
+   (xdoc::p
+    "A search checks this on short labels:
      of all the lists of one to six characters taken from thirteen,
      416,724 lists of six characters and 40,017 shorter ones
      are right-to-left labels that satisfy it,
@@ -647,18 +655,15 @@
      has no right-to-left character,
      and is displayed as it is stored in a paragraph from left to right:
      see @(see bidi-rule-theorems).
+     In a paragraph from right to left
+     each of its characters gets level 2,
+     and it is again displayed as it is stored:
+     see @(see bidi-rule-left-to-right-label).
      A second search has two letters of class @('L') in its set
      of eleven characters,
      and compares the labels of the two kinds together:
      85,486 labels of six characters and 12,264 shorter ones,
-     none displayed like another in either direction.")
-   (xdoc::p
-    "That no two labels of any length that satisfy this predicate
-     are displayed alike is proved for a paragraph from left to right
-     (a label that satisfies this predicate satisfies
-     @(tsee bidi-rule-wide-p);
-     see @(see bidi-rule-display-theorem)).
-     For a paragraph from right to left it is not proved yet."))
+     none displayed like another in either direction."))
   (and (bidi-rule-p label ver)
        (not (bidi-class-kind-present-p :european-terminator label ver))
        (not (bidi-class-kind-present-p :boundary-neutral label ver)))
@@ -914,7 +919,9 @@
     "The rule does not hold for a paragraph from right to left.
      There a Hebrew point followed by alef
      and alef followed by the point are displayed alike,
-     and both satisfy the rule.")
+     and both satisfy the rule.
+     The first of the two does not satisfy @(tsee bidi-rule-strict-p),
+     which holds for paragraphs of any direction.")
    (xdoc::p
     "That no two names of any length that satisfy this rule
      are displayed alike, in a paragraph from left to right,
@@ -1043,7 +1050,11 @@
      the Unicode Bidirectional Algorithm displays it as it is stored;
      that is the theorem @('bidi-display-when-right-to-left-free-p')
      of @(see bidi-left-to-right).
-     Two different left-to-right labels are then not displayed alike.")
+     Two different left-to-right labels are then not displayed alike.
+     A left-to-right label that satisfies @(tsee bidi-rule-strict-p)
+     is displayed as it is stored
+     in a paragraph from right to left too
+     (see @(see bidi-rule-left-to-right-label)).")
    (xdoc::p
     "The last theorem says that the wide rule extends the strict one:
      a label that satisfies @(tsee bidi-rule-strict-p)
@@ -1090,20 +1101,18 @@
 (defxdoc bidi-rule-proof-plan
   :short "How it is proved that no two names that satisfy the wide rule
           are displayed alike in a paragraph from left to right,
-          and a plan for the direction that is left."
+          and that no two labels that satisfy the strict rule
+          are displayed alike in paragraphs of any direction."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first three of the four steps below are proved;
-     they are for @(tsee bidi-rule-wide-p)
+    "The four steps below are proved.
+     The first three are for @(tsee bidi-rule-wide-p)
      in a paragraph from left to right.
-     The fourth, for @(tsee bidi-rule-strict-p)
-     in a paragraph from right to left, is not.
-     What this topic says about the fourth step
-     was compared with the algorithm
-     on the labels of the searches of up to five characters
-     (see @(see bidi-rule)),
-     once, on 2026-11-25, outside the certified books.")
+     The fourth is for @(tsee bidi-rule-strict-p)
+     in a paragraph of another direction.
+     The topic kept its name from the time
+     when it was the plan of the proofs.")
    (xdoc::h3 "The statements")
    (xdoc::p
     "For the wide rule, in a paragraph from left to right:")
@@ -1123,15 +1132,26 @@
      Since a label that satisfies the strict rule satisfies the wide rule
      (see @(see bidi-rule-theorems)),
      it is also a theorem about the strict rule in such a paragraph.
-     For the strict rule in a paragraph from right to left,
-     the statement is the same
-     with @(tsee bidi-rule-strict-p) and @(':right-to-left');
-     that one is not proved.
-     The third way of giving the direction of a paragraph,
-     @(':first-strong'), is left out:
-     the direction is then taken from the label itself,
-     and two labels can be displayed
-     in paragraphs of different directions.")
+     For the strict rule, in paragraphs of any direction:")
+   (xdoc::codeblock
+    "(implies (and (bidi-rule-strict-p x ver)"
+    "              (bidi-rule-strict-p y ver)"
+    "              (equal (bidi-display x direction1 ver)"
+    "                     (bidi-display y direction2 ver)))"
+    "         (equal (code-point-list-fix x)"
+    "                (code-point-list-fix y)))")
+   (xdoc::p
+    "This is the theorem
+     @('bidi-display-is-one-to-one-when-bidi-rule-strict-p')
+     (see @(see bidi-rule-display-strict-theorem)).
+     Each of the two directions can be given in any of the three ways
+     (see @(tsee paragraph-direction)):
+     @(':left-to-right'), @(':right-to-left'), or @(':first-strong'),
+     where the direction is taken from the label itself.
+     The two labels can be in paragraphs of different directions.
+     The wide rule has no such theorem
+     for a paragraph from right to left:
+     it does not hold there (see @(tsee bidi-rule-wide-p)).")
    (xdoc::p
     "Here @(tsee bidi-display) is the text as it is displayed,
      with every character kept and the mirrored ones replaced,
@@ -1149,7 +1169,7 @@
      (see @(see bidi-rule-theorems)),
      so the work is for the right-to-left names.
      It has three steps for the wide rule;
-     a fourth is for the other direction.")
+     a fourth is for the strict rule in the other directions.")
    (xdoc::p
     "An example:
      the name is @('*'), a Hebrew point, alef, @('1'), @(','), @('2'),
@@ -1254,41 +1274,59 @@
       The tests have two names with both kinds of digits
       that are displayed alike:
       for those the function cannot tell which name it was.
-      The other conditions are for the first two steps."))
-   (xdoc::p
-    "The fourth step, which is not done, is the strict rule
-     in a paragraph from right to left.
-     A right-to-left label that satisfies the strict rule
-     begins with a letter and ends with a letter or a digit,
-     so it has no character of level 0,
-     and it gets the same levels and the same display
-     in the two directions;
-     that is so for each of the 40,017 labels
-     of up to five characters of the search for the strict rule.
-     Proving it is a variant of the first step.
-     A left-to-right label needs a proof of its own
-     that it is displayed as it is stored
-     in a paragraph from right to left:
-     its first character is of class @('L'),
-     and each digit takes the class of the letter before it
-     [UAX #9, rule W7].
-     That too is so for the 5,354 left-to-right labels
-     of up to five characters of the second search for the strict rule,
-     the one with letters of class @('L').")
+      The other conditions are for the first two steps.")
+    (xdoc::li
+     "<b>The strict rule, in the other directions.</b>
+      A right-to-left label that satisfies the strict rule
+      begins with a letter,
+      and only marks come after its last letter or digit.
+      So the middle part of the first step is the whole label,
+      and no character has level 0.
+      In a paragraph from right to left,
+      the classes after the rules W1 to W7 are the same
+      as in a paragraph from left to right,
+      because the label does not start with a mark;
+      rule N0 again changes some brackets to the class @('R')
+      (@('Right_To_Left')) and nothing else;
+      rules N1 and N2 give @('R') to every neutral character that is left;
+      and the levels are 1 and 2, the same as in the first step.
+      That is the theorem
+      @('bidi-paragraph-all-levels-at-level-1-when-bidi-rule-strict-p')
+      (see @(see bidi-rule-display-strict-theorem)).
+      It follows from a theorem about the wide rule,
+      for a right-to-left name whose first character is not a mark
+      (see @(see bidi-rule-display-levels)).
+      With the same levels the display is the same, by the second step.
+      A left-to-right label is displayed as it is stored
+      in a paragraph from right to left too,
+      but its levels are not 0 there.
+      Its first character is of class @('L'),
+      each digit takes the class of the letter before it
+      [UAX #9, rule W7],
+      every neutral character is then between two characters
+      of class @('L') and takes that class [UAX #9, rule N1],
+      and so every character gets level 2
+      (see @(see bidi-rule-left-to-right-label)).
+      A paragraph in which no level is odd is displayed as it is stored
+      (see @(see bidi-display-even-levels-theorem)).
+      When the direction is taken from the first strong character,
+      the paragraph goes from right to left for a right-to-left label
+      and from left to right for a left-to-right label.
+      So a label that satisfies the strict rule
+      has one display in all those paragraphs,
+      the one that @(tsee bidi-name-display) gives,
+      and the third step gives the label back from it."))
    (xdoc::h3 "Size, and what the theorems do not cover")
    (xdoc::p
     "The first two steps have five books and some 6,300 lines.
      The third is reasoning about lists, without the algorithm;
      its book has some 2,500 lines.
-     The fourth would be small beside them.")
+     The fourth added one book and some 1,700 lines.")
    (xdoc::p
     "The theorems hold for names of any length,
      in each of the three versions of Unicode that the library has.
-     They are for a name that is a paragraph by itself,
-     in a paragraph from left to right.
+     They are for a name that is a paragraph by itself.
      They say nothing about a name inside a longer text
-     (for that, see @(see bidi-self-contained-segments)),
-     about a paragraph from right to left,
-     or about a paragraph that takes its direction
-     from its first strong character."))
+     (for that, see @(see bidi-self-contained-segments)).
+     For the wide rule they are for a paragraph from left to right only."))
   :parents (bidi-rule))

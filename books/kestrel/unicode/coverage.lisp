@@ -287,7 +287,7 @@
       see @(see bidi-rule).
       That topic also has two rules that are of this library,
       a strict one and a wide one,
-      for which a search finds no two labels that are displayed alike,
+      under which no two labels are displayed alike,
       and the examples that show that the Bidi Rule alone
       does not prevent that.
       The two rules are not in a specification.
@@ -298,8 +298,9 @@
       for different names, and the algorithm is proved to give it
       (see @(see bidi-rule-display)
       and @(see bidi-rule-display-theorem)).
-      For the strict one in a paragraph from right to left,
-      that is not proved yet."))
+      For the strict one the same is proved
+      for paragraphs of any direction
+      (see @(see bidi-rule-display-strict-theorem))."))
    (xdoc::p
     "Relations between these properties
      are proved in @(see property-relations).")

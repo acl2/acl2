@@ -110,7 +110,14 @@
      [UAX #9, rule W7].
      And no terminator is next to a European digit:
      otherwise the terminator would take the class of the digit
-     [UAX #9, rule W5]."))
+     [UAX #9, rule W5].")
+   (xdoc::p
+    "In a paragraph from right to left the weak rules give the same classes,
+     if the name does not start with a mark:
+     a mark at the start of the name
+     would take the direction of the paragraph [UAX #9, rule W1],
+     which is then @('R').
+     That is the second theorem of this book."))
   :order-subtopics t
   :default-parent t)
 
@@ -1473,6 +1480,33 @@
                   (bidi-clusters-weak-classes clusters nil nil ver)))
   :enable bidi-resolve-weak-types)
 
+; The same when the direction at the start of the sequence is R,
+; if the first cluster does not start with a mark:
+; rule W1 then gives the direction at the start to no mark,
+; and rules W2, W4 and W7 look at the class before the first cluster
+; only to see if it is AL, a number, or L.
+
+(defrulel w4r-when-previous-is-right-to-left
+  (implies (equal (bidi-class-kind prevclass) :right-to-left)
+           (equal (w4r ns cs prevclass)
+                  (w4r ns cs (bidi-class-left-to-right))))
+  :expand (:free (p) (w4r ns cs p)))
+
+(defrulel bidi-resolve-weak-types-of-classes-of-flatten-after-right-to-left
+  (implies (and (fit clusters nil ver)
+                (proper-ok clusters ver)
+                (start-ok clusters ver)
+                (not (heads-et-en clusters ver))
+                (equal (bidi-class-kind sos) :right-to-left))
+           (equal (bidi-resolve-weak-types
+                   (classes-of (acl2::flatten clusters) ver)
+                   sos)
+                  (bidi-clusters-weak-classes clusters nil nil ver)))
+  :enable (bidi-resolve-weak-types
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p)
+  :disable fit-when-proper-ok)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The clusters of a name that the wide rule allows
@@ -1551,6 +1585,14 @@
   :enable fit
   :cases ((consp cps)))
 
+(defrulel proper-ok-of-bidi-clusters-when-cps-ok
+  (implies (and (cps-ok cps ver)
+                (not (bidi-mark-code-point-p (car cps) ver)))
+           (proper-ok (bidi-clusters cps ver) ver))
+  :cases ((consp cps))
+  :expand ((proper-ok (bidi-clusters cps ver) ver)
+           (proper-ok nil ver)))
+
 ; No digit comes before the first letter.
 
 (defrulel start-ok-of-bidi-clusters
@@ -1609,7 +1651,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection bidi-rule-display-weak-theorem
-  :short "Theorem that the weak rules give the classes
+  :short "Theorems that the weak rules give the classes
           of @(tsee bidi-clusters-weak-classes)
           to a name that satisfies the wide rule
           and has a right-to-left letter or an Arabic digit."
@@ -1618,10 +1660,13 @@
    (xdoc::p
     "The classes of the name are those of the list
      that @(tsee code-points-to-bidi-chars) gives,
-     and @('sos') is the direction at the start of the sequence,
-     which is @('L') (@('Left_To_Right'))
-     in a paragraph from left to right.
-     The rule is disabled by default."))
+     and @('sos') is the direction at the start of the sequence.
+     In the first theorem it is @('L') (@('Left_To_Right')),
+     as in a paragraph from left to right.
+     In the second it is @('R') (@('Right_To_Left')),
+     as in a paragraph from right to left,
+     and the first character of the name is not a mark.
+     The two rules are disabled by default."))
 
   (defruled bidi-resolve-weak-types-when-bidi-rule-wide-p
     (implies (and (bidi-rule-wide-p name ver)
@@ -1644,5 +1689,26 @@
     :disable (bidi-resolve-weak-types-of-classes-of-flatten
               bidi-resolve-weak-types-of-bidi-class-fix-sos
               bidi-class-fix-under-bidi-class-equiv
+              bidi-clusters-weak-classes-in-terms-of-weak-heads
+              heads-et-en-in-terms-of-heads))
+
+  (defruled bidi-resolve-weak-types-when-bidi-rule-wide-p-after-right-to-left
+    (implies (and (bidi-rule-wide-p name ver)
+                  (bidi-right-to-left-label-p name ver)
+                  (not (bidi-mark-code-point-p (car name) ver))
+                  (equal (bidi-class-kind sos) :right-to-left))
+             (equal (bidi-resolve-weak-types
+                     (bidi-char-list-classes
+                      (code-points-to-bidi-chars name ver))
+                     sos)
+                    (bidi-clusters-weak-classes (bidi-clusters name ver)
+                                                nil
+                                                nil
+                                                ver)))
+    :enable bidi-rule-wide-p
+    :use (:instance
+          bidi-resolve-weak-types-of-classes-of-flatten-after-right-to-left
+          (clusters (bidi-clusters name ver)))
+    :disable (bidi-resolve-weak-types-of-classes-of-flatten-after-right-to-left
               bidi-clusters-weak-classes-in-terms-of-weak-heads
               heads-et-en-in-terms-of-heads)))

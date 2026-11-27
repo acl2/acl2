@@ -16,9 +16,10 @@
 ; The second part compares that display
 ; with the display of the Unicode Bidirectional Algorithm.
 ; That the two are the same for every name that satisfies the wide rule,
-; in a paragraph from left to right, is a theorem
+; in a paragraph from left to right, and for every label that satisfies
+; the strict rule, in a paragraph of any direction, are theorems
 ; (book bidi-rule-display-theorem.lisp); the search was written
-; before the proof, and is kept as a test of the functions.
+; before the proofs, and is kept as a test of the functions.
 ; A search goes through every list, up to a length,
 ; of the characters of a small set; for each list that satisfies the rule
 ; it checks that the two displays are the same
@@ -249,6 +250,112 @@
         (equal (bidi-name-display name1 *v17*) display)
         (equal (bidi-name-display name2 *v17*) display)
         (equal (bidi-name-read display *v17*) name2))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The strict rule, in a paragraph of any direction.
+; In each example the label satisfies the strict rule,
+; and the display that BIDI-NAME-DISPLAY computes is the display
+; of the algorithm in a paragraph from left to right,
+; in a paragraph from right to left, and in a paragraph that takes
+; its direction from the first strong character of the label.
+; The third argument has the levels in a paragraph from right to left;
+; for a right-to-left label they are those of BIDI-NAME-LEVELS,
+; the same as in a paragraph from left to right.
+
+(defmacro bidi-rule-strict-example (label display levels)
+  `(assert-event
+    (b* ((label ,label)
+         (display ,display)
+         (levels ,levels)
+         (chars (code-points-to-bidi-chars label *v17*)))
+      (and (bidi-rule-strict-p label *v17*)
+           (equal (bidi-name-display label *v17*) display)
+           (equal (bidi-display label *ltr* *v17*) display)
+           (equal (bidi-display label *rtl* *v17*) display)
+           (equal (bidi-display label
+                                (paragraph-direction-first-strong)
+                                *v17*)
+                  display)
+           (equal (bidi-paragraph-all-levels chars 1) levels)
+           (or (not (bidi-right-to-left-label-p label *v17*))
+               (and (equal (bidi-name-levels label *v17*) levels)
+                    (equal (bidi-paragraph-all-levels chars 0) levels)))))))
+
+; Right-to-left labels.
+; alef, hyphen, bet, 1.
+
+(bidi-rule-strict-example '(#x5D0 #x2D #x5D1 #x31)
+                          '(#x31 #x5D1 #x2D #x5D0)
+                          '(1 1 1 2))
+
+; alef, sheva, a pair of parentheses with 1 inside, bet.
+
+(bidi-rule-strict-example '(#x5D0 #x5B0 #x28 #x31 #x29 #x5D1)
+                          '(#x5D1 #x28 #x31 #x29 #x5D0 #x5B0)
+                          '(1 1 1 2 1 1))
+
+; Arabic alef, 1, comma, 2, sheva: one number of Arabic digits.
+
+(bidi-rule-strict-example '(#x627 #x31 #x2C #x32 #x5B0)
+                          '(#x31 #x2C #x32 #x5B0 #x627)
+                          '(1 2 2 2 2))
+
+; alef, less-than, 1, hyphen, 2, bet: the less-than sign is mirrored.
+
+(bidi-rule-strict-example '(#x5D0 #x3C #x31 #x2D #x32 #x5D1)
+                          '(#x5D1 #x31 #x2D #x32 #x3E #x5D0)
+                          '(1 1 2 2 2 1))
+
+; Left-to-right labels: each character has level 2
+; in a paragraph from right to left, and the label is displayed
+; as it is stored.
+; a, hyphen, 1; a, a pair of parentheses with 1 inside, asterisk,
+; b, sheva; a, 1, comma, 2, sheva.
+
+(bidi-rule-strict-example '(#x61 #x2D #x31)
+                          '(#x61 #x2D #x31)
+                          '(2 2 2))
+
+(bidi-rule-strict-example '(#x61 #x28 #x31 #x29 #x2A #x62 #x5B0)
+                          '(#x61 #x28 #x31 #x29 #x2A #x62 #x5B0)
+                          '(2 2 2 2 2 2 2))
+
+(bidi-rule-strict-example '(#x61 #x31 #x2C #x32 #x5B0)
+                          '(#x61 #x31 #x2C #x32 #x5B0)
+                          '(2 2 2 2 2))
+
+;;;;;;;;;;;;;;;;;;;;
+
+; The wide rule in a paragraph from right to left.
+
+; A right-to-left name whose first character is not a mark
+; has there the levels of BIDI-MIDDLE-LEVELS for the whole name,
+; and the same classes after the weak rules as in a paragraph
+; from left to right.  For asterisk, alef, 1, hyphen,
+; no character stays in place, and the display is not the one
+; of a paragraph from left to right.
+; (Two names that the wide rule allows and that are displayed alike
+; in a paragraph from right to left are in the tests of the Bidi Rule.)
+
+(assert-event
+ (b* ((name '(#x2A #x5D0 #x31 #x2D))
+      (chars (code-points-to-bidi-chars name *v17*)))
+   (and (bidi-rule-wide-p name *v17*)
+        (not (bidi-rule-strict-p name *v17*))
+        (equal (bidi-name-levels name *v17*) '(0 1 2 0))
+        (equal (bidi-paragraph-all-levels chars 0) '(0 1 2 0))
+        (equal (bidi-middle-levels (bidi-clusters name *v17*) nil *v17*)
+               '(1 1 2 1))
+        (equal (bidi-paragraph-all-levels chars 1) '(1 1 2 1))
+        (equal (bidi-resolve-weak-types (bidi-char-list-classes chars)
+                                        (bidi-class-right-to-left))
+               (bidi-clusters-weak-classes (bidi-clusters name *v17*)
+                                           nil
+                                           nil
+                                           *v17*))
+        (equal (bidi-display name *ltr* *v17*) '(#x2A #x31 #x5D0 #x2D))
+        (equal (bidi-display name *rtl* *v17*) '(#x2D #x31 #x5D0 #x2A)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

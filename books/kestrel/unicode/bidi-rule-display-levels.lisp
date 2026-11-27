@@ -30,8 +30,10 @@
 ; This book proves that the Unicode Bidirectional Algorithm [UAX #9]
 ; gives the levels of BIDI-NAME-LEVELS to a name that satisfies the wide rule
 ; and has a letter of class R or AL or a digit of class AN,
-; in a paragraph from left to right.  The theorem is at the end;
-; every other event is local.
+; in a paragraph from left to right.  A second theorem is for a paragraph
+; from right to left, when the first character of the name is not a mark:
+; the levels are then those of BIDI-MIDDLE-LEVELS for the whole name.
+; The theorems are at the end; every other event is local.
 ;
 ; The plan of the proof.  A name of that kind is plain text
 ; (theorem BIDI-PARAGRAPH-ALL-LEVELS-WHEN-PLAIN): it is one sequence
@@ -60,6 +62,13 @@
 ;    (LEVELS-OF-THREE-PARTS).  Rule L1 changes nothing.
 ; 4. The levels 1 and 2 of the middle part are those of
 ;    BIDI-MIDDLE-LEVELS (LEV-OF-BIDI-CLUSTERS-WEAK-CLASSES).
+; 5. In a paragraph from right to left the name is one sequence at level 1
+;    (theorem BIDI-PARAGRAPH-ALL-LEVELS-WHEN-PLAIN-AT-LEVEL).
+;    The classes after the weak rules are the same as in step 1,
+;    because the name does not start with a mark.  Rule N0 still changes
+;    some classes ON to R and nothing else: no class L is inside a pair.
+;    Rules N1 and N2 give R to every ON, so the levels are 2 for AN and EN
+;    and 1 for the rest, as in step 4 for the whole name.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3363,7 +3372,288 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; The theorem of this book.
+; A paragraph from right to left: the paragraph embedding level is 1,
+; and the direction at the two ends of the sequence is R.
+; This part is for a name whose first code point is not a mark.
+
+; Rule N0 still only changes some classes ON to R:
+; no class L is inside a pair, so each pair is set to R or left as it is.
+
+(defrulel refines-of-bidi-n0-pair-when-embedding-is-right-to-left
+  (implies (and (w-ok w s)
+                (wrel cps w pk carry ver)
+                (refines w cur)
+                (pair-fit x cps s ver)
+                (equal embedding (bidi-class-right-to-left)))
+           (refines w
+                    (bidi-n0-pair cur
+                                  (classes-of cps ver)
+                                  x
+                                  sos
+                                  embedding)))
+  :enable (bidi-n0-pair
+           w-ok
+           pair-fit)
+  :disable (not-bidi-n0-strong-inside-p-when-no-l-from
+            refines-of-nthcdr
+            no-l-when-refines
+            refines-of-bidi-n0-set-pair
+            refines-transitive)
+  :use ((:instance not-bidi-n0-strong-inside-p-when-no-l-from
+                   (classes cur)
+                   (k s)
+                   (position 0)
+                   (pair x)
+                   (direction (bidi-class-left-to-right)))
+        (:instance refines-of-nthcdr (x w) (y cur) (n s))
+        (:instance no-l-when-refines
+                   (x (nthcdr s w))
+                   (y (nthcdr s cur)))
+        (:instance refines-of-bidi-n0-set-pair
+                   (position 0)
+                   (pair x)
+                   (direction (bidi-class-right-to-left))
+                   (after nil))
+        (:instance refines-transitive
+                   (x w)
+                   (y cur)
+                   (z (bidi-n0-set-pair cur
+                                        (classes-of cps ver)
+                                        0
+                                        x
+                                        (bidi-class-right-to-left)
+                                        nil)))))
+
+(defrulel refines-of-bidi-n0-pairs-when-embedding-is-right-to-left
+  (implies (and (w-ok w s)
+                (wrel cps w pk carry ver)
+                (refines w cur)
+                (pairs-fit pairs cps s ver)
+                (equal embedding (bidi-class-right-to-left)))
+           (refines w
+                    (bidi-n0-pairs cur
+                                   (classes-of cps ver)
+                                   pairs
+                                   sos
+                                   embedding)))
+  :induct (bidi-n0-pairs cur (classes-of cps ver) pairs sos embedding)
+  :enable (bidi-n0-pairs
+           pairs-fit))
+
+; Rules N1 and N2 give the class R to every class ON
+; of a list of classes without L,
+; when the direction is R before it, after it and for the embedding.
+
+(defrulel bidi-neutral-run-end-when-mid-p
+  (implies (and (mid-p x)
+                (equal eos (bidi-class-right-to-left)))
+           (equal (bidi-neutral-run-end x eos)
+                  (bidi-class-right-to-left)))
+  :induct (len x)
+  :enable (len
+           mid-p
+           bidi-neutral-run-end
+           bidi-class-neutral-or-isolate-p
+           bidi-class-neutral-p
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p
+           bidi-class-direction))
+
+(defrulel bidi-n1-n2-when-mid-p
+  (implies (and (mid-p x)
+                (equal previous (bidi-class-right-to-left))
+                (equal eos (bidi-class-right-to-left))
+                (equal embedding (bidi-class-right-to-left)))
+           (equal (bidi-n1-n2 x previous eos embedding)
+                  (to-r x)))
+  :induct (len x)
+  :enable (len
+           mid-p
+           to-r
+           bidi-class-neutral-or-isolate-p
+           bidi-class-neutral-p
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p
+           bidi-class-direction)
+  :expand ((:free (p s e) (bidi-n1-n2 x p s e))))
+
+; The implicit levels at level 1: 1 for the class R, 2 for AN and EN.
+
+(defrulel bidi-implicit-levels-of-to-r-at-level-1
+  (implies (and (mid-p m)
+                (equal level 1))
+           (equal (bidi-implicit-levels (to-r m) level)
+                  (lev m)))
+  :induct (len m)
+  :enable (len
+           mid-p
+           to-r
+           lev
+           bidi-implicit-level)
+  :expand ((:free (a b) (bidi-implicit-levels (cons a b) 1))
+           (bidi-implicit-levels nil 1)))
+
+; The levels of the one isolating run sequence of the name.
+
+(defruledl bidi-resolve-sequence-of-name-in-steps-at-level-1
+  (implies (and (equal sos (bidi-class-right-to-left))
+                (equal eos (bidi-class-right-to-left))
+                (equal level 1))
+           (equal (bidi-resolve-sequence (classes-of name ver)
+                                         (roles-of name ver)
+                                         sos
+                                         eos
+                                         level)
+                  (bidi-implicit-levels
+                   (bidi-n1-n2
+                    (bidi-n0-pairs
+                     (bidi-resolve-weak-types (classes-of name ver) sos)
+                     (classes-of name ver)
+                     (bidi-bracket-pairs (classes-of name ver)
+                                         (roles-of name ver))
+                     sos
+                     sos)
+                    sos
+                    eos
+                    sos)
+                   level)))
+  :enable (bidi-resolve-sequence
+           bidi-resolve-neutral-types
+           bidi-n0
+           bidi-level-direction))
+
+(defrulel bidi-resolve-weak-types-of-classes-of-name-after-right-to-left
+  (implies (and (bidi-rule-wide-p name ver)
+                (bidi-right-to-left-label-p name ver)
+                (not (bidi-mark-code-point-p (car name) ver))
+                (equal (bidi-class-kind sos) :right-to-left))
+           (equal (bidi-resolve-weak-types (classes-of name ver) sos)
+                  (bidi-clusters-weak-classes (bidi-clusters name ver)
+                                              nil
+                                              nil
+                                              ver)))
+  :use bidi-resolve-weak-types-when-bidi-rule-wide-p-after-right-to-left)
+
+(defrulel bidi-resolve-sequence-of-name-at-level-1
+  (implies (and (code-point-listp name)
+                (bidi-rule-wide-p name ver)
+                (bidi-right-to-left-label-p name ver)
+                (not (bidi-mark-code-point-p (car name) ver))
+                (equal sos (bidi-class-right-to-left))
+                (equal eos (bidi-class-right-to-left))
+                (equal level 1))
+           (equal (bidi-resolve-sequence (classes-of name ver)
+                                         (roles-of name ver)
+                                         sos
+                                         eos
+                                         level)
+                  (bidi-middle-levels (bidi-clusters name ver) nil ver)))
+  :enable (bidi-resolve-sequence-of-name-in-steps-at-level-1
+           bidi-rule-wide-p)
+  :disable (pairs-of-name
+            w-ok-of-name
+            wrel-of-name
+            refines-of-bidi-n0-pairs-when-embedding-is-right-to-left)
+  :use (pairs-of-name
+        w-ok-of-name
+        (:instance wrel-of-name (pk (bidi-class-left-to-right)))
+        (:instance refines-of-bidi-n0-pairs-when-embedding-is-right-to-left
+                   (w (bidi-clusters-weak-classes (bidi-clusters name ver)
+                                                  nil
+                                                  nil
+                                                  ver))
+                   (cur (bidi-clusters-weak-classes (bidi-clusters name ver)
+                                                    nil
+                                                    nil
+                                                    ver))
+                   (cps name)
+                   (pk (bidi-class-left-to-right))
+                   (carry nil)
+                   (s (bidi-name-start name ver))
+                   (pairs (bidi-bracket-pairs (classes-of name ver)
+                                              (roles-of name ver)))
+                   (sos (bidi-class-right-to-left))
+                   (embedding (bidi-class-right-to-left)))))
+
+; Rule L1 changes no level: the name has no separator, no white space,
+; and no character that rule X9 removes.
+
+(local
+ (define no-reset-p (classes)
+   :returns (yes/no booleanp)
+   (or (atom classes)
+       (and (not (member-eq (bidi-class-kind (car classes))
+                            '(:segment-separator
+                              :paragraph-separator
+                              :white-space)))
+            (not (bidi-class-isolate-formatting-p (car classes)))
+            (not (bidi-class-removed-p (car classes)))
+            (no-reset-p (cdr classes))))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel no-reset-p-of-classes-of
+  (implies (bidi-rule-wide-code-points-p name ver)
+           (no-reset-p (classes-of name ver)))
+  :induct (len name)
+  :enable (len
+           classes-of
+           no-reset-p
+           bidi-rule-wide-code-point-p
+           bidi-class-removed-p
+           bidi-class-isolate-formatting-p
+           bidi-class-isolate-initiator-p))
+
+(defrulel bidi-reset-all-levels-when-no-reset-p
+  (implies (and (no-reset-p classes)
+                (nat-listp levels)
+                (equal (len levels) (len classes)))
+           (equal (mv-nth 0 (bidi-reset-all-levels classes
+                                                   levels
+                                                   paragraph-level))
+                  levels))
+  :induct (two-lists-induction classes levels)
+  :enable (two-lists-induction
+           bidi-reset-all-levels
+           no-reset-p
+           len))
+
+(defrulel len-of-bidi-middle-levels-of-name
+  (implies (and (code-point-listp name)
+                (bidi-rule-wide-p name ver)
+                (bidi-right-to-left-label-p name ver)
+                (not (bidi-mark-code-point-p (car name) ver)))
+           (equal (len (bidi-middle-levels (bidi-clusters name ver) nil ver))
+                  (len name)))
+  :disable (bidi-resolve-sequence-of-name-at-level-1
+            len-of-bidi-resolve-sequence)
+  :use ((:instance bidi-resolve-sequence-of-name-at-level-1
+                   (sos (bidi-class-right-to-left))
+                   (eos (bidi-class-right-to-left))
+                   (level 1))
+        (:instance len-of-bidi-resolve-sequence
+                   (classes (classes-of name ver))
+                   (roles (roles-of name ver))
+                   (sos (bidi-class-right-to-left))
+                   (eos (bidi-class-right-to-left))
+                   (level 1))))
+
+(defrulel bidi-paragraph-all-levels-at-level-1-when-code-point-listp
+  (implies (and (code-point-listp name)
+                (bidi-rule-wide-p name ver)
+                (bidi-right-to-left-label-p name ver)
+                (not (bidi-mark-code-point-p (car name) ver)))
+           (equal (bidi-paragraph-all-levels (code-points-to-bidi-chars name
+                                                                        ver)
+                                             1)
+                  (bidi-middle-levels (bidi-clusters name ver) nil ver)))
+  :enable (bidi-paragraph-all-levels-when-plain-at-level
+           bidi-rule-wide-p
+           bidi-level-direction))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The theorems of this book.
 
 (defrulel bidi-paragraph-all-levels-when-code-point-listp
   (implies (and (code-point-listp name)
@@ -3378,11 +3668,13 @@
 
 (defsection bidi-rule-display-levels
   :parents (bidi-rule-display)
-  :short "Theorem that the Unicode Bidirectional Algorithm,
+  :short "Theorems that the Unicode Bidirectional Algorithm
+          gives the levels of @(tsee bidi-name-levels),
           in a paragraph from left to right,
-          gives the levels of @(tsee bidi-name-levels)
           to a name that satisfies the wide rule
-          and has a right-to-left letter or an Arabic digit."
+          and has a right-to-left letter or an Arabic digit,
+          and those of @(tsee bidi-middle-levels) for the whole name
+          in a paragraph from right to left."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -3407,7 +3699,24 @@
      and, in it, 2 for the classes @('AN') (@('Arabic_Number'))
      and @('EN') (@('European_Number')) and 1 for @('R')
      [UAX #9, rules I1 and I2].
-     The rule is disabled by default."))
+     The rule is disabled by default.")
+   (xdoc::p
+    "The second theorem is for a paragraph from right to left,
+     where the paragraph embedding level is 1,
+     and for a name whose first character is not a mark.
+     The classes after the weak rules are then the same.
+     Rule N0 again changes some classes @('ON') to @('R')
+     and nothing else,
+     and rules N1 and N2 give @('R') to every @('ON') that is left,
+     since the direction is @('R') at the two ends of the name.
+     So no character has level 0:
+     the levels are 2 for @('AN') and @('EN') and 1 for @('R'),
+     which is what @(tsee bidi-middle-levels) gives
+     for the clusters of the whole name.
+     For a label that satisfies the strict rule
+     these are the levels of the first theorem
+     (see @(see bidi-rule-display-strict-theorem)).
+     This rule is disabled by default too."))
 
   (defruled bidi-paragraph-all-levels-when-bidi-rule-wide-p
     (implies (and (bidi-rule-wide-p name ver)
@@ -3417,4 +3726,15 @@
                      0)
                     (bidi-name-levels name ver)))
     :use (:instance bidi-paragraph-all-levels-when-code-point-listp
+                    (name (code-point-list-fix name))))
+
+  (defruled bidi-paragraph-all-levels-at-level-1-when-bidi-rule-wide-p
+    (implies (and (bidi-rule-wide-p name ver)
+                  (bidi-right-to-left-label-p name ver)
+                  (not (bidi-mark-code-point-p (car name) ver)))
+             (equal (bidi-paragraph-all-levels
+                     (code-points-to-bidi-chars name ver)
+                     1)
+                    (bidi-middle-levels (bidi-clusters name ver) nil ver)))
+    :use (:instance bidi-paragraph-all-levels-at-level-1-when-code-point-listp
                     (name (code-point-list-fix name)))))

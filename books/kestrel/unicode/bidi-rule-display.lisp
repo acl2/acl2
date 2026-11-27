@@ -37,11 +37,11 @@
     "The predicate @(tsee bidi-rule-wide-p) is meant to keep
      two different names from being displayed alike
      in a paragraph from left to right (see @(see bidi-rule)).
-     The plan for a proof of that (see @(see bidi-rule-proof-plan))
-     is to say how such a name is displayed
+     The proof of that (see @(see bidi-rule-proof-plan))
+     says how such a name is displayed
      without going through the rules
      of the Unicode Bidirectional Algorithm [UAX #9],
-     and to read the name back from that display.
+     and reads the name back from that display.
      This book has the two functions:
      @(tsee bidi-name-display) from a name to its display,
      and @(tsee bidi-name-read) from a display to a name.
@@ -168,7 +168,23 @@
      (see @(see bidi-rule-display-levels));
      and the order of display that follows from those levels
      (see @(see bidi-rule-display-order)).
-     See also @(see bidi-rule-proof-plan)."))
+     See also @(see bidi-rule-proof-plan).")
+   (xdoc::p
+    "A label that satisfies the strict rule,
+     @(tsee bidi-rule-strict-p),
+     is displayed as this book says in a paragraph of any direction:")
+   (xdoc::codeblock
+    "(implies (bidi-rule-strict-p name ver)"
+    "         (equal (bidi-display name direction ver)"
+    "                (bidi-name-display name ver)))")
+   (xdoc::p
+    "This is the theorem @('bidi-display-when-bidi-rule-strict-p')
+     (see @(see bidi-rule-display-strict-theorem)).
+     So two labels that satisfy the strict rule and are displayed alike,
+     in paragraphs of any directions, are the same label.
+     The wide rule does not have that
+     in a paragraph from right to left
+     (see @(tsee bidi-rule-wide-p))."))
   :order-subtopics t
   :default-parent t)
 
