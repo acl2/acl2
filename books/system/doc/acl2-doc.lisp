@@ -110801,6 +110801,12 @@ it."
  standard input stream.  This could happen in @(':')@(tsee program)-mode code,
  causing an infinite loop in at least one Lisp implementation (SBCL).</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug that
+ allowed @(tsee serialize-write), @(tsee delete-file$), and @('dmr-start') (see
+ @(see dmr)) to create or delete files inside a @(see wormhole), where they now
+ cause an error.  For an example, see @(see community-book)
+ @('system/tests/wormhole-file-changes.lisp').</p>
+
  <p>Calls of @(tsee verify) and @(tsee retrieve) are now illegal when made
  inside the @(see proof-builder).  This change avoids unsoundness: proofs of
  @('nil') were possible due to the lack of those restrictions.  See for example

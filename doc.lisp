@@ -107686,6 +107686,12 @@ Bug Fixes From AI via Eric Smith
   causing an infinite loop in at least one Lisp implementation
   (SBCL).
 
+  Applied (and checked) AI-suggested fix to eliminate a soundness bug
+  that allowed [30m[47m[serialize-write][0m[0m, [30m[47m[delete-file$][0m[0m, and [30m[47mdmr-start[0m[0m (see
+  [dmr]) to create or delete files inside a [wormhole], where they
+  now cause an error.  For an example, see [community-book]
+  [30m[47msystem/tests/wormhole-file-changes.lisp[0m[0m.
+
   Calls of [30m[47m[verify][0m[0m and [30m[47m[retrieve][0m[0m are now illegal when made inside the
   [proof-builder].  This change avoids unsoundness: proofs of [30m[47mnil[0m[0m
   were possible due to the lack of those restrictions.  See for
