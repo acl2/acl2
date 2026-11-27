@@ -1477,8 +1477,11 @@
     (INST "RET" (OP :OP #xCA)
           (ARG :OP1 '(I W))
           'NIL
-          'NIL)
-    (INST "RET" (OP :OP #xCB) NIL '(X86-RET) 'NIL)
+          '((:UD (UD-LOCK-USED))))
+    (INST "RET" (OP :OP #xCB)
+          NIL
+          '(X86-RET)
+          '((:UD (UD-LOCK-USED))))
     (INST "INT3" (OP :OP #xCC)
           NIL '(X86-INT3)
           '((:UD (UD-LOCK-USED))))
