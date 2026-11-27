@@ -34,6 +34,7 @@
 (include-book "../skeleton")
 (include-book "../mixed-scripts")
 (include-book "../names")
+(include-book "../code-point-labels")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,6 +103,10 @@
 ;           and then those of Hanb, Hntl, Jpan and Kore that it has
 ;   wspace  1 if it has White_Space, 0 otherwise
 ;   name    its name, the Name property; empty if it has none
+;   aliases its aliases, the Name_Alias property, in the order of the
+;           file NameAliases.txt, separated by vertical bars;
+;           each is the alias, a colon, and its type; empty if it has none
+;   label   its label; empty if it has a name
 ;
 ; Numbers are in decimal; the code points of a sequence, and the items
 ; of a set, are separated by spaces.
@@ -163,6 +168,22 @@
   (cond ((endp types) nil)
         (t (cons (identifier-type-name (car types))
                  (identifier-type-names (cdr types))))))
+
+(defun dump-name-aliases (aliases channel state)
+  (declare (xargs :stobjs state))
+  (cond ((endp aliases) state)
+        (t (b* ((alias (car aliases))
+                (state (princ$ (name-alias->name alias) channel state))
+                (state (princ$ ":" channel state))
+                (state (princ$ (common-lisp::string-downcase
+                                (symbol-name
+                                 (name-alias-type-kind
+                                  (name-alias->type alias))))
+                               channel state))
+                (state (if (consp (cdr aliases))
+                           (princ$ "|" channel state)
+                         state)))
+             (dump-name-aliases (cdr aliases) channel state)))))
 
 (defun dump-code-point (cp ver channel state)
   (declare (xargs :stobjs state))
@@ -254,7 +275,12 @@
                  channel state)))
        (state (dump-flag (white-space-p cp ver) channel state))
        (state (princ$ ";" channel state))
-       (state (princ$ (code-point-name cp ver) channel state)))
+       (state (princ$ (code-point-name cp ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (dump-name-aliases (code-point-name-aliases cp ver)
+                                 channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (code-point-label cp ver) channel state)))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -279,7 +305,8 @@
        (state (princ$ "ids;idc;sc;scx;bc;blk;dd;" channel state))
        (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty;"
                       channel state))
-       (state (princ$ "skel;skelk;skelm;ass;wspace;name" channel state))
+       (state (princ$ "skel;skelk;skelm;ass;wspace;name;aliases;label"
+                      channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))

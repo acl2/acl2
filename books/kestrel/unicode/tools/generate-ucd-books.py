@@ -85,6 +85,9 @@ What is read, and how:
     it back from the generated books.  So the books of the versions are
     generated from the lowest version up, and this script stops if a
     version changes or removes a name.
+
+  * The aliases of the names are read from NameAliases.txt.  A code
+    point can have several; they are kept in the order of the file.
 """
 
 import argparse
@@ -127,6 +130,7 @@ UCD_FILES = {
     "BidiCharacterTest.txt": True,
     "extracted/DerivedName.txt": True,
     "Jamo.txt": True,
+    "NameAliases.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
     "PropertyValueAliases.txt": False,
@@ -2000,6 +2004,87 @@ def book_derived_name(version, sources):
     return book
 
 
+# The types of the aliases of names (Unicode Standard, Section 4.8,
+# Table 4-7).  These are also the names of the constructors of the ACL2
+# type name-alias-type.
+NAME_ALIAS_TYPES = ["correction", "control", "alternate", "figment",
+                    "abbreviation"]
+
+
+def parse_name_aliases(source):
+    """Parse NameAliases.txt.
+
+    Return the list of the (code point, alias, type) of its lines, in
+    the order of the file.
+    """
+    aliases = []
+    seen = set()
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        fields = line.split(";")
+        if len(fields) != 3:
+            die("%s: not 'code point;alias;type'" % where)
+        cp, hi = parse_cp_range(fields[0], where)
+        if hi != cp:
+            die("%s: a range" % where)
+        check_name(fields[1], where)
+        if fields[2] not in NAME_ALIAS_TYPES:
+            die("%s: unexpected type %r" % (where, fields[2]))
+        if fields[1] in seen:
+            die("%s: %r listed twice" % (where, fields[1]))
+        seen.add(fields[1])
+        aliases.append((cp, fields[1], fields[2]))
+    return aliases
+
+
+def book_name_aliases(version, sources):
+    source = sources["NameAliases.txt"]
+    book = Book(version, "name-aliases",
+                "Name_Alias, from NameAliases.txt.",
+                [source], ["name-tables"], ["std/util/defconsts"])
+    aliases = parse_name_aliases(source)
+    names, patterns = parse_derived_name(sources["extracted/DerivedName.txt"])
+    all_names = set(names.values())
+    by_cp = {}
+    for cp, alias, kind in aliases:
+        if alias in all_names:
+            die("%s: %r is also a name" % (source.relpath, alias))
+        by_cp.setdefault(cp, []).append((alias, kind))
+    book.comment(
+        "The aliases of the names of the characters (Unicode Standard,\n"
+        "Section 4.8): a map from a code point to the list of its\n"
+        "aliases, in the order of the file.  Each alias has a type:\n"
+        "correction, control, alternate, figment or abbreviation.\n"
+        "%d aliases of %d code points." % (len(aliases), len(by_cp)))
+    book.blank()
+    const = book.constant("name-aliases")
+    out = book.lines.append
+    out("(defconsts %s" % const)
+    out("  (treemap::update-from-alist")
+    out("   (list")
+    for cp, entries in sorted(by_cp.items()):
+        out("    (cons %s" % hexcp(cp))
+        for i, (alias, kind) in enumerate(entries):
+            head = "          (list " if i == 0 else "                "
+            first = '%s(name-alias "%s"' % (head, alias)
+            second = "(name-alias-type-%s))" % kind
+            if len(first) + 1 + len(second) <= 77:
+                out("%s %s" % (first, second))
+            else:
+                out(first)
+                out("%s%s" % (" " * 28, second))
+        book.lines[-1] += "))"
+    book.lines[-1] += ")"
+    out("   (treemap::empty)))")
+    book.blank()
+    book.assert_holds("(name-alias-mapp %s)" % const)
+    book.assert_equal("(treemap::size %s)" % const, len(by_cp))
+    return book
+
+
 BOOKS = [book_derived_core_properties,
          book_prop_list,
          book_derived_combining_class,
@@ -2018,6 +2103,7 @@ BOOKS = [book_derived_core_properties,
          book_bidi_mirroring,
          book_jamo,
          book_derived_name,
+         book_name_aliases,
          book_normalization_test]
 
 

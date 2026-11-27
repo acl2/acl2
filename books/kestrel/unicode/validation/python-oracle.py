@@ -14,11 +14,12 @@ Usage:
 
     python-oracle.py VERSION code-points [UCD-DIR] > FILE
     python-oracle.py VERSION pairs PAIRS-FILE
+    python-oracle.py VERSION files UCD-DIR > FILE
 
-VERSION, e.g. 16.0.0, must be the version of Unicode of the Python
-interpreter's unicodedata module (unicodedata.unidata_version); the script
-stops if it is not.  Python 3.14 has Unicode 16.0.0 and Python 3.15 has
-Unicode 17.0.0.
+For the first two forms, VERSION, e.g. 16.0.0, must be the version of
+Unicode of the Python interpreter's unicodedata module
+(unicodedata.unidata_version); the script stops if it is not.  Python
+3.14 has Unicode 16.0.0 and Python 3.15 has Unicode 17.0.0.
 
 The first form writes a header line and one line for each code point.
 Each column is named `property@source`, where the source is
@@ -48,6 +49,19 @@ Each column is named `property@source`, where the source is
              Default_Ignorable_Code_Point.  These columns are written
              only if UCD-DIR is given; it is laid out as for
              tools/generate-ucd-books.py.
+             Also the aliases of the name of each code point: the
+             aliases that NameAliases.txt of VERSION lists for it, with
+             their types, less the ones for which unicodedata.lookup
+             does not give the code point.  The script reports how many
+             of those there are.
+
+    files    two files of VERSION alone, read from UCD-DIR.  The labels
+             of the code points without a name, from the comments of
+             extracted/DerivedGeneralCategory.txt, which give the label
+             of the first and of the last code point of each range of
+             such code points; for the code points inside a range the
+             field is `!`.  A code point of another General_Category
+             has no label.
 
 Python strings may contain surrogates, so there is a line for every code
 point.
@@ -55,6 +69,10 @@ point.
 The second form reads a file written by DUMP-PAIRS of dump.lisp, with lines
 `first second composite nfc...`, and checks the NFC form of each pair
 against unicodedata.normalize.  It exits with status 1 if any differs.
+
+The third form writes a header line and one line for each code point with
+the columns of the source `files` only.  They do not depend on the
+interpreter, so this form is for a version of Unicode that no Python has.
 """
 
 import sys
@@ -147,6 +165,52 @@ def skeleton_function(version, ucd_dir):
     return skeleton
 
 
+def name_aliases(version, ucd_dir):
+    """The aliases of each code point in NameAliases.txt, as a dictionary
+    from a code point to the list of its (alias, type)."""
+    aliases = {}
+    for fields in data_lines(ucd_dir + "/NameAliases.txt", version):
+        aliases.setdefault(int(fields[0], 16), []).append(
+            (fields[1], fields[2]))
+    return aliases
+
+
+def labels(version, ucd_dir):
+    """The labels in the comments of extracted/DerivedGeneralCategory.txt,
+    as a list indexed by code point: the label of the first and of the
+    last code point of each range of Cc, Cs, Co or Cn, `!` for the code
+    points inside such a range, and the empty string for the others."""
+    label = [None] * 0x110000
+    path = "%s/extracted/DerivedGeneralCategory.txt" % ucd_dir
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    if version not in lines[0]:
+        die("%s is not a file of Unicode %s" % (path, version))
+    for line in lines:
+        data, _, comment = line.partition("#")
+        fields = [f.strip() for f in data.split(";")]
+        if len(fields) != 2 or not fields[0] or fields[0][0] == "@":
+            continue
+        first, _, last = fields[0].partition("..")
+        first = int(first, 16)
+        last = int(last, 16) if last else first
+        if fields[1] not in NAMELESS_CATEGORIES:
+            for cp in range(first, last + 1):
+                label[cp] = ""
+            continue
+        found = [part[part.index("<") + 1:-1]
+                 for part in comment.split()[-1].split("..")]
+        if len(found) != (1 if first == last else 2):
+            die("%s: unexpected comment in %r" % (path, line))
+        for cp in range(first, last + 1):
+            label[cp] = "!"
+        label[first] = found[0]
+        label[last] = found[-1]
+    if None in label:
+        die("%s: no line for U+%04X" % (path, label.index(None)))
+    return label
+
+
 def seq(s):
     return " ".join(str(ord(c)) for c in s)
 
@@ -161,7 +225,11 @@ def code_points(version, ucd_dir):
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
     if skeleton:
-        columns += ["skel@python-and-files", "skelm@python-and-files"]
+        columns += ["skel@python-and-files", "skelm@python-and-files",
+                    "aliases@python-and-files", "label@files"]
+        aliases = name_aliases(version, ucd_dir)
+        label = labels(version, ucd_dir)
+    alias_missing = []
     out = sys.stdout
     out.write("#cp;" + ";".join(columns) + "\n")
     name_missing = []
@@ -204,14 +272,40 @@ def code_points(version, ucd_dir):
             fields += ["1" if sets[k][cp] else "0"
                        for k in ("xids", "xidc", "pws", "bidic")]
         if skeleton:
+            found = []
+            for alias, kind in aliases.get(cp, []):
+                try:
+                    known = unicodedata.lookup(alias) == c
+                except KeyError:
+                    known = False
+                if known:
+                    found.append("%s:%s" % (alias, kind))
+                else:
+                    alias_missing.append(alias)
             fields += [seq(skeleton(c)),
-                       seq(skeleton("a" + c + "\u0301\u0327"))]
+                       seq(skeleton("a" + c + "\u0301\u0327")),
+                       "|".join(found),
+                       label[cp]]
         out.write(";".join(fields) + "\n")
     if name_missing:
         print("python-oracle.py: unicodedata.name gives no name for %d code"
               " points that have one, from U+%04X to U+%04X"
               % (len(name_missing), name_missing[0], name_missing[-1]),
               file=sys.stderr)
+    if alias_missing:
+        print("python-oracle.py: unicodedata.lookup does not give the code"
+              " point of %d aliases: %s"
+              % (len(alias_missing), ", ".join(alias_missing)),
+              file=sys.stderr)
+
+
+def files(version, ucd_dir):
+    """Write the columns that are read from the files of VERSION alone."""
+    label = labels(version, ucd_dir)
+    out = sys.stdout
+    out.write("#cp;label@files\n")
+    for cp in range(0x110000):
+        out.write("%d;%s\n" % (cp, label[cp]))
 
 
 def pairs(path):
@@ -236,8 +330,12 @@ def pairs(path):
 def main():
     if len(sys.argv) < 3:
         die("usage: python-oracle.py VERSION code-points [UCD-DIR]"
-            " | python-oracle.py VERSION pairs FILE")
+            " | python-oracle.py VERSION pairs FILE"
+            " | python-oracle.py VERSION files UCD-DIR")
     version = sys.argv[1]
+    if sys.argv[2] == "files" and len(sys.argv) == 4:
+        files(version, sys.argv[3])
+        return
     if unicodedata.unidata_version != version:
         die("this Python (%s) has Unicode %s, not %s"
             % (sys.version.split()[0], unicodedata.unidata_version, version))

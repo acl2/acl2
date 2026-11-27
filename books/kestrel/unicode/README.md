@@ -5,8 +5,8 @@ programming languages need: code points, the identifier and white space
 properties, normalization, scripts, the bidirectional classes and controls,
 the bidirectional algorithm, the properties that say which characters are
 safe in identifiers, the detection of strings that look alike or that
-mix scripts, and the names of the characters.  It is a shared
-library: nothing in it is specific to one language.
+mix scripts, and the names of the characters with their aliases.  It is a
+shared library: nothing in it is specific to one language.
 
 The documentation is in XDOC (topic `unicode::unicode`); this file covers
 what a maintainer needs: where things are, where the data comes from, how to
@@ -149,6 +149,9 @@ validated.
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
 | `names` | `Name` (`code-point-name`): the names that are listed one by one, the names of the Hangul syllables, which are made from `Jamo_Short_Name`, and the names that end in the code point.  The code point with a given name (`name-code-point`).  The loose matching of names of UAX #44 (`name-loose-key`, `loose-name-code-point`).  The proofs that the two functions between code points and names undo each other, that no two names match loosely, that a name is made of capital letters, digits, spaces and hyphens, that the code points without a name are those whose `General_Category` is `Cc`, `Cs`, `Co` or `Cn`, and that a name is the same in every later version. |
+| `name-aliases` | `Name_Alias` (`code-point-name-aliases`): the aliases of the names, each with its type, which is one of correction, control, alternate, figment and abbreviation.  The code point of which a string is an alias (`name-alias-code-point`), or the name or an alias (`name-or-alias-code-point`), and the same by loose matching (`loose-name-alias-code-point`, `loose-name-or-alias-code-point`).  The proofs that an alias gives its code point back, that no alias matches a name or another alias loosely, that an alias is written like a name, and that an alias of a version is an alias in every later version. |
+| `code-point-types` | The seven basic types of code points of the Unicode Standard (`code-point-basic-type`): graphic, format, control, private-use, surrogate, noncharacter and reserved; and the code points of a type as a list of ranges (`basic-type-ranges`).  The proofs of which code points are the control codes, the private-use code points, the surrogates and the noncharacters, and that a code point that is not reserved has the same type in every later version. |
+| `code-point-labels` | The labels of the code points that have no name, such as `control-0009` (`code-point-label`); a name or a label for every code point (`code-point-name-or-label`); and the code point that has a label (`label-code-point`, `loose-label-code-point`).  The proofs that every code point has a name or a label and not both, that a label gives its code point back, that no label matches a name or an alias loosely, and that no two code points have the same name or label. |
 | `default-ignorable` | `Default_Ignorable_Code_Point`. |
 | `variation-selectors` | `Variation_Selector`. |
 | `join-controls` | `Join_Control`: the zero width joiner and non-joiner. |
@@ -179,7 +182,7 @@ validated.
 | `bidi-class-tables` | The fixtype of the twenty-three values of `Bidi_Class`, with the predicates for the strong, weak, neutral and explicit formatting classes; the runs of that property. |
 | `block-tables` | The runs of `Block`, whose values are the names of the blocks, as strings. |
 | `identifier-type-tables` | The fixtype of the twelve values of `Identifier_Type`, and the runs of that property, whose values are lists of types. |
-| `name-tables` | The fixtypes of the tables of the names: the tree maps from code points to names, the patterns of the names that end in the code point, and the tree maps from the keys of loose matching to code points. |
+| `name-tables` | The fixtypes of the tables of the names: the tree maps from code points to names, the patterns of the names that end in the code point, and the tree maps from the keys of loose matching to code points.  The fixtypes of the aliases of the names, of their types, and of the tree maps from code points to lists of aliases. |
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and three books from the data files of UTS #39. |
@@ -191,8 +194,8 @@ validated.
 
 What is not modeled is listed, specification by specification, in the
 documentation topic `unicode-coverage` (book `coverage`).  Among other
-things: the aliases of the names of characters, case mappings, text
-segmentation, emoji sequences, and collation.  That topic is also the
+things: case mappings, text segmentation, emoji sequences, the names
+of sequences of characters, and collation.  That topic is also the
 only place where the library names programming languages: it says, for C,
 Java, Python, Rust, Scheme and Remora, whether the library has all that
 their lexical rules take from Unicode.
@@ -820,14 +823,67 @@ About the bidirectional skeleton:
   points without a name are those whose `General_Category` is `Cc`, `Cs`,
   `Co` or `Cn`, that is, the control codes, the surrogates, the private
   use code points and the code points that are not assigned.
+- `name-alias-code-point-when-member-of-code-point-name-aliases`: an
+  alias of a code point gives the code point back.  The theorems about
+  an alias of a code point are stated for a member of the list that
+  `code-point-name-aliases` gives.
+  `find-name-alias-of-name-alias-code-point` is the other direction: the
+  code point found for a string has the string as an alias.
+- `code-points-equal-when-aliases-match-loosely`: two code points that
+  have aliases that match loosely are the same code point.
+- `not-loose-name-code-point-when-member-of-code-point-name-aliases`,
+  `not-loose-name-alias-code-point-of-code-point-name`: no alias matches
+  a name loosely, and no name matches an alias.  So
+  `name-or-alias-code-point` and `loose-name-or-alias-code-point` give
+  the code point back from its name and from each of its aliases
+  (`name-or-alias-code-point-of-code-point-name`,
+  `name-or-alias-code-point-when-member-of-code-point-name-aliases`, and
+  the two for loose matching).
+- `name-char-listp-of-name-alias->name-when-member`: an alias is made of
+  capital letters, digits, spaces and hyphens.
+- `code-point-basic-type-is-control`,
+  `code-point-basic-type-is-private-use`,
+  `code-point-basic-type-is-surrogate`,
+  `code-point-basic-type-is-noncharacter`: the control codes are U+0000
+  to U+001F and U+007F to U+009F; the private-use code points are
+  U+E000 to U+F8FF, U+F0000 to U+FFFFD and U+100000 to U+10FFFD; the
+  surrogates are those of `surrogate-p`; the noncharacters are those of
+  `noncharacter-p`.  `assigned-p-in-terms-of-basic-type`: a code point is
+  assigned exactly when it is neither a noncharacter nor reserved.
+  `code-point-in-basic-type-ranges`: the ranges of a type are the code
+  points that have the type.
+- `code-point-label-is-empty`: the label of a code point is the empty
+  string exactly when its name is not, so every code point has a name or
+  a label and not both.
+  `code-point-name-is-empty-in-terms-of-basic-type`,
+  `code-point-label-is-empty-in-terms-of-basic-type`: the code points
+  with a name are the graphic and format ones.
+- `label-code-point-of-code-point-label`,
+  `code-point-label-of-label-code-point`: the label of a code point gives
+  the code point back, and the code point with a label has that label.
+- `not-loose-name-code-point-of-code-point-label`,
+  `not-loose-name-alias-code-point-of-code-point-label`,
+  `not-loose-label-code-point-of-code-point-name`,
+  `not-loose-label-code-point-when-member-of-code-point-name-aliases`: no
+  label matches a name or an alias loosely, and no name or alias matches
+  a label.
+- `code-points-equal-when-names-or-labels-match-loosely`: two code
+  points for which `code-point-name-or-label` gives strings that match
+  loosely are the same code point.
 
 And about two versions, besides the theorems listed further up:
 `stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
 (text of assigned characters stays in Stream-Safe Text Format, and the
 process gives the same result), `nfc-quick-check-of-later-version`
 (and the other three: the quick check values of an assigned code point
-stay the same), and `code-point-name-of-later-version` (a code point that
-has a name has the same name in every later version).
+stay the same), `code-point-name-of-later-version` (a code point that
+has a name has the same name in every later version),
+`code-point-name-aliases-of-later-version` (an alias of a code point is
+an alias of it in every later version),
+`code-point-basic-type-of-later-version` (a code point that is not
+reserved has the same basic type in every later version), and
+`code-point-label-of-later-version` (such a code point has the same
+label, or no label, in every later version).
 
 ### Including only what you need
 
@@ -845,6 +901,9 @@ supported version, and nothing else of this library.
 | `code-point-bidi-class`, `bidi-class-ranges`; the type `bidi-class` and its predicates such as `bidi-class-right-to-left-p` | `bidi-class` | `bidi-controls`, `runs`, `bidi-class-tables`, and the books that those load | `derived-bidi-class`, `prop-list` |
 | `code-point-block`, `block-ranges`, `block-names` | `blocks` | `code-points`, `versions`, `ranges`, `runs`, `block-tables` | `blocks` |
 | `code-point-name`, `name-code-point`, `loose-name-code-point`, `name-loose-key`, `jamo-short-name`, `hangul-syllable-name` | `names` | `name-tables`, `hangul`, `general-category`, and the books that those load | `derived-name`, `jamo`, `derived-general-category` |
+| `code-point-name-aliases`, `name-alias-code-point`, `name-or-alias-code-point`, `loose-name-or-alias-code-point`, `find-name-alias`; the types `name-alias` and `name-alias-type` | `name-aliases` | `names`, and the books that it loads | `name-aliases`, and the tables of `names` |
+| `code-point-basic-type`, `basic-type-ranges`; the type `basic-type` | `code-point-types` | `general-category`, `noncharacters`, `range-operations`, and the books that those load | `derived-general-category`, `prop-list` |
+| `code-point-label`, `code-point-name-or-label`, `label-code-point`, `loose-label-code-point` | `code-point-labels` | `name-aliases`, `code-point-types`, and the books that those load | the tables of `name-aliases` and of `code-point-types` |
 | `emoji-p`, `emoji-presentation-p`, `emoji-modifier-p`, `emoji-modifier-base-p`, `emoji-component-p`, `extended-pictographic-p`, `regional-indicator-p` | `emoji` | `code-points`, `versions`, `ranges` | `emoji-data`, `prop-list` |
 | `decimal-digit-value`, `decimal-digit-p`, `decimal-digit-zero` | `decimal-digits` | `code-points`, `versions`, `ranges`, `maps` | `unicode-data` |
 | `identifier-allowed-p`, `code-point-identifier-types`, `identifier-type-ranges`; the type `identifier-type` | `identifier-status` | `code-points`, `versions`, `ranges`, `runs`, `identifier-type-tables` | `identifier-status`, `identifier-type` |
@@ -893,7 +952,8 @@ its delimiters;
 `pattern-white-space` and `bidi-controls` if its white space or the
 characters it rejects are defined by those properties; and `utf-8` if it
 decodes its input with `[books]/unicode`.  A front end for a language that
-has escape sequences that denote a character by its name needs `names`.
+has escape sequences that denote a character by its name needs `names`,
+or `name-aliases` if an alias can be written for the name.
 A front end for a language that
 defines its identifiers or its white space by general categories needs
 `general-category`.  The predicates on values, such as
@@ -994,6 +1054,7 @@ of UTS #39:
 | `BidiMirroring.txt` | `bidi-mirroring` | `Bidi_Mirroring_Glyph` |
 | `extracted/DerivedName.txt` | `derived-name` | `Name`: the names that are listed one by one, and a pattern for each range of the names that end in the code point.  The book of 16.0.0 has every listed name; the book of a later version has the names that the version adds |
 | `Jamo.txt` | `jamo` | `Jamo_Short_Name` |
+| `NameAliases.txt` | `name-aliases` | `Name_Alias`: for each code point that has aliases, the list of them, each with its type, in the order of the file |
 | `extracted/DerivedName.txt` | `hangul-syllable-names`, in `data/names/` | The names of the Hangul syllables, once for all versions, for a test |
 | `BidiTest.txt` | `bidi-test`, in `data/bidi/` | The conformance test vectors on bidirectional classes, once for all versions |
 | `BidiCharacterTest.txt` | `bidi-character-test`, in `data/bidi/` | The conformance test vectors on code points, once for all versions |
@@ -1056,14 +1117,20 @@ How the generator reads the UCD:
   earlier names back from the generated books, and stops if the new
   version changes or removes a name, or takes a code point out of a range
   with a pattern.  So the versions are generated from the earliest up.
+- **The aliases of the names are read from `NameAliases.txt`**, and
+  written in full for each version.  A code point can have several; they
+  are kept in the order of the file.  The generator checks that each is
+  written like a name, has one of the five types, is listed once, and is
+  not a listed name.
 - **Surrogates are code points** and get property values like any others.
 
 What is computed in ACL2 rather than generated: the full decompositions
 (by expanding the mappings, with a check that the result cannot be expanded
 further), the table of the pairs that compose (from the canonical
 mappings and `Full_Composition_Exclusion`), and the tables from the keys
-of loose matching to code points (from the tables of the names, when
-`names` is certified).  The Hangul syllables are
+of loose matching to code points (from the tables of the names and of
+their aliases, when `names` and `name-aliases` are certified).  The
+Hangul syllables are
 handled by the arithmetic of the standard, not by tables, and so are
 their names.
 
@@ -1094,6 +1161,10 @@ checked against the recognizer of its type, by evaluation, in the book
 that defines it.  The listed names are a tree map from code points to
 strings (`fty::deftreemap name-map`), and the patterns are a list of
 products of a range and a prefix (`fty::defprod name-pattern`).
+An alias is a product of a string and a type (`fty::defprod name-alias`,
+`fty::deftagsum name-alias-type`), and the table of the aliases is a
+tree map from code points to lists of aliases; the generated books
+build the aliases with the typed constructors.
 The conformance test vectors are typed too: a line of
 `NormalizationTest.txt` is a `normalization-test-line`, a product with one
 field per column (`tests/normalization-test-types`), and the generated
@@ -1108,8 +1179,8 @@ supported version, `Scripts.txt`, `ScriptExtensions.txt`, `Blocks.txt`,
 `emoji/emoji-data.txt` and two files of UTS #39 were downloaded on
 2026-11-19; `confusables.txt`, `BidiBrackets.txt`, `BidiMirroring.txt`,
 `BidiTest.txt` and `BidiCharacterTest.txt` on 2026-11-20;
-`extracted/DerivedName.txt` and `Jamo.txt` on 2026-11-26; and the other
-files on 2026-11-14.
+`extracted/DerivedName.txt`, `Jamo.txt` and `NameAliases.txt` on
+2026-11-26; and the other files on 2026-11-14.
 
 To check the files and the books of a version:
 
@@ -1156,7 +1227,7 @@ For example 19.0.0:
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
    `combining-classes`, `decompositions`, `compositions`, `composing-pairs`,
-   `quick-check`, `names`),
+   `quick-check`, `names`, `name-aliases`),
    add the `include-book`
    of the new data book and a `:v19.0.0` line to each selector;
    `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions`,
@@ -1165,7 +1236,13 @@ For example 19.0.0:
    line to `internal-skeleton-unstable-code-points`.  In `names`, also
    copy the constant `*name-keys-v18.0.0*` with its two assertions, and
    add the new version to the local function `name-stable-ok` and to the
-   local lemma `code-point-name-in-terms-of-version-case`.
+   local lemma `code-point-name-in-terms-of-version-case`.  In
+   `name-aliases`, do the same with `*name-alias-keys-v18.0.0*`,
+   `aliases-stable-ok` and
+   `code-point-name-aliases-in-terms-of-version-case`; the assertion on
+   the size of the new constant has the number of aliases of the new
+   version.  In `code-point-types`, add the new version to the local lemma
+   `basic-type-ranges-in-terms-of-version-case`.
 5. Read Section 5.1 of the revision of UTS #39 for the new version.  If
    the rules for the augmented script set have changed, as they did in
    the revision for 18.0.0, change `augment-script-extensions` in
@@ -1173,7 +1250,8 @@ For example 19.0.0:
 6. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
    `quick-check-v18.0.0.lisp`, changing the version, and add to
    `bidi-character-test.lisp` the assertion for the new version, and to
-   `names.lisp` the tests of the new version on whole sets of code points.
+   `names.lisp`, `name-aliases.lisp` and `code-point-types.lisp` the
+   tests of the new version that count code points or aliases.
    Then run the generator with `--check` for each of the older versions.
    If it says that a book of `data/bidi/` differs, the new version has
    changed a test case of `BidiTest.txt` or `BidiCharacterTest.txt`:
@@ -1223,13 +1301,18 @@ For example 19.0.0:
      line of `internal-skeleton-unstable-code-points`.  Then
      `internal-skeleton-of-internal-skeleton-from-v18.0.0` has to be
      restated for 18.0.0 alone.
+   - `code-point-basic-type-of-later-version` fails if the new version
+     makes a graphic character a format character, or the reverse, by
+     changing its `General_Category`; the stability policies allow that.
+     `code-point-label-of-later-version` follows from it.
    - The theorems of `property-relations` are facts about the data, some
      of which the specifications state and some not.  If one fails, that
      is a change in Unicode to look at, as before.
 
    A failure of any of the others (assigned code points, `XID_Start`,
    `XID_Continue`, `ID_Start`, `ID_Continue`, normalization, Stream-Safe
-   text, the quick check for NFD and NFKD, the names of the characters,
+   text, the quick check for NFD and NFKD, the names of the characters
+   and their aliases, the labels,
    `Pattern_White_Space`, `Pattern_Syntax`,
    noncharacters, the three fixed values of `General_Category`) would mean
    that the new version breaks a stability policy of the standard, or that
@@ -1374,6 +1457,24 @@ there is no formal specification to prove that against.  The evidence is:
   end in the code point, with no code point counted twice.  And the
   characters that loose matching ignores as white space are, among the
   first 256 code points, those that have `White_Space`.
+- `name-aliases`: examples of the aliases of code points, with their
+  types, and of the functions from an alias, or from a name or an alias,
+  to its code point, exactly and by loose matching.  Then, for each
+  version, the number of aliases of each type: 35 corrections in 16.0.0
+  and 39 in the other two, 84 of type control, 1 alternate, 3 of type
+  figment and 354 abbreviations.
+- `code-point-types`: examples of each basic type, and, for each
+  version, the number of code points of each type, counted on the
+  ranges: 65 control codes, 137,468 private-use code points, 2,048
+  surrogates, 66 noncharacters and 172 format characters in every
+  version; 154,826 graphic characters in 16.0.0, 159,629 in 17.0.0 and
+  172,636 in 18.0.0; and the rest reserved.
+- `code-point-labels`: examples of the labels of the five types that have
+  them, of the name or label of a code point, and of the functions from
+  a label to its code point; among them the strings that are not labels
+  because of the number of their digits or of their type, and the two
+  aliases, `PRIVATE USE-1` and `PRIVATE USE-2`, whose keys for loose
+  matching look like those of labels.
 
 The conformance test of normalization takes about ten seconds per
 version, and the quick-check test about twenty.  The two conformance
@@ -1723,6 +1824,31 @@ differences:
   `code-point-name`; for the second the tests have the examples of
   UAX #44.
 
+The aliases of the names and the labels were compared on 2026-11-27,
+for every code point (`validation/dump.lisp` writes two more columns),
+and the comparisons above of every code point were run again on that
+day.  No differences:
+
+- The aliases, with Python 3.14.6 for 16.0.0 and Python 3.15.0b4 for
+  17.0.0.  Python has no function from a code point to its aliases, so
+  the oracle takes the aliases and their types from `NameAliases.txt`
+  and keeps, for each code point, those for which `unicodedata.lookup`
+  gives that code point.  It kept all of them: 477 and 481.  For 18.0.0
+  the aliases were not compared with another implementation; they are
+  the same as those of 17.0.0.
+- The labels, for the three versions, with the comments of
+  `extracted/DerivedGeneralCategory.txt`, which give the label of the
+  first and of the last code point of each range of the code points
+  whose `General_Category` is `Cc`, `Cs`, `Co` or `Cn`.  The oracle
+  writes "cannot say" for the code points inside such a range, and no
+  label for the code points of the other categories.  So the labels
+  were compared on 1,225 code points for 16.0.0, 1,234 for 17.0.0 and
+  1,229 for 18.0.0, and the absence of a label on the 154,998, 159,801
+  and 172,808 code points that have a name.
+- The basic types of code points were not compared with another
+  implementation: they are a short definition on top of
+  `General_Category` and `Noncharacter_Code_Point`, which were.
+
 Not compared with another implementation: the bidirectional skeleton as
 a whole (its two parts are, above: the displayed text and the internal
 skeleton; and the tests have the worked example of UTS #39); the
@@ -1740,7 +1866,8 @@ of its 3,138 groups in 18.0.0, have members with different skeletons).
 
 To repeat this (it needs `acl2` and `cargo`, and for the Python part an
 interpreter with the right version of Unicode; `UCD_DIR` is the directory
-with the files of the version, for the skeletons of the Python part):
+with the files of the version, for the skeletons and the aliases of the
+Python part and for the labels):
 
 ```
 cert.pl validation/dump
@@ -1748,7 +1875,8 @@ UCD_DIR=/tmp/ucd-16.0.0 \
   validation/run.sh 16.0.0 /tmp/unicode-validation python3.14
 UCD_DIR=/tmp/ucd-17.0.0 \
   validation/run.sh 17.0.0 /tmp/unicode-validation python3.15
-validation/run.sh 18.0.0 /tmp/unicode-validation
+UCD_DIR=/tmp/ucd-18.0.0 \
+  validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
 
 ## Documentation topics
@@ -1789,7 +1917,7 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,320 topics.  The books of the
+With this, the library has about 1,420 topics.  The books of the
 bidirectional algorithm have some 385 of them: their functions, and
 twenty-seven small types whose generated topics, about fifteen at most for
 one type, are under the line.  The book of the Bidi Rule has 29, and
@@ -1812,7 +1940,9 @@ prototype of a code point.  The name of a code point is a test for the
 Hangul syllables, a search in the list of the patterns, which has about
 twenty, and a lookup in a tree map; the code point with a name is a
 lookup in a tree map whose keys are strings, and then the name of the
-code point found, to compare.  The skeleton of a list normalizes it twice.
+code point found, to compare.  The aliases of a code point are a lookup
+in a tree map.  The basic type and the label of a code point need its
+`General_Category`.  The skeleton of a list normalizes it twice.
 The operations on lists of ranges take time proportional to the product of
 the lengths of the two lists; `general-category-changes`, which uses them
 on the ranges of each of the thirty values, takes well under a second.
@@ -1825,13 +1955,13 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 168 books from scratch, the tests and the generated
+Certifying all the 177 books from scratch, the tests and the generated
 tables included, took about nine minutes with two jobs
-(`cert.pl -j 2`, SBCL).  The slowest books, apart from the tests, are
-`bidi-mark-class` (38 seconds), `white-space` (37 seconds),
-`quick-check-theorems` (34 seconds), `script-tables` (30 seconds: the
-type of the scripts is a tagged sum with 179 cases),
-`normalization-across-versions` (24 seconds) and `names` (23 seconds).
+(`cert.pl -j 2`, SBCL).  The slowest books, apart from the tests, take
+between twenty and forty seconds each: `bidi-mark-class`, `white-space`,
+`quick-check-theorems`, `script-tables` (the type of the scripts is a
+tagged sum with 179 cases), `normalization-across-versions`, `names`,
+`code-point-labels` and `bidi-rule-display-levels`.
 
 ## License
 

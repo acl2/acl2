@@ -36,6 +36,10 @@
       "sha256": "e0f42a73ec3bf9fa4bc404ea0a2921675c73742905dacbe439675fe8c9b2359f",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/Jamo.txt"
     },
+    "NameAliases.txt": {
+      "sha256": "9953f0fcebf5ea8091c5c581e4df0e43f20d2533c84ccca7987a9bb819a896a8",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/NameAliases.txt"
+    },
     "NormalizationTest.txt": {
       "sha256": "d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/NormalizationTest.txt"
@@ -134,6 +138,10 @@
       "sha256": "17bb07f5e37f995351ddcef393c04464a9e3891ed0c0bd56a03a5c5e400a6326",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/Jamo.txt"
     },
+    "NameAliases.txt": {
+      "sha256": "793f6f1e4d15fd90f05ae66460191dc4d75d1fea90136a25f30dd6a4cb950eac",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/NameAliases.txt"
+    },
     "NormalizationTest.txt": {
       "sha256": "5019ffd530751a741900c849c0e010332f142a3612234639bd200b82138a87db",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/NormalizationTest.txt"
@@ -231,6 +239,10 @@
     "Jamo.txt": {
       "sha256": "2216bd39fbfeb8fc44825909e61bed4d866c5e155ed359fbf8d308e307b15c57",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/Jamo.txt"
+    },
+    "NameAliases.txt": {
+      "sha256": "3d5cf5e468901b080cd99adf2230061b748083705fe633db43ac8b73ec7a13da",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/NameAliases.txt"
     },
     "NormalizationTest.txt": {
       "sha256": "25a50d816764b04abfb4a646d3eb2b2a803284c3873d9a06757b94fe4513dde3",
