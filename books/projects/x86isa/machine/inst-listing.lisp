@@ -2952,7 +2952,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "CLD" (OP :OP #xFC)
           NIL '(X86-CMC/CLC/STC/CLD/STD)
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "STD" (OP :OP #xFD)
           NIL '(X86-CMC/CLC/STC/CLD/STD)
           '((:UD (UD-LOCK-USED))))
