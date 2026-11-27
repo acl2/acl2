@@ -760,6 +760,20 @@
                (contains-assumptionp-fc-derivations (cdr lst))))))
 )
 
+(defun mfc-forced-ttreep (forcep ttree)
+
+; This predicate is used below when the mfc-xx functions discard the ttree
+; returned by the corresponding prover operation.  The values computed with
+; forcep = nil are trusted by meta-extract-contextual-fact.  But the type-alist
+; and the linear pot-lst of a metafunction context can contain facts that
+; depend on forced hypotheses (for example, from forward-chaining or linear
+; rules), which are proved in the forcing round only if they get into the
+; ttree of the proof.  So when forcep is nil, we do not use a result whose
+; ttree contains such an assumption.
+
+  (and (null forcep)
+       (contains-assumptionp ttree)))
+
 (defun remove-assumption-entries-from-type-alist (type-alist)
 
 ; We delete from type-alist any entry, (term ts . ttree), whose ttree contains

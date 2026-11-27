@@ -1301,7 +1301,9 @@
 ; heuristic purposes, and get their logical information from the world stored
 ; in mfc (not in state).
 
-; This function avoids forcing and does not return a tag-tree.
+; This function avoids forcing and does not return a tag-tree.  The mfc-xx
+; functions called below, with forcep = nil, avoid results that depend on
+; forced assumptions in the context; see mfc-forced-ttreep.
 
   (declare (xargs :mode :program ; becomes :logic with system-verify-guards
                   :stobjs state))

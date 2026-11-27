@@ -36839,7 +36839,12 @@ ld) and @(tsee include-book)"
  @('nil'), respectively.  A value of @(':same') for @(':forcep') means that
  forcing will be allowed if and only if it is allowed in the current rewriting
  environment; see @(see force).  A value of @('t') or @('nil') for @(':forcep')
- overrides this default and allows or disallows forcing, respectively.  By
+ overrides this default and allows or disallows forcing, respectively.  When
+ @(':forcep') is @('nil') and no tag-tree is returned, a result that depends
+ on hypotheses forced earlier (for example, by @(see forward-chaining)) is
+ replaced by a trivial one: no type information for @('mfc-ts'), the
+ (instantiated) input term for @('mfc-rw') and @('mfc-rw+'), and @('nil') for
+ @('mfc-ap') and @('mfc-relieve-hyp').  By
  default these functions return a single value, @('val'), but if @(':ttreep')
  is @('t') then they return @('(mv val ttree)'), where @('ttree') is the
  tag-tree (see @(see ttree)) returned by the indicated operation, with an input
@@ -110517,6 +110522,19 @@ it."
  subterm.  (These are the union of the set of top-level assumptions and the set
  of governing IF-tests.)  For an example, see @(see community-book)
  @('system/tests/proof-builder-assumptions-contradiction.lisp').</p>
+
+ <p>Fixed a soundness bug in the use of @(see meta-extract) hypotheses, which
+ trusted results of @(tsee mfc-ts), @(tsee mfc-rw), @(tsee mfc-rw+), @(tsee
+ mfc-relieve-hyp), and @(tsee mfc-ap) that could depend on @(see force)d
+ hypotheses (for example, from @(see forward-chaining) rules) that were never
+ proved.  Now those functions avoid such results when called with @(':forcep
+ nil').  For an example, see @(see community-book)
+ @('system/tests/meta-extract-forced-context.lisp').  Note: The fixes were
+ vetted by an ACL2 maintainer but were made entirely by AI (including this
+ release note before the present sentence, and including updating the
+ documentation for @(see extended-metafunctions)), the only change being to
+ convert the new function @('mfc-forced-ttreep') from a raw Lisp function to a
+ @(see program)-mode function (without changing its @('defun') form).</p>
 
  <p>Fixed a soundness bug by adding the following restriction on @(tsee
  stobj-let) forms: the parent @(see stobj) must not belong to the list of

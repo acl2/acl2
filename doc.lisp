@@ -40442,10 +40442,15 @@ Subtopics
   be allowed if and only if it is allowed in the current rewriting
   environment; see [force].  A value of [30m[47mt[0m[0m or [30m[47mnil[0m[0m for [30m[47m:forcep[0m[0m
   overrides this default and allows or disallows forcing,
-  respectively.  By default these functions return a single value,
-  [30m[47mval[0m[0m, but if [30m[47m:ttreep[0m[0m is [30m[47mt[0m[0m then they return [30m[47m(mv val ttree)[0m[0m, where
-  [30m[47mttree[0m[0m is the tag-tree (see [ttree]) returned by the indicated
-  operation, with an input tag-tree of [30m[47mnil[0m[0m).
+  respectively.  When [30m[47m:forcep[0m[0m is [30m[47mnil[0m[0m and no tag-tree is returned, a
+  result that depends on hypotheses forced earlier (for example, by
+  [forward-chaining]) is replaced by a trivial one: no type
+  information for [30m[47mmfc-ts[0m[0m, the (instantiated) input term for [30m[47mmfc-rw[0m[0m
+  and [30m[47mmfc-rw+[0m[0m, and [30m[47mnil[0m[0m for [30m[47mmfc-ap[0m[0m and [30m[47mmfc-relieve-hyp[0m[0m.  By default
+  these functions return a single value, [30m[47mval[0m[0m, but if [30m[47m:ttreep[0m[0m is [30m[47mt[0m[0m
+  then they return [30m[47m(mv val ttree)[0m[0m, where [30m[47mttree[0m[0m is the tag-tree (see
+  [ttree]) returned by the indicated operation, with an input
+  tag-tree of [30m[47mnil[0m[0m).
 
   During the execution of a metafunction by the theorem prover, the
   expressions above compute the results specified.  Typically, you
@@ -107393,6 +107398,20 @@ Bug Fixes From AI via Eric Smith
   (These are the union of the set of top-level assumptions and the
   set of governing IF-tests.)  For an example, see [community-book]
   [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
+
+  Fixed a soundness bug in the use of [meta-extract] hypotheses, which
+  trusted results of [30m[47m[mfc-ts][0m[0m, [30m[47m[mfc-rw][0m[0m, [30m[47m[mfc-rw+][0m[0m,
+  [30m[47m[mfc-relieve-hyp][0m[0m, and [30m[47m[mfc-ap][0m[0m that could depend on [force]d
+  hypotheses (for example, from [forward-chaining] rules) that were
+  never proved.  Now those functions avoid such results when called
+  with [30m[47m:forcep nil[0m[0m.  For an example, see [community-book]
+  [30m[47msystem/tests/meta-extract-forced-context.lisp[0m[0m.  Note: The fixes
+  were vetted by an ACL2 maintainer but were made entirely by AI
+  (including this release note before the present sentence, and
+  including updating the documentation for [extended-metafunctions]),
+  the only change being to convert the new function [30m[47mmfc-forced-ttreep[0m[0m
+  from a raw Lisp function to a [program]-mode function (without
+  changing its [30m[47mdefun[0m[0m form).
 
   Fixed a soundness bug by adding the following restriction on
   [30m[47m[stobj-let][0m[0m forms: the parent [stobj] must not belong to the list

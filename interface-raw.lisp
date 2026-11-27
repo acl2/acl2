@@ -8355,8 +8355,9 @@
   (defun-overrides mfc-ts-fn (term mfc state forcep)
     (mv-let (ans ttree)
             (mfc-ts-raw term mfc state forcep)
-            (declare (ignore ttree))
-            ans))
+            (if (mfc-forced-ttreep forcep ttree)
+                *ts-unknown*
+              ans)))
   (defun-overrides mfc-ts-ttree (term mfc state forcep)
     (mfc-ts-raw term mfc state forcep))
 
@@ -8364,8 +8365,9 @@
     (mv-let (ans ttree)
             (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state
                         forcep)
-            (declare (ignore ttree))
-            ans))
+            (if (mfc-forced-ttreep forcep ttree)
+                term
+              ans)))
   (defun-overrides mfc-rw-ttree (term obj equiv-info mfc state forcep)
     (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep))
 
@@ -8373,8 +8375,9 @@
     (mv-let (ans ttree)
             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
                         forcep)
-            (declare (ignore ttree))
-            ans))
+            (if (mfc-forced-ttreep forcep ttree)
+                (sublis-var alist term)
+              ans)))
   (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
     (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep))
 
@@ -8383,15 +8386,19 @@
     (mv-let (ans ttree)
             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
                                  forcep)
-            (declare (ignore ttree))
-            ans))
+            (and (not (mfc-forced-ttreep forcep ttree))
+                 ans)))
   (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
                                               state forcep)
     (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
                          forcep))
 
   (defun-overrides mfc-ap-fn (term mfc state forcep)
-    (mfc-ap-raw term mfc state forcep)))
+    (let ((contradictionp (mfc-ap-raw term mfc state forcep)))
+      (and contradictionp
+           (not (mfc-forced-ttreep forcep
+                                   (access poly contradictionp :ttree)))
+           contradictionp))))
 
 #+ccl
 (defun stack-access-defeat-hook-default (fn)
