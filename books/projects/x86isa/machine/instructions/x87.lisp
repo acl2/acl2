@@ -166,6 +166,11 @@
                ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
                 (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
                ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?))
+
                ((unless (signed-byte-p 64 (+ 512 dest-addr))) (!!ms-fresh :fxsave-address-overflow))
 
                ((mv flg x86) (wme16 proc-mode dest-addr seg-reg (fp-ctrl x86) inst-ac? x86))
@@ -348,6 +353,11 @@
                ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
                 (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
                ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?))
+
                ((unless (signed-byte-p 64 (+ 512 src-addr -1))) (!!ms-fresh :fxrstor-address-overflow))
 
                ((mv flg fp-ctrl x86) (rme16 proc-mode src-addr seg-reg :r inst-ac? x86))
