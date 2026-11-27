@@ -174,7 +174,7 @@
   `(eql (cr4Bits->pce (cr4)) 0))
 
 (defmacro gp-cr4-umip-is-1 ()
-  `(eql (cr4Bits->umip (cr4)) 0))
+  `(eql (cr4Bits->umip (cr4)) 1))
 
 (defmacro gp-cr0-pe-is-0 ()
   `(eql (cr0Bits->pe (cr0)) 0))
