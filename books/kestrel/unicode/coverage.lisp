@@ -204,6 +204,17 @@
     (xdoc::li
      "@('Block'): see @(see blocks).")
     (xdoc::li
+     "@('Name') [Unicode, Section 4.8], with @('Jamo_Short_Name'),
+      from which the names of the Hangul syllables are made;
+      the function from a name to its code point;
+      and the loose matching of names
+      [UAX #44, Section 5.9.2, rule UAX44-LM2].
+      The two functions between code points and names
+      are proved to undo each other,
+      and the code points without a name are proved to be
+      those of four general categories:
+      see @(see names) and @(see names-theorems).")
+    (xdoc::li
      "The decimal digits and their values,
       which is the part of @('Numeric_Type') and @('Numeric_Value')
       for the characters whose numeric type is @('Decimal'):
@@ -341,7 +352,19 @@
       (see @(see general-category-stability)).")
     (xdoc::li
      "Identifier Stability, for the identifiers of @(see xid):
-      an identifier of a version is an identifier of every later version."))
+      an identifier of a version is an identifier of every later version.")
+    (xdoc::li
+     "Name Stability:
+      a code point that has a name in a version
+      has the same name in every later version.
+      See @(see names-theorems).")
+    (xdoc::li
+     "Name Uniqueness, for the names of the characters alone:
+      no two of them match loosely.
+      The policy is about the names, their aliases
+      and the named sequences taken together,
+      and the library has only the first.
+      See @(see names-theorems)."))
    (xdoc::p
     "The @('General_Category') of other characters is not stable.
      The library computes its changes between two versions:
@@ -357,7 +380,9 @@
    (xdoc::ul
     (xdoc::li
      "From [Unicode] and [UAX #44]:
-      the names of characters and their aliases;
+      the aliases of the names of characters, the named sequences,
+      and the labels of the code points without a name
+      [Unicode, Section 4.8];
       case mappings, case folding,
       and the properties @('Alphabetic'), @('Lowercase'), @('Uppercase'),
       @('Cased'), @('Case_Ignorable') and @('Grapheme_Extend');
@@ -394,7 +419,8 @@
       and the other profiles and requirements of that annex.")
     (xdoc::li
      "From [Stability]:
-      the policies about the names of characters,
+      the policies about the aliases of the names of characters
+      and about the named sequences,
       about case folding and case pairs,
       and about the names and aliases of properties,
       none of which the library has;
@@ -483,14 +509,20 @@
       Identifiers are not normalized.
       See @(tsee code-point-general-category).")
     (xdoc::li
-     (xdoc::b "Python: sufficient.")
+     (xdoc::b "Python: sufficient for identifiers,
+               not for one escape sequence.")
      " In Python 3 [The Python Language Reference, `Lexical analysis'],
       a name starts with a character that has @('XID_Start')
       or with the underscore,
       and continues with characters that have @('XID_Continue');
       names are converted to Normalization Form KC
       and compared in that form.
-      See @(tsee xid-start-p), @(tsee xid-continue-p) and @(tsee nfkc).")
+      See @(tsee xid-start-p), @(tsee xid-continue-p) and @(tsee nfkc).
+      In a string literal, the escape sequence @('\\N{name}')
+      denotes the character with that name,
+      and the name can be an alias of the name of the character.
+      The library has the names (see @(tsee name-code-point))
+      and not their aliases.")
     (xdoc::li
      (xdoc::b "Rust: sufficient for the lexer.")
      " In Rust [The Rust Reference, `Identifiers' and `Whitespace'],
@@ -548,8 +580,9 @@
       and, of [UTS #39], the skeleton
       and the bidirectional skeleton of a string,
       mixed-script detection and mixed-number detection,
+      and the names of characters,
       which are modeled.
       It also takes grapheme clusters, emoji sequences,
-      and the names of characters,
+      and the aliases of the names of characters,
       which are not.")))
   :order-subtopics t)

@@ -32,6 +32,10 @@
       "sha256": "4d4c03892dea9146d674b686e495df2d55a28d071ac474041d73518f887abddc",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/DerivedNormalizationProps.txt"
     },
+    "Jamo.txt": {
+      "sha256": "e0f42a73ec3bf9fa4bc404ea0a2921675c73742905dacbe439675fe8c9b2359f",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/Jamo.txt"
+    },
     "NormalizationTest.txt": {
       "sha256": "d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/NormalizationTest.txt"
@@ -75,6 +79,10 @@
     "extracted/DerivedGeneralCategory.txt": {
       "sha256": "7676ab755a41ef82108460238569e60ad65c191ddafe61b36c6765ec1353f293",
       "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedGeneralCategory.txt"
+    },
+    "extracted/DerivedName.txt": {
+      "sha256": "0cc1469faa0c5518572ef93f4f457f93aa8a160ce320aad3793d85f4b435fd24",
+      "url": "https://www.unicode.org/Public/16.0.0/ucd/extracted/DerivedName.txt"
     },
     "security/IdentifierStatus.txt": {
       "sha256": "c6108ca140e054b55a5b0378e7ebed8b1ef0e846251f6195361bc9af8ffc61b1",
@@ -122,6 +130,10 @@
       "sha256": "71fd6a206a2c0cdd41feb6b7f656aa31091db45e9cedc926985d718397f9e488",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/DerivedNormalizationProps.txt"
     },
+    "Jamo.txt": {
+      "sha256": "17bb07f5e37f995351ddcef393c04464a9e3891ed0c0bd56a03a5c5e400a6326",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/Jamo.txt"
+    },
     "NormalizationTest.txt": {
       "sha256": "5019ffd530751a741900c849c0e010332f142a3612234639bd200b82138a87db",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/NormalizationTest.txt"
@@ -165,6 +177,10 @@
     "extracted/DerivedGeneralCategory.txt": {
       "sha256": "d62e5bab70ca74f099343f71224fa051cb1fdd61a1ab45c0488c44cfc0b6102e",
       "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedGeneralCategory.txt"
+    },
+    "extracted/DerivedName.txt": {
+      "sha256": "019758bbe6c756c40fca6d505187ea660c5e195533e2ff2c841963a212c9d369",
+      "url": "https://www.unicode.org/Public/17.0.0/ucd/extracted/DerivedName.txt"
     },
     "security/IdentifierStatus.txt": {
       "sha256": "617228a16da13850bf8af28b6cd08f5e9b6595d2eb60404fe6eee2c85b4e4a35",
@@ -212,6 +228,10 @@
       "sha256": "98ac7f67d985fe781e317f6182e885e94cabb0c314769e6dd73e48b226931ccd",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/DerivedNormalizationProps.txt"
     },
+    "Jamo.txt": {
+      "sha256": "2216bd39fbfeb8fc44825909e61bed4d866c5e155ed359fbf8d308e307b15c57",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/Jamo.txt"
+    },
     "NormalizationTest.txt": {
       "sha256": "25a50d816764b04abfb4a646d3eb2b2a803284c3873d9a06757b94fe4513dde3",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/NormalizationTest.txt"
@@ -255,6 +275,10 @@
     "extracted/DerivedGeneralCategory.txt": {
       "sha256": "d6b151d2d40ee9b1876d26f417980f45ffae47b6055ccf7203cb31f07a030f94",
       "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedGeneralCategory.txt"
+    },
+    "extracted/DerivedName.txt": {
+      "sha256": "ac6cf808ea4ee29323031d5ba9449de13da51398a3f5ce401546d8fceb976df7",
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedName.txt"
     },
     "security/IdentifierStatus.txt": {
       "sha256": "5863c7d99ca18f213c41c7318aa5528bebfb6d32ec0f1d5944e37192c119aebd",

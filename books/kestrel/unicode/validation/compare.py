@@ -24,7 +24,8 @@ ACL2 column `property`, for every code point, except that:
     Pattern_White_Space: that is how rustc's lexer defines them;
 
   * a field `!` means that the oracle cannot say (the Rust oracle writes it
-    for the surrogates, which are not Rust chars); such fields are counted
+    for the surrogates, which are not Rust chars, and the Python oracle
+    for a name that Python does not have); such fields are counted
     but not compared;
 
   * ass_no_hntl is compared with the ACL2 column ass without the
@@ -100,7 +101,7 @@ def main():
                  "nchar", "dep", "pcm", "psyn", "ids", "idc", "sc", "scx",
                  "bc", "blk", "dd", "emoji", "epres", "emod", "ebase",
                  "ecomp", "extpict", "ri", "idst", "idty", "skel", "skelk",
-                 "skelm", "ass", "wspace"]:
+                 "skelm", "ass", "wspace", "name"]:
         if name not in index:
             die("%s: no column %s" % (sys.argv[1], name))
 

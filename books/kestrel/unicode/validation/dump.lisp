@@ -33,6 +33,7 @@
 (include-book "../identifier-status")
 (include-book "../skeleton")
 (include-book "../mixed-scripts")
+(include-book "../names")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,6 +101,7 @@
 ;           of its elements, the scripts first, in the order of the codes,
 ;           and then those of Hanb, Hntl, Jpan and Kore that it has
 ;   wspace  1 if it has White_Space, 0 otherwise
+;   name    its name, the Name property; empty if it has none
 ;
 ; Numbers are in decimal; the code points of a sequence, and the items
 ; of a set, are separated by spaces.
@@ -250,7 +252,9 @@
                 (dump-strings
                  (writing-system-list-codes (script-set-of->members set))
                  channel state)))
-       (state (dump-flag (white-space-p cp ver) channel state)))
+       (state (dump-flag (white-space-p cp ver) channel state))
+       (state (princ$ ";" channel state))
+       (state (princ$ (code-point-name cp ver) channel state)))
     (newline channel state)))
 
 (defun dump-code-points (cp ver channel state)
@@ -275,7 +279,7 @@
        (state (princ$ "ids;idc;sc;scx;bc;blk;dd;" channel state))
        (state (princ$ "emoji;epres;emod;ebase;ecomp;extpict;ri;idst;idty;"
                       channel state))
-       (state (princ$ "skel;skelk;skelm;ass;wspace" channel state))
+       (state (princ$ "skel;skelk;skelm;ass;wspace;name" channel state))
        (state (newline channel state))
        (state (dump-code-points 0 ver channel state)))
     (close-output-channel channel state)))
