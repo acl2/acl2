@@ -28640,6 +28640,12 @@ Lisp definition."
   (declare (ignore file))
   #-acl2-loop-only
   (when (live-state-p state)
+    (when *wormholep*
+
+; Deleting a file in a wormhole would be a change to the file system that is
+; not undone when leaving the wormhole.
+
+      (wormhole-er 'delete-file$ (list file)))
     (return-from
      delete-file$
      (mv (our-ignore-errors

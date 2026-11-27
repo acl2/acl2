@@ -3014,6 +3014,12 @@
         *dmr-interval*))
 
 (defun dmr-start-fn-raw (state)
+  (when *wormholep*
+
+; Opening *dmr-file-name* in a wormhole would create or change that file, which
+; is not undone when leaving the wormhole.
+
+    (wormhole-er 'dmr-start-fn nil))
   (initialize-dmr-interval-used)
   (or (boundp '*dmr-file-name*)
       (setq *dmr-file-name* (dmr-file-name)))

@@ -42,6 +42,13 @@
   #-acl2-loop-only
   (cond
    ((live-state-p state)
+    (when *wormholep*
+
+; Writing a file in a wormhole would be a change to the file system that is not
+; undone when leaving the wormhole.  We omit obj from the error message since
+; it may be large.
+
+      (wormhole-er 'serialize-write-fn (list filename)))
     (with-open-file
      (stream filename
              :direction :output
