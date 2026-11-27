@@ -304,8 +304,8 @@
 (def-inst x86-fxrstor/fxrstor64
 
           ;; Op/En: M
-          ;; 0F AE /0: fxrstor
-          ;; REX.W + 00F AE /0: fxrstor64
+          ;; 0F AE /1: fxrstor
+          ;; REX.W + 0F AE /1: fxrstor64
 
           :parents (two-byte-opcodes)
 
