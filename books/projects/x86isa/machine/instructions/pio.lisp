@@ -111,6 +111,11 @@
                ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
                 (add-to-*ip proc-mode temp-rip 1 x86))
                ((when flg) (!!ms-fresh :increment-error flg))
+
+               (badlength? (check-instruction-length start-rip temp-rip 0))
+               ((when badlength?)
+                (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
                (x86 (case port-number
                       (1 (modelcall-printk x86))
                       (otherwise (!!ms-fresh :unhandled-port port-number)))))
