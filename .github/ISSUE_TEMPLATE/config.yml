@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question
+    url: https://www.acl2.org/doc/index.html?topic=ACL2____COMMUNITY
+    about: Ask on the acl2-help mailing list or the ACL2 Zulip. Both require joining first; this page explains how.

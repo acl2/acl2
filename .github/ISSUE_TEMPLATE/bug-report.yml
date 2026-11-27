@@ -1,0 +1,46 @@
+name: Bug report
+description: Report something in ACL2 or the books that doesn't work.
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What's wrong, and what should happen instead? If you found it by reading the code, say where.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: The smallest book, events, or commands that show the problem, or a description of when it happens.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: Error messages or log excerpts not already shown above. For long logs, attach a file or link to one.
+  - type: input
+    id: acl2-version
+    attributes:
+      label: ACL2 version
+      description: A release or a git commit, as shown in the ACL2 startup banner. Mention ACL2(p), ACL2(r), or any non-default build options.
+      placeholder: e.g. 8.7, or commit 785943a7cc
+    validations:
+      required: true
+  - type: input
+    id: lisp
+    attributes:
+      label: Lisp
+      description: The host Lisp and its version.
+      placeholder: e.g. SBCL 2.5.10
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: The OS and architecture, or N/A if it doesn't matter.
+      placeholder: e.g. macOS 15 on Apple M3
+    validations:
+      required: true
