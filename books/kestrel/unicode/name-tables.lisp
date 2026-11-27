@@ -43,7 +43,14 @@
      These go in a list of patterns.
      This book has the types of the two tables,
      and of the map that goes back from a name to its code point.
-     The functions that use the tables are in @(see names)."))
+     The functions that use the tables are in @(see names).")
+   (xdoc::p
+    "The file @('NameAliases.txt') gives some code points
+     one or more aliases, which are further names
+     (the property @('Name_Alias')).
+     This book has the type of an alias,
+     and of the map from a code point to its aliases.
+     The functions that use that table are in @(see name-aliases)."))
   :order-subtopics t
   :default-parent t)
 
@@ -182,5 +189,107 @@
                                       (name-key-map-fix map))))
     (if in?
         (code-point-fix cp)
+      nil))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum name-alias-type
+  :short "Fixtype of the types of the aliases of names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each alias in the file @('NameAliases.txt') has one of five types
+     [Unicode, Section 4.8, Table 4-7]:")
+   (xdoc::ul
+    (xdoc::li
+     "@('correction'):
+      a correction for a serious problem in the name of the character.
+      For example, U+FE18 has the name
+      @('PRESENTATION FORM FOR VERTICAL RIGHT WHITE LENTICULAR BRAKCET')
+      and an alias that ends in @('BRACKET').")
+    (xdoc::li
+     "@('control'):
+      a name for a control code, such as @('LINE FEED') for U+000A.
+      The control codes have no value of the @('Name') property.")
+    (xdoc::li
+     "@('alternate'):
+      a widely used other name for a format character.
+      The only one is @('BYTE ORDER MARK') for U+FEFF.")
+    (xdoc::li
+     "@('figment'):
+      a label for a control code that was documented
+      and never approved in any standard,
+      such as @('PADDING CHARACTER') for U+0080.")
+    (xdoc::li
+     "@('abbreviation'):
+      a common abbreviation for a control code, a format character,
+      a space or a variation selector,
+      such as @('LF') for U+000A and @('ZWSP') for U+200B.")))
+  (:correction ())
+  (:control ())
+  (:alternate ())
+  (:figment ())
+  (:abbreviation ())
+  :pred name-alias-type-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod name-alias
+  :short "Fixtype of aliases of names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "An alias consists of a string and a type.
+     The string is written like a name:
+     with capital letters, digits, spaces and hyphens
+     [Unicode, Section 4.8]."))
+  ((name string)
+   (type name-alias-type))
+  :pred name-alias-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption name-alias-option
+  name-alias
+  :short "Fixtype of optional aliases of names."
+  :pred name-alias-option-p)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist name-alias-list
+  :short "Fixtype of lists of aliases of names."
+  :elt-type name-alias
+  :true-listp t
+  :elementp-of-nil nil
+  :pred name-alias-listp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftreemap name-alias-map
+  :short "Fixtype of maps from code points to lists of aliases of names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The aliases of a code point are in the order
+     in which the file @('NameAliases.txt') has them."))
+  :key-type code-point
+  :val-type name-alias-list
+  :pred name-alias-mapp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define name-alias-map-lookup ((cp code-point-p) (map name-alias-mapp))
+  :returns (aliases name-alias-listp)
+  :short "Look up a code point in a map of aliases of names."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The result is the empty list if the code point is not in the map.
+     No list in the maps of the generated tables is empty."))
+  (b* (((mv in? aliases) (treemap::lookup? (code-point-fix cp)
+                                           (name-alias-map-fix map))))
+    (if in?
+        (name-alias-list-fix aliases)
       nil))
   :hooks (:fix))

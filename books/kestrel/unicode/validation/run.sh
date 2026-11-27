@@ -27,7 +27,10 @@
 # If the environment variable UCD_DIR is set, it is the directory with the
 # files of VERSION, laid out as for tools/generate-ucd-books.py; then the
 # Python oracle also computes the skeletons of UTS #39, from the files
-# security/confusables.txt and DerivedCoreProperties.txt of that directory.
+# security/confusables.txt and DerivedCoreProperties.txt of that directory,
+# checks the aliases of NameAliases.txt, and reads the labels of the code
+# points from extracted/DerivedGeneralCategory.txt.  With UCD_DIR and
+# without PYTHON, the labels alone are read from that file, with python3.
 #
 # This needs acl2 and cargo on the PATH, and the book dump in this
 # directory certified (cert.pl dump).  cargo downloads the crates.
@@ -37,7 +40,7 @@
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '10,36p' "$0"
+    sed -n '10,38p' "$0"
     exit 2
 fi
 version=$1
@@ -82,6 +85,11 @@ if [ $# -gt 0 ]; then
     files+=("$work/python-$version.txt")
     "$@" "$here/python-oracle.py" "$version" pairs \
          "$work/acl2-pairs-$version.txt" || status=1
+elif [ -n "${UCD_DIR:-}" ]; then
+    echo "== Reading the labels from the files of the version"
+    python3 "$here/python-oracle.py" "$version" files "$UCD_DIR" \
+            > "$work/files-$version.txt"
+    files+=("$work/files-$version.txt")
 fi
 
 echo "== Comparing every code point"

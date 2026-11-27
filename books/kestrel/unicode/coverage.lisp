@@ -49,6 +49,10 @@
     (xdoc::li
      "Noncharacters [Unicode, D14]: see @(see noncharacters).")
     (xdoc::li
+     "The seven basic types of code points
+      [Unicode, Section 2.4, Table 2-3, and D10a]:
+      see @(see code-point-types).")
+    (xdoc::li
      "Canonical and compatibility decomposition [Unicode, D65, D68],
       the arithmetic for Hangul syllables [Unicode, Section 3.12],
       canonical ordering [Unicode, D108, D109]
@@ -215,6 +219,21 @@
       those of four general categories:
       see @(see names) and @(see names-theorems).")
     (xdoc::li
+     "@('Name_Alias') [Unicode, Section 4.8]:
+      the aliases of the names, with their five types,
+      and the functions from an alias, or from a name or an alias,
+      to its code point, exactly and by loose matching.
+      No alias is proved to match a name or another alias:
+      see @(see name-aliases) and @(see name-aliases-theorems).")
+    (xdoc::li
+     "The labels of the code points that have no name
+      [Unicode, Section 4.8.2],
+      which are not a property,
+      with the function from a label to its code point.
+      Every code point is proved to have a name or a label and not both,
+      and no label is proved to match a name or an alias:
+      see @(see code-point-labels) and @(see code-point-labels-theorems).")
+    (xdoc::li
      "The decimal digits and their values,
       which is the part of @('Numeric_Type') and @('Numeric_Value')
       for the characters whose numeric type is @('Decimal'):
@@ -359,12 +378,17 @@
       has the same name in every later version.
       See @(see names-theorems).")
     (xdoc::li
-     "Name Uniqueness, for the names of the characters alone:
+     "Formal Name Alias Stability:
+      an alias of a code point in a version
+      is an alias of that code point in every later version.
+      See @(see name-aliases-theorems).")
+    (xdoc::li
+     "Name Uniqueness, for the names of the characters and their aliases:
       no two of them match loosely.
-      The policy is about the names, their aliases
+      The policy is about the names, the aliases
       and the named sequences taken together,
-      and the library has only the first.
-      See @(see names-theorems)."))
+      and the library does not have the named sequences.
+      See @(see names-theorems) and @(see name-aliases-theorems)."))
    (xdoc::p
     "The @('General_Category') of other characters is not stable.
      The library computes its changes between two versions:
@@ -380,9 +404,7 @@
    (xdoc::ul
     (xdoc::li
      "From [Unicode] and [UAX #44]:
-      the aliases of the names of characters, the named sequences,
-      and the labels of the code points without a name
-      [Unicode, Section 4.8];
+      the named sequences [Unicode, Section 4.8];
       case mappings, case folding,
       and the properties @('Alphabetic'), @('Lowercase'), @('Uppercase'),
       @('Cased'), @('Case_Ignorable') and @('Grapheme_Extend');
@@ -419,8 +441,7 @@
       and the other profiles and requirements of that annex.")
     (xdoc::li
      "From [Stability]:
-      the policies about the aliases of the names of characters
-      and about the named sequences,
+      the policies about the named sequences,
       about case folding and case pairs,
       and about the names and aliases of properties,
       none of which the library has;
@@ -509,8 +530,7 @@
       Identifiers are not normalized.
       See @(tsee code-point-general-category).")
     (xdoc::li
-     (xdoc::b "Python: sufficient for identifiers,
-               not for one escape sequence.")
+     (xdoc::b "Python: sufficient.")
      " In Python 3 [The Python Language Reference, `Lexical analysis'],
       a name starts with a character that has @('XID_Start')
       or with the underscore,
@@ -521,8 +541,7 @@
       In a string literal, the escape sequence @('\\N{name}')
       denotes the character with that name,
       and the name can be an alias of the name of the character.
-      The library has the names (see @(tsee name-code-point))
-      and not their aliases.")
+      See @(tsee name-or-alias-code-point).")
     (xdoc::li
      (xdoc::b "Rust: sufficient for the lexer.")
      " In Rust [The Rust Reference, `Identifiers' and `Whitespace'],
@@ -580,9 +599,9 @@
       and, of [UTS #39], the skeleton
       and the bidirectional skeleton of a string,
       mixed-script detection and mixed-number detection,
-      and the names of characters,
+      and the names of characters, the aliases of the names
+      and the labels of the code points without a name,
       which are modeled.
-      It also takes grapheme clusters, emoji sequences,
-      and the aliases of the names of characters,
+      It also takes grapheme clusters and emoji sequences,
       which are not.")))
   :order-subtopics t)

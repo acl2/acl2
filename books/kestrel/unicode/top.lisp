@@ -68,6 +68,9 @@
 (include-book "identifier-chunks")
 (include-book "name-tables")
 (include-book "names")
+(include-book "name-aliases")
+(include-book "code-point-types")
+(include-book "code-point-labels")
 (include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -230,7 +233,16 @@
       which are the values of the @('Name') property,
       with the function from a name to its code point
       and the loose matching of names:
-      see @(see names).")
+      see @(see names).
+      The aliases of the names,
+      which are the values of the @('Name_Alias') property:
+      see @(see name-aliases).
+      The labels of the code points that have no name:
+      see @(see code-point-labels).")
+    (xdoc::li
+     "The seven basic types of code points,
+      such as graphic, control and reserved:
+      see @(see code-point-types).")
     (xdoc::li
      "Six more properties of characters
       that a lexer may have to reject, report or treat specially:
@@ -439,8 +451,22 @@
      "@('kestrel/unicode/names') for @(tsee code-point-name),
       @(tsee name-code-point) and @(tsee loose-name-code-point).
       It loads @('hangul') and @('general-category'),
-      and the tables of the names, which no other part loads
-      and which are the largest tables of the library.")
+      and the tables of the names, which are the largest of the library
+      and which only this part and the next two load.")
+    (xdoc::li
+     "@('kestrel/unicode/name-aliases')
+      for @(tsee code-point-name-aliases),
+      @(tsee name-or-alias-code-point)
+      and @(tsee loose-name-or-alias-code-point).
+      It loads @('names').")
+    (xdoc::li
+     "@('kestrel/unicode/code-point-labels') for @(tsee code-point-label)
+      and @(tsee code-point-name-or-label).
+      It loads @('name-aliases') and @('code-point-types').")
+    (xdoc::li
+     "@('kestrel/unicode/code-point-types')
+      for @(tsee code-point-basic-type).
+      It loads @('general-category') and @('noncharacters').")
     (xdoc::li
      "@('kestrel/unicode/utf-8') for the theorems that connect this library
       to the UTF-8 decoder of @('[books]/unicode'), which it loads.")
@@ -465,8 +491,9 @@
      and the books of the other properties
      if its white space or the characters that it rejects
      are defined by those properties;
-     and @('names') if it has escape sequences
-     that denote a character by its name.
+     and @('names'), or @('name-aliases'),
+     if it has escape sequences
+     that denote a character by its name or by an alias of its name.
      None of these loads the tests.
      A book in another package can call the functions of this library
      with the package prefix once it has included the book;
@@ -578,6 +605,9 @@
                     bidi-mirroring
                     bidirectional-algorithm
                     names
+                    name-aliases
+                    code-point-labels
+                    code-point-types
                     tables))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,7 +643,8 @@
       and @(see identifier-type-tables)."))
    (xdoc::p
     "The names of the characters have tables of their own,
-     a map from code points to strings and a list of patterns:
+     a map from code points to strings and a list of patterns,
+     and so do their aliases:
      see @(see name-tables).")
    (xdoc::p
     "All three kinds are fixtypes:

@@ -108,8 +108,11 @@
      whose name matches a string loosely.
      No two names match loosely;
      the Unicode Standard promises this of the names, the name aliases,
-     the named sequences and the code point labels taken together,
-     and this library does not have the last three.")
+     the code point labels and the named sequences taken together.
+     The aliases are in @(see name-aliases)
+     and the labels in @(see code-point-labels),
+     with the theorems that none of them matches a name;
+     this library does not have the named sequences.")
    (xdoc::p
     "The theorems are proved by evaluation, on every code point,
      for each supported version;
@@ -721,10 +724,11 @@
      (see @(tsee name-loose-key)), or @('nil') if there is none.
      So @('latin small letter a'), @('Latin_Small_Letter_A')
      and @('LATINSMALLLETTERA') all give U+0061.
-     Only the names are searched:
-     this library does not have the name aliases,
-     nor the labels of the code points without a name,
-     which the same rule matches."))
+     Only the names are searched.
+     The same rule matches the aliases of the names
+     and the labels of the code points without a name:
+     see @(tsee loose-name-or-alias-code-point)
+     and @(tsee loose-label-code-point)."))
   (name-key-code-point (name-loose-key name) ver)
   :hooks (:fix))
 
@@ -938,7 +942,7 @@
     :use code-points-equal-when-names-match-loosely)
 
   (defrule name-char-listp-of-code-point-name
-    (name-char-listp (coerce (code-point-name cp ver) 'list))
+    (name-char-listp (acl2::explode (code-point-name cp ver)))
     :enable name-ok
     :use name-ok-holds)
 
