@@ -122,13 +122,28 @@
 
        ;; Unlike AND, ANDN leaves PF undefined as well as AF.
        ;; SF and ZF reflect the result; CF and OF are cleared.
+       (input-rflags (rflags x86))
+       (sf (logbit (1- (* 8 operand-size)) result))
+       (zf (bool->bit (equal result 0)))
        (output-rflags
-        (change-rflagsBits (rflags x86)
-                           :cf 0
-                           :of 0
-                           :sf (logbit (1- (* 8 operand-size)) result)
-                           :zf (bool->bit (equal result 0))))
-       (undefined-flags (change-rflagsBits 0 :af 1 :pf 1))
+        (mbe :logic (change-rflagsBits input-rflags
+                                       :cf 0
+                                       :of 0
+                                       :sf sf
+                                       :zf zf)
+             :exec (the (unsigned-byte 32)
+                     (!rflagsBits->cf
+                      0
+                      (!rflagsBits->of
+                       0
+                       (!rflagsBits->sf
+                        sf
+                        (!rflagsBits->zf
+                         zf
+                         input-rflags)))))))
+       (undefined-flags
+        (mbe :logic (change-rflagsBits 0 :af 1 :pf 1)
+             :exec (!rflagsBits->af 1 (!rflagsBits->pf 1 0))))
 
        ;; ModR/M.reg specifies the destination.
        ;; A 32-bit write also clears its upper half.
@@ -139,7 +154,10 @@
                         x86))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
-    x86))
+    x86)
+
+  :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                         ((tau-system))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
