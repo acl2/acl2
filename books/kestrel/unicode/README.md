@@ -4,8 +4,8 @@ An ACL2 model of the parts of the Unicode Standard that the lexers of
 programming languages need: code points, the identifier and white space
 properties, normalization, scripts, the bidirectional classes and controls,
 the bidirectional algorithm, the properties that say which characters are
-safe in identifiers, and the detection of strings that look alike or that
-mix scripts.  It is a shared
+safe in identifiers, the detection of strings that look alike or that
+mix scripts, and the names of the characters.  It is a shared
 library: nothing in it is specific to one language.
 
 The documentation is in XDOC (topic `unicode::unicode`); this file covers
@@ -81,6 +81,17 @@ validated.
   its punctuation make visible: `dromedaryCamel` has the chunks
   `dromedary` and `Camel`, and `snake_case` has `snake`, `_` and `case`
   (UTS #55, Section 5.1.2.1).
+- A Hangul syllable is a character of the Korean alphabet, Hangul, that
+  stands for a whole syllable.  It is made of two or three letters, which
+  are called jamo: a leading consonant, a vowel and, in some syllables, a
+  trailing consonant.  The Unicode Standard writes L, V and T for the
+  three.  `Jamo_Short_Name` is the property that gives each of those
+  letters a short name in Latin letters, such as `G` or `WI`.
+- NR1 to NR4 are the numbers of the four rules of the Unicode Standard,
+  Section 4.8, that say what the name of a code point is.  UAX44-LM2 is
+  the number of the rule of UAX #44, Section 5.9.2, for the loose matching
+  of names: the rule that says which differences between two strings do
+  not count when the strings are compared as names.
 - UCD: Unicode Character Database.
 
 ## What is here
@@ -137,6 +148,7 @@ validated.
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
 | `decimal-digits` | The decimal digits and their values (`decimal-digit-value`), with the proof that the digits of a system are ten consecutive code points with the values 0 to 9. |
 | `blocks` | `Block` (`code-point-block`), with the proof that a block is one range and that a block of a version is the same block in every later version. |
+| `names` | `Name` (`code-point-name`): the names that are listed one by one, the names of the Hangul syllables, which are made from `Jamo_Short_Name`, and the names that end in the code point.  The code point with a given name (`name-code-point`).  The loose matching of names of UAX #44 (`name-loose-key`, `loose-name-code-point`).  The proofs that the two functions between code points and names undo each other, that no two names match loosely, that a name is made of capital letters, digits, spaces and hyphens, that the code points without a name are those whose `General_Category` is `Cc`, `Cs`, `Co` or `Cn`, and that a name is the same in every later version. |
 | `default-ignorable` | `Default_Ignorable_Code_Point`. |
 | `variation-selectors` | `Variation_Selector`. |
 | `join-controls` | `Join_Control`: the zero width joiner and non-joiner. |
@@ -167,18 +179,20 @@ validated.
 | `bidi-class-tables` | The fixtype of the twenty-three values of `Bidi_Class`, with the predicates for the strong, weak, neutral and explicit formatting classes; the runs of that property. |
 | `block-tables` | The runs of `Block`, whose values are the names of the blocks, as strings. |
 | `identifier-type-tables` | The fixtype of the twelve values of `Identifier_Type`, and the runs of that property, whose values are lists of types. |
+| `name-tables` | The fixtypes of the tables of the names: the tree maps from code points to names, the patterns of the names that end in the code point, and the tree maps from the keys of loose matching to code points. |
 | `coverage` | Documentation only: what the library models of each Unicode specification, what it does not, and for which programming languages that is enough. |
 | `top` | All of the above, and the overview topics of the documentation. |
 | `data/v<version>/` | **Generated** tables, one book per file of the Unicode Character Database, and three books from the data files of UTS #39. |
 | `data/bidi/` | **Generated**: the two conformance files of the bidirectional algorithm, which are the same for all the supported versions. |
+| `data/names/` | **Generated**: the names of the Hangul syllables as `DerivedName.txt` lists them, which are the same for all the supported versions.  Only a test loads it. |
 | `tests/` | Tests that run when certified, including the whole of `NormalizationTest.txt`, `BidiTest.txt` and `BidiCharacterTest.txt`. |
 | `tools/` | The generator of the data books, and the pinned SHA-256 of its inputs. |
 | `validation/` | Tools to compare the library, on every code point, with other implementations, and to compare the displayed text of random strings with ICU. |
 
 What is not modeled is listed, specification by specification, in the
 documentation topic `unicode-coverage` (book `coverage`).  Among other
-things: character names, case mappings, text segmentation, emoji
-sequences, and collation.  That topic is also the
+things: the aliases of the names of characters, case mappings, text
+segmentation, emoji sequences, and collation.  That topic is also the
 only place where the library names programming languages: it says, for C,
 Java, Python, Rust, Scheme and Remora, whether the library has all that
 their lexical rules take from Unicode.
@@ -791,13 +805,29 @@ About the bidirectional skeleton:
 - The three classes of confusable strings (`confusable-kinds`) are
   defined with `confusable-p`, so only for the lists that satisfy its
   guard.
+- `name-code-point-of-code-point-name`,
+  `code-point-name-of-name-code-point`: the name of a code point gives the
+  code point back, and the code point with a name has that name.
+  `loose-name-code-point-of-code-point-name` is the first of the two for
+  loose matching.
+- `code-points-equal-when-names-match-loosely`: two code points whose
+  names match loosely (UAX #44, rule UAX44-LM2) are the same code point.
+  So no two code points have the same name
+  (`code-points-equal-when-names-equal`).
+- `name-char-listp-of-code-point-name`: a name is made of capital letters,
+  digits, spaces and hyphens.
+- `code-point-name-is-empty-in-terms-of-general-category`: the code
+  points without a name are those whose `General_Category` is `Cc`, `Cs`,
+  `Co` or `Cn`, that is, the control codes, the surrogates, the private
+  use code points and the code points that are not assigned.
 
 And about two versions, besides the theorems listed further up:
 `stream-safe-p-of-later-version`, `stream-safe-process-of-later-version`
 (text of assigned characters stays in Stream-Safe Text Format, and the
-process gives the same result), and `nfc-quick-check-of-later-version`
+process gives the same result), `nfc-quick-check-of-later-version`
 (and the other three: the quick check values of an assigned code point
-stay the same).
+stay the same), and `code-point-name-of-later-version` (a code point that
+has a name has the same name in every later version).
 
 ### Including only what you need
 
@@ -814,6 +844,7 @@ supported version, and nothing else of this library.
 | `code-point-script`, `script-ranges`, `code-point-script-extensions`, `script-extensions-ranges`; the type `script` | `scripts` | `code-points`, `versions`, `ranges`, `runs`, `script-tables` | `scripts`, `script-extensions` |
 | `code-point-bidi-class`, `bidi-class-ranges`; the type `bidi-class` and its predicates such as `bidi-class-right-to-left-p` | `bidi-class` | `bidi-controls`, `runs`, `bidi-class-tables`, and the books that those load | `derived-bidi-class`, `prop-list` |
 | `code-point-block`, `block-ranges`, `block-names` | `blocks` | `code-points`, `versions`, `ranges`, `runs`, `block-tables` | `blocks` |
+| `code-point-name`, `name-code-point`, `loose-name-code-point`, `name-loose-key`, `jamo-short-name`, `hangul-syllable-name` | `names` | `name-tables`, `hangul`, `general-category`, and the books that those load | `derived-name`, `jamo`, `derived-general-category` |
 | `emoji-p`, `emoji-presentation-p`, `emoji-modifier-p`, `emoji-modifier-base-p`, `emoji-component-p`, `extended-pictographic-p`, `regional-indicator-p` | `emoji` | `code-points`, `versions`, `ranges` | `emoji-data`, `prop-list` |
 | `decimal-digit-value`, `decimal-digit-p`, `decimal-digit-zero` | `decimal-digits` | `code-points`, `versions`, `ranges`, `maps` | `unicode-data` |
 | `identifier-allowed-p`, `code-point-identifier-types`, `identifier-type-ranges`; the type `identifier-type` | `identifier-status` | `code-points`, `versions`, `ranges`, `runs`, `identifier-type-tables` | `identifier-status`, `identifier-type` |
@@ -862,6 +893,8 @@ its delimiters;
 `pattern-white-space` and `bidi-controls` if its white space or the
 characters it rejects are defined by those properties; and `utf-8` if it
 decodes its input with `[books]/unicode`.  A front end for a language that
+has escape sequences that denote a character by its name needs `names`.
+A front end for a language that
 defines its identifiers or its white space by general categories needs
 `general-category`.  The predicates on values, such as
 `general-category-letter-p`, apply to the result of
@@ -874,8 +907,10 @@ categories can also be had as lists of ranges, with
   any book in the table loads the tests or the test vectors: only the books
   in `tests/` do.
 - **Cost.**  All of them need `centaur/fty/top`, which is most of what it
-  costs to include the small ones.  `normalization` costs the most: it has
-  the largest tables, and it loads the compatibility decompositions even if
+  costs to include the small ones.  `names` and `normalization` cost the
+  most.  `names` has the largest tables: about 35,000 names for each
+  version, and as many keys for the way back from a name to its code
+  point.  `normalization` loads the compatibility decompositions even if
   only NFC is used.
 - **Effect on the including book.**  The settings that these books certify
   under (`controlled-configuration`) are local to them.  What they leave
@@ -957,6 +992,9 @@ of UTS #39:
 | `confusables.txt` of UTS #39 | `confusables` | the prototypes of confusable characters |
 | `BidiBrackets.txt` | `bidi-brackets` | `Bidi_Paired_Bracket_Type` with `Bidi_Paired_Bracket` |
 | `BidiMirroring.txt` | `bidi-mirroring` | `Bidi_Mirroring_Glyph` |
+| `extracted/DerivedName.txt` | `derived-name` | `Name`: the names that are listed one by one, and a pattern for each range of the names that end in the code point.  The book of 16.0.0 has every listed name; the book of a later version has the names that the version adds |
+| `Jamo.txt` | `jamo` | `Jamo_Short_Name` |
+| `extracted/DerivedName.txt` | `hangul-syllable-names`, in `data/names/` | The names of the Hangul syllables, once for all versions, for a test |
 | `BidiTest.txt` | `bidi-test`, in `data/bidi/` | The conformance test vectors on bidirectional classes, once for all versions |
 | `BidiCharacterTest.txt` | `bidi-character-test`, in `data/bidi/` | The conformance test vectors on code points, once for all versions |
 | `NormalizationTest.txt` | `normalization-test` | The conformance test vectors |
@@ -1002,13 +1040,32 @@ How the generator reads the UCD:
   version asserts that every script of `PropertyValueAliases.txt`, with
   its code and its long name, is an entry of `*script-table*`.
 - **`First`/`Last` pairs of lines in `UnicodeData.txt` are ranges.**
+- **The names are read from `extracted/DerivedName.txt`**, which has all
+  of them: the names that are listed one by one, a pattern such as
+  `CJK UNIFIED IDEOGRAPH-*` for each range of the names that end in the
+  code point, and the names of the Hangul syllables.  The generator checks
+  the listed names against field 1 of `UnicodeData.txt`.  It checks that
+  the names of the Hangul syllables are the ones that rule NR1 of the
+  standard makes from `Jamo.txt`, and leaves them out of the tables of the
+  versions: the library computes them by that rule.  They are written
+  once, in `data/names/`, for the test that the rule in ACL2 gives them.
+- **The names of a version are written as what it adds to the version
+  before it.**  The book `derived-name` of 16.0.0 has the whole table; the
+  book of a later version includes the book of the version before it and
+  has only the names that the version adds.  The generator reads the
+  earlier names back from the generated books, and stops if the new
+  version changes or removes a name, or takes a code point out of a range
+  with a pattern.  So the versions are generated from the earliest up.
 - **Surrogates are code points** and get property values like any others.
 
 What is computed in ACL2 rather than generated: the full decompositions
 (by expanding the mappings, with a check that the result cannot be expanded
-further) and the table of the pairs that compose (from the canonical
-mappings and `Full_Composition_Exclusion`).  The Hangul syllables are
-handled by the arithmetic of the standard, not by tables.
+further), the table of the pairs that compose (from the canonical
+mappings and `Full_Composition_Exclusion`), and the tables from the keys
+of loose matching to code points (from the tables of the names, when
+`names` is certified).  The Hangul syllables are
+handled by the arithmetic of the standard, not by tables, and so are
+their names.
 
 The tables are fixtypes.  A binary property is a list of ranges of code
 points (`fty::defprod range`, `fty::deflist range-list`); the generated
@@ -1034,7 +1091,10 @@ to scalar values; and the sets of the code points that are the first, or
 the second, of a pair that composes are tree sets (`fty::deftreeset
 code-point-set`).  Every table that is not built with typed constructors is
 checked against the recognizer of its type, by evaluation, in the book
-that defines it.  The conformance test vectors are typed too: a line of
+that defines it.  The listed names are a tree map from code points to
+strings (`fty::deftreemap name-map`), and the patterns are a list of
+products of a range and a prefix (`fty::defprod name-pattern`).
+The conformance test vectors are typed too: a line of
 `NormalizationTest.txt` is a `normalization-test-line`, a product with one
 field per column (`tests/normalization-test-types`), and the generated
 books build the lines with its constructor.
@@ -1047,7 +1107,8 @@ from the files of `www.unicode.org`, at the URLs recorded in the books, and
 supported version, `Scripts.txt`, `ScriptExtensions.txt`, `Blocks.txt`,
 `emoji/emoji-data.txt` and two files of UTS #39 were downloaded on
 2026-11-19; `confusables.txt`, `BidiBrackets.txt`, `BidiMirroring.txt`,
-`BidiTest.txt` and `BidiCharacterTest.txt` on 2026-11-20; and the other
+`BidiTest.txt` and `BidiCharacterTest.txt` on 2026-11-20;
+`extracted/DerivedName.txt` and `Jamo.txt` on 2026-11-26; and the other
 files on 2026-11-14.
 
 To check the files and the books of a version:
@@ -1070,6 +1131,9 @@ where `UCD_DIR` is laid out like `https://www.unicode.org/Public/16.0.0/ucd/`,
 with the three files of UTS #39 in its subdirectory `security/`
 (`--fetch` downloads into it the files that are missing).  The version must
 be written in full.  The script needs only the Python standard library.
+To regenerate the books of several versions, run it for the earliest
+version first: the book of the names of a version is written from the
+books of the versions before it.
 
 ### Adding a version
 
@@ -1092,20 +1156,24 @@ For example 19.0.0:
    `default-ignorable`, `variation-selectors`, `join-controls`,
    `noncharacters`, `deprecated`, `prepended-concatenation-marks`,
    `combining-classes`, `decompositions`, `compositions`, `composing-pairs`,
-   `quick-check`),
+   `quick-check`, `names`),
    add the `include-book`
    of the new data book and a `:v19.0.0` line to each selector;
    `grep -n v18.0.0 *.lisp` finds every place.  In `decompositions`,
    `compositions` and `composing-pairs`, also copy the block that defines
    and checks the computed tables.  In `skeleton`, add a `:v19.0.0 nil`
-   line to `internal-skeleton-unstable-code-points`.
+   line to `internal-skeleton-unstable-code-points`.  In `names`, also
+   copy the constant `*name-keys-v18.0.0*` with its two assertions, and
+   add the new version to the local function `name-stable-ok` and to the
+   local lemma `code-point-name-in-terms-of-version-case`.
 5. Read Section 5.1 of the revision of UTS #39 for the new version.  If
    the rules for the augmented script set have changed, as they did in
    the revision for 18.0.0, change `augment-script-extensions` in
    `mixed-scripts`, with a condition on the version.
 6. In `tests/`, copy `normalization-test-v18.0.0.lisp` and
    `quick-check-v18.0.0.lisp`, changing the version, and add to
-   `bidi-character-test.lisp` the assertion for the new version.
+   `bidi-character-test.lisp` the assertion for the new version, and to
+   `names.lisp` the tests of the new version on whole sets of code points.
    Then run the generator with `--check` for each of the older versions.
    If it says that a book of `data/bidi/` differs, the new version has
    changed a test case of `BidiTest.txt` or `BidiCharacterTest.txt`:
@@ -1161,7 +1229,7 @@ For example 19.0.0:
 
    A failure of any of the others (assigned code points, `XID_Start`,
    `XID_Continue`, `ID_Start`, `ID_Continue`, normalization, Stream-Safe
-   text, the quick check for NFD and NFKD,
+   text, the quick check for NFD and NFKD, the names of the characters,
    `Pattern_White_Space`, `Pattern_Syntax`,
    noncharacters, the three fixed values of `General_Category`) would mean
    that the new version breaks a stability policy of the standard, or that
@@ -1294,6 +1362,18 @@ there is no formal specification to prove that against.  The evidence is:
   eleven characters with two kinds of brackets; none fails.  The same
   checks at six characters were run once, on 2026-11-25, outside the
   certified books: 4,437,669, 816,451 and 394,108 names, and none fails.
+
+- `names`: examples of the three kinds of names, of the code points
+  without a name, of loose matching, with the examples of UAX #44, and
+  of the functions from a name to its code point.  Then, for each
+  version, three checks on whole sets of code points.  The rule for the
+  names of the Hangul syllables gives the 11,172 names that
+  `DerivedName.txt` lists for them.  The number of code points with a name
+  is 154,998 for 16.0.0, 159,801 for 17.0.0 and 172,808 for 18.0.0: the
+  listed names, the Hangul syllables, and the ranges of the names that
+  end in the code point, with no code point counted twice.  And the
+  characters that loose matching ignores as white space are, among the
+  first 256 code points, those that have `White_Space`.
 
 The conformance test of normalization takes about ten seconds per
 version, and the quick-check test about twenty.  The two conformance
@@ -1618,6 +1698,31 @@ percent sign.  The scripts are not in the library.
   package `python-bidi` 0.6.12, the Rust crate `unicode-bidi` 0.3.18, the
   npm package `bidi-js` 1.1.0, and the class `java.text.Bidi` of JDK 21.
 
+The names were compared on 2026-11-26, for every code point
+(`validation/dump.lisp` writes one more column, with what
+`code-point-name` gives), with `unicodedata.name` of Python, and the
+comparisons above of every code point were run again on that day.  No
+differences:
+
+- With Python 3.15.0b4, for 17.0.0: on the 1,114,112 code points.
+- With Python 3.14.6, for 16.0.0: on 1,107,967 code points.  The other
+  6,145 are the Tangut ideographs of that version, U+17000 to U+187F7 and
+  U+18D00 to U+18D08.  `unicodedata.name` of that Python has no name for
+  them, although its `unicodedata.lookup` finds U+17000 by the name
+  `TANGUT IDEOGRAPH-17000` (CPython issue 80667).  The oracle writes
+  "cannot say" for a code point that has no name in Python and whose
+  `General_Category`, in Python, is not `Cc`, `Cs`, `Co` or `Cn`, and
+  reports how many there are.
+- For 18.0.0 the names were not compared with another implementation.
+  The generator checks, for each version, every listed name against
+  field 1 of `UnicodeData.txt`, and the names of the Hangul syllables
+  against the rule; and the library proves that a name of 17.0.0 is the
+  same in 18.0.0.
+- `name-code-point` and the loose matching were not compared with another
+  implementation.  The first is proved to be the inverse of
+  `code-point-name`; for the second the tests have the examples of
+  UAX #44.
+
 Not compared with another implementation: the bidirectional skeleton as
 a whole (its two parts are, above: the displayed text and the internal
 skeleton; and the tests have the worked example of UTS #39); the
@@ -1684,7 +1789,7 @@ their theorems can be read.  The smaller types of the same kind
 (`identifier-type`, with 12 values and 42 topics, and the ones with fewer
 values) are under the line and keep the generated topics.
 
-With this, the library has about 1,260 topics.  The books of the
+With this, the library has about 1,320 topics.  The books of the
 bidirectional algorithm have some 385 of them: their functions, and
 twenty-seven small types whose generated topics, about fifteen at most for
 one type, are under the line.  The book of the Bidi Rule has 29, and
@@ -1703,7 +1808,11 @@ which is about 4,100; the same goes for `Script` (about 1,700 runs),
 `Script_Extensions` (1,900), `Bidi_Class` (1,300), `Block` (400) and
 `Identifier_Type` (2,400 in 16.0.0, and 5,200 in the later versions).
 The value of a decimal digit is a lookup in a tree map, and so is the
-prototype of a code point.  The skeleton of a list normalizes it twice.
+prototype of a code point.  The name of a code point is a test for the
+Hangul syllables, a search in the list of the patterns, which has about
+twenty, and a lookup in a tree map; the code point with a name is a
+lookup in a tree map whose keys are strings, and then the name of the
+code point found, to compare.  The skeleton of a list normalizes it twice.
 The operations on lists of ranges take time proportional to the product of
 the lengths of the two lists; `general-category-changes`, which uses them
 on the ranges of each of the thirty values, takes well under a second.
@@ -1716,11 +1825,13 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 *n*, and they are not tail recursive.  The 770,241 tests of `BidiTest.txt`,
 on sequences of a few characters, run in about a second and a half.
 
-Certifying all the 158 books from scratch, the tests and the generated
-tables included, took about eight minutes with two jobs
-(`cert.pl -j 2`, SBCL).  The slowest books are `quick-check-theorems` (31
-seconds), `script-tables` (29 seconds: the type of the scripts is a tagged
-sum with 179 cases) and `normalization-across-versions` (22 seconds).
+Certifying all the 168 books from scratch, the tests and the generated
+tables included, took about nine minutes with two jobs
+(`cert.pl -j 2`, SBCL).  The slowest books, apart from the tests, are
+`bidi-mark-class` (38 seconds), `white-space` (37 seconds),
+`quick-check-theorems` (34 seconds), `script-tables` (30 seconds: the
+type of the scripts is a tagged sum with 179 cases),
+`normalization-across-versions` (24 seconds) and `names` (23 seconds).
 
 ## License
 

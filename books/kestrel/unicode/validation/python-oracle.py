@@ -28,6 +28,12 @@ Each column is named `property@source`, where the source is
              unicodedata.bidirectional gives the Bidi_Class of the
              assigned characters only; for the others the field is `!`,
              which means "cannot say".
+             unicodedata.name gives the Name.  Where it gives none for a
+             code point whose General_Category, by the same module, is
+             not Cc, Cs, Co or Cn, the field is `!`: such a code point
+             has a name [Unicode, Section 4.8], and the module does not
+             say what it is.  The script reports how many there are.
+             Python 3.14 gives no name for the Tangut ideographs.
     regex    the third-party `regex` module, which has its own Unicode
              tables; its columns are written only if it is installed and
              its tables are for VERSION (it does not say which version
@@ -56,6 +62,10 @@ import unicodedata
 
 BIDI_FORMATTING = {"LRE", "RLE", "LRO", "RLO", "PDF", "LRI", "RLI", "FSI",
                    "PDI"}
+
+# The values of General_Category of the code points without a name
+# [Unicode, Section 4.8, rule NR4].
+NAMELESS_CATEGORIES = {"Cc", "Cs", "Co", "Cn"}
 
 
 def die(message):
@@ -146,15 +156,22 @@ def code_points(version, ucd_dir):
     skeleton = skeleton_function(version, ucd_dir) if ucd_dir else None
     columns = ["xids@python", "xidc@python", "bidif@python", "ccc@python",
                "dm@python", "nfd@python", "nfc@python", "nfkd@python",
-               "nfkc@python", "gc@python", "bc@python", "dd@python"]
+               "nfkc@python", "gc@python", "bc@python", "dd@python",
+               "name@python"]
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
     if skeleton:
         columns += ["skel@python-and-files", "skelm@python-and-files"]
     out = sys.stdout
     out.write("#cp;" + ";".join(columns) + "\n")
+    name_missing = []
     for cp in range(0x110000):
         c = chr(cp)
+        category = unicodedata.category(c)
+        name = unicodedata.name(c, "")
+        if not name and category not in NAMELESS_CATEGORIES:
+            name = "!"
+            name_missing.append(cp)
         # str.isidentifier: the first character must have XID_Start or be
         # an underscore, and the others must have XID_Continue.
         xids = c.isidentifier() and c != "_"
@@ -179,9 +196,10 @@ def code_points(version, ucd_dir):
                   seq(unicodedata.normalize("NFC", c)),
                   seq(unicodedata.normalize("NFKD", c)),
                   seq(unicodedata.normalize("NFKC", c)),
-                  unicodedata.category(c),
+                  category,
                   bidi if bidi else "!",
-                  str(unicodedata.decimal(c, "-"))]
+                  str(unicodedata.decimal(c, "-")),
+                  name]
         if sets:
             fields += ["1" if sets[k][cp] else "0"
                        for k in ("xids", "xidc", "pws", "bidic")]
@@ -189,6 +207,11 @@ def code_points(version, ucd_dir):
             fields += [seq(skeleton(c)),
                        seq(skeleton("a" + c + "\u0301\u0327"))]
         out.write(";".join(fields) + "\n")
+    if name_missing:
+        print("python-oracle.py: unicodedata.name gives no name for %d code"
+              " points that have one, from U+%04X to U+%04X"
+              % (len(name_missing), name_missing[0], name_missing[-1]),
+              file=sys.stderr)
 
 
 def pairs(path):

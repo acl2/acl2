@@ -76,6 +76,15 @@ What is read, and how:
   * IdentifierStatus.txt and IdentifierType.txt are data files of
     UTS #39, not of the UCD.  They have a version of Unicode in their
     headers, which is checked like those of the UCD files.
+
+  * The names of the characters are read from extracted/DerivedName.txt
+    and cross-checked with UnicodeData.txt and Jamo.txt.  The table of
+    the names that no rule gives is written in full for the lowest
+    version only; the book of a later version has the names that the
+    version adds, and this script reads the table of the version before
+    it back from the generated books.  So the books of the versions are
+    generated from the lowest version up, and this script stops if a
+    version changes or removes a name.
 """
 
 import argparse
@@ -116,6 +125,8 @@ UCD_FILES = {
     "BidiMirroring.txt": True,
     "BidiTest.txt": True,
     "BidiCharacterTest.txt": True,
+    "extracted/DerivedName.txt": True,
+    "Jamo.txt": True,
     "CompositionExclusions.txt": False,
     "extracted/DerivedDecompositionType.txt": False,
     "PropertyValueAliases.txt": False,
@@ -1674,6 +1685,321 @@ def book_bidi_mirroring(version, sources):
     return book
 
 
+###############################################################################
+# The names of the characters.
+
+# The conjoining jamo with a Jamo_Short_Name: the leading consonants,
+# the vowels and the trailing consonants of the Hangul syllables
+# (Unicode Standard, Section 3.12).
+JAMO_RANGES = [(0x1100, 0x1112), (0x1161, 0x1175), (0x11A8, 0x11C2)]
+
+NAME_ENTRY_RE = re.compile(r'^ +\'?\(*\((#x[0-9A-F]{4,6}) \. "([^"]*)"\)')
+NAME_PATTERN_RE = re.compile(
+    r'\(name-pattern \(range (#x[0-9A-F]{4,6}) (#x[0-9A-F]{4,6})\)'
+    r' "([^"]*)"\)')
+
+
+def version_key(version):
+    return tuple(int(part) for part in version.split("."))
+
+
+def previous_version(version):
+    """The greatest version in ucd-sources.json below VERSION, or None."""
+    manifest = json.loads(MANIFEST.read_text()) if MANIFEST.exists() else {}
+    below = [v for v in manifest if version_key(v) < version_key(version)]
+    return max(below, key=version_key) if below else None
+
+
+def check_name(name, where):
+    """A name has capital letters, digits, spaces and hyphens only
+    (Unicode Standard, Section 4.8), and this script expects no space
+    at either end and no two spaces in a row."""
+    if (not re.match(r"^[A-Z0-9 -]+$", name) or name[0] in " -"
+            or name[-1] in " -" or "  " in name):
+        die("%s: unexpected name %r" % (where, name))
+
+
+def parse_jamo(source):
+    """Parse Jamo.txt: return short[cp], the Jamo_Short_Name of the
+    conjoining jamo that have one.  It is the empty string for U+110B."""
+    short = {}
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 2:
+            die("%s: not 'code point; short name'" % where)
+        cp, hi = parse_cp_range(fields[0], where)
+        if hi != cp or cp in short:
+            die("%s: a range, or a code point listed twice" % where)
+        if not re.match(r"^[A-Z]{0,3}$", fields[1]):
+            die("%s: unexpected short name %r" % (where, fields[1]))
+        short[cp] = fields[1]
+    expected = [cp for lo, hi in JAMO_RANGES for cp in range(lo, hi + 1)]
+    if sorted(short) != expected:
+        die("%s: not the %d conjoining jamo of the Hangul syllables"
+            % (source.relpath, len(expected)))
+    return short
+
+
+def hangul_syllable_name(short, cp):
+    """The name of a Hangul syllable (Unicode Standard, Section 3.12,
+    Hangul Syllable Name Generation)."""
+    index = cp - HANGUL_S_BASE
+    name = "HANGUL SYLLABLE " + short[0x1100 + index // 588]
+    name += short[0x1161 + (index % 588) // 28]
+    if index % 28:
+        name += short[0x11A7 + index % 28]
+    return name
+
+
+def parse_derived_name(source):
+    """Parse extracted/DerivedName.txt.
+
+    Return (names, patterns): names[cp] is the name of a code point
+    that the file lists by itself; patterns is the list of the
+    (first, last, prefix) of the lines with a pattern 'PREFIX*', which
+    give each code point from first to last the name made of the prefix
+    and of the code point in hexadecimal.
+    """
+    names = {}
+    patterns = []
+    for number, line in enumerate(source.lines, start=1):
+        where = "%s:%d" % (source.relpath, number)
+        line = line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+        fields = [f.strip() for f in line.split(";")]
+        if len(fields) != 2:
+            die("%s: not 'code points; name'" % where)
+        lo, hi = parse_cp_range(fields[0], where)
+        if fields[1].endswith("*"):
+            prefix = fields[1][:-1]
+            if not prefix.endswith("-"):
+                die("%s: a pattern without a hyphen" % where)
+            check_name(prefix + "0", where)
+            patterns.append((lo, hi, prefix))
+        else:
+            if hi != lo:
+                die("%s: a range without a pattern" % where)
+            check_name(fields[1], where)
+            if lo in names:
+                die("%s: U+%04X listed twice" % (where, lo))
+            names[lo] = fields[1]
+    patterns.sort()
+    for (lo, hi, prefix), (lo2, hi2, prefix2) in zip(patterns, patterns[1:]):
+        if hi >= lo2:
+            die("%s: overlapping patterns" % source.relpath)
+    for lo, hi, prefix in patterns:
+        if any(cp in names for cp in range(lo, hi + 1)):
+            die("%s: a code point with a name and a pattern"
+                % source.relpath)
+    return names, patterns
+
+
+def name_tables(sources):
+    """The names of a version, cross-checked with the other files.
+
+    Return (table, patterns, hangul, short): table[cp] is the name of
+    a code point whose name no rule gives; patterns is as in
+    parse_derived_name; hangul is the list of the names of the Hangul
+    syllables, in order; short is as in parse_jamo.
+    """
+    source = sources["extracted/DerivedName.txt"]
+    names, patterns = parse_derived_name(source)
+    short = parse_jamo(sources["Jamo.txt"])
+    # The Hangul syllables: the file lists the names that the rule gives.
+    hangul = []
+    for cp in range(HANGUL_S_BASE, HANGUL_S_BASE + HANGUL_S_COUNT):
+        name = hangul_syllable_name(short, cp)
+        if names.get(cp) != name:
+            die("%s: U+%04X is not %s" % (source.relpath, cp, name))
+        hangul.append(name)
+    table = {cp: name for cp, name in names.items()
+             if not HANGUL_S_BASE <= cp < HANGUL_S_BASE + HANGUL_S_COUNT}
+
+    def derived(cp):
+        if cp in names:
+            return names[cp]
+        for lo, hi, prefix in patterns:
+            if lo <= cp <= hi:
+                return prefix + hexcp(cp)[2:]
+        return ""
+
+    # Field 1 of UnicodeData.txt (Unicode Standard, Section 4.8): a name,
+    # or a label in angle brackets.  A pair of labels ", First>" and
+    # ", Last>" stands for a range; the ranges of private use and of
+    # surrogate code points have no names.
+    listed = 0
+    first = None
+    data = sources["UnicodeData.txt"]
+    for number, line in enumerate(data.lines, start=1):
+        if not line:
+            continue
+        where = "%s:%d" % (data.relpath, number)
+        fields = line.split(";")
+        cp = int(fields[0], 16)
+        label = fields[1]
+        if label.endswith(", First>"):
+            first = (cp, label[1:-len(", First>")])
+        elif label.endswith(", Last>"):
+            if first is None or first[1] != label[1:-len(", Last>")]:
+                die("%s: a last line without its first line" % where)
+            named = not ("Private Use" in first[1]
+                         or "Surrogate" in first[1])
+            for point in range(first[0], cp + 1):
+                if (derived(point) != "") != named:
+                    die("%s: U+%04X: name %r in a range %s"
+                        % (where, point, derived(point), first[1]))
+            listed += (cp + 1 - first[0]) if named else 0
+            first = None
+        elif label.startswith("<"):
+            if derived(cp) != "":
+                die("%s: U+%04X is %s and has a name" % (where, cp, label))
+        else:
+            if derived(cp) != label:
+                die("%s: U+%04X is %r in %s"
+                    % (where, cp, derived(cp), source.relpath))
+            listed += 1
+    total = len(names) + sum(hi - lo + 1 for lo, hi, prefix in patterns)
+    if listed != total:
+        die("%s has %d names, UnicodeData.txt %d"
+            % (source.relpath, total, listed))
+    return table, patterns, hangul, short
+
+
+def read_name_table(version):
+    """The table of names of an earlier version, read back from its
+    generated book and from those of the versions before it."""
+    path = LIBRARY / "data" / ("v" + version) / "derived-name.lisp"
+    if not path.exists():
+        die("%s is missing: generate the books of Unicode %s first"
+            % (path, version))
+    text = path.read_text()
+    before = re.search(
+        r'^\(include-book "\.\./\.\./data/v([0-9.]+)/derived-name"\)$',
+        text, re.M)
+    table = read_name_table(before.group(1))[0] if before else {}
+    for line in text.split("\n"):
+        entry = NAME_ENTRY_RE.match(line)
+        if entry:
+            table[int(entry.group(1)[2:], 16)] = entry.group(2)
+    patterns = [(int(lo[2:], 16), int(hi[2:], 16), prefix)
+                for lo, hi, prefix in NAME_PATTERN_RE.findall(text)]
+    return table, patterns
+
+
+def book_jamo(version, sources):
+    source = sources["Jamo.txt"]
+    book = Book(version, "jamo",
+                "Jamo_Short_Name, from Jamo.txt.",
+                [source], ["name-tables"], ["std/util/defconsts"])
+    short = parse_jamo(source)
+    book.comment(
+        "The short names of the conjoining jamo, from which the names\n"
+        "of the Hangul syllables are made (Unicode Standard,\n"
+        "Section 3.12): a map from the code point of a jamo to its\n"
+        "Jamo_Short_Name.  The short name of U+110B is the empty string.\n"
+        "%d entries." % len(short))
+    book.blank()
+    book.tree_map("jamo-short-names",
+                  ['(%s . "%s")' % (hexcp(cp), name)
+                   for cp, name in sorted(short.items())],
+                  True, "name-mapp")
+    return book
+
+
+def book_derived_name(version, sources):
+    source = sources["extracted/DerivedName.txt"]
+    table, patterns, hangul, short = name_tables(sources)
+    before = previous_version(version)
+    includes = ["name-tables"]
+    if before is not None:
+        includes.append("data/v%s/derived-name" % before)
+    book = Book(version, "derived-name",
+                "Name, from extracted/DerivedName.txt.",
+                [source, sources["UnicodeData.txt"], sources["Jamo.txt"]],
+                includes, ["std/util/defconsts"])
+    book.comment(
+        "The names of the characters (Unicode Standard, Section 4.8).\n"
+        "The file gives a name to %d code points.  This book does not\n"
+        "have the names of the %d Hangul syllables, which are made from\n"
+        "the short names of their jamo; the file lists them, and the\n"
+        "tool that generates this book checks that they are the ones\n"
+        "that the rule gives.  The tool also checks the names against\n"
+        "field 1 of UnicodeData.txt."
+        % (len(table) + len(hangul)
+           + sum(hi - lo + 1 for lo, hi, prefix in patterns),
+           len(hangul)))
+    book.blank()
+    book.comment(
+        "The patterns of the file: each code point of the range has the\n"
+        "name made of the prefix and of the code point in hexadecimal.\n"
+        "%d patterns, %d code points."
+        % (len(patterns), sum(hi - lo + 1 for lo, hi, prefix in patterns)))
+    book.blank()
+    const = book.constant("name-patterns")
+    book.lines.append("(defconst %s" % const)
+    items = ['(name-pattern (range %s %s) "%s")' % (hexcp(lo), hexcp(hi),
+                                                    prefix)
+             for lo, hi, prefix in patterns]
+    book.lines.append("  (list %s" % items[0])
+    for item in items[1:]:
+        book.lines.append("        %s" % item)
+    book.lines[-1] += "))"
+    book.blank()
+    book.assert_holds("(name-pattern-listp %s)" % const)
+    book.assert_equal("(len %s)" % const, len(patterns))
+    book.assert_holds("(name-patterns-ordered-p %s)" % const)
+    book.blank()
+    if before is None:
+        added = table
+        base = "(treemap::empty)"
+        book.comment(
+            "The names that no rule gives: a map from the code point\n"
+            "to the name.  %d entries." % len(table))
+    else:
+        old_table, old_patterns = read_name_table(before)
+        for cp, name in sorted(old_table.items()):
+            if table.get(cp) != name:
+                die("U+%04X is %s in Unicode %s and %r in %s"
+                    % (cp, name, before, table.get(cp), version))
+        for lo, hi, prefix in old_patterns:
+            if not any(lo2 <= lo and hi <= hi2 and prefix == prefix2
+                       for lo2, hi2, prefix2 in patterns):
+                die("the pattern %s of U+%04X..U+%04X of Unicode %s"
+                    " is not in %s" % (prefix, lo, hi, before, version))
+        added = {cp: name for cp, name in table.items()
+                 if cp not in old_table}
+        base = "*names-v%s*" % before
+        book.comment(
+            "The names that no rule gives: a map from the code point\n"
+            "to the name.  It is the map of Unicode %s with the %d names\n"
+            "that this version adds; no name of that version is changed\n"
+            "or removed.  %d entries."
+            % (before, len(added), len(table)))
+    book.blank()
+    const = book.constant("names")
+    book.lines.append("(defconsts %s" % const)
+    book.lines.append("  (treemap::update-from-alist")
+    entries = ['(%s . "%s")' % (hexcp(cp), name)
+               for cp, name in sorted(added.items())]
+    if entries:
+        book.lines.append("   '(%s" % entries[0])
+        for entry in entries[1:]:
+            book.lines.append("     %s" % entry)
+        book.lines[-1] += ")"
+    else:
+        book.lines.append("   nil")
+    book.lines.append("   %s))" % base)
+    book.blank()
+    book.assert_holds("(name-mapp %s)" % const)
+    book.assert_equal("(treemap::size %s)" % const, len(table))
+    return book
+
+
 BOOKS = [book_derived_core_properties,
          book_prop_list,
          book_derived_combining_class,
@@ -1690,6 +2016,8 @@ BOOKS = [book_derived_core_properties,
          book_confusables,
          book_bidi_brackets,
          book_bidi_mirroring,
+         book_jamo,
+         book_derived_name,
          book_normalization_test]
 
 
@@ -1718,15 +2046,17 @@ BIDI_TEST_ALPHABET = ("0123456789"
                       "!#$%&()*+,-./:;<=>?@[]^_{}~")
 
 
-def shared_book(name, title, relpath, manifest, includes):
-    """A book for a file that is the same in every version."""
+def shared_book(name, title, relpath, manifest, includes,
+                same=("; The file has the same test cases in each of them;",
+                      "; its comments differ.")):
+    """A book for a file that is the same in every version, or that has
+    a part that is; SAME has the comment lines that say so."""
     versions = sorted(v for v in manifest if relpath in manifest[v])
     book = Book(", ".join(versions), name, title, [], includes,
                 ["std/util/defconsts"])
     index = book.lines.index("; Unicode version: " + ", ".join(versions))
-    lines = ["; Unicode versions: " + ", ".join(versions) + ".",
-             "; The file has the same test cases in each of them;",
-             "; its comments differ."]
+    lines = ["; Unicode versions: " + ", ".join(versions) + "."]
+    lines.extend(same)
     for v in versions:
         lines.append("; Source: " + manifest[v][relpath]["url"])
         lines.append("; SHA-256: " + manifest[v][relpath]["sha256"])
@@ -1947,7 +2277,37 @@ def book_bidi_character_test(version, sources, manifest):
     return book
 
 
-SHARED_BOOKS = [book_bidi_test, book_bidi_character_test]
+def book_hangul_syllable_names(version, sources, manifest):
+    table, patterns, hangul, short = name_tables(sources)
+    book = shared_book(
+        "hangul-syllable-names",
+        "The names of the Hangul syllables, from extracted/DerivedName.txt.",
+        "extracted/DerivedName.txt", manifest, [],
+        ("; The file has the same names for the Hangul syllables",
+         "; in each of them."))
+    book.comment(
+        "The names that the file gives to the %d Hangul syllables,\n"
+        "U+AC00 to U+D7A3, in the order of the code points.  The library\n"
+        "makes these names by rule, from the short names of the jamo\n"
+        "(Unicode Standard, Section 3.12); this list is for the test\n"
+        "that the rule gives the names of the file." % len(hangul))
+    book.blank()
+    book.lines.append("(defconst *hangul-syllable-names*")
+    for row in lisp_list(['"%s"' % name for name in hangul],
+                         indent=2).split("\n"):
+        book.lines.append("  " + row.lstrip(" ") if row.startswith("'")
+                          else row)
+    book.lines[-1] += ")"
+    book.blank()
+    book.assert_holds("(string-listp *hangul-syllable-names*)")
+    book.assert_equal("(len *hangul-syllable-names*)", len(hangul))
+    return book
+
+
+# The shared books, each with its directory under data/.
+SHARED_BOOKS = [("bidi", book_bidi_test),
+                ("bidi", book_bidi_character_test),
+                ("names", book_hangul_syllable_names)]
 
 
 CERT_ACL2 = """\
@@ -2045,9 +2405,9 @@ def main():
     for make in BOOKS:
         book = make(version, sources)
         outputs[out_dir / (book.name + ".lisp")] = book.text()
-    shared_dir = LIBRARY / "data" / "bidi"
-    outputs[shared_dir / "cert.acl2"] = CERT_ACL2
-    for make in SHARED_BOOKS:
+    for directory, make in SHARED_BOOKS:
+        shared_dir = LIBRARY / "data" / directory
+        outputs[shared_dir / "cert.acl2"] = CERT_ACL2
         book = make(version, sources, manifest)
         outputs[shared_dir / (book.name + ".lisp")] = book.text()
 

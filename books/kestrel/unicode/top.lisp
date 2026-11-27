@@ -66,6 +66,8 @@
 (include-book "confusable-kinds")
 (include-book "mixed-numbers")
 (include-book "identifier-chunks")
+(include-book "name-tables")
+(include-book "names")
 (include-book "coverage")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -223,6 +225,12 @@
       see @(see decimal-digits).")
     (xdoc::li
      "The @('Block') property: see @(see blocks).")
+    (xdoc::li
+     "The names of the characters,
+      which are the values of the @('Name') property,
+      with the function from a name to its code point
+      and the loose matching of names:
+      see @(see names).")
     (xdoc::li
      "Six more properties of characters
       that a lexer may have to reject, report or treat specially:
@@ -428,6 +436,12 @@
       that relate the quick check properties to the normalization forms.
       It loads @('quick-check') and @('normalization').")
     (xdoc::li
+     "@('kestrel/unicode/names') for @(tsee code-point-name),
+      @(tsee name-code-point) and @(tsee loose-name-code-point).
+      It loads @('hangul') and @('general-category'),
+      and the tables of the names, which no other part loads
+      and which are the largest tables of the library.")
+    (xdoc::li
      "@('kestrel/unicode/utf-8') for the theorems that connect this library
       to the UTF-8 decoder of @('[books]/unicode'), which it loads.")
     (xdoc::li
@@ -450,7 +464,9 @@
      and @('pattern-white-space'), @('bidi-controls')
      and the books of the other properties
      if its white space or the characters that it rejects
-     are defined by those properties.
+     are defined by those properties;
+     and @('names') if it has escape sequences
+     that denote a character by its name.
      None of these loads the tests.
      A book in another package can call the functions of this library
      with the package prefix once it has included the book;
@@ -561,6 +577,7 @@
                     bidi-paired-brackets
                     bidi-mirroring
                     bidirectional-algorithm
+                    names
                     tables))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -595,6 +612,10 @@
       @(see bidi-class-tables), @(see block-tables)
       and @(see identifier-type-tables)."))
    (xdoc::p
+    "The names of the characters have tables of their own,
+     a map from code points to strings and a list of patterns:
+     see @(see name-tables).")
+   (xdoc::p
     "All three kinds are fixtypes:
      a range is a product of two code points,
      a run is a product of two code points and a value,
@@ -623,4 +644,5 @@
                     script-tables
                     bidi-class-tables
                     block-tables
-                    identifier-type-tables))
+                    identifier-type-tables
+                    name-tables))
