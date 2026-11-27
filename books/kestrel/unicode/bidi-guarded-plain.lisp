@@ -24,19 +24,24 @@
 ; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
 ; See each of the two books for the plan of its proof.
+; The books bidi-rule-display-levels.lisp
+; and bidi-rule-left-to-right-label.lisp include it locally too,
+; for the theorem about a paragraph embedding level that is given here.
 ;
 ; A class is plain if it is not B (Paragraph Separator),
 ; not one of the classes that rule X9 of the Unicode Bidirectional Algorithm
 ; removes, and not the class of an isolate formatting character.
 ; A paragraph whose characters all have plain classes
 ; has no embedding, no override and no isolate.
-; So, when the paragraph embedding level is 0:
-; rules X1 to X8 give every character the level 0 and leave the classes;
+; So, at any paragraph embedding level:
+; rules X1 to X8 give every character that level and leave the classes;
 ; rule X9 removes nothing;
-; the whole paragraph is one isolating run sequence, with sos = eos = L;
+; the whole paragraph is one isolating run sequence,
+; with sos and eos in the direction of that level;
 ; and so the levels before rule L1 are the result
-; of one call of BIDI-RESOLVE-SEQUENCE.
-; Rule L1 only changes some levels to 0.
+; of one call of BIDI-RESOLVE-SEQUENCE
+; (theorem BIDI-PARAGRAPH-ALL-LEVELS-WHEN-PLAIN-AT-LEVEL).
+; At the level 0, sos = eos = L, and rule L1 only changes some levels to 0.
 ;
 ; This book proves the consequence that the first proof needs:
 ; if some positions have level 0 in the result of that one call,
@@ -179,19 +184,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The characters with their levels and classes after rules X1 to X8,
-; when the classes are plain and the paragraph embedding level is 0:
-; every level is 0 and the class is the one that the character has.
+; when the classes are plain:
+; every level is the paragraph embedding level
+; and the class is the one that the character has.
 
 (local
- (define flat-lchars ((chars bidi-char-listp))
+ (define flat-lchars ((chars bidi-char-listp) (level natp))
    :returns (lchars bidi-leveled-char-listp)
    (b* (((when (endp chars)) nil)
         ((bidi-char char) (car chars)))
      (cons (make-bidi-leveled-char :original char.class
                                    :class char.class
                                    :bracket char.bracket
-                                   :level 0)
-           (flat-lchars (cdr chars))))
+                                   :level level)
+           (flat-lchars (cdr chars) level)))
    :hooks nil
    ///
    (defret len-of-flat-lchars
@@ -199,31 +205,15 @@
             (len chars))
      :hints (("Goal" :induct t :in-theory (enable len))))))
 
-; A character with level 0 and a plain class.
-
-(local
- (define lchar-flat-p ((lchar bidi-leveled-char-p))
-   :returns (yes/no booleanp)
-   (and (equal (bidi-leveled-char->level lchar) 0)
-        (bidi-plain-class-p (bidi-leveled-char->original lchar)))
-   :hooks nil))
-
-(local
- (std::deflist lchars-flat-p (x)
-   :guard (bidi-leveled-char-listp x)
-   (lchar-flat-p x)))
-
-(defrulel lchars-flat-p-of-flat-lchars
-  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
-           (lchars-flat-p (flat-lchars chars)))
+(defrulel flat-lchars-of-nfix
+  (equal (flat-lchars chars (nfix level))
+         (flat-lchars chars level))
   :induct (list-induction chars)
   :enable (list-induction
-           flat-lchars
-           bidi-char-list-classes
-           lchar-flat-p))
+           flat-lchars))
 
 (defrulel bidi-leveled-char-list-classes-of-flat-lchars
-  (equal (bidi-leveled-char-list-classes (flat-lchars chars))
+  (equal (bidi-leveled-char-list-classes (flat-lchars chars level))
          (bidi-char-list-classes chars))
   :induct (list-induction chars)
   :enable (list-induction
@@ -232,7 +222,7 @@
            bidi-leveled-char-list-classes))
 
 (defrulel bidi-leveled-char-list-brackets-of-flat-lchars
-  (equal (bidi-leveled-char-list-brackets (flat-lchars chars))
+  (equal (bidi-leveled-char-list-brackets (flat-lchars chars level))
          (bidi-char-list-brackets chars))
   :induct (list-induction chars)
   :enable (list-induction
@@ -246,14 +236,12 @@
 
 (defrulel bidi-explicit-step-when-plain
   (implies (and (bidi-plain-class-p class)
-                (equal (directional-status->level (explicit-state->top st))
-                       0)
                 (equal (directional-override-kind
                         (directional-status->override
                          (explicit-state->top st)))
                        :neutral))
            (equal (bidi-explicit-step class rest st paragraph-level)
-                  (mv 0
+                  (mv (directional-status->level (explicit-state->top st))
                       (bidi-class-fix class)
                       (explicit-state-fix st))))
   :enable (bidi-explicit-step
@@ -265,8 +253,6 @@
 
 (defrulel bidi-leveled-chars-of-bidi-explicit-levels-from-when-plain
   (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
-                (equal (directional-status->level (explicit-state->top st))
-                       0)
                 (equal (directional-override-kind
                         (directional-status->override
                          (explicit-state->top st)))
@@ -276,7 +262,9 @@
                                             st
                                             paragraph-level)))
              (equal (bidi-leveled-chars chars levels classes)
-                    (flat-lchars chars))))
+                    (flat-lchars chars
+                                 (directional-status->level
+                                  (explicit-state->top st))))))
   :induct (list-induction chars)
   :enable (list-induction
            flat-lchars
@@ -286,14 +274,15 @@
 
 ; Rule X9.
 
-(defrulel bidi-remove-by-x9-when-lchars-flat-p
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-remove-by-x9 lchars)
-                  (bidi-leveled-char-list-fix lchars)))
-  :induct (list-induction lchars)
+(defrulel bidi-remove-by-x9-of-flat-lchars
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-remove-by-x9 (flat-lchars chars level))
+                  (flat-lchars chars level)))
+  :induct (list-induction chars)
   :enable (list-induction
+           flat-lchars
+           bidi-char-list-classes
            bidi-remove-by-x9
-           lchar-flat-p
            bidi-plain-class-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,24 +302,49 @@
    :hints (("Goal" :in-theory (enable nfix fix natp o-p o-finp o<)))
    :hooks nil))
 
-(defrulel bidi-leveled-char->level-of-bidi-leveled-char-at-when-flat
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-leveled-char->level
-                   (bidi-leveled-char-at position lchars))
-                  0))
-  :induct (bidi-leveled-char-at position lchars)
-  :enable (bidi-leveled-char-at
-           lchar-flat-p))
+(local
+ (define char-at-induction (position chars)
+   (if (or (zp position)
+           (atom chars))
+       nil
+     (char-at-induction (- position 1) (cdr chars)))
+   :verify-guards nil
+   :hooks nil))
 
-(defrulel bidi-leveled-char->original-of-bidi-leveled-char-at-when-flat
-  (implies (lchars-flat-p lchars)
+(local
+ (define up-to-induction (position n)
+   (if (< (nfix position) (nfix n))
+       (up-to-induction (+ 1 (nfix position)) n)
+     nil)
+   :measure (nfix (- (nfix n) (nfix position)))
+   :hints (("Goal" :in-theory (enable nfix fix natp o-p o-finp o<)))
+   :verify-guards nil
+   :hooks nil))
+
+(defrulel bidi-leveled-char->level-of-bidi-leveled-char-at-of-flat-lchars
+  (implies (< (nfix position) (len chars))
+           (equal (bidi-leveled-char->level
+                   (bidi-leveled-char-at position (flat-lchars chars level)))
+                  (nfix level)))
+  :induct (char-at-induction position chars)
+  :enable (char-at-induction
+           len
+           nfix)
+  :expand ((flat-lchars chars level)
+           (:free (a b) (bidi-leveled-char-at position (cons a b)))))
+
+(defrulel bidi-leveled-char->original-of-bidi-leveled-char-at-of-flat-lchars
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
            (bidi-plain-class-p
             (bidi-leveled-char->original
-             (bidi-leveled-char-at position lchars))))
-  :induct (bidi-leveled-char-at position lchars)
-  :enable (bidi-leveled-char-at
-           lchar-flat-p
-           bidi-plain-class-p))
+             (bidi-leveled-char-at position (flat-lchars chars level)))))
+  :induct (char-at-induction position chars)
+  :enable (char-at-induction
+           bidi-char-list-classes
+           nfix)
+  :expand ((flat-lchars chars level)
+           (:free (a b) (bidi-leveled-char-at position (cons a b)))
+           (bidi-leveled-char-at position nil)))
 
 (defrulel not-isolate-when-bidi-plain-class-p
   (implies (bidi-plain-class-p class)
@@ -340,38 +354,46 @@
   :enable (bidi-plain-class-p
            bidi-class-isolate-formatting-p))
 
-(defrulel bidi-sequence-successor-when-flat
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-sequence-successor position lchars)
-                  (and (< (+ 1 (nfix position)) (len lchars))
+(defrulel bidi-sequence-successor-of-flat-lchars
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-sequence-successor position (flat-lchars chars level))
+                  (and (< (+ 1 (nfix position)) (len chars))
                        (+ 1 (nfix position)))))
   :enable (bidi-sequence-successor
            nfix
            natp))
 
-(defrulel bidi-sequence-from-when-flat
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-sequence-from position lchars)
-                  (nat-range position (len lchars))))
-  :induct (bidi-sequence-from position lchars)
-  :enable (bidi-sequence-from
-           nat-range
-           nfix
-           natp))
+(defrulel nat-range-when-not-below
+  (implies (<= (nfix end) (nfix start))
+           (equal (nat-range start end)
+                  nil))
+  :expand (nat-range start end)
+  :enable nfix)
 
-(defrulel bidi-sequence-start-p-when-flat
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-sequence-start-p position lchars)
-                  (and (< (nfix position) (len lchars))
+(defrulel bidi-sequence-from-of-flat-lchars
+  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
+                (equal n (len chars)))
+           (equal (bidi-sequence-from position (flat-lchars chars level))
+                  (nat-range position n)))
+  :induct (up-to-induction position n)
+  :enable (up-to-induction
+           nfix
+           natp)
+  :expand ((bidi-sequence-from position (flat-lchars chars level))
+           (:free (m) (nat-range position m))))
+
+(defrulel bidi-sequence-start-p-of-flat-lchars
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-sequence-start-p position (flat-lchars chars level))
+                  (and (< (nfix position) (len chars))
                        (equal (nfix position) 0))))
   :enable (bidi-sequence-start-p
            nfix
            natp))
 
-(defrulel bidi-level-at-when-flat
-  (implies (lchars-flat-p lchars)
-           (equal (bidi-level-at position lchars 0)
-                  0))
+(defrulel bidi-level-at-of-flat-lchars
+  (equal (bidi-level-at position (flat-lchars chars level) level)
+         (nfix level))
   :enable bidi-level-at)
 
 ; The characters at all the positions are all the characters.
@@ -487,32 +509,52 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Rules X10, W1 to W7, N0 to N2, I1 and I2:
-; one call of BIDI-RESOLVE-SEQUENCE, with sos = eos = L.
+; one call of BIDI-RESOLVE-SEQUENCE,
+; with sos and eos in the direction of the paragraph embedding level.
 
-(defrulel bidi-resolve-sequence-at-when-flat
-  (implies (and (lchars-flat-p lchars)
-                (consp positions))
-           (equal (bidi-resolve-sequence-at positions lchars 0)
-                  (b* ((sequence (bidi-leveled-chars-at positions lchars)))
+(defrulel nfix-of-nat-list-last
+  (equal (nfix (nat-list-last positions))
+         (nat-list-last positions))
+  :enable nfix)
+
+(defrulel bidi-resolve-sequence-at-of-flat-lchars
+  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
+                (consp positions)
+                (< (nfix (car positions)) (len chars))
+                (< (nat-list-last positions) (len chars)))
+           (equal (bidi-resolve-sequence-at positions
+                                            (flat-lchars chars level)
+                                            level)
+                  (b* ((sequence (bidi-leveled-chars-at
+                                  positions
+                                  (flat-lchars chars level))))
                     (bidi-resolve-sequence
                      (bidi-leveled-char-list-classes sequence)
                      (bidi-leveled-char-list-brackets sequence)
-                     (bidi-class-left-to-right)
-                     (bidi-class-left-to-right)
-                     0))))
+                     (bidi-level-direction level)
+                     (bidi-level-direction level)
+                     level))))
   :enable (bidi-resolve-sequence-at
-           bidi-level-direction))
+           max))
 
-(defrulel bidi-resolve-sequences-from-when-flat-and-not-first
-  (implies (and (lchars-flat-p lchars)
+(defrulel bidi-resolve-sequences-from-of-flat-lchars-and-not-first
+  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
+                (equal n (len chars))
                 (natp position)
                 (< 0 position))
-           (equal (bidi-resolve-sequences-from position lchars 0 levels)
+           (equal (bidi-resolve-sequences-from position
+                                               (flat-lchars chars level)
+                                               level
+                                               levels)
                   (nat-list-fix levels)))
-  :induct (bidi-resolve-sequences-from position lchars 0 levels)
-  :enable (bidi-resolve-sequences-from
+  :induct (up-to-induction position n)
+  :enable (up-to-induction
            nfix
-           natp))
+           natp)
+  :expand ((bidi-resolve-sequences-from position
+                                        (flat-lchars chars level)
+                                        level
+                                        levels)))
 
 (defrulel consp-of-nat-range-of-0
   (implies (consp x)
@@ -520,20 +562,56 @@
   :expand ((len x)
            (nat-range 0 (+ 1 (len (cdr x))))))
 
-(defrulel bidi-resolve-sequences-from-when-flat
-  (implies (and (lchars-flat-p lchars)
-                (bidi-leveled-char-listp lchars)
-                (equal (len levels) (len lchars)))
-           (equal (bidi-resolve-sequences-from 0 lchars 0 levels)
-                  (if (consp lchars)
+(defrulel car-of-nat-range-of-0
+  (implies (consp x)
+           (equal (car (nat-range 0 (len x)))
+                  0))
+  :expand ((len x)
+           (nat-range 0 (+ 1 (len (cdr x))))))
+
+(defrulel nat-list-last-of-nat-range-upper-bound
+  (implies (and (natp start)
+                (natp end)
+                (< start end))
+           (< (nat-list-last (nat-range start end)) end))
+  :rule-classes :linear
+  :induct (nat-range start end)
+  :enable (nat-range
+           nat-list-last
+           nfix))
+
+(defrulel nat-list-last-of-nat-range-of-0
+  (implies (consp x)
+           (< (nat-list-last (nat-range 0 (len x))) (len x)))
+  :enable len)
+
+(defrulel bidi-leveled-chars-at-of-nat-range-of-all-of-flat-lchars
+  (equal (bidi-leveled-chars-at (nat-range 0 (len chars))
+                                (flat-lchars chars level))
+         (flat-lchars chars level))
+  :use (:instance bidi-leveled-chars-at-of-nat-range-of-all
+                  (lchars (flat-lchars chars level)))
+  :disable bidi-leveled-chars-at-of-nat-range-of-all)
+
+(defrulel bidi-resolve-sequences-from-of-flat-lchars
+  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
+                (equal (len levels) (len chars)))
+           (equal (bidi-resolve-sequences-from 0
+                                               (flat-lchars chars level)
+                                               level
+                                               levels)
+                  (if (consp chars)
                       (bidi-resolve-sequence
-                       (bidi-leveled-char-list-classes lchars)
-                       (bidi-leveled-char-list-brackets lchars)
-                       (bidi-class-left-to-right)
-                       (bidi-class-left-to-right)
-                       0)
+                       (bidi-char-list-classes chars)
+                       (bidi-char-list-brackets chars)
+                       (bidi-level-direction level)
+                       (bidi-level-direction level)
+                       level)
                     (nat-list-fix levels))))
-  :expand (bidi-resolve-sequences-from 0 lchars 0 levels)
+  :expand (bidi-resolve-sequences-from 0
+                                       (flat-lchars chars level)
+                                       level
+                                       levels)
   :enable len)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -596,21 +674,70 @@
 
 (defrulel bidi-reset-levels-of-flat-lchars
   (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
-           (equal (bidi-reset-levels (flat-lchars chars) levels 0)
-                  (bidi-reset-plain (bidi-char-list-classes chars) levels)))
+           (equal (bidi-reset-levels (flat-lchars chars level)
+                                     levels
+                                     paragraph-level)
+                  (bidi-reset-all-levels (bidi-char-list-classes chars)
+                                         levels
+                                         paragraph-level)))
   :induct (two-lists-induction chars levels)
-  :expand ((flat-lchars chars)
+  :expand ((flat-lchars chars level)
            (bidi-char-list-classes chars)
-           (:free (a b) (bidi-reset-levels (cons a b) levels 0))
-           (:free (a b) (bidi-reset-plain (cons a b) levels))
-           (bidi-reset-levels nil levels 0)
-           (bidi-reset-plain nil levels)
-           (:free (a b) (bidi-reset-levels (cons a b) nil 0)))
+           (:free (a b)
+                  (bidi-reset-levels (cons a b) levels paragraph-level))
+           (:free (a b)
+                  (bidi-reset-all-levels (cons a b) levels paragraph-level))
+           (bidi-reset-levels nil levels paragraph-level)
+           (bidi-reset-all-levels nil levels paragraph-level)
+           (:free (a b) (bidi-reset-levels (cons a b) nil paragraph-level))
+           (:free (a b)
+                  (bidi-reset-all-levels (cons a b) nil paragraph-level)))
   :enable (two-lists-induction
            bidi-plain-class-p
            bidi-class-removed-p
            bidi-class-isolate-formatting-p
            bidi-class-isolate-initiator-p))
+
+; Rule L1, done twice, does what it does once.
+
+(local
+ (define trailing-all-p ((classes bidi-class-listp))
+   :returns (yes/no booleanp)
+   (b* (((when (endp classes)) t)
+        (class (bidi-class-fix (car classes))))
+     (cond ((or (equal (bidi-class-kind class) :segment-separator)
+                (equal (bidi-class-kind class) :paragraph-separator))
+            t)
+           ((or (equal (bidi-class-kind class) :white-space)
+                (bidi-class-isolate-formatting-p class)
+                (bidi-class-removed-p class))
+            (trailing-all-p (cdr classes)))
+           (t nil)))
+   :hooks nil))
+
+(defrulel trailing-of-bidi-reset-all-levels
+  (implies (equal (len levels) (len classes))
+           (equal (mv-nth 1 (bidi-reset-all-levels classes levels level))
+                  (trailing-all-p classes)))
+  :induct (two-lists-induction classes levels)
+  :expand ((bidi-reset-all-levels classes levels level)
+           (trailing-all-p classes))
+  :enable (two-lists-induction len))
+
+(defrulel bidi-reset-all-levels-of-bidi-reset-all-levels
+  (implies (equal (len levels) (len classes))
+           (equal (mv-nth 0 (bidi-reset-all-levels
+                             classes
+                             (mv-nth 0 (bidi-reset-all-levels classes
+                                                              levels
+                                                              level))
+                             level))
+                  (mv-nth 0 (bidi-reset-all-levels classes levels level))))
+  :induct (two-lists-induction classes levels)
+  :expand ((bidi-reset-all-levels classes levels level)
+           (bidi-reset-all-levels classes nil level)
+           (:free (a b) (bidi-reset-all-levels classes (cons a b) level)))
+  :enable (two-lists-induction len))
 
 (defrulel bidi-reset-all-levels-when-plain
   (implies (bidi-plain-class-listp classes)
@@ -738,9 +865,9 @@
   :expand (bidi-reset-all-levels nil levels level))
 
 (defrulel flat-lchars-under-iff
-  (iff (flat-lchars chars)
+  (iff (flat-lchars chars level)
        (consp chars))
-  :expand (flat-lchars chars))
+  :expand (flat-lchars chars level))
 
 (defrulel bidi-char-list-classes-when-not-consp
   (implies (not (consp chars))
@@ -748,16 +875,21 @@
                   nil))
   :expand (bidi-char-list-classes chars))
 
-(defrule bidi-outside-zero-p-of-bidi-paragraph-all-levels-when-plain
-  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
-                (bidi-outside-zero-p outside
-                                     (bidi-resolve-sequence
-                                      (bidi-char-list-classes chars)
-                                      (bidi-char-list-brackets chars)
-                                      (bidi-class-left-to-right)
-                                      (bidi-class-left-to-right)
-                                      0)))
-           (bidi-outside-zero-p outside (bidi-paragraph-all-levels chars 0)))
+; The levels of a plain paragraph, at any paragraph embedding level:
+; one call of BIDI-RESOLVE-SEQUENCE, then rule L1.
+
+(defruled bidi-paragraph-all-levels-when-plain-at-level
+  (implies (bidi-plain-class-listp (bidi-char-list-classes chars))
+           (equal (bidi-paragraph-all-levels chars level)
+                  (mv-nth 0 (bidi-reset-all-levels
+                             (bidi-char-list-classes chars)
+                             (bidi-resolve-sequence
+                              (bidi-char-list-classes chars)
+                              (bidi-char-list-brackets chars)
+                              (bidi-level-direction level)
+                              (bidi-level-direction level)
+                              level)
+                             level))))
   :enable (bidi-paragraph-all-levels
            bidi-paragraph-levels
            bidi-explicit-levels))
@@ -775,9 +907,20 @@
                               (bidi-class-left-to-right)
                               (bidi-class-left-to-right)
                               0)))))
-  :enable (bidi-paragraph-all-levels
-           bidi-paragraph-levels
-           bidi-explicit-levels))
+  :enable (bidi-paragraph-all-levels-when-plain-at-level
+           bidi-level-direction))
+
+(defrule bidi-outside-zero-p-of-bidi-paragraph-all-levels-when-plain
+  (implies (and (bidi-plain-class-listp (bidi-char-list-classes chars))
+                (bidi-outside-zero-p outside
+                                     (bidi-resolve-sequence
+                                      (bidi-char-list-classes chars)
+                                      (bidi-char-list-brackets chars)
+                                      (bidi-class-left-to-right)
+                                      (bidi-class-left-to-right)
+                                      0)))
+           (bidi-outside-zero-p outside (bidi-paragraph-all-levels chars 0)))
+  :enable bidi-paragraph-all-levels-when-plain)
 
 ; Rule L1 on a part of the paragraph.
 

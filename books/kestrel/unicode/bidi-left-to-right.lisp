@@ -943,6 +943,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; A list of natural numbers that BIDI-LEVELS-EVEN-P recognizes
+; has only even numbers.
+
+(defruledl levels-ok-when-bidi-levels-even-p
+  (implies (and (nat-listp x)
+                (bidi-levels-even-p x))
+           (levels-ok x))
+  :induct t
+  :enable (bidi-level-option-even-p
+           acl2::maybe-natp-fix
+           nat-listp))
+
+(defsection bidi-display-even-levels-theorem
+  :short "Theorem that a paragraph in which no level is odd
+          is displayed as it is stored."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is about rules L2, L3 and L4 alone:
+     the levels can be any list of natural numbers
+     that is as long as the list of the code points.
+     If none of them is odd, rule L2 reverses nothing,
+     rule L3 moves no combining mark,
+     and rule L4 replaces no character by its mirrored one.
+     The levels need not be 0.
+     A paragraph from right to left can have them:
+     a left-to-right label that satisfies the strict rule
+     derived from the Bidi Rule (see @(see bidi-rule))
+     gets level 2 for each of its characters there
+     (see @(see bidi-rule-left-to-right-label))."))
+
+  (defrule bidi-mirror-chars-of-bidi-arrange-with-levels-when-even
+    (implies (and (nat-listp levels)
+                  (bidi-levels-even-p levels)
+                  (equal (len levels) (len cps)))
+             (equal (bidi-mirror-chars
+                     (bidi-arrange-with-levels cps levels ver)
+                     ver)
+                    (code-point-list-fix cps)))
+    :enable (bidi-arrange-with-levels
+             bidi-shown-chars-at-of-bidi-positions-with-level
+             levels-ok-when-bidi-levels-even-p)
+    :disable bidi-levels-even-p-when-levels-ok))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection bidi-display-left-to-right-theorem
   :short "Theorem that text without right-to-left characters
           is displayed as it is, with every character kept."

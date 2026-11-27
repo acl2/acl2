@@ -15,16 +15,18 @@
 ;
 ; The second part is about labels that are displayed alike.
 ; That the wide rule keeps two different names from being displayed alike
-; in a paragraph from left to right is proved
-; (book bidi-rule-display-theorem.lisp); for the strict rule
-; in a paragraph from right to left it is not, and what is known
-; is here.  For the Bidi Rule as it is written,
+; in a paragraph from left to right, and that the strict rule does
+; in paragraphs of any direction, are proved
+; (book bidi-rule-display-theorem.lisp).
+; For the Bidi Rule as it is written,
 ; and for the wide rule with each of its conditions dropped in turn,
 ; there are two labels that are displayed alike.
 ; For the strict rule and for the wide rule, a search finds none:
 ; it runs the Unicode Bidirectional Algorithm on every list,
 ; up to a length, of the characters of a small set,
 ; and compares the displays of the lists that satisfy the rule.
+; The searches were written before the proofs,
+; and are kept as tests of the rules and of the algorithm.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

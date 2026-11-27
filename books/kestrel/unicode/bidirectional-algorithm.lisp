@@ -186,7 +186,7 @@
      the condition that Internationalized Domain Names put
      on a label with right-to-left characters,
      and two rules derived from it
-     for which a search finds no two labels that are displayed alike
+     that keep two different labels from being displayed alike
      (see @(see bidi-rule)).
      Those predicates look only at the classes of the characters.
      For the wider of the two, in a paragraph from left to right,
@@ -197,8 +197,9 @@
      (see @(see bidi-rule-display)),
      and the algorithm is proved to give it
      (see @(see bidi-rule-display-theorem)).
-     For the stricter one in a paragraph from right to left,
-     that is not proved yet."))
+     For the stricter one the same is proved
+     for paragraphs of any direction
+     (see @(see bidi-rule-display-strict-theorem))."))
   :order-subtopics (bidi-characters
                     bidi-explicit-rules
                     bidi-weak-types
