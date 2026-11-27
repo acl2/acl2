@@ -110434,6 +110434,11 @@ it."
  recompression was required but was not performed.  See @(see community-book)
  @('system/tests/compress1-length-bug.lisp').</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in
+ @(tsee maybe-flush-and-compress1), which could return an array updated by
+ @(tsee aset1) without compressing it.  For an example, see @(see
+ community-book) @('system/tests/maybe-flush-and-compress1-aset1.lisp').</p>
+
  <p>Fixed a soundness bug caused by failing to account for @(see
  invariant-risk) for function calls inside calls of @(tsee loop$).  See @(see
  community-book) @('system/tests/loop-invariant-risk.lisp').</p>
