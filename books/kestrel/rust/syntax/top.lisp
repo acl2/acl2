@@ -20,6 +20,7 @@
 (include-book "token-tree-operations")
 (include-book "grammar")
 (include-book "extra-grammatical-restrictions")
+(include-book "lexing-uniqueness")
 (include-book "lexer")
 (include-book "lexer-correctness")
 (include-book "tokenizer")
@@ -66,6 +67,9 @@
      (see @(see extra-grammatical-restrictions)),
      except the one for Unicode identifiers;
      the lexer and the tokenizer are tested against them.
+     The specification of lexing is proved to allow
+     at most one way to split an input into lexemes
+     (see @(see lexing-uniqueness)).
      The lexer is proved to satisfy its specification,
      except for maximal munch (see @(see lexer-correctness));
      the proofs for maximal munch and for the tokenizer are future work.
