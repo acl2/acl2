@@ -8,6 +8,7 @@
 (in-package "SMT")
 ;; for lambda expression
 (include-book "kestrel/utilities/system/terms" :dir :system)
+(local (include-book "tools/defthm-prune" :dir :system))
 
 (encapsulate ()
   (local (in-theory (enable pseudo-lambdap)))
@@ -57,7 +58,7 @@
   ;; first focus on function expansion. The :doc pseudo-term-fty stuff looks
   ;; really cool.
   (define pseudo-lambda-fix ((x pseudo-lambdap))
-    :returns (fixed pseudo-lambdap)
+    :returns (fixed pseudo-lambdap :hints ((acl2::prune-theory-hint)))
     (mbe :logic (if (pseudo-lambdap x) x '(lambda nil nil))
          :exec x)
     ///

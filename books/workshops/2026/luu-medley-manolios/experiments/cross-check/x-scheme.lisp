@@ -21,6 +21,7 @@
 (in-package "ACL2")
 
 (include-book "x-mmt")
+(local (include-book "tools/defthm-prune" :dir :system))
 
 ;;; ------------------------------------------------------------------
 ;;; Summands
@@ -312,13 +313,13 @@
       S
     (x-apply-path L (cdr path) (x-apply-move L (car path) S))))
 
-(defthm x-path-ok-p-of-append
+(defthm-prune x-path-ok-p-of-append
   (equal (x-path-ok-p L (append p1 p2) S)
          (and (x-path-ok-p L p1 S)
               (x-path-ok-p L p2 (x-apply-path L p1 S))))
   :hints (("Goal" :induct (x-apply-path L p1 S))))
 
-(defthm x-apply-path-of-append
+(defthm-prune x-apply-path-of-append
   (equal (x-apply-path L (append p1 p2) S)
          (x-apply-path L p2 (x-apply-path L p1 S)))
   :hints (("Goal" :induct (x-apply-path L p1 S))))
