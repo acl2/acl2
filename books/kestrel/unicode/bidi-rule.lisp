@@ -97,8 +97,7 @@
       No two labels that satisfy this predicate are displayed alike,
       whatever the directions of the paragraphs that they are in.
       That is proved
-      (see @(see bidi-rule-display-strict-theorem));
-      the searches described below found none before the proof.")
+      (see @(see bidi-rule-display-strict-theorem)).")
     (xdoc::li
      "@(tsee bidi-rule-wide-p) is a rule of this library,
       not of a specification.
@@ -131,9 +130,9 @@
    (xdoc::p
     "For how the proofs go, see @(see bidi-rule-proof-plan).")
    (xdoc::p
-    "The searches are tests of this library,
-     in the file @('tests/bidi-rule.lisp').
-     Each one takes a small set of characters,
+    "The tests of this library, in the file @('tests/bidi-rule.lisp'),
+     have a search for each of the three predicates.
+     A search takes a small set of characters,
      with one or two characters
      of each class that the predicate allows,
      among them paired brackets, a mirrored character
@@ -141,7 +140,9 @@
      it runs the algorithm on every list of those characters
      up to a length, and compares the displays
      of the lists that satisfy the predicate.
-     The file says which characters and which lengths.")
+     The file says which characters and which lengths.
+     The searches were written before the proofs,
+     and are kept as tests of the rules and of the algorithm.")
    (xdoc::p
     "The terms `right-to-left label', `left-to-right label'
      and `Bidi domain name' are those of [RFC 5893, Section 1.4]:
@@ -892,7 +893,13 @@
      after a digit it is a part of the number,
      and after a terminator it is a terminator.")
    (xdoc::p
-    "What is known about this rule is a search:
+    "No two names that satisfy this rule are displayed alike
+     in a paragraph from left to right, whatever their length.
+     That is the theorem
+     @('bidi-display-is-one-to-one-when-bidi-rule-wide-p')
+     (see @(see bidi-rule-display-theorem)).")
+   (xdoc::p
+    "A search checks this on short names:
      of all the lists of one to six characters taken from sixteen,
      4,437,669 lists of six characters and 318,375 shorter ones
      are right-to-left names that satisfy it,
@@ -921,11 +928,7 @@
      and alef followed by the point are displayed alike,
      and both satisfy the rule.
      The first of the two does not satisfy @(tsee bidi-rule-strict-p),
-     which holds for paragraphs of any direction.")
-   (xdoc::p
-    "That no two names of any length that satisfy this rule
-     are displayed alike, in a paragraph from left to right,
-     is proved: see @(see bidi-rule-display-theorem)."))
+     which holds for paragraphs of any direction."))
   (and (bidi-rule-wide-code-points-p name ver)
        (or (not (bidi-right-to-left-label-p name ver))
            (and (not (bidi-class-kind-present-p :left-to-right name ver))
@@ -1110,9 +1113,7 @@
      The first three are for @(tsee bidi-rule-wide-p)
      in a paragraph from left to right.
      The fourth is for @(tsee bidi-rule-strict-p)
-     in a paragraph of another direction.
-     The topic kept its name from the time
-     when it was the plan of the proofs.")
+     in a paragraph of another direction.")
    (xdoc::h3 "The statements")
    (xdoc::p
     "For the wide rule, in a paragraph from left to right:")
@@ -1221,10 +1222,9 @@
       The delicate rule after them is N0, on the bracket pairs:
       it looks at what is inside a pair
       after it has changed the brackets of the pairs before it.
-      The proof needed a fact about the pairs themselves,
-      that no two of them cross,
-      which is now the theorem
-      @('bidi-pairs-nested-p-of-bidi-bracket-pairs').
+      The proof uses a fact about the pairs themselves,
+      that no two of them cross:
+      the theorem @('bidi-pairs-nested-p-of-bidi-bracket-pairs').
       This is the largest step.")
     (xdoc::li
      "<b>The display, from those levels.</b>
@@ -1316,12 +1316,7 @@
       has one display in all those paragraphs,
       the one that @(tsee bidi-name-display) gives,
       and the third step gives the label back from it."))
-   (xdoc::h3 "Size, and what the theorems do not cover")
-   (xdoc::p
-    "The first two steps have five books and some 6,300 lines.
-     The third is reasoning about lists, without the algorithm;
-     its book has some 2,500 lines.
-     The fourth added one book and some 1,700 lines.")
+   (xdoc::h3 "What the theorems do not cover")
    (xdoc::p
     "The theorems hold for names of any length,
      in each of the three versions of Unicode that the library has.
