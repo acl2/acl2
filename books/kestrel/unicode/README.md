@@ -129,7 +129,7 @@ validated.
 | `bidi-rule` | The Bidi Rule for a label of a domain name (RFC 5893, Section 2, which UTS #46 applies with its option `CheckBidi`), as it is written: `bidi-rule-p` for a label and `bidi-rule-domain-name-p` for a domain name.  And two rules derived from it, which are of this library and not of a specification: a strict one (`bidi-rule-strict-p`), and a wide one for names that may begin or end with punctuation (`bidi-rule-wide-p`).  The predicates look only at `Bidi_Class` and `Bidi_Paired_Bracket_Type`, and the book does not load the algorithm.  With the proofs that the two ways in which the RFC says what a right-to-left label is agree under the rule, that a left-to-right label or name has no right-to-left character, and that the wide rule extends the strict one.  That the wide rule keeps two names from being displayed alike in a paragraph from left to right, and that the strict rule does in paragraphs of any direction, are proved in the books of the next rows. |
 | `bidi-rule-display` | How a name that satisfies the wide rule is displayed in a paragraph from left to right, computed without the rules of the algorithm (`bidi-name-display`): the name has three parts, the middle one goes from its first right-to-left letter to its last letter, digit or closing bracket of a pair with a letter or digit inside, and its clusters (a character with the marks after it) are displayed from right to left except that each number keeps its order.  And the way back from a display to the name (`bidi-name-read`), with the proof that it undoes the first function for every name that satisfies the wide rule, so that this display is different for different names.  The book also has the levels of such a name, computed in the same way (`bidi-name-levels`).  It loads the rules of the algorithm up to the bracket pairs, not the rest. |
 | `bidi-rule-display-weak` | The classes that rules W1 to W7 give to the characters of a name that satisfies the wide rule and has a right-to-left letter or an Arabic digit, in a paragraph from left to right, computed cluster by cluster without those rules (`bidi-clusters-weak-classes`), and the proof that the rules give them.  They give the same classes in a paragraph from right to left when the name does not start with a mark; that is proved too. |
-| `bidi-rule-display-levels` | The proof that the algorithm gives such a name the levels of `bidi-name-levels`: rule N0 on the bracket pairs, rules N1 and N2, the implicit levels and rule L1, after the weak rules of the row above.  It uses a theorem added to `bidi-guarded-brackets`: no two bracket pairs cross.  And the proof that in a paragraph from right to left such a name, when it does not start with a mark, gets the levels of `bidi-middle-levels` for the whole name: no character has level 0. |
+| `bidi-rule-display-levels` | The proof that the algorithm gives such a name the levels of `bidi-name-levels`: rule N0 on the bracket pairs, rules N1 and N2, the implicit levels and rule L1, after the weak rules of the row above.  It uses a theorem of `bidi-guarded-brackets`: no two bracket pairs cross.  And the proof that in a paragraph from right to left such a name, when it does not start with a mark, gets the levels of `bidi-middle-levels` for the whole name: no character has level 0. |
 | `bidi-rule-display-order` | The proof that, with those levels, rules L2 to L4 give the display of `bidi-name-display`. |
 | `bidi-mark-class` | A fact about the data for that proof, checked on every code point: a code point whose class is not `L` is a combining mark for rule L3 exactly when its class is `NSM`. |
 | `bidi-rule-left-to-right-label` | The proof that a left-to-right label that satisfies the strict rule gets level 2 for each of its characters in a paragraph from right to left. |
@@ -717,8 +717,7 @@ it:
   for rules L2 to L4 on those levels.
 - `bidi-display-is-one-to-one-when-bidi-rule-wide-p`: so two names that
   satisfy the wide rule and that the algorithm displays alike, in a
-  paragraph from left to right, are the same name.  This is the statement
-  that the searches for the wide rule only tested before.
+  paragraph from left to right, are the same name.
 - `bidi-resolve-weak-types-when-bidi-rule-wide-p-after-right-to-left`,
   `bidi-paragraph-all-levels-at-level-1-when-bidi-rule-wide-p`: in a
   paragraph from right to left, a right-to-left name that satisfies the
@@ -742,8 +741,7 @@ it:
 - `bidi-display-is-one-to-one-when-bidi-rule-strict-p`: so two labels
   that satisfy the strict rule and that the algorithm displays alike are
   the same label.  The two labels can be in paragraphs of different
-  directions.  This is the statement that the searches for the strict
-  rule only tested before.
+  directions.
 - `bidi-pairs-nested-p-of-bidi-bracket-pairs`: no two of the bracket
   pairs that `bidi-bracket-pairs` finds cross, and the pairs are in the
   order of their opening brackets.  The proof above needs it for rule N0.
@@ -790,7 +788,7 @@ About the bidirectional skeleton:
   displayed with the question mark first.  None of these lists has a
   character of class `R` or `AL`, and for each the bidirectional skeleton
   is not the internal skeleton.
-- The three classes of confusable strings (`confusable-kinds`) are still
+- The three classes of confusable strings (`confusable-kinds`) are
   defined with `confusable-p`, so only for the lists that satisfy its
   guard.
 
@@ -1043,23 +1041,16 @@ books build the lines with its constructor.
 
 ### Where the bytes came from
 
-The UCD files are not in the repository.  The data books were first
-generated, on 2026-11-13, from copies in the Unicode Consortium's repository
-on GitHub (`unicode-org/unicodetools`, directory
-`unicodetools/data/ucd/<version>/`).  On 2026-11-14, all the files that the
-generator reads, for every supported version, were downloaded from
-`www.unicode.org`, at the URLs recorded in the books: they are byte-identical
-to those copies, so the recorded SHA-256 values are those of the official
-files.
+The UCD files are not in the repository.  The data books are generated
+from the files of `www.unicode.org`, at the URLs recorded in the books, and
+`tools/ucd-sources.json` has the SHA-256 of each file.  For every
+supported version, `Scripts.txt`, `ScriptExtensions.txt`, `Blocks.txt`,
+`emoji/emoji-data.txt` and two files of UTS #39 were downloaded on
+2026-11-19; `confusables.txt`, `BidiBrackets.txt`, `BidiMirroring.txt`,
+`BidiTest.txt` and `BidiCharacterTest.txt` on 2026-11-20; and the other
+files on 2026-11-14.
 
-The six files that were added later (`Scripts.txt`,
-`ScriptExtensions.txt`, `Blocks.txt`, `emoji/emoji-data.txt`, and two
-files of UTS #39) were downloaded from `www.unicode.org` on 2026-11-19,
-for each version, and `confusables.txt`, `BidiBrackets.txt`,
-`BidiMirroring.txt`, `BidiTest.txt` and `BidiCharacterTest.txt` on
-2026-11-20.
-
-To repeat that check for a version:
+To check the files and the books of a version:
 
 ```
 python3 tools/generate-ucd-books.py 16.0.0 /tmp/ucd-16.0.0 --fetch --check
@@ -1082,7 +1073,7 @@ be written in full.  The script needs only the Python standard library.
 
 ### Adding a version
 
-For example 19.0.0 (this is how 18.0.0 was added):
+For example 19.0.0:
 
 1. Generate the tables and record the SHA-256 of the inputs:
    `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
@@ -1259,9 +1250,7 @@ there is no formal specification to prove that against.  The evidence is:
   `AL`, two digits of class `EN` and two of class `AN`, the hyphen, the
   comma, the asterisk, the two parentheses and a Hebrew point): 36,543
   labels of five characters and 3,474 shorter ones, none displayed like
-  another, in a paragraph of either direction (that is now a theorem for
-  labels of any length; the search was written before the proof).  For
-  the wide rule it has
+  another, in a paragraph of either direction.  For the wide rule it has
   sixteen (those, the percent sign, `<` and `>`): 297,633 names of five
   characters and 20,742 shorter ones, none displayed like another in a
   paragraph from left to right.  For the Bidi Rule as it is written, with
@@ -1275,7 +1264,8 @@ there is no formal specification to prove that against.  The evidence is:
   2026-11-24, outside the certified books: 416,724 labels for the strict
   rule in each direction and 4,437,669 names for the wide rule, and with
   the letters of class `L` 85,486 labels and 816,451 names; none
-  displayed like another.
+  displayed like another.  The searches were written before the proofs,
+  and are kept as tests of the rules and of the algorithm.
 - `bidi-rule-display`: examples of the display of a name computed
   without the rules of the algorithm (`bidi-name-display`) and of the way
   back (`bidi-name-read`): numbers,
@@ -1287,8 +1277,8 @@ there is no formal specification to prove that against.  The evidence is:
   displayed alike.  Then the search: for every name of up to five
   characters that satisfies the wide rule, the display of
   `bidi-name-display` is the display of the algorithm in a paragraph from
-  left to right, and the way back gives the name.  That is now a theorem
-  for names of any length; the search was written before the proof.  Five
+  left to right, and the way back gives the name (the search was written
+  before the proofs, and is kept as a test of the functions).  Five
   examples of the levels (`bidi-name-levels`) and of the classes after
   the weak rules (`bidi-clusters-weak-classes`), each compared with the
   algorithm.  Seven labels that satisfy the strict rule, four
@@ -1377,8 +1367,9 @@ Notes:
   with another implementation (the first two are proved to be the same as
   in the other versions).
 
-The properties added on 2026-11-19 were compared on that day, for every
-code point, and the earlier comparisons were run again:
+`General_Category` and seven binary properties were compared on
+2026-11-19, for every code point, and the comparisons above were run again
+on that day:
 
 - `General_Category`: with `unicode-properties` 0.1.3 for 16.0.0, 0.1.4 for
   17.0.0 and 0.1.5 for 18.0.0 (the versions that rustc's lexer is built
@@ -1398,7 +1389,7 @@ code point, and the earlier comparisons were run again:
   read from `extracted/DerivedGeneralCategory.txt`, against field 2 of
   `UnicodeData.txt`.
 
-The Stream-Safe Text Process was compared, on the same day, with the
+The Stream-Safe Text Process was compared, on 2026-11-19, with the
 `stream_safe` iterator of `unicode-normalization` (0.1.24, 0.1.25 and 0.1.26
 for the three versions).  `validation/dump.lisp` writes what
 `stream-safe-process` gives for three sequences for each code point whose
@@ -1407,16 +1398,15 @@ combining acute accents, the code point, and 3 more accents; and the code
 point 16 times between two letters, and once more), and for five other
 sequences: 6,275 sequences for 16.0.0, 6,377 for 17.0.0 and 6,479 for
 18.0.0.  The process inserts U+034F in 1,885 of the sequences for 16.0.0.
-No differences.  The other definitions and theorems
-added on that day (`composing-pairs`, `normalization-inert`,
-`normalization-members`) are statements about the normalization functions,
-proved in the library; nothing new is compared for them.
+No differences.  The definitions and theorems of `composing-pairs`,
+`normalization-inert` and `normalization-members` are statements about the
+normalization functions, proved in the library; nothing is compared for
+them.
 
 The properties of identifiers, scripts, bidirectional classes, emoji and
-digits, which were added on 2026-11-20, were compared on that day, for
-every code point (`validation/dump.lisp` writes sixteen more columns),
-and the earlier comparisons of every code point were run again.  No
-differences:
+digits were compared on 2026-11-20, for every code point
+(`validation/dump.lisp` writes sixteen more columns), and the comparisons
+above of every code point were run again on that day.  No differences:
 
 - `Script` and `Script_Extensions`: with `unicode-script` 0.5.7 for
   16.0.0, 0.5.8 for 17.0.0 and 0.5.9 for 18.0.0.  (The crate has no code
@@ -1472,16 +1462,16 @@ generator.
 `White_Space` was compared on 2026-11-20, for every code point but the
 surrogates (`validation/dump.lisp` writes one more column for it), with
 `char::is_whitespace` of the Rust standard library in the oracle of each
-version, and for 16.0.0 also with `regex-syntax`; the earlier comparisons
+version, and for 16.0.0 also with `regex-syntax`; the comparisons above
 of every code point were run again.  No differences.  The standard
 library has its own tables, for the version of Unicode of the toolchain
 that builds the oracle (rustc 1.97.0); the property is the same in
 the three supported versions.
 
-The skeletons and the script sets of UTS #39, which were added on
-2026-11-20 too, were compared on that day, for every code point
-(`validation/dump.lisp` writes four more columns for them), and the
-earlier comparisons of every code point were run again.  No differences:
+The skeletons and the script sets of UTS #39 were compared on 2026-11-20,
+for every code point (`validation/dump.lisp` writes four more columns for
+them), and the comparisons above of every code point were run again.  No
+differences:
 
 - The internal skeleton of each code point alone, and of each code point
   between the letter a and two combining marks that are not in canonical
@@ -1516,11 +1506,10 @@ earlier comparisons of every code point were run again.  No differences:
 The guard of `skeleton` rests on a fact about the Unicode Bidirectional
 Algorithm: a text with no character of class `R`, `AL`, `AN`, `RLE`, `RLO`
 or `RLI` is displayed, in a paragraph from left to right, in the order in
-which it is stored.  That is a theorem of the library since 2026-11-23
-(`bidi-display-order-when-right-to-left-free-p`).  Before the library had
-the algorithm it was a claim, which was tested on 2026-11-20 with
-`unicode-bidi` 0.3.18 (Unicode 16.0.0), by `oracle 16.0.0 display-order`,
-which `validation/run.sh` still runs:
+which it is stored.  That is a theorem of the library
+(`bidi-display-order-when-right-to-left-free-p`).  It was also tested, on
+2026-11-20, with `unicode-bidi` 0.3.18 (Unicode 16.0.0), by
+`oracle 16.0.0 display-order`, which `validation/run.sh` runs:
 
 - All 67,368,420 strings of one to six characters over twenty characters
   of sixteen of the seventeen other classes are displayed in the order in
@@ -1575,12 +1564,10 @@ level.  For line 86 of `BidiCharacterTest.txt`, `05D0 0028 05D1 0029
 0331` in a paragraph from left to right, it gives 1 1 1 1 0, and the file
 has 1 1 1 1 1.
 
-The comparison changed one definition: at first, combining marks at a
-right-to-left level with no base character next to them were left in the
-order that rule L2 gives them, which is the opposite of the stored order.
-ICU puts them back in the stored order, like the marks that have a base,
-and now `bidi-move-marks` does too; the rule does not speak of such
-marks.  Two differences are left as they are.  One is the place of the
+Rule L3 does not speak of combining marks at a right-to-left level with
+no base character next to them.  ICU puts them back in the stored order,
+like the marks that have a base, and `bidi-move-marks` does too.  Two
+differences are left as they are.  One is the place of the
 characters that rule X9 removes, above.  The other is a text of several
 paragraphs, which the comparison does not cover: ICU orders the whole
 text as one line, so that two paragraphs from right to left come out
