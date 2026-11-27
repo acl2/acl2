@@ -357,7 +357,7 @@
   :hints (("Goal"
 	   :use ((:instance pos-exp-inverse-exists (y (/ y)))
 		 (:instance pos-exp-inverse-exists (y y)))
-	   :in-theory (enable-disable (interval-definition-theory) (pos-exp-inverse-exists))))
+	   :in-theory (e/d (interval-definition-theory) (pos-exp-inverse-exists))))
   )
 
 (defthm realp-ln-for-positive
@@ -367,7 +367,7 @@
   :hints (("Goal"
 	   :use ((:instance pos-exp-inverse-exists (y x))
 		 (:instance pos-exp-inverse-exists (y (/ x))))
-	   :in-theory (enable-disable (interval-definition-theory) (pos-exp-inverse-exists)))))
+	   :in-theory (e/d (interval-definition-theory) (pos-exp-inverse-exists)))))
 
 (defthm ln-for-positive-exp
   (implies (realp x)
@@ -504,7 +504,7 @@
                   (acl2-exp x)))
   :hints (("Goal"
            :use ((:instance acl2-exp->-0-for-reals))
-           :in-theory (enable-disable (abs) (acl2-exp->-0-for-reals)))))
+           :in-theory (e/d (abs) (acl2-exp->-0-for-reals)))))
 
 (defthm imagpart-+
   (equal (imagpart (+ x y))
@@ -606,8 +606,8 @@
 	      (realp (acl2-acos (acl2-cosine theta))))
    :hints (("Goal"
 	    :use ((:instance acl2-acos-exists (y (acl2-cosine theta))))
-	    :in-theory (enable-disable (interval-definition-theory)
-				       (acl2-acos-exists))))))
+	    :in-theory (e/d (interval-definition-theory)
+			    (acl2-acos-exists))))))
 
 (defthm anglepart-e-i-theta
   (implies (and (realp theta)
@@ -639,9 +639,9 @@
 			    (x1 theta)
 			    (x2 (ACL2-ACOS (ACL2-COSINE THETA))))
 		 )
-           :in-theory (enable-disable (interval-definition-theory)
-				      (sine->=-0-=>-x-<=-pi
-				       acl2-acos-exists)))
+           :in-theory (e/d (interval-definition-theory)
+			   (sine->=-0-=>-x-<=-pi
+			    acl2-acos-exists)))
           ("Subgoal 1"
            :use ((:instance sine-<-0-=>-x->-pi
                             (x theta))
@@ -650,11 +650,11 @@
 		 (:instance cosine-is-1-1-on-domain
 			    (x1 (+ (* (acl2-pi) 2) (- theta)))
 			    (x2 (ACL2-ACOS (ACL2-COSINE (+ (* (acl2-pi) 2) (- theta)))))))
-           :in-theory (enable-disable (interval-definition-theory)
-				      (sine-<-0-=>-x->-pi
-				       acl2-acos-exists
-				       COS-2PI-X
-				       COS-2PI+X)))))
+           :in-theory (e/d (interval-definition-theory)
+			   (sine-<-0-=>-x->-pi
+			    acl2-acos-exists
+			    COS-2PI-X
+			    COS-2PI+X)))))
 
 (encapsulate
  ()

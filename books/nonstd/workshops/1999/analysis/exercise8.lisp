@@ -147,7 +147,7 @@ result about continuous functions.)
 				    (x (+ x1 y1))
 				    (y (+ x1 y2))
 				    (z (+ x2 y2))))
-	    :in-theory (enable-disable (i-close) (i-close-transitive)))))
+	    :in-theory (e/d (i-close) (i-close-transitive)))))
  )
 
 (defthm f1+f2-differentiable-part2
@@ -241,13 +241,13 @@ result about continuous functions.)
 			     (x (f2 x))
 			     (y (f2 y1)))
 		  (:instance f2-differentiable (y2 y1)))
-	    :in-theory (enable-disable (standards-are-limited)
-				       (i-close-limited f2-differentiable
-                                                        ;; The following are
-                                                        ;; also needed for v2-6.
-                                                        I-CLOSE-SYMMETRIC
-                                                        I-CLOSE-LARGE-2
-                                                        ))))))
+	    :in-theory (e/d (standards-are-limited)
+			    (i-close-limited f2-differentiable
+                                             ;; The following are
+                                             ;; also needed for v2-6.
+                                             I-CLOSE-SYMMETRIC
+                                             I-CLOSE-LARGE-2
+                                             ))))))
 
 (encapsulate
  ()
@@ -333,7 +333,7 @@ result about continuous functions.)
 		 (:instance small*limited->small
 			    (x (- x1 x2))
 			    (y y2)))
-	   :in-theory (enable-disable (i-close) (i-small-plus small*limited->small)))))
+	   :in-theory (e/d (i-close) (i-small-plus small*limited->small)))))
 
 (encapsulate
  ()

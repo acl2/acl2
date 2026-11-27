@@ -422,7 +422,7 @@
    :hints (("Goal"
 	    :use ((:instance i-small-uminus
 			     (x (+ (- x) y))))
-	    :in-theory (enable-disable (i-close) (i-small-uminus))))
+	    :in-theory (e/d (i-close) (i-small-uminus))))
    ))
 
 (local
@@ -571,7 +571,7 @@
 	   :use ((:instance small*limited->small
 			    (x (* x y))
 			    (y (/ x))))
-	   :in-theory (enable-disable (i-large) (small*limited->small)))))
+	   :in-theory (e/d (i-large) (small*limited->small)))))
 
 (defthm i-close-/-lemma
     (implies (and (i-close x y)
@@ -585,11 +585,11 @@
 		 (:instance small*limited->small
 			    (x (- y x))
 			    (y (/ (* x y)))))
-	   :in-theory (enable-disable (i-large
-				       i-close)
-				      (simplify-minus-/
-				       small*limited->small
-				       DISTRIBUTIVITY-OF-/-OVER-*))))
+	   :in-theory (e/d (i-large
+			    i-close)
+			   (simplify-minus-/
+			    small*limited->small
+			    DISTRIBUTIVITY-OF-/-OVER-*))))
   )
 
 
@@ -651,7 +651,7 @@
 	      (i-small (+ (- x) y)))
    :hints (("Goal"
 	    :use ((:instance i-small-uminus (x (- x y))))
-	    :in-theory (enable-disable (i-close) (i-small-uminus))))))
+	    :in-theory (e/d (i-close) (i-small-uminus))))))
 
 (defthm idfn-inverse-differentiable-part2-lemma
     (implies (and (standardp x)

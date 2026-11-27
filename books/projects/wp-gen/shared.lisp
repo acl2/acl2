@@ -1,4 +1,4 @@
-(in-package "ACL2")
+(in-package "WP-GEN")
 
 ;; Some shared functions
 

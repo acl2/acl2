@@ -23,8 +23,10 @@
  <p>This tool has not been used in big proofs and probably can be improved
  quite a bit.  The author encourages users to build improved versions.</p>")
 
-(defmacro enable-disable (a b)
-  `(set-difference-theories (enable ,@a) ',b))
+; [2026-11-01] I replaced this with calls of E/D to resolve a name conflict in
+; books/top. -- David Taylor
+;; (defmacro enable-disable (a b)
+;;   `(set-difference-theories (enable ,@a) ',b))
 
 (mutual-recursion
 
@@ -717,7 +719,7 @@
                              ,@(and in-theory `(:in-theory ,in-theory))
                              ,@(and (or enable disable)
                                     `(:in-theory
-                                      (enable-disable
+                                      (e/d
                                        (,@(cond
                                            ((null enable) nil)
                                            ((or (atom enable)

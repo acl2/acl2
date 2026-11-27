@@ -679,7 +679,7 @@
 		  (:instance i-small-uminus
 			     (x (+ 1 a (- b))))
 		  )
-	    :in-theory (enable-disable (i-close) (limited-not-close-to-large i-small-uminus))))))
+	    :in-theory (e/d (i-close) (limited-not-close-to-large i-small-uminus))))))
 
 (local
  (defthm innerpoint-not-close-to-b
@@ -698,7 +698,7 @@
 		  (:instance i-small-uminus
 			     (x (+ 1 a (- b))))
 		  )
-	    :in-theory (enable-disable (i-close) (innerpoint-not-close-to-a limited-not-close-to-large i-small-uminus))))))
+	    :in-theory (e/d (i-close) (innerpoint-not-close-to-a limited-not-close-to-large i-small-uminus))))))
 
 
 (local
@@ -1062,7 +1062,7 @@
 		   (:instance small-if-<-small
 			      (x (- a b))
 			      (y (- x1 x2))))
-	     :in-theory (enable-disable (i-close) (close-standards-are-equal small-if-<-small)))
+	     :in-theory (e/d (i-close) (close-standards-are-equal small-if-<-small)))
 	    )))
 
  (local
@@ -1080,7 +1080,7 @@
 		   (:instance small-if-<-small
 			      (x (- a b))
 			      (y (- x1 x2))))
-	     :in-theory (enable-disable (i-close) (close-standards-are-equal small-if-<-small)))
+	     :in-theory (e/d (i-close) (close-standards-are-equal small-if-<-small)))
 	    )))
 
  (local

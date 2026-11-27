@@ -1177,7 +1177,7 @@
 	    :use ((:instance new-guess-num-iters-bound-type-prescription
 			     (eps eps1))
 		  (:instance lemma-2))
-	    :in-theory (enable-disable
+	    :in-theory (e/d
 			(n-for-taylor-sin-term-raw)
 			(new-guess-num-iters-bound-type-prescription
 			 lemma-2))))
@@ -1619,10 +1619,10 @@
 							1
 						      -1)
 						    x)))))
-	   :in-theory (enable-disable (limited-integers-are-standard)
-				      (evenp
-				       sumlist-taylor-sincos-list-split
-				       standard-part-of-plus)))))
+	   :in-theory (e/d (limited-integers-are-standard)
+			   (evenp
+			    sumlist-taylor-sincos-list-split
+			    standard-part-of-plus)))))
 
 ;; Same as above, but starting with counter equal to 1.
 
@@ -1653,10 +1653,10 @@
 							1
 						      -1)
 						    x)))))
-	   :in-theory (enable-disable (limited-integers-are-standard)
-				      (evenp
-				       sumlist-taylor-sincos-list-split
-				       standard-part-of-plus)))))
+	   :in-theory (e/d (limited-integers-are-standard)
+			   (evenp
+			    sumlist-taylor-sincos-list-split
+			    standard-part-of-plus)))))
 
 ;; The error term we ended up with looks like standard-part(XXX) so we
 ;; want to know when standard-part(XXX) < eps.  It turns out that we

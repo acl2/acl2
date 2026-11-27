@@ -25,8 +25,8 @@ closed interval.
 	    (equal (standard-part x) (standard-part y)))
    :hints (("Goal"
 	    :use ((:instance i-close-limited))
-	    :in-theory (enable-disable (i-close i-small)
-				       (i-close-limited))))))
+	    :in-theory (e/d (i-close i-small)
+                            (i-close-limited))))))
 |#
 
 ;; The task is to prove the maximal theorem.  The approach is similar

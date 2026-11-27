@@ -431,8 +431,8 @@
             (equal (acl2-sine (standard-part x))
                    (standard-part (acl2-sine  x))))
    :hints (("Goal"
-            :in-theory (enable-disable (i-close i-small)
-                                       (sine-continuous ))
+            :in-theory (e/d (i-close i-small)
+                            (sine-continuous ))
             :use (:instance sine-continuous
                             (x (standard-part x))
                             (y x))))))
@@ -444,8 +444,8 @@
             (equal (acl2-cosine (standard-part x))
                    (standard-part (acl2-cosine  x))))
    :hints (("Goal"
-            :in-theory (enable-disable (i-close i-small)
-                                       (cosine-continuous ))
+            :in-theory (e/d (i-close i-small)
+                            (cosine-continuous ))
             :use (:instance cosine-continuous
                             (x (standard-part x))
                             (y x))))))
@@ -625,8 +625,8 @@
                 (< x (/ (acl2-pi) 2)))
            (equal (sign (acl2-tangent x))
                   (sign x)))
-  :hints (("Goal" :in-theory (enable-disable (sign)
-                                             (cos-positive--pi/2-to-pi/2))
+  :hints (("Goal" :in-theory (e/d (sign)
+                                  (cos-positive--pi/2-to-pi/2))
            :use ((:instance cos-positive--pi/2-to-pi/2)
                  (:instance sine-positive-in-0-pi/2
                             (x x))
@@ -679,10 +679,10 @@
                         (:instance acl2-tangent-sign)
                         (:instance sin**2+cos**2)
                         (:instance cos-positive--pi/2-to-pi/2))
-           :in-theory (enable-disable (abs sign)
-                                      (SIGN-*-X-Y
-                                       sin**2+cos**2
-                                       cos-positive--pi/2-to-pi/2)))))
+           :in-theory (e/d (abs sign)
+                           (SIGN-*-X-Y
+                            sin**2+cos**2
+                            cos-positive--pi/2-to-pi/2)))))
 
 ; Next goal: prove that the range of atan(x) is (-pi/2, pi/2)
 

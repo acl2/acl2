@@ -139,10 +139,10 @@
 		 (:instance close-x-y->same-standard-part
 			    (x (RCFN-2 (STANDARD-PART X) arg))
 			    (y (RCFN-2 X arg))))
-	   :in-theory (enable-disable (standards-are-limited)
-				      (rcfn-2-continuous
-				       rcfn-2-uniformly-continuous
-				       close-x-y->same-standard-part)))))
+	   :in-theory (e/d (standards-are-limited)
+			   (rcfn-2-continuous
+			    rcfn-2-uniformly-continuous
+			    close-x-y->same-standard-part)))))
 
 ;; The next task is to prove the extreme theorems.  The approach is
 ;; similar to the intermediate-value theorem.  First, we define a

@@ -1,7 +1,7 @@
 
 (include-book "wp-gen")
 
-(ld "examples/sum.lisp") ; assigns sum program to global sum
+(ld "examples/sum.lsp") ; assigns sum program to global sum
 ;; Calculates the sum of integers from 1 to A_0101-1 (generated from an 8-bit
 ;; adding routine for the 6502).
 (run-wp (@ sum) :count-var count :prefix wp-SUM)
@@ -9,7 +9,7 @@
 ;; WP-SUM-L_289 and WP-SUM-L_291.
 
 
-(ld "examples/sum-simple.lisp") ; assigns sum-simple
+(ld "examples/sum-simple.lsp") ; assigns sum-simple
 ;; A simpler version of sum-program.lisp
 (run-wp (@ sum-simple) :count-var count :prefix wp-sum-simple)
 ;; Defuns WP-SUM-SIMPLE-L_INIT, WP-SUM-SIMPLE-L_280, 
@@ -17,7 +17,7 @@
 ;; WP-SUM-SIMPLE-L_287 and WP-SUM-SIMPLE-L_291.
 
 
-(ld "examples/sum-simpler.lisp") ; assigns sum-simpler
+(ld "examples/sum-simpler.lsp") ; assigns sum-simpler
 ;; An even simpler version of sum-program.lisp
 (run-wp (@ sum-simpler) :count-var count :prefix wp-sum-simpler)
 ;; Defuns WP-SUM-SIMPLER-L_INIT, WP-SUM-SIMPLER-L_280, 
@@ -26,7 +26,7 @@
 ;; WP-SUM-SIMPLER-L_291.
 
 
-(ld "examples/new-program.lisp") ; assigns new-prog
+(ld "examples/new-program.lsp") ; assigns new-prog
 ;; A program that does some basic assignments and then a branch to two possible
 ;; end states based on the value of a variable. The mutrec form detects that
 ;; the weakest precondition predicates are not mutually recursive.
@@ -44,18 +44,18 @@
 ;; Cannot prove this theorem because ACL2 tries to induct and can't find an
 ;; induction scheme.
 
-(ld "examples/new-program2.lisp") ; assigns new-prog2
+(ld "examples/new-program2.lsp") ; assigns new-prog2
 (run-wp (@ new-prog2) :count-var count :prefix wp-NEW2)
 ;; Defuns WP-NEW2-L_1, WP-NEW2-L_2, WP-NEW2-L_25, WP-NEW2-L_3, WP-NEW2-L_BAD
 ;; and WP-NEW2-L_END.
 
 
-(ld "examples/false-prog.lisp") ; assigns false-prog
+(ld "examples/false-prog.lsp") ; assigns false-prog
 (run-wp (@ false-prog) :prefix wp-F)
 ;; Defuns WP-F-L_INIT, WP-F-L_280, WP-F-L_282, WP-F-L_283, WP-F-L_286,
 ;; WP-F-L_287 and WP-F-L_291.
 
-(ld "examples/sum-simple-wrong.lisp") ; assigns sum-simple-wrong
+(ld "examples/sum-simple-wrong.lsp") ; assigns sum-simple-wrong
 (run-wp (@ sum-simple-wrong) :count-var count :prefix wp-sum-wrong)
 ;; Defuns WP-SUM-WRONG-L_INIT, WP-SUM-WRONG-L_280, WP-SUM-WRONG-L_282,
 ;; WP-SUM-WRONG-L_283, WP-SUM-WRONG-L_286, WP-SUM-WRONG-L_287 and 

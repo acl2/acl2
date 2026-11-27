@@ -21,10 +21,10 @@
             (equal (acl2-exp (standard-part x))
                    (standard-part (acl2-exp x))))
    :hints
-   (("goal" :in-theory (enable-disable (i-close i-small)
-                                       (exp-continuous-for-limited
-                                        exp-continuous-2
-                                        exp-continuous))
+   (("goal" :in-theory (e/d (i-close i-small)
+                            (exp-continuous-for-limited
+                             exp-continuous-2
+                             exp-continuous))
      :use (:instance exp-continuous-for-limited
                      (x (standard-part x))
                      (Y X))))))
@@ -113,9 +113,9 @@
                             (y (SUMLIST (TAYLOR-EXP-LIST (I-LARGE-INTEGER)
                                            0 X)))
                             (x x)))
-           :in-theory (enable-disable (acl2-exp)
-                                      (EXPAND-OUT-EXP-LIST-LESS
-                                       STANDARD-PART-<=)))))
+           :in-theory (e/d (acl2-exp)
+                           (EXPAND-OUT-EXP-LIST-LESS
+                            STANDARD-PART-<=)))))
 
 
 (defthm exp-large-for-positive-large
@@ -184,8 +184,8 @@
                  (< x 1))
             (i-limited (acl2-ln-for-positive x)))
    :hints (("Goal"
-            :in-theory (enable-disable (acl2-ln-for-positive)
-                                       (ln-for-positive-limited->-1))
+            :in-theory (e/d (acl2-ln-for-positive)
+                            (ln-for-positive-limited->-1))
             :use ((:instance ln-for-positive-limited->-1 (x (/ x))))))))
 
 (defthm ln-for-positive-limited
@@ -326,8 +326,8 @@
                 (not (i-small x)))
            (i-limited (acl2-ln x)))
   :hints (("Goal"
-           :in-theory (enable-disable (acl2-ln)
-                                      (radiuspart anglepart))
+           :in-theory (e/d (acl2-ln)
+                           (radiuspart anglepart))
            :use ((:instance zero-is-small (x (radiuspart x)))
                  (:instance number-limited (x (acl2-ln x)))
                  (:instance ln-for-positive-limited (x (radiuspart x)))))))
@@ -362,13 +362,13 @@
                          (:instance acl2-exp-standard-part-out
                                     (x (acl2-ln y)))
                          (:instance i-close-limited (x x) (y y)))
-            :in-theory (enable-disable (i-close i-small)
-                                       (exp-ln acl2-ln-continuous-lemma-1
-                                               acl2-exp-standard-part-out
-                                               i-close-limited
-                                               i-close-limited-2
-                                               LIMITED+LARGE->LARGE
-                                               ))))))
+            :in-theory (e/d (i-close i-small)
+                            (exp-ln acl2-ln-continuous-lemma-1
+                                    acl2-exp-standard-part-out
+                                    i-close-limited
+                                    i-close-limited-2
+                                    LIMITED+LARGE->LARGE
+                                    ))))))
 
 (defthm acl2-ln-real-continuous
   (implies (and (realp x) (< 0 x)
