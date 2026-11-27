@@ -10,9 +10,9 @@
 
 (include-book "std/util/define-sk" :dir :system)
 
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")

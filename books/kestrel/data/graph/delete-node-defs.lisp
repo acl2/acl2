@@ -8,10 +8,10 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/subset-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/subset-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
 
 (include-book "graph-defs")
 (include-book "predecessors-defs")

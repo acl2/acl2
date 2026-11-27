@@ -14,14 +14,14 @@
 
 ; Tests of the tokenizer.
 ; We check the resulting tokens (and some spans),
-; in both editions where the difference matters [SC6].
+; in both editions where the difference matters [SC6] [SC15].
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Abbreviations for the tests.
 
 (defmacro toks (string &optional (edition '(rust::edition-2024)))
-  `(tokenize-rust-from-string ,string ,edition "test.rs"))
+  `(tokenize-rust-from-string ,string ,edition))
 
 ; The list of bare tokens (spans stripped), or :error.
 
@@ -118,6 +118,39 @@
              (list (token-doc-comment (doc-style-inner) nil "doc")))
 (test-tokens "////plain" nil) ; four slashes: plain comment, not doc
 
+; Block doc comments: the content is the text
+; between the "/**" or "/*!" and the "*/".
+
+(test-tokens "/** doc */"
+             (list (token-doc-comment (doc-style-outer) t " doc ")))
+(test-tokens "/**a*/"
+             (list (token-doc-comment (doc-style-outer) t "a")))
+(test-tokens "/*! doc */"
+             (list (token-doc-comment (doc-style-inner) t " doc ")))
+(test-tokens "/*!*/"
+             (list (token-doc-comment (doc-style-inner) t "")))
+(test-tokens "/** a /* b */ c */"
+             (list (token-doc-comment (doc-style-outer) t " a /* b */ c ")))
+(test-tokens "/**
+ * a
+ */"
+             (list (token-doc-comment (doc-style-outer) t "
+ * a
+ ")))
+(test-tokens "/** a */ b /*! c */"
+             (list (token-doc-comment (doc-style-outer) t " a ")
+                   (token-ident "b" nil)
+                   (token-doc-comment (doc-style-inner) t " c ")))
+
+; Block comments that are not doc comments:
+; two stars and nothing else, three stars or more.
+
+(test-tokens "/**/" nil)
+(test-tokens "/***/" nil)
+(test-tokens "/****/" nil)
+(test-tokens "/*** not doc */" nil)
+(test-tokens "/**/ */" (list (token-punct "*") (token-punct "/")))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Integer literals: radix, digits as written, suffix.
@@ -135,6 +168,22 @@
 (test-tokens "0o77" (list (int-tok (radix-oct) "77" "")))
 (test-tokens "0xF_Fu32" (list (int-tok (radix-hex) "F_F" "u32")))
 (test-tokens "0usize" (list (int-tok (radix-dec) "0" "usize")))
+
+; The digits of a hexadecimal literal extend over the letters
+; that are hexadecimal digits; its suffix starts at another letter.
+; After the digits of the other radixes, those letters start a suffix.
+
+(test-tokens "0x1f" (list (int-tok (radix-hex) "1f" "")))
+(test-tokens "0x1F" (list (int-tok (radix-hex) "1F" "")))
+(test-tokens "0xabcdef" (list (int-tok (radix-hex) "abcdef" "")))
+(test-tokens "0x1e3" (list (int-tok (radix-hex) "1e3" "")))
+(test-tokens "0x1_f_" (list (int-tok (radix-hex) "1_f_" "")))
+(test-tokens "0x1fu8" (list (int-tok (radix-hex) "1f" "u8")))
+(test-tokens "0x1g" (list (int-tok (radix-hex) "1" "g")))
+(test-tokens "0x1Gf" (list (int-tok (radix-hex) "1" "Gf")))
+(test-tokens "1f" (list (int-tok (radix-dec) "1" "f")))
+(test-tokens "0b1a" (list (int-tok (radix-bin) "1" "a")))
+(test-tokens "0o7F" (list (int-tok (radix-oct) "7" "F")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,8 +302,7 @@
 
 (assert-event
  (equal (toks-only (tokenize-rust (list #x22 #xe9 #x22) ; e with acute accent
-                                  (rust::edition-2024)
-                                  "test.rs"))
+                                  (rust::edition-2024)))
         (list (str-tok (str-kind-plain)
                        nil
                        (acl2::implode (list (code-char #xc3) (code-char #xa9)))
@@ -324,51 +372,122 @@ x += 2;"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Spans: lines advance at line feeds, columns count code points.
+; Spans: offsets into the input, counted in code points,
+; from the start of a token to just after its end.
+; The whitespace and the comments between tokens count.
+
+; The start and the end of the span of a token with span.
+
+(defun span-offsets (token+span)
+  (b* ((span (token+span->span token+span)))
+    (cons (span->start span) (span->end span))))
+
+; The line and the column of an offset in a list of code points.
+
+(defun line+column (offset nats)
+  (b* ((pos (position-of-offset offset nats)))
+    (cons (position->line pos) (position->column pos))))
 
 (assert-event
  (b* ((tokens+spans (toks "a
 bc"))
       ((when (reserrp tokens+spans)) nil)
-      ((list ts1 ts2) tokens+spans)
-      (span1 (token+span->span ts1))
-      (span2 (token+span->span ts2)))
-   (and (equal (position->line (span->start span1)) 1)
-        (equal (position->column (span->start span1)) 0)
-        (equal (position->line (span->end span1)) 1)
-        (equal (position->column (span->end span1)) 0)
-        (equal (position->line (span->start span2)) 2)
-        (equal (position->column (span->start span2)) 0)
-        (equal (position->line (span->end span2)) 2)
-        (equal (position->column (span->end span2)) 1))))
-
-; Non-ASCII whitespace (LINE SEPARATOR) counts as one column, not a line.
+      ((list ts1 ts2) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 1))
+        (equal (span-offsets ts2) '(2 . 4)))))
 
 (assert-event
- (b* ((tokens+spans (tokenize-rust (list #x61 #x2028 #x62)
-                                   (rust::edition-2024)
-                                   "test.rs"))
+ (b* ((tokens+spans (toks "a /* c */ b// d
+  c"))
+      ((when (reserrp tokens+spans)) nil)
+      ((list ts1 ts2 ts3) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 1))
+        (equal (span-offsets ts2) '(10 . 11))
+        (equal (span-offsets ts3) '(18 . 19)))))
+
+; Positions are computed from offsets:
+; lines advance at line feeds, columns count code points.
+
+(assert-event
+ (b* ((nats (acl2::string=>nats "a
+bc")))
+   (and (equal (line+column 0 nats) '(1 . 0)) ; a
+        (equal (line+column 1 nats) '(1 . 1)) ; the line feed
+        (equal (line+column 2 nats) '(2 . 0)) ; b
+        (equal (line+column 3 nats) '(2 . 1)) ; c
+        (equal (line+column 4 nats) '(2 . 2))))) ; the end
+
+; Non-ASCII whitespace (LINE SEPARATOR) counts as one code point,
+; and as one column, not a line.
+
+(assert-event
+ (b* ((nats (list #x61 #x2028 #x62))
+      (tokens+spans (tokenize-rust nats (rust::edition-2024)))
       ((when (reserrp tokens+spans)) nil)
       ((list ts1 ts2) tokens+spans))
    (and (equal (token+span->token ts1) (token-ident "a" nil))
         (equal (token+span->token ts2) (token-ident "b" nil))
-        (equal (position->column (span->start (token+span->span ts2))) 2))))
+        (equal (span-offsets ts2) '(2 . 3))
+        (equal (line+column 2 nats) '(1 . 2)))))
 
 ; A string literal can span lines.
 
 (assert-event
- (b* ((tokens+spans (toks "\"a
-b\" c"))
+ (b* ((string "\"a
+b\" c")
+      (nats (acl2::string=>nats string))
+      (tokens+spans (toks string))
       ((when (reserrp tokens+spans)) nil)
-      ((list ts1 ts2) tokens+spans)
-      (span1 (token+span->span ts1))
-      (span2 (token+span->span ts2)))
-   (and (equal (position->line (span->start span1)) 1)
-        (equal (position->column (span->start span1)) 0)
-        (equal (position->line (span->end span1)) 2)
-        (equal (position->column (span->end span1)) 1)
-        (equal (position->line (span->start span2)) 2)
-        (equal (position->column (span->start span2)) 3))))
+      ((list ts1 ts2) tokens+spans))
+   (and (equal (span-offsets ts1) '(0 . 5))
+        (equal (line+column 0 nats) '(1 . 0)) ; the opening quote
+        (equal (line+column 4 nats) '(2 . 1)) ; the closing quote
+        (equal (span-offsets ts2) '(6 . 7))
+        (equal (line+column 6 nats) '(2 . 3))))) ; c
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Reserved guards [SC15]: in edition 2024, a "#" immediately followed by
+; another "#" or by a string literal is rejected; in edition 2021,
+; the same text is separate tokens.
+; Each case below was run through rustc 1.87.0 in both editions.
+; The first two are from the rustc tests transcribed in
+; rustc-lexer-vectors.lisp, where they lex (lexing has no editions).
+
+(test-tokenize-fail "foo ##bar")
+(test-tokenize-fail "r\"\"##")
+(test-tokenize-fail "##")
+(test-tokenize-fail "###")
+(test-tokenize-fail "#\"a\"")
+(test-tokenize-fail "#\"a\"#")
+(test-tokenize-fail "m!(#\"x\")")
+
+(test-tokens-2021 "foo ##bar" (list (token-ident "foo" nil)
+                                    (token-punct "#")
+                                    (token-punct "#")
+                                    (token-ident "bar" nil)))
+(test-tokens-2021 "r\"\"##" (list (str-tok (str-kind-plain) 0 "" "")
+                                  (token-punct "#")
+                                  (token-punct "#")))
+(test-tokens-2021 "#\"a\"#" (list (token-punct "#")
+                                  (str-tok (str-kind-plain) nil "a" "")
+                                  (token-punct "#")))
+
+; A "#" followed by anything else is not a reserved guard:
+; whitespace or a comment; a raw string, byte string, or character literal.
+; And a raw string literal takes its own "#".
+
+(test-tokens "# #" (list (token-punct "#") (token-punct "#")))
+(test-tokens "#/**/#" (list (token-punct "#") (token-punct "#")))
+(test-tokens "# \"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-plain) nil "a" "")))
+(test-tokens "#r\"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-plain) 0 "a" "")))
+(test-tokens "#b\"a\"" (list (token-punct "#")
+                             (str-tok (str-kind-byte) nil "a" "")))
+(test-tokens "#'a'" (list (token-punct "#") (char-tok nil "a" "")))
+(test-tokens "r#\"abc\"##" (list (str-tok (str-kind-plain) 1 "abc" "")
+                                 (token-punct "#")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

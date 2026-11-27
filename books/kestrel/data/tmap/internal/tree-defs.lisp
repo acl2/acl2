@@ -1,0 +1,45 @@
+; Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "TMAP")
+
+(include-book "kestrel/data/tset/hash-defs" :dir :system)
+(include-book "kestrel/data/utilities/fixed-size-words/u32-defs" :dir :system)
+
+(local (include-book "std/util/defredundant" :dir :system))
+(local (include-book "tree"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::defredundant
+  :names (tree-element-p
+          irr-tree-element
+          tree-element-fix
+          tree-element-equiv
+          tree-element->key
+          tree-element->val
+          tree-element->hash
+          tree-element->key+val
+          tree-element
+          tree-element$
+          treep
+          tree-fix
+          tree-equiv
+          tree-empty-p
+          tree->head
+          tree->left
+          tree->right
+          tree-node
+          tree-node-with-hint
+          tree-leaf
+          tree-listp
+          tree-list-fix
+          ))
+
+(defequiv tree-element-equiv)
+(defequiv tree-equiv)

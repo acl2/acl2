@@ -34,10 +34,10 @@
      shapes and ispaces are normalized to concatenations of
      shape variables and single-dimension shapes
      with normalized dimensions.
-     The equivalence checks are intended to be sound and complete,
+     The equivalence checks are sound and complete,
      since each normalization step is an instance of an inference rule
      and equivalent ispaces have the same normal form;
-     we have not proved either yet."))
+     this is proved in @(see ispace-equivalence-checker-correctness)."))
   :order-subtopics t
   :default-parent t)
 
@@ -143,6 +143,8 @@
   ;;;;;;;;;;;;;;;;;;;;
 
   :verify-guards :after-returns
+
+  :flag-local nil
 
   ///
 

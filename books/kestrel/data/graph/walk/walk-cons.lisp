@@ -12,9 +12,9 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")
@@ -25,12 +25,12 @@
 (include-book "walk-in-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/set" :dir :system))
-(local (include-book "kestrel/data/treeset/in" :dir :system))
-(local (include-book "kestrel/data/treeset/insert" :dir :system))
-(local (include-book "kestrel/data/treeset/subset" :dir :system))
+(local (include-book "kestrel/data/tset/set" :dir :system))
+(local (include-book "kestrel/data/tset/in" :dir :system))
+(local (include-book "kestrel/data/tset/insert" :dir :system))
+(local (include-book "kestrel/data/tset/subset" :dir :system))
 
 (local (include-book "../edge"))
 (local (include-book "../edges"))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define walk-cons (from label (walk walkp))
-  :type-prescription :none
   :returns (walk$ walkp)
   :parents (walks)
   :short "Add a step to the front of a walk."
@@ -85,14 +84,14 @@
 
 (defrule walk-edges-of-walk-cons
   (equal (walk-edges (walk-cons from label walk))
-         (treeset::insert (edge from (walk->start walk) label)
-                          (walk-edges walk)))
+         (tset::insert (edge from (walk->start walk) label)
+                       (walk-edges walk)))
   :enable (walk-edges
            steps-edges))
 
 (defrule walk-in-of-walk-cons
   (equal (walk-in (walk-cons from label walk) graph)
-         (and (treeset::in (edge from (walk->start walk) label)
-                           (edges graph))
+         (and (tset::in (edge from (walk->start walk) label)
+                        (edges graph))
               (walk-in walk graph)))
   :enable walk-in)

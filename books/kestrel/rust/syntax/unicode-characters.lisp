@@ -43,7 +43,7 @@
     "We represent Unicode scalar values as ACL2 naturals.
      The lexer operates on lists of them;
      UTF-8 decoding of source bytes belongs to
-     the file-reading layer, not here.
+     the input format (see @(see input-format)), not here.
      (The lexical grammar's terminal set is defined separately,
      in the grammar book, over naturals;
      decoded source input always satisfies

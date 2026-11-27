@@ -12,7 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "kestrel/data/treeset/in-defs" :dir :system)
+(include-book "kestrel/data/tset/in-defs" :dir :system)
 
 (include-book "edge-defs")
 (include-book "graph-defs")
@@ -24,9 +24,9 @@
 (include-book "internal/transpose-defs")
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
-(local (include-book "kestrel/data/treeset/extensionality" :dir :system))
+(local (include-book "kestrel/data/tset/extensionality" :dir :system))
 
 (local (include-book "edge"))
 (local (include-book "graph"))
@@ -41,7 +41,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define transpose ((graph graphp))
-  :type-prescription :none
   :returns (graph$ graphp
                    :hints (("Goal" :in-theory (enable* graphp
                                                        break-abstraction))))
@@ -86,12 +85,12 @@
 
 (defrule in-of-edges-of-transpose
   (implies (edge-equiv edge$ (double-rewrite edge))
-           (equal (treeset::in edge (edges (transpose graph)))
+           (equal (tset::in edge (edges (transpose graph)))
                   (and (edgep edge)
-                       (treeset::in (edge (edge->to edge$)
-                                          (edge->from edge$)
-                                          (edge->label edge$))
-                                    (edges graph)))))
+                       (tset::in (edge (edge->to edge$)
+                                       (edge->from edge$)
+                                       (edge->label edge$))
+                                 (edges graph)))))
   :enable (edges
            transpose
            graphp
@@ -114,14 +113,14 @@
 (defrule successors-of-transpose
   (equal (successors node (transpose graph))
          (predecessors node graph))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels)
   :disable emptyp-of-labels)
 
 (defrule predecessors-of-transpose
   (equal (predecessors node (transpose graph))
          (successors node graph))
-  :enable (treeset::extensionality-polar
+  :enable (tset::extensionality-polar
            in-of-successors-becomes-not-emptyp-of-labels)
   :disable emptyp-of-labels)
 
@@ -129,7 +128,7 @@
   (equal (transpose (transpose graph))
          (fix graph))
   :enable (extensionality
-           treeset::extensionality-polar))
+           tset::extensionality-polar))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

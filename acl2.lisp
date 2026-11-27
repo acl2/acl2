@@ -820,6 +820,470 @@
 ; See acl2-fns.lisp for changes to lower-case-p, char-upcase, and
 ; string-upcase, which are installed later below after loading acl2-fns.lisp.
 
+; AI discovered the errors involving the truncate implementation in CCL, and
+; noted resulting unsoundness in ACL2.  The following example is illustrative.
+;   ACL2 !>(truncate 3/4 1/1180591620717411303424)
+;   #<COMPILED-LEXICAL-CLOSURE (INTERNAL HANDLER WRITE-INTERNAL) #x10F60326C>
+;   ACL2 !>
+; Evaluation caused a raw Lisp error in ACL2 built on CCL for the following.
+;   (mod 3/4 1/1180591620717411303424)
+;   (floor 3/4 1/1180591620717411303424)
+;   (rem 3/4 1/1180591620717411303424)
+;   (ceiling 3/4 1/1180591620717411303424)
+;   (round 3/4 1/1180591620717411303424)
+; The suggested workaround from AI is below.  But we install it only when
+; necessary, as determined by the following test (so we moved "#+ccl from in
+; front of AI's code to the entire form below).
+
+; NOTE: The original AI suggestion was further below and did not include the
+; typep check, which we added so that when the CCL bug is fixed (see
+; https://github.com/Clozure/ccl/issues/733), this code won't fire.
+
+; <<Start AI fix 1>>
+
+#+ccl
+(when (and (fboundp 'ccl::truncate-no-rem) ; AI suggestion (see below)
+           (not (typep (ccl::truncate-no-rem 3 1/295147905179352825856)
+                       'number)))
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) have a bug
+; in ccl::truncate-no-rem, which computes truncate when only one value is
+; needed and is also used by floor, ceiling, round, mod, and rem.  For a ratio
+; divisor n/d it multiplies the dividend by d into a stack-allocated bignum and
+; then truncates that product by n; so when n is 1, it returns that bignum,
+; which is later overwritten.  For example, (mod 3/4 (/ (expt 2 70))) evaluated
+; to 3/4 instead of 0, which made it possible to prove nil; see community book
+; books/system/tests/ccl-truncate-ratio-divisor.lisp.  We avoid that code by
+; giving ccl::truncate-no-rem integer arguments when the dividend is rational
+; and the divisor is a ratio, since a/b divided by n/d is (a*d)/(b*n).
+
+; (when (fboundp 'ccl::truncate-no-rem) ;;; Changed from AI to test above
+  (let ((old (symbol-function 'ccl::truncate-no-rem))
+        (ccl:*warn-if-redefine-kernel* nil))
+    (setf (symbol-function 'ccl::truncate-no-rem)
+          (lambda (number divisor &rest rest)
+            (declare (dynamic-extent rest))
+            (if (and (rationalp number)
+                     (rationalp divisor)
+                     (not (integerp divisor)))
+                (funcall old
+                         (* (numerator number) (denominator divisor))
+                         (* (denominator number) (numerator divisor)))
+              (apply old number divisor rest))))))
+
+; <<End AI fix 1>>
+
+; <<Start AI fix 2>>
+
+#+ccl
+(when (typep #c(1 1) '(member #c(1 2))) ; true only while the CCL bug is present
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) translate a
+; MEMBER type specifier by replacing each number in it with (ctype-of number).
+; For a complex number that is not exact: ctype-of-number returns a complex
+; numeric type whose real and imaginary parts may each range over the interval
+; between the two parts.  So for example (member #c(1 2)) is treated as
+; (complex (integer 1 2)), which also contains #c(1 1), #c(2 1), and #c(2 2);
+; see https://github.com/Clozure/ccl/issues/749.  Since ACL2 allows
+; (member ...) type-specs with complex rational elements and translates them
+; exactly to guards, that made it possible to prove nil: for the declared type
+; (and (member #c(1 1)) (not (member #c(1 2)))), CCL computes the empty type and
+; compiles (equal x #c(1 1)) to NIL in a guard-verified function.  We
+; redefine the MEMBER translator so that it converts only real numbers, which
+; it does exactly; complex numbers are kept as members and compared with EQL.
+; This definition is CCL's own except for REALP in place of NUMBERP.
+
+  (let ((ccl:*warn-if-redefine-kernel* nil))
+    (ccl::def-type-translator member (&rest members)
+      (if members
+          (ccl::collect ((non-numbers) (numbers))
+            (dolist (m (remove-duplicates members))
+              (if (and (realp m)
+                       (not (and (floatp m) (zerop m))))
+                  (numbers (ccl::ctype-of m))
+                (non-numbers m)))
+            (apply #'ccl::type-union
+                   (if (non-numbers)
+                       (ccl::make-member-ctype :members (non-numbers))
+                     ccl::*empty-type*)
+                   (numbers)))
+        ccl::*empty-type*)))
+  (ccl::clear-type-cache)
+  (when (typep #c(1 1) '(member #c(1 2)))
+    (error "Failed to work around CCL issue 749 (MEMBER types with complex ~
+            numbers).")))
+
+; <<End AI fix 2>>
+
+; <<Start AI fix 3>>
+
+#+ccl
+(labels ((ccl-flet-inline-bug-p ()
+
+; Return true if a local function declared INLINE is compiled using the body of
+; a global inline function of the same name.  We use an uninterned name so that
+; nothing else can see the test definitions.
+
+           (let ((name (make-symbol "AI-FIX-3-TEST")))
+             (eval `(progn (declaim (inline ,name))
+                           (defun ,name (x) (cons 'global x))))
+             (equal (funcall (compile nil
+                                      `(lambda (x)
+                                         (flet ((,name (y) (cons 'local y)))
+                                           (declare (inline ,name))
+                                           (,name x))))
+                             1)
+                    '(global . 1)))))
+  (when (ccl-flet-inline-bug-p)
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) have a bug in
+; ccl::nx-inline-expansion: when a function bound by FLET or LABELS is declared
+; INLINE and a global function of the same name is also inline, the global
+; function's body is inlined instead of the local one; see
+; https://github.com/Clozure/ccl/issues/750.  For example, after (defun-inline
+; foo (x) ...), a guard-verified function that binds foo$inline with FLET and
+; declares it INLINE was compiled to call the global foo$inline, so evaluation
+; disagreed with the function's definition and nil was provable.  The
+; definition below is CCL's own, except that the global definition is consulted
+; only when there is no lexical (FLET/LABELS) binding of SYM.
+
+    (let ((ccl:*warn-if-redefine-kernel* nil))
+      (defun ccl::nx-inline-expansion (sym &optional
+                                           (env ccl::*nx-lexical-environment*)
+                                           global-only)
+        (let* ((lambda-form nil)
+               (containing-env nil)
+               (token nil))
+          (if (and (ccl::nx-declared-inline-p sym env)
+                   (not (gethash sym ccl::*nx1-alphatizers*))
+                   (not ccl::*nx-current-code-note*))
+              (multiple-value-bind (info afunc)
+                  (unless global-only (ccl::nx-lexical-finfo sym env))
+                (if info
+                    (setq token afunc
+                          containing-env (ccl::afunc-environment afunc)
+                          lambda-form (ccl::afunc-lambdaform afunc))
+                  (progn
+                    (setq info
+                          (cdr (ccl::retrieve-environment-function-info sym
+                                                                        env)))
+                    (if (ccl::def-info.lambda info)
+                        (setq lambda-form (ccl::%def-info.lambda info)
+                              token sym
+                              containing-env
+                              (ccl::new-lexical-environment
+                               (ccl::%def-info.environment info)))
+                      (unless info
+                        (if (cdr (setq info
+                                       (assoc sym ccl::*nx-globally-inline*)))
+                            (setq lambda-form (cdr info)
+                                  token sym
+                                  containing-env
+                                  (ccl::new-lexical-environment
+                                   (ccl::new-definition-environment nil))))))))))
+          (values lambda-form
+                  (ccl::nx-closed-environment env containing-env)
+                  token))))
+    (when (ccl-flet-inline-bug-p)
+      (error "Failed to work around CCL issue 750 (FLET/LABELS INLINE ~
+              functions replaced by global inline functions)."))))
+
+; <<End AI fix 3>>
+
+; <<Start AI fix 4>>
+
+#+ccl
+(labels ((ccl-print-case-backslash-bug-p ()
+
+; Return true if printing a symbol without escapes, under a *print-case* that
+; differs from the readtable case, doubles a backslash in the symbol's name.
+
+           (let ((*print-escape* nil)
+                 (*print-readably* nil)
+                 (*print-case* :downcase))
+             (not (equal (princ-to-string '|A\\b|) "a\\b")))))
+  (when (ccl-print-case-backslash-bug-p)
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) have a bug in
+; ccl::write-perverted-string, which applies *print-case* (or an :invert
+; readtable) to a symbol name: it doubles each backslash in the name even when
+; the name is not being escaped (its optional ESCAPE argument is nil), and it
+; then fails to treat the next character as the start of a word for
+; :capitalize; see https://github.com/Clozure/ccl/issues/751.  For example,
+; with *print-escape* nil and *print-case* :downcase, (princ '|A\\b|) wrote
+; the four characters a\\b.  Since the logical definitions of princ$ and
+; prin1$ write (string-downcase (symbol-name x)) in that case, a verified
+; clause processor that reads back its own output from the live state could
+; prove nil.  The definition below is CCL's own except that a character is
+; doubled only when ESCAPE is supplied.
+
+    (let ((ccl:*warn-if-redefine-kernel* nil))
+      (defun ccl::write-perverted-string (string stream end type
+                                                 &optional escape)
+        ;; type :invert :upcase :downcase :capitalize or :studly
+        (declare (fixnum end))
+        (let* ((readtable *readtable*)
+               (readcase (readtable-case readtable))
+               (outbuf-ptr -1)
+               (outbuf (make-string (+ end
+                                       (if escape 2 0)
+                                       (if escape
+                                           (count-if (lambda (c)
+                                                       (or (eql c escape)
+                                                           (eql c #\\)))
+                                                     string :end end)
+                                         0))))
+               (word-start t)
+               (offset 0))
+          (declare (fixnum offset outbuf-ptr)
+                   (dynamic-extent outbuf))
+          (when (eq type :studly)
+            (do ((i 0 (1+ i)))
+                ((>= i end))
+              (declare (type fixnum i))
+              (setq offset (+ offset (char-int (char string i))))))
+          (when escape
+            (setf (schar outbuf (incf outbuf-ptr)) escape))
+          (do ((i 0 (1+ i)))
+              ((>= i end))
+            (declare (type fixnum i))
+            (let ((c (char string i)))
+              (declare (type character c))
+              (cond ((alpha-char-p c)
+                     (case type
+                       (:studly
+                        (cond ((not (< (logand (+ (char-int c) offset) 15)
+                                       6)))
+                              ((upper-case-p c)
+                               (setq c (char-downcase c)))
+                              (t
+                               (setq c (char-upcase c)))))
+                       (:invert
+                        (setq c (if (upper-case-p c)
+                                    (char-downcase c)
+                                  (char-upcase c))))
+                       (:upcase
+                        (setq c (char-upcase c)))
+                       (:downcase
+                        (setq c (char-downcase c)))
+                       (:capitalize
+                        (setq c (cond (word-start
+                                       (setq word-start nil)
+                                       (if (eq readcase :upcase)
+                                           c
+                                         (char-upcase c)))
+                                      (t
+                                       (if (eq readcase :upcase)
+                                           (char-downcase c)
+                                         c)))))))
+                    ((and escape (or (eql c escape) (eql c #\\)))
+                     (setf (schar outbuf (incf outbuf-ptr)) #\\))
+                    ((digit-char-p c) (setq word-start nil))
+                    (t (setq word-start t)))
+              (setf (schar outbuf (incf outbuf-ptr)) c)))
+          (when escape
+            (setf (schar outbuf (incf outbuf-ptr)) escape))
+          (write-string outbuf stream :start 0 :end (1+ outbuf-ptr)))))
+    (when (ccl-print-case-backslash-bug-p)
+      (error "Failed to work around CCL issue 751 (*print-case* doubles ~
+              backslashes in symbol names)."))))
+
+; <<End AI fix 4>>
+
+; <<Start AI fix 5>>
+
+#+ccl
+(labels ((ccl-satisfies-cache-bug-p ()
+
+; Return true if TYPEP still uses the old definition of a SATISFIES predicate
+; after that predicate is redefined.  We use an uninterned name so that nothing
+; else can see the test definitions.
+
+           (let* ((p (make-symbol "AI-FIX-5-TEST"))
+                  (spec `(and (or null bit) (satisfies ,p))))
+             (setf (symbol-function p) (lambda (x) (integerp x)))
+             (typep nil spec)
+             (setf (symbol-function p) (lambda (x) (or (null x) (integerp x))))
+             (not (typep nil (copy-tree spec))))))
+  (when (ccl-satisfies-cache-bug-p)
+
+; CCL Versions 1.13 and 1.14 (and probably some earlier versions) simplify the
+; intersection of a MEMBER type with a type (SATISFIES P) by calling P on each
+; member, using CCL::CTYPEP, and then cache the simplified type by its
+; specifier.  If P is later redefined, the cached type still reflects the old
+; definition of P.  Since ACL2 allows a function to be defined locally and then
+; defined differently, that made it possible to prove nil: a stobj array whose
+; element type is (and (or null (integer 0 1)) (satisfies p)) was created as a
+; bit vector after P was redefined to accept NIL; see
+; https://github.com/Clozure/ccl/issues/754.  We wrap CCL::CTYPEP so that
+; it answers "unknown", (values nil nil), for a SATISFIES type whose predicate
+; is not in the COMMON-LISP package, which conforming programs cannot redefine.
+; SBCL similarly calls only predicates that it can constant-fold.  TYPEP is
+; unaffected, since it does not use CTYPEP for SATISFIES types.
+
+    (let ((ccl:*warn-if-redefine-kernel* nil)
+          (old-ctypep (symbol-function 'ccl::ctypep)))
+      (setf (symbol-function 'ccl::ctypep)
+            (lambda (obj type)
+              (let ((spec (and (ccl::hairy-ctype-p type)
+                               (ccl::hairy-ctype-specifier type))))
+                (if (and (consp spec)
+                         (eq (car spec) 'satisfies)
+                         (not (and (symbolp (cadr spec))
+                                   (eq (symbol-package (cadr spec))
+                                       (find-package "COMMON-LISP")))))
+                    (values nil nil)
+                  (funcall old-ctypep obj type))))))
+    (ccl::clear-type-cache)
+    (when (ccl-satisfies-cache-bug-p)
+      (error "Failed to work around CCL issue 754 (stale SATISFIES types ~
+              after a predicate is redefined)."))))
+
+; <<End AI fix 5>>
+
+; <<Start AI fix 6>>
+
+; [Note: At https://github.com/Clozure/ccl/issues/755 on 11/25/2026 we find:
+; "closed this as completed in 0563a2816h".  See also
+; books/system/tests/sbit-constant-index.lisp.]
+
+; CCL Version 1.14 on ARM64 (and probably some earlier versions) miscompiles an
+; access to a bit vector at a constant index greater than
+; arch::target-max-1-bit-constant-index (32792); see
+; https://github.com/Clozure/ccl/issues/755.  For a read, CCL::ARM642-VREF1
+; computes the byte offset of the 32-bit word containing the bit as
+; (+ misc-data-offset (ash k -5)), omitting the factor of 4, so the wrong bit
+; is read.  That made it possible to prove nil: a guard-verified function that
+; reads a stobj bit array at a constant index such as 33000 returned a
+; different bit than the logic says.  For a write compiled with (speed 3)
+; (safety 0), CCL::ARM642-VSET1 uses an index register that was never loaded,
+; and compilation fails with "bad regspec: NIL".
+
+; We work around both without copying CCL's code.  We wrap CCL::ARM642-VREF1
+; so that for such an index K it receives instead the index
+; (+ (* 128 (floor K 32)) (mod K 32)), for which CCL's computation produces
+; the correct word offset and bit number; that index also exceeds the limit,
+; so the same code path is taken.  And we wrap CCL::ARM642-VSET so that such a
+; write is compiled as a safe write, which loads the index into a register
+; (and adds a bounds check), for which CCL's code is correct.  Each wrapper is
+; installed only if its bug is detected, and the build stops with an error if
+; the bug is still present afterwards.
+
+#+(and ccl arm64)
+(labels ((ccl-sbit-index-limit ()
+           (arch::target-max-1-bit-constant-index
+            (ccl::backend-target-arch ccl::*target-backend*)))
+         (ccl-sbit-constant-index-read-bug-p ()
+
+; Return true if a compiled read of a bit vector at a constant index just
+; above the limit returns the wrong bit.
+
+           (let* ((k (1+ (ccl-sbit-index-limit)))
+                  (v (make-array (1+ k) :element-type 'bit :initial-element 0))
+                  (f (compile nil `(lambda (v)
+                                     (declare (type simple-bit-vector v))
+                                     (sbit v ,k)))))
+             (setf (sbit v (car (list k))) 1) ; non-constant index
+             (not (eql (funcall f v) 1))))
+         (ccl-sbit-constant-index-write-bug-p ()
+
+; Return true if an unsafe compiled write to a bit vector at a constant index
+; just above the limit fails to compile.
+
+           (null (ignore-errors
+                   (compile nil `(lambda (v b)
+                                   (declare (type simple-bit-vector v)
+                                            (type bit b)
+                                            (optimize (speed 3) (safety 0)))
+                                   (setf (sbit v ,(1+ (ccl-sbit-index-limit)))
+                                         b)))))))
+  (when (and (fboundp 'ccl::arm642-vref1)
+             (ccl-sbit-constant-index-read-bug-p))
+    (let ((ccl:*warn-if-redefine-kernel* nil)
+          (old-vref1 (symbol-function 'ccl::arm642-vref1)))
+      (setf (symbol-function 'ccl::arm642-vref1)
+            (lambda (seg vreg xfer type-keyword src unscaled-idx
+                         index-known-fixnum)
+              (let ((arch (ccl::backend-target-arch ccl::*target-backend*)))
+                (funcall old-vref1 seg vreg xfer type-keyword src unscaled-idx
+                         (if (and index-known-fixnum
+                                  (member type-keyword
+                                          (arch::target-1-bit-ivector-types
+                                           arch))
+                                  (> index-known-fixnum
+                                     (arch::target-max-1-bit-constant-index
+                                      arch)))
+                             (logior (ash (ash index-known-fixnum -5) 7)
+                                     (logand index-known-fixnum #x1f))
+                           index-known-fixnum))))))
+    (when (ccl-sbit-constant-index-read-bug-p)
+      (error "Failed to work around CCL issue 755 (reading a bit vector at a ~
+              large constant index).")))
+  (when (and (fboundp 'ccl::arm642-vset)
+             (ccl-sbit-constant-index-write-bug-p))
+    (let ((ccl:*warn-if-redefine-kernel* nil)
+          (old-vset (symbol-function 'ccl::arm642-vset)))
+      (setf (symbol-function 'ccl::arm642-vset)
+            (lambda (seg vreg xfer type-keyword vector index value safe)
+              (funcall old-vset seg vreg xfer type-keyword vector index value
+                       (or safe
+                           (let ((k (ccl::acode-fixnum-form-p index))
+                                 (arch (ccl::backend-target-arch
+                                        ccl::*target-backend*)))
+                             (and k
+                                  (member type-keyword
+                                          (arch::target-1-bit-ivector-types
+                                           arch))
+                                  (> k (arch::target-max-1-bit-constant-index
+                                        arch))
+                                  t)))))))
+    (when (ccl-sbit-constant-index-write-bug-p)
+      (error "Failed to work around CCL issue 755 (writing a bit vector at a ~
+              large constant index)."))))
+
+; <<End AI fix 6>>
+
+; <<Start AI fix 7>>
+
+#+sbcl
+(labels ((acl2tf-char-code-back-bug-p ()
+
+; Return true if SBCL wrongly concludes, from (eql (char-code x) y) being false
+; where y is only known to be in [10,20], that the code of x is outside
+; [10,20].
+
+           (let ((f (compile nil
+                             '(lambda (x y)
+                                (let ((y (the (integer 10 20) y)))
+                                  (if (eql (char-code x) y)
+                                      nil
+                                    (and (<= 10 (char-code x))
+                                         (<= (char-code x) 20))))))))
+             (not (funcall f (code-char 12) 11)))))
+  (when (acl2tf-char-code-back-bug-p)
+
+; SBCL Version 2.6.10 (and probably earlier versions) has a bug in the
+; CONSTRAINT-PROPAGATE-BACK optimizer for CHAR-CODE (file
+; src/compiler/constraint-back.lisp).  When (eql (char-code x) y) is false and
+; the type of y is a range [low,high], it concludes that the code of x is not
+; in [low,high], which is valid only when low = high.  That made it possible to
+; prove nil: a guard-verified function that tests (eql (char-code x) y) and
+; then (<= 10 (char-code x)) took the wrong branch.  Proclaiming char-code
+; notinline, as done above, does not prevent this optimizer from running.  We
+; therefore remove the optimizer, which only narrows types, so removing it
+; cannot make compiled code wrong.  This bug was fixed in SBCL by commit
+; d325109f91 ("Fix char-code constraint-propagate-back", November 2026), so
+; this workaround is skipped for SBCL versions that include that fix.
+
+    (setf (sb-c::fun-info-constraint-propagate-back
+           (sb-int:info :function :info 'char-code))
+          nil)
+    (when (acl2tf-char-code-back-bug-p)
+      (error "Failed to work around SBCL's char-code constraint ~
+              propagation bug."))))
+
+; <<End AI fix 7>>
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

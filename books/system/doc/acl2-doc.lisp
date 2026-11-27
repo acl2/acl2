@@ -22324,6 +22324,18 @@ href='http://www.cs.utexas.edu/users/moore/classes/index.html'>here</a>.</li>
  documentation see @(see with-global-stobj), specifically the section on
  ``Constrained Functions and Defattach''.</p>
 
+ <p>The notion of @(see invariant-risk) must be preserved through attachments.
+ Enforcement of this requirement can produce the following error message.</p>
+
+ @({
+ ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+ for F, because G has invariant-risk but F was not introduced with a
+ specification of :INVARIANT-RISK T.  See :DOC defattach.
+ })
+
+ <p>See @(see invariant-risk) for how the use of @(':invariant-risk t') in a
+ function's @(see signature) can avoid this error.</p>
+
  <p>We conclude with an example promised above, showing why it is necessary in
  general to unattach all function symbols in an existing attachment nest when
  unattaching any one of those function symbols.  Consider the following
@@ -36827,7 +36839,12 @@ ld) and @(tsee include-book)"
  @('nil'), respectively.  A value of @(':same') for @(':forcep') means that
  forcing will be allowed if and only if it is allowed in the current rewriting
  environment; see @(see force).  A value of @('t') or @('nil') for @(':forcep')
- overrides this default and allows or disallows forcing, respectively.  By
+ overrides this default and allows or disallows forcing, respectively.  When
+ @(':forcep') is @('nil') and no tag-tree is returned, a result that depends
+ on hypotheses forced earlier (for example, by @(see forward-chaining)) is
+ replaced by a trivial one: no type information for @('mfc-ts'), the
+ (instantiated) input term for @('mfc-rw') and @('mfc-rw+'), and @('nil') for
+ @('mfc-ap') and @('mfc-relieve-hyp').  By
  default these functions return a single value, @('val'), but if @(':ttreep')
  is @('t') then they return @('(mv val ttree)'), where @('ttree') is the
  tag-tree (see @(see ttree)) returned by the indicated operation, with an input
@@ -59656,7 +59673,38 @@ tables in the current Hons Space."
  Rather than removing invariant-risk checking for <i>all</i> functions at
  runtime with @(tsee set-check-invariant-risk), it is probably much safer to
  remove it only for the functions in a given book or @(tsee encapsulate) event.
- See @(see set-register-invariant-risk) for how to do that.</p>")
+ See @(see set-register-invariant-risk) for how to do that.</p>
+
+ <h3>Interaction with Attachments</h3>
+
+ <p>When you invoke @(tsee defattach), say, @('(defattach f g)'), you might see
+ the following error.</p>
+
+ @({
+ ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+ for F, because G has invariant-risk but F was not introduced with a
+ specification of :INVARIANT-RISK T.  See :DOC invariant-risk.
+ })
+
+ <p>The workaround is to specify @(':invariant-risk t') in the @(tsee
+ encapsulate) event that introduces @('f'), specifically, in the signature for
+ @('f'); see @(see signature).  For example:</p>
+
+ @({
+ (encapsulate
+   (((f * st) => st :invariant-risk t ...))
+   (local (defun f (v st) ...)))
+ })
+
+ <p>The @('defattach') example above illustrates the case that the proposed
+ attachment @('g') has @(see invariant-risk), for example because it updates a
+ @(see stobj) field that has a non-trival type; see @(see invariant-risk).  The
+ concern is that a @(see program)-mode function call will lead to an ill-@(see
+ guard)ed call of @('f') that leads to an ill-guarded call of @('g') that
+ violates an invariant.  When the signature of a function symbol @('f')
+ includes @(':invariant-risk t'), ACL2 makes a note that @('f') has
+ invariant-risk, which allows @('f') to receive an attachment that has
+ invariant-risk (@('g'), in our example).</p>")
 
 (defxdoc invariant-risk-details
   :parents (invariant-risk)
@@ -110475,6 +110523,19 @@ it."
  of governing IF-tests.)  For an example, see @(see community-book)
  @('system/tests/proof-builder-assumptions-contradiction.lisp').</p>
 
+ <p>Fixed a soundness bug in the use of @(see meta-extract) hypotheses, which
+ trusted results of @(tsee mfc-ts), @(tsee mfc-rw), @(tsee mfc-rw+), @(tsee
+ mfc-relieve-hyp), and @(tsee mfc-ap) that could depend on @(see force)d
+ hypotheses (for example, from @(see forward-chaining) rules) that were never
+ proved.  Now those functions avoid such results when called with @(':forcep
+ nil').  For an example, see @(see community-book)
+ @('system/tests/meta-extract-forced-context.lisp').  Note: The fixes were
+ vetted by an ACL2 maintainer but were made entirely by AI (including this
+ release note before the present sentence, and including updating the
+ documentation for @(see extended-metafunctions)), the only change being to
+ convert the new function @('mfc-forced-ttreep') from a raw Lisp function to a
+ @(see program)-mode function (without changing its @('defun') form).</p>
+
  <p>Fixed a soundness bug by adding the following restriction on @(tsee
  stobj-let) forms: the parent @(see stobj) must not belong to the list of
  producer variables.  For a relevant example, see @(see community-book)
@@ -110753,8 +110814,8 @@ it."
  @('system/tests/cl-cache-full-ring-hang-loop.lisp') and
  @('system/tests/cl-cache-invalidation-semantics.lisp').</p>
 
- <p>The termination analysis for some instances of @(tsee loop$-recursion) was
- faulty as demonstrated in the @(see community-books)
+ <p>Termination analysis involving @(tsee loop$) was sometimes faulty, as
+ demonstrated in the @(see community-books)
  @('system/tests/loop-in-let-double-subst-rejects-valid-defun.lisp'),
  @('system/tests/loop-recursion-double-subst-clause-processor.lisp'),
  @('system/tests/loop-recursion-plain-target-subst.lisp'), and
@@ -110845,10 +110906,10 @@ it."
  @('not') as a tau predicate instead of only treating it as negation. See @(see
  community-book) @('system/tests/tau-not-recognizer-conjunctive.lisp').</p>
 
- <p>Fixed a soundness bug in the implementation of @(tsee apply$) for badged
- @(':')@(tsee program) mode functions applied to the wrong number of arguments.
- The original implementation failed to check that the list of arguments was a
- @(tsee true-listp).  See @(see community-book)
+ <p>Fixed a soundness bug in the implementation of @(tsee apply$) for @(see
+ badge)d functions applied to the wrong number of arguments.  The original
+ implementation failed to check that the list of arguments was a @(tsee
+ true-listp).  See @(see community-book)
  @('system/tests/apply-string-args-take.lisp').</p>
 
  <p>Fixed a soundness bug in @(tsee defwarrant) allowing it to issue a warrant
@@ -110856,6 +110917,101 @@ it."
  @(tsee apply$).  See @(see community-books)
  @('system/tests/apply-equivalence-witness-g1-warrant.lisp') and
  @('system/tests/defwarrant-constrained-callee.lisp').</p>
+
+ <p>Added several function symbols, generally related to evaluation, to the
+ list of built-in untouchable function symbols
+ (@('*initial-untouchable-fns*')), and added @('boot-strap-flg') to the list of
+ built-in state global variable symbols (@('*initial-untouchable-vars*')).
+ This fixes several unsound behaviors.  See @(see community-books) directory
+ @('system/tests/untouchables/').</p>
+
+ <p>Fixed a bug in the maintenance of the compiled lambda cache related to
+ undoing.  By using a quoted lambda containing an undefined function it was
+ possible to produce a cache line with @(':status :GOOD) even if the lambda
+ mentioned an undefined function.  This was caused the lambda is applied (and
+ guard verified) while the undefined function is being defined.  In that case,
+ the lambda was assigned an @(':abs-event-no') that was lower than that of the
+ newly defined function, so that when the function is undone, the cache line
+ remained marked @(':status :GOOD').  Now, retraction of the world marks every
+ cache line as @(':status :UNKNOWN') and lines will be re-validated if and when
+ their lambdas are applied.  See @(see community-books)
+ @('system/tests/cl-cache-failed-defun-good-line.lisp'),
+ @('system/tests/cl-cache-local-defun-good-line.lisp'), and
+ @('system/tests/cl-cache-make-event-expansion-good-line.lisp').</p>
+
+ <p>Fixed a soundness bug due to a failure to track @(see invariant-risk) after
+ the use of @(tsee defattach).  See @(see community-books)
+ @('system/tests/defattach-invariant-risk.lisp'),
+ @('system/tests/absstobj-attached-exec-invariant-risk-a.lisp'), and
+ @('system/tests/absstobj-attached-exec-invariant-risk-b.lisp').  A new keyword
+ for @(see signature)s, @(':')@(tsee invariant-risk), is required when
+ constraining a function in order for it to get an attachment that has
+ invariant-risk; see @(see signature).  Technical implementation note: As noted
+ by AI, it is insufficient for @('(defattach f g)') to note invariant-risk for
+ @('f'), because existing @(see program)-mode callers of @('f') will already
+ have *1* functions (see @(see evaluation)) that fail to account for
+ invariant-risk.</p>
+
+ <p>Prohibit @(see for-loop$) iteration variables from being declared
+ @('OF-TYPE') @(tsee DOUBLE-FLOAT), as in @('(loop$ for y of-type double-float
+ in x ...)').  This prohibition fixes a soundness bug, and it is reasonable
+ since you can't use recursion to iterate that way, since @(see df)s are not
+ allowed in lists.  See @(see community-book)
+ @('system/tests/for-loop-df-variables.lisp').</p>
+
+ <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
+ truncate) and related functions, due to a <a
+ href='https://github.com/Clozure/ccl/issues/733'>related CCL bug</a>, as
+ described in a comment labeled &ldquo;AI fix 1&rdquo; about CCL bug 733 in
+ ACL2 source file @('acl2.lisp').</p>
+
+ <p>(CCL only) Worked around the following CCL bugs using suggestions from AI
+ that were passed along by Stephen Westfold, who created these CCL Issues.
+ These bugs all led to unsoundness of ACL2.</p>
+
+ <ul>
+
+ <li>CCL Issue #747 (fixed in November 2026): &ldquo;(float (rationalize x) x)
+ is not x: ratio-to-float conversion is not correctly rounded&rdquo;; see
+ discussion in ACL2 source function @('df-rationalize')</li>
+
+ <li>CCL Issue #748: &ldquo;float of an integer just below 2^1024 returns
+ infinity instead of signalling floating-point-overflow&rdquo;; see &ldquo;AI
+ fix 0&rdquo; in ACL2 source file @('axioms.lisp') and @(see community-book)
+ @('system/tests/to-df-overflow-infinity-ccl-only.lisp')</li>
+
+ <li>CCL Issue #749: &ldquo;(member #c(1 2)) and (eql #c(1 2)) types contain
+ other complex numbers, such as #c(1 1)&rdquo;; see &ldquo;AI
+ fix 2&rdquo; in ACL2 source file @('acl2.lisp') and see @(see
+ community-book) @('system/tests/ccl-member-complex-type-ccl-only.lisp')</li>
+
+ <li>CCL Issue #750: &ldquo;A local function declared INLINE is replaced by a
+ global inline function of the same name&rdquo;; see &ldquo;AI fix 3&rdquo; in
+ ACL2 source file @('acl2.lisp') and see @(see community-book)
+ @('system/tests/ccl-flet-inline-global-body-ccl-only.lisp')</li>
+
+ <li>CCL Issue #751: &ldquo;With *print-escape* nil, *print-case* :downcase or
+ :capitalize doubles backslashes in symbol names&rdquo;; see &ldquo;AI fix
+ 4&rdquo; in ACL2 source file @('acl2.lisp') and @(see community-books)
+ @('system/tests/ccl-prin1-print-escape-nil-backslash.lisp') and
+ @('system/tests/princ-downcase-backslash-ccl-only.lisp')</li>
+
+ <li>CCL Issue #754: &ldquo;After a SATISFIES predicate is redefined, TYPEP
+ still uses the old definition&rdquo;; see &ldquo;AI fix
+ 5&rdquo; in ACL2 source file @('acl2.lisp') and @(see community-book)
+ @('system/tests/ccl-satisfies-type-cache-bug.lisp')</li>
+
+ <li>CCL Issue #755: &ldquo;ARM64: SBIT with a constant index above 32792 reads
+ the wrong bit, and SETF of it fails to compile at (speed 3) (safety 0)&rdquo;;
+ see &ldquo;AI fix 6&rdquo; in ACL2 source file @('acl2.lisp') and @(see
+ community-book) @('system/tests/sbit-constant-index.lisp')</li>
+
+ <li>SBCL: &ldquo;Fix char-code constraint-propagate-back&rdquo; fixed in SBCL
+ commit d325109f91 11/14/2026; see &ldquo;AI fix 7&rdquo; in ACL2 source file
+ @('acl2.lisp') and @(see community-book)
+ @('system/tests/char-code-bad-optimization.lisp')</li>
+
+ </ul>
 
  <h3>Other Bug Fixes</h3>
 
@@ -110955,8 +111111,9 @@ it."
  @('system/tests/reader-error*.*'); thanks to Eric McCarthy and AI for that
  PR.</p>
 
- <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder).
- The following example shows why.</p>
+ <p>Calls of @(tsee LD) are no longer allowed inside the @(see proof-builder),
+ except when inside a @(see wormhole) as when inside @(see break-rewrite).  The
+ following example shows why.</p>
 
  @({
  (verify (equal x x))
@@ -110968,6 +111125,25 @@ it."
  <p>Fixed a soundness bug caused by permitting @(tsee ec-call) to be used with
  a function that is locally bound by @(tsee flet).  This now causes an error.
  See @(see community-book) @('system/tests/ec-call-under-flet.lisp').</p>
+
+ <p>Fixed a scoping bug involving @(see for-loop$) expressions and @(see df)s.
+ In general, the iteration variable is not a @(see df).  However, if an
+ iteration variable shadows a variable that is a df outside the @(see
+ for-loop$) expression, then that variable should remain a df in the target of
+ that expression.  Here is an example.</p>
+
+ @({
+ (include-book \"projects/apply/top\" :dir :system)
+
+ (defun list-a-df (x)
+   (declare (xargs :dfs (x)))
+   (list (from-df x)))
+
+ ; The following is legal, but it failed in ACL2  8.7 because v was removed as
+ ; a df before (list-a-df v) was translated:
+ (let ((v (to-df 3))) ; hence v is a df
+   (loop$ for v in (list-a-df v) collect v))
+ })
 
  <h3>Changes at the System Level</h3>
 
@@ -142962,16 +143138,16 @@ work on <tt>(q x)</tt>.</p>
  and values starting with a keyword.  In this case @('((fn x1 ... xn) => val)')
  must be a legal signature as described above.  The legal keywords in @('k')
  are generally @(':GUARD') and @(':FORMALS'), but see remarks at the end of
- this topic regarding @(':GLOBAL-STOBJS') and @(':TRANSPARENT') and, for
- ACL2(r), @(':CLASSICALP').  The value following @(':FORMALS') is to be the
- list of formal parameters of @('fn'), which must be consistent with the
- parameters specified in @('(fn x1 ... xn)'): they must both specify the same
- arity (number of formal parameters) and the same @(see stobj) inputs.  The
- value following @(':GUARD') is a term that is to be the @(see guard) of
- @('fn').  Note that this guard is never actually evaluated, and is not subject
- to the guard verification performed on functions introduced by @(tsee
- defun) (see @(see verify-guards)).  Said differently: this guard need not
- itself have a guard of @('t').  Indeed, the guard is only used for
+ this topic regarding @(':GLOBAL-STOBJS') and @(':TRANSPARENT'),
+ @(':INVARIANT-RISK'), and, for ACL2(r), @(':CLASSICALP').  The value following
+ @(':FORMALS') is to be the list of formal parameters of @('fn'), which must be
+ consistent with the parameters specified in @('(fn x1 ... xn)'): they must
+ both specify the same arity (number of formal parameters) and the same @(see
+ stobj) inputs.  The value following @(':GUARD') is a term that is to be the
+ @(see guard) of @('fn').  Note that this guard is never actually evaluated,
+ and is not subject to the guard verification performed on functions introduced
+ by @(tsee defun) (see @(see verify-guards)).  Said differently: this guard
+ need not itself have a guard of @('t').  Indeed, the guard is only used for
  attachments; see @(see defattach).  Note that if @(':GUARD') is supplied, then
  @(':FORMALS') must also be supplied as a list of distinct variables that
  includes all variables occurring free in the specified guard.  One final
@@ -143021,12 +143197,14 @@ work on <tt>(q x)</tt>.</p>
  <p>As promised above, we conclude with a remark about additional keywords.
  The keyword @(':GLOBAL-STOBJS') specifies the use of the macro,
  @('with-global-stobj'), in attachments (see @(see defattach)); see @(tsee
- with-global-stobj) for explanation of this keyword.  The keyword
- @(':TRANSPARENT') specifies transparent functions; see @(see
- transparent-functions).  Finally, the keyword @(':CLASSICALP') is legal for
- ACL2(r) only (see @(see real)).  The value of this keyword must be @('t') (the
- default) or @('nil'), indicating respectively whether @('fn') is classical or
- not.</p>")
+ with-global-stobj) for explanation of this keyword.  Each of the remaining
+ keywords must be followed by a Boolean value, with the following effect when
+ that value is @('T').  The keyword @(':TRANSPARENT') specifies transparent
+ functions; see @(see transparent-functions).  The keyword @(':INVARIANT-RISK')
+ specifies that @('fn') is considered to have @(see invariant-risk), which can
+ be important for a subsequent use of @(see defattach); see @(see
+ invariant-risk).  Finally, the keyword @(':CLASSICALP') is legal for ACL2(r)
+ only (see @(see real)) and specifies that @('fn') is classical.</p>")
 
 (defxdoc signed-byte-p
   :parents (numbers acl2-built-ins)

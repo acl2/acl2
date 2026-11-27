@@ -24,10 +24,6 @@ import argparse, collections, json, os, re
 
 def known_gaps(text):
     tags = []
-    if '/**' in text or '/*!' in text:
-        tags.append('block-doc')
-    if '\r' in text and ('///' in text or '//!' in text):
-        tags.append('doc-cr')
     if any(ord(ch) > 127 for ch in text):
         tags.append('non-ascii')
     return tags

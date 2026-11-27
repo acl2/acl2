@@ -167,9 +167,6 @@
      We gathered them based on GCC extensions we encountered in practical code;
      more may need to be added.")
    (xdoc::p
-    "It is not even clear to us whether these should be actually keywords,
-     as opposed to special identifiers somehow, but we treat them as keywords.")
-   (xdoc::p
     "This list is disjoint from the C17 standard keywords.
      This list is disjoint from the C23 standard keywords,
      with the exception of the @('typeof') keyword."))
@@ -181,18 +178,14 @@
     "__attribute"
     "__attribute__"
     "__auto_type"
-    "__bf16"
     "__builtin_convertvector"
     "__builtin_offsetof"
     "__builtin_types_compatible_p"
     "__builtin_va_arg"
-    "__builtin_va_list"
     "__complex"
     "__complex__"
     "__declspec"
     "__extension__"
-    "__float80"
-    "__float128"
     "_Float16"
     "_Float32"
     "_Float32x"
@@ -204,7 +197,6 @@
     "__inline"
     "__inline__"
     "__int128"
-    "__int128_t"
     "__label__"
     "__real__"
     "__restrict"
@@ -246,9 +238,10 @@
      (xdoc::ahref
        "https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point"
        "[CLE#half-precision-floating-point]")
-     ", @('__float128'),
-      which Clang treats as a keyword in all language modes and on all targets,
-      and @('__bf16').")
+     ".")
+   (xdoc::p
+    "We also include @('__float128') and @('__bf16'),
+     which Clang treats as keywords in all language modes and on all targets.")
    (xdoc::p
     "This list is disjoint from the C17 standard keywords.
      This list is disjoint from the C23 standard keywords,
@@ -268,11 +261,12 @@
       "_Null_unspecified"
       "_Nullable"
       "_Nullable_result"
-      "__builtin_bit_cast")
+      "__builtin_bit_cast"
+      "__float128"
+      "__bf16")
     (set-difference-equal
       *keywords-gcc*
-      '("__float80"
-        "_Float32"
+      '("_Float32"
         "_Float32x"
         "_Float64"
         "_Float64x"
@@ -296,9 +290,7 @@
    (xdoc::p
     "This list is disjoint from the C17 and C23 standard keywords,
      and from the GCC and Clang additional keywords."))
-  '("__capability"
-    "__intcap_t"
-    "__uintcap_t")
+  '("__capability")
   ///
   (assert-event (string-listp *keywords-cheri*))
   (assert-event (no-duplicatesp-equal *keywords-cheri*))

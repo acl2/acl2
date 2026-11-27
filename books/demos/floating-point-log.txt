@@ -3708,6 +3708,30 @@ ACL2 !>>(ASSERT-EVENT (EQUAL (LET ((V (TO-DF 7)))
                                      (FROM-DF V)))
                              '(6 . 7)))
  :PASSED
+ACL2 !>>(DEFUN LIST-A-DF (X)
+          (DECLARE (XARGS :DFS (X)))
+          (LIST (FROM-DF X)))
+
+Since LIST-A-DF is non-recursive, its admission is trivial.  We observe
+that the type of LIST-A-DF is described by the theorem 
+(AND (CONSP (LIST-A-DF X)) (TRUE-LISTP (LIST-A-DF X))).  We used primitive
+type reasoning.
+
+(LIST-A-DF :DF) => *.
+
+Computing the guard conjecture for LIST-A-DF....
+
+The guard conjecture for LIST-A-DF is trivial to prove.  LIST-A-DF
+is compliant with Common Lisp.
+
+Summary
+Form:  ( DEFUN LIST-A-DF ...)
+Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL))
+ LIST-A-DF
+ACL2 !>>(LET ((V (TO-DF 3)))
+          (LOOP$ FOR V IN (LIST-A-DF V)
+                 COLLECT V))
+(3)
 ACL2 !>>(DEFSTOBJ ST5 (ST4A :TYPE ST4))
 
 Summary

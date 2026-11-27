@@ -13,7 +13,7 @@
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 
 (local (include-book "std/basic/controlled-configuration" :dir :system))
-(local (acl2::controlled-configuration :hooks nil))
+(local (acl2::controlled-configuration :hooks nil :type-prescription :none))
 
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
@@ -170,7 +170,8 @@
 ;; Induction schemes
 
 (defund nat-nat-logcdr-induct (n m l)
-  (declare (xargs :measure (nfix n)
+  (declare (xargs :type-prescription :none
+                  :measure (nfix n)
                   :hints (("Goal" :in-theory (enable nfix)))))
   (if (or (equal (nfix n) 0)
           (equal (nfix m) 0)
@@ -183,7 +184,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund nat-cdr-induct (n list)
-  (declare (xargs :measure (nfix n)
+  (declare (xargs :type-prescription :none
+                  :measure (nfix n)
                   :hints (("Goal" :in-theory (enable nfix)))))
   (if (or (equal (nfix n) 0)
           (not (consp list)))

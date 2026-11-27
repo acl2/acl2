@@ -153,6 +153,7 @@
  `(encapsulate
     (((interp-st-sat-check * * interp-st state)
       => (mv * interp-st state)
+      :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
       :formals (params bfr interp-st state)
       :guard (and (interp-st-bfr-p bfr)
                   (interp-st-bfrs-ok interp-st))))
@@ -332,6 +333,7 @@
 
 (encapsulate
   (((interp-st-sat-counterexample * interp-st state) => (mv * interp-st)
+    :invariant-risk t ; Matt K. mod for fix for defattach and invariant-risk after ACL2 8.7
     :formals (params interp-st state)
     :guard (interp-st-bfrs-ok interp-st)))
   (local (defun interp-st-sat-counterexample (params interp-st state)

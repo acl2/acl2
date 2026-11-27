@@ -3990,6 +3990,43 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         acl2_*1*_acl2::member-equal
         acl2_*1*_acl2::brr-data-mirror))
 
+; The next form was written by AI (including comments), for use in to-df.
+; Although AI restricted to CCL, we have applied the fix to GCL as well after
+; books/system/tests/to-df-overflow-infinity-ccl-only.lisp failed to certify.
+; It is fine to add other Lisps as needed.
+
+; <<Start AI fix 0>>
+
+#+(and (or ccl gcl) (not acl2-loop-only))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+
+(declaim (inline ccl-to-df-check))
+(defun ccl-to-df-check (f x)
+
+; CCL (at least through Version 1.14) can return an infinity, instead of
+; signaling floating-point-overflow, when converting a rational just below
+; 2^1024 in magnitude to a double-float; see
+; https://github.com/Clozure/ccl/issues/748.  For example:
+
+;   ? (float (1- (expt 2 1024)) 0d0)
+;   1D++0
+
+; Since (rational +infinity) is 2^1024 in CCL, such a result let us prove nil,
+; e.g., by evaluating (df/ 1 (to-df r)) to 0.  So we signal the overflow that
+; the conversion should have signaled, as SBCL does and as CCL itself does for
+; 2^1024 and beyond.  Here f is the result of (float x 0.0D0).
+
+  (declare (type double-float f))
+  (if (and (<= f most-positive-double-float)
+           (>= f most-negative-double-float))
+      f
+    (error 'floating-point-overflow
+           :operation 'float
+           :operands (list x 0.0D0))))
+)
+
+; <<End AI fix 0>>
+
 #-acl2-loop-only
 (defmacro to-df (x)
 
@@ -4034,16 +4071,25 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Fortunately, even though that's unfortunate, it doesn't seem to be important
 ; for our purposes.
 
+; AI discovered that CCL can return an infinite value; see
+; books/system/tests/ratio-overflow-infinity-ccl-only.lisp.  So it suggested
+; adding the #+ccl code below; see also ccl-to-df-check.
+
   (cond ((rationalp x) ; compute suitable constant at compile time
-         (float x 0.0D0))
+         #-(or ccl gcl) (float x 0.0D0)
+         #+(or ccl gcl) (ccl-to-df-check (float x 0.0D0) x))
         ((and (consp x)
               (eq (car x) 'quote)
               (consp (cdr x))
               (rationalp (cadr x))
               (null (cddr x)))
-         (float (cadr x) 0.0D0))
+         #-(or ccl gcl) (float (cadr x) 0.0D0)
+         #+(or ccl gcl) (ccl-to-df-check (float (cadr x) 0.0D0) (cadr x)))
         (t
-         `(float ,x 0.0D0))))
+         #-(or ccl gcl) `(float ,x 0.0D0)
+         #+(or ccl gcl) (let ((var (gensym "TO-DF-ARG")))
+                          `(let ((,var ,x))
+                             (ccl-to-df-check (float ,var 0.0D0) ,var))))))
 
 (defun boolean-listp (lst)
   (declare (xargs :guard t))
@@ -22862,15 +22908,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;   defabsstobj-fn1 ; called by defabsstobj-missing-events; seems safe
     maybe-add-command-landmark
     ubt-ubu-fn1
-    install-event-defuns ; calls install-event
-    defthm-fn1 ; calls install-event
-    defuns-fn0 ; calls defuns-fn1
-    ld-read-eval-print ; calls maybe-add-command-landmark
+    install-event-defuns      ; calls install-event
+    defthm-fn1                ; calls install-event
+    defuns-fn0                ; calls defuns-fn1
+    ld-read-eval-print        ; calls maybe-add-command-landmark
     ld-read-eval-print-simple ; calls maybe-add-command-landmark
-    ld-loop ; calls ld-read-eval-print
-    ld-loop-simple ; calls ld-read-eval-print-simple
-    ld-fn-body ; calls ld-loop
-    ld-fn0 ld-fn1 ; both call ld-fn-body
+    ld-loop                   ; calls ld-read-eval-print
+    ld-loop-simple            ; calls ld-read-eval-print-simple
+    ld-fn-body                ; calls ld-loop
+    ld-fn0 ld-fn1             ; both call ld-fn-body
 
 ; End of functions leading to calls of set-w
 
@@ -22925,6 +22971,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     state-from-instructions state-stack-from-instructions
     assign-event-name-and-rule-classes
     save-fn
+    ev-synp
+    ev-fncall-w-tau-recog
+    ev-respecting-ens
+    trans-eval1
+    verify-guards-fn1
+    ev-rec-return-last
+    ev-fncall-meta
+    acl2-raw-eval
+    trace$-fn-general
     ))
 
 (defconst *initial-untouchable-vars*
@@ -23087,6 +23142,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     inside-progn-fn1
     warnings-as-errors
     pc-output pc-ss-alist
+    boot-strap-flg
     ))
 
 ; There is a variety of state global variables, 'ld-skip-proofsp among them,

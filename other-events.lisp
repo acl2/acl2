@@ -3199,7 +3199,7 @@
 (defconst *signature-keywords*
   '(:GUARD
     #+non-standard-analysis :CLASSICALP
-    :STOBJS :DFS :FORMALS :GLOBAL-STOBJS :TRANSPARENT))
+    :STOBJS :DFS :FORMALS :GLOBAL-STOBJS :TRANSPARENT :INVARIANT-RISK))
 
 (defun duplicate-key-in-keyword-value-listp (l)
   (declare (xargs :guard (keyword-value-listp l)))
@@ -3451,6 +3451,8 @@
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                  kwd-value-list))))
+              (not (booleanp (cadr (assoc-keyword :INVARIANT-RISK
                                                   kwd-value-list)))))
 
 ; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
@@ -3460,13 +3462,15 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-non-standard-analysis
-                   :TRANSPARENT
-                   #+non-standard-analysis
-                   (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
-                                                           kwd-value-list))))
-                       :CLASSICALP
-                     :TRANSPARENT))
+                   (cond #+non-standard-analysis
+                         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                              kwd-value-list))))
+                          :CLASSICALP)
+                         ((not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                              kwd-value-list))))
+                          :TRANSPARENT)
+                         (t
+                          :INVARIANT-RISK)))
               nil nil nil nil nil nil))
          (t
           (let* ((formals-tail (assoc-keyword :FORMALS kwd-value-list))
@@ -3523,6 +3527,8 @@
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                  kwd-value-list))))
+              (not (booleanp (cadr (assoc-keyword :INVARIANT-RISK
                                                   kwd-value-list)))))
 
 ; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
@@ -3532,13 +3538,15 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-non-standard-analysis
-                   :TRANSPARENT
-                   #+non-standard-analysis
-                   (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
-                                                           kwd-value-list))))
-                       :CLASSICALP
-                     :TRANSPARENT))
+                   (cond #+non-standard-analysis
+                         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+                                                              kwd-value-list))))
+                          :CLASSICALP)
+                         ((not (booleanp (cadr (assoc-keyword :TRANSPARENT
+                                                              kwd-value-list))))
+                          :TRANSPARENT)
+                         (t
+                          :INVARIANT-RISK)))
               nil nil nil nil nil nil))
          (t
           (let* ((stobjs-tail (assoc-keyword :STOBJS kwd-value-list))
@@ -6208,6 +6216,21 @@
          (cons (car infectious-fns)
                (transparent-mismatch transparent (cdr infectious-fns) wrld)))))
 
+(defun put-invariant-risk-sigs (fns kwd-value-list-lst wrld)
+
+; Fns is a list of symbols in one-one correspondence with kwd-value-list-lst,
+; which is a list of keyword-value-listps for which :invariant-risk t indicates
+; that the corresponding function should be marked as having invariant-risk.
+
+  (cond ((endp fns) wrld)
+        (t (put-invariant-risk-sigs
+            (cdr fns)
+            (cdr kwd-value-list-lst)
+            (if (cadr (assoc-keyword :invariant-risk
+                                     (car kwd-value-list-lst)))
+                (putprop (car fns) 'invariant-risk (car fns) wrld)
+              wrld)))))
+
 (defun encapsulate-pass-2 (insigs kwd-value-list-lst ev-lst
                                   saved-acl2-defaults-table only-pass-p ctx
                                   state)
@@ -6527,7 +6550,18 @@
                               :DOC transparent-functions."
                              sig-fns transparent-mismatch)))
                       (t
-                       (let* ((wrld2
+                       (let* ((wrld2a (if transparent ; see comment above
+                                           (putprop (car sig-fns)
+                                                    'constrainedp
+                                                    (make transparent-rec
+                                                          :names nil)
+                                                    wrld)
+                                         wrld))
+                              (wrld2b (put-invariant-risk-sigs
+                                       sig-fns
+                                       kwd-value-list-lst
+                                       wrld2a))
+                              (wrld2
                                (putprop-constraints
                                 (car sig-fns)
                                 (remove1-eq (car sig-fns) constrained-fns)
@@ -6576,14 +6610,8 @@
                                                  (remove1 (car sig-fns)
                                                           constrained-fns))
                                          constrained-fns)
-                                       (if transparent ; see comment above
-                                           (putprop (car sig-fns)
-                                                    'constrainedp
-                                                    (make transparent-rec
-                                                          :names nil)
-                                                    wrld)
-                                         wrld))))
-                                  wrld)))
+                                       wrld2b)))
+                                  wrld2b)))
                               (state (set-w 'extension wrld2 state))
                               (bogus-exported-compliants
                                (bogus-exported-compliants
@@ -31077,6 +31105,14 @@
                               ~x1~@2, because the two functions were ~
                               introduced in the same event.~@3"
                              g f unless-ttag see-doc))
+                        ((and (getpropc g 'invariant-risk nil wrld)
+                              (not (getpropc f 'invariant-risk nil wrld)))
+                         (er soft ctx
+                             "The function ~x0 is an illegal attachment for ~
+                              ~x1, because ~x0 has invariant-risk but ~x1 was ~
+                              not introduced with a specification of ~
+                              :INVARIANT-RISK T.  See :DOC invariant-risk."
+                             g f))
                         (t
                          (process-defattach-args1
                           (cdr args) ctx wrld state

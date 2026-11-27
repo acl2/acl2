@@ -697,10 +697,69 @@ __int128 __signed__ z;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
+;; Built-in typedef names.
+;; They are declared in the file scope,
+;; where they may be redefined compatibly as typedef names,
+;; and they may be redeclared in inner scopes.
+
+(test-valid
+ "typedef __int128 __int128_t;
+__int128_t x;
+__uint128_t y;
+__builtin_va_list v;
+__builtin_ms_va_list m;
+__builtin_sysv_va_list s;
+__float80 a;
+__float128 b;
+__bf16 c;
+long f(long z) {
+  return (__int128_t) z + (__uint128_t) z;
+}
+void g(void) {
+  int __int128_t = 1;
+  int __float128 = __int128_t;
+}
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
 (test-valid
  "__int128_t x;
-__int128 y;
-unsigned __int128_t z;
+__uint128_t y;
+__builtin_va_list v;
+__builtin_ms_va_list m;
+__NSConstantString n;
+_Complex __float128 c;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid
+ "__intcap_t x;
+__uintcap_t y;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t :cheri t))
+
+(test-valid-fail
+ "__float80 a;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+ "__intcap_t x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :clang t))
+
+(test-valid-fail
+ "unsigned __int128_t x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "_Complex __float128 x;
+"
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
+
+(test-valid-fail
+ "int __int128_t;
 "
  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
@@ -2413,8 +2472,8 @@ flt f(int x) {
  :cond (b* ((externals (trans-ensemble-vinfo->externals
                         (trans-ensemble->info ast))))
          (and (equal (omap::size (trans-ensemble->units ast)) 2)
-              (treemap::lookup (ident "a") externals)
-              (treemap::lookup (ident "b") externals))))
+              (tmap::lookup (ident "a") externals)
+              (tmap::lookup (ident "b") externals))))
 
 ;; Both operands of a conditional expression may have void type [C17:6.5.15/3].
 (test-valid

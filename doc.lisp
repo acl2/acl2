@@ -25642,6 +25642,17 @@ Miscellaneous Remarks, with discussion of possible user errors.
   relevant documentation see [with-global-stobj], specifically the
   section on ``Constrained Functions and Defattach''.
 
+  The notion of [invariant-risk] must be preserved through attachments.
+  Enforcement of this requirement can produce the following error
+  message.
+
+    ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+    for F, because G has invariant-risk but F was not introduced with a
+    specification of :INVARIANT-RISK T.  See :DOC defattach.
+
+  See [invariant-risk] for how the use of [30m[47m:invariant-risk t[0m[0m in a
+  function's [signature] can avoid this error.
+
   We conclude with an example promised above, showing why it is
   necessary in general to unattach all function symbols in an
   existing attachment nest when unattaching any one of those function
@@ -40431,10 +40442,15 @@ Subtopics
   be allowed if and only if it is allowed in the current rewriting
   environment; see [force].  A value of [30m[47mt[0m[0m or [30m[47mnil[0m[0m for [30m[47m:forcep[0m[0m
   overrides this default and allows or disallows forcing,
-  respectively.  By default these functions return a single value,
-  [30m[47mval[0m[0m, but if [30m[47m:ttreep[0m[0m is [30m[47mt[0m[0m then they return [30m[47m(mv val ttree)[0m[0m, where
-  [30m[47mttree[0m[0m is the tag-tree (see [ttree]) returned by the indicated
-  operation, with an input tag-tree of [30m[47mnil[0m[0m).
+  respectively.  When [30m[47m:forcep[0m[0m is [30m[47mnil[0m[0m and no tag-tree is returned, a
+  result that depends on hypotheses forced earlier (for example, by
+  [forward-chaining]) is replaced by a trivial one: no type
+  information for [30m[47mmfc-ts[0m[0m, the (instantiated) input term for [30m[47mmfc-rw[0m[0m
+  and [30m[47mmfc-rw+[0m[0m, and [30m[47mnil[0m[0m for [30m[47mmfc-ap[0m[0m and [30m[47mmfc-relieve-hyp[0m[0m.  By default
+  these functions return a single value, [30m[47mval[0m[0m, but if [30m[47m:ttreep[0m[0m is [30m[47mt[0m[0m
+  then they return [30m[47m(mv val ttree)[0m[0m, where [30m[47mttree[0m[0m is the tag-tree (see
+  [ttree]) returned by the indicated operation, with an input
+  tag-tree of [30m[47mnil[0m[0m).
 
   During the execution of a metafunction by the theorem prover, the
   expressions above compute the results specified.  Typically, you
@@ -63264,6 +63280,34 @@ Eliminating invariant-risk checking done by specific functions
   [30m[47m[set-check-invariant-risk][0m[0m, it is probably much safer to remove it
   only for the functions in a given book or [30m[47m[encapsulate][0m[0m event.  See
   [set-register-invariant-risk] for how to do that.
+
+
+Interaction with Attachments
+
+  When you invoke [30m[47m[defattach][0m[0m, say, [30m[47m(defattach f g)[0m[0m, you might see the
+  following error.
+
+    ACL2 Error in ( DEFATTACH F G):  The function G is an illegal attachment
+    for F, because G has invariant-risk but F was not introduced with a
+    specification of :INVARIANT-RISK T.  See :DOC invariant-risk.
+
+  The workaround is to specify [30m[47m:invariant-risk t[0m[0m in the [30m[47m[encapsulate][0m[0m
+  event that introduces [30m[47mf[0m[0m, specifically, in the signature for [30m[47mf[0m[0m; see
+  [signature].  For example:
+
+    (encapsulate
+      (((f * st) => st :invariant-risk t ...))
+      (local (defun f (v st) ...)))
+
+  The [30m[47mdefattach[0m[0m example above illustrates the case that the proposed
+  attachment [30m[47mg[0m[0m has [invariant-risk], for example because it updates a
+  [stobj] field that has a non-trival type; see [invariant-risk].
+  The concern is that a [program]-mode function call will lead to an
+  ill-[guard]ed call of [30m[47mf[0m[0m that leads to an ill-guarded call of [30m[47mg[0m[0m that
+  violates an invariant.  When the signature of a function symbol [30m[47mf[0m[0m
+  includes [30m[47m:invariant-risk t[0m[0m, ACL2 makes a note that [30m[47mf[0m[0m has
+  invariant-risk, which allows [30m[47mf[0m[0m to receive an attachment that has
+  invariant-risk ([30m[47mg[0m[0m, in our example).
 
 
 Subtopics
@@ -107355,6 +107399,20 @@ Bug Fixes From AI via Eric Smith
   set of governing IF-tests.)  For an example, see [community-book]
   [30m[47msystem/tests/proof-builder-assumptions-contradiction.lisp[0m[0m.
 
+  Fixed a soundness bug in the use of [meta-extract] hypotheses, which
+  trusted results of [30m[47m[mfc-ts][0m[0m, [30m[47m[mfc-rw][0m[0m, [30m[47m[mfc-rw+][0m[0m,
+  [30m[47m[mfc-relieve-hyp][0m[0m, and [30m[47m[mfc-ap][0m[0m that could depend on [force]d
+  hypotheses (for example, from [forward-chaining] rules) that were
+  never proved.  Now those functions avoid such results when called
+  with [30m[47m:forcep nil[0m[0m.  For an example, see [community-book]
+  [30m[47msystem/tests/meta-extract-forced-context.lisp[0m[0m.  Note: The fixes
+  were vetted by an ACL2 maintainer but were made entirely by AI
+  (including this release note before the present sentence, and
+  including updating the documentation for [extended-metafunctions]),
+  the only change being to convert the new function [30m[47mmfc-forced-ttreep[0m[0m
+  from a raw Lisp function to a [program]-mode function (without
+  changing its [30m[47mdefun[0m[0m form).
+
   Fixed a soundness bug by adding the following restriction on
   [30m[47m[stobj-let][0m[0m forms: the parent [stobj] must not belong to the list
   of producer variables.  For a relevant example, see
@@ -107642,8 +107700,8 @@ Bug Fixes From AI via Eric Smith
   [30m[47msystem/tests/cl-cache-full-ring-hang-loop.lisp[0m[0m and
   [30m[47msystem/tests/cl-cache-invalidation-semantics.lisp[0m[0m.
 
-  The termination analysis for some instances of [30m[47m[loop$-recursion][0m[0m was
-  faulty as demonstrated in the [community-books]
+  Termination analysis involving [30m[47m[loop$][0m[0m was sometimes faulty, as
+  demonstrated in the [community-books]
   [30m[47msystem/tests/loop-in-let-double-subst-rejects-valid-defun.lisp[0m[0m,
   [30m[47msystem/tests/loop-recursion-double-subst-clause-processor.lisp[0m[0m,
   [30m[47msystem/tests/loop-recursion-plain-target-subst.lisp[0m[0m, and
@@ -107719,6 +107777,124 @@ Bug Fixes From AI via Eric Smith
   system function [30m[47mwarrant-function-namep[0m[0m).  See [community-books]
   [30m[47msystem/tests/fake-warrant-defpkg.lisp[0m[0m and
   [30m[47msystem/tests/fake-warrant-name-import.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a proof of [30m[47mnil[0m[0m manifested when a
+  singleton tau interval is derived that includes one of the
+  constants known not to be in the tau.  See [community-books]
+  [30m[47msystem/tests/tau-singleton-ignores-neg-evgs-signature.lisp[0m[0m and
+  [30m[47msystem/tests/tau-singleton-ignores-neg-evgs.lisp[0m[0m.
+
+  Fixed a [tau] bug leading to a proof of [30m[47mnil[0m[0m manifested when [30m[47m(booleanp
+  (not x))[0m[0m is proved as rule, tricking tau into classifying [30m[47mnot[0m[0m as a
+  tau predicate instead of only treating it as negation. See
+  [community-book] [30m[47msystem/tests/tau-not-recognizer-conjunctive.lisp[0m[0m.
+
+  Fixed a soundness bug in the implementation of [30m[47m[apply$][0m[0m for [badge]d
+  functions applied to the wrong number of arguments.  The original
+  implementation failed to check that the list of arguments was a
+  [30m[47m[true-listp][0m[0m.  See [community-book]
+  [30m[47msystem/tests/apply-string-args-take.lisp[0m[0m.
+
+  Fixed a soundness bug in [30m[47m[defwarrant][0m[0m allowing it to issue a warrant
+  for some functions calling constrained functions whose constraints
+  depend on [30m[47m[apply$][0m[0m.  See [community-books]
+  [30m[47msystem/tests/apply-equivalence-witness-g1-warrant.lisp[0m[0m and
+  [30m[47msystem/tests/defwarrant-constrained-callee.lisp[0m[0m.
+
+  Added several function symbols, generally related to evaluation, to
+  the list of built-in untouchable function symbols
+  ([30m[47m*initial-untouchable-fns*[0m[0m), and added [30m[47mboot-strap-flg[0m[0m to the list
+  of built-in state global variable symbols
+  ([30m[47m*initial-untouchable-vars*[0m[0m).  This fixes several unsound
+  behaviors.  See [community-books] directory
+  [30m[47msystem/tests/untouchables/[0m[0m.
+
+  Fixed a bug in the maintenance of the compiled lambda cache related
+  to undoing.  By using a quoted lambda containing an undefined
+  function it was possible to produce a cache line with [30m[47m:status
+  :GOOD) even if the lambda mentioned an undefined function.  This
+  was caused the lambda is applied (and guard verified) while the
+  undefined function is being defined.  In that case, the lambda was
+  assigned an @(':abs-event-no[0m[0m that was lower than that of the newly
+  defined function, so that when the function is undone, the cache
+  line remained marked [30m[47m:status :GOOD[0m[0m.  Now, retraction of the world
+  marks every cache line as [30m[47m:status :UNKNOWN[0m[0m and lines will be
+  re-validated if and when their lambdas are applied.  See
+  [community-books]
+  [30m[47msystem/tests/cl-cache-failed-defun-good-line.lisp[0m[0m,
+  [30m[47msystem/tests/cl-cache-local-defun-good-line.lisp[0m[0m, and
+  [30m[47msystem/tests/cl-cache-make-event-expansion-good-line.lisp[0m[0m.
+
+  Fixed a soundness bug due to a failure to track [invariant-risk]
+  after the use of [30m[47m[defattach][0m[0m.  See [community-books]
+  [30m[47msystem/tests/defattach-invariant-risk.lisp[0m[0m,
+  [30m[47msystem/tests/absstobj-attached-exec-invariant-risk-a.lisp[0m[0m, and
+  [30m[47msystem/tests/absstobj-attached-exec-invariant-risk-b.lisp[0m[0m.  A new
+  keyword for [signature]s, [30m[47m:[0m[0m[30m[47m[invariant-risk][0m[0m, is required when
+  constraining a function in order for it to get an attachment that
+  has invariant-risk; see [signature].  Technical implementation
+  note: As noted by AI, it is insufficient for [30m[47m(defattach f g)[0m[0m to
+  note invariant-risk for [30m[47mf[0m[0m, because existing [program]-mode callers
+  of [30m[47mf[0m[0m will already have *1* functions (see [evaluation]) that fail
+  to account for invariant-risk.
+
+  Prohibit [for-loop$] iteration variables from being declared [30m[47mOF-TYPE[0m[0m
+  [30m[47m[double-float][0m[0m, as in [30m[47m(loop$ for y of-type double-float in x ...)[0m[0m.
+  This prohibition fixes a soundness bug, and it is reasonable since
+  you can't use recursion to iterate that way, since [df]s are not
+  allowed in lists.  See [community-book]
+  [30m[47msystem/tests/for-loop-df-variables.lisp[0m[0m.
+
+  (CCL only) Added a workaround from AI for unsoundnesss involving
+  [30m[47m[truncate][0m[0m and related functions, due to a {related CCL bug |
+  https://github.com/Clozure/ccl/issues/733}, as described in a
+  comment labeled ``AI fix 1'' about CCL bug 733 in ACL2 source file
+  [30m[47macl2.lisp[0m[0m.
+
+  (CCL only) Worked around the following CCL bugs using suggestions
+  from AI that were passed along by Stephen Westfold, who created
+  these CCL Issues.  These bugs all led to unsoundness of ACL2.
+
+    * CCL Issue #747 (fixed in November 2026): ``(float (rationalize x) x)
+      is not x: ratio-to-float conversion is not correctly rounded'';
+      see discussion in ACL2 source function [30m[47mdf-rationalize[0m[0m
+
+    * CCL Issue #748: ``float of an integer just below 2^1024 returns
+      infinity instead of signalling floating-point-overflow''; see
+      ``AI fix 0'' in ACL2 source file [30m[47maxioms.lisp[0m[0m and
+      [community-book]
+      [30m[47msystem/tests/to-df-overflow-infinity-ccl-only.lisp[0m[0m
+
+    * CCL Issue #749: ``(member #c(1 2)) and (eql #c(1 2)) types contain
+      other complex numbers, such as #c(1 1)''; see ``AI fix 2'' in
+      ACL2 source file [30m[47macl2.lisp[0m[0m and see [community-book]
+      [30m[47msystem/tests/ccl-member-complex-type-ccl-only.lisp[0m[0m
+
+    * CCL Issue #750: ``A local function declared INLINE is replaced by a
+      global inline function of the same name''; see ``AI fix 3'' in
+      ACL2 source file [30m[47macl2.lisp[0m[0m and see [community-book]
+      [30m[47msystem/tests/ccl-flet-inline-global-body-ccl-only.lisp[0m[0m
+
+    * CCL Issue #751: ``With *print-escape* nil, *print-case* :downcase or
+      :capitalize doubles backslashes in symbol names''; see ``AI fix
+      4'' in ACL2 source file [30m[47macl2.lisp[0m[0m and [community-books]
+      [30m[47msystem/tests/ccl-prin1-print-escape-nil-backslash.lisp[0m[0m and
+      [30m[47msystem/tests/princ-downcase-backslash-ccl-only.lisp[0m[0m
+
+    * CCL Issue #754: ``After a SATISFIES predicate is redefined, TYPEP
+      still uses the old definition''; see ``AI fix 5'' in ACL2
+      source file [30m[47macl2.lisp[0m[0m and [community-book]
+      [30m[47msystem/tests/ccl-satisfies-type-cache-bug.lisp[0m[0m
+
+    * CCL Issue #755: ``ARM64: SBIT with a constant index above 32792 reads
+      the wrong bit, and SETF of it fails to compile at (speed 3)
+      (safety 0)''; see ``AI fix 6'' in ACL2 source file [30m[47macl2.lisp[0m[0m
+      and [community-book] [30m[47msystem/tests/sbit-constant-index.lisp[0m[0m
+
+    * SBCL: ``Fix char-code constraint-propagate-back'' fixed in SBCL
+      commit d325109f91 11/14/2026; see ``AI fix 7'' in ACL2 source
+      file [30m[47macl2.lisp[0m[0m and [community-book]
+      [30m[47msystem/tests/char-code-bad-optimization.lisp[0m[0m
 
 
 Other Bug Fixes
@@ -107820,8 +107996,9 @@ Other Bug Fixes
   [community-books] [30m[47msystem/tests/reader-error*.*[0m[0m; thanks to Eric
   McCarthy and AI for that PR.
 
-  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder].  The
-  following example shows why.
+  Calls of [30m[47m[ld][0m[0m are no longer allowed inside the [proof-builder],
+  except when inside a [wormhole] as when inside [break-rewrite].
+  The following example shows why.
 
     (verify (equal x x))
     (lisp (ld *standard-oi*)) ;or (lisp (ld '((defun h (x) x)))), both now illegal
@@ -107831,6 +108008,23 @@ Other Bug Fixes
   Fixed a soundness bug caused by permitting [30m[47m[ec-call][0m[0m to be used with
   a function that is locally bound by [30m[47m[flet][0m[0m.  This now causes an
   error.  See [community-book] [30m[47msystem/tests/ec-call-under-flet.lisp[0m[0m.
+
+  Fixed a scoping bug involving [for-loop$] expressions and [df]s.  In
+  general, the iteration variable is not a [df].  However, if an
+  iteration variable shadows a variable that is a df outside the
+  [for-loop$] expression, then that variable should remain a df in
+  the target of that expression.  Here is an example.
+
+    (include-book \"projects/apply/top\" :dir :system)
+
+    (defun list-a-df (x)
+      (declare (xargs :dfs (x)))
+      (list (from-df x)))
+
+    ; The following is legal, but it failed in ACL2  8.7 because v was removed as
+    ; a df before (list-a-df v) was translated:
+    (let ((v (to-df 3))) ; hence v is a df
+      (loop$ for v in (list-a-df v) collect v))
 
 
 Changes at the System Level
@@ -142351,21 +142545,22 @@ Extended Example
   values starting with a keyword.  In this case [30m[47m((fn x1 ... xn) =>
   val)[0m[0m must be a legal signature as described above.  The legal
   keywords in [30m[47mk[0m[0m are generally [30m[47m:GUARD[0m[0m and [30m[47m:FORMALS[0m[0m, but see remarks at
-  the end of this topic regarding [30m[47m:GLOBAL-STOBJS[0m[0m and [30m[47m:TRANSPARENT[0m[0m
-  and, for ACL2(r), [30m[47m:CLASSICALP[0m[0m.  The value following [30m[47m:FORMALS[0m[0m is to
-  be the list of formal parameters of [30m[47mfn[0m[0m, which must be consistent
-  with the parameters specified in [30m[47m(fn x1 ... xn)[0m[0m: they must both
-  specify the same arity (number of formal parameters) and the same
-  [stobj] inputs.  The value following [30m[47m:GUARD[0m[0m is a term that is to be
-  the [guard] of [30m[47mfn[0m[0m.  Note that this guard is never actually
-  evaluated, and is not subject to the guard verification performed
-  on functions introduced by [30m[47m[defun][0m[0m (see [verify-guards]).  Said
-  differently: this guard need not itself have a guard of [30m[47mt[0m[0m.  Indeed,
-  the guard is only used for attachments; see [defattach].  Note that
-  if [30m[47m:GUARD[0m[0m is supplied, then [30m[47m:FORMALS[0m[0m must also be supplied as a
-  list of distinct variables that includes all variables occurring
-  free in the specified guard.  One final observation about guards:
-  if the [30m[47m:GUARD[0m[0m keyword is omitted, then the guard defaults to [30m[47mT[0m[0m.
+  the end of this topic regarding [30m[47m:GLOBAL-STOBJS[0m[0m and [30m[47m:TRANSPARENT[0m[0m,
+  [30m[47m:INVARIANT-RISK[0m[0m, and, for ACL2(r), [30m[47m:CLASSICALP[0m[0m.  The value
+  following [30m[47m:FORMALS[0m[0m is to be the list of formal parameters of [30m[47mfn[0m[0m,
+  which must be consistent with the parameters specified in [30m[47m(fn x1
+  ... xn)[0m[0m: they must both specify the same arity (number of formal
+  parameters) and the same [stobj] inputs.  The value following
+  [30m[47m:GUARD[0m[0m is a term that is to be the [guard] of [30m[47mfn[0m[0m.  Note that this
+  guard is never actually evaluated, and is not subject to the guard
+  verification performed on functions introduced by [30m[47m[defun][0m[0m (see
+  [verify-guards]).  Said differently: this guard need not itself
+  have a guard of [30m[47mt[0m[0m.  Indeed, the guard is only used for attachments;
+  see [defattach].  Note that if [30m[47m:GUARD[0m[0m is supplied, then [30m[47m:FORMALS[0m[0m
+  must also be supplied as a list of distinct variables that includes
+  all variables occurring free in the specified guard.  One final
+  observation about guards: if the [30m[47m:GUARD[0m[0m keyword is omitted, then
+  the guard defaults to [30m[47mT[0m[0m.
 
   Before ACL2 supported user-declared single-threaded objects there was
   only one single-threaded object: ACL2's built-in notion of [30m[47m[state][0m[0m.
@@ -142407,12 +142602,15 @@ Extended Example
   As promised above, we conclude with a remark about additional
   keywords.  The keyword [30m[47m:GLOBAL-STOBJS[0m[0m specifies the use of the
   macro, [30m[47mwith-global-stobj[0m[0m, in attachments (see [defattach]); see
-  [30m[47m[with-global-stobj][0m[0m for explanation of this keyword.  The keyword
-  [30m[47m:TRANSPARENT[0m[0m specifies transparent functions; see
-  [transparent-functions].  Finally, the keyword [30m[47m:CLASSICALP[0m[0m is legal
-  for ACL2(r) only (see [real]).  The value of this keyword must be [30m[47mt[0m[0m
-  (the default) or [30m[47mnil[0m[0m, indicating respectively whether [30m[47mfn[0m[0m is
-  classical or not.")
+  [30m[47m[with-global-stobj][0m[0m for explanation of this keyword.  Each of the
+  remaining keywords must be followed by a Boolean value, with the
+  following effect when that value is [30m[47mT[0m[0m.  The keyword [30m[47m:TRANSPARENT[0m[0m
+  specifies transparent functions; see [transparent-functions].  The
+  keyword [30m[47m:INVARIANT-RISK[0m[0m specifies that [30m[47mfn[0m[0m is considered to have
+  [invariant-risk], which can be important for a subsequent use of
+  [defattach]; see [invariant-risk].  Finally, the keyword
+  [30m[47m:CLASSICALP[0m[0m is legal for ACL2(r) only (see [real]) and specifies
+  that [30m[47mfn[0m[0m is classical.")
  (SIGNED-BYTE-P
   (NUMBERS ACL2-BUILT-INS)
   "Recognizer for signed integers that fit in a specified bit width

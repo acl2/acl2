@@ -11,15 +11,19 @@
 (in-package "RUST$")
 
 (include-book "../../tokenizer")
+(include-book "../../token-tree-builder")
 (include-book "../../extra-grammatical-restrictions")
+(include-book "../../source-units")
 
 (include-book "kestrel/file-io-light/read-objects-from-file" :dir :system)
 (include-book "kestrel/file-io-light/write-objects-to-file" :dir :system)
 
-; The ACL2 side of the differential tests of the lexer and tokenizer
+; The ACL2 side of the differential tests of the input layer, the lexer,
+; the tokenizer, and the token-tree builder
 ; (see the xdoc topic differential-testing, and README.md in this directory).
-; Each entry point reads a file of test inputs written by to_acl2.py,
-; runs the lexer and tokenizer on each input,
+; Each entry point reads a file of test inputs
+; written by to_acl2.py or by input_format.py,
+; runs the front end on each input,
 ; and writes a file of results, or returns a summary,
 ; for the comparison scripts in this directory.
 ; The functions are not in the manual (:parents nil):
@@ -27,7 +31,11 @@
 
 (local (in-theory (enable abnf::tree-listp-when-result-not-error
                           lexemep-when-result-not-error
-                          token+span-listp-when-result-not-error)))
+                          token+span-listp-when-result-not-error
+                          lexeme+span-listp-when-result-not-error
+                          token-tree-listp-when-result-not-error
+                          source-textp-when-result-not-error
+                          source-unitp-when-result-not-error)))
 
 (defrulel nat-listp-of-nthcdr
   (implies (nat-listp x)
@@ -86,80 +94,115 @@
         (acl2::write-objects-to-file results fname 'rv-write state)))
     state))
 
+; The code points of a test of to_acl2.py are those of a piece of a file,
+; as written.  rustc reads the file with the input layer's steps,
+; of which CRLF normalization applies to a piece that is not at the start.
+
+(define rv-normalize ((nats nat-listp))
+  :returns (new-nats nat-listp)
+  :parents nil
+  (b* (((mv new-nats &) (normalize-crlf nats)))
+    new-nats))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Counting tokens as the macros of run_rustc.py do.
+; Counting token trees as the macros of run_rustc.py do.
 ; rustc turns an outer doc comment into the tokens of #[doc = "..."]
 ; and an inner one into those of #![doc = "..."].
 
-; A count is a number, or :unbal if the delimiters do not match
-; (rustc rejects those inputs while it builds token trees).
-
-(define rv-countp (x)
-  :returns (yes/no booleanp)
-  :parents nil
-  (or (natp x)
-      (eq x :unbal)))
-
 ; Number of top-level token trees.
 
-(define rv-tt-count ((tokens token+span-listp) (stack true-listp) (acc natp))
-  :returns (count rv-countp
-                  :hyp (natp acc)
-                  :hints (("Goal" :in-theory (enable rv-countp))))
+(define rv-tt-count ((trees token-tree-listp) (acc natp))
+  :returns (count natp :hyp (natp acc))
   :parents nil
-  (b* (((when (endp tokens)) (if (endp stack) acc :unbal))
-       (tok (token+span->token (car tokens)))
-       (top (endp stack)))
-    (token-case
-     tok
-     :open-delim (rv-tt-count (cdr tokens)
-                              (cons tok.delim stack)
-                              (if top (1+ acc) acc))
-     :close-delim (if (and (consp stack) (equal (car stack) tok.delim))
-                      (rv-tt-count (cdr tokens) (cdr stack) acc)
-                    :unbal)
-     :doc-comment (rv-tt-count
-                   (cdr tokens)
-                   stack
-                   (if top
-                       (+ acc (if (equal tok.style (doc-style-outer)) 2 3))
-                     acc))
-     :otherwise (rv-tt-count (cdr tokens) stack (if top (1+ acc) acc)))))
+  (b* (((when (endp trees)) acc)
+       (tree (car trees))
+       (n (token-tree-case
+           tree
+           :leaf (b* ((tok (token+span->token tree.token)))
+                   (token-case
+                    tok
+                    :doc-comment (if (equal tok.style (doc-style-outer)) 2 3)
+                    :otherwise 1))
+           :delimited 1)))
+    (rv-tt-count (cdr trees) (+ acc n))))
 
 ; Number of tokens at all depths, a delimited group counting as one
-; plus its contents (the --deep count of run_rustc.py).
+; plus its contents (the --deep count of run_rustc.py):
+; that is every token but the closing delimiters.
+; This is for tokens that the token-tree builder accepts.
 
-(define rv-deep-count ((tokens token+span-listp) (stack true-listp) (acc natp))
-  :returns (count rv-countp
-                  :hyp (natp acc)
-                  :hints (("Goal" :in-theory (enable rv-countp))))
+(define rv-deep-count ((tokens token+span-listp) (acc natp))
+  :returns (count natp :hyp (natp acc))
   :parents nil
-  (b* (((when (endp tokens)) (if (endp stack) acc :unbal))
-       (tok (token+span->token (car tokens))))
-    (token-case
-     tok
-     :open-delim (rv-deep-count (cdr tokens) (cons tok.delim stack) (1+ acc))
-     :close-delim (if (and (consp stack) (equal (car stack) tok.delim))
-                      (rv-deep-count (cdr tokens) (cdr stack) acc)
-                    :unbal)
-     :doc-comment (rv-deep-count
-                   (cdr tokens)
-                   stack
-                   (+ acc (if (equal tok.style (doc-style-outer)) 5 6)))
-     :otherwise (rv-deep-count (cdr tokens) stack (1+ acc)))))
+  (b* (((when (endp tokens)) acc)
+       (tok (token+span->token (car tokens)))
+       (n (token-case
+           tok
+           :close-delim 0
+           :doc-comment (if (equal tok.style (doc-style-outer)) 5 6)
+           :otherwise 1)))
+    (rv-deep-count (cdr tokens) (+ acc n))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The probe of run_rustc.py puts each input between the parentheses
+; of a macro invocation.  So rustc builds token trees from
+; the opening parenthesis, the tokens of the input,
+; and the closing parenthesis
+; (the rest of the probe's file is balanced, and does not affect
+; whether there is an error about delimiters, or which is the first).
+; We give the token-tree builder the same tokens.
+
+(define rv-probe-tokens ((tokens token+span-listp))
+  :returns (probe-tokens token+span-listp)
+  :parents nil
+  (cons (make-token+span :token (token-open-delim (delim-paren))
+                         :span (irr-span))
+        (append (token+span-list-fix tokens)
+                (list (make-token+span :token (token-close-delim (delim-paren))
+                                       :span (irr-span))))))
+
+; The kind of an error of the token-tree builder, named after
+; rustc's three errors about delimiters.
+
+(define rv-delim-error ((err reserrp))
+  :parents nil
+  (b* ((info (fty::reserr->info err))
+       (frame (and (consp info) (car info)))
+       (payload (and (consp frame) (consp (cdr frame)) (cadr frame)))
+       (kind (and (consp payload) (car payload))))
+    (case kind
+      (:mismatched-closing-delimiter :mismatched)
+      (:unclosed-delimiter :unclosed)
+      (:unexpected-closing-delimiter :unexpected)
+      (t :other))))
+
 ; Short inputs: (rv-go in out edition state) writes, for each test,
-; ("id" n) with the number of top-level token trees, ("id" :err) if
-; the lexer or tokenizer rejects the input, or ("id" :unbal).
+; ("id" x), where x is one of the following.
+; - :err if the lexer or tokenizer rejects the input.
+; - :mismatched, :unclosed, or :unexpected if the token-tree builder
+;   rejects the probe's tokens, with that kind of error.
+; - :split if the builder accepts the probe's tokens,
+;   but the input closes the probe's parenthesis before its end,
+;   as ") (" does: the input is not the arguments of the macro,
+;   and there is nothing to count
+;   (rustc builds the token trees, and reports an error later).
+; - Otherwise, the number of top-level token trees of the input.
 ; It returns the number of tests.
 
 (define rv-run1 ((nats nat-listp) (edition rust::editionp))
   :parents nil
-  (b* ((toks (tokenize-rust nats edition "t")))
-    (if (reserrp toks) :err (rv-tt-count toks nil 0))))
+  (b* ((nats (rv-normalize nats))
+       (toks (tokenize-rust nats edition))
+       ((when (reserrp toks)) :err)
+       (trees (build-token-trees (rv-probe-tokens toks)))
+       ((when (reserrp trees)) (rv-delim-error trees))
+       ((unless (and (consp trees) (not (consp (cdr trees))))) :split)
+       (tree (car trees)))
+    (token-tree-case tree
+                     :leaf :split
+                     :delimited (rv-tt-count tree.trees 0))))
 
 (define rv-run ((tests rv-test-listp) (edition rust::editionp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -180,51 +223,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Edition 2024 with a stand-in for the reserved guards, which the
-; tokenizer does not implement yet: reject a "#" lexeme immediately
-; followed by a lexeme that starts with "#" or a double quote.
-; (rv-go-2024-guard in out state) is rv-go for edition 2024 plus this
-; rule; it becomes redundant once the tokenizer has the rule.
-
-(define rv-guard-flag ((trees abnf::tree-listp))
-  :returns (yes/no booleanp)
-  :parents nil
-  (cond ((or (endp trees) (endp (cdr trees))) nil)
-        ((and (equal (abnf::tree->string (car trees)) '(35))
-              (b* ((next (abnf::tree->string (cadr trees))))
-                (and (consp next)
-                     (or (equal (car next) 35)
-                         (equal (car next) 34)))))
-         t)
-        (t (rv-guard-flag (cdr trees)))))
-
-(define rv-run1-2024-guard ((nats nat-listp))
-  :parents nil
-  (b* ((trees (lexemize-rust nats))
-       ((when (reserrp trees)) :err)
-       ((when (rv-guard-flag trees)) :err))
-    (rv-run1 nats (rust::edition-2024))))
-
-(define rv-run-2024-guard ((tests rv-test-listp) (acc true-listp))
-  :returns (results true-listp :hyp (true-listp acc))
-  :parents nil
-  (if (endp tests)
-      (revappend acc nil)
-    (rv-run-2024-guard (cdr tests)
-                       (cons (list (caar tests)
-                                   (rv-run1-2024-guard (cdar tests)))
-                             acc)))
-  :guard-hints (("Goal" :in-theory (enable rv-testp))))
-
-(define rv-go-2024-guard ((in stringp) (out stringp) state)
-  :returns (mv (n natp) state)
-  :parents nil
-  (b* (((mv tests state) (rv-read-tests in state))
-       (state (rv-write (rv-run-2024-guard tests nil) out state)))
-    (mv (len tests) state)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Whole files: (rv-go-files in out state) writes, for each file,
 ; ("id" n) with the deep token count, ("id" :unbal),
 ; ("id" (:tokerr)) if only the tokenizer rejects the file, or
@@ -234,15 +232,17 @@
 
 (define rv-file1 ((nats nat-listp))
   :parents nil
-  (b* (((mv & rest) (lex-*-lexeme nats))
+  (b* ((nats (rv-normalize nats))
+       ((mv & rest) (lex-*-lexeme nats))
        ((when (consp rest))
         (b* ((pos (nfix (- (len nats) (len rest)))))
           (list :lexerr
                 (take (min 20 pos) (nthcdr (nfix (- pos 20)) nats))
                 (take (min 30 (len rest)) rest))))
-       (toks (tokenize-rust nats (rust::edition-2021) "t"))
-       ((when (reserrp toks)) (list :tokerr)))
-    (rv-deep-count toks nil 0)))
+       (toks (tokenize-rust nats (rust::edition-2021)))
+       ((when (reserrp toks)) (list :tokerr))
+       ((when (reserrp (build-token-trees toks))) :unbal))
+    (rv-deep-count toks 0)))
 
 (define rv-files ((tests rv-test-listp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -275,6 +275,8 @@
       (b* ((tree (car trees))
            (rest (nthcdr (len (abnf::tree->string tree)) input)))
         (and (lexeme-cst-okp tree)
+             (lexeme-cst-doc-comment-cr-okp tree)
+             (lexeme-cst-unicode-escapes-okp tree)
              (lexeme-cst-float-period-okp tree rest)
              (lexeme-cst-reserved-number-okp tree rest)
              (lexeme-cst-reserved-prefix-okp tree rest)
@@ -288,7 +290,7 @@
   :parents nil
   (if (endp tests)
       (mv n (revappend bad nil))
-    (b* ((nats (cdar tests))
+    (b* ((nats (rv-normalize (cdar tests)))
          (trees (lexemize-rust nats)))
       (cond ((reserrp trees) (rv-spec (cdr tests) n bad))
             ((rv-spec-okp trees nats) (rv-spec (cdr tests) (1+ n) bad))
@@ -304,37 +306,93 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The tokenizer against its specification:
+; (rv-go-tokenization in edition state) returns a list of
+; the number of inputs that lex, the number of those that tokenize,
+; and the ids of the inputs that lex
+; on which the tokenizer and the specification differ.
+; The tokenizer, applied to the lexer's CSTs, should fail
+; exactly when tokenization-conditions-okp does not hold of them:
+; a raw identifier or a raw lifetime with an excluded name [SC5],
+; or, in edition 2024, a reserved guard [SC15].
+; And the token that it makes of a lexeme should be a keyword token
+; exactly when keyword-lexeme-cst-p holds of the lexeme [SC6].
+; There should be no such ids.
+
+(define rv-keywords-okp ((trees abnf::tree-listp) (edition rust::editionp))
+  :returns (yes/no booleanp)
+  :parents nil
+  (or (endp trees)
+      (b* ((tree (car trees))
+           (lexeme (abs-lexeme tree edition)))
+        (and (or (reserrp lexeme)
+                 (iff (and (lexeme-case lexeme :token)
+                           (token-case (lexeme-token->token lexeme)
+                                       :keyword))
+                      (keyword-lexeme-cst-p tree edition)))
+             (rv-keywords-okp (cdr trees) edition)))))
+
+(define rv-tokenization ((tests rv-test-listp)
+                         (edition rust::editionp)
+                         (n-lexed natp)
+                         (n-tokenized natp)
+                         (bad true-listp))
+  :returns (mv (n-lexed natp :hyp (natp n-lexed))
+               (n-tokenized natp :hyp (natp n-tokenized))
+               (bad-ids true-listp :hyp (true-listp bad)))
+  :parents nil
+  (if (endp tests)
+      (mv n-lexed n-tokenized (revappend bad nil))
+    (b* ((nats (rv-normalize (cdar tests)))
+         (trees (lexemize-rust nats))
+         ((when (reserrp trees))
+          (rv-tokenization (cdr tests) edition n-lexed n-tokenized bad))
+         (tokenizes (not (reserrp (lexeme-csts-to-lexemes trees 0 edition))))
+         (okp (and (iff tokenizes
+                        (tokenization-conditions-okp trees nats edition))
+                   (rv-keywords-okp trees edition))))
+      (rv-tokenization (cdr tests)
+                       edition
+                       (1+ n-lexed)
+                       (if tokenizes (1+ n-tokenized) n-tokenized)
+                       (if okp bad (cons (caar tests) bad)))))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-tokenization ((in stringp) (edition rust::editionp) state)
+  :returns (mv summary state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       ((mv n-lexed n-tokenized bad)
+        (rv-tokenization tests edition 0 0 nil)))
+    (mv (list n-lexed n-tokenized bad) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Token boundaries: (rv-go-bounds in out state) writes, for each test,
 ; ("id" :err), ("id" :unbal), or ("id" (start . end) ...) with the
 ; code-point offsets of each token in the input (end exclusive),
-; in edition 2024 with the stand-in for the reserved guards.
+; which are the start and the end of its span,
+; in edition 2024, the one that the Reference's rules correspond to.
 ; compare_bounds.py compares them with the tokens of the Reference's
 ; interpreter (reference-driver).  It returns the number of tests.
 
-(define rv-bounds-aux ((trees abnf::tree-listp) (pos natp) (acc true-listp))
+(define rv-bounds-aux ((tokens token+span-listp) (acc true-listp))
   :returns (bounds true-listp :hyp (true-listp acc))
   :parents nil
-  (if (endp trees)
+  (if (endp tokens)
       (revappend acc nil)
-    (b* ((tree (car trees))
-         (end (+ (lnfix pos) (len (abnf::tree->string tree))))
-         (lexeme (abs-lexeme tree (rust::edition-2024))))
-      (rv-bounds-aux (cdr trees)
-                     end
-                     (if (and (not (reserrp lexeme))
-                              (equal (lexeme-kind lexeme) :token))
-                         (cons (cons pos end) acc)
-                       acc)))))
+    (b* ((span (token+span->span (car tokens))))
+      (rv-bounds-aux (cdr tokens)
+                     (cons (cons (span->start span) (span->end span))
+                           acc)))))
 
 (define rv-bounds1 ((nats nat-listp))
   :parents nil
-  (b* ((trees (lexemize-rust nats))
-       ((when (reserrp trees)) :err)
-       ((when (rv-guard-flag trees)) :err)
-       (toks (tokenize-rust nats (rust::edition-2024) "t"))
+  (b* ((nats (rv-normalize nats))
+       (toks (tokenize-rust nats (rust::edition-2024)))
        ((when (reserrp toks)) :err)
-       ((when (eq (rv-tt-count toks nil 0) :unbal)) :unbal))
-    (rv-bounds-aux trees 0 nil)))
+       ((when (reserrp (build-token-trees toks))) :unbal))
+    (rv-bounds-aux toks nil)))
 
 (define rv-bounds ((tests rv-test-listp) (acc true-listp))
   :returns (results true-listp :hyp (true-listp acc))
@@ -350,4 +408,103 @@
   :parents nil
   (b* (((mv tests state) (rv-read-tests in state))
        (state (rv-write (rv-bounds tests nil) out state)))
+    (mv (len tests) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The lexemes against the text: (rv-go-reprint in edition state) returns
+; a list of the number of inputs that lex and tokenize,
+; and the ids of those among them whose lexemes, with their spans,
+; do not tile the input (see lexeme+span-list-tiles-p):
+; some lexeme does not give back, from its components,
+; the code points at its span.
+; There should be no such ids.
+; This is the check that the making of a source unit fails on;
+; here it is run on inputs that are not whole files.
+
+(define rv-reprint ((tests rv-test-listp)
+                    (edition rust::editionp)
+                    (n natp)
+                    (bad true-listp))
+  :returns (mv (n-tokenized natp :hyp (natp n))
+               (bad-ids true-listp :hyp (true-listp bad)))
+  :parents nil
+  (if (endp tests)
+      (mv n (revappend bad nil))
+    (b* ((nats (rv-normalize (cdar tests)))
+         (trees (lexemize-rust nats))
+         ((when (reserrp trees)) (rv-reprint (cdr tests) edition n bad))
+         (lexemes (lexeme-csts-to-lexemes trees 0 edition))
+         ((when (reserrp lexemes)) (rv-reprint (cdr tests) edition n bad)))
+      (rv-reprint (cdr tests)
+                  edition
+                  (1+ n)
+                  (if (lexeme+span-list-tiles-p lexemes nats 0)
+                      bad
+                    (cons (caar tests) bad)))))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-reprint ((in stringp) (edition rust::editionp) state)
+  :returns (mv summary state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       ((mv n bad) (rv-reprint tests edition 0 nil)))
+    (mv (list n bad) state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The input layer: (rv-go-input in out edition state) reads the tests
+; of input_format.py, in which the naturals of a test are
+; the bytes of a whole file, and writes, for each test, ("id" x n),
+; where n is the length of the shebang that the file starts with
+; (0 if it starts with none, or if x is :utf8),
+; and x is one of the following.
+; - :utf8 if the bytes are not valid UTF-8.
+; - :err if the lexer or tokenizer rejects the file.
+; - :reprint if the lexer and the tokenizer accept the file
+;   but there is no source unit: the lexemes do not give back the text.
+;   This should not happen.
+; - :mismatched, :unclosed, or :unexpected if the token-tree builder
+;   rejects the tokens of the file, with that kind of error.
+; - :ok otherwise.
+; It returns the number of tests.
+
+(define rv-input1 ((bytes nat-listp) (edition rust::editionp))
+  :parents nil
+  (b* (((unless (byte-listp bytes)) (list :not-bytes 0))
+       (source (source-text-from-bytes bytes))
+       ((when (reserrp source)) (list :utf8 0))
+       (text (source-text->text source))
+       (shebang (shebang-length text))
+       (unit (source-unit-from-source-text source edition "t"))
+       ((when (reserrp unit))
+        (b* ((trees (lexemize-rust (nthcdr shebang text)))
+             ((when (reserrp trees)) (list :err shebang))
+             (lexemes (lexeme-csts-to-lexemes trees shebang edition))
+             ((when (reserrp lexemes)) (list :err shebang)))
+          (list :reprint shebang)))
+       (trees (source-unit-token-trees unit))
+       ((when (reserrp trees)) (list (rv-delim-error trees) shebang)))
+    (list :ok shebang)))
+
+(define rv-input ((tests rv-test-listp)
+                  (edition rust::editionp)
+                  (acc true-listp))
+  :returns (results true-listp :hyp (true-listp acc))
+  :parents nil
+  (if (endp tests)
+      (revappend acc nil)
+    (rv-input (cdr tests)
+              edition
+              (cons (cons (caar tests) (rv-input1 (cdar tests) edition)) acc)))
+  :guard-hints (("Goal" :in-theory (enable rv-testp))))
+
+(define rv-go-input ((in stringp)
+                     (out stringp)
+                     (edition rust::editionp)
+                     state)
+  :returns (mv (n natp) state)
+  :parents nil
+  (b* (((mv tests state) (rv-read-tests in state))
+       (state (rv-write (rv-input tests edition nil) out state)))
     (mv (len tests) state)))

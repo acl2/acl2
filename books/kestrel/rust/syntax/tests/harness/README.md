@@ -1,16 +1,22 @@
-# Differential tests of the lexer and tokenizer
+# Differential tests of the input layer, lexer, tokenizer, and token-tree builder
 
-These scripts compare the ACL2 Rust lexer and tokenizer
+These scripts compare the ACL2 Rust input layer, lexer, tokenizer,
+and token-tree builder
 (the books in `kestrel/rust/syntax`) with rustc,
 and with the interpreter of the Rust Reference's lexical grammar,
-on generated short inputs and on real source files.
+on generated short inputs, on generated whole files,
+and on real source files.
 The xdoc topic `rust$::differential-testing` says what is compared and why;
 this file says how to run the comparison.
 
 For each input, the comparison with rustc is on whether both sides accept it
-and, if so, on how many tokens it has.
+and, if so, on how many token trees it has;
+when the delimiters do not match, it is also on the kind of error.
 The comparison with the Reference's interpreter
 is also on where each token starts and ends.
+For the input layer, the inputs are the bytes of whole files,
+and the comparison is on the kind of error, if any,
+and on whether the file starts with a shebang.
 
 ## Requirements
 
@@ -54,7 +60,8 @@ Run the shell commands from this directory.
 
        python3 to_acl2.py $DATA/tests.lsp $DATA/tests
 
-4. Run them through the ACL2 lexer and tokenizer (a few seconds each):
+4. Run them through the ACL2 lexer, tokenizer, and token-tree builder
+   (a few seconds each):
 
        (include-book "kestrel/rust/syntax/tests/harness/driver" :dir :system)
        (rust$::rv-go "/data/tests.lsp" "/data/acl2-2021.lsp" (rust::edition-2021) state)
@@ -93,6 +100,38 @@ that it matches; for example, files with float literals:
 For each file where the two sides disagree,
 `compare_files.py` shows where the ACL2 lexer stopped.
 
+## The input layer
+
+What comes before lexing
+(UTF-8 decoding, the byte order mark, CR LF, the shebang)
+applies to a file as a whole,
+so these tests are whole files, given as bytes.
+`input_format.py` generates them (31,120 files),
+runs them through rustc (about 2 minutes), and compares:
+
+    python3 input_format.py gen $DATA/input-format
+    python3 input_format.py rustc $DATA/input-format --toolchain 1.87.0 --edition 2021
+
+    (rust$::rv-go-input "/data/input-format/cases.lsp" "/data/input-format/acl2-2021.lsp" (rust::edition-2021) state)
+
+    python3 input_format.py compare $DATA/input-format $DATA/input-format/rustc-1.87.0-2021.json $DATA/input-format/acl2-2021.lsp
+
+The output gives the totals, then the disagreements.
+It also lists rustc's first error for each file
+in which rustc found no error of its lexer:
+check that none of these messages is one of the lexer's
+(the script tells them by how they begin: see `LEX` in it).
+
+The script also has hand-written cases,
+each with the result expected of rustc:
+that the file compiles, or the start of the first error.
+They include the cases with more than one file
+(a module, a file named in `include!`),
+and those on which two versions of rustc differ.
+This runs them and reports any that does not come out as expected:
+
+    python3 input_format.py hand --toolchain 1.87.0 --toolchain 1.100.0
+
 ## The lexer against its specification
 
     (rust$::rv-go-spec "/data/tests.lsp" state)
@@ -100,6 +139,37 @@ For each file where the two sides disagree,
 This returns the number of inputs that lex, and the ids of those whose
 lexeme CSTs violate an executable conjunct of `rust$::lexing-okp`
 (every conjunct except maximal munch); there should be none.
+It also takes the converted whole files.
+
+## The tokenizer against its specification
+
+    (rust$::rv-go-tokenization "/data/tests.lsp" (rust::edition-2021) state)
+    (rust$::rv-go-tokenization "/data/tests.lsp" (rust::edition-2024) state)
+
+This returns the number of inputs that lex, the number of those that
+also tokenize, and the ids of the inputs that lex on which the tokenizer
+and the specification differ; there should be none.
+The lexer accepts two kinds of input that the tokenizer rejects:
+one with a raw identifier or a raw lifetime that has an excluded name,
+and, in edition 2024, one with a reserved guard.
+So the tokenizer, applied to the lexer's CSTs, should fail exactly when
+`rust$::tokenization-conditions-okp` does not hold of them.
+And the token that it makes of a lexeme should be a keyword token
+exactly when `rust$::keyword-lexeme-cst-p` holds of the lexeme.
+
+## The lexemes against the text
+
+    (rust$::rv-go-reprint "/data/tests.lsp" (rust::edition-2021) state)
+    (rust$::rv-go-reprint "/data/tests.lsp" (rust::edition-2024) state)
+
+This returns the number of inputs that lex and tokenize,
+and the ids of those whose lexemes, with their spans,
+do not tile the input (`rust$::lexeme+span-list-tiles-p`):
+some lexeme does not give back, from its components,
+the code points at its span.
+There should be none.
+It is the check that the making of a source unit ends with
+(`rust$::source-unit-wfp`), which is not yet proved to always succeed.
 It also takes the converted whole files.
 
 ## Another version of rustc
@@ -114,7 +184,17 @@ The results of each version go in directories named after it:
 
     python3 compare_results.py $DATA/tests $DATA/rustc-1.87.0-2021 $DATA/rustc-1.100.0-2021
 
-`compare_results.py` compares any two directories of results.
+`compare_results.py` compares any two directories of results,
+on whether each input is accepted and on the counts.
+It does not compare the errors.
+`compare.py` does, for the errors about delimiters,
+and they depend on the version of rustc:
+where closing delimiters of the wrong kind are followed
+by a closing delimiter that closes nothing,
+rustc 1.87.0 reports all these errors,
+and rustc 1.100.0 leaves out some of the first ones.
+So `compare.py` with the results of rustc 1.100.0
+shows `delimiter errors differ` on such inputs.
 
 ## The Reference's interpreter
 
@@ -134,11 +214,15 @@ Build it with its output outside the books, and run it:
 The Reference's rules have no editions and always apply the reserved
 guards, so its results correspond to edition 2024.
 Its results also hold where each token starts and ends.
-To compare those with the ACL2 lexer:
+To compare those with the spans of the ACL2 tokens:
 
     (rust$::rv-go-bounds "/data/tests.lsp" "/data/acl2-bounds.lsp" state)
 
     python3 compare_bounds.py $DATA/tests $DATA/reference-1.100.0 $DATA/acl2-bounds.lsp
+
+One disagreement outside the known gaps is expected there: `/*!/*/`,
+which the Reference's rules accept, and which rustc and the ACL2 lexer
+reject as an unterminated block comment.
 
 ## How the comparison works
 
@@ -148,51 +232,93 @@ counts its argument tokens.
 The tokens never reach the parser or later phases,
 so the only errors are those of rustc's lexer
 (including its building of token trees),
-which is the stage that the ACL2 lexer and tokenizer model.
+which is the stage that the ACL2 lexer, tokenizer,
+and token-tree builder model.
+(The exception is an input that closes the parenthesis of the macro
+invocation, like `) (`: see `:split` below.)
 The count is the number of top-level token trees:
 a delimited group counts as one.
 With `--deep` it is the number of all tokens,
 a group counting as one plus its contents.
 
 **ACL2.**
-The driver counts the tokens of the tokenizer in the same way.
+The driver runs the lexer, the tokenizer, and the token-tree builder.
+The probe puts the input between the parentheses of a macro invocation,
+so the driver gives the builder the tokens of the input
+between an opening and a closing parenthesis,
+and counts the token trees that the builder puts between the two.
 rustc turns a doc comment into the tokens of an attribute,
 so an outer doc comment counts as 2 token trees (5 tokens deep)
 and an inner one as 3 (6 deep).
-Inputs whose delimiters do not match are reported as `:unbal`:
-rustc rejects them while building token trees,
-which the ACL2 side does not do yet.
+
+For each short input the driver writes one of the following.
+
+| Result | Meaning | Agrees with rustc when |
+|---|---|---|
+| a number | the top-level token trees of the input | rustc accepts, with the same count |
+| `:err` | the lexer or the tokenizer rejects the input | rustc rejects |
+| `:mismatched`, `:unclosed`, `:unexpected` | the builder rejects the probe's tokens, with that kind of error | rustc's first error about delimiters is of that kind |
+| `:split` | the input closes the probe's parenthesis before its end, as `) (` does | rustc rejects, with no error about delimiters |
+
+The three kinds of error are rustc's
+`mismatched closing delimiter`,
+`this file contains an unclosed delimiter`, and
+`unexpected closing delimiter`.
+For whole files and for token boundaries,
+the driver gives the builder the tokens of the input alone,
+and writes `:unbal` if it rejects them.
 
 **Input adjustments.**
 `to_acl2.py` appends a line feed to each input,
-because the probe puts one after the input,
-and replaces each CR LF pair with LF,
-because rustc does that when it reads a file
-(in the ACL2 front end this belongs to the input layer, before lexing).
-`reference-driver` makes the same two adjustments,
+because the probe puts one after the input.
+The driver then replaces each CR LF pair with LF,
+with the function of the input layer (`rust$::normalize-crlf`),
+because rustc does that when it reads a file.
+`reference-driver` appends the line feed and replaces the pairs itself,
 and puts each input after a `;` and a line feed,
 because the interpreter treats the start of its input
 as the start of a file.
 
+**The input layer.**
+`input_format.py` gives rustc each file as it is, as a library crate,
+so rustc's parser and later phases see the tokens,
+and most files do not compile.
+What is compared is the class of the file:
+not valid UTF-8; an error of the lexer;
+an error about delimiters, with its kind; or none of these.
+rustc reports the errors of its lexer before those of its parser,
+so a file is in the last class when none of rustc's errors
+is one of the lexer's.
+For each file the driver writes
+`:utf8`, `:err`, `:mismatched`, `:unclosed`, `:unexpected`, or `:ok`,
+and the length of the shebang (0 if there is none).
+The driver makes a source unit of each file that lexes and tokenizes;
+it writes `:reprint` if that fails, which should not happen
+(the lexemes then do not give back the text).
+
+Whether a file starts with a shebang shows in its class
+only when the first line has an error;
+so some files are probes, built to show it in another way.
+After `#!` and the text under test, a `kept` probe has
+an inner attribute and a function on the same line,
+and a call of the function on the next line:
+if it compiles, the first line was not removed (no shebang);
+if rustc does not find the function, the line was removed (shebang).
+A `removed` probe has, after the attribute,
+the opening quote of a string that is never closed:
+if it compiles, the line was removed (shebang);
+if rustc reports the string, and no line feed comes before it,
+the line was not removed (no shebang).
+Any other outcome says nothing, and is not compared.
+The texts under test are sequences of up to three pieces:
+whitespace characters, comments of each kind, and other characters.
+
 **Known gaps.**
 `compare.py` and `compare_bounds.py` tag a disagreement as a known gap
 when the input contains something the lexer does not cover yet:
-`block-doc`, `doc-cr` (a bare CR in a doc comment),
-or `non-ascii`.
+`non-ascii` (non-ASCII identifiers) is the only one left.
 The tags are heuristics on the input text, in `known_gaps`;
 remove each one when its gap is closed.
-`gen_files.py` skips files with block doc comments
-for the same reason.
-
-**Edition 2024 reserved guards.**
-`rv-go-2024-guard` is `rv-go` for edition 2024 plus a stand-in for the
-reserved guards (`##`, and `#` before a string literal),
-which the tokenizer does not implement yet:
-it rejects a `#` lexeme immediately followed by a lexeme
-that starts with `#` or a double quote.
-`rv-go-bounds` uses the same stand-in.
-
-    (rust$::rv-go-2024-guard "/data/tests.lsp" "/data/acl2-2024-guard.lsp" state)
 
 ## Files
 
@@ -202,7 +328,8 @@ that starts with `#` or a double quote.
 | `gen_files.py` | Selects real source files |
 | `run_rustc.py` | Runs inputs through rustc |
 | `to_acl2.py` | Converts inputs to code-point lists for ACL2 |
-| `driver.lisp` | Runs inputs through the ACL2 lexer and tokenizer |
+| `input_format.py` | Whole files for the input layer: generates them, runs them through rustc, and compares |
+| `driver.lisp` | Runs inputs through the ACL2 input layer, lexer, tokenizer, and token-tree builder |
 | `compare.py` | Compares the results on short inputs |
 | `compare_files.py` | Compares the results on whole files |
 | `compare_results.py` | Compares two directories of results (two versions of rustc, or the Reference's interpreter and rustc) |

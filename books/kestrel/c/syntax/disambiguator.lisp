@@ -15,7 +15,7 @@
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
-(include-book "kestrel/fty/deftreemap" :dir :system)
+(include-book "kestrel/fty/deftmap" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -221,7 +221,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap dimb-scope
+(fty::deftmap dimb-scope
   :short "Fixtype of scopes in disambiguation tables."
   :long
   (xdoc::topstring
@@ -237,8 +237,8 @@
 
   (defrule dimb-kind-optionp-of-lookup-when-dimb-scopep
     (implies (dimb-scopep scope)
-             (dimb-kind-optionp (treemap::lookup ident scope)))
-    :cases ((treeset::in ident (treemap::keys scope)))))
+             (dimb-kind-optionp (tmap::lookup ident scope)))
+    :cases ((tset::in ident (tmap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -344,7 +344,7 @@
      so we push via @(tsee cons).
      Also see @(tsee dimb-pop-scope)."))
   (b* ((table (dstate->table dstate))
-       (new-table (cons (treemap::empty) table)))
+       (new-table (cons (tmap::empty) table)))
     (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -390,7 +390,7 @@
      :parents nil
      (b* (((when (endp table)) nil)
           (scope (dimb-scope-fix (car table)))
-          (kind? (treemap::lookup (ident-fix ident) scope))
+          (kind? (tmap::lookup (ident-fix ident) scope))
           ((when kind?) kind?))
        (dimb-lookup-ident-loop ident (cdr table))))))
 
@@ -421,12 +421,25 @@
         (raise "Internal error: empty disambiguation table.")
         (irr-dstate))
        (scope (dimb-scope-fix (car table)))
-       (new-scope (treemap::update (ident-fix ident)
-                                   (dimb-kind-fix kind)
-                                   scope))
+       (new-scope (tmap::update (ident-fix ident)
+                                (dimb-kind-fix kind)
+                                scope))
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
   :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-add-idents ((idents ident-listp)
+                         (kind dimb-kindp)
+                         (dstate dstatep))
+  :returns (new-dstate dstatep)
+  :short "Add all the identifiers in a list to the disambiguation table,
+          with the provided kind."
+  (cond ((endp idents) (dstate-fix dstate))
+        (t (dimb-add-idents (cdr idents)
+                            kind
+                            (dimb-add-ident (car idents) kind dstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -435,17 +448,6 @@
   :short "Add an identifier to the disambiguation table,
           with object or function kind."
   (dimb-add-ident ident (dimb-kind-objfun) dstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-add-idents-objfun ((idents ident-listp) (dstate dstatep))
-  :returns (new-dstate dstatep)
-  :short "Add all the identifiers in a list to the disambiguation table,
-          with object or function kind."
-  (cond ((endp idents) (dstate-fix dstate))
-        (t (dimb-add-idents-objfun (cdr idents)
-                                   (dimb-add-ident-objfun (car idents)
-                                                          dstate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -464,9 +466,9 @@
         (irr-dstate))
        (table (dimb-table-fix table))
        (scope (car (last table)))
-       (new-scope (treemap::update (ident-fix ident)
-                                   (dimb-kind-objfun)
-                                   scope))
+       (new-scope (tmap::update (ident-fix ident)
+                                (dimb-kind-objfun)
+                                scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
   :no-function nil)
@@ -477,7 +479,7 @@
   :returns (new-dstate dstatep)
   :short "Add an identifier to the set for which @('goto')s we re-classified."
   (b* ((idents (dstate->goto-reclass dstate))
-       (new-idents (treeset::insert (ident-fix ident) idents)))
+       (new-idents (tset::insert (ident-fix ident) idents)))
     (change-dstate dstate :goto-reclass new-idents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -502,16 +504,23 @@
      is initially empty, since no re-classification has occurred yet.")
    (xdoc::p
     "The macro table is the initial one for the given dialect."))
-  (b* ((table (list (treemap::empty)))
+  (b* ((table (list (tmap::empty)))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
-                            :goto-reclass (treeset::empty)
+                            :goto-reclass (tset::empty)
                             :macros macros
                             :file file
-                            :ienv ienv)))
-    (dimb-add-idents-objfun (ident-list-of (built-in-fun/var-names-for dialect))
-                            dstate)))
+                            :ienv ienv))
+       (dstate (dimb-add-idents
+                (ident-list-of (built-in-fun/var-names-for dialect))
+                (dimb-kind-objfun)
+                dstate)))
+    (dimb-add-idents
+     (ident-list-of (built-in-typedef-list->name
+                     (built-in-typedefs-for dialect)))
+     (dimb-kind-typedef)
+     dstate)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1917,10 +1926,7 @@
                                         an enumeration constant ~
                                         but it is used as a typedef name."
                                        (ident->unwrap tyspec.name))))
-       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
-                      (dstate-fix dstate))
-       :locase-float80 (retok (type-spec-locase-float80)
-                              (dstate-fix dstate))
+       :int128 (retok (type-spec-int128) (dstate-fix dstate))
        :locase-float128 (retok (type-spec-locase-float128)
                                (dstate-fix dstate))
        :float16 (retok (type-spec-float16) (dstate-fix dstate))
@@ -1932,8 +1938,6 @@
        :float128 (retok (type-spec-float128) (dstate-fix dstate))
        :float128x (retok (type-spec-float128x) (dstate-fix dstate))
        :bf16 (retok (type-spec-bf16) (dstate-fix dstate))
-       :builtin-va-list (retok (type-spec-builtin-va-list)
-                               (dstate-fix dstate))
        :struct-empty (retok (type-spec-fix tyspec)
                             (dstate-fix dstate))
        :typeof-expr
@@ -3950,9 +3954,10 @@
        ((erp new-declons dstate) (dimb-declon-list fundef.declons dstate))
        (dstate (dimb-add-ident-objfun (ident "__func__") dstate))
        (dstate (if (c::dialect-gcc/clangp (ienv->dialect (dstate->ienv dstate)))
-                   (dimb-add-idents-objfun
+                   (dimb-add-idents
                     (list (ident "__FUNCTION__")
                           (ident "__PRETTY_FUNCTION__"))
+                    (dimb-kind-objfun)
                     dstate)
                  dstate))
        ((erp new-body dstate) (dimb-comp-stmt fundef.body t dstate))

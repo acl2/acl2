@@ -26,10 +26,11 @@
 (include-book "translation-unit-comparison")
 (include-book "types-compatibility")
 
+(include-book "kestrel/data/tmap/cursor/defs" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
-(local (include-book "kestrel/data/treemap/iter" :dir :system))
+(local (include-book "kestrel/data/tmap/cursor/top" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -186,9 +187,9 @@
   (b* (((vstate vstate) vstate)
        ((valid-table table) vstate.table)
        (new-completions
-        (treemap::update (uid-fix uid)
-                         (type-struni-member-list-fix members)
-                         table.completions)))
+        (tmap::update (uid-fix uid)
+                      (type-struni-member-list-fix members)
+                      table.completions)))
     (change-vstate vstate
                    :table (change-valid-table table
                                               :completions new-completions))))
@@ -289,8 +290,8 @@
      for an identifier with external linkage
      which has been declared in any scope of the translation unit.
      See @(see valid-table)."))
-  (treemap::lookup (ident-fix ident)
-                   (valid-table->externals (vstate->table vstate))))
+  (tmap::lookup (ident-fix ident)
+                (valid-table->externals (vstate->table vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,7 +361,7 @@
        ((valid-table table) vstate.table)
        (new-info (make-valid-ext-info :type type))
        (new-externals
-        (treemap::update (ident-fix ident) new-info table.externals)))
+        (tmap::update (ident-fix ident) new-info table.externals)))
     (change-vstate vstate
                    :table (change-valid-table table
                                               :externals new-externals))))
@@ -402,9 +403,9 @@
         (vstate-fix vstate))
        (scope (car table.scopes))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (treemap::update (ident-fix ident)
-                                       (valid-ord-info-fix info)
-                                       ord-scope))
+       (new-ord-scope (tmap::update (ident-fix ident)
+                                    (valid-ord-info-fix info)
+                                    ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (cons new-scope (cdr table.scopes)))
        (table (change-valid-table table :scopes new-scopes))
@@ -451,9 +452,9 @@
         (irr-vstate))
        (scope (car (last scopes)))
        (ord-scope (valid-scope->ord scope))
-       (new-ord-scope (treemap::update (ident-fix ident)
-                                       (valid-ord-info-fix info)
-                                       ord-scope))
+       (new-ord-scope (tmap::update (ident-fix ident)
+                                    (valid-ord-info-fix info)
+                                    ord-scope))
        (new-scope (change-valid-scope scope :ord new-ord-scope))
        (new-scopes (append (butlast scopes 1) (list new-scope)))
        (table (change-valid-table table :scopes new-scopes))
@@ -529,6 +530,29 @@
     (vstate-add-built-in-vars (cdr vars) vstate))
   :measure (acl2-count (built-in-var-list-fix vars)))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define vstate-add-built-in-typedefs ((typedefs built-in-typedef-listp)
+                                      (vstate vstatep))
+  :returns (new-vstate vstatep)
+  :short "Add ordinary identifiers, that refer to the built-in @('typedef')s,
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are added to the file scope.")
+   (xdoc::p
+    "Like other @('typedef') names, they have no linkage."))
+  (b* ((typedefs (built-in-typedef-list-fix typedefs))
+       ((when (endp typedefs)) (vstate-fix vstate))
+       ((built-in-typedef typedef) (car typedefs))
+       (ident (ident typedef.name))
+       ((mv uid vstate) (vstate-get-fresh-uid ident (linkage-none) vstate))
+       (info (make-valid-ord-info-typedef :def typedef.type :uid uid))
+       (vstate (vstate-add-ord-file-scope ident info vstate)))
+    (vstate-add-built-in-typedefs (cdr typedefs) vstate))
+  :measure (acl2-count (built-in-typedef-list-fix typedefs)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define vstate-make-type-composite ((x typep)
@@ -550,8 +574,8 @@
        ((mv composite completions & & next-uid-num)
         (type-composite x y
                         (vstate->completions vstate)
-                        (treemap::empty)
-                        (treeset::empty)
+                        (tmap::empty)
+                        (tset::empty)
                         (vstate->filepath vstate)
                         vstate.next-uid-num))
        (table (change-valid-table vstate.table :completions completions)))
@@ -603,11 +627,11 @@
 (defirrelevant irr-valid-merge-state
   :short "An irrelevant validator merge state."
   :type valid-merge-statep
-  :body (valid-merge-state (treemap::empty)
-                           (treemap::empty)
-                           (treeset::empty)
-                           (treeset::empty)
-                           (treemap::empty)
+  :body (valid-merge-state (tmap::empty)
+                           (tmap::empty)
+                           (tset::empty)
+                           (tset::empty)
+                           (tmap::empty)
                            0))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -622,11 +646,11 @@
      and the local @(see UID)s without translation unit
      allocated during the merging
      are numbered starting from 0."))
-  (make-valid-merge-state :externals (treemap::empty)
-                          :completions (treemap::empty)
-                          :compatible-pairs (treeset::empty)
-                          :composite-inputs (treeset::empty)
-                          :composites (treemap::empty)
+  (make-valid-merge-state :externals (tmap::empty)
+                          :completions (tmap::empty)
+                          :compatible-pairs (tset::empty)
+                          :composite-inputs (tset::empty)
+                          :composites (tmap::empty)
                           :next-uid-num 0)
   :inline t)
 
@@ -2587,11 +2611,7 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
-     ((type-spec-list-locase-float80-p tyspecs)
-      (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-p tyspecs)
-      (retok (type-unknown-arithmetic)))
-     ((type-spec-list-locase-float80-complex-p tyspecs)
       (retok (type-unknown-arithmetic)))
      ((type-spec-list-locase-float128-complex-p tyspecs)
       (retok (type-unknown-arithmetic)))
@@ -4028,7 +4048,7 @@
                            (mv nil nil nil))
                           (uid (valid-tag-info->uid info?))
                           ((mv completep &)
-                              (treemap::lookup?
+                              (tmap::lookup?
                                (valid-tag-info->uid info?)
                                (vstate->completions vstate))))
                        (mv uid (valid-tag-info->kind info?) completep)))
@@ -4136,7 +4156,7 @@
                           (mv nil nil nil))
                          (uid (valid-tag-info->uid info?))
                          ((mv completep &)
-                             (treemap::lookup?
+                             (tmap::lookup?
                               (valid-tag-info->uid info?)
                               (vstate->completions vstate))))
                       (mv uid (valid-tag-info->kind info?) completep)))
@@ -4213,13 +4233,7 @@
                    :otherwise (retmsg$ "The identifier ~x0 does not ~
                                         represent a typedef."
                                        (ident->unwrap tyspec.name))))
-       :int128 (retok (make-type-spec-int128 :uscoret tyspec.uscoret)
-                      nil
-                      ext-tyspecs
-                      nil
-                      same-vstate)
-       :locase-float80 (retok (type-spec-locase-float80)
-                              nil ext-tyspecs nil same-vstate)
+       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-vstate)
        :locase-float128 (retok (type-spec-locase-float128)
                                nil ext-tyspecs nil same-vstate)
        :float16 (retok (type-spec-float16) nil ext-tyspecs nil same-vstate)
@@ -4231,13 +4245,6 @@
        :float128 (retok (type-spec-float128) nil ext-tyspecs nil same-vstate)
        :float128x (retok (type-spec-float128x) nil ext-tyspecs nil same-vstate)
        :bf16 (retok (type-spec-bf16) nil ext-tyspecs nil same-vstate)
-       :builtin-va-list (if (endp tyspecs)
-                            (retok (type-spec-builtin-va-list)
-                                   (type-unknown-builtin)
-                                   nil
-                                   nil
-                                   same-vstate)
-                          (reterr msg-bad-preceding))
        :struct-empty (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                           ((mv current-uid? current-kind? current+completep)
                            (b* (((unless tyspec.name?)
@@ -4248,7 +4255,7 @@
                                  (mv nil nil nil))
                                 (uid (valid-tag-info->uid info?))
                                 ((mv completep &)
-                                 (treemap::lookup?
+                                 (tmap::lookup?
                                   (valid-tag-info->uid info?)
                                   (vstate->completions vstate))))
                              (mv uid (valid-tag-info->kind info?) completep)))
@@ -8749,11 +8756,13 @@
      and the type completions from the table,
      for merging with those of other translation units
      (see @(tsee valid-merge-trans-unit))."))
-  (b* (((reterr) (irr-trans-unit) (treemap::empty) (treemap::empty))
+  (b* (((reterr) (irr-trans-unit) (tmap::empty) (tmap::empty))
        (dialect (ienv->dialect ienv))
        (vstate (init-vstate ienv filepath))
        (vstate (vstate-add-built-in-funs (built-in-functions-for dialect) vstate))
        (vstate (vstate-add-built-in-vars (built-in-vars-for dialect) vstate))
+       (vstate (vstate-add-built-in-typedefs (built-in-typedefs-for dialect)
+                                             vstate))
        ((erp new-items vstate)
         (valid-trans-item-list (trans-unit->items tunit) vstate))
        ((valid-table table) (vstate->table vstate))
@@ -8772,12 +8781,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-merge-externals-loop ((iter treemap::iterp)
+(define valid-merge-externals-loop ((cursor tmap::cursorp)
                                     (mstate valid-merge-statep)
                                     (ienv ienvp)
                                     (strict-merge booleanp))
-  :guard (and (not (treemap::before-firstp iter))
-              (valid-externalsp (treemap::from-iter iter)))
+  :guard (and (valid-externalsp (tmap::from-cursor cursor))
+              (or (tmap::entryp cursor)
+                  (tmap::endp cursor)))
   :returns (mv (erp maybe-msgp)
                (new-mstate valid-merge-statep))
   :short "Merge the information about identifiers with external linkage
@@ -8786,7 +8796,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The iterator goes through the information of the translation unit.
+    "The cursor goes through the information of the translation unit.
      An identifier not in the merged information so far is just added.
      Otherwise, the identifier has been declared
      in some previous translation unit,
@@ -8826,18 +8836,17 @@
      can be compared and composed."))
   (b* (((reterr) (irr-valid-merge-state))
        ((valid-merge-state mstate) mstate)
-       ((when (mbe :logic (not (treemap::has-valuep iter))
-                   :exec (treemap::after-lastp iter)))
+       ((when (not (tmap::entryp cursor)))
         (retok (valid-merge-state-fix mstate)))
-       (ident (treemap::entry-key iter))
-       ((valid-ext-info info) (treemap::entry-val iter))
-       (prev? (treemap::lookup ident mstate.externals))
+       (ident (tmap::entry-key cursor))
+       ((valid-ext-info info) (tmap::entry-val cursor))
+       (prev? (tmap::lookup ident mstate.externals))
        ((unless prev?)
         (valid-merge-externals-loop
-         (treemap::next iter)
+         (tmap::next cursor)
          (change-valid-merge-state
           mstate
-          :externals (treemap::update ident info mstate.externals))
+          :externals (tmap::update ident info mstate.externals))
          ienv
          strict-merge))
        ((valid-ext-info prev) prev?)
@@ -8854,8 +8863,8 @@
                       in the translation units validated before."
                      ident info.type prev.type)
           (valid-merge-externals-loop
-           (treemap::next iter)
-           (change-valid-merge-state mstate :compatible-pairs compatible-pairs)
+           (tmap::next cursor)
+           (valid-merge-state-fix mstate)
            ienv
            strict-merge)))
        ((mv type completions composites composite-inputs next-uid-num)
@@ -8868,11 +8877,11 @@
                         mstate.next-uid-num))
        (externals (if (equal type prev.type)
                       mstate.externals
-                    (treemap::update ident
-                                     (make-valid-ext-info :type type)
-                                     mstate.externals))))
+                    (tmap::update ident
+                                  (make-valid-ext-info :type type)
+                                  mstate.externals))))
     (valid-merge-externals-loop
-     (treemap::next iter)
+     (tmap::next cursor)
      (make-valid-merge-state
       :externals externals
       :completions completions
@@ -8882,7 +8891,7 @@
       :next-uid-num next-uid-num)
      ienv
      strict-merge))
-  :measure (treemap::nexts iter))
+  :measure (tmap::nexts cursor))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -8908,11 +8917,11 @@
     about identifiers with external linkage
     needs the type completions of the translation unit;
     see @(tsee valid-merge-externals-loop).")
-  (b* ((completions (treemap::update* (type-completions-fix tu-completions)
-                                      (valid-merge-state->completions mstate)))
+  (b* ((completions (tmap::update* (type-completions-fix tu-completions)
+                                   (valid-merge-state->completions mstate)))
        (mstate (change-valid-merge-state mstate :completions completions)))
     (valid-merge-externals-loop
-     (treemap::iter-min (valid-externals-fix tu-externals))
+     (tmap::seek-min (valid-externals-fix tu-externals))
      mstate
      ienv
      strict-merge)))

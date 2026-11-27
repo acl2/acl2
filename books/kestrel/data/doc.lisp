@@ -10,9 +10,9 @@
 
 (include-book "deque/top")
 (include-book "hash/top")
-(include-book "treeset/doc")
-(include-book "treemap/doc")
-(include-book "treebag/doc")
+(include-book "tset/doc")
+(include-book "tmap/doc")
+(include-book "tbag/doc")
 (include-book "graph/doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

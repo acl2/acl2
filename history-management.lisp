@@ -3999,7 +3999,7 @@
 ; itself.
 
   #-acl2-loop-only
-  (declare (ftype (function (t t) (values t))
+  (declare (ftype (function (t) (values t))
                   invalidate-some-cl-cache-lines))
 
   #+acl2-loop-only
@@ -4033,9 +4033,7 @@
                 (push-wormhole-undo-formi 'cloaked-set-w! (w *the-live-state*)
                                           nil)))
          (and (not (f-get-global 'boot-strap-flg *the-live-state*))
-              (invalidate-some-cl-cache-lines
-               flg
-               wrld))
+              (invalidate-some-cl-cache-lines flg))
          (let ((*defattach-fns* nil))
            (cond ((eq flg 'extension)
                   (extend-world1 'current-acl2-world wrld)
@@ -4231,7 +4229,6 @@
             main-timer                 ;;; preserve accumulated summary info
             verbose-theory-warning     ;;; warn if disabling a *bbody-alist* key
             pc-ss-alist                ;;; for saves under :instructions hints
-            pc-output                  ;;; for thm-fn
             last-step-limit            ;;; propagate step-limit past expansion
             illegal-to-certify-message ;;; needs to persist past expansion
             splitter-output            ;;; allow user to modify this in a book

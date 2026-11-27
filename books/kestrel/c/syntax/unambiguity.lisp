@@ -180,11 +180,6 @@
              (type-spec-unambp type-spec))
     :enable type-spec-unambp)
 
-  (defruled type-spec-unambp-when-int128
-    (implies (type-spec-case type-spec :int128)
-             (type-spec-unambp type-spec))
-    :enable type-spec-unambp)
-
   (defruled type-spec-unambp-when-struct-empty
     (implies (type-spec-case type-spec :struct-empty)
              (type-spec-unambp type-spec))
@@ -360,7 +355,6 @@
                     type-spec-unambp-when-bool
                     type-spec-unambp-when-complex
                     type-spec-unambp-when-typedef
-                    type-spec-unambp-when-int128
                     type-spec-unambp-when-struct-empty
                     spec/qual-unambp-when-typequal
                     spec/qual-unambp-when-attrib

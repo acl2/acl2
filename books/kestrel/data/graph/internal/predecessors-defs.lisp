@@ -8,14 +8,17 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treeset/set-defs" :dir :system)
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/size-defs" :dir :system)
-(include-book "kestrel/data/treemap/in-defs" :dir :system)
-(include-book "kestrel/data/treemap/min-max-defs" :dir :system)
-(include-book "kestrel/data/treemap/lookup-defs" :dir :system)
-(include-book "kestrel/data/treemap/delete-defs" :dir :system)
+(include-book "std/omaps/defs" :dir :system)
+
+(include-book "kestrel/data/tset/set-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/size-defs" :dir :system)
+(include-book "kestrel/data/tmap/in-defs" :dir :system)
+(include-book "kestrel/data/tmap/min-max-defs" :dir :system)
+(include-book "kestrel/data/tmap/lookup-defs" :dir :system)
+(include-book "kestrel/data/tmap/delete-defs" :dir :system)
+(include-book "kestrel/data/tmap/to-omap-defs" :dir :system)
 
 (include-book "adj-list-defs")
 
@@ -25,5 +28,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (std::defredundant
-  :names (adj-list-predecessors
+  :names (adj-list-predecessors-omap
+          adj-list-predecessors
           ))

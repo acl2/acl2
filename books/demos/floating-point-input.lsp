@@ -1469,6 +1469,14 @@
                              ))
                      '(6 . 7)))
 
+(defun list-a-df (x)
+  (declare (xargs :dfs (x)))
+  (list (from-df x)))
+
+; Failed in ACL2 8.7:
+(let ((v (to-df 3))) ; hence v is a df
+  (loop$ for v in (list-a-df v) collect v))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Stobj-let (nested stobjs)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -8,11 +8,11 @@
 
 (in-package "GRAPH")
 
-(include-book "kestrel/data/treeset/insert-defs" :dir :system)
-(include-book "kestrel/data/treeset/intersect-defs" :dir :system)
-(include-book "kestrel/data/treeset/diff-defs" :dir :system)
-(include-book "kestrel/data/treemap/map-defs" :dir :system)
-(include-book "kestrel/data/treemap/keys-defs" :dir :system)
+(include-book "kestrel/data/tset/insert-defs" :dir :system)
+(include-book "kestrel/data/tset/intersect-defs" :dir :system)
+(include-book "kestrel/data/tset/diff-defs" :dir :system)
+(include-book "kestrel/data/tmap/map-defs" :dir :system)
+(include-book "kestrel/data/tmap/keys-defs" :dir :system)
 
 (include-book "../graph-defs")
 (include-book "../nodes-defs")

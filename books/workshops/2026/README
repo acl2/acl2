@@ -15,6 +15,8 @@ monjil-ray/
 
 Kuter Bora and Mark Greenstreet Erlang in ACL2: a Continuation-Passing-Style Evaluator
 
+bora-greenstreet/
+
 ------------------------------
 
 Pablo Cayuela
@@ -78,8 +80,8 @@ Arrayset Revisited
 Grant Jurgensen
 Treesets: Efficient Finite Sets with Unique Representations
 
-[books]/kestrel/data/treeset/
-[books]/kestrel/data/treemap/
+[books]/kestrel/data/tset/
+[books]/kestrel/data/tmap/
 [books]/kestrel/data/hash/
 [books]/kestrel/data/benchmark/
 jurgensen/

@@ -447,8 +447,6 @@
    (xdoc::p
     "We similarly include the GCC extension types
      @('__int128'),
-     @('__int128_t'),
-     @('__float80'),
      @('__float128'),
      @('_Float16'),
      @('_Float16x'),
@@ -458,9 +456,11 @@
      @('_Float64x'),
      @('_Float128'),
      @('_Float128x'),
-     @('__bf16'),
-     @('__builtin_va_list'), and
-     @('__auto_type').")
+     @('__bf16'), and
+     @('__auto_type').
+     Some of these are keywords only in some dialects;
+     for instance, @('__float128') and @('__bf16') are keywords in Clang,
+     but identifiers (built-in @('typedef') names) in GCC.")
    (xdoc::p
     "Note that @('bool') is a keyword only in C23:
      @(tsee lex-identifier/keyword) checks the dialect of the parser state.
@@ -485,8 +485,6 @@
       (token-keywordp token? "__complex")
       (token-keywordp token? "__complex__")
       (token-keywordp token? "__int128")
-      (token-keywordp token? "__int128_t")
-      (token-keywordp token? "__float80")
       (token-keywordp token? "__float128")
       (token-keywordp token? "_Float16")
       (token-keywordp token? "_Float16x")
@@ -497,7 +495,6 @@
       (token-keywordp token? "_Float128")
       (token-keywordp token? "_Float128x")
       (token-keywordp token? "__bf16")
-      (token-keywordp token? "__builtin_va_list")
       (token-keywordp token? "__auto_type"))
   ///
 
@@ -535,9 +532,7 @@
          (type-spec-complex (keyword-uscores-start)))
         ((token-keywordp token "__complex__")
          (type-spec-complex (keyword-uscores-both)))
-        ((token-keywordp token "__int128") (type-spec-int128 nil))
-        ((token-keywordp token "__int128_t") (type-spec-int128 t))
-        ((token-keywordp token "__float80") (type-spec-locase-float80))
+        ((token-keywordp token "__int128") (type-spec-int128))
         ((token-keywordp token "__float128") (type-spec-locase-float128))
         ((token-keywordp token "_Float16") (type-spec-float16))
         ((token-keywordp token "_Float16x") (type-spec-float16x))
@@ -548,7 +543,6 @@
         ((token-keywordp token "_Float128") (type-spec-float128))
         ((token-keywordp token "_Float128x") (type-spec-float128x))
         ((token-keywordp token "__bf16") (type-spec-bf16))
-        ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))
         (t (prog2$ (impossible) (irr-type-spec))))
   :prepwork ((local (in-theory (enable token-type-specifier-keyword-p)))))

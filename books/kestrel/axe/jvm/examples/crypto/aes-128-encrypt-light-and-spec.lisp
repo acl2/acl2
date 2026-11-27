@@ -34,11 +34,9 @@
 
 ;; Unroll the spec:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
-                   `(list-to-bv-array '8 (aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16)
-                                                               ,(bit-blasted-symbolic-byte-list 'key *key-byte-count*)))
-                   :rules :auto
-                   :extra-rules (introduce-bv-array-rules) ; turns nth into bv-array-read
-                   )
+                   `(list-to-byte-array (aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16)
+                                                              ,(bit-blasted-symbolic-byte-list 'key *key-byte-count*)))
+                   :rules :auto)
 
 ;; Unroll the code:
 ;; NOTE: This assumes that the AES classes have not been initialized yet, so
