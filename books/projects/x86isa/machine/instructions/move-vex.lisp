@@ -711,7 +711,12 @@
 
   :body
 
-  (b* (;; Index of source register.
+  (b* (;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Index of source register.
        ((the (unsigned-byte 4) xmm/ymm-index) (reg-index reg rex-byte #.*r*))
 
        ;; Index of destination register.
@@ -810,7 +815,12 @@
 
   :body
 
-  (b* (;; Index of source register.
+  (b* (;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Index of source register.
        ((the (unsigned-byte 4) xmm/ymm-index) (reg-index reg rex-byte #.*r*))
 
        ;; Index of destination register.
