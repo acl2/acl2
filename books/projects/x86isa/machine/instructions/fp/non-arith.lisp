@@ -61,7 +61,12 @@
 
   :body
 
-  (b* (;; This instruction requires VEX.L = 0,
+  (b* (;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; This instruction requires VEX.L = 0,
        ;; throwing a #UD otherwise;
        ;; see Intel Manuals Volume 2 Section 3.1.12 (Dec 2023).
        ((unless (equal (vex->l vex-prefixes) 0))
