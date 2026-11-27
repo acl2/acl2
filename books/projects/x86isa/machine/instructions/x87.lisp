@@ -385,12 +385,12 @@
                ;; The manual breaks this field up into FCS and FIP when operand
                ;; size is not 64-bit, but all the cases are equivalent to the
                ;; following
-               ((mv flg fp-last-inst x86) (rme32 proc-mode (+ 8 src-addr) seg-reg :r inst-ac? x86))
-               ((when flg) (!!ms-fresh :rme32 proc-mode flg))
+               ((mv flg fp-last-inst x86) (rme48 proc-mode (+ 8 src-addr) seg-reg :r inst-ac? x86))
+               ((when flg) (!!ms-fresh :rme48 proc-mode flg))
                (x86 (!fp-last-inst fp-last-inst x86))
 
-               ((mv flg fp-last-data x86) (rme32 proc-mode (+ 16 src-addr) seg-reg :r inst-ac? x86))
-               ((when flg) (!!ms-fresh :rme32 proc-mode flg))
+               ((mv flg fp-last-data x86) (rme48 proc-mode (+ 16 src-addr) seg-reg :r inst-ac? x86))
+               ((when flg) (!!ms-fresh :rme48 proc-mode flg))
                (x86 (!fp-last-data fp-last-data x86))
 
                ((mv flg mxcsr x86) (rme32 proc-mode (+ 24 src-addr) seg-reg :r inst-ac? x86))
