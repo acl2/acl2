@@ -28126,8 +28126,15 @@ Lisp definition."
                    (true-listp (nthcdr n x)))))
 
  (defun count-fn (item sequence start end)
+
+; In raw Lisp, count is the Common Lisp function, which compares item to
+; members of sequence using eql, while count-listp uses equal.  So when
+; sequence is a list, the guard below (in analogy to the guard of member)
+; ensures that eql and equal agree on those comparisons.
+
    (declare (xargs :guard (and (if (true-listp sequence)
-                                   t
+                                   (or (eqlablep item)
+                                       (eqlable-listp sequence))
                                  (stringp sequence))
                                (natp start)
                                (or (null end)

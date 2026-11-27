@@ -19473,7 +19473,7 @@ subtree of X with T, without duplication.</p>
   (count #\\D \"DabcDefcDe\" :start 1 :end 5) ; = 1
   (count #\\D \"DabcDefcDe\" :start 1 :end 4) ; = 0
   (count #\\z \"DabcDefcDe\")                 ; = 0
-  (count '(a b) '(17 (a b) 23 (a b) (c d)))   ; = 2
+  (count 'a '(17 a 23 a (c d)))               ; = 2
 
   General Form:
   (count item sequence &key start end)
@@ -19483,7 +19483,10 @@ subtree of X with T, without duplication.</p>
  @('sequence').  The @(see guard) for calls of @('count') (which is actually a
  macro in ACL2) specifies that @('sequence') is a string or a true-list, and
  that @('start'), which defaults to 0, and @('end'), which defaults to the
- length of @('sequence'), are valid indices into sequence.</p>
+ length of @('sequence'), are valid indices into sequence.  If @('sequence') is
+ a list, then the guard also specifies that either @('item') or every member of
+ @('sequence') satisfies @(tsee eqlablep), since Common Lisp's @('count')
+ compares using @(tsee eql).</p>
 
  <p>See any Common Lisp documentation for more information about @('count'),
  which is a Common Lisp utility.  At this time ACL2 does not support keyword
@@ -110379,6 +110382,13 @@ it."
  @(tsee stobj-let)'s bindings was on a quoted non-numeric index.  As part of
  the fix, extended a guard optimization for constant indices from just the
  numeric case.</p>
+
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in
+ @(tsee count), which in @(see guard)-verified code compared list members to
+ the item using @(tsee eql), although its logical definition uses @(tsee
+ equal).  The guard of @('count') on a list now requires that the item or every
+ member of the list satisfies @(tsee eqlablep).  For an example, see @(see
+ community-book) @('system/tests/count-eql-vs-equal.lisp').</p>
 
  <p>Checks were improved to avoid raw Lisp errors in the following situations.
  (Aside: AI reported, for the first two: &ldquo;Four subagents tested ~270
