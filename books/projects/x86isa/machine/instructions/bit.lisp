@@ -1324,8 +1324,7 @@
        ;; SDM says AF and PF are undefined. Are they really undefined or just preserved?
        (undefined-flags (!rflagsbits->pf 1 (!rflagsbits->af 1 0)))
 
-       (x86 (!rgfi-size operand-size src1-index res 1 ;; fake rex-byte
-                        x86))
+       (x86 (!rgfi-size operand-size src1-index res rex-byte x86))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
