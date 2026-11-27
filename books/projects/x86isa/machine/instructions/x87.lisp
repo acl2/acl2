@@ -100,7 +100,7 @@
 
           ;; Op/En: M
           ;; 0F AE /0: fxsave
-          ;; REX.W + 00F AE /0: fxsave64
+          ;; REX.W + 0F AE /0: fxsave64
 
           :parents (two-byte-opcodes)
 
