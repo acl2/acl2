@@ -19973,21 +19973,21 @@
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W0)
-              :FEAT '(:BMI1 :AVX)
+              :FEAT '(:BMI1)
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           '(x86-blsi)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1)))))
     (INST "BLSI"
           (OP :OP #xF38F3
               :VEX '(:0F38 :NDD :LZ :W1)
-              :FEAT '(:BMI1 :AVX)
+              :FEAT '(:BMI1)
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
           '(x86-blsi)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI1)))))
     (INST "BZHI"
           (OP :OP #xF38F5
               :VEX '(:0F38 :NDS :LZ :W0)
@@ -20097,57 +20097,57 @@
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W0)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "SARX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F3 :W1)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W0)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "SHLX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :66 :W1)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W0)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))
     (INST "SHRX"
           (OP :OP #xF38F7
               :VEX '(:0F38 :NDS :LZ :F2 :W1)
-              :FEAT '(:BMI2 :AVX))
+              :FEAT '(:BMI2))
           (ARG :OP1 '(G Y)
                :OP2 '(E Y)
                :OP3 '(B Y))
           '(X86-SARX/SHLX/SHRX)
-          '((:EX (CHK-EXC :TYPE-13 (:BMI2 :AVX)))))))
+          '((:EX (CHK-EXC :TYPE-13 (:BMI2)))))))
 
 (defconst *pre-0f-3a-three-byte-opcode-map*
   '((INST "VPERMQ"
