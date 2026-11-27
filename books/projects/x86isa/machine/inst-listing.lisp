@@ -146,7 +146,7 @@
     (INST "ADC" (OP :OP #x12)
           (ARG :OP1 '(G B) :OP2 '(E B))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-G-E (OPERATION . #x2))
-          '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
+          '((:UD (UD-LOCK-USED))))
     (INST "ADC" (OP :OP #x13)
           (ARG :OP1 '(G V) :OP2 '(E V))
           '(X86-ADD/ADC/SUB/SBB/OR/AND/XOR/CMP-G-E (OPERATION . #x2))
@@ -3131,7 +3131,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "VMLAUNCH"
           (OP :OP #xF01
               :REG #x0
@@ -3140,7 +3140,8 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "VMRESUME"
           (OP :OP #xF01
               :REG #x0
@@ -3149,7 +3150,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "VMXOFF"
           (OP :OP #xF01
               :REG #x0
@@ -3158,8 +3159,9 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          ;; BOZO Rob -- following GP only if executed in VMX root operation!
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            ;; BOZO Rob -- following GP only if executed in VMX root operation!
+            (:GP (GP-CPL-NOT-0))))
     (INST "SIDT"
           (OP :OP #xF01
               :REG #x1
@@ -3180,7 +3182,8 @@
               :GROUP '(:GROUP-7)
               :FEAT '(:MONITOR))
           NIL 'NIL
-          '((:UD (UD-CPL-IS-NOT-ZERO))))
+          '((:UD (UD-LOCK-USED)
+                 (UD-CPL-IS-NOT-ZERO))))
     (INST "MWAIT"
           (OP :OP #xF01
               :REG #x1
@@ -3190,7 +3193,8 @@
               :GROUP '(:GROUP-7)
               :FEAT '(:MONITOR))
           NIL 'NIL
-          '((:UD (UD-CPL-IS-NOT-ZERO))))
+          '((:UD (UD-LOCK-USED)
+                 (UD-CPL-IS-NOT-ZERO))))
     (INST "CLAC"
           (OP :OP #xF01
               :REG #x1
@@ -3221,7 +3225,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "LGDT"
           (OP :OP #xF01
               :REG #x2
@@ -3272,7 +3276,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "XEND"
           (OP :OP #xF01
               :REG #x3
@@ -3303,7 +3307,8 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-7))
           NIL 'NIL
-          '((:NM (NM-CR0-TS-IS-1))))
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1))))
     (INST "SMSW"
           (OP :OP #xF01
               :REG #x4
@@ -5116,8 +5121,8 @@
             (:GP (GP-CPL-NOT-0) (GP-CR0-PE-IS-0))))
     (INST "GETSEC" (OP :OP #xF37)
           NIL 'NIL
-          ;; TODO: Lock Used? Feature flag info?
-          'NIL)
+          ;; TODO: Feature flag info?
+          '((:UD (UD-LOCK-USED))))
     (INST :3-BYTE-ESCAPE (OP :OP #xF38)
           'NIL
           '(THREE-BYTE-OPCODE-DECODE-AND-EXECUTE (SECOND-ESCAPE-BYTE . OPCODE))
@@ -8968,7 +8973,8 @@
     (INST "MREAD" (OP :OP #xF78)
           (ARG :OP1 '(E Y) :OP2 '(G Y))
           'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "VCVTTPD2UDQ"
           (OP :OP #xF78
               :EVEX '(:0F :256 :W1)
@@ -9068,7 +9074,8 @@
     (INST "MWRITE" (OP :OP #xF79)
           (ARG :OP1 '(E Y) :OP2 '(G Y))
           'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "VCVTPD2UDQ"
           (OP :OP #xF79
               :EVEX '(:0F :128 :W1)
@@ -10016,7 +10023,7 @@
           '((:UD (UD-LOCK-USED))))
     (INST "RSM" (OP :OP #xFAA)
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "BTS" (OP :OP #xFAB)
           (ARG :OP1 '(E V) :OP2 '(G V))
           '(X86-BTS-0F-AB)
@@ -10264,7 +10271,7 @@
     (INST "JMPE" (OP :OP #xFB8 :PFX :NO-PREFIX)
           ;; Reserved for emulator on IPF (Itanium Processor Family).
           NIL 'NIL
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "POPCNT" (OP :OP #xFB8
                        :PFX :F3
                        :FEAT '(:POPCNT))
@@ -10694,7 +10701,8 @@
               :GROUP '(:GROUP-9))
           (ARG :OP1 '(M Q))
           'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "VMCLEAR"
           (OP :OP #xFC7
               :REG #x6
@@ -10704,7 +10712,8 @@
               :GROUP '(:GROUP-9))
           (ARG :OP1 '(M Q))
           'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "VMXON"
           (OP :OP #xFC7
               :REG #x6
@@ -10714,8 +10723,9 @@
               :GROUP '(:GROUP-9))
           (ARG :OP1 '(M Q))
           'NIL
-          ;; BOZO Rob -- following GP only if executed outside VMX operation!
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            ;; BOZO Rob -- following GP only if executed outside VMX operation!
+            (:GP (GP-CPL-NOT-0))))
     (INST "VMPTRLD"
           (OP :OP #xFC7
               :REG #x7
@@ -10725,7 +10735,8 @@
               :GROUP '(:GROUP-9))
           (ARG :OP1 '(M Q))
           'NIL
-          '((:GP (GP-CPL-NOT-0))))
+          '((:UD (UD-LOCK-USED))
+            (:GP (GP-CPL-NOT-0))))
     (INST "RDRAND"
           (OP :OP #xFC7
               :REG #x6
@@ -17192,7 +17203,8 @@
     (INST "INVEPT" (OP :OP #xF3880 :PFX :66)
           (ARG :OP1 '(G Y) :OP2 '(M DQ))
           'NIL
-          '((:UD (UD-NOT-IN-PROT-OR-64-MODE)
+          '((:UD (UD-LOCK-USED)
+                 (UD-NOT-IN-PROT-OR-64-MODE)
                  (UD-NOT-IN-VMX-OPERATION)
                  (UD-INVEPT-NOT-SUPPORTED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))
@@ -17200,7 +17212,8 @@
     (INST "INVVPID" (OP :OP #xF3881 :PFX :66)
           (ARG :OP1 '(G Y) :OP2 '(M DQ))
           'NIL
-          '((:UD (UD-NOT-IN-PROT-OR-64-MODE)
+          '((:UD (UD-LOCK-USED)
+                 (UD-NOT-IN-PROT-OR-64-MODE)
                  (UD-NOT-IN-VMX-OPERATION)
                  (UD-INVVPID-NOT-SUPPORTED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))
