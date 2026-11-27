@@ -65,21 +65,26 @@
         (null  (member-equal '(:executable-counterpart dp-t-f) th-dis-e))
         (null  (member-equal '(:executable-counterpart dp-t-f) th-dis-p)))))
 
-;; 3. Strict prune-only (1-hop, 2-hop, bare :use, e/d, keep-rules)
+;; 3. Default strict mode (no fallback unless :prune-fallback t)
+(make-event
+ (mv-let (err ev state)
+   (dp-compile-defthm-prune 'dp-t-check '(equal x x) nil nil (w state) (ens state) state)
+   (if (and (null err) (consp ev) (eq (car ev) 'acl2::defthm))
+       (value '(value-triple :strict-default-ok))
+     (er soft 'dp-test "Expected direct DEFTHM expansion by default, got ~x0 (err ~x1)."
+         ev err))))
+
 (defthm-prune dp-test-1hop
   (implies (natp x) (< 0 (dp-t-g x)))
-  :rule-classes nil
-  :prune-fallback nil)
+  :rule-classes nil)
 
 (defthm-prune dp-test-2hop
   (implies (natp x) (equal (dp-t-hop0 x) (+ 2 x)))
   :rule-classes nil
-  :prune-hops 2
-  :prune-fallback nil)
+  :prune-hops 2)
 
 (defthmd-prune dp-test-bare-use
   (equal (dp-t-double x) (+ x x))
-  :prune-fallback nil
   :hints (("Goal" :use dp-t-double-rwd)))
 
 ;; Verify defthmd-prune actually disabled its exported rune

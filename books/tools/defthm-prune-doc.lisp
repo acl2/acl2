@@ -44,13 +44,15 @@
  <li>@(':prune-hops') (default @('1')): number of expansion hops from the
  initial seed function symbols through enabled definitions and covered
  non-primitive rewrite-rule right-hand sides.</li>
- <li>@(':prune-fallback') (default @('t')): when @('t'), emits
+ <li>@(':prune-fallback') (default @('nil')): when @('nil'), enforces the
+ pruned theory strictly (emitting a single @(tsee defthm)/@(tsee defthmd)
+ event with no fallback).  When @('t'), emits
  @('(make-event '(:or <pruned> <original>))') so that if the pruned attempt
  fails or exceeds @(':prune-step-limit'), ACL2 falls back transparently to the
- unpruned event.  When @('nil'), enforces the pruned theory strictly.</li>
+ unpruned event.</li>
  <li>@(':prune-step-limit') (default @('50000')): prover step limit applied to
  the pruned attempt when @(':prune-fallback t'); may be @('nil') for no
- limit.</li>
+ limit.  Unused when @(':prune-fallback nil').</li>
  <li>@(':prune-keep-rules') (default @('nil')): list of extra runic designators
  (or ruleset names) to keep enabled and seed from.</li>
  </ul>

@@ -36,9 +36,10 @@
 ;      using ACL2's exact runic-designator semantics (e.g., disabling a function
 ;      name disables :definition and :induction, preserving :executable-counterpart
 ;      and :type-prescription unless explicitly named).
-;   5. With :prune-fallback T (default), emits (make-event '(:or <pruned> <orig>))
+;   5. With :prune-fallback NIL (default), enforces the pruned theory strictly
+;      (emitting a single defthm/defthmd event with no step limit or fallback).
+;      With :prune-fallback T, emits (make-event '(:or <pruned> <orig>))
 ;      capped by :prune-step-limit (default 50000) on the pruned attempt.
-;      With :prune-fallback NIL, enforces the pruned theory strictly.
 
 (in-package "ACL2")
 
@@ -63,6 +64,7 @@
     :fake-rune-for-linear-equalities))
 
 (defconst *dp-default-hops* 1)
+(defconst *dp-default-fallback* nil)
 (defconst *dp-default-step-limit* 50000)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -656,7 +658,8 @@
   (let* ((defthm-sym (if disable-p 'acl2::defthmd 'acl2::defthm))
          (ctx-msg    (msg "In ~s0 ~x1" (if disable-p "DEFTHMD-PRUNE" "DEFTHM-PRUNE") name)))
     (mv-let (oerr hops fb step-lim keep-rules base-opts)
-      (dp-split-prune-opts opts *dp-default-hops* t *dp-default-step-limit* nil nil ctx-msg)
+      (dp-split-prune-opts opts *dp-default-hops* *dp-default-fallback*
+                           *dp-default-step-limit* nil nil ctx-msg)
       (if oerr
           (mv oerr nil state)
         (let* ((orig-ev  `(,defthm-sym ,name ,formula ,@base-opts))
