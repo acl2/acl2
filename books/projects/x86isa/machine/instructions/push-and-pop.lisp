@@ -355,7 +355,11 @@
 
   :body
 
-  (b* (((the (integer 1 8) operand-size)
+  (b* ((badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ((the (integer 1 8) operand-size)
         (select-operand-size proc-mode nil rex-byte nil prefixes t t nil x86))
 
        (rsp (read-*sp proc-mode x86))
@@ -599,7 +603,12 @@
 
   :body
 
-  (b* (;; Determine operand size.
+  (b* (;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Determine operand size.
        ((the (integer 2 8) operand-size)
         (select-operand-size proc-mode
                              nil ; byte-operand?
