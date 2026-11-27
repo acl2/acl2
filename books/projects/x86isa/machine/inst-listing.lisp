@@ -10318,7 +10318,7 @@
     (INST "TZCNT" (OP :OP #xFBC :PFX :F3)
           (ARG :OP1 '(G V) :OP2 '(E V))
           '(X86-TZCNT)
-          'NIL)
+          '((:UD (UD-LOCK-USED))))
     (INST "BSR" (OP :OP #xFBD :PFX :NO-PREFIX)
           (ARG :OP1 '(G V) :OP2 '(E V))
           '(X86-BSR)
