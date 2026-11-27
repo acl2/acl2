@@ -1,0 +1,3 @@
+*.lisp  text diff=scheme
+*.lsp   text diff=scheme
+*.acl2  text diff=scheme

@@ -1,0 +1,5 @@
+*.el
+*.html
+*.org
+*.sh
+!.dir-locals.el
