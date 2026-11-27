@@ -13870,7 +13870,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     (cond
      ((null old)
       (compress1 name ar))
-     ((eq (car old) ar)
+     ((and (eq (car old) ar)
+
+; The alist associated with name is not necessarily compressed, since aset1 may
+; have consed a pair onto it.  But if it starts with the header, then it was
+; returned by compress1 or by the recompression in aset1; so it is compressed
+; (or else its :order is nil, in which case compress1 returns it unchanged).
+
+           (eq (caar ar) :header))
       ar)
      (t (prog2$ (flush-compress name)
                 (compress1 name ar))))))
@@ -22968,7 +22975,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     pc-single-step-primitive
     pc-single-step
     pc-top pc-main pc-main-loop pc-main1 install-initial-state-stack
-    state-from-instructions state-stack-from-instructions
+    state-from-instructions
     assign-event-name-and-rule-classes
     save-fn
     ev-synp

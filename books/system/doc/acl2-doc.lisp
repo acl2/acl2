@@ -110434,6 +110434,11 @@ it."
  recompression was required but was not performed.  See @(see community-book)
  @('system/tests/compress1-length-bug.lisp').</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in
+ @(tsee maybe-flush-and-compress1), which could return an array updated by
+ @(tsee aset1) without compressing it.  For an example, see @(see
+ community-book) @('system/tests/maybe-flush-and-compress1-aset1.lisp').</p>
+
  <p>Fixed a soundness bug caused by failing to account for @(see
  invariant-risk) for function calls inside calls of @(tsee loop$).  See @(see
  community-book) @('system/tests/loop-invariant-risk.lisp').</p>
@@ -110964,6 +110969,12 @@ it."
  since you can't use recursion to iterate that way, since @(see df)s are not
  allowed in lists.  See @(see community-book)
  @('system/tests/for-loop-df-variables.lisp').</p>
+
+ <p>Fixed a soundness bug caused by inappropriate management of the @(see
+ proof-builder) state, specifically: for uses of @(':instructions') in @(see
+ events) submitted under a @(':lisp') command invoked in an interactive
+ proof-builder session.  See @(see community-book)
+ @('system/tests/proof-builder-session-reuse.lisp') for an example.</p>
 
  <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
  truncate) and related functions, due to a <a
