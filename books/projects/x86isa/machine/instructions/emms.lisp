@@ -59,7 +59,12 @@
 
   :body
 
-  (b* (;; #MF exception if there is a pending FPU exception.
+  (b* (;; Ensure the instruction is not too long.
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; #MF exception if there is a pending FPU exception.
        (fp-status (fp-status x86))
        ((when (= (fp-statusbits->es fp-status) 1))
         (!!fault-fresh :mf :emms-with-pending-fpu-exception))
