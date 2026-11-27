@@ -1255,7 +1255,7 @@
   :modr/m t
   :vex t
   :body
-  ;; placeholder
+
   (b* ((64-bit-mode? (eql proc-mode #.*64-bit-mode*))
 
        ;; VEX.W selects a 64-bit operand only in 64-bit mode.
