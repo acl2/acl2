@@ -541,7 +541,18 @@
       In a string literal, the escape sequence @('\\N{name}')
       denotes the character with that name,
       and the name can be an alias of the name of the character.
-      See @(tsee name-or-alias-code-point).")
+      See @(tsee name-or-alias-code-point).
+      The reference does not say
+      if the case of the letters of the name matters.
+      The implementation CPython (versions 3.13 to 3.15)
+      takes the name with its letters in either case,
+      and otherwise only as it is written
+      in the Unicode Character Database, with every space and hyphen.
+      So a model of that implementation
+      puts the letters of the name in upper case
+      before it calls that function.
+      The loose matching of @(tsee loose-name-or-alias-code-point)
+      accepts more names than that implementation does.")
     (xdoc::li
      (xdoc::b "Rust: sufficient for the lexer.")
      " In Rust [The Rust Reference, `Identifiers' and `Whitespace'],

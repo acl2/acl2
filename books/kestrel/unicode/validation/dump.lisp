@@ -43,7 +43,7 @@
 ; in a version of Unicode.
 ; The file is then compared with the files that independent implementations
 ; of the same version of Unicode write in the same format:
-; see the file README.md in this directory.
+; see the section "Validation" of ../README.md.
 ;
 ; The file has a header line and then one line for each code point,
 ; from 0 to #x10FFFF, with these fields, separated by semicolons:
@@ -131,6 +131,11 @@
 ; and a few more.
 ; Each line has a sequence, the character >, and the result of the process,
 ; separated by spaces.
+;
+; The second file and the third file end with the line #end,
+; which is written last.  A program that reads one of them
+; takes a file without that line to be incomplete.
+; The first file has a known number of lines.
 ;
 ; The functions here are in program mode: they do input/output,
 ; and they are not part of the library proper.
@@ -381,7 +386,9 @@
                  (nats-from (+ 1 *hangul-t-base*) 1 (- *hangul-t-count* 1))))
        (state (princ$ "#first second composite nfc" channel state))
        (state (newline channel state))
-       (state (dump-pairs-of-firsts firsts seconds ver channel state)))
+       (state (dump-pairs-of-firsts firsts seconds ver channel state))
+       (state (princ$ "#end" channel state))
+       (state (newline channel state)))
     (close-output-channel channel state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -448,5 +455,7 @@
        (state (dump-stream-safe-line
                (cons #x61 (make-list 61 :initial-element #x323))
                ver channel state))
-       (state (dump-stream-safe-of-code-points 0 ver channel state)))
+       (state (dump-stream-safe-of-code-points 0 ver channel state))
+       (state (princ$ "#end" channel state))
+       (state (newline channel state)))
     (close-output-channel channel state)))

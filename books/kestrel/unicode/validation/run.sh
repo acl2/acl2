@@ -35,12 +35,14 @@
 # This needs acl2 and cargo on the PATH, and the book dump in this
 # directory certified (cert.pl dump).  cargo downloads the crates.
 #
-# The exit status is 0 if nothing differs.
+# The files that ACL2 writes for VERSION are removed from WORK_DIR first,
+# so that what is compared is what this run writes.  The exit status is 0
+# if ACL2 writes its three files to the end and nothing differs.
 
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '10,38p' "$0"
+    sed -n '10,40p' "$0"
     exit 2
 fi
 version=$1
@@ -52,7 +54,14 @@ work=$(cd "$work" && pwd)
 
 echo "== ACL2: writing $work/acl2-$version.txt, acl2-pairs-$version.txt"
 echo "   and acl2-stream-safe-$version.txt"
-acl2 > "$work/acl2-$version.log" 2>&1 <<EOF2
+dumps=("$work/acl2-$version.txt" "$work/acl2-pairs-$version.txt"
+       "$work/acl2-stream-safe-$version.txt")
+rm -f "${dumps[@]}"
+# ACL2 exits with status 0 also when a form fails, for example when the
+# book dump is not certified; so the files are checked.  The programs
+# that read them check that they are complete.  No customization file is
+# loaded: one could start ACL2 in another package.
+ACL2_CUSTOMIZATION=NONE acl2 > "$work/acl2-$version.log" 2>&1 <<EOF2
 (include-book "$here/dump")
 (in-package "UNICODE")
 (dump-properties (version-v$version) "$work/acl2-$version.txt" state)
@@ -60,6 +69,13 @@ acl2 > "$work/acl2-$version.log" 2>&1 <<EOF2
 (dump-stream-safe (version-v$version) "$work/acl2-stream-safe-$version.txt"
                   state)
 EOF2
+for file in "${dumps[@]}"; do
+    if [ ! -s "$file" ]; then
+        echo "== ACL2 did not write $file"
+        echo "   see $work/acl2-$version.log"
+        exit 1
+    fi
+done
 files=("$work/acl2-$version.txt")
 status=0
 
@@ -98,6 +114,6 @@ python3 "$here/compare.py" "${files[@]}" || status=1
 if [ $status -eq 0 ]; then
     echo "== Unicode $version: no differences"
 else
-    echo "== Unicode $version: DIFFERENCES FOUND"
+    echo "== Unicode $version: DIFFERENCES OR ERRORS (see above)"
 fi
 exit $status

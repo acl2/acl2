@@ -40,12 +40,17 @@
 //! result is what the stream_safe iterator of unicode-normalization gives
 //! for the sequence.  It exits with status 1 if any line differs.
 //!
-//! The fourth form, which needs unicode-bidi, tests a claim that the
-//! library makes and does not prove, because it does not have the Unicode
-//! Bidirectional Algorithm: a text with no character of the six classes
-//! that RIGHT-TO-LEFT-CODE-POINT-P of ../../../skeleton.lisp recognizes
-//! is displayed, in a paragraph from left to right, in the order in which
-//! it is stored.  See the function display_order.
+//! Each of those two files ends with the line `#end`, which is written
+//! last.  A file without that line is not complete: the program stops
+//! with an error.
+//!
+//! The fourth form, which needs unicode-bidi, tests with that crate a
+//! theorem of the library, BIDI-DISPLAY-ORDER-WHEN-RIGHT-TO-LEFT-FREE-P of
+//! ../../../bidi-left-to-right.lisp: a text with no character of the six
+//! classes that RIGHT-TO-LEFT-CODE-POINT-P of
+//! ../../../right-to-left-free.lisp recognizes is displayed, in a
+//! paragraph from left to right, in the order in which it is stored.
+//! See the function display_order.
 
 use std::io::{self, BufRead, BufWriter, Write};
 use unicode_normalization::char::{canonical_combining_class, compose};
@@ -402,14 +407,37 @@ fn code_points(out: &mut impl Write) -> io::Result<()> {
     Ok(())
 }
 
-fn pairs(path: &str) -> io::Result<bool> {
+/// The lines of a file that the ACL2 functions dump-pairs and
+/// dump-stream-safe write, without the lines that start with #.
+/// Those functions write the line #end last: a file without it,
+/// for example an empty file or one that ACL2 did not finish, is
+/// rejected, and so is a file with lines after it.
+fn complete_lines(path: &str) -> io::Result<Vec<String>> {
     let file = std::fs::File::open(path)?;
-    let (mut lines, mut skipped, mut differences) = (0u64, 0u64, 0u64);
+    let mut lines = Vec::new();
+    let mut ended = false;
     for line in io::BufReader::new(file).lines() {
         let line = line?;
         if line.starts_with('#') {
+            ended = ended || line == "#end";
             continue;
         }
+        if ended {
+            die(&format!("{path} has lines after #end"));
+        }
+        lines.push(line);
+    }
+    if !ended {
+        die(&format!(
+            "{path} does not end with the line #end: it is not complete"
+        ));
+    }
+    Ok(lines)
+}
+
+fn pairs(path: &str) -> io::Result<bool> {
+    let (mut lines, mut skipped, mut differences) = (0u64, 0u64, 0u64);
+    for line in complete_lines(path)? {
         lines += 1;
         let fields: Vec<&str> = line.split(' ').collect();
         if fields.len() < 4 {
@@ -442,13 +470,8 @@ fn pairs(path: &str) -> io::Result<bool> {
 }
 
 fn stream_safe(path: &str) -> io::Result<bool> {
-    let file = std::fs::File::open(path)?;
     let (mut lines, mut skipped, mut differences) = (0u64, 0u64, 0u64);
-    for line in io::BufReader::new(file).lines() {
-        let line = line?;
-        if line.starts_with('#') {
-            continue;
-        }
+    for line in complete_lines(path)? {
         lines += 1;
         let Some((sequence, result)) = line.split_once(" > ") else {
             die(&format!("bad line: {line}"));
@@ -529,8 +552,9 @@ fn count_reordered(
     (total, reordered, first)
 }
 
-/// Test, with unicode-bidi, the claim about RIGHT-TO-LEFT-FREE-P of
-/// ../../../skeleton.lisp.  The alphabet has twenty characters of sixteen
+/// Test, with unicode-bidi, the theorem about RIGHT-TO-LEFT-FREE-P of
+/// ../../../right-to-left-free.lisp that the top of this file names.
+/// The alphabet has twenty characters of sixteen
 /// of the seventeen classes that the predicate allows; the seventeenth is
 /// B, the paragraph separators, which only cut a text into paragraphs.
 /// Every string of up to six of them must be displayed in the order in
