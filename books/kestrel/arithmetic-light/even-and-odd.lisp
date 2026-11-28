@@ -179,3 +179,32 @@
 (defthmd not-evenp-when-oddp
   (implies (oddp x)
            (not (evenp x))))
+
+(defthm evenp-of-*-of-2
+  (implies (acl2-numberp x)
+           (equal (evenp (* 2 x))
+                  (integerp x)))
+  :hints (("Goal" :in-theory (enable evenp))))
+
+;rename
+(defthm oddp-of-double
+  (implies (integerp x)
+           (not (oddp (* 2 x))))
+  :hints (("Goal" :in-theory (enable oddp))))
+
+;; (defthm evenp-of-numerator-of-*-2
+;;   (implies (integerp x)
+;;            (evenp (numerator (* 2 x)))))
+
+;; (defthm not-oddp-of-numerator-of-*-2
+;;   (implies (integerp x)
+;;            (not (oddp (numerator (* 2 x))))))
+
+(defthm oddp-of-times-expt
+  (implies (and (natp m)
+                (integerp x))
+           (equal (oddp (* x (expt 2 m)))
+                  (if (equal m 0)
+                      (oddp x)
+                    nil)))
+  :hints (("Goal" :in-theory (enable evenp))))

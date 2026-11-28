@@ -63,6 +63,7 @@
 (local (include-book "logand-b"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
+(local (include-book "logbitp"))
 (local (include-book "bvuminus"))
 (local (include-book "bvminus"))
 (local (include-book "bvand"))
@@ -270,29 +271,6 @@
                (logand k b)))
   :hints (("Goal" :in-theory (enable myif))))
 
-;rewrite
-;move
-(defthm oddp-of-double
-  (implies (integerp x)
-           (not (oddp (* 2 x))))
-  :hints (("Goal" :in-theory (enable oddp))))
-
-;move
-(defthm logbitp-0-of-times-2
-  (implies (integerp x)
-           (not (LOGBITP 0 (* 2 X))))
-  :hints (("Goal" :in-theory (e/d (LOGBITP oddp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
-
-;move
-(defthm logbitp-of-double
-  (implies (and (natp n)
-                (integerp x))
-           (equal (logbitp n (* 2 x))
-                  (if (equal 0 n)
-                      nil
-                    (logbitp (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
-
 (defthm logext-of-logapp
   (implies (and (integerp x)
                 (natp k)
@@ -301,28 +279,6 @@
            (equal (LOGEXT k (LOGAPP 1 0 x))
                   (logapp 1 0 (logext (+ -1 k) x))))
   :hints (("Goal" :in-theory (enable logapp))))
-
-;move
-(defthm oddp-of-times-expt
-  (implies (and (natp m)
-                (integerp x))
-           (equal (oddp (* x (expt 2 m)))
-                  (if (equal m 0)
-                      (oddp x)
-                    nil)))
-  :hints (("Goal" :in-theory (enable oddp))))
-
-;move
-(defthm logbitp-of-shift
-  (implies (and (natp n)
-                (natp m)
-                (<= m n)
-                (integerp x))
-           (equal (logbitp n (* (expt 2 m) x))
-                  (if (equal 0 n)
-                      (logbitp 0 x)
-                    (logbitp (- n m) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp floor oddp expt-of-+) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (defthm logext-identity2
   (implies (and (signed-byte-p free i)
@@ -1010,15 +966,22 @@
    (equal (logtail 16 (LOGAPP 8 v x))
           (logtail 8 x)))
 
-(defthm shift-compare-hack
-   (< (logtail 8
-               (BVCHOP 16 x))
-      256))
+(defthm <-of-logtail-of-bvchop-linear
+  (implies (and (<= m n)
+                (natp n)
+                (natp m))
+           (< (logtail m (bvchop n x)) (expt 2 (- n m))))
+  :rule-classes ((:linear :trigger-terms ((logtail m (bvchop n x))))))
 
-(defthm shift-compare-hack-24-16
-   (< (logtail 16
-               (BVCHOP 24 x))
-      256))
+;; (defthm shift-compare-hack
+;;    (< (logtail 8
+;;                (BVCHOP 16 x))
+;;       256))
+
+;; (defthm shift-compare-hack-24-16
+;;    (< (logtail 16
+;;                (BVCHOP 24 x))
+;;       256))
 
 ;; ;deprecating in favor of power-of-2p
 ;; (defun pow2p (x)
