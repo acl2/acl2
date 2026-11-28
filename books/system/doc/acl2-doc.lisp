@@ -110759,6 +110759,14 @@ it."
  produced @('(F (RETURN-LAST 'PROGN '7 (TO-DF X)))') but now produces the
  correct result, @('(F (TO-DF X))').</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in the
+ @(see proof-builder)'s @('apply-linear') command, which added the conclusion
+ of a @(see linear) rule as a top-level hypothesis even when rule's hypotheses
+ were relieved using IF tests governing the current subterm.  In that case, the
+ added hypothesis is now an implication from those tests to that conclusion;
+ see @(see acl2-pc::apply-linear).  For an example, see @(see community-book)
+ @('system/tests/proof-builder-apply-linear-governors.lisp').</p>
+
  <p>Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
  fields of @(see stobj)s, by strengthening a check in each binding that the
  bound variable agrees with the key, so that the two are not merely congruent
@@ -171248,7 +171256,11 @@ apply a linear rule"
  <p>Finally, the instruction is applied exactly as the @('rewrite') instruction
  is applied, except instead of replacing the current subterm, the rule's
  instantiated conclusion is added to the end of the list of top-level
- hypotheses of the goal.</p>
+ hypotheses of the goal.  However, if the current subterm has governors (IF
+ tests) that are not top-level hypotheses, then since these may have been used
+ in relieving the rule's hypotheses, the hypothesis added is instead the
+ implication whose hypotheses are those governors and whose conclusion is the
+ rule's instantiated conclusion.</p>
 
  <p>Note that as for the @('rewrite') command, the substitution argument should
  be a list whose elements have the form @('(variable term)'), where @('term')

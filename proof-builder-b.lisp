@@ -3322,14 +3322,26 @@
                              (make-new-goals-fixed-hyps subst-hyps
                                                         assumptions
                                                         goal-name
-                                                        depends-on)))
+                                                        depends-on))
+
+; The hypotheses of the rule were relieved using assumptions, which include the
+; governors of the current subterm.  So the instantiated conclusion is only
+; known to hold under those governors, and the new top-level hypothesis is the
+; implication from those not already among the top-level hypotheses to that
+; conclusion.
+
+                            (govs (set-difference-equal
+                                   (reverse (governors conc current-addr))
+                                   hyps)))
                         (let ((changed-goal
                                (change goal (car goals)
                                        :hyps
                                        (append hyps
                                                (list
-                                                (sublis-var unify-subst
-                                                            lemma-concl)))
+                                                (make-implication
+                                                 govs
+                                                 (sublis-var unify-subst
+                                                             lemma-concl))))
                                        :depends-on
                                        (+ depends-on (length new-goals)))))
                           (mv
