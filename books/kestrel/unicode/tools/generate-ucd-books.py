@@ -40,7 +40,9 @@ Usage:
                ucd-sources.json (next to this script).  This is how a new
                Unicode version is added.  Without --pin, the version must
                already be in ucd-sources.json and every file read must
-               have the SHA-256 recorded there.
+               have the SHA-256 recorded there.  The file is written
+               last: a run that stops with an error leaves it, and the
+               books, as they were.
     --check    Do not write anything; exit with status 1 if any generated
                book differs from the one in the tree.
 
@@ -2655,11 +2657,9 @@ def main():
     if args.pin:
         if args.check:
             die("--pin and --check do not go together")
+        # The file is written at the end, when the books have been
+        # written: a run that stops with an error leaves it as it was.
         manifest[version] = read
-        MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True)
-                            + "\n")
-        print("recorded the SHA-256 of %d files of Unicode %s in %s"
-              % (len(read), version, MANIFEST.name))
     elif version not in manifest:
         die("Unicode %s is not in %s; use --pin to add it"
             % (version, MANIFEST.name))
@@ -2695,6 +2695,11 @@ def main():
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text)
             print("wrote %s" % path)
+    if args.pin:
+        MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True)
+                            + "\n")
+        print("recorded the SHA-256 of %d files of Unicode %s in %s"
+              % (len(read), version, MANIFEST.name))
     if args.check:
         if different:
             sys.exit(1)

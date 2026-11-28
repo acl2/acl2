@@ -228,25 +228,38 @@
     "The position is given by the code points before it,
      in reverse order, so that the nearest one is first,
      and by the code points after it, in order.
-     There is no boundary at the start or at the end of a list:
-     if either argument is empty, the result is @('nil').")
+     Either list can be empty:
+     the position is then the start or the end of the text.")
    (xdoc::p
     "These are the three rules of [UTS #55, Section 5.1.2.1]:
-     see @(see identifier-word-boundaries)."))
-  (b* (((unless (and (consp before) (consp after))) nil)
-       (next (car after))
-       (base? (chunk-skip-marks before ver))
+     see @(see identifier-word-boundaries).
+     The first rule needs a character on each side of the position.
+     The second rule looks only at the characters after the position,
+     and the third rule at the character on one side of it.
+     So there can be a boundary at the start of the text,
+     by the second rule or by the third:
+     the table of examples of the specification
+     marks one at the start of @('TypeII').
+     There can be one at the end of the text, by the third rule.
+     A boundary at the start or at the end of the text
+     delimits no chunk: see @(tsee identifier-chunks)."))
+  (b* ((base? (chunk-skip-marks before ver))
        (camel (and (consp base?)
+                   (consp after)
                    (or (chunk-lowercase-p (car base?) ver)
                        (chunk-non-greek-titlecase-p (car base?) ver))
-                   (chunk-uppercase-or-titlecase-p next ver)))
-       (following? (chunk-skip-marks (cdr after) ver))
-       (hat (or (chunk-non-greek-titlecase-p next ver)
-                (and (chunk-uppercase-or-titlecase-p next ver)
-                     (consp following?)
-                     (chunk-lowercase-p (car following?) ver))))
-       (snake (or (chunk-punctuation-p next ver)
-                  (chunk-punctuation-p (car before) ver))))
+                   (chunk-uppercase-or-titlecase-p (car after) ver)))
+       (following? (and (consp after)
+                        (chunk-skip-marks (cdr after) ver)))
+       (hat (and (consp after)
+                 (or (chunk-non-greek-titlecase-p (car after) ver)
+                     (and (chunk-uppercase-or-titlecase-p (car after) ver)
+                          (consp following?)
+                          (chunk-lowercase-p (car following?) ver)))))
+       (snake (or (and (consp after)
+                       (chunk-punctuation-p (car after) ver))
+                  (and (consp before)
+                       (chunk-punctuation-p (car before) ver)))))
     (or camel hat snake))
   :hooks (:fix))
 

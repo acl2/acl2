@@ -68,7 +68,9 @@ point.
 
 The second form reads a file written by DUMP-PAIRS of dump.lisp, with lines
 `first second composite nfc...`, and checks the NFC form of each pair
-against unicodedata.normalize.  It exits with status 1 if any differs.
+against unicodedata.normalize.  It exits with status 1 if any differs,
+or if the file does not end with the line `#end`, which DUMP-PAIRS writes
+last: such a file is not complete.
 
 The third form writes a header line and one line for each code point with
 the columns of the source `files` only.  They do not depend on the
@@ -310,11 +312,16 @@ def files(version, ucd_dir):
 
 def pairs(path):
     lines = differences = 0
+    ended = False
     with open(path) as f:
         for line in f:
             line = line.rstrip("\n")
             if line.startswith("#"):
+                ended = ended or line == "#end"
                 continue
+            if ended:
+                sys.exit("python-oracle.py: error: %s has lines after #end"
+                         % path)
             lines += 1
             fields = line.split(" ")
             first, second = int(fields[0]), int(fields[1])
@@ -323,6 +330,10 @@ def pairs(path):
                 differences += 1
                 if differences <= 20:
                     print("DIFFERENT: %s (here: %s)" % (line, nfc))
+    if not ended:
+        # dump-pairs of dump.lisp writes that line last
+        sys.exit("python-oracle.py: error: %s does not end with the line"
+                 " #end: it is not complete" % path)
     print("pairs@python: %d pairs, %d different" % (lines, differences))
     return differences == 0
 

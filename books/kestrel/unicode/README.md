@@ -1230,6 +1230,8 @@ For example 19.0.0:
 
 1. Generate the tables and record the SHA-256 of the inputs:
    `python3 tools/generate-ucd-books.py 19.0.0 UCD_DIR --fetch --pin`.
+   (If the generator stops with an error, it has changed neither the
+   books nor `tools/ucd-sources.json`.)
 2. In `versions.lisp`, add `(:v19.0.0 ())` to the type `version`, a line
    to `version-string` and to `version-rank`, and a line to the statement
    and to the hint of the theorem `version-fix-in-terms-of-version-case`.
@@ -1875,8 +1877,10 @@ and mixed-number detection, which are short definitions on top of what is
 compared; the tests have the examples of UTS #39 for each.  The chunks of
 an identifier are not compared with another implementation either.  The
 tests have the thirteen examples of the table of UTS #55, Section
-5.1.2.1, and that is all the evidence there is that the definition is the
-one the specification means.  The file
+5.1.2.1, as lists of chunks and as the positions of the boundaries that
+the table marks, of which three are at the start of an example; that is
+all the evidence there is that the definition is the one the
+specification means.  The file
 `confusablesSummary.txt` of UTS #39 is not used as a test: its groups of
 look-alike strings are not the classes of strings with the same skeleton
 (by the second implementation, 73 of its 3,417 groups in 17.0.0, and 31
@@ -1896,6 +1900,14 @@ UCD_DIR=/tmp/ucd-17.0.0 \
 UCD_DIR=/tmp/ucd-18.0.0 \
   validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
+
+The script does not report "no differences" when ACL2 fails or is cut
+short.  It first removes the files that ACL2 wrote for the version in an
+earlier run, and it stops if ACL2 does not write one of its three files.
+The file of the pairs and the file of the Stream-Safe sequences end with
+the line `#end`, which ACL2 writes last, and the programs that read them
+stop if that line is not there.  `validation/compare.py` stops if a file
+does not have a line for each of the 1,114,112 code points.
 
 ## Documentation topics
 

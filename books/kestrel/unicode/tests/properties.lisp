@@ -1645,6 +1645,95 @@
 (test (equal (identifier-chunks (ascii "__") *v17*)
              (list (ascii "_") (ascii "_"))))
 
+; The boundaries themselves.  A position is given by the code points
+; before it, the nearest one first, and by the code points after it.
+
+; The positions of the boundaries of a list of code points,
+; from 0, which is the start, to its length, which is the end.
+
+(defun boundary-positions-from (before after position ver)
+  (declare (xargs :mode :program))
+  (let ((rest (if (endp after)
+                  nil
+                (boundary-positions-from (cons (car after) before)
+                                         (cdr after)
+                                         (+ 1 position)
+                                         ver))))
+    (if (identifier-word-boundary-p before after ver)
+        (cons position rest)
+      rest)))
+
+(defmacro boundary-positions (cps ver)
+  `(boundary-positions-from nil ,cps 0 ,ver))
+
+; The examples of UTS #55, Section 5.1.2.1, in the order of its table,
+; with the boundaries that the table marks.
+; It marks one at the start of the first example, by the second rule,
+; and at the start of two more.
+
+(test (equal (boundary-positions (ascii "TypeII") *v16*) '(0 4)))
+(test (equal (boundary-positions (ascii "TypeII") *v17*) '(0 4)))
+(test (equal (boundary-positions (ascii "TypeII") *v18*) '(0 4)))
+(test (equal (boundary-positions (ascii "OCaml") *v17*) '(1)))
+(test (equal (boundary-positions
+              (append (ascii "HTTP") '(#x417 #x430 #x43F #x440 #x43E #x441))
+              *v17*)
+             '(4)))
+(test (equal (boundary-positions (ascii "UAX9ClauseHL4") *v17*) '(4 10)))
+(test (equal (boundary-positions (ascii "LOUD_SNAKE") *v17*) '(4 5)))
+(test (equal (boundary-positions (ascii "Fancy_Snake") *v17*) '(0 5 6)))
+(test (equal (boundary-positions (ascii "snake-kebab") *v17*) '(5 6)))
+(test (equal (boundary-positions
+              (append (ascii "Paral") '(#xB7) (ascii "lel")) *v17*)
+             '(0)))
+(test (equal (boundary-positions (ascii "microB") *v17*) '(5)))
+(test (equal (boundary-positions (append (ascii "micro") '(#x15AF)) *v17*)
+             nil))
+(test (equal (boundary-positions
+              (append (ascii "HTTP") '(#x938 #x930 #x94D #x935 #x930)) *v17*)
+             nil))
+(test (equal (boundary-positions (ascii "dromedaryCamel") *v17*) '(9)))
+(test (equal (boundary-positions (ascii "snakeELEPHANTSnake") *v17*)
+             '(5 13)))
+
+; In TypeII: a boundary at the start, and between e and I by the first rule;
+; none between y and p, between I and I, or at the end.
+
+(test (identifier-word-boundary-p nil (ascii "TypeII") *v17*))
+(test (identifier-word-boundary-p (ascii "epyT") (ascii "II") *v17*))
+(test (not (identifier-word-boundary-p (ascii "yT") (ascii "peII") *v17*)))
+(test (not (identifier-word-boundary-p (ascii "IepyT") (ascii "I") *v17*)))
+(test (not (identifier-word-boundary-p (ascii "IIepyT") nil *v17*)))
+
+; The third rule puts a boundary on each side of a low line,
+; also when the low line is the whole text or is at one end of it.
+
+(test (identifier-word-boundary-p nil (ascii "_") *v17*))
+(test (identifier-word-boundary-p (ascii "_") nil *v17*))
+(test (identifier-word-boundary-p nil (ascii "_x") *v17*))
+(test (identifier-word-boundary-p (ascii "_") (ascii "x") *v17*))
+(test (identifier-word-boundary-p (ascii "x") (ascii "_") *v17*))
+(test (identifier-word-boundary-p (ascii "_x") nil *v17*))
+
+; No boundary at either end of abc, or in the empty text.
+
+(test (not (identifier-word-boundary-p nil (ascii "abc") *v17*)))
+(test (not (identifier-word-boundary-p (ascii "cba") nil *v17*)))
+(test (not (identifier-word-boundary-p nil nil *v17*)))
+
+; Titlecase letters at the start: a boundary before U+01C5, which is Latin;
+; before U+1F88, which is Greek, when a lowercase letter follows,
+; here U+03B1 GREEK SMALL LETTER ALPHA; none before U+1F88 alone.
+
+(test (identifier-word-boundary-p nil '(#x1C5) *v17*))
+(test (identifier-word-boundary-p nil '(#x1F88 #x3B1) *v17*))
+(test (not (identifier-word-boundary-p nil '(#x1F88) *v17*)))
+
+; Marks after a letter count as that letter, at the start too:
+; A, U+0301 COMBINING ACUTE ACCENT, b.
+
+(test (identifier-word-boundary-p nil '(#x41 #x301 #x62) *v17*))
+
 ; There are thirty-one titlecase letters in each version: four Latin ones,
 ; and twenty-seven Greek ones.
 
@@ -1904,6 +1993,50 @@
              (skeleton *paypal-with-cyrillic-a* *v17*)))
 (test (bidi-confusable-p *paypal* *paypal-with-cyrillic-a*
                          *first-strong* *v17*))
+
+; A character that rule X9 of the bidirectional algorithm removes
+; has no level and is not in the order of display,
+; but it is kept in the text as displayed,
+; so it is there when the internal skeleton is taken.
+; That matters for a, U+0300 COMBINING GRAVE ACCENT,
+; U+200D ZERO WIDTH JOINER, which rule X9 removes,
+; and U+05B9 HEBREW POINT HOLAM.
+; The list is an identifier and satisfies right-to-left-free-p.
+; The joiner keeps the holam, whose combining class is the lower one,
+; behind the accent when the list is first decomposed;
+; then the joiner is removed and the holam becomes
+; U+0307 COMBINING DOT ABOVE, which has the combining class of the accent.
+; Without the joiner the two marks end in the other order.
+
+(defconst *marks-with-joiner* '(#x61 #x300 #x200D #x5B9))
+
+(test (xid-identifier-p *marks-with-joiner* *v17*))
+(test (right-to-left-free-p *marks-with-joiner* *v17*))
+(test (equal (bidi-display-order *marks-with-joiner* *ltr* *v17*)
+             '(0 1 3)))
+(test (equal (bidi-display *marks-with-joiner* *ltr* *v17*)
+             *marks-with-joiner*))
+(test (equal (bidi-skeleton *marks-with-joiner* *ltr* *v16*)
+             '(#x61 #x300 #x307)))
+(test (equal (bidi-skeleton *marks-with-joiner* *ltr* *v17*)
+             '(#x61 #x300 #x307)))
+(test (equal (bidi-skeleton *marks-with-joiner* *ltr* *v18*)
+             '(#x61 #x300 #x307)))
+(test (equal (skeleton *marks-with-joiner* *v17*)
+             '(#x61 #x300 #x307)))
+(test (equal (bidi-skeleton '(#x61 #x300 #x5B9) *ltr* *v17*)
+             '(#x61 #x307 #x300)))
+(test (not (bidi-confusable-p *marks-with-joiner* '(#x61 #x300 #x5B9)
+                              *ltr* *v17*)))
+
+; U+0001, a control character, is removed by rule X9 too,
+; and is not default ignorable: it is its own skeleton.
+
+(test (right-to-left-free-p '(#x01) *v17*))
+(test (equal (bidi-display-order '(#x01) *ltr* *v17*) nil))
+(test (equal (bidi-display '(#x01) *ltr* *v17*) '(#x01)))
+(test (equal (bidi-skeleton '(#x01) *ltr* *v17*) '(#x01)))
+(test (equal (skeleton '(#x01) *v17*) '(#x01)))
 
 ; The specification says that the bidirectional skeleton
 ; for the direction from left to right is the internal skeleton
