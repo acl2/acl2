@@ -62,12 +62,32 @@
      punctuation and delimiters;
      escapes, including unicode escapes and string continuations;
      identifiers and suffixes;
-     and character, byte, string, byte string, and C string literals.
+     character, byte, string, byte string, and C string literals;
+     raw string, raw byte string, and raw C string literals;
+     and the digits of number literals:
+     decimal, binary, octal, and hexadecimal literals,
+     and the exponents of float literals.
      The functions that check the value of a unicode escape [SC9]
      may fail on the string of a tree that matches their rule,
-     so their theorems are about the remaining input when they do not fail.
+     so their theorems are about the remaining input when they do not fail;
+     likewise the functions for the digits after a radix prefix,
+     which fail when a decimal digit follows them [SC7].
      The theorems for string literals use [SC13],
-     which is part of @(tsee lexeme-cst-okp).")
+     and the theorems for raw literals use [SC10];
+     both are part of @(tsee lexeme-cst-okp).
+     For the digits of number literals, which the functions take greedily,
+     the theorems say exactly how far a function goes
+     into the remaining input:
+     as far as the digits and underscores at its start.")
+   (xdoc::p
+    "The rules for block comments, and for the content of raw literals,
+     allow more strings than are valid;
+     the side conditions [SC2] and [SC10] say which strings are.
+     So the theorems for block comments and for the content of raw literals
+     are about the strings that satisfy those conditions,
+     not about trees.
+     They are in @(see lexer-correctness),
+     with the other theorems about those conditions.")
    (xdoc::p
     "The theorem for a lexing function is named after the function,
      with @('-when-tree-match') added,
@@ -76,7 +96,9 @@
      With them are theorems about
      the first characters of the strings of trees,
      and about the first characters on which lexing functions fail,
-     which say that the alternatives of a rule do not overlap.
+     which say that the alternatives of a rule do not overlap;
+     and theorems about how the strings of the trees for comments start,
+     from which the lexer chooses the kind of a comment.
      All these theorems are disabled.
      The proof that the lexer satisfies maximal munch
      is built on them (see @(see lexer-maximal-munch))."))
@@ -471,6 +493,13 @@
 ; (the value of a unicode escape, [SC9]):
 ; the conclusion is then only about the remaining input,
 ; under the hypothesis that the function does not fail.
+; The kinds :continues and :continues-if-ok are for the functions
+; that end with a repetition of which they take all they can
+; (the digits of a number):
+; the conclusion is that the function leaves
+; what the function for that repetition, given as :then,
+; leaves of the remaining input.
+; This says exactly how far the function goes into the remaining input.
 ; The keyword arguments are another name for the theorem,
 ; an additional hypothesis
 ; (about the remaining input, or a side condition on the tree),
@@ -479,7 +508,8 @@
 ; a long one can be given as a list of strings, which are joined.
 
 (defmacro def-lex-when-tree-match (fn rule kind
-                                      &key name hyp enable disable expand use)
+                                      &key
+                                      name hyp then enable disable expand use)
   (b* ((thm (or name (acl2::packn-pos (list fn '-when-tree-match) fn)))
        (rule (if (stringp rule) rule (acl2::string-append-lst rule)))
        (call `(,fn (append (abnf::tree->string tree) rest)))
@@ -524,6 +554,20 @@
             :corollary (implies ,hyps
                                 (<= (len (mv-nth 1 ,call))
                                     (len rest)))))
+          ,@hints))
+      (:continues
+       `(defruled ,thm
+          (implies ,hyps
+                   (and (not (reserrp (mv-nth 0 ,call)))
+                        (equal (mv-nth 1 ,call)
+                               (mv-nth 1 (,then rest)))))
+          ,@hints))
+      (:continues-if-ok
+       `(defruled ,thm
+          (implies (and ,hyps
+                        (not (reserrp (mv-nth 0 ,call))))
+                   (equal (mv-nth 1 ,call)
+                          (mv-nth 1 (,then rest))))
           ,@hints))
       (t ; :at-most-if-ok
        `(defruled ,thm
@@ -578,6 +622,8 @@
 ; followed by any remaining input,
 ; a repetition function leaves at most the remaining input;
 ; and it leaves exactly that if no element starts the remaining input.
+; Both follow from the third theorem:
+; it leaves what it leaves of the remaining input alone.
 ; The theorem for the element function must be of the first kind:
 ; the element fixes where it ends.
 
@@ -586,8 +632,23 @@
        (len-thm (acl2::packn-pos (list 'len-of- rep-fn '-when-tree-list-match)
                                  rep-fn))
        (rest-thm (acl2::packn-pos (list rep-fn '-when-tree-list-match)
-                                  rep-fn)))
+                                  rep-fn))
+       (append-thm (acl2::packn-pos
+                    (list rep-fn '-of-append-when-tree-list-match)
+                    rep-fn)))
     `(progn
+       (defruled ,append-thm
+         (implies (cst-list-elem-matchp trees ,elem-string)
+                  (equal (mv-nth 1 (,rep-fn
+                                    (append (abnf::tree-list->string trees)
+                                            rest)))
+                         (mv-nth 1 (,rep-fn rest))))
+         :induct (len trees)
+         :enable (tree-matching
+                  ,rep-fn
+                  ,elem-thm
+                  (:induction len))
+         :disable tree-matching-openers)
        (defruled ,len-thm
          (implies (cst-list-elem-matchp trees ,elem-string)
                   (<= (len (mv-nth 1 (,rep-fn
@@ -660,37 +721,6 @@
            lex-not-slash-bang-lf-when-tree-match
            lex-not-slash-bang-lf-when-slash
            len-of-lex-*-not-lf-when-tree-list-match))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Block comments.
-
-; The rules for block comments overapproximate:
-; [SC2] says which of the strings that they give are block comments.
-; So the theorem for block comments is about
-; any string that satisfies [SC2], and not about trees:
-; it is rest-input-of-lex-lexeme-when-block-comment-string-p,
-; proved with the other theorems about [SC2].
-; A valid lexeme CST satisfies [SC2] if its string starts with /*
-; (see lexeme-cst-okp).
-; The strings of the trees for the three kinds of block comments
-; start that way.
-
-(defmacro def-slash-star-prefixp-of-tree->string (rule)
-  `(defruled ,(acl2::packn-pos
-               (list 'slash-star-prefixp-of-tree->string-when-
-                     (acl2::string-upcase rule))
-               'lex-whitespace-char)
-     (implies (cst-matchp tree ,rule)
-              (prefixp '(#x2f #x2a) (abnf::tree->string tree)))
-     :enable tree-matching
-     :expand ((:free (element rules)
-               (abnf::tree-match-element-p tree element rules))
-              (abnf::tree-terminatedp tree))))
-
-(def-slash-star-prefixp-of-tree->string "block-comment")
-(def-slash-star-prefixp-of-tree->string "outer-block-doc")
-(def-slash-star-prefixp-of-tree->string "inner-block-doc")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1586,3 +1616,346 @@
            first-of-tree->string-when-dquote
            lex-*-c-string-literal-item-when-tree-list-match
            lex-option-suffix-when-tree-match))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Raw literals.
+
+; The rules for the content of a raw literal overapproximate:
+; [SC10] says which of the strings that they give are contents.
+; So the theorem for the content is about
+; any string that satisfies [SC10], and not about trees:
+; it is rest-input-of-lex-raw-string-content-when-raw-content-string-p,
+; with its companions for the other two kinds of raw literals,
+; proved with the other theorems about [SC10].
+; In a valid lexeme CST, the content of a raw literal satisfies [SC10]
+; (see lexeme-cst-raw-termination-okp).
+; After the content, the function for the literal
+; takes as much of a suffix as it can.
+
+(def-lex-when-tree-match lex-raw-string-literal "raw-string-literal"
+  :at-most-if-ok
+  :hyp (raw-content-string-p
+        (abnf::tree-list->string (cadr (abnf::tree-nonleaf->branches tree))))
+  :enable (rest-input-of-lex-raw-string-content-when-raw-content-string-p
+           lex-option-suffix-when-tree-match))
+
+(def-lex-when-tree-match lex-raw-byte-string-literal "raw-byte-string-literal"
+  :at-most-if-ok
+  :hyp (raw-content-string-p
+        (abnf::tree-list->string (cadr (abnf::tree-nonleaf->branches tree))))
+  :enable (rest-input-of-lex-raw-byte-string-content-when-raw-content-string-p
+           lex-option-suffix-when-tree-match))
+
+(def-lex-when-tree-match lex-raw-c-string-literal "raw-c-string-literal"
+  :at-most-if-ok
+  :hyp (raw-content-string-p
+        (abnf::tree-list->string (cadr (abnf::tree-nonleaf->branches tree))))
+  :enable (rest-input-of-lex-raw-c-string-content-when-raw-content-string-p
+           lex-option-suffix-when-tree-match))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Digits and underscores.
+
+; The digits of a number literal, in each of the four radixes,
+; are a list of items, each a digit or an underscore,
+; and the functions take all the items that they can.
+; For each radix, this macro generates:
+; the theorems for an item and for a list of items;
+; and three theorems that say that the function for a list of items
+; leaves the same when part of the items has been taken before:
+; one digit, by the function for a digit;
+; the underscores at the start, by the function for those;
+; or the string of a tree for a digit.
+; The first two of these are about the lexing functions alone.
+; The keyword argument is for the function for a digit
+; that is not a character class.
+
+(defmacro def-lex-fails-when-underscore (fn &key enable)
+  `(defruled ,(acl2::packn-pos (list fn '-when-underscore) fn)
+     (implies (prefixp '(#x5f) (nat-list-fix input))
+              (reserrp (mv-nth 0 (,fn input))))
+     :enable (,fn abnf::parse-next nfix ,@enable)
+     :expand (nat-list-fix input)))
+
+(defmacro def-lex-digit-items-when-tree-match (radix &key enable)
+  (b* ((pkg 'lex-dec-digit)
+       (digit-fn (acl2::packn-pos (list 'lex- radix '-digit) pkg))
+       (item-fn (acl2::packn-pos (list 'lex- radix '-digit/underscore) pkg))
+       (items-fn (acl2::packn-pos (list 'lex-*- radix '-digit/underscore) pkg))
+       (underscore-fn (acl2::packn-pos (list 'lex-underscore-as- radix '-item)
+                                       pkg))
+       (underscores-fn (acl2::packn-pos
+                        (list 'lex-*-underscore-as- radix '-item) pkg))
+       (digit-rule (acl2::concatenate
+                    'acl2::string
+                    (acl2::string-downcase (acl2::symbol-name radix))
+                    "-digit"))
+       (item-rule (acl2::concatenate 'acl2::string
+                                     "( " digit-rule " / \"_\" )"))
+       (digit-thm (acl2::packn-pos (list digit-fn '-when-tree-match) pkg))
+       (fails-thm (acl2::packn-pos (list digit-fn '-when-underscore) pkg)))
+    `(progn
+       (def-lex-fails-when-underscore ,digit-fn :enable ,enable)
+       (def-lex-when-tree-match ,item-fn ,item-rule :exact
+         :enable (,digit-thm ,fails-thm))
+       (def-lex-repetition-when-tree-list-match ,items-fn ,item-fn ,item-rule)
+       (defruled ,(acl2::packn-pos (list items-fn '-of- digit-fn) pkg)
+         (implies (not (reserrp (mv-nth 0 (,digit-fn input))))
+                  (equal (mv-nth 1 (,items-fn (mv-nth 1 (,digit-fn input))))
+                         (mv-nth 1 (,items-fn input))))
+         :expand (,items-fn input)
+         :enable (,item-fn
+                  abnf::not-reserrp-when-treep))
+       (defruled ,(acl2::packn-pos (list items-fn '-of- underscores-fn) pkg)
+         (equal (mv-nth 1 (,items-fn (mv-nth 1 (,underscores-fn input))))
+                (mv-nth 1 (,items-fn input)))
+         :induct (,underscores-fn input)
+         :enable (,underscores-fn
+                  ,underscore-fn
+                  ,item-fn
+                  ,fails-thm
+                  parse-ichars-when-caseless-chars)
+         :expand (,items-fn input))
+       (defruled ,(acl2::packn-pos
+                   (list items-fn '-of-append-when-digit-tree-match) pkg)
+         (implies (cst-matchp tree ,digit-rule)
+                  (equal (mv-nth 1 (,items-fn
+                                    (append (abnf::tree->string tree) rest)))
+                         (mv-nth 1 (,items-fn rest))))
+         :expand (,items-fn (append (abnf::tree->string tree) rest))
+         :enable (,item-fn
+                  ,digit-thm
+                  abnf::not-reserrp-when-treep)))))
+
+(def-lex-digit-items-when-tree-match dec)
+(def-lex-digit-items-when-tree-match bin)
+(def-lex-digit-items-when-tree-match oct)
+(def-lex-digit-items-when-tree-match hex
+  :enable (lex-dec-digit-when-underscore))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The digits of number literals.
+
+; A decimal literal is a digit and a list of items,
+; of which the function takes all that it can:
+; so it leaves what the function for a list of items
+; leaves of the remaining input.
+
+(def-lex-when-tree-match lex-dec-literal "dec-literal" :continues
+  :then lex-*-dec-digit/underscore
+  :enable (lex-dec-digit-when-tree-match
+           lex-*-dec-digit/underscore-of-append-when-tree-list-match))
+
+; The other three literals have, after the prefix,
+; a list of items, a digit, and a list of items.
+; The grammar does not say which of the digits is that digit.
+; The function takes the underscores, the first digit,
+; and all the items that it can,
+; which is to take all the items that it can from after the prefix;
+; and the string of the tree, after the prefix, consists of items.
+; The function fails if a decimal digit follows what it takes [SC7].
+
+(def-lex-when-tree-match lex-bin-literal "bin-literal" :continues-if-ok
+  :then lex-*-bin-digit/underscore
+  :enable (lex-*-bin-digit/underscore-of-lex-bin-digit
+           lex-*-bin-digit/underscore-of-lex-*-underscore-as-bin-item
+           lex-*-bin-digit/underscore-of-append-when-tree-list-match
+           lex-*-bin-digit/underscore-of-append-when-digit-tree-match))
+
+(def-lex-when-tree-match lex-oct-literal "oct-literal" :continues-if-ok
+  :then lex-*-oct-digit/underscore
+  :enable (lex-*-oct-digit/underscore-of-lex-oct-digit
+           lex-*-oct-digit/underscore-of-lex-*-underscore-as-oct-item
+           lex-*-oct-digit/underscore-of-append-when-tree-list-match
+           lex-*-oct-digit/underscore-of-append-when-digit-tree-match))
+
+(def-lex-when-tree-match lex-hex-literal "hex-literal" :continues-if-ok
+  :then lex-*-hex-digit/underscore
+  :enable (lex-*-hex-digit/underscore-of-lex-hex-digit
+           lex-*-hex-digit/underscore-of-lex-*-underscore-as-hex-item
+           lex-*-hex-digit/underscore-of-append-when-tree-list-match
+           lex-*-hex-digit/underscore-of-append-when-digit-tree-match))
+
+; The exponent of a float literal has, after the letter and the sign,
+; the same three parts, in decimal digits.
+; The sign is optional;
+; when there is none, the function for it takes nothing,
+; since a digit or an underscore follows.
+; The function for the exponent fails if it finds no digit,
+; which does not happen on the string of a tree;
+; but the theorem that it does not fail is not needed
+; for the remaining input, and is not here.
+
+(def-lex-when-tree-match lex-exponent-letter "( %s\"e\" / %s\"E\" )" :exact)
+
+(def-lex-when-tree-match lex-option-sign "[ \"+\" / \"-\" ]" :exact
+  :hyp (and (reserrp (mv-nth 0 (abnf::parse-ichars "+" rest)))
+            (reserrp (mv-nth 0 (abnf::parse-ichars "-" rest)))))
+
+(defruled parse-ichars-of-plus-when-not-plus
+  (implies (not (and (consp input)
+                     (equal (car input) #x2b)))
+           (reserrp (mv-nth 0 (abnf::parse-ichars "+" input))))
+  :enable (parse-ichars-when-caseless-chars
+           prefixp
+           nfix)
+  :expand (nat-list-fix input))
+
+(defruled parse-ichars-of-minus-when-not-minus
+  (implies (not (and (consp input)
+                     (equal (car input) #x2d)))
+           (reserrp (mv-nth 0 (abnf::parse-ichars "-" input))))
+  :enable (parse-ichars-when-caseless-chars
+           prefixp
+           nfix)
+  :expand (nat-list-fix input))
+
+(def-first-of-tree->string "( dec-digit / \"_\" )"
+  (and (not (equal first #x2b))
+       (not (equal first #x2d)))
+  :name first-of-tree->string-when-dec-digit/underscore
+  :enable (first-of-tree->string-when-dec-digit))
+
+(defruled parse-ichars-of-sign-of-dec-items-and-dec-digit
+  (implies (and (cst-list-elem-matchp trees "( dec-digit / \"_\" )")
+                (cst-matchp tree "dec-digit"))
+           (and (reserrp
+                 (mv-nth 0 (abnf::parse-ichars
+                            "+"
+                            (append (abnf::tree-list->string trees)
+                                    (append (abnf::tree->string tree)
+                                            rest)))))
+                (reserrp
+                 (mv-nth 0 (abnf::parse-ichars
+                            "-"
+                            (append (abnf::tree-list->string trees)
+                                    (append (abnf::tree->string tree)
+                                            rest)))))))
+  :cases ((consp trees))
+  :enable (tree-matching
+           parse-ichars-of-plus-when-not-plus
+           parse-ichars-of-minus-when-not-minus
+           first-of-tree->string-when-dec-digit/underscore
+           first-of-tree->string-when-dec-digit)
+  :disable tree-matching-openers)
+
+(def-lex-when-tree-match lex-float-exponent "float-exponent" :continues-if-ok
+  :then lex-*-dec-digit/underscore
+  :enable (lex-exponent-letter-when-tree-match
+           lex-option-sign-when-tree-match
+           parse-ichars-of-sign-of-dec-items-and-dec-digit
+           lex-*-dec-digit/underscore-of-lex-dec-digit
+           lex-*-dec-digit/underscore-of-lex-*-underscore-as-dec-item
+           lex-*-dec-digit/underscore-of-append-when-tree-list-match
+           lex-*-dec-digit/underscore-of-append-when-digit-tree-match))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; How the strings of comments start.
+
+; The lexer chooses the kind of a comment from its first characters.
+; These theorems say how the string of a tree
+; for each kind of comment starts,
+; as far as that choice needs:
+; which the first characters are,
+; and which character does not follow them.
+; (The car of the rest of a string that ends is nil,
+; so a statement that a character of a string is not a given one
+; also covers the strings that end before it.)
+; For a line comment that may be just its opening characters,
+; the last conjunct gives the length of the string in that case.
+
+(def-first-of-tree->string "not-slash-bang-lf"
+  (and (natp first)
+       (not (equal first #x2f))
+       (not (equal first #x21))))
+
+(def-first-of-tree->string "not-slash-lf"
+  (and (natp first)
+       (not (equal first #x2f))))
+
+(defruled start-of-tree->string-when-line-comment
+  (implies (cst-matchp tree "line-comment")
+           (b* ((string (abnf::tree->string tree)))
+             (and (consp string)
+                  (consp (cdr string))
+                  (equal (car string) #x2f)
+                  (equal (cadr string) #x2f)
+                  (not (equal (caddr string) #x21))
+                  (implies (equal (caddr string) #x2f)
+                           (and (consp (cdddr string))
+                                (equal (cadddr string) #x2f)))
+                  (implies (not (consp (cddr string)))
+                           (equal (len string) 2)))))
+  :enable (tree-matching
+           inline-groups
+           first-of-tree->string-when-not-slash-bang-lf)
+  :expand ((:free (element rules)
+            (abnf::tree-match-element-p tree element rules))
+           (abnf::tree-terminatedp tree)))
+
+(defruled start-of-tree->string-when-outer-line-doc
+  (implies (cst-matchp tree "outer-line-doc")
+           (b* ((string (abnf::tree->string tree)))
+             (and (consp string)
+                  (consp (cdr string))
+                  (consp (cddr string))
+                  (equal (car string) #x2f)
+                  (equal (cadr string) #x2f)
+                  (equal (caddr string) #x2f)
+                  (not (equal (cadddr string) #x2f))
+                  (implies (not (consp (cdddr string)))
+                           (equal (len string) 3)))))
+  :enable (tree-matching
+           inline-groups
+           first-of-tree->string-when-not-slash-lf)
+  :expand ((:free (element rules)
+            (abnf::tree-match-element-p tree element rules))
+           (abnf::tree-terminatedp tree)))
+
+(defruled start-of-tree->string-when-inner-line-doc
+  (implies (cst-matchp tree "inner-line-doc")
+           (b* ((string (abnf::tree->string tree)))
+             (and (consp string)
+                  (consp (cdr string))
+                  (consp (cddr string))
+                  (equal (car string) #x2f)
+                  (equal (cadr string) #x2f)
+                  (equal (caddr string) #x21))))
+  :enable tree-matching
+  :expand ((:free (element rules)
+            (abnf::tree-match-element-p tree element rules))
+           (abnf::tree-terminatedp tree)))
+
+; The rules for block comments overapproximate:
+; [SC2] says which of the strings that they give are block comments.
+; So the theorem for block comments is about
+; any string that satisfies [SC2], and not about trees:
+; it is rest-input-of-lex-lexeme-when-block-comment-string-p,
+; proved with the other theorems about [SC2].
+; A valid lexeme CST satisfies [SC2] if its string starts with /*
+; (see lexeme-cst-okp).
+; The strings of the trees for the three kinds of block comments
+; start that way.
+
+(defmacro def-start-of-tree->string-when-block-comment (rule)
+  `(defruled ,(acl2::packn-pos
+               (list 'start-of-tree->string-when- (acl2::string-upcase rule))
+               'lex-whitespace-char)
+     (implies (cst-matchp tree ,rule)
+              (b* ((string (abnf::tree->string tree)))
+                (and (consp string)
+                     (consp (cdr string))
+                     (equal (car string) #x2f)
+                     (equal (cadr string) #x2a))))
+     :enable tree-matching
+     :expand ((:free (element rules)
+               (abnf::tree-match-element-p tree element rules))
+              (abnf::tree-terminatedp tree))))
+
+(def-start-of-tree->string-when-block-comment "block-comment")
+(def-start-of-tree->string-when-block-comment "outer-block-doc")
+(def-start-of-tree->string-when-block-comment "inner-block-doc")
