@@ -201,7 +201,7 @@
   :short "Add the keys of the aliases of a code point
           to a map from keys to code points."
   (b* (((when (endp aliases)) (name-key-map-fix keys))
-       (keys (treemap::update (name-loose-key
+       (keys (tmap::update (name-loose-key
                                (name-alias->name (car aliases)))
                               (code-point-fix cp)
                               (name-key-map-fix keys))))
@@ -235,17 +235,17 @@
 (defconsts *name-alias-keys-v16.0.0*
   (name-alias-keys-add (all-code-points)
                        *name-aliases-v16.0.0*
-                       (treemap::empty)))
+                       (tmap::empty)))
 
 (defconsts *name-alias-keys-v17.0.0*
   (name-alias-keys-add (all-code-points)
                        *name-aliases-v17.0.0*
-                       (treemap::empty)))
+                       (tmap::empty)))
 
 (defconsts *name-alias-keys-v18.0.0*
   (name-alias-keys-add (all-code-points)
                        *name-aliases-v18.0.0*
-                       (treemap::empty)))
+                       (tmap::empty)))
 
 ; The keys are as many as the aliases: no two aliases have the same key.
 
@@ -253,9 +253,9 @@
 (assert-event (name-key-mapp *name-alias-keys-v17.0.0*))
 (assert-event (name-key-mapp *name-alias-keys-v18.0.0*))
 
-(assert-event (equal (treemap::size *name-alias-keys-v16.0.0*) 477))
-(assert-event (equal (treemap::size *name-alias-keys-v17.0.0*) 481))
-(assert-event (equal (treemap::size *name-alias-keys-v18.0.0*) 481))
+(assert-event (equal (tmap::size *name-alias-keys-v16.0.0*) 477))
+(assert-event (equal (tmap::size *name-alias-keys-v17.0.0*) 481))
+(assert-event (equal (tmap::size *name-alias-keys-v18.0.0*) 481))
 
 ;;;;;;;;;;;;;;;;;;;;
 

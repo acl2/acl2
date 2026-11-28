@@ -76,7 +76,7 @@
 ; or removed.  34594 entries.
 
 (defconsts *names-v17.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x088F . "ARABIC LETTER NOON WITH RING ABOVE")
      (#x0C5C . "TELUGU ARCHAIC SHRII")
      (#x0CDC . "KANNADA ARCHAIC SHRII")
@@ -537,4 +537,4 @@
    *names-v16.0.0*))
 
 (assert-event (name-mapp *names-v17.0.0*))
-(assert-event (equal (treemap::size *names-v17.0.0*) 34594))
+(assert-event (equal (tmap::size *names-v17.0.0*) 34594))

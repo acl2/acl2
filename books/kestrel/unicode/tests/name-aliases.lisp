@@ -345,6 +345,6 @@
 
 (test (equal (+ 35 84 1 3 354) 477))
 (test (equal (+ 39 84 1 3 354) 481))
-(test (equal (treemap::size (name-alias-keys *v16*)) 477))
-(test (equal (treemap::size (name-alias-keys *v17*)) 481))
-(test (equal (treemap::size (name-alias-keys *v18*)) 481))
+(test (equal (tmap::size (name-alias-keys *v16*)) 477))
+(test (equal (tmap::size (name-alias-keys *v17*)) 481))
+(test (equal (tmap::size (name-alias-keys *v18*)) 481))

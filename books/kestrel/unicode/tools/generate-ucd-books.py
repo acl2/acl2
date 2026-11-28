@@ -663,7 +663,7 @@ class Book:
         the elements of a quoted list, or forms to evaluate."""
         const = self.constant(name)
         self.lines.append("(defconsts %s" % const)
-        self.lines.append("  (treemap::update-from-alist")
+        self.lines.append("  (tmap::update-from-alist")
         if not entries:
             self.lines.append("   nil")
         elif quoted:
@@ -676,10 +676,10 @@ class Book:
             for entry in entries[1:]:
                 self.lines.append("         %s" % entry)
             self.lines[-1] += ")"
-        self.lines.append("   (treemap::empty)))")
+        self.lines.append("   (tmap::empty)))")
         self.blank()
         self.assert_holds("(%s %s)" % (recognizer, const))
-        self.assert_equal("(treemap::size %s)" % const, len(entries))
+        self.assert_equal("(tmap::size %s)" % const, len(entries))
         return const
 
     def assert_holds(self, form):
@@ -1960,7 +1960,7 @@ def book_derived_name(version, sources):
     book.blank()
     if before is None:
         added = table
-        base = "(treemap::empty)"
+        base = "(tmap::empty)"
         book.comment(
             "The names that no rule gives: a map from the code point\n"
             "to the name.  %d entries." % len(table))
@@ -1987,7 +1987,7 @@ def book_derived_name(version, sources):
     book.blank()
     const = book.constant("names")
     book.lines.append("(defconsts %s" % const)
-    book.lines.append("  (treemap::update-from-alist")
+    book.lines.append("  (tmap::update-from-alist")
     entries = ['(%s . "%s")' % (hexcp(cp), name)
                for cp, name in sorted(added.items())]
     if entries:
@@ -2000,7 +2000,7 @@ def book_derived_name(version, sources):
     book.lines.append("   %s))" % base)
     book.blank()
     book.assert_holds("(name-mapp %s)" % const)
-    book.assert_equal("(treemap::size %s)" % const, len(table))
+    book.assert_equal("(tmap::size %s)" % const, len(table))
     return book
 
 
@@ -2063,7 +2063,7 @@ def book_name_aliases(version, sources):
     const = book.constant("name-aliases")
     out = book.lines.append
     out("(defconsts %s" % const)
-    out("  (treemap::update-from-alist")
+    out("  (tmap::update-from-alist")
     out("   (list")
     for cp, entries in sorted(by_cp.items()):
         out("    (cons %s" % hexcp(cp))
@@ -2078,10 +2078,10 @@ def book_name_aliases(version, sources):
                 out("%s%s" % (" " * 28, second))
         book.lines[-1] += "))"
     book.lines[-1] += ")"
-    out("   (treemap::empty)))")
+    out("   (tmap::empty)))")
     book.blank()
     book.assert_holds("(name-alias-mapp %s)" % const)
-    book.assert_equal("(treemap::size %s)" % const, len(by_cp))
+    book.assert_equal("(tmap::size %s)" % const, len(by_cp))
     return book
 
 

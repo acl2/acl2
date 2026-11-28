@@ -99,7 +99,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap composition-map
+(fty::deftmap composition-map
   :short "Fixtype of maps from pairs of code points to scalar values."
   :long
   (xdoc::topstring
@@ -123,7 +123,7 @@
    (xdoc::p
     "The result is @('nil') if the pair is not in the map."))
   (b* (((mv in? composite)
-        (treemap::lookup? (code-point-pair first second)
+        (tmap::lookup? (code-point-pair first second)
                           (composition-map-fix map))))
     (if in? composite nil))
   :hooks (:fix))
@@ -167,7 +167,7 @@
        (map (if (and (equal (len mapping) 2)
                      (scalar-value-p cp)
                      (not (code-point-in-ranges-p cp exclusions)))
-                (treemap::update (code-point-pair (first mapping)
+                (tmap::update (code-point-pair (first mapping)
                                                   (second mapping))
                                  cp
                                  map)
@@ -222,11 +222,11 @@
     (primary-composites (all-code-points)
                         *canonical-decomposition-mapping-v16.0.0*
                         *full-composition-exclusion-v16.0.0*
-                        (treemap::empty)))
+                        (tmap::empty)))
 
   (assert-event
    (and (composition-mapp *composition-v16.0.0*)
-        (equal (treemap::size *composition-v16.0.0*)
+        (equal (tmap::size *composition-v16.0.0*)
                (primary-composite-count
                 (all-code-points)
                 *canonical-decomposition-mapping-v16.0.0*
@@ -239,11 +239,11 @@
     (primary-composites (all-code-points)
                         *canonical-decomposition-mapping-v17.0.0*
                         *full-composition-exclusion-v17.0.0*
-                        (treemap::empty)))
+                        (tmap::empty)))
 
   (assert-event
    (and (composition-mapp *composition-v17.0.0*)
-        (equal (treemap::size *composition-v17.0.0*)
+        (equal (tmap::size *composition-v17.0.0*)
                (primary-composite-count
                 (all-code-points)
                 *canonical-decomposition-mapping-v17.0.0*
@@ -256,11 +256,11 @@
     (primary-composites (all-code-points)
                         *canonical-decomposition-mapping-v18.0.0*
                         *full-composition-exclusion-v18.0.0*
-                        (treemap::empty)))
+                        (tmap::empty)))
 
   (assert-event
    (and (composition-mapp *composition-v18.0.0*)
-        (equal (treemap::size *composition-v18.0.0*)
+        (equal (tmap::size *composition-v18.0.0*)
                (primary-composite-count
                 (all-code-points)
                 *canonical-decomposition-mapping-v18.0.0*
@@ -431,7 +431,7 @@
                      (mappings decomposition-mapp)
                      (exclusions range-listp))
      :returns (yes/no booleanp)
-     (b* (((mv in? cp) (treemap::lookup? (code-point-pair-fix pair)
+     (b* (((mv in? cp) (tmap::lookup? (code-point-pair-fix pair)
                                          (composition-map-fix map))))
        (or (not in?)
            (and (equal (decomposition-map-lookup cp mappings)
@@ -464,12 +464,12 @@
            (primary-composites (all-code-points)
                                (canonical-mappings ver)
                                (full-composition-exclusion-ranges ver)
-                               (treemap::empty)))
+                               (tmap::empty)))
     :enable (canonical-compositions
              canonical-mappings
              full-composition-exclusion-ranges
              (:e all-code-points)
-             (:e treemap::empty))
+             (:e tmap::empty))
     :disable primary-composites)
 
   ;; No precomposed Hangul syllable is in the table of the canonical mappings,
@@ -520,7 +520,7 @@
   ;; which is neither excluded nor a precomposed Hangul syllable:
 
   (defrulel entry-ok-of-empty
-    (entry-ok pair (treemap::empty) mappings exclusions)
+    (entry-ok pair (tmap::empty) mappings exclusions)
     :enable entry-ok)
 
   (defruledl entry-ok-of-canonical-compositions

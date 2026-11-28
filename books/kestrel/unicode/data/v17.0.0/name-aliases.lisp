@@ -36,7 +36,7 @@
 ; 481 aliases of 388 code points.
 
 (defconsts *name-aliases-v17.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    (list
     (cons #x0000
           (list (name-alias "NULL" (name-alias-type-control))
@@ -962,7 +962,7 @@
           (list (name-alias "VS255" (name-alias-type-abbreviation))))
     (cons #xE01EF
           (list (name-alias "VS256" (name-alias-type-abbreviation)))))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (name-alias-mapp *name-aliases-v17.0.0*))
-(assert-event (equal (treemap::size *name-aliases-v17.0.0*) 388))
+(assert-event (equal (tmap::size *name-aliases-v17.0.0*) 388))

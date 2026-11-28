@@ -37,7 +37,7 @@
 ; 968 code points, 55 distinct classes.
 
 (defconsts *canonical-combining-class-v17.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0300 . 230)
      (#x0301 . 230)
      (#x0302 . 230)
@@ -1006,7 +1006,7 @@
      (#x1E948 . 230)
      (#x1E949 . 230)
      (#x1E94A . 7))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (combining-class-mapp *canonical-combining-class-v17.0.0*))
-(assert-event (equal (treemap::size *canonical-combining-class-v17.0.0*) 968))
+(assert-event (equal (tmap::size *canonical-combining-class-v17.0.0*) 968))

@@ -236,7 +236,7 @@
        (mapping (or (decomposition-map-lookup cp canonical)
                     (decomposition-map-lookup cp compat)))
        (full (if mapping
-                 (treemap::update cp
+                 (tmap::update cp
                                   (expand-decomposition
                                    mapping
                                    canonical
@@ -293,14 +293,14 @@
   (defconsts *canonical-decomposition-v16.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v16.0.0*
-                         (treemap::empty)
-                         (treemap::empty)))
+                         (tmap::empty)
+                         (tmap::empty)))
 
   (defconsts *compatibility-decomposition-v16.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v16.0.0*
                          *compatibility-decomposition-mapping-v16.0.0*
-                         (treemap::empty)))
+                         (tmap::empty)))
 
   (assert-event
    (and (decomposition-mapp *canonical-decomposition-v16.0.0*)
@@ -308,9 +308,9 @@
          (all-code-points)
          *canonical-decomposition-v16.0.0*
          *canonical-decomposition-mapping-v16.0.0*
-         (treemap::empty))
-        (equal (treemap::size *canonical-decomposition-v16.0.0*)
-               (treemap::size *canonical-decomposition-mapping-v16.0.0*))))
+         (tmap::empty))
+        (equal (tmap::size *canonical-decomposition-v16.0.0*)
+               (tmap::size *canonical-decomposition-mapping-v16.0.0*))))
 
   (assert-event
    (and (decomposition-mapp *compatibility-decomposition-v16.0.0*)
@@ -319,10 +319,10 @@
          *compatibility-decomposition-v16.0.0*
          *canonical-decomposition-mapping-v16.0.0*
          *compatibility-decomposition-mapping-v16.0.0*)
-        (equal (treemap::size *compatibility-decomposition-v16.0.0*)
-               (+ (treemap::size
+        (equal (tmap::size *compatibility-decomposition-v16.0.0*)
+               (+ (tmap::size
                    *canonical-decomposition-mapping-v16.0.0*)
-                  (treemap::size
+                  (tmap::size
                    *compatibility-decomposition-mapping-v16.0.0*)))))
 
   ;; Unicode 17.0.0:
@@ -330,14 +330,14 @@
   (defconsts *canonical-decomposition-v17.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v17.0.0*
-                         (treemap::empty)
-                         (treemap::empty)))
+                         (tmap::empty)
+                         (tmap::empty)))
 
   (defconsts *compatibility-decomposition-v17.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v17.0.0*
                          *compatibility-decomposition-mapping-v17.0.0*
-                         (treemap::empty)))
+                         (tmap::empty)))
 
   (assert-event
    (and (decomposition-mapp *canonical-decomposition-v17.0.0*)
@@ -345,9 +345,9 @@
          (all-code-points)
          *canonical-decomposition-v17.0.0*
          *canonical-decomposition-mapping-v17.0.0*
-         (treemap::empty))
-        (equal (treemap::size *canonical-decomposition-v17.0.0*)
-               (treemap::size *canonical-decomposition-mapping-v17.0.0*))))
+         (tmap::empty))
+        (equal (tmap::size *canonical-decomposition-v17.0.0*)
+               (tmap::size *canonical-decomposition-mapping-v17.0.0*))))
 
   (assert-event
    (and (decomposition-mapp *compatibility-decomposition-v17.0.0*)
@@ -356,10 +356,10 @@
          *compatibility-decomposition-v17.0.0*
          *canonical-decomposition-mapping-v17.0.0*
          *compatibility-decomposition-mapping-v17.0.0*)
-        (equal (treemap::size *compatibility-decomposition-v17.0.0*)
-               (+ (treemap::size
+        (equal (tmap::size *compatibility-decomposition-v17.0.0*)
+               (+ (tmap::size
                    *canonical-decomposition-mapping-v17.0.0*)
-                  (treemap::size
+                  (tmap::size
                    *compatibility-decomposition-mapping-v17.0.0*)))))
 
   ;; Unicode 18.0.0:
@@ -367,14 +367,14 @@
   (defconsts *canonical-decomposition-v18.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v18.0.0*
-                         (treemap::empty)
-                         (treemap::empty)))
+                         (tmap::empty)
+                         (tmap::empty)))
 
   (defconsts *compatibility-decomposition-v18.0.0*
     (full-decompositions (all-code-points)
                          *canonical-decomposition-mapping-v18.0.0*
                          *compatibility-decomposition-mapping-v18.0.0*
-                         (treemap::empty)))
+                         (tmap::empty)))
 
   (assert-event
    (and (decomposition-mapp *canonical-decomposition-v18.0.0*)
@@ -382,9 +382,9 @@
          (all-code-points)
          *canonical-decomposition-v18.0.0*
          *canonical-decomposition-mapping-v18.0.0*
-         (treemap::empty))
-        (equal (treemap::size *canonical-decomposition-v18.0.0*)
-               (treemap::size *canonical-decomposition-mapping-v18.0.0*))))
+         (tmap::empty))
+        (equal (tmap::size *canonical-decomposition-v18.0.0*)
+               (tmap::size *canonical-decomposition-mapping-v18.0.0*))))
 
   (assert-event
    (and (decomposition-mapp *compatibility-decomposition-v18.0.0*)
@@ -393,10 +393,10 @@
          *compatibility-decomposition-v18.0.0*
          *canonical-decomposition-mapping-v18.0.0*
          *compatibility-decomposition-mapping-v18.0.0*)
-        (equal (treemap::size *compatibility-decomposition-v18.0.0*)
-               (+ (treemap::size
+        (equal (tmap::size *compatibility-decomposition-v18.0.0*)
+               (+ (tmap::size
                    *canonical-decomposition-mapping-v18.0.0*)
-                  (treemap::size
+                  (tmap::size
                    *compatibility-decomposition-mapping-v18.0.0*))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -650,7 +650,7 @@
     "All three kinds are fixtypes:
      a range is a product of two code points,
      a run is a product of two code points and a value,
-     and the maps are @(see treemap::treemap)s
+     and the maps are @(see tmap::tmap)s
      whose keys and values have fixtypes.
      Every generated table is built with the constructors of its type,
      in the book that defines it,

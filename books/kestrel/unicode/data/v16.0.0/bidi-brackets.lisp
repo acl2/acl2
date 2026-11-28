@@ -36,7 +36,7 @@
 ; 128 entries.
 
 (defconsts *bidi-bracket-v16.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    (list (cons #x0028 (bidi-bracket-open #x0029))
          (cons #x0029 (bidi-bracket-close #x0028))
          (cons #x005B (bidi-bracket-open #x005D))
@@ -165,7 +165,7 @@
          (cons #xFF60 (bidi-bracket-close #xFF5F))
          (cons #xFF62 (bidi-bracket-open #xFF63))
          (cons #xFF63 (bidi-bracket-close #xFF62)))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (bidi-bracket-mapp *bidi-bracket-v16.0.0*))
-(assert-event (equal (treemap::size *bidi-bracket-v16.0.0*) 128))
+(assert-event (equal (tmap::size *bidi-bracket-v16.0.0*) 128))

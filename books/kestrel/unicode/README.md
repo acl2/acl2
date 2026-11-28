@@ -1152,14 +1152,14 @@ way; the macro `defruns` (book `runs`) introduces the type of the runs and
 the functions on them for each, and each has its own macro to write the
 runs compactly.  The values of `Script_Extensions` and of
 `Identifier_Type` are lists, which stand for sets.  The other
-tables are tree maps (`fty::deftreemap`) from code points to values, or,
+tables are tree maps (`fty::deftmap`) from code points to values, or,
 for composition, from pairs of code points (`fty::defprod code-point-pair`)
 to scalar values; and the sets of the code points that are the first, or
-the second, of a pair that composes are tree sets (`fty::deftreeset
+the second, of a pair that composes are tree sets (`fty::deftset
 code-point-set`).  Every table that is not built with typed constructors is
 checked against the recognizer of its type, by evaluation, in the book
 that defines it.  The listed names are a tree map from code points to
-strings (`fty::deftreemap name-map`), and the patterns are a list of
+strings (`fty::deftmap name-map`), and the patterns are a list of
 products of a range and a prefix (`fty::defprod name-pattern`).
 An alias is a product of a string and a type (`fty::defprod name-alias`,
 `fty::deftagsum name-alias-type`), and the table of the aliases is a

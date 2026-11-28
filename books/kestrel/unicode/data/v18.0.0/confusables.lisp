@@ -49,7 +49,7 @@
 ;   18      1
 
 (defconsts *prototype-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0022 #x0027 #x0027)
      (#x0025 #x00B0 #x002F #x2080)
      (#x0030 #x004F)
@@ -6763,7 +6763,7 @@
      (#x2EE1C #x2EE1B)
      (#x31E7C #x7DC7)
      (#x32A8F #x2EDB5))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (prototype-mapp *prototype-v18.0.0*))
-(assert-event (equal (treemap::size *prototype-v18.0.0*) 6712))
+(assert-event (equal (tmap::size *prototype-v18.0.0*) 6712))

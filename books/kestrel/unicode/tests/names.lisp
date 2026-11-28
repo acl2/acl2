@@ -422,7 +422,7 @@
 
 (define name-kinds-size ((ver versionp))
   :returns (size natp)
-  (+ (treemap::size (listed-names ver))
+  (+ (tmap::size (listed-names ver))
      (+ 1 (- #xD7A3 #xAC00))
      (name-patterns-size (name-patterns ver))))
 
