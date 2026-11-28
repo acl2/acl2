@@ -55,9 +55,16 @@
      relate the lexing functions to those trees,
      and @(see lexer-maximal-munch) builds
      the proof of maximal munch on them.
-     One theorem of that kind is here, with the theorems about [SC2]:
+     A few theorems of that kind are here,
+     with the theorems about the side conditions that they rest on.
      @('rest-input-of-lex-lexeme-when-block-comment-string-p') says that
-     the lexer takes exactly a complete block comment that starts the input.")
+     the lexer, if it does not fail,
+     takes exactly a complete block comment that starts the input [SC2].
+     @('rest-input-of-lex-raw-string-content-when-raw-content-string-p'),
+     and its companions for raw byte strings and raw C strings,
+     say that the function for the content of a raw literal,
+     if it does not fail,
+     takes exactly a complete content that starts its input [SC10].")
    (xdoc::p
     "The side conditions [SC5] and [SC15] are not part of @(tsee lexing-okp):
      the tokenizer checks them
@@ -1125,6 +1132,208 @@
                                    raw-content-branch-okp
                                    abnf::tree-list->string)
                                   (prefix-splitters)))))
+
+; Conversely, if the input starts with the content of a raw literal
+; that satisfies the specification's condition,
+; the function for the content takes exactly that content,
+; if it does not fail.
+; The content that the function takes satisfies the condition too,
+; as proved above; and the condition fixes the length of
+; a content that starts a given input,
+; so the two contents are the same.
+
+; The length that the specification's scan accepts at the start of an input:
+; up to the first double quote that is followed by
+; the given number of "#", and those "#".
+
+(local
+ (defun raw-close-len (input pounds)
+   (cond ((atom input) 0)
+         ((and (equal (car input) #x22)
+               (prefixp (acl2::repeat pounds #x23) (cdr input)))
+          (+ 1 (nfix pounds)))
+         (t (+ 1 (raw-close-len (cdr input) pounds))))))
+
+; Whether a text continues with a given number of "#"
+; can be read off a prefix of the text that is longer than that number.
+
+(defruledl prefixp-of-repeat-when-prefixp-and-leading-pound-count
+  (implies (and (nat-listp x)
+                (prefixp x z)
+                (<= (nfix n) (leading-pound-count x)))
+           (prefixp (acl2::repeat n #x23) z))
+  :use (prefixp-of-repeat-when-leading-pound-count
+        (:instance acl2::prefixp-transitive
+                   (x (acl2::repeat n #x23))
+                   (y x)
+                   (z z)))
+  :disable acl2::prefixp-transitive)
+
+(local
+ (defun repeat-prefix-induction (n x z)
+   (if (zp n)
+       (list x z)
+     (repeat-prefix-induction (1- n) (cdr x) (cdr z)))))
+
+(defruledl not-prefixp-of-repeat-when-prefixp-and-leading-pound-count
+  (implies (and (nat-listp x)
+                (prefixp x z)
+                (< (leading-pound-count x) (nfix n))
+                (< (nfix n) (len x)))
+           (not (prefixp (acl2::repeat n #x23) z)))
+  :induct (repeat-prefix-induction n x z)
+  :enable (acl2::repeat prefixp nfix zp)
+  :expand (leading-pound-count x))
+
+(defruledl len-when-raw-rest-closes-p
+  (implies (and (nat-listp nats)
+                (raw-rest-closes-p nats pounds))
+           (< (nfix pounds) (len nats)))
+  :rule-classes :linear
+  :induct (raw-rest-closes-p nats pounds)
+  :enable raw-rest-closes-p)
+
+(defruledl len-when-raw-rest-closes-p-and-prefixp
+  (implies (and (nat-listp text)
+                (prefixp text input)
+                (raw-rest-closes-p text pounds))
+           (equal (len text)
+                  (raw-close-len input pounds)))
+  :induct (prefixp text input)
+  :enable (prefixp
+           raw-close-len
+           prefixp-of-repeat-when-prefixp-and-leading-pound-count
+           not-prefixp-of-repeat-when-prefixp-and-leading-pound-count
+           len-when-raw-rest-closes-p
+           fix)
+  :expand (raw-rest-closes-p text pounds))
+
+; The same for the whole content:
+; the "#", the opening double quote, and what the scan accepts.
+
+(local
+ (defun raw-content-len (input)
+   (let ((pounds (leading-pound-count input)))
+     (+ 1 pounds (raw-close-len (nthcdr (+ 1 pounds) input) pounds)))))
+
+(defruledl leading-pound-count-when-prefixp
+  (implies (and (nat-listp x)
+                (nat-listp z)
+                (prefixp x z)
+                (< (leading-pound-count x) (len x)))
+           (equal (leading-pound-count z)
+                  (leading-pound-count x)))
+  :induct (prefixp x z)
+  :enable (prefixp leading-pound-count))
+
+(defruledl prefixp-of-nthcdr-and-nthcdr-when-prefixp
+  (implies (prefixp x z)
+           (prefixp (nthcdr n x) (nthcdr n z)))
+  :induct (repeat-prefix-induction n x z)
+  :enable (nthcdr prefixp zp))
+
+(defrulel len-when-raw-content-string-p-and-prefixp
+  (implies (and (nat-listp string)
+                (nat-listp input)
+                (prefixp string input)
+                (raw-content-string-p string))
+           (equal (len string)
+                  (raw-content-len input)))
+  :rule-classes nil
+  :use ((:instance len-when-raw-rest-closes-p-and-prefixp
+                   (text (nthcdr (+ 1 (leading-pound-count string)) string))
+                   (input (nthcdr (+ 1 (leading-pound-count string)) input))
+                   (pounds (leading-pound-count string)))
+        (:instance prefixp-of-nthcdr-and-nthcdr-when-prefixp
+                   (x string)
+                   (z input)
+                   (n (+ 1 (leading-pound-count string))))
+        (:instance leading-pound-count-when-prefixp
+                   (x string)
+                   (z input)))
+  :enable (raw-content-string-p
+           raw-content-len
+           acl2::cdr-of-nthcdr
+           nfix
+           fix))
+
+; So two contents that start the same input leave the same rest of it.
+
+(defrulel prefixp-and-nthcdr-when-equal-of-append
+  (implies (equal (append a b) z)
+           (and (prefixp a z)
+                (equal (nthcdr (len a) z) b)))
+  :rule-classes nil
+  :enable nfix)
+
+(defrulel equal-of-rests-when-raw-content-string-p
+  (implies (and (nat-listp string1)
+                (nat-listp string2)
+                (nat-listp input)
+                (raw-content-string-p string1)
+                (raw-content-string-p string2)
+                (equal (append string1 rest1) input)
+                (equal (append string2 rest2) input))
+           (equal rest1 rest2))
+  :rule-classes nil
+  :use ((:instance len-when-raw-content-string-p-and-prefixp
+                   (string string1))
+        (:instance len-when-raw-content-string-p-and-prefixp
+                   (string string2))
+        (:instance prefixp-and-nthcdr-when-equal-of-append
+                   (a string1)
+                   (b rest1)
+                   (z input))
+        (:instance prefixp-and-nthcdr-when-equal-of-append
+                   (a string2)
+                   (b rest2)
+                   (z input)))
+  :disable (acl2::prefixp-of-append-arg1
+            acl2::prefixp-of-append-arg2
+            acl2::nthcdr-of-append-gen))
+
+; The theorem, for each of the three kinds of raw literals.
+; The number of "#" is the one that the lexer passes,
+; which is at most 255;
+; the function fails if it is not the number of "#"
+; that the content starts with.
+
+(defmacro def-rest-input-when-raw-content-string-p (content-fn)
+  (b* ((thm (acl2::packn-pos
+             (list 'rest-input-of- content-fn '-when-raw-content-string-p)
+             content-fn))
+       (closes-thm (acl2::packn-pos
+                    (list 'raw-content-string-p-of- content-fn) content-fn))
+       (decomp-thm (acl2::packn-pos
+                    (list 'input-decomposition-of- content-fn) content-fn))
+       (terminated-thm (acl2::packn-pos
+                        (list 'tree-terminatedp-of- content-fn) content-fn))
+       (call `(,content-fn n n (append string rest))))
+    `(defruled ,thm
+       (implies (and (nat-listp string)
+                     (raw-content-string-p string)
+                     (natp n)
+                     (<= n 255)
+                     (not (reserrp (mv-nth 0 ,call))))
+                (equal (mv-nth 1 ,call)
+                       (nat-list-fix rest)))
+       :use ((:instance ,closes-thm
+                        (input (append string rest)))
+             (:instance ,decomp-thm
+                        (k n)
+                        (input (append string rest)))
+             (:instance equal-of-rests-when-raw-content-string-p
+                        (string1 (abnf::tree->string (mv-nth 0 ,call)))
+                        (rest1 (mv-nth 1 ,call))
+                        (string2 string)
+                        (rest2 (nat-list-fix rest))
+                        (input (append string (nat-list-fix rest)))))
+       :enable ,terminated-thm
+       :disable (,closes-thm ,decomp-thm))))
+
+(def-rest-input-when-raw-content-string-p lex-raw-string-content)
+(def-rest-input-when-raw-content-string-p lex-raw-byte-string-content)
+(def-rest-input-when-raw-content-string-p lex-raw-c-string-content)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
