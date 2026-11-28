@@ -40,7 +40,7 @@
 ; 9 code points.
 
 (defconsts *bidi-formatting-class-v16.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    (list (cons #x202A (bidi-formatting-class-lre))
          (cons #x202B (bidi-formatting-class-rle))
          (cons #x202C (bidi-formatting-class-pdf))
@@ -50,10 +50,10 @@
          (cons #x2067 (bidi-formatting-class-rli))
          (cons #x2068 (bidi-formatting-class-fsi))
          (cons #x2069 (bidi-formatting-class-pdi)))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (bidi-formatting-class-mapp *bidi-formatting-class-v16.0.0*))
-(assert-event (equal (treemap::size *bidi-formatting-class-v16.0.0*) 9))
+(assert-event (equal (tmap::size *bidi-formatting-class-v16.0.0*) 9))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

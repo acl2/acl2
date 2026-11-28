@@ -74,7 +74,7 @@
 ; to the name.  34137 entries.
 
 (defconsts *names-v16.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0020 . "SPACE")
      (#x0021 . "EXCLAMATION MARK")
      (#x0022 . "QUOTATION MARK")
@@ -34212,7 +34212,7 @@
      (#xE01ED . "VARIATION SELECTOR-254")
      (#xE01EE . "VARIATION SELECTOR-255")
      (#xE01EF . "VARIATION SELECTOR-256"))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (name-mapp *names-v16.0.0*))
-(assert-event (equal (treemap::size *names-v16.0.0*) 34137))
+(assert-event (equal (tmap::size *names-v16.0.0*) 34137))

@@ -46,7 +46,7 @@
 ; Canonical decomposition mappings: 2081 entries.
 
 (defconsts *canonical-decomposition-mapping-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x00C0 #x0041 #x0300)
      (#x00C1 #x0041 #x0301)
      (#x00C2 #x0041 #x0302)
@@ -2128,11 +2128,11 @@
      (#x2FA1B #x9F16)
      (#x2FA1C #x9F3B)
      (#x2FA1D #x2A600))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (decomposition-mapp *canonical-decomposition-mapping-v18.0.0*))
 (assert-event
- (equal (treemap::size *canonical-decomposition-mapping-v18.0.0*)
+ (equal (tmap::size *canonical-decomposition-mapping-v18.0.0*)
         2081))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2140,7 +2140,7 @@
 ; Compatibility decomposition mappings: 3901 entries.
 
 (defconsts *compatibility-decomposition-mapping-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x00A0 #x0020)
      (#x00A8 #x0020 #x0308)
      (#x00AA #x0061)
@@ -6042,12 +6042,12 @@
      (#x1FBF7 #x0037)
      (#x1FBF8 #x0038)
      (#x1FBF9 #x0039))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event
  (decomposition-mapp *compatibility-decomposition-mapping-v18.0.0*))
 (assert-event
- (equal (treemap::size *compatibility-decomposition-mapping-v18.0.0*)
+ (equal (tmap::size *compatibility-decomposition-mapping-v18.0.0*)
         3901))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -6058,7 +6058,7 @@
 ; 770 entries.
 
 (defconsts *decimal-digit-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0030 . 0)
      (#x0031 . 1)
      (#x0032 . 2)
@@ -6829,7 +6829,7 @@
      (#x1FBF7 . 7)
      (#x1FBF8 . 8)
      (#x1FBF9 . 9))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (decimal-digit-mapp *decimal-digit-v18.0.0*))
-(assert-event (equal (treemap::size *decimal-digit-v18.0.0*) 770))
+(assert-event (equal (tmap::size *decimal-digit-v18.0.0*) 770))

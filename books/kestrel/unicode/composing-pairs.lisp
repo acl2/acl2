@@ -12,7 +12,7 @@
 
 (include-book "compositions")
 
-(include-book "kestrel/fty/deftreeset" :dir :system)
+(include-book "kestrel/fty/deftset" :dir :system)
 
 (local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
 
@@ -63,16 +63,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreeset code-point-set
+(fty::deftset code-point-set
   :short "Fixtype of sets of code points."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The sets are @(see treeset::treeset)s,
+    "The sets are @(see tset::tset)s,
      in which a membership test takes logarithmic time;
-     the fixtype is introduced with @(tsee fty::deftreeset).
+     the fixtype is introduced with @(tsee fty::deftset).
      The operations on these sets are the ones of the tree sets:
-     for example, @(tsee treeset::in) for membership."))
+     for example, @(tsee tset::in) for membership."))
   :elt-type code-point
   :pred code-point-setp)
 
@@ -104,7 +104,7 @@
        (set (if (and (equal (len mapping) 2)
                      (scalar-value-p cp)
                      (not (code-point-in-ranges-p cp exclusions)))
-                (treeset::insert (code-point-fix (first mapping)) set)
+                (tset::insert (code-point-fix (first mapping)) set)
               set)))
     (composition-firsts (cdr cps) mappings exclusions set))
   :hooks nil
@@ -136,7 +136,7 @@
        (set (if (and (equal (len mapping) 2)
                      (scalar-value-p cp)
                      (not (code-point-in-ranges-p cp exclusions)))
-                (treeset::insert (code-point-fix (second mapping)) set)
+                (tset::insert (code-point-fix (second mapping)) set)
               set)))
     (composition-seconds (cdr cps) mappings exclusions set))
   :hooks nil
@@ -166,13 +166,13 @@
     (composition-firsts (all-code-points)
                         *canonical-decomposition-mapping-v16.0.0*
                         *full-composition-exclusion-v16.0.0*
-                        (treeset::empty)))
+                        (tset::empty)))
 
   (defconsts *composition-seconds-v16.0.0*
     (composition-seconds (all-code-points)
                          *canonical-decomposition-mapping-v16.0.0*
                          *full-composition-exclusion-v16.0.0*
-                         (treeset::empty)))
+                         (tset::empty)))
 
   (assert-event
    (and (code-point-setp *composition-firsts-v16.0.0*)
@@ -184,13 +184,13 @@
     (composition-firsts (all-code-points)
                         *canonical-decomposition-mapping-v17.0.0*
                         *full-composition-exclusion-v17.0.0*
-                        (treeset::empty)))
+                        (tset::empty)))
 
   (defconsts *composition-seconds-v17.0.0*
     (composition-seconds (all-code-points)
                          *canonical-decomposition-mapping-v17.0.0*
                          *full-composition-exclusion-v17.0.0*
-                         (treeset::empty)))
+                         (tset::empty)))
 
   (assert-event
    (and (code-point-setp *composition-firsts-v17.0.0*)
@@ -202,13 +202,13 @@
     (composition-firsts (all-code-points)
                         *canonical-decomposition-mapping-v18.0.0*
                         *full-composition-exclusion-v18.0.0*
-                        (treeset::empty)))
+                        (tset::empty)))
 
   (defconsts *composition-seconds-v18.0.0*
     (composition-seconds (all-code-points)
                          *canonical-decomposition-mapping-v18.0.0*
                          *full-composition-exclusion-v18.0.0*
-                         (treeset::empty)))
+                         (tset::empty)))
 
   (assert-event
    (and (code-point-setp *composition-firsts-v18.0.0*)
@@ -270,7 +270,7 @@
   (b* ((cp (code-point-fix cp)))
     (or (hangul-l-p cp)
         (hangul-lv-syllable-p cp)
-        (treeset::in cp (canonical-composition-firsts ver))))
+        (tset::in cp (canonical-composition-firsts ver))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -291,7 +291,7 @@
   (b* ((cp (code-point-fix cp)))
     (or (hangul-v-p cp)
         (hangul-t-p cp)
-        (treeset::in cp (canonical-composition-seconds ver))))
+        (tset::in cp (canonical-composition-seconds ver))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -328,24 +328,24 @@
            (composition-firsts (all-code-points)
                                (canonical-mappings ver)
                                (full-composition-exclusion-ranges ver)
-                               (treeset::empty)))
+                               (tset::empty)))
     :enable (canonical-composition-firsts
              canonical-mappings
              full-composition-exclusion-ranges
              (:e all-code-points)
-             (:e treeset::empty)))
+             (:e tset::empty)))
 
   (defruled canonical-composition-seconds-is-composition-seconds
     (equal (canonical-composition-seconds ver)
            (composition-seconds (all-code-points)
                                 (canonical-mappings ver)
                                 (full-composition-exclusion-ranges ver)
-                                (treeset::empty)))
+                                (tset::empty)))
     :enable (canonical-composition-seconds
              canonical-mappings
              full-composition-exclusion-ranges
              (:e all-code-points)
-             (:e treeset::empty)))
+             (:e tset::empty)))
 
   ;; We check, on every code point, for each version,
   ;; that if the code point is not excluded
@@ -358,9 +358,9 @@
      (b* ((mapping (decomposition-map-lookup cp (canonical-mappings ver))))
        (or (not (equal (len mapping) 2))
            (full-composition-exclusion-p cp ver)
-           (and (treeset::in (code-point-fix (first mapping))
+           (and (tset::in (code-point-fix (first mapping))
                              (canonical-composition-firsts ver))
-                (treeset::in (code-point-fix (second mapping))
+                (tset::in (code-point-fix (second mapping))
                              (canonical-composition-seconds ver)))))
      :hooks nil
      :guard-hints (("Goal" :in-theory (enable len)))))

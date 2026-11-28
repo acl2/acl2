@@ -36,7 +36,7 @@
 ; 67 entries.
 
 (defconsts *jamo-short-names-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x1100 . "G")
      (#x1101 . "GG")
      (#x1102 . "N")
@@ -104,7 +104,7 @@
      (#x11C0 . "T")
      (#x11C1 . "P")
      (#x11C2 . "H"))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (name-mapp *jamo-short-names-v18.0.0*))
-(assert-event (equal (treemap::size *jamo-short-names-v18.0.0*) 67))
+(assert-event (equal (tmap::size *jamo-short-names-v18.0.0*) 67))

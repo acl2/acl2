@@ -463,7 +463,7 @@
        (name (name-map-lookup cp names))
        (keys (if (equal name "")
                  (name-key-map-fix keys)
-               (treemap::update (name-loose-key name)
+               (tmap::update (name-loose-key name)
                                 cp
                                 (name-key-map-fix keys)))))
     (name-keys-add (cdr cps) names keys))
@@ -476,22 +476,22 @@
 ; and stored in its certificate.
 
 (defconsts *name-keys-v16.0.0*
-  (name-keys-add (all-code-points) *names-v16.0.0* (treemap::empty)))
+  (name-keys-add (all-code-points) *names-v16.0.0* (tmap::empty)))
 
 (defconsts *name-keys-v17.0.0*
-  (name-keys-add (all-code-points) *names-v17.0.0* (treemap::empty)))
+  (name-keys-add (all-code-points) *names-v17.0.0* (tmap::empty)))
 
 (defconsts *name-keys-v18.0.0*
-  (name-keys-add (all-code-points) *names-v18.0.0* (treemap::empty)))
+  (name-keys-add (all-code-points) *names-v18.0.0* (tmap::empty)))
 
 ; No two listed names have the same key.
 
-(assert-event (equal (treemap::size *name-keys-v16.0.0*)
-                     (treemap::size *names-v16.0.0*)))
-(assert-event (equal (treemap::size *name-keys-v17.0.0*)
-                     (treemap::size *names-v17.0.0*)))
-(assert-event (equal (treemap::size *name-keys-v18.0.0*)
-                     (treemap::size *names-v18.0.0*)))
+(assert-event (equal (tmap::size *name-keys-v16.0.0*)
+                     (tmap::size *names-v16.0.0*)))
+(assert-event (equal (tmap::size *name-keys-v17.0.0*)
+                     (tmap::size *names-v17.0.0*)))
+(assert-event (equal (tmap::size *name-keys-v18.0.0*)
+                     (tmap::size *names-v18.0.0*)))
 
 ;;;;;;;;;;;;;;;;;;;;
 

@@ -56,7 +56,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap name-map
+(fty::deftmap name-map
   :short "Fixtype of maps from code points to strings,
           for the names of the characters."
   :long
@@ -79,7 +79,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is the empty string if the code point is not in the map."))
-  (b* (((mv in? name) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? name) (tmap::lookup? (code-point-fix cp)
                                         (name-map-fix map))))
     (if in?
         (acl2::str-fix name)
@@ -158,7 +158,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap name-key-map
+(fty::deftmap name-key-map
   :short "Fixtype of maps from strings to code points,
           for finding a character by its name."
   :long
@@ -185,7 +185,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is @('nil') if the key is not in the map."))
-  (b* (((mv in? cp) (treemap::lookup? (acl2::str-fix key)
+  (b* (((mv in? cp) (tmap::lookup? (acl2::str-fix key)
                                       (name-key-map-fix map))))
     (if in?
         (code-point-fix cp)
@@ -266,7 +266,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap name-alias-map
+(fty::deftmap name-alias-map
   :short "Fixtype of maps from code points to lists of aliases of names."
   :long
   (xdoc::topstring
@@ -287,7 +287,7 @@
    (xdoc::p
     "The result is the empty list if the code point is not in the map.
      No list in the maps of the generated tables is empty."))
-  (b* (((mv in? aliases) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? aliases) (tmap::lookup? (code-point-fix cp)
                                            (name-alias-map-fix map))))
     (if in?
         (name-alias-list-fix aliases)

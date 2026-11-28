@@ -12,7 +12,7 @@
 
 (include-book "code-points")
 
-(include-book "kestrel/fty/deftreemap" :dir :system)
+(include-book "kestrel/fty/deftmap" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
 
 (acl2::controlled-configuration)
@@ -30,19 +30,19 @@
      Most code points have the default value of the property,
      so we represent such a property as a finite map
      from the code points that have other values to their values.
-     The maps are @(see treemap::treemap)s,
+     The maps are @(see tmap::tmap)s,
      in which a lookup takes logarithmic time;
-     the fixtypes are introduced with @(tsee fty::deftreemap).")
+     the fixtypes are introduced with @(tsee fty::deftmap).")
    (xdoc::p
     "Here we introduce the fixtypes of the maps
      that the generated tables have.
-     The operations on them are the ones of the @(see treemap::treemap)s."))
+     The operations on them are the ones of the @(see tmap::tmap)s."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap combining-class-map
+(fty::deftmap combining-class-map
   :short "Fixtype of maps from code points to canonical combining classes."
   :long
   (xdoc::topstring
@@ -65,7 +65,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is 0 if the code point is not in the map."))
-  (b* (((mv in? ccc) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? ccc) (tmap::lookup? (code-point-fix cp)
                                        (combining-class-map-fix map))))
     (if in? ccc 0))
   :hooks (:fix)
@@ -83,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap decomposition-map
+(fty::deftmap decomposition-map
   :short "Fixtype of maps from code points to sequences of scalar values."
   :long
   (xdoc::topstring
@@ -108,12 +108,12 @@
     "The result is @('nil') if the code point is not in the map.
      The sequences in the maps of the generated tables are not empty,
      so there @('nil') means that the code point is not in the map."))
-  (b* (((mv in? mapping) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? mapping) (tmap::lookup? (code-point-fix cp)
                                            (decomposition-map-fix map))))
     (if in? mapping nil))
   :hooks (:fix))
 
-(fty::deftreemap prototype-map
+(fty::deftmap prototype-map
   :short "Fixtype of maps from code points to sequences of scalar values,
           for the prototypes of confusable characters."
   :long
@@ -142,7 +142,7 @@
     "The result is @('nil') if the code point is not in the map.
      The sequences in the maps of the generated tables are not empty,
      so there @('nil') means that the code point is not in the map."))
-  (b* (((mv in? prototype) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? prototype) (tmap::lookup? (code-point-fix cp)
                                              (prototype-map-fix map))))
     (if in? prototype nil))
   :hooks (:fix))
@@ -192,7 +192,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap bidi-formatting-class-map
+(fty::deftmap bidi-formatting-class-map
   :short "Fixtype of maps from code points to bidirectional classes
           of the explicit directional formatting characters."
   :key-type code-point
@@ -210,7 +210,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is @('nil') if the code point is not in the map."))
-  (b* (((mv in? class) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? class) (tmap::lookup? (code-point-fix cp)
                                          (bidi-formatting-class-map-fix map))))
     (if in? class nil))
   :hooks (:fix))
@@ -262,7 +262,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap decimal-digit-map
+(fty::deftmap decimal-digit-map
   :short "Fixtype of maps from code points to values of decimal digits."
   :long
   (xdoc::topstring
@@ -285,7 +285,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is @('nil') if the code point is not in the map."))
-  (b* (((mv in? value) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? value) (tmap::lookup? (code-point-fix cp)
                                          (decimal-digit-map-fix map))))
     (if in? value nil))
   :hooks (:fix))
@@ -329,7 +329,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap bidi-bracket-map
+(fty::deftmap bidi-bracket-map
   :short "Fixtype of maps from code points
           to values of the paired bracket properties."
   :key-type code-point
@@ -346,7 +346,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is @('nil') if the code point is not in the map."))
-  (b* (((mv in? bracket) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? bracket) (tmap::lookup? (code-point-fix cp)
                                            (bidi-bracket-map-fix map))))
     (if in? bracket nil))
   :hooks (:fix))
@@ -360,7 +360,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftreemap mirroring-map
+(fty::deftmap mirroring-map
   :short "Fixtype of maps from code points to code points,
           for the @('Bidi_Mirroring_Glyph') property."
   :long
@@ -386,7 +386,7 @@
   (xdoc::topstring
    (xdoc::p
     "The result is @('nil') if the code point is not in the map."))
-  (b* (((mv in? mirror) (treemap::lookup? (code-point-fix cp)
+  (b* (((mv in? mirror) (tmap::lookup? (code-point-fix cp)
                                           (mirroring-map-fix map))))
     (if in? mirror nil))
   :hooks (:fix))

@@ -78,7 +78,7 @@
 ; or removed.  35351 entries.
 
 (defconsts *names-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0558 . "MODIFIER LETTER ARMENIAN SMALL EH")
      (#x058B . "MODIFIER LETTER ARMENIAN SMALL INI")
      (#x058C . "MODIFIER LETTER ARMENIAN SMALL YI")
@@ -839,4 +839,4 @@
    *names-v17.0.0*))
 
 (assert-event (name-mapp *names-v18.0.0*))
-(assert-event (equal (treemap::size *names-v18.0.0*) 35351))
+(assert-event (equal (tmap::size *names-v18.0.0*) 35351))

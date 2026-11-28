@@ -611,12 +611,12 @@
 ; The sets of the first and of the second code points of the pairs
 ; that compose to primary composites have the same sizes in the three versions.
 
-(test (equal (treeset::cardinality (canonical-composition-firsts *v16*)) 391))
-(test (equal (treeset::cardinality (canonical-composition-firsts *v17*)) 391))
-(test (equal (treeset::cardinality (canonical-composition-firsts *v18*)) 391))
-(test (equal (treeset::cardinality (canonical-composition-seconds *v16*)) 72))
-(test (equal (treeset::cardinality (canonical-composition-seconds *v17*)) 72))
-(test (equal (treeset::cardinality (canonical-composition-seconds *v18*)) 72))
+(test (equal (tset::cardinality (canonical-composition-firsts *v16*)) 391))
+(test (equal (tset::cardinality (canonical-composition-firsts *v17*)) 391))
+(test (equal (tset::cardinality (canonical-composition-firsts *v18*)) 391))
+(test (equal (tset::cardinality (canonical-composition-seconds *v16*)) 72))
+(test (equal (tset::cardinality (canonical-composition-seconds *v17*)) 72))
+(test (equal (tset::cardinality (canonical-composition-seconds *v18*)) 72))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1259,8 +1259,8 @@
 (test (not (equal (decimal-digit-zero (char-code #\7) *v16*)
                   (decimal-digit-zero #x0667 *v16*))))
 
-(test (equal (treemap::size (decimal-digit-values *v16*)) 760))
-(test (equal (treemap::size (decimal-digit-values *v18*)) 770))
+(test (equal (tmap::size (decimal-digit-values *v16*)) 760))
+(test (equal (tmap::size (decimal-digit-values *v18*)) 770))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1691,10 +1691,10 @@
              (bidi-bracket-open #x2E63)))
 (test (equal (code-point-bidi-mirroring-glyph #x221D *v17*) nil))
 (test (equal (code-point-bidi-mirroring-glyph #x221D *v18*) #x1DB10))
-(test (equal (treemap::size (bidi-brackets *v16*)) 128))
-(test (equal (treemap::size (bidi-brackets *v18*)) 130))
-(test (equal (treemap::size (bidi-mirroring-glyphs *v17*)) 428))
-(test (equal (treemap::size (bidi-mirroring-glyphs *v18*)) 438))
+(test (equal (tmap::size (bidi-brackets *v16*)) 128))
+(test (equal (tmap::size (bidi-brackets *v18*)) 130))
+(test (equal (tmap::size (bidi-mirroring-glyphs *v17*)) 428))
+(test (equal (tmap::size (bidi-mirroring-glyphs *v18*)) 438))
 
 ; The two angle brackets that have canonical equivalents
 ; have the identifiers of those in bracket pairs.

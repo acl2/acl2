@@ -40,7 +40,7 @@
 ; the mirrored glyph.
 
 (defconsts *bidi-mirroring-v18.0.0*
-  (treemap::update-from-alist
+  (tmap::update-from-alist
    '((#x0028 . #x0029)
      (#x0029 . #x0028)
      (#x003C . #x003E)
@@ -479,7 +479,7 @@
      (#x1DB08 . #x1DB09)
      (#x1DB09 . #x1DB08)
      (#x1DB10 . #x221D))
-   (treemap::empty)))
+   (tmap::empty)))
 
 (assert-event (mirroring-mapp *bidi-mirroring-v18.0.0*))
-(assert-event (equal (treemap::size *bidi-mirroring-v18.0.0*) 438))
+(assert-event (equal (tmap::size *bidi-mirroring-v18.0.0*) 438))
