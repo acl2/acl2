@@ -142,7 +142,7 @@ validated.
 | `bidi-rule-display-weak` | The classes that rules W1 to W7 give to the characters of a name that satisfies the wide rule and has a right-to-left letter or an Arabic digit, in a paragraph from left to right, computed cluster by cluster without those rules (`bidi-clusters-weak-classes`), and the proof that the rules give them.  They give the same classes in a paragraph from right to left when the name does not start with a mark; that is proved too. |
 | `bidi-rule-display-levels` | The proof that the algorithm gives such a name the levels of `bidi-name-levels`: rule N0 on the bracket pairs, rules N1 and N2, the implicit levels and rule L1, after the weak rules of the row above.  It uses a theorem of `bidi-guarded-brackets`: no two bracket pairs cross.  And the proof that in a paragraph from right to left such a name, when it does not start with a mark, gets the levels of `bidi-middle-levels` for the whole name: no character has level 0. |
 | `bidi-rule-display-order` | The proof that, with those levels, rules L2 to L4 give the display of `bidi-name-display`. |
-| `bidi-mark-class` | A fact about the data for that proof, checked on every code point: a code point whose class is not `L` is a combining mark for rule L3 exactly when its class is `NSM`. |
+| `bidi-mark-class` | A fact about the data for that proof, checked for each version by computing with lists of ranges: a code point whose class is not `L` is a combining mark for rule L3 exactly when its class is `NSM`. |
 | `bidi-rule-left-to-right-label` | The proof that a left-to-right label that satisfies the strict rule gets level 2 for each of its characters in a paragraph from right to left. |
 | `bidi-rule-display-theorem` | The theorems that the rows above lead to.  In a paragraph from left to right, the algorithm displays a name that satisfies the wide rule as `bidi-name-display` says, and no two such names are displayed alike.  In a paragraph of any direction, the algorithm displays a label that satisfies the strict rule as `bidi-name-display` says, and no two such labels are displayed alike. |
 | `emoji` | `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`, `Emoji_Component`, `Extended_Pictographic` and `Regional_Indicator`, with how they contain each other. |
@@ -764,7 +764,7 @@ it:
   order of their opening brackets.  The proof above needs it for rule N0.
 - `bidi-combining-mark-p-when-not-left-to-right`: a code point whose
   class is not `L` is a combining mark for rule L3 exactly when its class
-  is `NSM`; checked on every code point, for each version.
+  is `NSM`; checked for each version, by computing with lists of ranges.
 - `code-point-bidi-class-when-code-point-bidi-mirroring-glyph`: a code
   point that has a mirroring glyph has the class `ON`; checked on every
   code point, for each version.  With it, replacing a code point by its
@@ -776,7 +776,7 @@ it:
   satisfy it and are displayed alike.  The wide rule does not in a
   paragraph from right to left: the tests have two names that satisfy it
   and are displayed alike there, one of which starts with a mark.  The
-  documentation topic `bidi-rule-proof-plan` says how the proofs for the
+  documentation topic `bidi-rule-proof-outline` says how the proofs for the
   wide rule and for the strict rule go: a function reads a name back from
   its display, the algorithm is proved to give that display, and for the
   strict rule the display is proved to be the same in every direction.
@@ -981,7 +981,9 @@ categories can also be had as lists of ranges, with
   book; nothing else is needed.  To import symbols of this library into
   another package, put
   `(include-book "kestrel/unicode/portcullis" :dir :system)` before the
-  `defpkg` in that package's `package.lsp`.
+  `defpkg` in that package's `package.lsp`.  To work on the books of this
+  directory, start ACL2 in it: the file `acl2-customization.lsp` defines
+  the package and makes it the current one.
 - **Versions.**  A front end should pick its version of Unicode in one
   place: a function from its own configuration (the edition of the
   language, the release of the compiler being modeled) to a `version`,
@@ -1117,6 +1119,18 @@ How the generator reads the UCD:
   earlier names back from the generated books, and stops if the new
   version changes or removes a name, or takes a code point out of a range
   with a pattern.  So the versions are generated from the earliest up.
+- **The conformance test of normalization of a version is written as
+  what it changes in the version before it.**  The book
+  `normalization-test` of 16.0.0 has all the lines of
+  `NormalizationTest.txt`, and takes 2.4 MB.  The book of a later version
+  includes the book of the version before it, and writes each part of the
+  file as a list of edits of the lines of the same part of that version:
+  edits that keep the next lines, that drop the next lines, and that add
+  lines.  Its constant has the same value as if the lines were all written
+  out.  The books of 17.0.0 and 18.0.0 add 69 and 137 lines and drop none,
+  and take 22 KB and 29 KB.  The generator reads the earlier lines back
+  from the generated books, and checks that the edits it writes give the
+  lines of the file.
 - **The aliases of the names are read from `NameAliases.txt`**, and
   written in full for each version.  A code point can have several; they
   are kept in the order of the file.  The generator checks that each is
@@ -1168,7 +1182,10 @@ build the aliases with the typed constructors.
 The conformance test vectors are typed too: a line of
 `NormalizationTest.txt` is a `normalization-test-line`, a product with one
 field per column (`tests/normalization-test-types`), and the generated
-books build the lines with its constructor.
+books build the lines with its constructor.  An edit of a list of lines
+is a `normalization-test-edit` (`fty::deftagsum`, with the kinds `:keep`,
+`:drop` and `:add`), and the function `normalization-test-apply-edits`
+applies a list of edits to a list of lines.
 
 ### Where the bytes came from
 
@@ -1203,8 +1220,9 @@ with the three files of UTS #39 in its subdirectory `security/`
 (`--fetch` downloads into it the files that are missing).  The version must
 be written in full.  The script needs only the Python standard library.
 To regenerate the books of several versions, run it for the earliest
-version first: the book of the names of a version is written from the
-books of the versions before it.
+version first: the book of the names of a version, and the book of its
+conformance test of normalization, are written from the books of the
+versions before it.
 
 ### Adding a version
 
@@ -1956,12 +1974,12 @@ through the list, so a paragraph of *n* characters takes time quadratic in
 on sequences of a few characters, run in about a second and a half.
 
 Certifying all the 177 books from scratch, the tests and the generated
-tables included, took about nine minutes with two jobs
+tables included, took about eight minutes with two jobs
 (`cert.pl -j 2`, SBCL).  The slowest books, apart from the tests, take
-between twenty and forty seconds each: `bidi-mark-class`, `white-space`,
-`quick-check-theorems`, `script-tables` (the type of the scripts is a
-tagged sum with 179 cases), `normalization-across-versions`, `names`,
-`code-point-labels` and `bidi-rule-display-levels`.
+about twenty to thirty seconds each: `quick-check-theorems`,
+`script-tables` (the type of the scripts is a tagged sum with 179 cases),
+`normalization-across-versions`, `names`, `bidi-rule-display-levels` and
+`code-point-labels`.
 
 ## License
 

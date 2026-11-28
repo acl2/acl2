@@ -23,7 +23,7 @@
 ; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
 ; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See each of the two books for the plan of its proof.
+; See each of the two books for the outline of its proof.
 ; The books bidi-rule-display-levels.lisp
 ; and bidi-rule-left-to-right-label.lisp include it locally too,
 ; for the theorem about a paragraph embedding level that is given here.

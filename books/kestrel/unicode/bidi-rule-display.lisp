@@ -37,7 +37,7 @@
     "The predicate @(tsee bidi-rule-wide-p) is meant to keep
      two different names from being displayed alike
      in a paragraph from left to right (see @(see bidi-rule)).
-     The proof of that (see @(see bidi-rule-proof-plan))
+     The proof of that (see @(see bidi-rule-proof-outline))
      says how such a name is displayed
      without going through the rules
      of the Unicode Bidirectional Algorithm [UAX #9],
@@ -168,7 +168,7 @@
      (see @(see bidi-rule-display-levels));
      and the order of display that follows from those levels
      (see @(see bidi-rule-display-order)).
-     See also @(see bidi-rule-proof-plan).")
+     See also @(see bidi-rule-proof-outline).")
    (xdoc::p
     "A label that satisfies the strict rule,
      @(tsee bidi-rule-strict-p),

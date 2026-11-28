@@ -128,7 +128,7 @@
      The strict rule has a theorem of its own
      for the other directions of the paragraph.")
    (xdoc::p
-    "For how the proofs go, see @(see bidi-rule-proof-plan).")
+    "For how the proofs go, see @(see bidi-rule-proof-outline).")
    (xdoc::p
     "The tests of this library, in the file @('tests/bidi-rule.lisp'),
      have a search for each of the three predicates.
@@ -1101,7 +1101,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc bidi-rule-proof-plan
+(defxdoc bidi-rule-proof-outline
   :short "How it is proved that no two names that satisfy the wide rule
           are displayed alike in a paragraph from left to right,
           and that no two labels that satisfy the strict rule

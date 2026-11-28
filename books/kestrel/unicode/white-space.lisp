@@ -16,6 +16,8 @@
 (include-book "data/v17.0.0/prop-list")
 (include-book "data/v18.0.0/prop-list")
 
+(local (include-book "range-operations"))
+
 (acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +84,36 @@
 
   ///
 
+  ;; The theorem below is proved by comparing lists of ranges:
+  ;; the ranges of each version are the normal form of the ranges
+  ;; that the theorem lists, which is checked by evaluation.
+  ;; A range of one code point is rewritten to an equality,
+  ;; so that the two sides of the theorem become the same term.
+
+  (defrulel code-point-in-range-p-when-one-code-point
+    (implies (equal (range->min range)
+                    (range->max range))
+             (equal (code-point-in-range-p cp range)
+                    (equal (code-point-fix cp)
+                           (range->min range))))
+    :enable code-point-in-range-p)
+
+  (defruledl white-space-ranges-alt-def
+    (equal (white-space-ranges ver)
+           (ranges-normalize
+            (list (range #x0009 #x000D)
+                  (range #x0020 #x0020)
+                  (range #x0085 #x0085)
+                  (range #x00A0 #x00A0)
+                  (range #x1680 #x1680)
+                  (range #x2000 #x200A)
+                  (range #x2028 #x2028)
+                  (range #x2029 #x2029)
+                  (range #x202F #x202F)
+                  (range #x205F #x205F)
+                  (range #x3000 #x3000))))
+    :enable white-space-ranges)
+
   (defruled white-space-p-alt-def
     (equal (white-space-p cp ver)
            (b* ((cp (code-point-fix cp)))
@@ -99,8 +131,9 @@
                  (equal cp #x202F) ; NARROW NO-BREAK SPACE
                  (equal cp #x205F) ; MEDIUM MATHEMATICAL SPACE
                  (equal cp #x3000)))) ; IDEOGRAPHIC SPACE
-    :enable (white-space-ranges
-             code-point-in-range-p))
+    :enable (white-space-ranges-alt-def
+             code-point-in-range-p)
+    :disable ((:e ranges-normalize)))
 
   (defrule white-space-p-same-in-all-versions
     (equal (white-space-p cp ver1)

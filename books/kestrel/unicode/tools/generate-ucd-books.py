@@ -88,6 +88,12 @@ What is read, and how:
 
   * The aliases of the names are read from NameAliases.txt.  A code
     point can have several; they are kept in the order of the file.
+
+  * The lines of NormalizationTest.txt are written in full for the
+    lowest version only.  The book of a later version writes each part
+    as edits of the lines of the same part of the version before it
+    (lines kept, lines dropped, lines added), and this script reads
+    those lines back from the generated books.
 """
 
 import argparse
@@ -1465,24 +1471,176 @@ def book_identifier_type(version, sources):
     return book
 
 
+def normalization_test_edits(old, new):
+    """The edits that turn the list OLD of test lines into the list NEW,
+    in the order in which they are applied: ("keep", n) and ("drop", n)
+    for the next n lines of OLD, and ("add", lines).  The lines of OLD
+    that are left after the last edit are kept.
+
+    The lists are walked together.  Where the next lines are the same,
+    the line is kept.  Otherwise the next line of OLD is dropped if it
+    does not come later in NEW, or else the next line of NEW is added
+    if it does not come later in OLD, or else the line of OLD is dropped.
+    """
+    left_old, left_new = {}, {}  # how many times a line is still to come
+    for line in old:
+        left_old[line] = left_old.get(line, 0) + 1
+    for line in new:
+        left_new[line] = left_new.get(line, 0) + 1
+    steps = []  # "keep", "drop", or a line to add
+    i = j = 0
+    while i < len(old) or j < len(new):
+        if i < len(old) and j < len(new) and old[i] == new[j]:
+            step = "keep"
+        elif i < len(old) and (j == len(new)
+                               or not left_new.get(old[i], 0)
+                               or left_old.get(new[j], 0)):
+            step = "drop"
+        else:
+            step = new[j]
+        if step in ("keep", "drop"):
+            left_old[old[i]] -= 1
+            i += 1
+        if step != "drop":
+            left_new[new[j]] -= 1
+            j += 1
+        steps.append(step)
+    edits = []
+    for step in steps:
+        kind = step if step in ("keep", "drop") else "add"
+        if not edits or edits[-1][0] != kind:
+            edits.append((kind, [] if kind == "add" else 0))
+        if kind == "add":
+            edits[-1][1].append(step)
+        else:
+            edits[-1] = (kind, edits[-1][1] + 1)
+    if edits and edits[-1][0] == "keep":
+        edits.pop()
+    return edits
+
+
+def apply_normalization_test_edits(edits, old):
+    """What the ACL2 function normalization-test-apply-edits does."""
+    new = []
+    i = 0
+    for kind, value in edits:
+        if kind == "keep":
+            new.extend(old[i:i + value])
+            i += value
+        elif kind == "drop":
+            i += value
+        else:
+            new.extend(value)
+    return new + old[i:]
+
+
+NORMALIZATION_TEST_LINE_RE = re.compile(
+    r"^ +\(normalization-test-line((?: '\((?:#x[0-9A-F]+ ?)+\)){5})\)+$")
+
+
+def read_normalization_test(version):
+    """The parts of the normalization test of an earlier version, as
+    parse_normalization_test gives them but with each line a tuple of
+    tuples, read back from its generated book and from those of the
+    versions before it."""
+    path = LIBRARY / "data" / ("v" + version) / "normalization-test.lisp"
+    if not path.exists():
+        die("%s is missing: generate the books of Unicode %s first"
+            % (path, version))
+    text = path.read_text()
+    before = re.search(
+        r'^\(include-book "\.\./\.\./data/v([0-9.]+)/normalization-test"\)$',
+        text, re.M)
+    old = dict(read_normalization_test(before.group(1))) if before else {}
+    # Each part of the book is a list [number, lines, edits]: its lines
+    # if they are written in full, or else None and its edits.
+    parts = []
+    lines = text.split("\n")
+    for at, line in enumerate(lines):
+        edit = re.match(
+            r"^ +\(normalization-test-edit-(keep|drop) (\d+)\)+$", line)
+        test = NORMALIZATION_TEST_LINE_RE.match(line)
+        if re.match(r"^ +\(normalization-test-part$", line):
+            parts.append([int(lines[at + 1]), [], None])
+        elif not parts:
+            continue
+        elif re.match(r"^ +\(normalization-test-apply-edits$", line):
+            parts[-1][1:] = [None, []]
+        elif re.match(r"^ +\(normalization-test-edit-add$", line):
+            parts[-1][2].append(("add", []))
+        elif edit:
+            parts[-1][2].append((edit.group(1), int(edit.group(2))))
+        elif test:
+            columns = tuple(
+                tuple(int(x[2:], 16) for x in column.split())
+                for column in re.findall(r"'\(([^()]*)\)", test.group(1)))
+            if parts[-1][1] is None:
+                parts[-1][2][-1][1].append(columns)
+            else:
+                parts[-1][1].append(columns)
+    result = []
+    for number, tests, edits in parts:
+        if tests is None:
+            tests = apply_normalization_test_edits(edits, old.get(number, []))
+        result.append((number, tests))
+    # the book asserts the number of lines of each part
+    counts = re.findall(
+        r"\(nth (\d+) %s\)\)\)\n +(\d+)\)\)"
+        % re.escape("*normalization-test-v%s*" % version), text)
+    if (not result or [(str(number), str(len(tests)))
+                       for number, tests in result] != counts):
+        die("%s is not as this script writes it" % path)
+    return result
+
+
 def book_normalization_test(version, sources):
     source = sources["NormalizationTest.txt"]
-    parts = parse_normalization_test(source)
+    parts = [(number, [tuple(map(tuple, columns)) for columns in tests])
+             for number, tests in parse_normalization_test(source)]
+    before = previous_version(version)
+    includes = ["tests/normalization-test-types"]
+    if before is not None:
+        includes.append("data/v%s/normalization-test" % before)
+        old = dict(read_normalization_test(before))
+        edits = {number: normalization_test_edits(old.get(number, []), tests)
+                 for number, tests in parts}
+        for number, tests in parts:
+            if apply_normalization_test_edits(
+                    edits[number], old.get(number, [])) != tests:
+                die("the edits of part %d do not give its lines" % number)
     book = Book(version, "normalization-test",
                 "The normalization conformance test, NormalizationTest.txt.",
-                [source], ["tests/normalization-test-types"],
-                ["std/util/defconsts"])
+                [source], includes, ["std/util/defconsts"])
     book.comment(
         "The value of the constant below is the list of the parts of the\n"
         "test file, in file order.  Each part has its number and its\n"
         "lines, in file order.  Each line has the five columns of a line\n"
         "of the file (source, NFC, NFD, NFKC, NFKD), each column being a\n"
         "list of code points.\n"
-        "The book ../../tests/normalization-test-v%s runs the tests.\n"
-        "%s"
-        % (version,
-           "\n".join("Part %d: %d lines." % (n, len(tests))
-                     for n, tests in parts)))
+        "The book ../../tests/normalization-test-v%s runs the tests."
+        % version)
+    if before is None:
+        book.comment("\n".join("Part %d: %d lines." % (n, len(tests))
+                               for n, tests in parts))
+    else:
+        book.comment()
+        book.comment(
+            "The lines of each part are written as edits of the lines of\n"
+            "the same part of Unicode %s, which are in the book\n"
+            "../v%s/normalization-test: edits that keep the next lines,\n"
+            "that drop the next lines, and that add lines, applied in\n"
+            "order by the function normalization-test-apply-edits.\n"
+            "The lines after the last edit are kept.\n"
+            "For each part, the number of its lines, and how many lines\n"
+            "of Unicode %s the edits drop and how many lines they add:"
+            % (before, before, before))
+        for number, tests in parts:
+            dropped = sum(value for kind, value in edits[number]
+                          if kind == "drop")
+            added = sum(len(value) for kind, value in edits[number]
+                        if kind == "add")
+            book.comment("Part %d: %d lines (%d dropped, %d added)."
+                         % (number, len(tests), dropped, added))
     book.comment()
     book.comment(
         "The constant is introduced with DEFCONSTS, which evaluates the\n"
@@ -1490,18 +1648,46 @@ def book_normalization_test(version, sources):
         "the thousands of calls below are not compiled.")
     book.blank()
     const = book.constant("normalization-test")
+
+    def line_form(columns):
+        return "(normalization-test-line %s)" % " ".join(
+            "'(%s)" % " ".join(hexcp(cp) for cp in column)
+            for column in columns)
+
     lines = book.lines
     lines.append("(defconsts %s" % const)
     lines.append("  (list")
     for number, tests in parts:
         lines.append("   (normalization-test-part")
         lines.append("    %d" % number)
-        lines.append("    (list")
-        for columns in tests:
-            lines.append("     (normalization-test-line %s)" % " ".join(
-                "'(%s)" % " ".join(hexcp(cp) for cp in column)
-                for column in columns))
-        lines[-1] += "))"
+        if before is None:
+            lines.append("    (list")
+            for columns in tests:
+                lines.append("     " + line_form(columns))
+            lines[-1] += "))"
+            continue
+        lines.append("    (normalization-test-apply-edits")
+        if edits[number]:
+            lines.append("     (list")
+            for kind, value in edits[number]:
+                if kind == "add":
+                    lines.append("      (normalization-test-edit-add")
+                    lines.append("       (list")
+                    for columns in value:
+                        lines.append("        " + line_form(columns))
+                    lines[-1] += "))"
+                else:
+                    lines.append("      (normalization-test-edit-%s %d)"
+                                 % (kind, value))
+            lines[-1] += ")"
+        else:
+            lines.append("     nil")
+        if number in old:
+            lines.append("     (normalization-test-part->lines")
+            lines.append("      (nth %d *normalization-test-v%s*))))"
+                         % (number, before))
+        else:
+            lines.append("     nil))")
     lines[-1] += "))"
     lines.append("")
     book.assert_equal("(len %s)" % const, len(parts))

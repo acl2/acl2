@@ -13,7 +13,7 @@
 (include-book "bidi-display")
 (include-book "bidi-rule")
 
-(local (include-book "std/lists/top" :dir :system)) ; for more DEFLIST theorems
+(local (include-book "range-operations"))
 
 (acl2::controlled-configuration)
 
@@ -34,44 +34,98 @@
      (see @(tsee bidi-mark-code-point-p)).
      Some combining marks have the class @('L');
      apart from those, the two predicates agree.
-     We prove it by checking it on every code point, for each version;
-     so adding a version checks it for that version."))
+     We prove it by computing with lists of ranges of code points,
+     for each version:
+     the code points for which exactly one of the two predicates holds,
+     less the code points of class @('L'),
+     are a list of ranges, and that list is empty.
+     So adding a version checks it for that version."))
+
+  ;; The code points of the three general categories of combining marks,
+  ;; as a list of ranges.
 
   (local
-   (define mark-class-ok ((cp code-point-p) (ver versionp))
-     :returns (yes/no booleanp)
-     (or (equal (bidi-class-kind (code-point-bidi-class cp ver))
-                :left-to-right)
-         (equal (bidi-combining-mark-p cp ver)
-                (bidi-mark-code-point-p cp ver)))
+   (define mark-ranges ((ver versionp))
+     :returns (ranges range-listp)
+     (ranges-union
+      (general-category-ranges (general-category-nonspacing-mark) ver)
+      (ranges-union
+       (general-category-ranges (general-category-spacing-mark) ver)
+       (general-category-ranges (general-category-enclosing-mark) ver)))
      :hooks nil))
 
+  (defrulel code-point-in-mark-ranges
+    (equal (code-point-in-ranges-p cp (mark-ranges ver))
+           (bidi-combining-mark-p cp ver))
+    :enable (mark-ranges
+             bidi-combining-mark-p
+             general-category-mark-p
+             code-point-in-general-category-ranges
+             equal-of-general-category-nonspacing-mark
+             equal-of-general-category-spacing-mark
+             equal-of-general-category-enclosing-mark)
+    :disable ((:e general-category-nonspacing-mark)
+              (:e general-category-spacing-mark)
+              (:e general-category-enclosing-mark)))
+
+  ;; The code points of the two classes, as lists of ranges.
+
+  (defrulel code-point-in-ranges-of-class-nonspacing-mark
+    (equal (code-point-in-ranges-p
+            cp
+            (bidi-class-ranges (bidi-class-nonspacing-mark) ver))
+           (bidi-mark-code-point-p cp ver))
+    :enable (bidi-mark-code-point-p
+             code-point-in-bidi-class-ranges
+             equal-of-bidi-class-nonspacing-mark)
+    :disable ((:e bidi-class-nonspacing-mark)))
+
+  (defrulel code-point-in-ranges-of-class-left-to-right
+    (equal (code-point-in-ranges-p
+            cp
+            (bidi-class-ranges (bidi-class-left-to-right) ver))
+           (equal (bidi-class-kind (code-point-bidi-class cp ver))
+                  :left-to-right))
+    :enable (code-point-in-bidi-class-ranges
+             equal-of-bidi-class-left-to-right)
+    :disable ((:e bidi-class-left-to-right)))
+
+  ;; The code points for which exactly one of the two predicates holds,
+  ;; less the code points of class L, as a list of ranges.
+
   (local
-   (std::deflist mark-class-ok-listp (x ver)
-     :guard (and (code-point-listp x)
-                 (versionp ver))
-     (mark-class-ok x ver)))
+   (define mark-class-exceptions ((ver versionp))
+     :returns (ranges range-listp)
+     (b* ((marks (mark-ranges ver))
+          (class-marks (bidi-class-ranges (bidi-class-nonspacing-mark) ver))
+          (left-to-right (bidi-class-ranges (bidi-class-left-to-right) ver)))
+       (ranges-difference
+        (ranges-union (ranges-difference marks class-marks)
+                      (ranges-difference class-marks marks))
+        left-to-right))
+     :hooks nil))
 
-  (defrulel mark-class-ok-listp-of-all-code-points
-    (mark-class-ok-listp (all-code-points) (version-fix ver))
-    :enable (version-fix-in-terms-of-version-case
-             (:e all-code-points))
-    :disable mark-class-ok-listp-of-cons)
+  (defruledl code-point-in-mark-class-exceptions
+    (equal (code-point-in-ranges-p cp (mark-class-exceptions ver))
+           (and (not (equal (bidi-combining-mark-p cp ver)
+                            (bidi-mark-code-point-p cp ver)))
+                (not (equal (bidi-class-kind (code-point-bidi-class cp ver))
+                            :left-to-right))))
+    :enable mark-class-exceptions
+    :disable ((:e bidi-class-nonspacing-mark)
+              (:e bidi-class-left-to-right)))
 
-  (defrulel mark-class-ok-holds
-    (mark-class-ok cp ver)
-    :rule-classes nil
-    :use (:instance
-          mark-class-ok-when-member-equal-of-mark-class-ok-listp
-          (acl2::a (code-point-fix cp))
-          (x (all-code-points))
-          (ver (version-fix ver)))
-    :enable mark-class-ok)
+  ;; There are none: this is checked by evaluation, for each version.
+
+  (defrulel no-mark-class-exceptions
+    (equal (mark-class-exceptions (version-fix ver))
+           nil)
+    :enable version-fix-in-terms-of-version-case)
 
   (defruled bidi-combining-mark-p-when-not-left-to-right
     (implies (not (equal (bidi-class-kind (code-point-bidi-class cp ver))
                          :left-to-right))
              (equal (bidi-combining-mark-p cp ver)
                     (bidi-mark-code-point-p cp ver)))
-    :enable mark-class-ok
-    :use mark-class-ok-holds))
+    :use (:instance code-point-in-mark-class-exceptions
+                    (ver (version-fix ver)))))

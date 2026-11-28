@@ -268,7 +268,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; From here to the last section, the events are local.
-; The last section has the two theorems and the plan of their proof.
+; The last section has the two theorems and the outline of their proof.
 
 (defrulel fix-when-acl2-numberp
   (implies (acl2-numberp x)

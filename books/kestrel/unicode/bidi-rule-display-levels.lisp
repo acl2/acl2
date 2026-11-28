@@ -35,7 +35,7 @@
 ; the levels are then those of BIDI-MIDDLE-LEVELS for the whole name.
 ; The theorems are at the end; every other event is local.
 ;
-; The plan of the proof.  A name of that kind is plain text
+; The outline of the proof.  A name of that kind is plain text
 ; (theorem BIDI-PARAGRAPH-ALL-LEVELS-WHEN-PLAIN): it is one sequence
 ; at level 0, and its levels come from the weak rules, rule N0 on the
 ; bracket pairs, rules N1 and N2, the implicit levels and rule L1.

@@ -24,7 +24,7 @@
 ; This book is a step of the proofs of the theorems of the books
 ; bidi-guarded-theorem.lisp and bidi-self-contained.lisp,
 ; which include this book locally.
-; See each of the two books for the plan of its proof.
+; See each of the two books for the outline of its proof.
 ;
 ; This book proves that rule N0 of the Unicode Bidirectional Algorithm
 ; keeps the scan (see the book bidi-guarded-weak.lisp),
