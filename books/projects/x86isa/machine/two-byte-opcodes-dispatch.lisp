@@ -206,6 +206,15 @@
           (mv nil 0 x86)))
        ((when flg1) (!!ms-fresh :modr/m-byte-read-error flg1))
 
+       ;; MOV to/from control and debug registers ignores ModR/M.mod: the r/m
+       ;; field always denotes a register.  Setting mod to #b11 here ensures
+       ;; that no SIB or displacement bytes are expected, below and in the
+       ;; instruction semantic functions.
+       ((the (unsigned-byte 8) modr/m)
+        (if (member opcode '(#x20 #x21 #x22 #x23))
+            (!modr/m->mod #b11 modr/m)
+          modr/m))
+
        ((mv flg temp-rip) (if modr/m?
                               (add-to-*ip proc-mode temp-rip 1 x86)
                             (mv nil temp-rip)))
