@@ -22907,7 +22907,7 @@ Subtopics
     (count #\\D \"DabcDefcDe\" :start 1 :end 5) ; = 1
     (count #\\D \"DabcDefcDe\" :start 1 :end 4) ; = 0
     (count #\\z \"DabcDefcDe\")                 ; = 0
-    (count '(a b) '(17 (a b) 23 (a b) (c d)))   ; = 2
+    (count 'a '(17 a 23 a (c d)))               ; = 2
 
     General Form:
     (count item sequence &key start end)
@@ -22916,7 +22916,10 @@ Subtopics
   [30m[47msequence[0m[0m.  The [guard] for calls of [30m[47mcount[0m[0m (which is actually a
   macro in ACL2) specifies that [30m[47msequence[0m[0m is a string or a true-list,
   and that [30m[47mstart[0m[0m, which defaults to 0, and [30m[47mend[0m[0m, which defaults to the
-  length of [30m[47msequence[0m[0m, are valid indices into sequence.
+  length of [30m[47msequence[0m[0m, are valid indices into sequence.  If [30m[47msequence[0m[0m
+  is a list, then the guard also specifies that either [30m[47mitem[0m[0m or every
+  member of [30m[47msequence[0m[0m satisfies [30m[47m[eqlablep][0m[0m, since Common Lisp's [30m[47mcount[0m[0m
+  compares using [30m[47m[eql][0m[0m.
 
   See any Common Lisp documentation for more information about [30m[47mcount[0m[0m,
   which is a Common Lisp utility.  At this time ACL2 does not support
@@ -107261,6 +107264,13 @@ Bug Fixes From AI via Eric Smith
   part of the fix, extended a guard optimization for constant indices
   from just the numeric case.
 
+  Applied (and checked) AI-suggested fix to eliminate a soundness bug
+  in [30m[47m[count][0m[0m, which in [guard]-verified code compared list members to
+  the item using [30m[47m[eql][0m[0m, although its logical definition uses [30m[47m[equal][0m[0m.
+  The guard of [30m[47mcount[0m[0m on a list now requires that the item or every
+  member of the list satisfies [30m[47m[eqlablep][0m[0m.  For an example, see
+  [community-book] [30m[47msystem/tests/count-eql-vs-equal.lisp[0m[0m.
+
   Checks were improved to avoid raw Lisp errors in the following
   situations.  (Aside: AI reported, for the first two: ``Four
   subagents tested ~270 malformed inputs across nearly every ACL2
@@ -107628,6 +107638,15 @@ Bug Fixes From AI via Eric Smith
   [30m[47mremove-guard-holders[0m[0m to [30m[47m(f (return-last 'progn '7 (to-df x)))[0m[0m
   produced [30m[47m(F (RETURN-LAST 'PROGN '7 (TO-DF X)))[0m[0m but now produces the
   correct result, [30m[47m(F (TO-DF X))[0m[0m.
+
+  Applied (and checked) AI-suggested fix to eliminate a soundness bug
+  in the [proof-builder]'s [30m[47mapply-linear[0m[0m command, which added the
+  conclusion of a [linear] rule as a top-level hypothesis even when
+  rule's hypotheses were relieved using IF tests governing the
+  current subterm.  In that case, the added hypothesis is now an
+  implication from those tests to that conclusion; see
+  [ACL2-pc::apply-linear].  For an example, see [community-book]
+  [30m[47msystem/tests/proof-builder-apply-linear-governors.lisp[0m[0m.
 
   Fixed a [30m[47m[stobj-let][0m[0m soundness bug involving [stobj-table] fields of
   [stobj]s, by strengthening a check in each binding that the bound
@@ -170431,7 +170450,12 @@ Remarks on defaults
   Finally, the instruction is applied exactly as the [30m[47mrewrite[0m[0m
   instruction is applied, except instead of replacing the current
   subterm, the rule's instantiated conclusion is added to the end of
-  the list of top-level hypotheses of the goal.
+  the list of top-level hypotheses of the goal.  However, if the
+  current subterm has governors (IF tests) that are not top-level
+  hypotheses, then since these may have been used in relieving the
+  rule's hypotheses, the hypothesis added is instead the implication
+  whose hypotheses are those governors and whose conclusion is the
+  rule's instantiated conclusion.
 
   Note that as for the [30m[47mrewrite[0m[0m command, the substitution argument
   should be a list whose elements have the form [30m[47m(variable term)[0m[0m,
