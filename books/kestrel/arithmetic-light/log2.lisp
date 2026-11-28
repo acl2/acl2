@@ -29,7 +29,8 @@
                            ;my-floor-lower-bound-linear
                            <-of-*-same-linear-special
                            <=-of-*-and-*-same-alt-linear
-                           <=-of-*-and-*-same-linear)))
+                           <=-of-*-and-*-same-linear
+                           <-of-*-and-*-same-forward-2)))
 
 (defthm natp-of-log2-type
   (implies (and (<= 1 x)
