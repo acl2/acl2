@@ -57,7 +57,7 @@
 ; in a paragraph from right to left.  The theorem is at the end;
 ; every other event is local.
 ;
-; The plan of the proof.  Such a label is plain text
+; The outline of the proof.  Such a label is plain text
 ; (theorem BIDI-PARAGRAPH-ALL-LEVELS-WHEN-PLAIN-AT-LEVEL): it is one sequence
 ; at level 1, with the direction R at its two ends.
 ;

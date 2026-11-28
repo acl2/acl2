@@ -25,7 +25,7 @@
 ; is confined: see the section at the end of the book.
 ; Everything before that section is local.
 ;
-; The plan of the proof.
+; The outline of the proof.
 ;
 ; 1. Mark each position of the text as outside or inside.
 ;    In each segment, the positions before the first character

@@ -24,7 +24,7 @@
 ; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
 ; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See each of the two books for the plan of its proof.
+; See each of the two books for the outline of its proof.
 ;
 ; This book proves facts about the bracket pairs
 ; that BIDI-BRACKET-PAIRS finds [UAX #9, BD16]:

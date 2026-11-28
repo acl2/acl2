@@ -23,7 +23,7 @@
 ; bidi-guarded-theorem.lisp and bidi-self-contained.lisp.
 ; Those books include this one locally,
 ; through the book bidi-guarded-neutral.lisp.
-; See each of the two books for the plan of its proof.
+; See each of the two books for the outline of its proof.
 ;
 ; This book defines the scan, which is the invariant of the proof,
 ; and proves that rules W1 to W7 of the Unicode Bidirectional Algorithm
