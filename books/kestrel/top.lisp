@@ -72,6 +72,7 @@
 ;; (include-book "typed-lists-light/top") ; TODO: Name clash on perm
 (include-book "syntheto/top")
 (include-book "unicode-light/top")
+(include-book "unicode/top")
 (include-book "untranslated-terms/top")
 (include-book "utilities/top")
 (include-book "world-light/top")

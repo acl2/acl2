@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+# Unicode Library
+#
+# Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+#
+# Author: Eric McCarthy (bendyarm on GitHub)
+
+"""Compare, for EVERY code point, a file written by the ACL2 function
+DUMP-PROPERTIES of dump.lisp with files written by the oracles
+(rust-oracle, python-oracle.py and icu-oracle.py), which are independent
+implementations of the same version of Unicode.
+
+Usage:
+
+    compare.py ACL2-FILE ORACLE-FILE...
+
+Each oracle column is named `property@source`.  It is compared with the
+ACL2 column `property`, for every code point, except that:
+
+  * rustc_id_start is compared with "XID_Start, or the underscore",
+    rustc_id_continue with XID_Continue, and rustc_whitespace with
+    Pattern_White_Space: that is how rustc's lexer defines them;
+
+  * a field `!` means that the oracle cannot say (the Rust oracle writes it
+    for the surrogates, which are not Rust chars, and the Python oracle
+    for a name that Python does not have); such fields are counted
+    but not compared;
+
+  * ass_no_hntl is compared with the ACL2 column ass without the
+    writing system Hntl, which the crate unicode-security does not have;
+
+  * emoji_status, which the crate unicode-properties gives as one of
+    nine values, is compared with the value that the five ACL2 columns
+    emoji, epres, emod, ebase and ecomp determine (see EMOJI_STATUS);
+
+  * for the precomposed Hangul syllables, the dm column of the Python
+    oracle is compared with the ACL2 NFD column: the Decomposition_Mapping
+    of an LVT syllable is the pair of an LV syllable and a T jamo, but
+    Python's unicodedata.decomposition returns its full decomposition,
+    and so does that of the module unicodedata2;
+
+  * the blk column of the ICU oracle, which has the names of the blocks
+    in another form (Latin_1_Supplement for Latin-1 Supplement), is
+    compared without regard to case, spaces, hyphens and low lines, as
+    the names of property values are matched (UAX #44, rule UAX44-LM3);
+
+  * the idty column of the ICU oracle is compared as a set of types;
+
+  * the correction column of the ICU oracle is compared with the aliases
+    of type `correction` in the ACL2 column aliases.
+
+This script also checks the ACL2 file against itself: a code point has
+Full_Composition_Exclusion exactly when its NFC form is not itself, and
+the columns that the library proves to be the same in all versions have
+the values that those theorems say.
+
+The exit status is 1 if anything differs.
+"""
+
+import re
+import sys
+
+NUM_CP = 0x110000
+
+# The EmojiStatus of the crate unicode-properties, for each combination
+# of (Emoji, Emoji_Presentation, Emoji_Modifier, Emoji_Modifier_Base,
+# Emoji_Component) that the crate has a value for.
+EMOJI_STATUS = {
+    ("0", "0", "0", "0", "0"): "NonEmoji",
+    ("0", "0", "0", "0", "1"): "NonEmojiButEmojiComponent",
+    ("1", "1", "0", "0", "0"): "EmojiPresentation",
+    ("1", "0", "0", "1", "0"): "EmojiModifierBase",
+    ("1", "1", "0", "1", "0"): "EmojiPresentationAndModifierBase",
+    ("1", "0", "0", "0", "0"): "EmojiOther",
+    ("1", "1", "0", "0", "1"): "EmojiPresentationAndEmojiComponent",
+    ("1", "1", "1", "0", "1"):
+        "EmojiPresentationAndModifierAndEmojiComponent",
+    ("1", "0", "0", "0", "1"): "EmojiOtherAndEmojiComponent",
+}
+
+
+def die(message):
+    sys.exit("compare.py: error: " + message)
+
+
+def canonical(prop, source):
+    """The function that puts the values of an oracle column, and the ACL2
+    values that they are compared with, in the form in which they are
+    compared; None if they are compared as they are."""
+    if (prop, source) == ("blk", "icu"):
+        return lambda name: re.sub("[ _-]", "", name).lower()
+    if (prop, source) == ("idty", "icu"):
+        return lambda types: " ".join(sorted(types.split(" ")))
+    return None
+
+
+def read(path):
+    """Return (column names, list of rows of fields indexed by code point)."""
+    with open(path) as f:
+        header = f.readline().rstrip("\n")
+        if not header.startswith("#cp;"):
+            die("%s: no header" % path)
+        columns = header[1:].split(";")
+        rows = []
+        for cp, line in enumerate(f):
+            fields = line.rstrip("\n").split(";")
+            if len(fields) != len(columns) or fields[0] != str(cp):
+                die("%s: bad line for code point %d" % (path, cp))
+            rows.append(fields)
+    if len(rows) != NUM_CP:
+        die("%s: %d code points, not %d" % (path, len(rows), NUM_CP))
+    return columns, rows
+
+
+def main():
+    if len(sys.argv) < 2:
+        die("usage: compare.py ACL2-FILE ORACLE-FILE...")
+    acl2_columns, acl2 = read(sys.argv[1])
+    index = {name: i for i, name in enumerate(acl2_columns)}
+    for name in ["xids", "xidc", "pws", "bidic", "bidif", "ccc", "fce",
+                 "dm", "nfd", "nfc", "nfkd", "nfkc", "gc", "di", "vs", "jc",
+                 "nchar", "dep", "pcm", "psyn", "ids", "idc", "sc", "scx",
+                 "bc", "blk", "dd", "emoji", "epres", "emod", "ebase",
+                 "ecomp", "extpict", "ri", "idst", "idty", "skel", "skelk",
+                 "skelm", "ass", "wspace", "name", "aliases", "label"]:
+        if name not in index:
+            die("%s: no column %s" % (sys.argv[1], name))
+
+    def expected(prop, source):
+        """The ACL2 values to compare an oracle column for PROP with."""
+        if prop == "rustc_id_start":
+            i = index["xids"]
+            return ["1" if (row[i] == "1" or cp == 0x5F) else "0"
+                    for cp, row in enumerate(acl2)]
+        if prop == "rustc_id_continue":
+            prop = "xidc"
+        if prop == "rustc_whitespace":
+            prop = "pws"
+        if prop == "emoji_status":
+            flags = [index[name] for name in
+                     ("emoji", "epres", "emod", "ebase", "ecomp")]
+            return [EMOJI_STATUS.get(tuple(row[i] for i in flags),
+                                     "no such status")
+                    for row in acl2]
+        if prop == "ass_no_hntl":
+            i = index["ass"]
+            return [" ".join(code for code in row[i].split(" ")
+                             if code != "Hntl")
+                    for row in acl2]
+        if prop == "correction":
+            i = index["aliases"]
+            return ["|".join(alias[:-len(":correction")]
+                             for alias in row[i].split("|")
+                             if alias.endswith(":correction"))
+                    for row in acl2]
+        if prop not in index:
+            die("no ACL2 column for %s" % prop)
+        i = index[prop]
+        if prop == "dm" and source in ("python", "unicodedata2"):
+            nfd = index["nfd"]
+            return ["c:" + row[nfd] if 0xAC00 <= cp <= 0xD7A3 else row[i]
+                    for cp, row in enumerate(acl2)]
+        return [row[i] for row in acl2]
+
+    failed = False
+
+    def report(what, compared, skipped, differences):
+        nonlocal failed
+        status = "ok" if not differences else "DIFFERENT"
+        print("%-34s %s: %d code points compared, %d skipped, %d different"
+              % (what, status, compared, skipped, len(differences)))
+        for cp, ours, theirs in differences[:10]:
+            print("    U+%04X: ACL2 %r, other %r" % (cp, ours, theirs))
+        if differences:
+            failed = True
+
+    # The ACL2 file against itself.
+    nfc, fce = index["nfc"], index["fce"]
+    report("fce = (nfc is not identity)", NUM_CP, 0,
+           [(cp, row[fce], row[nfc]) for cp, row in enumerate(acl2)
+            if (row[fce] == "1") != (row[nfc] != str(cp))])
+    pws = {*range(0x9, 0xE), 0x20, 0x85, 0x200E, 0x200F, 0x2028, 0x2029}
+    report("pws = the 11 code points", NUM_CP, 0,
+           [(cp, row[index["pws"]], "") for cp, row in enumerate(acl2)
+            if (row[index["pws"]] == "1") != (cp in pws)])
+    bidic = {0x61C, 0x200E, 0x200F, *range(0x202A, 0x202F),
+             *range(0x2066, 0x206A)}
+    report("bidic = the 12 code points", NUM_CP, 0,
+           [(cp, row[index["bidic"]], "") for cp, row in enumerate(acl2)
+            if (row[index["bidic"]] == "1") != (cp in bidic)])
+
+    # The oracles.
+    for path in sys.argv[2:]:
+        columns, rows = read(path)
+        for i, column in enumerate(columns):
+            if i == 0:
+                continue
+            prop, _, source = column.partition("@")
+            ours = expected(prop, source)
+            form = canonical(prop, source)
+            forms = {}
+            compared = skipped = 0
+            differences = []
+            for cp, row in enumerate(rows):
+                if row[i] == "!":
+                    skipped += 1
+                    continue
+                compared += 1
+                if form is None:
+                    same = row[i] == ours[cp]
+                else:
+                    for value in (row[i], ours[cp]):
+                        if value not in forms:
+                            forms[value] = form(value)
+                    same = forms[row[i]] == forms[ours[cp]]
+                if not same:
+                    differences.append((cp, ours[cp], row[i]))
+            report(column, compared, skipped, differences)
+
+    sys.exit(1 if failed else 0)
+
+
+if __name__ == "__main__":
+    main()
