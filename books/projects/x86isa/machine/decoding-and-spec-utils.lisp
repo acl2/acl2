@@ -2466,7 +2466,7 @@ reference made from privilege level 3.</blockquote>"
   :inline t
   :no-function t
   :parents (decoding-and-spec-utils)
-  :short "Segment register to use for an instruction operand  in memory."
+  :short "Segment register to use for an instruction operand in memory."
   :long
   "<p>
    If there is a segment register override prefix,
