@@ -552,7 +552,7 @@
      on every code point have been compared with those of
      independent implementations of the same versions of Unicode:
      the Rust crates that the Rust compiler uses,
-     and the Python standard library.
+     the Python standard library, and the ICU library.
      The tools for that are in the @('validation') directory,
      and the file @('README.md') says how to run them
      and what was compared.")

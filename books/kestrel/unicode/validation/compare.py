@@ -9,8 +9,8 @@
 
 """Compare, for EVERY code point, a file written by the ACL2 function
 DUMP-PROPERTIES of dump.lisp with files written by the oracles
-(rust-oracle and python-oracle.py), which are independent implementations
-of the same version of Unicode.
+(rust-oracle, python-oracle.py and icu-oracle.py), which are independent
+implementations of the same version of Unicode.
 
 Usage:
 
@@ -38,7 +38,18 @@ ACL2 column `property`, for every code point, except that:
   * for the precomposed Hangul syllables, the dm column of the Python
     oracle is compared with the ACL2 NFD column: the Decomposition_Mapping
     of an LVT syllable is the pair of an LV syllable and a T jamo, but
-    Python's unicodedata.decomposition returns its full decomposition.
+    Python's unicodedata.decomposition returns its full decomposition,
+    and so does that of the module unicodedata2;
+
+  * the blk column of the ICU oracle, which has the names of the blocks
+    in another form (Latin_1_Supplement for Latin-1 Supplement), is
+    compared without regard to case, spaces, hyphens and low lines, as
+    the names of property values are matched (UAX #44, rule UAX44-LM3);
+
+  * the idty column of the ICU oracle is compared as a set of types;
+
+  * the correction column of the ICU oracle is compared with the aliases
+    of type `correction` in the ACL2 column aliases.
 
 This script also checks the ACL2 file against itself: a code point has
 Full_Composition_Exclusion exactly when its NFC form is not itself, and
@@ -48,6 +59,7 @@ the values that those theorems say.
 The exit status is 1 if anything differs.
 """
 
+import re
 import sys
 
 NUM_CP = 0x110000
@@ -71,6 +83,17 @@ EMOJI_STATUS = {
 
 def die(message):
     sys.exit("compare.py: error: " + message)
+
+
+def canonical(prop, source):
+    """The function that puts the values of an oracle column, and the ACL2
+    values that they are compared with, in the form in which they are
+    compared; None if they are compared as they are."""
+    if (prop, source) == ("blk", "icu"):
+        return lambda name: re.sub("[ _-]", "", name).lower()
+    if (prop, source) == ("idty", "icu"):
+        return lambda types: " ".join(sorted(types.split(" ")))
+    return None
 
 
 def read(path):
@@ -126,10 +149,16 @@ def main():
             return [" ".join(code for code in row[i].split(" ")
                              if code != "Hntl")
                     for row in acl2]
+        if prop == "correction":
+            i = index["aliases"]
+            return ["|".join(alias[:-len(":correction")]
+                             for alias in row[i].split("|")
+                             if alias.endswith(":correction"))
+                    for row in acl2]
         if prop not in index:
             die("no ACL2 column for %s" % prop)
         i = index[prop]
-        if prop == "dm" and source == "python":
+        if prop == "dm" and source in ("python", "unicodedata2"):
             nfd = index["nfd"]
             return ["c:" + row[nfd] if 0xAC00 <= cp <= 0xD7A3 else row[i]
                     for cp, row in enumerate(acl2)]
@@ -170,6 +199,8 @@ def main():
                 continue
             prop, _, source = column.partition("@")
             ours = expected(prop, source)
+            form = canonical(prop, source)
+            forms = {}
             compared = skipped = 0
             differences = []
             for cp, row in enumerate(rows):
@@ -177,7 +208,14 @@ def main():
                     skipped += 1
                     continue
                 compared += 1
-                if row[i] != ours[cp]:
+                if form is None:
+                    same = row[i] == ours[cp]
+                else:
+                    for value in (row[i], ours[cp]):
+                        if value not in forms:
+                            forms[value] = form(value)
+                    same = forms[row[i]] == forms[ours[cp]]
+                if not same:
                     differences.append((cp, ours[cp], row[i]))
             report(column, compared, skipped, differences)
 

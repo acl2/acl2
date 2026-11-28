@@ -1562,11 +1562,10 @@ Notes:
   oracle reports 4,647 code points that differ in `XID_Start`.
 - Unicode 18.0.0 was compared in the same way, on 2026-11-14, with
   `unicode-ident` 1.0.27, `unicode-normalization` 0.1.26 and rustc's lexer
-  (`ra-ap-rustc_lexer` 0.184.0), with no differences.  No Python with
-  Unicode 18.0.0 was available; so for 18.0.0 `Bidi_Control`, the explicit
-  formatting classes and `Decomposition_Mapping` have not been compared
-  with another implementation (the first two are proved to be the same as
-  in the other versions).
+  (`ra-ap-rustc_lexer` 0.184.0), with no differences.  No Python has
+  Unicode 18.0.0; for that version `Bidi_Control`, the explicit
+  formatting classes and `Decomposition_Mapping` are compared with ICU
+  and with the Python module `unicodedata2`, below.
 
 `General_Category` and seven binary properties were compared on
 2026-11-19, for every code point, and the comparisons above were run again
@@ -1585,7 +1584,8 @@ on that day:
   But each of these seven tables is the same in 16.0.0, 17.0.0 and 18.0.0,
   as evaluating `(equal (deprecated-ranges (version-v16.0.0))
   (deprecated-ranges (version-v17.0.0)))` and the like shows, so the
-  comparison for 16.0.0 covers the three versions.
+  comparison for 16.0.0 covers the three versions.  They are also
+  compared with ICU for each version, below.
 - The generator also checks `General_Category` of every code point, as
   read from `extracted/DerivedGeneralCategory.txt`, against field 2 of
   `UnicodeData.txt`.
@@ -1622,13 +1622,14 @@ above of every code point were run again on that day.  No differences:
   `extracted/DerivedBidiClass.txt` everywhere: it has L for the 3,835
   unassigned code points whose default is BN, and R for 135 of the 293
   whose default is AL.  There is no release of `unicode-bidi` for the
-  later versions, so for 18.0.0 `Bidi_Class` was not compared with another
-  implementation.  The generator checks, for the three versions, the
+  later versions; for 18.0.0 `Bidi_Class` is compared with ICU and with
+  `unicodedata2`, below.  The generator checks, for the three versions, the
   `Bidi_Class` of every code point that `UnicodeData.txt` lists against
   field 4 of that file.
 - `Identifier_Status`: with `unicode-security` 0.1.2 for 16.0.0 and 0.1.3
   for 18.0.0.  There is no release of it for 17.0.0, whose table differs
-  from that of 18.0.0 in one code point.
+  from that of 18.0.0 in one code point; for 17.0.0 the property is
+  compared with ICU, below.
 - `Emoji`, `Emoji_Presentation`, `Emoji_Modifier`, `Emoji_Modifier_Base`
   and `Emoji_Component`: with the emoji status of `unicode-properties`
   (0.1.3, 0.1.4 and 0.1.5 for the three versions), which is one of nine
@@ -1641,24 +1642,24 @@ above of every code point were run again on that day.  No differences:
   compared, and to differ from `XID_Start` and `XID_Continue`, which are
   compared, in the same code points as in 16.0.0; `Regional_Indicator` is
   proved to be the same code points; `Extended_Pictographic` of 17.0.0 and
-  18.0.0 was not compared with another implementation.
+  18.0.0 is compared with ICU, below.
 - The values of the decimal digits: with `unicodedata.decimal` of Python
   3.14.6 for 16.0.0 and of Python 3.15.0b4 for 17.0.0.  For 18.0.0 they
-  were not compared; the library proves, for each version, that the
-  decimal digits are the code points of category `Nd`, and that they come
-  in runs of ten with the values 0 to 9.
+  are compared with ICU and with `unicodedata2`, below.  The library
+  proves, for each version, that the decimal digits are the code points
+  of category `Nd`, and that they come in runs of ten with the values 0
+  to 9.
 - As a control, comparing the 17.0.0 output of the library with the
   18.0.0 oracle reports 13,007 code points that differ in `Script`, 9 in
   emoji status, and 1 in `Identifier_Status`.
 
-Not compared with another implementation, in any version: `Block`,
-`Identifier_Type`, `Other_ID_Start`, `Other_ID_Continue`,
-`ID_Compat_Math_Start` and `ID_Compat_Math_Continue`.  What the library
-has about them is the data files and the theorems: the last four are
-proved to be short lists of code points, which the documentation shows;
-the identifier types are proved to agree with the identifier status,
-which is compared; nothing checks the blocks beyond the checks of the
-generator.
+`Block` and `Identifier_Type` are compared with ICU, below, and with
+nothing else; the identifier types are also proved to agree with the
+identifier status.  Not compared with another implementation, in any
+version: `Other_ID_Start`, `Other_ID_Continue`, `ID_Compat_Math_Start`
+and `ID_Compat_Math_Continue`.  What the library has about them is the
+data files and the theorems: they are proved to be short lists of code
+points, which the documentation shows.
 
 `White_Space` was compared on 2026-11-20, for every code point but the
 surrogates (`validation/dump.lisp` writes one more column for it), with
@@ -1731,8 +1732,10 @@ UTS #39 leave open and that the conformance files do not test: the place
 of the characters that rule X9 removes, and what rule L3 does exactly.
 The documentation topic `bidi-displayed-text` states what the library
 does.  It was compared on 2026-11-23 with ICU 74.2, by the script
-`validation/icu-display.py` and the book `validation/compare-display`.
-That ICU has Unicode 15.1.0, so the strings are made of 35 characters whose
+`validation/icu-display.py` and the book `validation/compare-display`,
+and on 2026-11-27 with ICU 76.1 for 16.0.0, ICU 78.3 for 17.0.0 and ICU
+79.1 for 18.0.0.  The four versions of ICU give the same answers.
+ICU 74.2 has Unicode 15.1.0, so the strings are made of 35 characters whose
 properties have not changed since: characters of all the bidirectional
 classes but `B`, among them paired brackets, other mirrored characters,
 two combining marks and the formatting characters.  The strings are
@@ -1756,7 +1759,7 @@ are the same for the three supported versions:
   says that the place of those characters is not specified.
 - No string differs for another reason.
 
-Two examples of the levels of ICU 74.2 that are not those of the
+Two examples of the levels of ICU that are not those of the
 conformance files.  For U+2067, U+05B0, U+003E, U+0009 in a paragraph
 from right to left, it gives 1 1 1 1, and `BidiTest.txt` has 1 3 3 1 for
 the classes of these characters (`RLI NSM ON S`); the order of display is
@@ -1777,7 +1780,8 @@ itself and puts them one after the other.  Neither matters for the
 skeleton of an identifier.
 
 To repeat the comparison with ICU (it needs `acl2`, `python3` and the
-shared library `libicuuc`):
+shared library `libicuuc`: the one of the system, or the one in the
+directory that the environment variable `ICU_LIB_DIR` names):
 
 ```
 cert.pl validation/compare-display
@@ -1834,11 +1838,11 @@ differences:
   "cannot say" for a code point that has no name in Python and whose
   `General_Category`, in Python, is not `Cc`, `Cs`, `Co` or `Cn`, and
   reports how many there are.
-- For 18.0.0 the names were not compared with another implementation.
-  The generator checks, for each version, every listed name against
-  field 1 of `UnicodeData.txt`, and the names of the Hangul syllables
-  against the rule; and the library proves that a name of 17.0.0 is the
-  same in 18.0.0.
+- For 18.0.0 the names are compared with `unicodedata2` and with ICU,
+  below.  The generator checks, for each version, every listed name
+  against field 1 of `UnicodeData.txt`, and the names of the Hangul
+  syllables against the rule; and the library proves that a name of
+  17.0.0 is the same in 18.0.0.
 - `name-code-point` and the loose matching were not compared with another
   implementation.  The first is proved to be the inverse of
   `code-point-name`; for the second the tests have the examples of
@@ -1853,9 +1857,9 @@ day.  No differences:
   17.0.0.  Python has no function from a code point to its aliases, so
   the oracle takes the aliases and their types from `NameAliases.txt`
   and keeps, for each code point, those for which `unicodedata.lookup`
-  gives that code point.  It kept all of them: 477 and 481.  For 18.0.0
-  the aliases were not compared with another implementation; they are
-  the same as those of 17.0.0.
+  gives that code point.  It kept all of them: 477 and 481.  The
+  aliases of 18.0.0, which are the same as those of 17.0.0, are compared
+  in the same way with `unicodedata2`, below.
 - The labels, for the three versions, with the comments of
   `extracted/DerivedGeneralCategory.txt`, which give the label of the
   first and of the last code point of each range of the code points
@@ -1868,6 +1872,62 @@ day.  No differences:
 - The basic types of code points were not compared with another
   implementation: they are a short definition on top of
   `General_Category` and `Noncharacter_Code_Point`, which were.
+
+The library was compared with ICU on 2026-11-27, for every code point,
+by `validation/icu-oracle.py`, which calls the C functions of ICU4C: with
+ICU 76.1 for 16.0.0, ICU 78.3 for 17.0.0 and ICU 79.1 for 18.0.0, each
+built from the source of its release by `validation/icu/build-icu.sh`.
+ICU has its own tables and its own code for normalization, names and
+skeletons.  The oracle writes 41 columns: all the columns of the dump but
+the earlier definition of the skeleton, the augmented script set, the
+labels, and the aliases that are not corrections.  No differences, on
+each of the 1,114,112 code points, the surrogates and the unassigned
+code points included:
+
+- What this adds to the comparisons above.  In the three versions:
+  `Block` and `Identifier_Type`, and every property on the code points
+  that an oracle above leaves out, such as the surrogates.  For 17.0.0
+  and 18.0.0, what is compared above for 16.0.0 alone:
+  `ID_Start`, `ID_Continue`, `Extended_Pictographic`,
+  `Regional_Indicator`, each of the five emoji properties by itself, and
+  the seven binary properties of 2026-11-19.  For 17.0.0,
+  `Identifier_Status`.  For 18.0.0, `Bidi_Control`, the explicit
+  formatting classes, `Bidi_Class`, `Decomposition_Mapping`, the decimal
+  digits and the names.
+- The names (`u_charName`): on every code point for 16.0.0 and 17.0.0,
+  the Tangut ideographs included.  ICU 79.1 gives no name for 12,242 code
+  points of 18.0.0 that have one by rule: the 914 Jurchen characters,
+  U+18E00 to U+19191, and the 11,328 small seal characters, U+3D000 to
+  U+3FC3F.  The oracle writes "cannot say" for them, as the Python oracle
+  does, and the names of 18.0.0 are compared on the other 1,101,870 code
+  points.
+- ICU gives one alias for a code point, its correction.  It is compared
+  with the alias of type `correction` that the library has, for the code
+  points that have one (35 in 16.0.0, 39 in the later versions), and
+  with there being none for the others.
+- The skeleton of ICU (`uspoof_getSkeleton`) is the internal skeleton
+  with its four steps.  It is compared on each code point alone and
+  between the letter a and two combining marks, as above.
+- The name of a block is compared without regard to case, spaces,
+  hyphens and low lines (ICU has `Latin_1_Supplement` where `Blocks.txt`
+  has `Latin-1 Supplement`), and the identifier types as a set.
+- As a control, comparing the 17.0.0 output of the library with the
+  oracle of ICU 79.1 reports differences in 22 of the 41 columns: 13,007
+  code points in `General_Category` and in `Script`, 12,976 in `Block`,
+  13,124 in `Identifier_Type`, 2,529 in the skeleton, 1 in
+  `Identifier_Status`.
+
+For 18.0.0 the library was also compared, on 2026-11-27, with the Python
+module `unicodedata2` 18.0.0 (in Python 3.12.3), which has the functions
+of Python's `unicodedata` with the tables of Unicode 18.0.0;
+`validation/python-oracle.py` uses it when the interpreter itself has
+another version.  No differences: the explicit formatting classes,
+`Canonical_Combining_Class`, `Decomposition_Mapping`, the four
+normalization forms, `General_Category`, the decimal digits and the names
+on every code point, the 12,242 that ICU has no name for included;
+`Bidi_Class` on the 312,389 assigned code points; the NFC form of the
+97,080 pairs; the second implementation of the skeleton, above, with NFD
+from that module; and the 481 aliases, each found by its `lookup`.
 
 Not compared with another implementation: the bidirectional skeleton as
 a whole (its two parts are, above: the displayed text and the internal
@@ -1900,6 +1960,25 @@ UCD_DIR=/tmp/ucd-17.0.0 \
 UCD_DIR=/tmp/ucd-18.0.0 \
   validation/run.sh 18.0.0 /tmp/unicode-validation
 ```
+
+Then, for ICU and `unicodedata2`, with Docker, on the directory in which
+`run.sh` has written its files:
+
+```
+docker build -t unicode-oracles -f validation/icu/Dockerfile validation
+docker run --rm --user "$(id -u):$(id -g)" \
+       -v /tmp/unicode-validation:/work \
+       -v /tmp/ucd-18.0.0:/ucd/18.0.0:ro unicode-oracles
+```
+
+The image has ICU 76.1, 78.3 and 79.1, built from their sources at the
+commits that the `Dockerfile` names, and `unicodedata2` 18.0.0; building
+it takes about ten minutes.  Its script `validation/icu/compare-all.sh`
+runs the two oracles for each version whose files are in the directory,
+and `validation/compare.py`.  Without Docker, build one ICU with
+`validation/icu/build-icu.sh` and give its directory `lib` to `run.sh` in
+the environment variable `ICU_LIB_DIR`; and give `run.sh`, as its
+Python, an interpreter that has `unicodedata2` installed.
 
 The script does not report "no differences" when ACL2 fails or is cut
 short.  It first removes the files that ACL2 wrote for the version in an

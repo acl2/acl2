@@ -1,0 +1,10 @@
+# The files that icu/Dockerfile copies into its image; the rest of this
+# directory, such as the build directories of rust-oracle, is not sent
+# to Docker.
+*
+!compare.py
+!icu-oracle.py
+!python-oracle.py
+!icu/build-icu.sh
+!icu/compare-all.sh
+!icu/data-filter.json
