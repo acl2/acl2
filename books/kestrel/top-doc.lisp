@@ -66,6 +66,7 @@
    (include-book "syntheto/top")
    (include-book "terms-light/doc")
    (include-book "typed-lists-light/doc")
+   (include-book "unicode/top")
    (include-book "utilities/top")
    (include-book "utilities/doc")
    (include-book "utilities/io/doc")

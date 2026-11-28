@@ -1,0 +1,58 @@
+# Unicode Library
+#
+# Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+#
+# Author: Eric McCarthy (bendyarm on GitHub)
+
+# The crates that rustc uses for identifiers and normalization,
+# at the versions that implement Unicode 17.0.0.
+# These are the versions in the Cargo.lock of rustc 1.97.0.
+#
+#   unicode-ident 1.0.22         Unicode 17.0.0 (says so itself)
+#   unicode-normalization 0.1.25 Unicode 17.0.0 (says so itself)
+#   ra-ap-rustc_lexer 0.146.0    rustc's own lexer crate, as published for
+#                                rust-analyzer; this version uses unicode-ident
+#
+# There is no release of unicode-xid or of regex-syntax for Unicode 17.0.0.
+#
+# And, for Script and Script_Extensions:
+#
+#   unicode-script 0.5.8         Unicode 17.0.0 (says so itself)
+#
+# There is no release of unicode-bidi or of unicode-security
+# for Unicode 17.0.0.
+
+[package]
+name = "unicode-oracle-v17-0-0"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "oracle"
+path = "../src/main.rs"
+
+[features]
+default = ["have-unicode-ident-version", "have-unicode-script"]
+have-unicode-xid = []
+have-regex-syntax = []
+have-unicode-ident-version = []
+have-unicode-script = []
+have-unicode-bidi = []
+have-unicode-security = []
+unicode-security-removes-default-ignorables = []
+
+[dependencies]
+unicode-normalization = "=0.1.25"
+unicode-ident = "=1.0.22"
+ra-ap-rustc_lexer = "=0.146.0"
+# rustc_lexer checks, when it is compiled, that this crate (which it uses
+# for emoji) and unicode-ident implement the same version of Unicode.
+unicode-properties = "=0.1.4"
+unicode-script = "=0.5.8"
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true

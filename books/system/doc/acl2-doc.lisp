@@ -19473,7 +19473,7 @@ subtree of X with T, without duplication.</p>
   (count #\\D \"DabcDefcDe\" :start 1 :end 5) ; = 1
   (count #\\D \"DabcDefcDe\" :start 1 :end 4) ; = 0
   (count #\\z \"DabcDefcDe\")                 ; = 0
-  (count '(a b) '(17 (a b) 23 (a b) (c d)))   ; = 2
+  (count 'a '(17 a 23 a (c d)))               ; = 2
 
   General Form:
   (count item sequence &key start end)
@@ -19483,7 +19483,10 @@ subtree of X with T, without duplication.</p>
  @('sequence').  The @(see guard) for calls of @('count') (which is actually a
  macro in ACL2) specifies that @('sequence') is a string or a true-list, and
  that @('start'), which defaults to 0, and @('end'), which defaults to the
- length of @('sequence'), are valid indices into sequence.</p>
+ length of @('sequence'), are valid indices into sequence.  If @('sequence') is
+ a list, then the guard also specifies that either @('item') or every member of
+ @('sequence') satisfies @(tsee eqlablep), since Common Lisp's @('count')
+ compares using @(tsee eql).</p>
 
  <p>See any Common Lisp documentation for more information about @('count'),
  which is a Common Lisp utility.  At this time ACL2 does not support keyword
@@ -110380,6 +110383,13 @@ it."
  the fix, extended a guard optimization for constant indices from just the
  numeric case.</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in
+ @(tsee count), which in @(see guard)-verified code compared list members to
+ the item using @(tsee eql), although its logical definition uses @(tsee
+ equal).  The guard of @('count') on a list now requires that the item or every
+ member of the list satisfies @(tsee eqlablep).  For an example, see @(see
+ community-book) @('system/tests/count-eql-vs-equal.lisp').</p>
+
  <p>Checks were improved to avoid raw Lisp errors in the following situations.
  (Aside: AI reported, for the first two: &ldquo;Four subagents tested ~270
  malformed inputs across nearly every ACL2 event type.... Out of ~270 tests,
@@ -110433,6 +110443,11 @@ it."
  already in order, but whose length exceeds the @(':maximum-length'):
  recompression was required but was not performed.  See @(see community-book)
  @('system/tests/compress1-length-bug.lisp').</p>
+
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in
+ @(tsee maybe-flush-and-compress1), which could return an array updated by
+ @(tsee aset1) without compressing it.  For an example, see @(see
+ community-book) @('system/tests/maybe-flush-and-compress1-aset1.lisp').</p>
 
  <p>Fixed a soundness bug caused by failing to account for @(see
  invariant-risk) for function calls inside calls of @(tsee loop$).  See @(see
@@ -110744,6 +110759,14 @@ it."
  produced @('(F (RETURN-LAST 'PROGN '7 (TO-DF X)))') but now produces the
  correct result, @('(F (TO-DF X))').</p>
 
+ <p>Applied (and checked) AI-suggested fix to eliminate a soundness bug in the
+ @(see proof-builder)'s @('apply-linear') command, which added the conclusion
+ of a @(see linear) rule as a top-level hypothesis even when rule's hypotheses
+ were relieved using IF tests governing the current subterm.  In that case, the
+ added hypothesis is now an implication from those tests to that conclusion;
+ see @(see acl2-pc::apply-linear).  For an example, see @(see community-book)
+ @('system/tests/proof-builder-apply-linear-governors.lisp').</p>
+
  <p>Fixed a @(tsee stobj-let) soundness bug involving @(see stobj-table)
  fields of @(see stobj)s, by strengthening a check in each binding that the
  bound variable agrees with the key, so that the two are not merely congruent
@@ -110964,6 +110987,12 @@ it."
  since you can't use recursion to iterate that way, since @(see df)s are not
  allowed in lists.  See @(see community-book)
  @('system/tests/for-loop-df-variables.lisp').</p>
+
+ <p>Fixed a soundness bug caused by inappropriate management of the @(see
+ proof-builder) state, specifically: for uses of @(':instructions') in @(see
+ events) submitted under a @(':lisp') command invoked in an interactive
+ proof-builder session.  See @(see community-book)
+ @('system/tests/proof-builder-session-reuse.lisp') for an example.</p>
 
  <p>(CCL only) Added a workaround from AI for unsoundnesss involving @(tsee
  truncate) and related functions, due to a <a
@@ -171227,7 +171256,11 @@ apply a linear rule"
  <p>Finally, the instruction is applied exactly as the @('rewrite') instruction
  is applied, except instead of replacing the current subterm, the rule's
  instantiated conclusion is added to the end of the list of top-level
- hypotheses of the goal.</p>
+ hypotheses of the goal.  However, if the current subterm has governors (IF
+ tests) that are not top-level hypotheses, then since these may have been used
+ in relieving the rule's hypotheses, the hypothesis added is instead the
+ implication whose hypotheses are those governors and whose conclusion is the
+ rule's instantiated conclusion.</p>
 
  <p>Note that as for the @('rewrite') command, the substitution argument should
  be a list whose elements have the form @('(variable term)'), where @('term')
