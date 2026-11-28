@@ -2471,11 +2471,11 @@ reference made from privilege level 3.</blockquote>"
   "<p>
    If there is a segment register override prefix,
    the prefix determines the segment register,
-   according to Intel manual, Mar'17, Volume 2, Section 2.1.1.
+   according to Intel manual, Sep 2026, Volume 2, Section 2.1.1.
    </p>
    <p>
    Otherwise, we use the default segment selection rules
-   in Intel manual, May'18, Volume 1, Table 3-5.
+   in Intel manual, Sep 2026, Volume 1, Table 3-5.
    Since we only call this function for instruction operands,
    the CS rule does not apply.
    The ES rule applies to string instructions,
@@ -2487,14 +2487,30 @@ reference made from privilege level 3.</blockquote>"
    So the result is either SS or DS,
    based on whether the base register is one of rSP and rBP or not:
    this determination is made based on
-   Intel manual, May'18, Volume 2, Table 2-1 if the address size is 16 bits,
-   and Intel manual, May'18, Volume 2, Table 2-2 otherwise.
+   Intel manual, Sep 2026, Volume 2, Table 2-1 if the address size is 16 bits,
+   and Intel manual, Sep 2026, Volume 2, Table 2-2 otherwise.
    However, when Mod is not 11b and R/M is 100b,
    the notation [--][--] in Table 2-2 indicates the use of a SIB byte:
-   according to Intel manual, May'18, Volume 2, Table 2-3,
+   according to Intel manual, Sep 2026, Volume 2, Table 2-3,
    when the Base field of the SIB byte is 100b,
    the base register is rSP,
    and thus in this case the default segment register is SS.
+   According to Note 1 of the same table,
+   when the Base field of the SIB byte is 101b,
+   the base register is rBP if Mod is 01b or 10b,
+   and thus in this case the default segment register is SS as well;
+   if instead Mod is 00b, there is no base register,
+   and thus the default segment register is DS.
+   As for Table 2-1,
+   Note 1 of that table says that
+   the default segment register is SS
+   for the effective addresses that contain BP,
+   and DS for the other effective addresses;
+   the effective addresses that contain BP
+   are the ones with R/M 010b or 011b (and Mod not 11b),
+   as well as the ones with R/M 110b and Mod 01b or 10b:
+   if instead R/M is 110b and Mod is 00b,
+   the effective address is just a displacement.
    </p>
    <p>
    Note that here we may recalculate the address size
@@ -2511,15 +2527,20 @@ reference made from privilege level 3.</blockquote>"
     (#x65 #.*gs*)
     (t (b* ((addr-size (select-address-size proc-mode p4? x86)))
          (if (= addr-size 2)
-             (if (and (not (= mod 3))
-                      (or (= r/m 2) (= r/m 3)))
+             (if (or (and (not (= mod 3))
+                          (or (= r/m 2) (= r/m 3)))
+                     (and (or (= mod 1) (= mod 2))
+                          (= r/m 6)))
                  #.*ss*
                #.*ds*)
            (if (or (and (or (= mod 1) (= mod 2))
                         (= r/m 5))
                    (and (not (= mod 3))
                         (= r/m 4)
-                        (= (sib->base sib) 4)))
+                        (= (sib->base sib) 4))
+                   (and (or (= mod 1) (= mod 2))
+                        (= r/m 4)
+                        (= (sib->base sib) 5)))
                #.*ss*
              #.*ds*)))))
   ///
