@@ -9,7 +9,7 @@
 
 # Compare the ACL2 library, on EVERY code point, with independent
 # implementations of one version of Unicode: the Rust crates that rustc
-# uses, and Python.  See the section "Validation" of ../README.md.
+# uses, Python, and ICU.  See the section "Validation" of ../README.md.
 #
 # Usage:
 #
@@ -21,8 +21,14 @@
 #     PYTHON...  the command that runs a Python interpreter whose
 #                unicodedata module is for VERSION (Python 3.14 for 16.0.0,
 #                Python 3.15 for 17.0.0), preferably with the `regex`
-#                module of the same version of Unicode installed;
+#                module of the same version of Unicode installed, or one
+#                that has the module unicodedata2 for VERSION installed;
 #                if it is omitted, the comparison with Python is skipped
+#
+# If the environment variable ICU_LIB_DIR is set, it is the directory with
+# the shared libraries of an ICU whose version of Unicode is VERSION (ICU
+# 76 for 16.0.0, ICU 78 for 17.0.0, ICU 79 for 18.0.0), which
+# icu/build-icu.sh builds; then the library is compared with ICU too.
 #
 # If the environment variable UCD_DIR is set, it is the directory with the
 # files of VERSION, laid out as for tools/generate-ucd-books.py; then the
@@ -42,7 +48,7 @@
 set -euo pipefail
 
 if [ $# -lt 2 ]; then
-    sed -n '10,40p' "$0"
+    sed -n '10,46p' "$0"
     exit 2
 fi
 version=$1
@@ -106,6 +112,13 @@ elif [ -n "${UCD_DIR:-}" ]; then
     python3 "$here/python-oracle.py" "$version" files "$UCD_DIR" \
             > "$work/files-$version.txt"
     files+=("$work/files-$version.txt")
+fi
+
+if [ -n "${ICU_LIB_DIR:-}" ]; then
+    echo "== ICU: running the oracle"
+    python3 "$here/icu-oracle.py" "$version" "$ICU_LIB_DIR" \
+            > "$work/icu-$version.txt"
+    files+=("$work/icu-$version.txt")
 fi
 
 echo "== Comparing every code point"

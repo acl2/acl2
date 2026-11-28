@@ -22,7 +22,10 @@ removes.
 This needs the shared library of ICU (libicuuc), with any version of
 Unicode: the strings are made of characters whose properties are the same
 in the versions of Unicode since 6.3 (see ALPHABET).  The version of
-Unicode of the library is written to the standard error.
+Unicode of the library is written to the standard error.  If the
+environment variable ICU_LIB_DIR is set, the library is taken from that
+directory, as icu-oracle.py takes it; otherwise it is the one that the
+system has.
 
 For each string and for a direction of the paragraph (left to right, right
 to left, or that of the first strong character), ICU is asked for
@@ -43,6 +46,8 @@ book compare-display reads it.  See the section "Validation" of
 
 import ctypes
 import ctypes.util
+import os
+import pathlib
 import random
 import re
 import sys
@@ -80,9 +85,19 @@ DIRECTIONS = [(0, ':ltr'), (1, ':rtl'), (UBIDI_DEFAULT_LTR, ':fs')]
 
 def load_icu():
     """Return a function that gives the ICU function of a name."""
-    name = ctypes.util.find_library('icuuc')
-    if name is None:
-        sys.exit('icu-display.py: the ICU library (icuuc) was not found')
+    lib_dir = os.environ.get('ICU_LIB_DIR')
+    if lib_dir:
+        names = [path.name for path in pathlib.Path(lib_dir).glob('libicuuc*')
+                 if re.fullmatch(r'libicuuc\.so\.\d+', path.name)]
+        if not names:
+            sys.exit('icu-display.py: no libicuuc.so.N in ' + lib_dir)
+        name = os.path.join(lib_dir, names[0])
+        # icuuc needs the data library.
+        ctypes.CDLL(name.replace('icuuc', 'icudata'), mode=ctypes.RTLD_GLOBAL)
+    else:
+        name = ctypes.util.find_library('icuuc')
+        if name is None:
+            sys.exit('icu-display.py: the ICU library (icuuc) was not found')
     library = ctypes.CDLL(name)
     # The functions of ICU have the version of ICU in their names,
     # unless the library was built without that.

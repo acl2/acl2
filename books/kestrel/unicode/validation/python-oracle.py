@@ -18,8 +18,15 @@ Usage:
 
 For the first two forms, VERSION, e.g. 16.0.0, must be the version of
 Unicode of the Python interpreter's unicodedata module
-(unicodedata.unidata_version); the script stops if it is not.  Python
-3.14 has Unicode 16.0.0 and Python 3.15 has Unicode 17.0.0.
+(unicodedata.unidata_version).  Python 3.14 has Unicode 16.0.0 and Python
+3.15 has Unicode 17.0.0.  If it is another version, the script uses the
+third-party module unicodedata2 in its place, if that module is installed
+and is for VERSION (the release 18.0.0 of unicodedata2 has Unicode
+18.0.0); otherwise it stops.  unicodedata2 has the functions of
+unicodedata, with the tables of another version of Unicode.  With it,
+the source of the columns is named `unicodedata2` and not `python`, and
+there are no columns for XID_Start and XID_Continue, which come from the
+interpreter itself.
 
 The first form writes a header line and one line for each code point.
 Each column is named `property@source`, where the source is
@@ -79,6 +86,10 @@ interpreter, so this form is for a version of Unicode that no Python has.
 
 import sys
 import unicodedata
+
+# The name of the source of the columns that come from the module
+# unicodedata, or from the module unicodedata2 in its place: see main.
+SOURCE = "python"
 
 BIDI_FORMATTING = {"LRE", "RLE", "LRO", "RLO", "PDF", "LRI", "RLI", "FSI",
                    "PDI"}
@@ -220,15 +231,18 @@ def seq(s):
 def code_points(version, ucd_dir):
     sets = regex_sets(version)
     skeleton = skeleton_function(version, ucd_dir) if ucd_dir else None
-    columns = ["xids@python", "xidc@python", "bidif@python", "ccc@python",
-               "dm@python", "nfd@python", "nfc@python", "nfkd@python",
-               "nfkc@python", "gc@python", "bc@python", "dd@python",
-               "name@python"]
+    # str.isidentifier is the interpreter's, whatever SOURCE is.
+    own = SOURCE == "python"
+    columns = ["xids@python", "xidc@python"] if own else []
+    columns += [name + "@" + SOURCE
+                for name in ("bidif", "ccc", "dm", "nfd", "nfc", "nfkd",
+                             "nfkc", "gc", "bc", "dd", "name")]
     if sets:
         columns += ["xids@regex", "xidc@regex", "pws@regex", "bidic@regex"]
     if skeleton:
-        columns += ["skel@python-and-files", "skelm@python-and-files",
-                    "aliases@python-and-files", "label@files"]
+        columns += [name + "@" + SOURCE + "-and-files"
+                    for name in ("skel", "skelm", "aliases")]
+        columns += ["label@files"]
         aliases = name_aliases(version, ucd_dir)
         label = labels(version, ucd_dir)
     alias_missing = []
@@ -256,10 +270,11 @@ def code_points(version, ucd_dir):
             if parts[0].startswith("<"):
                 kind, parts = "k:", parts[1:]
             dm = kind + " ".join(str(int(p, 16)) for p in parts)
-        fields = [str(cp),
-                  "1" if xids else "0",
-                  "1" if xidc else "0",
-                  bidi if bidi in BIDI_FORMATTING else "-",
+        fields = [str(cp)]
+        if own:
+            fields += ["1" if xids else "0",
+                       "1" if xidc else "0"]
+        fields += [bidi if bidi in BIDI_FORMATTING else "-",
                   str(unicodedata.combining(c)),
                   dm,
                   seq(unicodedata.normalize("NFD", c)),
@@ -334,7 +349,8 @@ def pairs(path):
         # dump-pairs of dump.lisp writes that line last
         sys.exit("python-oracle.py: error: %s does not end with the line"
                  " #end: it is not complete" % path)
-    print("pairs@python: %d pairs, %d different" % (lines, differences))
+    print("pairs@%s: %d pairs, %d different"
+          % (SOURCE, lines, differences))
     return differences == 0
 
 
@@ -347,12 +363,27 @@ def main():
     if sys.argv[2] == "files" and len(sys.argv) == 4:
         files(version, sys.argv[3])
         return
-    if unicodedata.unidata_version != version:
-        die("this Python (%s) has Unicode %s, not %s"
-            % (sys.version.split()[0], unicodedata.unidata_version, version))
-    print("python-oracle.py: Python %s has Unicode %s"
-          % (sys.version.split()[0], unicodedata.unidata_version),
-          file=sys.stderr)
+    global unicodedata, SOURCE
+    if unicodedata.unidata_version == version:
+        print("python-oracle.py: Python %s has Unicode %s"
+              % (sys.version.split()[0], version), file=sys.stderr)
+    else:
+        own = unicodedata.unidata_version
+        try:
+            import unicodedata2
+        except ImportError:
+            die("this Python (%s) has Unicode %s, not %s, and the module"
+                " unicodedata2 is not installed"
+                % (sys.version.split()[0], own, version))
+        if unicodedata2.unidata_version != version:
+            die("this Python (%s) has Unicode %s, and its module"
+                " unicodedata2 has Unicode %s, not %s"
+                % (sys.version.split()[0], own,
+                   unicodedata2.unidata_version, version))
+        unicodedata, SOURCE = unicodedata2, "unicodedata2"
+        print("python-oracle.py: the module unicodedata2 has Unicode %s"
+              " (Python %s has Unicode %s)"
+              % (version, sys.version.split()[0], own), file=sys.stderr)
     if sys.argv[2] == "code-points" and len(sys.argv) in (3, 4):
         code_points(version, sys.argv[3] if len(sys.argv) == 4 else None)
     elif sys.argv[2] == "pairs" and len(sys.argv) == 4:

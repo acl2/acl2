@@ -1,0 +1,12 @@
+{
+  "strategy": "additive",
+  "featureFilters": {
+    "cnvalias": "include",
+    "confusables": "include",
+    "misc": "include",
+    "normalization": "include",
+    "uemoji": "include",
+    "ulayout": "include",
+    "unames": "include"
+  }
+}
