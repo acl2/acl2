@@ -141,6 +141,22 @@ lexeme CSTs violate an executable conjunct of `rust$::lexing-okp`
 (every conjunct except maximal munch); there should be none.
 It also takes the converted whole files.
 
+## The tokenizer against its specification
+
+    (rust$::rv-go-tokenization "/data/tests.lsp" (rust::edition-2021) state)
+    (rust$::rv-go-tokenization "/data/tests.lsp" (rust::edition-2024) state)
+
+This returns the number of inputs that lex, the number of those that
+also tokenize, and the ids of the inputs that lex on which the tokenizer
+and the specification differ; there should be none.
+The lexer accepts two kinds of input that the tokenizer rejects:
+one with a raw identifier or a raw lifetime that has an excluded name,
+and, in edition 2024, one with a reserved guard.
+So the tokenizer, applied to the lexer's CSTs, should fail exactly when
+`rust$::tokenization-conditions-okp` does not hold of them.
+And the token that it makes of a lexeme should be a keyword token
+exactly when `rust$::keyword-lexeme-cst-p` holds of the lexeme.
+
 ## The lexemes against the text
 
     (rust$::rv-go-reprint "/data/tests.lsp" (rust::edition-2021) state)

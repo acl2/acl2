@@ -1,0 +1,67 @@
+# Unicode Library
+#
+# Copyright (C) 2026 Kestrel Institute (http://www.kestrel.edu)
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+#
+# Author: Eric McCarthy (bendyarm on GitHub)
+
+# The crates that rustc uses for identifiers and normalization,
+# at the versions that implement Unicode 18.0.0.
+#
+#   unicode-ident 1.0.27         Unicode 18.0.0 (says so itself)
+#   unicode-normalization 0.1.26 Unicode 18.0.0 (says so itself)
+#   ra-ap-rustc_lexer 0.184.0    rustc's own lexer crate, as published for
+#                                rust-analyzer; this version uses unicode-ident
+#
+# There is no release of unicode-xid or of regex-syntax for Unicode 18.0.0.
+#
+# And, for Script, Script_Extensions, Identifier_Status, skeletons and
+# augmented script sets:
+#
+#   unicode-script 0.5.9         Unicode 18.0.0 (says so itself)
+#   unicode-security 0.1.3       Unicode 18.0.0 (says so itself); its
+#                                skeleton removes the default ignorable
+#                                code points, and it does not have the
+#                                writing system Hntl
+#
+# There is no release of unicode-bidi for Unicode 18.0.0.
+
+[package]
+name = "unicode-oracle-v18-0-0"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "oracle"
+path = "../src/main.rs"
+
+[features]
+default = [
+    "have-unicode-ident-version",
+    "have-unicode-script",
+    "have-unicode-security",
+    "unicode-security-removes-default-ignorables",
+]
+have-unicode-xid = []
+have-regex-syntax = []
+have-unicode-ident-version = []
+have-unicode-script = []
+have-unicode-bidi = []
+have-unicode-security = []
+unicode-security-removes-default-ignorables = []
+
+[dependencies]
+unicode-normalization = "=0.1.26"
+unicode-ident = "=1.0.27"
+ra-ap-rustc_lexer = "=0.184.0"
+# rustc_lexer checks, when it is compiled, that this crate (which it uses
+# for emoji) and unicode-ident implement the same version of Unicode.
+unicode-properties = "=0.1.5"
+unicode-script = "=0.5.9"
+unicode-security = "=0.1.3"
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true

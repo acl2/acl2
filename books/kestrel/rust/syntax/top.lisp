@@ -20,7 +20,11 @@
 (include-book "token-tree-operations")
 (include-book "grammar")
 (include-book "extra-grammatical-restrictions")
+(include-book "lexing-uniqueness")
 (include-book "lexer")
+(include-book "lexer-correctness")
+(include-book "lexer-tree-completeness")
+(include-book "lexer-maximal-munch")
 (include-book "tokenizer")
 (include-book "token-tree-builder")
 (include-book "input-format")
@@ -60,6 +64,19 @@
      (see @(see differential-testing)),
      and @(see related-lexer-descriptions) relates our grammar
      to other descriptions of Rust's lexical structure.
+     The side conditions of the lexical grammar
+     have declarative specifications
+     (see @(see extra-grammatical-restrictions)),
+     except the one for Unicode identifiers;
+     the lexer and the tokenizer are tested against them.
+     The specification of lexing is proved to allow
+     at most one way to split an input into lexemes
+     (see @(see lexing-uniqueness)).
+     The lexer is proved to satisfy its specification,
+     except for maximal munch (see @(see lexer-correctness));
+     the proof of maximal munch is in progress
+     (see @(see lexer-tree-completeness) and @(see lexer-maximal-munch)),
+     and the proof for the tokenizer is future work.
      Still to come are
      Unicode identifiers and their normalization.
      The token-tree builder groups the tokens into token trees,

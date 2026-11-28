@@ -405,7 +405,8 @@
       and @('1_e') and @('1.0_e') are rejected,
       as exponents without digits.
       Our rules for a suffix after digits,
-      @('suffix-no-e') and @('suffix-no-underscore'),
+      @('suffix-no-e'), @('suffix-no-hex-digit'),
+      and @('suffix-no-underscore'),
       do not begin with an underscore."))
    (xdoc::desc
     "A hexadecimal digit at the start of the suffix of a hexadecimal literal"
@@ -418,12 +419,10 @@
       The Reference's examples show the first reading
       (@('0x01_f32') is given as the integer 7986),
       and rustc does the same: the digits extend as far as they can.
-      Our grammar has both readings, like the Reference;
-      our lexer takes the digits as far as they go.
-      For this reason, the side condition [SC7] tells
-      whether a literal with a radix prefix has a suffix
-      from its text, not from its CST
-      (see @(tsee radix-literal-string-p))."))
+      Our grammar has the first reading only:
+      the suffix of a hexadecimal literal has a rule of its own,
+      @('suffix-no-hex-digit'),
+      which does not begin with a hexadecimal digit."))
    (xdoc::desc
     "A radix prefix read as the digit @('0') and the start of a suffix"
     (xdoc::p
